@@ -33,22 +33,24 @@ The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. You
 The changes between the old and new system mainly concern Python operators ``+ - * / @``,
 that now create the following ``Operator`` subclass instances.
 
-+----------------------------------+------------------+------------------------+
-|                                  | Legacy           | New opmath             |
-+==================================+==================+========================+
-| tensor products                  | ``operation.Tensor`` | ``ops.Prod``       |
-| ``X(0) @ X(1)``                  |                  |                        |
-+----------------------------------+------------------+------------------------+
-| sums                             | ``ops.Hamiltonian`` | ``ops.Sum``         |
-| ``X(0) + X(1)``                  |                  |                        |
-+----------------------------------+------------------+------------------------+
-| scalar products                  | ``ops.Hamiltonian`` | ``ops.SProd``       |
-| ``1.5 * X(1)``                   |                  |                        |
-+----------------------------------+------------------+------------------------+
-| ``qml.dot(coeffs,ops)``          | ``ops.Sum``      | ``ops.Sum``            |
-+----------------------------------+------------------+------------------------+
-| ``qml.Hamiltonian(coeffs, ops)`` | ``ops.Hamiltonian`` | ``ops.LinearCombination``|
-+----------------------------------+------------------+------------------------+
+
++----------------------------------+----------------------+---------------------------+
+|                                  | Legacy               | New opmath                |
++==================================+======================+===========================+
+| tensor products                  | ``operation.Tensor`` | ``ops.Prod``              |
+| ``X(0) @ X(1)``                  |                      |                           |
++----------------------------------+----------------------+---------------------------+
+| sums                             | ``ops.Hamiltonian``  | ``ops.Sum``               |
+| ``X(0) + X(1)``                  |                      |                           |
++----------------------------------+----------------------+---------------------------+
+| scalar products                  | ``ops.Hamiltonian``  | ``ops.SProd``             |
+| ``1.5 * X(1)``                   |                      |                           |
++----------------------------------+----------------------+---------------------------+
+| ``qml.dot(coeffs,ops)``          | ``ops.Sum``          | ``ops.Sum``               |
++----------------------------------+----------------------+---------------------------+
+| ``qml.Hamiltonian(coeffs, ops)`` | ``ops.Hamiltonian``  | ``ops.LinearCombination`` |
++----------------------------------+----------------------+---------------------------+
+
 
 The three main new opmath classes ``SProd``, ``Prod``, and ``Sum`` have already been around for a while.
 E.g. ``qml.dot()`` has always returned a ``Sum`` instance.
