@@ -68,9 +68,7 @@ class QFT(Operation):
           0.35355339+0.j -0.35355339+0.j  0.35355339+0.j -0.35355339+0.j]
 
     .. details::
-        :title: Usage Details
-
-        **Semiclassical Quantum Fourier transform**
+        :title: Semiclassical Quantum Fourier transform
 
         If the QFT is the last subroutine applied within a circuit, it can be
         replaced by a
