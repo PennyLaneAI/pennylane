@@ -285,12 +285,6 @@ class QubitDevice(Device):
         )
         if has_mcm:
             mid_measurements = kwargs["mid_measurements"]
-            mid_values = np.array(tuple(mid_measurements.values()))
-            if np.any(mid_values == -1):
-                for k, v in tuple(mid_measurements.items()):
-                    if v == -1:
-                        mid_measurements.pop(k)
-                return None, mid_measurements
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
@@ -311,16 +305,24 @@ class QubitDevice(Device):
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
+        if has_mcm:
+            n_mcms = len(mid_measurements)
+            stat_circuit = qml.tape.QuantumScript(
+                circuit.operations,
+                circuit.measurements[0:-n_mcms],
+                shots=1,
+                trainable_params=circuit.trainable_params,
+            )
+        else:
+            stat_circuit = circuit
         if self._shot_vector is not None:
-            results = self.shot_vec_statistics(circuit)
+            results = self.shot_vec_statistics(stat_circuit)
 
         else:
-            results = self.statistics(circuit)
-            single_measurement = len(circuit.measurements) == 1
+            results = self.statistics(stat_circuit)
             if has_mcm:
-                n_mcms = len(mid_measurements)
-                results = results[-n_mcms:]
                 results.extend(list(mid_measurements.values()))
+            single_measurement = len(circuit.measurements) == 1
             results = results[0] if single_measurement else tuple(results)
         # increment counter for number of executions of qubit device
         self._num_executions += 1
