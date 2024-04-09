@@ -1,5 +1,5 @@
 # Uses https://github.com/ossf/scorecard-action
-name: Scorecard supply-chain security
+name: Scorecard
 on:
   # For Branch-Protection check. Only the default branch is supported. See
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
@@ -37,7 +37,7 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          publish_results: false # enable later for public-facing reports
+          publish_results: true
 
       # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF
       # format to the repository Actions tab.

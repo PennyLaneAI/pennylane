@@ -23,6 +23,11 @@
   <a href="https://www.apache.org/licenses/LICENSE-2.0">
     <img src="https://img.shields.io/pypi/l/PennyLane.svg?logo=apache&style=flat-square" />
   </a>
+  <a href="https://www.apache.org/licenses/LICENSE-2.0">
+    <img src="https://img.shields.io/pypi/l/PennyLane.svg?logo=apache&style=flat-square" />
+  </a>
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/pennylaneai/pennylane/badge)](https://securityscorecards.dev/viewer/?uri=github.com/pennylaneai/pennylane)
+
 </p>
 
 <p align="center">
