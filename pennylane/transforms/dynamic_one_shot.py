@@ -184,13 +184,10 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
                 new_measurements.append(m)
-    # all_measurement_values = []
     for op in circuit:
         if isinstance(op, MidMeasureMP):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
-            # all_measurement_values.append(MeasurementValue([op], lambda res: res))
 
-    # new_measurements.append(qml.sample(all_measurement_values))
     return qml.tape.QuantumScript(
         circuit.operations, new_measurements, shots=1, trainable_params=circuit.trainable_params
     )
