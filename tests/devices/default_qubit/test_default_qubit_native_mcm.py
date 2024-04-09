@@ -487,7 +487,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_fn", [qml.expval, qml.sample, qml.probs])
-def test_broadcasting_qnode(shots, reset, measure_fn):
+def test_broadcasting_qnode(shots, postselect, reset, measure_fn):
     """Test that executing qnodes with broadcasting work as expected"""
     dev = qml.device("default.qubit", shots=shots)
     param = [[np.pi / 3, np.pi / 4], [np.pi / 6, 2 * np.pi / 3]]
@@ -495,7 +495,7 @@ def test_broadcasting_qnode(shots, reset, measure_fn):
 
     @qml.qnode(dev)
     def func(x, y):
-        obs_tape(x, y, None, reset)
+        obs_tape(x, y, None, reset, postselect)
         return measure_fn(op=obs)
 
     func1 = func
