@@ -172,3 +172,69 @@ class TestQutritDepolarizingChannel:
         p = jax.numpy.array(0.43, dtype=jax.numpy.complex128)
         jac = jax.jacobian(self.kraus_fn, holomorphic=True)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
+
+
+class TestQutritAmplitudeDamping:
+    """Tests for the qutrit quantum channel QutritAmplitudeDamping"""
+
+    def test_gamma_zero(self, tol):
+        """Test gamma=0 gives correct Kraus matrices"""
+        op = channel.AmplitudeDamping
+        assert np.allclose(op(0, wires=0).kraus_matrices()[0], np.eye(2), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices()[1], np.zeros((2, 2)), atol=tol, rtol=0)
+
+    def test_gamma_arbitrary(self, tol):
+        """Test gamma=0.1 gives correct Kraus matrices"""
+        op = channel.AmplitudeDamping
+        expected = [
+            np.array([[1.0, 0.0], [0.0, 0.9486833]]),
+            np.array([[0.0, 0.31622777], [0.0, 0.0]]),
+        ]
+        assert np.allclose(op(0.1, wires=0).kraus_matrices(), expected, atol=tol, rtol=0)
+
+    def test_gamma_invalid_parameter(self):
+        with pytest.raises(ValueError, match="gamma must be in the interval"):
+            channel.AmplitudeDamping(1.5, wires=0).kraus_matrices()
+
+    @staticmethod
+    def expected_jac_fn(gamma):
+        return [
+            qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1 - gamma))]]),
+            qml.math.array([[0, 1 / (2 * qml.math.sqrt(gamma))], [0, 0]]),
+        ]
+
+    @staticmethod
+    def kraus_fn(x):
+        return qml.math.stack(channel.AmplitudeDamping(x, wires=0).kraus_matrices())
+
+    @pytest.mark.autograd
+    def test_kraus_jac_autograd(self):
+        gamma = pnp.array(0.43, requires_grad=True)
+        jac = qml.jacobian(self.kraus_fn)(gamma)
+        assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
+
+    @pytest.mark.torch
+    def test_kraus_jac_torch(self):
+        import torch
+
+        gamma = torch.tensor(0.43, requires_grad=True)
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, gamma)
+        assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(gamma.detach().numpy()))
+
+    @pytest.mark.tf
+    def test_kraus_jac_tf(self):
+        import tensorflow as tf
+
+        gamma = tf.Variable(0.43)
+        with tf.GradientTape() as tape:
+            out = self.kraus_fn(gamma)
+        jac = tape.jacobian(out, gamma)
+        assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
+
+    @pytest.mark.jax
+    def test_kraus_jac_jax(self):
+        import jax
+
+        gamma = jax.numpy.array(0.43)
+        jac = jax.jacobian(self.kraus_fn)(gamma)
+        assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
