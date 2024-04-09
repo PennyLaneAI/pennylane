@@ -9,7 +9,9 @@ on:
   schedule:
     - cron: '29 7 * * 5'
   push:
-    branches: [ "master" ]
+    branches:
+      - master
+  pull_request:
 
 # Declare default permissions as read only.
 permissions: read-all
@@ -18,8 +20,6 @@ jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
-    secrets:
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
     permissions:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
