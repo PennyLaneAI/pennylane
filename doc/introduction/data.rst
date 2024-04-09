@@ -74,7 +74,7 @@ To determine what attributes are available for a type of dataset, we can use the
     
     - Spin systems: ``periodicity`` is ``"open"``, ``lattice`` is ``"chain"``, and ``layout`` is ``1x4`` for ``chain`` systems and ``2x2`` for ``rectangular`` systems.
 
-Viewing Datasets in PennyLane
+Using Datasets in PennyLane
 ---------------------------
 
 Once loaded, one can access properties of the datasets:
@@ -100,9 +100,9 @@ use them directly in a PennyLane circuits as follows:
 Viewing Available Datasets
 --------------------------
 
-You can call the 
+We can call the 
 :func:`~pennylane.data.list_datasets` function to get a snapshot of the currently available data.
-This function returns a nested dictionary as we show below. 
+This function returns a nested dictionary as shown below. 
 
 >>> available_data = qml.data.list_datasets()
 >>> available_data.keys()
@@ -151,6 +151,9 @@ We can then write this :class:`~pennylane.data.Dataset` to storage and read it a
 + (1) [Z0]
 >>> read_dataset.energies
 array([-1.5, -0.5,  0.5,  1.5])
+
+For more details on reading and writing custom datasets, including metadata, please
+see the :mod:`~.data` subpackage documentation.
 
 :html:`<div class="summary-table">`
 

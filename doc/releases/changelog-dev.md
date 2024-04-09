@@ -298,6 +298,9 @@
 * A code example in the `qml.measure` docstring has been added that showcases returning mid-circuit measurement statistics from QNodes.
   [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
 
+* The text in the `qml.data` module and datasets quickstart have been slightly modified to lead to the quickstart first and highlight `list_datasets`.
+  [(5484)](https://github.com/PennyLaneAI/pennylane/pull/5484)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
@@ -358,6 +361,7 @@ Astral Cai,
 Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
+Diego Guala,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
