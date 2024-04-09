@@ -423,7 +423,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
     if measure_f == qml.probs:
         with pytest.raises(
             ValueError,
-            match="Cannot use qml.probs\(\) when measuring multiple mid-circuit measurements collected",
+            match=r"Cannot use qml.probs\(\) when measuring multiple mid-circuit measurements collected",
         ):
             _ = func1(param)
         return
