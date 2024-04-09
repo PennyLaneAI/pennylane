@@ -203,7 +203,7 @@ def test_unsupported_measurement():
         func(*params)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
@@ -255,7 +255,7 @@ def obs_tape(x, y, z, reset=False, postselect=None):
     return m0, m1
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
@@ -286,7 +286,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
         validate_measurements(measure_f, shots, results1, results2)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 def test_single_mcm_multiple_measure_obs(postselect, reset):
@@ -311,7 +311,7 @@ def test_single_mcm_multiple_measure_obs(postselect, reset):
         validate_measurements(measure_f, 5000, res1, res2)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 3000, [3000, 3001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
@@ -344,7 +344,7 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
         validate_measurements(measure_f, shots, results1, results2)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [5000])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
@@ -374,7 +374,7 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
             validate_measurements(measure_f, shots, r1, r2)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
@@ -410,7 +410,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
         validate_measurements(measure_f, shots, results1, results2)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
@@ -443,7 +443,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
         validate_measurements(measure_f, shots, results1, results2)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
@@ -475,7 +475,7 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
     validate_measurements(measure_f, shots, results1, results2)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [5000])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])

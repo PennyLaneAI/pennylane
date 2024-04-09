@@ -160,12 +160,13 @@ def _apply_diagonalizing_gates(
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    measurements: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
+    mid_measurements: dict = None,
 ) -> List[TensorLike]:
     """
     Returns the samples of the measurement process performed on the given state.
@@ -173,7 +174,7 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mp (List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
+        measurements (List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
             The sample measurements to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (Shots): The number of samples to take
@@ -183,15 +184,22 @@ def measure_with_samples(
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
+    # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
+    mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
+    skip_measure = any(v == -1 for v in mid_measurements.values()) if mid_measurements else False
 
     groups, indices = _group_measurements(mps)
 
     all_res = []
     for group in groups:
+        if skip_measure:
+            all_res.extend([None] * len(group))
+            continue
         if isinstance(group[0], ExpectationMP) and isinstance(
             group[0].obs, (Hamiltonian, LinearCombination)
         ):
@@ -216,6 +224,12 @@ def measure_with_samples(
     sorted_res = tuple(
         res for _, res in sorted(list(enumerate(all_res)), key=lambda r: flat_indices[r[0]])
     )
+
+    # append MCM samples
+    if mid_measurements:
+        sorted_res = list(sorted_res)
+        sorted_res.extend(list(mid_measurements.values()))
+        sorted_res = tuple(sorted_res)
 
     # put the shot vector axis before the measurement axis
     if shots.has_partitioned_shots:

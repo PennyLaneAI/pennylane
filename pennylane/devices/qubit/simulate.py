@@ -201,6 +201,7 @@ def measure_final_state(
         is_state_batched=is_state_batched,
         rng=rng,
         prng_key=prng_key,
+        mid_measurements=mid_measurements,
     )
 
     if len(circuit.measurements) == 1:
@@ -287,11 +288,6 @@ def simulate_one_shot_native_mcm(
     state, is_state_batched = get_final_state(
         circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements
     )
-    if any(v == -1 for v in mid_measurements.values()):
-        # the state is likely non-orthonormal, let's orthonormalize it
-        state[:] = 0.0
-        slices = [slice(0, 1, 1)] * qml.math.ndim(state)
-        state[tuple(slices)] = 1.0
     return measure_final_state(
         circuit,
         state,

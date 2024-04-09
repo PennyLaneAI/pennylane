@@ -116,15 +116,14 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
         all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
         for res in results:
             samples = (
-                res
+                [res]
                 if len(post_process_tape.measurements) == 0 and len(aux_tape.measurements) == 1
                 else res[-n_mcms::]
             )
-            samples = np.array(samples).reshape((-1))
-            mcm_values_dict = dict((k, v) for k, v in zip(all_mcms, samples))
-            if any(v == -1 for v in mcm_values_dict.values()):
+            if any(v == -1 for v in samples):
                 continue
             valid_shots += 1
+            mcm_values_dict = dict((k, v) for k, v in zip(all_mcms, samples))
             if len(post_process_tape.measurements) == 0:
                 one_shot_meas = []
             elif len(post_process_tape.measurements) == 1:
