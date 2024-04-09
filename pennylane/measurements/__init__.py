@@ -103,7 +103,7 @@ Wires can be reused as normal after making mid-circuit measurements. Moreover, a
 reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qml.measure`` to ``True``.
 
 Users can also collect statistics on mid-circuit measurements along with other terminal measurements. Currently,
-``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. ``qml.probs``, 
+``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. ``qml.probs``,
 ``qml.sample``, and ``qml.counts`` support sequences of measurement values, ``qml.expval`` and ``qml.var`` do not.
 Statistics of arithmetic combinations of measurement values are supported by all but ``qml.probs``, and only as
 long as they are not collected in a sequence.
