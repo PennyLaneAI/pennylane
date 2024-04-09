@@ -301,7 +301,16 @@
 * A code example in the `qml.measure` docstring has been added that showcases returning mid-circuit measurement statistics from QNodes.
   [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
 
+* The computational basis convention used for `qml.measure` — 0 and 1 rather than ±1 — has been clarified in its docstring.
+  [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
+
 <h3>Bug fixes 🐛</h3>
+
+* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+  [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
+
+* Tensorflow can now handle devices with float32 results but float64 input parameters.
+  [(#5446)](https://github.com/PennyLaneAI/pennylane/pull/5446)
 
 * Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
   creating an inconsistency with other differentiation methods and preventing some use cases.
