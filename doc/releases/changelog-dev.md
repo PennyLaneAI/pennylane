@@ -306,6 +306,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+  [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
+
 * Tensorflow can now handle devices with float32 results but float64 input parameters.
   [(#5446)](https://github.com/PennyLaneAI/pennylane/pull/5446)
 
