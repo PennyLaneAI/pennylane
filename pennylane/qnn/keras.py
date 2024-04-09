@@ -42,23 +42,6 @@ except ImportError:
     CORRECT_TF_VERSION = False
 
 
-if not CORRECT_TF_VERSION:
-    import_error_msg = (
-        "KerasLayer requires TensorFlow version 2 or above. The latest "
-        "version of TensorFlow can be installed using:\n "
-        "pip install tensorflow --upgrade\nAlternatively, visit "
-        "https://www.tensorflow.org/install for detailed instructions."
-    )
-elif not CORRECT_KERAS_VERSION:
-    import_error_msg = (
-        f"KerasLayer requires a Keras version lower than 3. You are currently using "
-        f"Keras version {tf.keras.version()}. For instructions on running with Keras 2,"
-        f"visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
-    )
-else:
-    import_error_msg = None
-
-
 class KerasLayer(Layer):
     """Converts a :class:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
@@ -319,8 +302,20 @@ class KerasLayer(Layer):
         **kwargs,
     ):
         # pylint: disable=too-many-arguments
-        if import_error_msg:
-            raise ImportError(import_error_msg)
+        if not CORRECT_TF_VERSION:
+            raise ImportError(
+                "KerasLayer requires TensorFlow version 2 or above. The latest "
+                "version of TensorFlow can be installed using:\n "
+                "pip install tensorflow --upgrade\nAlternatively, visit "
+                "https://www.tensorflow.org/install for detailed instructions."
+            )
+
+        if not CORRECT_KERAS_VERSION:
+            raise ImportError(
+                f"KerasLayer requires a Keras version lower than 3. You are currently using "
+                f"Keras version {tf.keras.version()}. For instructions on running with Keras 2,"
+                f"visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
+            )
 
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())

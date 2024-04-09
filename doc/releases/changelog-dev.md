@@ -166,6 +166,10 @@
 * Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, and `CountsMP`.
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
 
+* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
+  (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
+  [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
+
 <h3>Breaking changes 💔</h3>
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
@@ -254,6 +258,7 @@ Gabriel Bottrill,
 Astral Cai,
 Amintor Dusko,
 Pietropaolo Frisoni,
+Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
