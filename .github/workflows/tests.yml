@@ -15,9 +15,9 @@ env:
 jobs:
   tests:
     uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
-      secrets:
-        codecov_token: ${{ secrets.CODECOV_TOKEN }}
       branch: ${{ github.ref }}
 
       # Run a 'lightened' version of the CI on Pull Requests by default
