@@ -93,7 +93,7 @@ def test_custom_operation():
     assert qml.math.allclose(result, -np.sqrt(4 / 3))
 
 
-@pytest.mark.tf
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("op", [qml.TRX(np.pi, 0), qml.QutritBasisState([1], 0)])
 @pytest.mark.parametrize("interface", ("jax", "tensorflow", "torch", "autograd", "numpy"))
 def test_result_has_correct_interface(op, interface):
