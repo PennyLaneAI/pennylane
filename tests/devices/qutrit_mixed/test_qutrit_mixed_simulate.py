@@ -22,6 +22,7 @@ from pennylane import math
 from pennylane.devices.qutrit_mixed import simulate, get_final_state, measure_final_state
 
 
+# pylint: disable=inconsistent-return-statements
 def expected_TRX_circ_expval_values(phi, subspace):
     """Find the expect-values of GellManns 2,3,5,8
     on a circuit with a TRX gate on subspace (0,1) or (0,2)"""
