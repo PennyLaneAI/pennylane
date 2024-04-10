@@ -51,6 +51,12 @@ class KerasLayer(Layer):
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
 
+    .. note::
+        KerasLayer currently only supports Keras 2. If you are running the newest version
+        of TensorFlow and Keras, you may automatically be using Keras 3. For instructions
+        on running with Keras 2, instead, see the
+        `documentation on backwards compatibility <https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility>`__ .
+
     Args:
         qnode (qml.QNode): the PennyLane QNode to be converted into a Keras Layer_
         weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
