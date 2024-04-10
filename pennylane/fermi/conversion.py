@@ -319,7 +319,9 @@ def bravyi_kitaev(
         compatible with the Bravyi-Kitaev basis.
 
     In the Bravyi-Kitaev mapping, both occupation number and parity of the orbitals are stored non-locally.
-    In comparison, :func:`~.jordan_wigner` stores the occupation number locally while storing the parity non-locally and vice-versa for :func:`~.parity_transform`. In the Bravyi-Kitaev mapping, the fermionic creation and annihilation operators for even-labelled orbitals are mapped to the Pauli operators as
+    In comparison, :func:`~.jordan_wigner` stores the occupation number locally while storing the parity
+    non-locally and vice-versa for :func:`~.parity_transform`. In the Bravyi-Kitaev mapping, the
+    fermionic creation and annihilation operators for even-labelled orbitals are mapped to the Pauli operators as
 
     .. math::
 
@@ -347,10 +349,11 @@ def bravyi_kitaev(
 
     .. math::
         \begin{align*}
-           a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{R(n)}\right ). \\\\
+           a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{R(n)}\right ), \\\\
         \end{align*}
 
-    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators, and :math:`U(n)`, :math:`P(n)` and :math:`R(n)` represent the update, parity and remainder sets, respectively [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
+    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators, and :math:`U(n)`, :math:`P(n)` and :math:`R(n)`
+    represent the update, parity and remainder sets, respectively [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
 
     Args:
         fermi_operator(FermiWord, FermiSentence): the fermionic operator
@@ -398,7 +401,8 @@ def _update_set(j, bin_range, n):
 
     Args:
         j (int) : the orbital index
-        bin_range (int) : Binary range for given number of qubits
+        bin_range (int) : smallest power of 2 equal to or greater than
+                          given number of qubits, e.g., 8 for 5 qubits
         n (int) : number of qubits
 
     Returns:
@@ -425,7 +429,8 @@ def _parity_set(j, bin_range):
 
     Args:
         j (int) : the orbital index
-        bin_range (int) : Binary range for given number of qubits
+        bin_range (int) : smallest power of 2 equal to or greater than
+                          given number of qubits, e.g., 8 for 5 qubits
 
     Returns:
         numpy.ndarray: Array of qubits which determine the parity of qubit j
@@ -456,7 +461,9 @@ def _flip_set(j, bin_range):
 
     Args:
         j (int) : the orbital index
-        bin_range (int) : Binary range for given number of qubits
+        bin_range (int) : smallest power of 2 equal to or greater than
+                          given number of qubits, e.g., 8 for 5 qubits
+
     Returns:
         numpy.ndarray: Array containing information if the phase of orbital j is same as qubit j.
     """
