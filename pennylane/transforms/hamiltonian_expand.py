@@ -25,13 +25,12 @@ from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
 
 
-def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
+def grouping_processing_fn(res_groupings, coeff_groupings, offset):
     """Sums up results for the expectation value of a multi-term observable when grouping is involved.
 
     Args:
         res_groupings (ResultBatch): The results from executing the batch of tapes with grouped observables
         coeff_groupings (List[TensorLike]): The coefficients in the same grouped structure as the results
-        batch_size (Optional[int]): The batch size of the tape and corresponding results
         offset (TensorLike): A constant offset from the multi-term observable
 
     Returns:
@@ -92,7 +91,6 @@ def _grouping_hamiltonian_expand(tape):
     return tapes, partial(
         grouping_processing_fn,
         coeff_groupings=coeff_groupings,
-        batch_size=batch_size,
         offset=offset,
     )
 
