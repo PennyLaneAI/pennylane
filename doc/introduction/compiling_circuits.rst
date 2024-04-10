@@ -43,17 +43,17 @@ RX(0.09999999999999964, wires=[0])
 RX(11.336370614359172, wires=[0])
 >>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
 RX(3.0, wires=[0])
->>> qml.simplify(qml.sum(qml.PauliY(3), qml.PauliY(3)))
+>>> qml.simplify(qml.sum(qml.Y(3), qml.Y(3)))
 2 * Y(3)
 >>> qml.simplify(qml.RX(1, 0) @ qml.RX(1, 0))
 RX(2.0, wires=[0])
->>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+>>> qml.simplify(qml.prod(qml.X(0), qml.Z(0)))
 -1j * Y(0)
 
 Now lets simplify a nested operator:
 
->>> sum_op = qml.RX(1, 0) + qml.PauliX(0)
->>> prod1 = qml.PauliX(0) @ sum_op
+>>> sum_op = qml.RX(1, 0) + qml.X(0)
+>>> prod1 = qml.X(0) @ sum_op
 >>> nested_op = prod1 @ qml.RX(1, 0)
 >>> qml.simplify(nested_op)
 (X(0) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
@@ -62,19 +62,19 @@ Several simplifications steps are happening here. First of all, the nested produ
 
 .. code-block:: python
 
-    qml.prod(qml.PauliX(0), qml.sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
+    qml.prod(qml.X(0), qml.sum(qml.RX(1, 0), qml.X(0)), qml.RX(1, 0))
 
 Then the product of sums is transformed into a sum of products:
 
 .. code-block:: python
 
-    qml.sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
+    qml.sum(qml.prod(qml.X(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.X(0), qml.X(0), qml.RX(1, 0)))
 
 And finally like terms in the obtained products are grouped together, removing all identities: 
 
 .. code-block:: python
 
-    qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
+    qml.sum(qml.prod(qml.X(0), qml.RX(2, 0)), qml.RX(1, 0))
 
 As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
 
@@ -219,7 +219,7 @@ For example, suppose we would like to implement the following QNode:
 
     def circuit(weights):
         qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
     original_dev = qml.device("default.qubit", wires=3)
     original_qnode = qml.QNode(circuit, original_dev)
