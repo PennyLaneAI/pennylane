@@ -367,6 +367,9 @@
 * `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
   [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
 
+* Fixes `hamiltonian_expand` produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
+  [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

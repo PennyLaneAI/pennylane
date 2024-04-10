@@ -298,8 +298,7 @@ class TestHamiltonianExpand:
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
-    @pytest.mark.parametrize("inputs", [0, [0, 0]])
-    def test_processing_function_conditional_clause(self, inputs):
+    def test_processing_function_conditional_clause(self):
         """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
         in the processing function returned by hamiltonian_expand, accessed when
         using a shot vector and grouping if the terms don't commute with each other."""
@@ -311,14 +310,27 @@ class TestHamiltonianExpand:
 
         @qml.transforms.hamiltonian_expand
         @qml.qnode(dev_with_shot_vector)
+        def circuit():
+            return qml.expval(H)
+
+        res = circuit()
+
+        assert res.shape == (3,)
+
+    def test_processing_function_shot_vector_and_broadcasting(self):
+        """Tests that with shot vectors and braodcasting, the output is of the correct shape."""
+
+        dev_with_shot_vector = qml.device("default.qubit", shots=(10, 10, 10))
+        H = qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)])
+
+        @qml.transforms.hamiltonian_expand
+        @qml.qnode(dev_with_shot_vector)
         def circuit(theta):
             qml.RX(theta, wires=0)
             return qml.expval(H)
 
-        res = circuit(inputs)
-
-        dimension = (3, len(inputs)) if isinstance(inputs, list) else (3,)
-        assert res.shape == dimension
+        res = circuit([0.1, 0.2])
+        assert res.shape == (3, 2)
 
     def test_constant_offset_grouping(self):
         """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and grouping."""
