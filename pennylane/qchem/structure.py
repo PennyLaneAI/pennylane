@@ -281,27 +281,29 @@ def excitations(electrons, orbitals, delta_sz=0):
 
     return singles, doubles
 
-
 def _beta_matrix(orbitals):
     r"""Generate the beta matrix for conversion from occupation number basis to the Bravyi-Kitaev basis.
 
     Args:
         orbitals (int): Number of *spin* orbitals. If an active space is defined,
-    this is the number of active spin-orbitals.
+            this is the number of active spin-orbitals.
 
     Returns:
-        array: Transformation matrix `
+        (array): Transformation matrix beta
     """
 
+    # Base case for beta_1
+    if orbitals == 1:
+        return np.array([[1]])
+
     bin_range = int(np.ceil(np.log2(orbitals)))
-    beta = np.array([[1, 0], [1, 1]])
 
-    for binary in range(1, bin_range + 1):
-        beta = np.kron(np.eye(2, dtype=int), beta)
-        for col in range(0, 2**binary):
-            beta[2 ** (binary + 1) - 1, col] = 1
-
-    return beta[0:orbitals, 0:orbitals]
+    beta_previous = _beta_matrix(2**(bin_range - 1))
+    beta = np.kron(np.eye(2), beta_previous)
+    # Fill in the last row of the last quadrant with 1's
+    beta[-1, :2**(bin_range - 1)] = 1
+    
+    return beta[:orbitals, :orbitals]
 
 
 def hf_state(electrons, orbitals, basis="occupation_num"):
@@ -323,6 +325,7 @@ def hf_state(electrons, orbitals, basis="occupation_num"):
             is the number of active electrons.
         orbitals (int): Number of *spin* orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
+        basis (string): Basis in which HF state needs to be represented.
 
     Returns:
         array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`

@@ -288,7 +288,7 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
         fermi_word_as_ps = parity_transform(fw, n, ps=True)
 
         for pw in fermi_word_as_ps:
-            qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
+            qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
             if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = qml.math.real(qubit_operator[pw])
@@ -553,7 +553,7 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
         fermi_word_as_ps = parity_transform(fw, n, ps=True)
 
         for pw in fermi_word_as_ps:
-            qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
+            qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
             if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = qml.math.real(qubit_operator[pw])

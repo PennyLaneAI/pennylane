@@ -200,6 +200,9 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* The `qml.qchem.hf_state` function can now be used for parity and Bravyi-Kitaev basis.
+  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
