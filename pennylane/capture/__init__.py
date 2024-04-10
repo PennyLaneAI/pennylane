@@ -14,4 +14,4 @@
 """
 Tools for enabling the capture of pennylane objects into JaxPR.
 """
-from .meta_type import JaxPRMeta, enable_plexpr, disable_plexpr
+from .meta_type import JaxPRMeta, JaxPRMetaCoerceWires, enable_plexpr, disable_plexpr

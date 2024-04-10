@@ -261,7 +261,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .capture import JaxPRMeta
+from .capture import JaxPRMetaCoerceWires
 from .utils import pauli_eigs
 from .pytrees import register_pytree
 
@@ -406,7 +406,7 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-class Operator(metaclass=JaxPRMeta):
+class Operator(metaclass=JaxPRMetaCoerceWires):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,

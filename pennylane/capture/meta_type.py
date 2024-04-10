@@ -115,3 +115,15 @@ class JaxPRMeta(type):
             return type.__call__(cls, *args, **kwargs)
         # use bind to construct the class if we want class construction to add it to the jaxpr
         return cls._primitive.bind(*args, **kwargs)
+
+class JaxPRMetaCoerceWires(JaxPRMeta):
+
+    def __call__(cls, *args, **kwargs):
+        wires = kwargs.get("wires", None)
+        if wires is None:
+            if len(args) == 0:
+                raise ValueError("Can't create object without wires")
+            kwargs['wires'] = args[-1]
+            args = args[:-1]
+        return JaxPRMeta.__call__(cls, *args, **kwargs)
+
