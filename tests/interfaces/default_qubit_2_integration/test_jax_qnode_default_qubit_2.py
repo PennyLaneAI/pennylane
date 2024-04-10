@@ -35,7 +35,10 @@ device_and_diff_method = [
     [DefaultQubit(seed=device_seed), "adjoint", False, True],
     [DefaultQubit(seed=device_seed), "spsa", False, False],
     [DefaultQubit(seed=device_seed), "hadamard", False, False],
-    # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
 ]
 
 interface_and_device_and_diff_method = [
@@ -1241,6 +1244,9 @@ class TestQubitIntegrationHigherOrder:
 
     def test_state(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
         """Test that the state can be returned and differentiated"""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("Lightning does not support state adjoint differentiation.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
