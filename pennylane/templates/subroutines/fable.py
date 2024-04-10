@@ -55,11 +55,8 @@ class FABLE(Operation):
     We can see that the input matrix has been block encoded in the matrix of the circuit:
 
     >>> s = int(qml.math.ceil(qml.math.log2(max(len(input_matrix), len(input_matrix[0])))))
-    >>> expected = (
-            2**s
-            * qml.matrix(example_circuit)().real[0 : 2**s, 0 : 2**s]
-        )
-    ... print(f"Block-encoded matrix:\n{expected}", "\n")
+    >>> expected = 2**s * qml.matrix(example_circuit)().real[0 : 2**s, 0 : 2**s]
+    >>> print(f"Block-encoded matrix:\n{expected}")
     Block-encoded matrix:
     [[0.1 0.2]
     [0.3 -0.2]]
