@@ -133,7 +133,7 @@ class FABLE(Operation):
         Args:
             input_matrix (tensor_like): an :math:`(N \times N)` matrix to be encoded
             wires (Any or Iterable[Any]): wires that the operator acts on
-            tol (float): tolerance
+            tol (float): rotation gates that have an angle value smaller than this tolerance are removed
 
         Returns:
             list[.Operator]: list of gates for efficient circuit
