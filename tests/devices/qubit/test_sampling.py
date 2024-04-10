@@ -825,8 +825,8 @@ class TestBroadcasting:
         "measurement, expected",
         [
             (
-                    qml.probs(wires=[0, 1]),
-                    np.array([[0, 0, 0, 1], [1 / 2, 0, 1 / 2, 0], [1 / 4, 1 / 4, 1 / 4, 1 / 4]]),
+                qml.probs(wires=[0, 1]),
+                np.array([[0, 0, 0, 1], [1 / 2, 0, 1 / 2, 0], [1 / 4, 1 / 4, 1 / 4, 1 / 4]]),
             ),
             (qml.expval(qml.PauliZ(1)), np.array([-1, 1, 0])),
             (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
