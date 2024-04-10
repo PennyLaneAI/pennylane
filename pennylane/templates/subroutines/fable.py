@@ -52,7 +52,7 @@ class FABLE(Operation):
             qml.FABLE(input_matrix, wires=range(3), tol=0)
             return qml.state()
 
-    We can see that the input_matrix has been block encoded in the matrix of the circuit:
+    We can see that the input matrix has been block encoded in the matrix of the circuit:
 
     >>> s = int(qml.math.ceil(qml.math.log2(max(len(input_matrix), len(input_matrix[0])))))
     >>> expected = (
