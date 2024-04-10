@@ -246,7 +246,7 @@ def test_hf_state_basis():
     occ_state = qchem.hf_state(electrons, qubits, basis="occupation_num")
     parity_state = qchem.hf_state(electrons, qubits, basis="parity")
     bk_state = qchem.hf_state(electrons, qubits, basis="bravyi_kitaev")
-    
+
     occ_h = qml.jordan_wigner(h_ferm, ps=True, tol=1e-16).hamiltonian()
     parity_h = qml.parity_transform(h_ferm, qubits, ps=True, tol=1e-16).hamiltonian()
     bk_h = qml.bravyi_kitaev(h_ferm, qubits, ps=True, tol=1e-16).hamiltonian()

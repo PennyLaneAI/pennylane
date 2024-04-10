@@ -281,6 +281,7 @@ def excitations(electrons, orbitals, delta_sz=0):
 
     return singles, doubles
 
+
 def _beta_matrix(orbitals):
     r"""Generate the beta matrix for conversion from occupation number basis to the Bravyi-Kitaev basis.
 
@@ -298,11 +299,11 @@ def _beta_matrix(orbitals):
 
     bin_range = int(np.ceil(np.log2(orbitals)))
 
-    beta_previous = _beta_matrix(2**(bin_range - 1))
+    beta_previous = _beta_matrix(2 ** (bin_range - 1))
     beta = np.kron(np.eye(2), beta_previous)
     # Fill in the last row of the last quadrant with 1's
-    beta[-1, :2**(bin_range - 1)] = 1
-    
+    beta[-1, : 2 ** (bin_range - 1)] = 1
+
     return beta[:orbitals, :orbitals]
 
 
