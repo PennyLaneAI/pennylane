@@ -65,9 +65,10 @@ class FABLE(Operation):
     [0.3 -0.2]]
 
     .. note::
-        By default it is assumed that the matrix is an :math:`(N \times N)` square matrix,
-        where :math:`N` is a power of 2. However, for matrices of arbitrary size,
-        we add zeros to reach the correct dimension. It is also assumed that the values
+        FABLE can be implemented for matrices of arbitrary shape and size.
+        When given a :math:`(N \times M)` matrix, the matrix is padded with zeroes
+        until it is of :math:`(N \times N)` dimension, where :math:`N` is equal to :math:`2^n`,
+        where :math:`n` is an integer. It is also assumed that the values
         of the input matrix are within [-1, 1]. Apply a subnormalization factor if needed.
     """
 
