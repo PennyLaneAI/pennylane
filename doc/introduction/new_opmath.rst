@@ -19,11 +19,6 @@ This pages should help developers with troubleshooting and guide in the process 
       `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?labels=bug+%3Abug%3A&template=bug_report.yml&title=[BUG]>`_
       on the PennyLane GitHub page.
 
-.. note::
-
-    The old return system has been completely removed from PennyLane as of version 0.33.0, along with the
-    ``enable_return()`` and ``disable_return()`` toggle functions.
-
 Summary of the update
 ---------------------
 
