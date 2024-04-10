@@ -284,9 +284,13 @@ def _measure_with_samples_diagonalizing_gates(
                 raise e
             samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
-        processed_samples = [
-            _process_single_shot(samples[lower:upper]) for lower, upper in shots.bins()
-        ]
+        processed_samples = []
+        for lower, upper in shots.bins():
+            if len(samples.shape) == 3:
+                # Handle broadcasting
+                processed_samples.append(_process_single_shot(samples[:, lower:upper, :]))
+            else:
+                processed_samples.append(_process_single_shot(samples[lower:upper]))
 
         return tuple(zip(*processed_samples))
 
