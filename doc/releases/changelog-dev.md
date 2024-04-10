@@ -211,6 +211,10 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
+* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
+  noisy qutrit circuit with measurement and sampling.
+  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
+
 * Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
