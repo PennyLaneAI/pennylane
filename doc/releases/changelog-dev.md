@@ -363,6 +363,9 @@
 * `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
   [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
 
+* Fixes a bug where `TorchLayer` does not work with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
