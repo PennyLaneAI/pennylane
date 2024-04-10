@@ -268,32 +268,6 @@ def _measure_with_samples_diagonalizing_gates(
 
         return tuple(processed)
 
-    # if there is a shot vector, build a list containing results for each shot entry
-    if shots.has_partitioned_shots:
-        try:
-            samples = sample_state(
-                state,
-                shots=shots.total_shots,
-                is_state_batched=is_state_batched,
-                wires=wires,
-                rng=rng,
-                prng_key=prng_key,
-            )
-        except ValueError as e:
-            if str(e) != "probabilities contain NaN":
-                raise e
-            samples = qml.math.full((shots.total_shots, len(wires)), 0)
-
-        processed_samples = []
-        for lower, upper in shots.bins():
-            if len(samples.shape) == 3:
-                # Handle broadcasting
-                processed_samples.append(_process_single_shot(samples[:, lower:upper, :]))
-            else:
-                processed_samples.append(_process_single_shot(samples[lower:upper]))
-
-        return tuple(zip(*processed_samples))
-
     try:
         samples = sample_state(
             state,
@@ -308,7 +282,18 @@ def _measure_with_samples_diagonalizing_gates(
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
-    return _process_single_shot(samples)
+    processed_samples = []
+    for lower, upper in shots.bins():
+        if len(samples.shape) == 3:
+            # Handle broadcasting
+            processed_samples.append(_process_single_shot(samples[:, lower:upper, :]))
+        else:
+            processed_samples.append(_process_single_shot(samples[lower:upper]))
+
+    if shots.has_partitioned_shots:
+        return tuple(zip(*processed_samples))
+
+    return processed_samples[0]
 
 
 def _measure_classical_shadow(
