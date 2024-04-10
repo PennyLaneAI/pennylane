@@ -215,6 +215,9 @@
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
+* Add type hints for unimplemented methods of the abstract class `Operator`.
+  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
+
 <h3>Breaking changes 💔</h3>
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
@@ -381,6 +384,7 @@ Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
+Kenya Sakka,
 Jay Soni,
 Matthew Silverman,
 David Wierichs.
