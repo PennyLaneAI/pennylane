@@ -298,7 +298,8 @@ class TestHamiltonianExpand:
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
-    def test_processing_function_conditional_clause(self):
+    @pytest.mark.parametrize("inputs", [0, [0, 0]])
+    def test_processing_function_conditional_clause(self, inputs):
         """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
         in the processing function returned by hamiltonian_expand, accessed when
         using a shot vector and grouping if the terms don't commute with each other."""
@@ -310,12 +311,14 @@ class TestHamiltonianExpand:
 
         @qml.transforms.hamiltonian_expand
         @qml.qnode(dev_with_shot_vector)
-        def circuit():
+        def circuit(theta):
+            qml.RX(theta, wires=0)
             return qml.expval(H)
 
-        res = circuit()
+        res = circuit(inputs)
 
-        assert res.shape == (3,)
+        dimension = (3, len(inputs)) if isinstance(inputs, list) else (3,)
+        assert res.shape == dimension
 
     def test_constant_offset_grouping(self):
         """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and grouping."""
