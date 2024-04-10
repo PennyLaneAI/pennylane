@@ -31,8 +31,8 @@ class FABLE(Operation):
 
 
     Args:
-        input_matrix (tensor_like): an :math:`(N \times N)` matrix to be encoded,
-            where :math:`N` should have dimension equal to :math:`2^n` where :math:`n` is an integer
+        input_matrix (tensor_like): A :math:`(2^n \times 2^n)` matrix to be encoded,
+            where :math:`n` is the number of wires used.
         tol (float): rotation gates that have an angle value smaller than this tolerance are removed
         id (str or None): string representing the operation (optional)
 
