@@ -465,10 +465,16 @@ class TestFable:
     def test_variety_of_matrix_shapes(self, input, wires):
         """Test that FABLE runs without error for variety of cases."""
         dev = qml.device("default.qubit")
+        s = int(qml.math.ceil(qml.math.log2(max(len(input), len(input[0])))))
+        dimension = s**2
 
         @qml.qnode(dev)
         def circuit():
             qml.FABLE(input_matrix=input, wires=range(wires), tol=0)
             return qml.state()
 
-        qml.matrix(circuit, wire_order=range(wires))()
+        expected = (
+            dimension
+            * qml.matrix(circuit, wire_order=range(wires))().real[0:dimension, 0:dimension]
+        )
+        assert qml.math.shape(expected) == (dimension, dimension)
