@@ -115,7 +115,9 @@ may run into one of the following common issues.
     
     * Check if you are explicitly enabling and disabling new opmath somewhere in your script. Mixing both systems is not supported.
 
-    If for some unexpected reason your script still breaks, please see the :ref:`I am unsure what to do <unsure>` section below.
+    If for some unexpected reason your script still breaks, please post on the PennyLane `discussion forum <https://discuss.pennylane.ai>`_ or open a
+    `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?labels=bug+%3Abug%3A&template=bug_report.yml&title=[BUG]>`_
+    on the PennyLane GitHub page.
 
 .. details::
     :title: I want to contribute to PennyLane
