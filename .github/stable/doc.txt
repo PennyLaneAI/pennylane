@@ -30,7 +30,7 @@ google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 graphviz==0.20.3
 grpcio==1.62.1
-h5py==3.10.0
+h5py==3.11.0
 idna==3.6
 imagesize==1.4.1
 importlib_metadata==7.1.0
