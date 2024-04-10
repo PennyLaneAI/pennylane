@@ -95,7 +95,9 @@ def test_qnode_native_mcm(mocker):
 
     class MCMDevice(DefaultQubitLegacy):
         def apply(self, *args, **kwargs):
-            pass
+            for op in args[0]:
+                if isinstance(op, qml.measurements.MidMeasureMP):
+                    kwargs["mid_measurements"][op] = 0
 
         @classmethod
         def capabilities(cls):
