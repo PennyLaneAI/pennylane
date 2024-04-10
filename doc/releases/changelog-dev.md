@@ -66,6 +66,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improve the performance of computing the matrix of `qml.QFT`
+  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
+  
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
@@ -137,9 +140,9 @@
 
   ```python
   import pennylane as qml
-  fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+  fermi_ham = qml.fermi.from_string('0+ 1-')
 
-  qubit_ham = qml.fermi.bravyi_kitaev(fermi_ham, n=6)
+  qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
   ```
 
   ```pycon
@@ -163,8 +166,10 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
- 
 <h3>Improvements 🛠</h3>
+
+* `LightningVJPs` is now compatible with Lightning devices using the new device API.
+  [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
@@ -199,6 +204,9 @@
 * Obtaining classical shadows using the `default.clifford` device is now compatible with
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
+
+* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
+  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
 * The `qml.qchem.hf_state` function can now be used for parity and Bravyi-Kitaev basis.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
@@ -311,7 +319,23 @@
 * A code example in the `qml.measure` docstring has been added that showcases returning mid-circuit measurement statistics from QNodes.
   [(#5441)](https://github.com/PennyLaneAI/pennylane/pull/5441)
 
+* The computational basis convention used for `qml.measure` — 0 and 1 rather than ±1 — has been clarified in its docstring.
+  [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
+  [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
+
+* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+  [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
+
+* Tensorflow can now handle devices with float32 results but float64 input parameters.
+  [(#5446)](https://github.com/PennyLaneAI/pennylane/pull/5446)
+
+* Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
+  creating an inconsistency with other differentiation methods and preventing some use cases.
+  [(#5458)](https://github.com/PennyLaneAI/pennylane/pull/5458)
 
 * Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
   [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
@@ -354,6 +378,9 @@
   differentiation.
   [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
 
+* `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
+  [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -374,4 +401,5 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
 Jay Soni,
-Matthew Silverman.
+Matthew Silverman,
+David Wierichs.
