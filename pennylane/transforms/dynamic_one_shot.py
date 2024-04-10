@@ -91,6 +91,16 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 "measurements."
             )
 
+    samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
+    postselect_present = any(
+        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+    )
+    if postselect_present and samples_present and tape.batch_size is not None:
+        raise ValueError(
+            "Returning qml.sample is not supported when postselecting mid-circuit "
+            "measurements with broadcasting"
+        )
+
     if (batch_size := tape.batch_size) is not None:
         tapes, broadcast_fn = qml.transforms.broadcast_expand(tape)
     else:

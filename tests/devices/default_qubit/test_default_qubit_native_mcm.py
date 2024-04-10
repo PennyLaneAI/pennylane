@@ -368,7 +368,14 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    if isinstance(shots, Sequence):
+        for s, r1, r2 in zip(shots, results1, results2):
+            for _r1, _r2 in zip(r1, r2):
+                validate_measurements(measure_f, s, _r1, _r2)
+        return
+
+    for r1, r2 in zip(results1, results2):
+        validate_measurements(measure_f, shots, r1, r2)
 
 
 @flaky(max_runs=5)
@@ -583,3 +590,23 @@ def test_broadcasting_qnode(shots, postselect, reset, measure_fn):
     results2 = func2(*param)
 
     validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
+
+
+def test_sample_with_broadcasting_and_postselection_error():
+    """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
+    tape = qml.tape.QuantumScript(
+        [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
+    )
+    dev = qml.device("default.qubit", shots=10)
+
+    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
+        qml.transforms.dynamic_one_shot(tape)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.RX([0.1, 0.2], 0)
+        qml.measure(0, postselect=1)
+        return qml.sample(wires=0)
+
+    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
+        _ = circuit()
