@@ -52,7 +52,8 @@ class KerasLayer(Layer):
     creating quantum and hybrid models.
 
     .. note::
-        KerasLayer currently only supports Keras 2. If you are running the newest version
+
+        ``KerasLayer`` currently only supports Keras 2. If you are running the newest version
         of TensorFlow and Keras, you may automatically be using Keras 3. For instructions
         on running with Keras 2, instead, see the
         `documentation on backwards compatibility <https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility>`__ .
