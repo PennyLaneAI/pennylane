@@ -130,6 +130,95 @@ If you are a developer or power-user that explicitly uses ``qml.operation.Tensor
 may run into one of the following common issues.
 
 .. details::
+    :title: Sharp bits about the nesting structure of new opmath instances
+    :href: sharp-bits-nesting
+
+    The type of the final operator is determined by the outermost operation. The resulting object is a nested structure (sums of s/prods or s/prods of sums).
+
+    >>> qml.operation.enable_new_opmath() # default soon
+    >>> op = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
+    >>> type(op)
+    pennylane.ops.op_math.sum.Sum
+    >>> op.operands
+    (0.5 * (X(0) @ X(1)), 0.5 * (Y(0) @ Y(1)))
+    >>> type(op.operands[0]), type(op.operands[1])
+    (pennylane.ops.op_math.sprod.SProd, pennylane.ops.op_math.sprod.SProd)
+    >>> op.operands[0].scalar, op.operands[0].base, type(op.operands[0].base)
+    (0.5, X(0) @ X(1), pennylane.ops.op_math.prod.Prod)
+
+    We could construct an equivalent operator with a different nesting structure.
+
+    >>> op = (0.5 * X(0)) @ X(1) + (0.5 * Y(0)) @ Y(1)
+    >>> op.operands
+    ((0.5 * X(0)) @ X(1), (0.5 * Y(0)) @ Y(1))
+
+    >>> type(op.operands[0]), type(op.operands[1])
+    (pennylane.ops.op_math.prod.Prod, pennylane.ops.op_math.prod.Prod)
+
+    >>> op.operands[0].operands
+    (0.5 * X(0), X(1))
+
+    >>> type(op.operands[0].operands[0]), type(op.operands[0].operands[1])
+    (pennylane.ops.op_math.sprod.SProd,
+     pennylane.ops.qubit.non_parametric_ops.PauliX)
+    
+    There is yet another way to construct the same, equivalent, operator.
+    We can bring all of them to the same format by using ``op.simplify()`` which brings the operator down to 
+    the form :math:`\sum_i c_i \hat{O}_i` where :math:`c_i` is a scalar coefficient and :math:`\hat{O}_i` a pure operator or tensor product of operators.
+
+    >>> op1 = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
+    >>> op2 = (0.5 * X(0)) @ X(1) + (0.5 * Y(0)) @ Y(1)
+    >>> op3 = 0.5 * (X(0) @ X(1) + Y(0) @ Y(1))
+    >>> qml.equal(op1, op2), qml.equal(op2, op3), qml.equal(op3, op1)
+    (True, False, False)
+
+    >>> op1 = op1.simplify()
+    >>> op2 = op2.simplify()
+    >>> op3 = op3.simplify()
+    >>> qml.equal(op1, op2), qml.equal(op2, op3), qml.equal(op3, op1)
+    (True, True, True)
+
+    >>> op1, op2, op3
+    (0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)),
+     0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)),
+     0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)))
+    
+    We can also obtain those scalar coefficients and tensor product operators via the op.terms() method.
+
+    >>> coeffs, ops = op1.terms()
+    ([0.5, 0.5], [X(1) @ X(0), Y(1) @ Y(0)])
+
+.. details::
+    :title: Sharp bits about the qml.Hamiltonian dispatch
+    :href: sharp-bits-hamiltonian
+
+    One of the reasons that :class:`~LinearCombination` exists is that the old Hamiltonian class is not compatible with new opmath tensor products.
+    We can try to instantiate a old ``qml.ops.Hamiltonian`` class with a ``X(0) @ X(1)`` tensor product, which returns a :class:`~Prod` instance with opmath enabled.
+
+    >>> qml.operation.active_new_opmath() # confirm opmath is active (by default)
+    True
+    >>> qml.ops.Hamiltonian([0.5], [X(0) @ X(1)])
+    PennyLaneDeprecationWarning: Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. Instead, use 'qml.Hamiltonian', or use 'qml.operation.disable_new_opmath()' to continue to access the legacy functionality. See https://docs.pennylane.ai/en/stable/development/deprecations.html for more details.
+    ValueError: Could not create circuits. Some or all observables are not valid.
+
+    However, using ``qml.Hamiltonian`` works as expected.
+
+    >>> qml.Hamiltonian([0.5], [X(0) @ X(1)])
+    0.5 * (X(0) @ X(1))
+
+    The API of LinearCombination is identical to that of Hamiltonian. We can group observables or simplify upon initialization.
+
+    >>> H1 = qml.Hamiltonian([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
+    >>> H2 = qml.ops.LinearCombination([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
+    >>> H1 == H2
+    True
+
+    One small difference is that ``ham.simplify()`` no longer alters the instance in-place. In either case (legacy/new opmath), the following works.
+
+    >>> H1 = qml.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(0) @ X(1)])
+    >>> H1 = H1.simplify() # work for new and legacy opmath
+
+.. details::
     :title: My old PennyLane script does not run anymore
     :href: old-script-broken
 
@@ -166,7 +255,7 @@ may run into one of the following common issues.
     on the PennyLane GitHub page.
 
 .. details::
-    :title: I want to contribute to PennyLane
+    :title: I want to contribute to PennyLane and need to provide legacy support in tests
     :href: PL-developer
 
     If you want to contribute a new feature to PennyLane or update an existing one, you likely also need to update the tests.
@@ -174,7 +263,17 @@ may run into one of the following common issues.
     .. note::
         Please refrain from explicitly using ``qml.operation.disable_new_opmath()`` and ``qml.operation.enable_new_opmath()`` anywhere in tests as that globally
         changes the status of new opmath and thereby can affect other tests.
-        Instead, please use the context managers ``qml.operation.disable_new_opmath_cm()`` and `qml.operation.enable_new_opmath_cm()``.
+
+        .. code-block:: python3
+            def test_some_legacy_opmath_behavior():
+                qml.operation.disable_new_opmath() # dont do this
+                # testing some legacy behavior things
+
+            def test_some_new_opmath_behavior():
+                assert qml.operation.active_new_opmath()
+                # will fail because the previous test globally disabled new opmath
+
+        Instead, please use the fixtures below, or the context managers ``qml.operation.disable_new_opmath_cm()`` and `qml.operation.enable_new_opmath_cm()``.
 
         >>> with qml.operation.disable_new_opmath_cm():
         ...     op = qml.Hamiltonian([0.5], [X(0) @ X(1)])
@@ -185,15 +284,71 @@ may run into one of the following common issues.
     In case a test needs to be adopted for either case, you can use the following fixtures.
 
     * Use ``@pytest.mark.usefixtures("use_legacy_opmath")`` to test functionality that is explicitly only supported by legacy opmath, e.g. for backward compatibility.
+      
+      .. code-bock:: python3
+        @pytest.mark.usefixtures("use_legacy_opmath")
+        def test_qml_hamiltonian_legacy_opmath():
+            assert qml.Hamiltonian == qml.ops.Hamiltonian
+
+        def test_qml_hamiltonian()
+            assert qml.Hamiltonian == qml.ops.LinearCombination
 
     * Use ``@pytest.mark.usefixtures("use_new_opmath")`` to test functionality that `only` works with new opmath. That is because for the intermittent period 
       of supporting both systems, we periodically run the test suite with new opmath disabled.
+
+      .. code-bock:: python3
+        @pytest.mark.usefixtures("use_new_opmath")
+        def test_qml_hamiltonian_new_opmath():
+            assert qml.Hamiltonian == qml.ops.LinearCombination
     
     * Use ``@pytest.mark.usefixtures("use_legacy_and_new_opmath")`` if you want to test support for both systems in one single test. You can use ``qml.operation.active_new_opmath``
       inside the test to account for minor differences between both systems.
+
+      .. code-bock:: python3
+        @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+        def test_qml_hamiltonian_new_opmath():
+            if qml.operation.active_new_opmath():
+                assert qml.Hamiltonian == qml.ops.LinearCombination
+            
+            if not qml.operation.active_new_opmath():
+                assert qml.Hamiltonian == qml.ops.Hamiltonian
     
     One sharp bit about testing is that ``pytest`` runs collection and test execution separately. That means that instances generated outside the test, e.g. for parametrization, have been created
     using the respective system. So you may need to also put that creation in the appropriate context manager.
+
+    .. code-block:: python3
+        # in some test file
+        with qml.operation.disable_new_opmath():
+            legacy_ham_example = qml.Hamiltonian(coeffs, ops) # creates a Hamiltonian instance
+
+        @pytest.mark.usefixtures("use_legacy_opmath")
+        @pytest.marl.parametrize("ham", [legacy_ham_example])
+        def test_qml_hamiltonian_legacy_opmath(ham):
+            assert isinstance(ham, qml.Hamiltonian) # True
+            assert isinstance(ham, qml.ops.Hamiltonian) # True
+
+    Alternatively, you can convert them back to legacy Hamiltonian instances using ``qml.operation.convert_to_legacy_H()``. 
+
+    .. code-block:: python3
+        ham_example = qml.Hamiltonian(coeffs, ops) # creates a LinearCombination instance
+
+        @pytest.mark.usefixtures("use_legacy_opmath")
+        @pytest.marl.parametrize("ham", [ham_example])
+        def test_qml_hamiltonian_legacy_opmath(ham):
+            assert isinstance(ham, qml.Hamiltonian) # True
+            assert not isinstance(ham, qml.ops.Hamiltonian) # True
+
+        @pytest.mark.usefixtures("use_legacy_opmath")
+        @pytest.marl.parametrize("ham", [ham_example])
+        def test_qml_hamiltonian_legacy_opmath(ham):
+            # Most likely you wanted to test things with an Hamiltonian instance
+            legacy_ham_example = convert_to_legacy_H(ham)
+            assert isinstance(legacy_ham_example, qml.ops.Hamiltonian) # True
+            assert isinstance(legacy_ham_example, qml.Hamiltonian) # True because we are in legacy opmath context
+            assert not isinstance(legacy_ham_example, qml.ops.LinearCombination) # True
+    
+    For all that, keep in mind that ``qml.Hamiltonian`` points to :class:`~Hamiltonian` and :class:`LinearCombination` depending on the status of ``qml.operation.active_new_opmath()``.
+    So if you want to test something specifically for the old Hamiltonian class, use qml.ops.Hamiltonian instead.
 
 
 .. details::
