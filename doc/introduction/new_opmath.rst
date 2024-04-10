@@ -124,14 +124,15 @@ may run into one of the following common issues.
     :href: PL-developer
 
     If you want to contribute a new feature to PennyLane or update an existing one, you likely also need to update the tests.
-    Please refrain from explicitly using ``qml.operation.disable_new_opmath()`` and ``qml.operation.enable_new_opmath()`` anywhere in tests and code as that globally
-    changes the status of new opmath and thereby can affect other parts of your code or other tests.
 
-    Instead, please use the context managers ``qml.operation.disable_new_opmath_cm()`` and `qml.operation.enable_new_opmath_cm()``.
+    .. note::
+        Please refrain from explicitly using ``qml.operation.disable_new_opmath()`` and ``qml.operation.enable_new_opmath()`` anywhere in tests as that globally
+        changes the status of new opmath and thereby can affect other tests.
+        Instead, please use the context managers ``qml.operation.disable_new_opmath_cm()`` and `qml.operation.enable_new_opmath_cm()``.
 
-    >>> with qml.operation.disable_new_opmath_cm():
-    ...     op = qml.Hamiltonian([0.5], [X(0) @ X(1)])
-    >>> assert isinstance(op, qml.ops.Hamiltonian)
+        >>> with qml.operation.disable_new_opmath_cm():
+        ...     op = qml.Hamiltonian([0.5], [X(0) @ X(1)])
+        >>> assert isinstance(op, qml.ops.Hamiltonian)
 
     Our continuous integration (CI) test suite is running all tests with the default of new opmath being enabled.
     We also periodically run the CI test suite with new opmath disabled, as we support both new and legacy systems for some limited time.
