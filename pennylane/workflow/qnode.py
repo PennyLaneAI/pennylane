@@ -27,8 +27,10 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.capture import JaxPRMeta
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
+import jax
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -96,6 +98,7 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(type(qfunc_output)(r) for r in results)
     return type(qfunc_output)(results)
+
 
 
 class QNode:
@@ -527,6 +530,10 @@ class QNode:
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
         self._transform_program = qml.transforms.core.TransformProgram()
+
+        self.qnode_call = jax.core.Primitive("QNode call")
+        self.qnode_call.def_impl(self._qnode_impl)
+        self.qnode_call.def_abstract_eval(self._qnode_abstract_eval)
 
     def __copy__(self):
         copied_qnode = QNode.__new__(QNode)
@@ -1061,8 +1068,8 @@ class QNode:
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots
         )
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
-
+    def _qnode_impl(self, *args, **kwargs):
+        print(args, kwargs)
         old_interface = self.interface
         if old_interface == "auto":
             interface = qml.math.get_interface(*args, *list(kwargs.values()))
@@ -1092,6 +1099,14 @@ class QNode:
             _, self.gradient_kwargs, self.device = original_grad_fn
 
         return res
+        return jax.make_jaxpr(self.func)
+
+    def _qnode_abstract_eval(self, *args, **kwargs):
+        return jax.make_jaxpr(self.func)(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.qnode_call.bind(*args, **kwargs)
+
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)

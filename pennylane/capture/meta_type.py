@@ -76,7 +76,7 @@ def get_abstract_type(class_type: type) -> type:
     # hopefully this API stays constant over jax versions... fingers crossed
     jax.core.raise_to_shaped_mappings[AbstractType] = lambda aval, _: aval
 
-    ABSTRACT_TYPE_CACHE[type_name] = AbstractType
+    ABSTRACT_TYPE_CACHE[top_parent] = AbstractType
 
     return AbstractType
 
