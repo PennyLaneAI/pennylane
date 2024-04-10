@@ -84,7 +84,7 @@ class QFT(Operation):
             dev = qml.device("default.qubit", shots=1)
 
             @qml.qnode(dev)
-            def sum_(m, k, n_wires):
+            def qft_add(m, k, n_wires):
                 qml.BasisEmbedding(m, wires=range(n_wires))
                 qml.adjoint(qml.QFT)(wires=range(n_wires))
                 for j in range(n_wires):
@@ -94,7 +94,7 @@ class QFT(Operation):
 
         .. code-block:: pycon
 
-            >>> sum_(7, 3, n_wires=4)
+            >>> qft_add(7, 3, n_wires=4)
             [1 0 1 0]
 
         The last building block of this circuit is a QFT, so we may replace it by its
@@ -112,7 +112,7 @@ class QFT(Operation):
                 qml.Hadamard(n_wires-1)
 
             @qml.qnode(dev)
-            def sum(m, k, n_wires):
+            def scFT_add(m, k, n_wires):
                 qml.BasisEmbedding(m, wires=range(n_wires))
                 qml.adjoint(qml.QFT)(wires=range(n_wires))
                 for j in range(n_wires):
@@ -123,7 +123,7 @@ class QFT(Operation):
 
         .. code-block:: pycon
 
-            >>> sum_(7, 3, n_wires=4)
+            >>> scFT_add(7, 3, n_wires=4)
             [1 0 1 0]
     """
 
