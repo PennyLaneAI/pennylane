@@ -305,7 +305,7 @@ class KerasLayer(Layer):
         if not CORRECT_TF_VERSION:
             raise ImportError(
                 "KerasLayer requires TensorFlow version 2 or above. The latest "
-                "version of TensorFlow can be installed using:\n "
+                "version of TensorFlow can be installed using:\n"
                 "pip install tensorflow --upgrade\nAlternatively, visit "
                 "https://www.tensorflow.org/install for detailed instructions."
             )
