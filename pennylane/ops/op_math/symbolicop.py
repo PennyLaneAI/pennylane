@@ -45,6 +45,7 @@ class SymbolicOp(Operator):
     :meth:`~.operation.Operator.decomposition`.
     """
 
+    _meta_coerce_wires = False
     _name = "Symbolic"
 
     # pylint: disable=attribute-defined-outside-init

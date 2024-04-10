@@ -119,11 +119,12 @@ class JaxPRMeta(type):
 class JaxPRMetaCoerceWires(JaxPRMeta):
 
     def __call__(cls, *args, **kwargs):
-        wires = kwargs.get("wires", None)
-        if wires is None:
-            if len(args) == 0:
-                raise ValueError("Can't create object without wires")
-            kwargs['wires'] = args[-1]
-            args = args[:-1]
+        if cls._meta_coerce_wires:
+            wires = kwargs.get("wires", None)
+            if wires is None:
+                if len(args) == 0:
+                    raise ValueError("Can't create object without wires")
+                kwargs['wires'] = args[-1]
+                args = args[:-1]
         return JaxPRMeta.__call__(cls, *args, **kwargs)
 
