@@ -350,10 +350,51 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
 
 
 @flaky(max_runs=5)
+@pytest.mark.parametrize(
+    "mcm_f",
+    [
+        lambda x: x * -1,
+        lambda x: x * 1,
+        lambda x: x * 2,
+        lambda x: 1 - x,
+        lambda x: x + 1,
+        lambda x: x & 3,
+    ],
+)
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
+def test_simple_composite_mcm(mcm_f, measure_f):
+    """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
+    conditional gate. A single measurement of a composite mid-circuit measurement is performed
+    at the end."""
+    shots = 5000
+
+    dev = qml.device("default.qubit", shots=shots)
+    param = np.pi / 3
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+        return measure_f(op=mcm_f(m2))
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(param)
+    results2 = func2(param)
+
+    validate_measurements(measure_f, shots, results1, results2)
+
+
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.sample, qml.var])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a composite mid-circuit measurement is performed
@@ -376,6 +417,14 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
     func2 = qml.defer_measurements(func)
 
     if shots is None and measure_f in (qml.counts, qml.sample):
+        return
+
+    if measure_f == qml.probs:
+        with pytest.raises(
+            ValueError,
+            match=r"Cannot use qml.probs\(\) when measuring multiple mid-circuit measurements collected",
+        ):
+            _ = func1(param)
         return
 
     results1 = func1(param)
