@@ -16,6 +16,7 @@ Contains the batch dimension transform.
 """
 # pylint: disable=import-outside-toplevel
 from collections import Counter
+from itertools import compress
 from typing import Callable, Sequence
 import warnings
 
@@ -113,15 +114,20 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             shots=aux_tape.shots,
             trainable_params=aux_tape.trainable_params,
         )
+        sca_results = len(post_process_tape.measurements) == 0 and len(aux_tape.measurements) == 1
+        mcm_samples = np.zeros((len(results), n_mcms), dtype=np.int64)
+        for i, res in enumerate(results):
+            mcm_samples[i, :] = [res] if sca_results else res[-n_mcms::]
+        mcm_mask = qml.math.all(mcm_samples != -1, axis=1)
+        mcm_samples = mcm_samples[mcm_mask, :]
+        results = list(compress(results, mcm_mask))
         all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
-        for res in results:
+        for i, res in enumerate(results):
             samples = (
                 [res]
                 if len(post_process_tape.measurements) == 0 and len(aux_tape.measurements) == 1
                 else res[-n_mcms::]
             )
-            if any(v == -1 for v in samples):
-                continue
             valid_shots += 1
             mcm_values_dict = dict((k, v) for k, v in zip(all_mcms, samples))
             if len(post_process_tape.measurements) == 0:
@@ -311,7 +317,9 @@ def gather_mcm(measurement, samples):
         mcm_samples = np.concatenate(mcm_samples, axis=1)
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
+    mcm_samples = np.zeros((len(samples), 1), dtype=np.int64)
+    for i, dct in enumerate(samples):
+        mcm_samples[i, 0] = mv.concretize(dct)
     use_as_is = len(mv.measurements) == 1
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
