@@ -454,11 +454,7 @@ class DefaultQubit(Device):
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
-        This device:
-
-        * Supports any qubit operations that provide a matrix
-        * Currently does not support finite shots
-        * Currently does not intrinsically support parameter broadcasting
+        This device supports any qubit operations that provide a matrix
 
         """
         config = self._setup_execution_config(execution_config)

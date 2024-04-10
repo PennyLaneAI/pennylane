@@ -155,9 +155,6 @@ def apply_operation(
     state,
     is_state_batched: bool = False,
     debugger=None,
-    # Should we expose the rng and PRNGKey here or only in the dispatch for MidMeasureMP?
-    # Same question for the docstring. This strategy is used for the mid_measurements
-    # arg used by the MidMeasureMP and Conditional dispatches.
     **_,
 ):
     """Apply and operator to a given state.
@@ -167,6 +164,8 @@ def apply_operation(
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
+        **execution_kwargs (Optional[dict]): Optional keyword arguments needed for applying
+            some operations
 
     Returns:
         ndarray: output state
@@ -224,8 +223,7 @@ def apply_conditional(
     state,
     is_state_batched: bool = False,
     debugger=None,
-    mid_measurements=None,
-    **_,
+    **execution_kwargs,
 ):
     """Applies a conditional operation.
 
@@ -239,6 +237,8 @@ def apply_conditional(
     Returns:
         ndarray: output state
     """
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+
     if op.meas_val.concretize(mid_measurements):
         return apply_operation(
             op.then_op,
@@ -252,14 +252,8 @@ def apply_conditional(
 
 @apply_operation.register
 def apply_mid_measure(
-    op: MidMeasureMP,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    mid_measurements=None,
-    rng=None,
-    prng_key=None,
-):  # pylint: disable=too-many-arguments
+    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
     """Applies a native mid-circuit measurement.
 
     Args:
@@ -271,13 +265,13 @@ def apply_mid_measure(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
         ndarray: output state
     """
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+    rng = execution_kwargs.get("rng", None)
+
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     if not np.allclose(np.linalg.norm(state), 1.0):
@@ -285,15 +279,7 @@ def apply_mid_measure(
         return np.zeros_like(state)
     wire = op.wires
     probs = qml.devices.qubit.measure(qml.probs(wire), state)
-
-    if prng_key is not None:
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        sample = jax.random.binomial(prng_key, 1, probs[1])
-    else:
-        rng = np.random.default_rng(rng)
-        sample = rng.binomial(1, probs[1])
+    sample = np.random.binomial(1, probs[1]) if rng is None else rng.binomial(1, probs[1])
 
     mid_measurements[op] = sample
     if op.postselect is not None and sample != op.postselect:
