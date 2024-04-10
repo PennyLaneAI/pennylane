@@ -309,6 +309,7 @@ def gather_mcm(measurement, samples):
         TensorLike: The combined measurement outcome
     """
     mv = measurement.mv
+    # The following block handles measurement value lists, like ``qml.counts(op=[mcm0, mcm1, mcm2])``.
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
         wires = qml.wires.Wires(range(len(mv)))
         mcm_samples = list(
@@ -318,9 +319,14 @@ def gather_mcm(measurement, samples):
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
     mcm_samples = np.zeros((len(samples), 1), dtype=np.int64)
-    for i, dct in enumerate(samples):
-        mcm_samples[i, 0] = mv.concretize(dct)
-    use_as_is = len(mv.measurements) == 1
+    if isinstance(measurement, ProbabilityMP):
+        for i, dct in enumerate(samples):
+            mcm_samples[i, 0] = dct[mv.measurements[0]]
+        use_as_is = True
+    else:
+        for i, dct in enumerate(samples):
+            mcm_samples[i, 0] = mv.concretize(dct)
+        use_as_is = mv.branches == {(0,): 0, (1,): 1}
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
     else:
