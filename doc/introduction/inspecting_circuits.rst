@@ -164,7 +164,7 @@ results.
 'execution_results': 0.0}
 
 All snapshots are numbered with consecutive integers, and if no tag was provided,
-the number of a snapshot is used as key in the output instead.
+the number of a snapshot is used as a key in the output dictionary instead.
 
 Graph representation
 --------------------

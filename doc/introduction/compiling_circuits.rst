@@ -333,7 +333,7 @@ by devices to make such measurements possible.
 On a lower level, the :func:`~.pennylane.pauli.group_observables` function can be used to split lists of
 observables and coefficients:
 
->>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+>>> obs = [qml.Y(0), qml.X(0) @ qml.X(1), qml.Z(1)]
 >>> coeffs = [1.43, 4.21, 0.97]
 >>> groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
 >>> obs_groupings, coeffs_groupings = groupings
