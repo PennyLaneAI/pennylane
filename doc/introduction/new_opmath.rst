@@ -5,7 +5,7 @@ New opmath
 
 Version ``0.36`` of PennyLane updated the default ``Operator`` subclasses, changing the operator arithmetic.
 An end-user should not notice any (breaking) changes.
-This pages should help developers with troubleshooting and guide in the process of legacy support while both systems are supported.
+This page should help developers with troubleshooting and provide instructions for legacy support while both systems are supported.
 
 .. note::
 
@@ -23,7 +23,7 @@ Summary of the update
 ---------------------
 
 The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. You can still opt-out via
-``qml.operation.disable_new_opmath()``.
+``qml.operation.disable_new_opmath()`` for backward compatibility.
 
 The changes between the old and new system mainly concern Python operators ``+ - * / @``,
 that now create the following ``Operator`` subclass instances.
@@ -49,6 +49,56 @@ that now create the following ``Operator`` subclass instances.
 
 The three main new opmath classes ``SProd``, ``Prod``, and ``Sum`` have already been around for a while.
 E.g. ``qml.dot()`` has always returned a ``Sum`` instance.
+
+Motivation
+~~~~~~~~~~
+
+Besides the python operators, you can also use the constructors :func:`~s_prod`, :func:`~prod`, and :func:`~sum`.
+For composite operators, we can access their constituens via the `op.operands` attribute.
+
+>>> op = qml.sum(X(0), X(1), X(2))
+>>> op.operands
+(X(0), X(1), X(2))
+
+In case all terms are composed of operators with a valid `pauli_rep`, then also the composite
+operator has a valid ``pauli_rep`` in terms of a :class:`~PauliSentence` instance. This is often handy for fast
+arithmetic processing.
+
+>>> op.pauli_rep
+1.0 * X(0)
++ 1.0 * X(1)
++ 1.0 * X(2)
+
+Further, composite operators can be simplified using :func:`~pennylane.simplify` or the ``op.simplify()`` method.
+
+>>> op = 0.5 * X(0) + 0.5 * Y(0) - 1.5 * X(0) - 0.5 * Y(0) # no simplification by default
+>>> op.simplify()
+-1.0 * X(0)
+>>> qml.simplify(op)
+-1.0 * X(0)
+
+Note that the simplification never happens in-place, such that the original operator is left unaltered.
+
+>>> op
+(
+    0.5 * X(0)
+  + 0.5 * Y(0)
+  + -1 * 1.5 * X(0)
+  + -1 * 0.5 * Y(0)
+)
+
+We are often interested in obtaining a list of coefficients and `pure` operators.
+We can do so by using the ``op.terms()`` method.
+
+>>> op = 0.5 * (X(0) @ X(1) + Y(0) @ Y(1) + 2 * Z(0) @ Z(1)) - 1.5 * I() + 0.5 * I()
+>>> op.terms()
+([0.5, 0.5, 1.0, -1.0], [X(1) @ X(0), Y(1) @ Y(0), Z(1) @ Z(0), I()])
+
+As seen by this example, this method already takes care of arithmetic simplifications.
+
+qml.Hamiltonian
+~~~~~~~~~~~~~~~
+
 The legacy classes :class:`~Tensor` and :class:`~Hamiltonian` will soon be deprecated.
 :class:`~LinearCombination` offers the same API as :class:`~Hamiltonian` but works well with new opmath classes.
 
@@ -69,6 +119,7 @@ False
 >>> type(H)
 pennylane.ops.qubit.hamiltonian.Hamiltonian
 
+Both classes offer the same API and functionality, so a user does not have to worry about those implementation details.
 
 .. _Troubleshooting:
 
