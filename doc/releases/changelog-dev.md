@@ -168,6 +168,9 @@
   ```
 <h3>Improvements 🛠</h3>
 
+* `LightningVJPs` is now compatible with Lightning devices using the new device API.
+  [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
+
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
@@ -318,6 +321,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
+  [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
+
+* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+  [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
+
+* Tensorflow can now handle devices with float32 results but float64 input parameters.
+  [(#5446)](https://github.com/PennyLaneAI/pennylane/pull/5446)
+
 * Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
   creating an inconsistency with other differentiation methods and preventing some use cases.
   [(#5458)](https://github.com/PennyLaneAI/pennylane/pull/5458)
@@ -362,6 +374,9 @@
 * Update `DefaultQubit.supports_derivatives` to correctly handle circuits containing `MidMeasureMP` with adjoint
   differentiation.
   [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
+
+* `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
+  [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
 
 <h3>Contributors ✍️</h3>
 
