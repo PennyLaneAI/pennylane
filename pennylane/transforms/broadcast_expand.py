@@ -45,11 +45,6 @@ def _split_operations(ops, num_tapes):
     return new_ops
 
 
-# def _unwrap_counts(res):
-#     """Helper function to unwrap counts dictionaries from 0-D arrays."""
-#     return [r.item() for r in res]
-
-
 @transform
 def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Expand a broadcasted tape into multiple tapes

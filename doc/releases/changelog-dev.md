@@ -154,6 +154,7 @@
 <h3>Improvements 🛠</h3>
 
 * `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
@@ -313,6 +314,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * The `dynamic_one_shot` transform now works with broadcasting.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
 * Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
   [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
