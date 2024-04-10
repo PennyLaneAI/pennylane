@@ -39,19 +39,19 @@ def validate_counts(shots, results1, results2, batch_size=None):
     Otherwise, fails if counts differ by more than ``20`` plus 20 percent.
     """
     if isinstance(shots, Sequence):
-        assert isinstance(results1, Sequence)
-        assert isinstance(results2, Sequence)
+        assert isinstance(results1, tuple)
+        assert isinstance(results2, tuple)
         assert len(results1) == len(results2) == len(shots)
         for s, r1, r2 in zip(shots, results1, results2):
             validate_counts(s, r1, r2, batch_size=batch_size)
         return
 
     if batch_size is not None:
-        assert isinstance(results1, Sequence)
-        assert isinstance(results2, Sequence)
+        assert isinstance(results1, Iterable)
+        assert isinstance(results2, Iterable)
         assert len(results1) == len(results2) == batch_size
         for r1, r2 in zip(results1, results2):
-            validate_counts(shots, r1.item(), r2.item(), batch_size=None)
+            validate_counts(shots, r1, r2, batch_size=None)
         return
 
     for key1, val1 in results1.items():
@@ -69,9 +69,9 @@ def validate_samples(shots, results1, results2, batch_size=None):
     This is to handle cases when post-selection yields variable shapes.
     Otherwise, fails if the sums of samples differ by more than ``20`` plus 20 percent.
     """
-    if isinstance(shots, Iterable):
-        assert isinstance(results1, Iterable)
-        assert isinstance(results2, Iterable)
+    if isinstance(shots, Sequence):
+        assert isinstance(results1, tuple)
+        assert isinstance(results2, tuple)
         assert len(results1) == len(results2) == len(shots)
         for s, r1, r2 in zip(shots, results1, results2):
             validate_samples(s, r1, r2, batch_size=batch_size)
@@ -102,8 +102,8 @@ def validate_expval(shots, results1, results2, batch_size=None):
     Otherwise, fails if the results do not match within ``0.01`` plus 20 percent.
     """
     if isinstance(shots, Sequence):
-        assert isinstance(results1, Sequence)
-        assert isinstance(results2, Sequence)
+        assert isinstance(results1, tuple)
+        assert isinstance(results2, tuple)
         assert len(results1) == len(results2) == len(shots)
         results1 = reduce(lambda x, y: x + y, results1) / len(results1)
         results2 = reduce(lambda x, y: x + y, results2) / len(results2)
@@ -368,8 +368,7 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    for r1, r2 in zip(results1, results2):
-        validate_measurements(measure_f, shots, r1, r2)
+    validate_measurements(measure_f, shots, results1, results2)
 
 
 @flaky(max_runs=5)
@@ -513,9 +512,12 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
 @pytest.mark.parametrize("shots", [5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_fn", [qml.expval, qml.sample, qml.probs])
+@pytest.mark.parametrize("measure_fn", [qml.expval, qml.sample, qml.probs, qml.counts])
 def test_broadcasting_qnode(shots, postselect, reset, measure_fn):
     """Test that executing qnodes with broadcasting work as expected"""
+    if measure_fn is qml.sample and postselect is not None:
+        pytest.skip("Postselection with samples doesn't work with broadcasting")
+
     dev = qml.device("default.qubit", shots=shots)
     param = [[np.pi / 3, np.pi / 4], [np.pi / 6, 2 * np.pi / 3]]
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
@@ -531,5 +533,4 @@ def test_broadcasting_qnode(shots, postselect, reset, measure_fn):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    for r1, r2 in zip(results1, results2):
-        validate_measurements(measure_fn, shots, r1, r2, batch_size=2)
+    validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
