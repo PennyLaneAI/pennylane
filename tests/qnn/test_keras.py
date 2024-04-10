@@ -124,7 +124,9 @@ class TestKerasLayer:
         c, w = get_circuit
         with monkeypatch.context() as m:
             m.setattr(qml.qnn.keras, "CORRECT_KERAS_VERSION", False)
-            with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
+            with pytest.raises(
+                ImportError, match="KerasLayer requires a Keras version lower than 3"
+            ):
                 KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))

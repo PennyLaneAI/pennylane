@@ -312,9 +312,8 @@ class KerasLayer(Layer):
 
         if not CORRECT_KERAS_VERSION:
             raise ImportError(
-                f"KerasLayer requires a Keras version lower than 3. You are currently using "
-                f"Keras version {tf.keras.version()}. For instructions on running with Keras 2,"
-                f"visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
+                "KerasLayer requires a Keras version lower than 3. For instructions on running with Keras 2,"
+                "visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
             )
 
         self.weight_shapes = {
