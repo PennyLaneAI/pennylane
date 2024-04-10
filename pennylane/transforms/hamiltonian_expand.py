@@ -86,8 +86,6 @@ def _grouping_hamiltonian_expand(tape):
         new_tape = new_tape.expand(stop_at=lambda obj: True)
         tapes.append(new_tape)
 
-    batch_size = tape.batch_size
-
     return tapes, partial(
         grouping_processing_fn,
         coeff_groupings=coeff_groupings,
