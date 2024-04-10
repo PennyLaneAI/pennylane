@@ -50,18 +50,18 @@ that now create the following ``Operator`` subclass instances.
 The three main new opmath classes ``SProd``, ``Prod``, and ``Sum`` have already been around for a while.
 E.g. ``qml.dot()`` has always returned a ``Sum`` instance.
 
-Motivation
-~~~~~~~~~~
+Usage
+~~~~~
 
 Besides the python operators, you can also use the constructors :func:`~s_prod`, :func:`~prod`, and :func:`~sum`.
-For composite operators, we can access their constituens via the `op.operands` attribute.
+For composite operators, we can access their constituens via the ``op.operands`` attribute.
 
 >>> op = qml.sum(X(0), X(1), X(2))
 >>> op.operands
 (X(0), X(1), X(2))
 
-In case all terms are composed of operators with a valid `pauli_rep`, then also the composite
-operator has a valid ``pauli_rep`` in terms of a :class:`~PauliSentence` instance. This is often handy for fast
+In case all terms are composed of operators with a valid ``pauli_rep``, then also the composite
+operator has a valid ``pauli_rep`` in terms of a :class:`~pauli.PauliSentence` instance. This is often handy for fast
 arithmetic processing.
 
 >>> op.pauli_rep
@@ -99,8 +99,8 @@ As seen by this example, this method already takes care of arithmetic simplifica
 qml.Hamiltonian
 ~~~~~~~~~~~~~~~
 
-The legacy classes :class:`~Tensor` and :class:`~Hamiltonian` will soon be deprecated.
-:class:`~LinearCombination` offers the same API as :class:`~Hamiltonian` but works well with new opmath classes.
+The legacy classes :class:`~operation.Tensor` and :class:`~ops.Hamiltonian` will soon be deprecated.
+:class:`~ops.LinearCombination` offers the same API as :class:`~ops.Hamiltonian` but works well with new opmath classes.
 
 Depending on whether or not new opmath is active, ``qml.Hamiltonian`` will return either of the two classes.
 
@@ -139,10 +139,13 @@ may run into one of the following common issues.
     >>> op = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
     >>> type(op)
     pennylane.ops.op_math.sum.Sum
+
     >>> op.operands
     (0.5 * (X(0) @ X(1)), 0.5 * (Y(0) @ Y(1)))
+
     >>> type(op.operands[0]), type(op.operands[1])
     (pennylane.ops.op_math.sprod.SProd, pennylane.ops.op_math.sprod.SProd)
+
     >>> op.operands[0].scalar, op.operands[0].base, type(op.operands[0].base)
     (0.5, X(0) @ X(1), pennylane.ops.op_math.prod.Prod)
 
@@ -192,7 +195,7 @@ may run into one of the following common issues.
     :title: Sharp bits about the qml.Hamiltonian dispatch
     :href: sharp-bits-hamiltonian
 
-    One of the reasons that :class:`~LinearCombination` exists is that the old Hamiltonian class is not compatible with new opmath tensor products.
+    One of the reasons that :class:`~ops.LinearCombination` exists is that the old Hamiltonian class is not compatible with new opmath tensor products.
     We can try to instantiate a old ``qml.ops.Hamiltonian`` class with a ``X(0) @ X(1)`` tensor product, which returns a :class:`~Prod` instance with opmath enabled.
 
     >>> qml.operation.active_new_opmath() # confirm opmath is active (by default)
@@ -273,7 +276,7 @@ may run into one of the following common issues.
                 assert qml.operation.active_new_opmath()
                 # will fail because the previous test globally disabled new opmath
 
-        Instead, please use the fixtures below, or the context managers ``qml.operation.disable_new_opmath_cm()`` and `qml.operation.enable_new_opmath_cm()``.
+        Instead, please use the fixtures below, or the context managers ``qml.operation.disable_new_opmath_cm()`` and ``qml.operation.enable_new_opmath_cm()``.
 
         >>> with qml.operation.disable_new_opmath_cm():
         ...     op = qml.Hamiltonian([0.5], [X(0) @ X(1)])
@@ -348,7 +351,7 @@ may run into one of the following common issues.
             assert not isinstance(legacy_ham_example, qml.ops.LinearCombination) # True
     
     For all that, keep in mind that ``qml.Hamiltonian`` points to :class:`~Hamiltonian` and :class:`LinearCombination` depending on the status of ``qml.operation.active_new_opmath()``.
-    So if you want to test something specifically for the old Hamiltonian class, use qml.ops.Hamiltonian instead.
+    So if you want to test something specifically for the old :class:`~Hamiltonian`` class, use ``qml.ops.Hamiltonian`` instead.
 
 
 .. details::
