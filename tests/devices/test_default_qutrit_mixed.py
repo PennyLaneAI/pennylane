@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qutrit mixed."""
+import pytest
 import numpy as np
 
 import pennylane as qml
 from pennylane.devices.default_qutrit_mixed import DefaultQutritMixed
+from pennylane.devices import ExecutionConfig
 
 
 def test_name():
@@ -32,20 +34,66 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
-def test_seed():
-    """Test that DefaultQutritMixed has a seed and _prng_key is None"""
-    # pylint: disable=protected-access
-    dev = DefaultQutritMixed()
-    assert hasattr(dev, "_rng")
-    assert hasattr(dev, "_prng_key")
-    assert dev._prng_key is None
+class TestRandomSeed:
+    """Test that the device behaves correctly when provided with a random seed"""
+
+    def test_global_seed_no_device_seed_by_default(self):
+        """Test that the global numpy seed initializes the rng if device seed is none."""
+        np.random.seed(42)
+        dev = DefaultQutritMixed()
+        first_num = dev._rng.random()  # pylint: disable=protected-access
+
+        np.random.seed(42)
+        dev2 = DefaultQutritMixed()
+        second_num = dev2._rng.random()  # pylint: disable=protected-access
+
+        assert qml.math.allclose(first_num, second_num)
+
+        np.random.seed(42)
+        dev2 = DefaultQutritMixed(seed="global")
+        third_num = dev2._rng.random()  # pylint: disable=protected-access
+
+        assert qml.math.allclose(third_num, first_num)
+
+    def test_None_seed_not_using_global_rng(self):
+        """Test that if the seed is None, it is uncorrelated with the global rng."""
+        np.random.seed(42)
+        dev = DefaultQutritMixed(seed=None)
+        first_nums = dev._rng.random(10)  # pylint: disable=protected-access
+
+        np.random.seed(42)
+        dev2 = DefaultQutritMixed(seed=None)
+        second_nums = dev2._rng.random(10)  # pylint: disable=protected-access
+
+        assert not qml.math.allclose(first_nums, second_nums)
+
+    def test_rng_as_seed(self):
+        """Test that a PRNG can be passed as a seed."""
+        rng1 = np.random.default_rng(42)
+        first_num = rng1.random()
+
+        rng = np.random.default_rng(42)
+        dev = DefaultQutritMixed(seed=rng)
+        second_num = dev._rng.random()  # pylint: disable=protected-access
+
+        assert qml.math.allclose(first_num, second_num)
 
 
-def test_seed_jax():
-    """Test that DefaultQutritMixed has a _prng_key and _rng is None"""
-    # pylint: disable=protected-access
-    dev = DefaultQutritMixed()
+@pytest.mark.jax
+class TestPRNGKeySeed:
+    """Test that the device behaves correctly when provided with a PRNG key and using the JAX interface"""
 
-    assert hasattr(dev, "_rng")
-    assert hasattr(dev, "_prng_key")
-    assert dev._debugger is not None
+    def test_prng_key_as_seed(self):
+        """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
+        the same results for sample, even with different seeds"""
+        """Test that a PRNG can be passed as a seed."""
+        from jax import random
+
+        key1 = random.key(123)
+        first_nums = random.uniform(key1, shape=(10,))
+
+        key = random.key(123)
+        dev = DefaultQutritMixed(seed=key)
+
+        second_nums = random.uniform(dev._prng_key, shape=(10,))  # pylint: disable=protected-access
+        assert np.all(first_nums == second_nums)
