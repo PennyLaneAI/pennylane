@@ -226,7 +226,7 @@ class CustomErrorOp2(ErrorOperation):
     def error(self, *args, **kwargs):
         return AdditiveError(self.flips)
 
-
+_HAMILTONIAN = qml.dot([1.0, -0.5], [qml.X(0)@qml.Y(1), qml.Y(0)@qml.Y(1)])
 class TestSpecAndTracker:
     """Test capture of ErrorOperation in specs and tracker."""
 
@@ -236,8 +236,10 @@ class TestSpecAndTracker:
     @qml.qnode(dev)
     def circuit():
         """circuit with custom ops"""
+        qml.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
         CustomErrorOp1(0.31, [0])
         CustomErrorOp2(0.12, [1])
+        qml.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=4)
         CustomErrorOp1(0.24, [1])
         CustomErrorOp2(0.73, [0])
         return qml.state()
@@ -246,7 +248,8 @@ class TestSpecAndTracker:
         """Test that specs are tracking errors as expected."""
 
         algo_errors = qml.specs(self.circuit)()["errors"]
-        assert len(algo_errors) == 2
-        assert all(error in algo_errors for error in ["MultiplicativeError", "AdditiveError"])
+        assert len(algo_errors) == 3
+        assert all(error in algo_errors for error in ["MultiplicativeError", "AdditiveError", "SpectralNormError"])
         assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
         assert algo_errors["AdditiveError"].error == 0.73 + 0.12
+        assert algo_errors["SpectralNormError"].error == 0.25 + 0.17998560822421455
