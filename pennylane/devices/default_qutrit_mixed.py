@@ -53,11 +53,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    if op.name in DefaultQutrit.operations:
-        return True
-    if op.name in channels:
-        return True
-    return False
+    return op.name in (DefaultQutrit.operations | channels)
 
 
 def stopping_condition_shots(op: qml.operation.Operator) -> bool:
@@ -70,7 +66,7 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     return isinstance(m, qml.measurements.SampleMeasurement)
 
 
-class DefaultQutritMixed(Device):  # TODO
+class DefaultQutritMixed(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -88,13 +84,27 @@ class DefaultQutritMixed(Device):  # TODO
             ``numpy.random.default_rng``.
     **Example:**
     .. code-block:: python
-        TODO create new qutrit qscripts
+
+        n_wires = 5
+        num_qscripts = 5
+        qscripts = []
+        for i in range(num_qscripts):
+            unitary = scipy.stats.unitary_group(dim=3**n_wires, seed=(42 + i)).rvs()
+            op = qml.QutritUnitary(unitary, wires=range(n_wires))
+            qs = qml.tape.QuantumScript([op], [qml.expval(qml.GellMann(0, 3))])
+            qscripts.append(qs)
+
     >>> dev = DefaultQutritMixed()
     >>> program, execution_config = dev.preprocess()
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    TODO add results
+    [0.08015701503959313,
+    0.04521414211599359,
+    -0.0215232130089687,
+    0.062120285032425865,
+    -0.0635052317625]
+
     This device currently supports backpropagation derivatives:
     >>> from pennylane.devices import ExecutionConfig
     >>> dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
@@ -223,4 +233,4 @@ class DefaultQutritMixed(Device):  # TODO
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-        return None
+        return None  # pragma: not covered
