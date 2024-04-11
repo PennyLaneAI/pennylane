@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for default qutrit mixed."""
 
-from unittest import mock
-from flaky import flaky
 import pytest
 import numpy as np
 
@@ -108,6 +106,7 @@ def test_applied_modifiers():
         qml.devices.modifiers.single_tape_support,
         qml.devices.modifiers.simulator_tracking,
     ]
+
 
 class TestSupportsDerivatives:
     """Test that DefaultQutritMixed states what kind of derivatives it supports."""
@@ -1244,5 +1243,3 @@ def test_broadcasted_parameter():
     results = dev.execute(batch, config)
     processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))
-
-

@@ -17,7 +17,7 @@ The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mix
 
 from dataclasses import replace
 from numbers import Number
-from typing import Union, Tuple, Sequence, Optional
+from typing import Union, Callable, Tuple, Sequence, Optional
 import inspect
 import logging
 import numpy as np
@@ -77,6 +77,7 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 
 
 def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
+    """TODO add"""
     num_executions = 0
     num_shots = 0
     for mp in tape.measurements:
