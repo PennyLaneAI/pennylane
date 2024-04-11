@@ -191,15 +191,15 @@ def measure_with_samples(
     """
     # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
     mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
-    skip_measure = any(v == -1 for v in mid_measurements.values()) if mid_measurements else False
+    if mid_measurements and any(v == -1 for v in mid_measurements.values()):
+        state[:] = 0.0
+        slices = [slice(0, 1, 1)] * qml.math.ndim(state)
+        state[tuple(slices)] = 1.0
 
     groups, indices = _group_measurements(mps)
 
     all_res = []
     for group in groups:
-        if skip_measure:
-            all_res.extend([None] * len(group))
-            continue
         if isinstance(group[0], ExpectationMP) and isinstance(
             group[0].obs, (Hamiltonian, LinearCombination)
         ):
