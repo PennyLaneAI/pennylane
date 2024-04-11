@@ -177,7 +177,6 @@ class DefaultQutritMixed(Device):
                 "best",
                 "backprop",
             }
-        updated_values["use_device_jacobian_product"] = False  # TODO: Should this be removed?
         updated_values["grad_on_execution"] = False
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
 
