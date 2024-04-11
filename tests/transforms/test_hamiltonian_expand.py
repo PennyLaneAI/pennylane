@@ -322,7 +322,10 @@ class TestHamiltonianExpand:
             return qml.expval(H)
 
         res = circuit(theta)
+        res = qml.math.stack(res)
+
         shape = (4,) if isinstance(theta, float) else (4, 3)
+
         assert res.shape == shape
         assert np.allclose(res, np.ones(shape) * expected, atol=0.1)
 
