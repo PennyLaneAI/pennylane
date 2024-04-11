@@ -23,51 +23,9 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
-
-from .symbolicop import SymbolicOp
 from pennylane.capture.meta_type import get_abstract_type
 
-has_jax = True
-try:
-    import jax
-    from jax._src.util import safe_map
-except ImportError:
-    has_jax = False
-
-def adjoint_jaxpr(jaxpr, consts, *args, **kwargs):
-    env = {}
-
-    def read(var):
-        if type(var) is jax.core.Literal:
-            return var.val
-        return env[var]
-
-    def write(var, val):
-        env[var] = val
-
-    safe_map(write, jaxpr.invars, args)
-    safe_map(write, jaxpr.constvars, consts)
-    abs_op_type = get_abstract_type(Operator)
-    op_eqns = []
-    for eqn in jaxpr.eqns:
-
-        if issubclass(getattr(eqn.primitive, "_class", object), Operator):
-            op_eqns.append(eqn)
-            continue
-        invals = safe_map(read, eqn.invars)
-        outvals = eqn.primitive.bind(*invals, **eqn.params)
-
-        if not eqn.primitive.multiple_results:
-            outvals = [outvals]
-
-        safe_map(write, eqn.outvars, outvals)
-
-    for eqn in op_eqns[::-1]:
-        invals = safe_map(read, eqn.invars)
-        outval = Adjoint._primitive.bind(eqn.primitive.bind(*invals, **eqn.params))
-        write(eqn.outvars[0], outval)
-
-    return safe_map(read, jaxpr.outvars)
+from .symbolicop import SymbolicOp
 
 
 # pylint: disable=no-member
@@ -209,8 +167,6 @@ def adjoint(fn, lazy=True):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.adjoint(fn)
     if qml.math.is_abstract(fn):
-        print(fn)
-        assert False
         return Adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
@@ -222,8 +178,6 @@ def adjoint(fn, lazy=True):
         )
 
     if qml.capture.meta_type._USE_DEFAULT_CALL:
-        if not has_jax:
-            raise ImportError
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
@@ -234,13 +188,19 @@ def adjoint(fn, lazy=True):
                 adjoint_ops = [_single_op_eager(op) for op in reversed(qscript.operations)]
 
             return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
+
     else:
+        from jax import make_jaxpr
+        from pennylane.capture.jaxpr_transforms import adjoint_jaxpr
+
+        if lazy is False:
+            raise CompileError("Setting lazy=False is not supported with plexpr.")
+
         @wraps(fn)
         def wrapper(*args, **kwargs):
+            closed_jaxpr = make_jaxpr(fn)(*args, **kwargs)
+            return adjoint_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.literals, *args, **kwargs)
 
-            closed_jaxpr = jax.make_jaxpr(fn)(*args, **kwargs)
-            out = adjoint_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.literals, *args, **kwargs)
-            return out
         return wrapper
 
     return wrapper
