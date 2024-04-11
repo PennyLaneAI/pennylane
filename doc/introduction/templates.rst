@@ -297,7 +297,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`FABLE <../code/api/pennylane.FABLE>`
-    :figure: _static/templates/subroutines/fable.png
+    :figure: _static/templates/subroutines/fable_template.png
 
 .. raw:: html
 
