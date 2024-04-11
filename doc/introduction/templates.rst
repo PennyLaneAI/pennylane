@@ -295,6 +295,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
     :figure: _static/templates/subroutines/small_ctrl.png
 
+.. gallery-item::
+    :description: :doc:`FABLE <../code/api/pennylane.FABLE>`
+    :figure: _static/templates/subroutines/fable.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
