@@ -3,9 +3,17 @@
 New opmath
 ==========
 
-Version ``0.36`` of PennyLane updated the default ``Operator`` subclasses, changing the operator arithmetic.
-An end-user should not notice any (breaking) changes.
-This page should help developers with troubleshooting and provide instructions for legacy support while both systems are supported.
+Version ``0.36`` of PennyLane updated the behaviour of operator arithmetic. This realizes
+a few objectives:
+
+  1. To make it as easy to work with PennyLane operators as it would be with pen and paper.
+  2. To improve the efficiency of operator arithmetic.
+
+In many cases, these changes should not break code and the difference to previous
+versions may not be noticeable.
+
+This page provides additional details about operator arithmetic updates and can be
+used to troubleshoot issues for those affected users.
 
 .. note::
 
