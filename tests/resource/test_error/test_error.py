@@ -245,7 +245,7 @@ class TestSpecAndTracker:
         return qml.transforms.core.TransformProgram(), execution_config
 
     dev = qml.device("null.qubit", wires=2)
-    dev.preprocess = preprocess
+    dev.preprocess = preprocess.__func__
 
     @staticmethod
     @qml.qnode(dev)
