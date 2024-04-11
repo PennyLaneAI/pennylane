@@ -134,6 +134,22 @@
 
   ```
 
+
+* Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
+  [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
+
+  ```python
+  import pennylane as qml
+  fermi_ham = qml.fermi.from_string('0+ 1-')
+
+  qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
+  ```
+
+  ```pycon
+  >>> print(qubit_ham)
+  -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
+  ```
+  
 * A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
   but for usage with new operator arithmetic.
   [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
@@ -381,6 +397,7 @@ Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
+Diksha Dhawan,
 Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
