@@ -22,17 +22,17 @@ measure_prim.multiple_results = True
 
 
 @measure_prim.def_impl
-def _(*measurements, shots=None):
+def _(*measurements, shots):
     # depends on the jax interpreter
     raise NotImplementedError
 
 
 @measure_prim.def_abstract_eval
-def _(*measurements, shots=None):
+def _(*measurements, shots):
     # later extend to more than just float measurements
-    return tuple(jax.core.ShapedArray((), jax.numpy.float32) for _ in measurements)
+    return tuple(jax.core.ShapedArray((shots.total_shots,), jax.numpy.int32) for _ in measurements)
 
 
-def measure(*measurements, shots=None):
+def measure(*measurements, shots=0):
     """Perform a measurement."""
     return measure_prim.bind(*measurements, shots=shots)

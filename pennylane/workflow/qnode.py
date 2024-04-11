@@ -1061,18 +1061,31 @@ class QNode:
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots
         )
 
+    def _plexpr_call(self, *args, **kwargs) -> qml.typing.Result:
+        # shots = shots.total_shots
+        if "shots" in kwargs:
+            shots = kwargs.pop("shots")
+        else:
+            shots = _get_device_shots(self.device)
+
+        shots = qml.measurements.Shots(shots)
+
+        def full_workflow(*inner_args, **inner_kwargs):
+            measurements = self.func(*inner_args, **inner_kwargs)
+            if not isinstance(measurements, (list, tuple)):
+                measurements = (measurements,)
+            return qml.capture.measure(*measurements, shots=shots)
+
+        import jax
+
+        jaxpr = jax.make_jaxpr(full_workflow)(*args, **kwargs)
+        print(jaxpr)
+        return self.device.execute_jaxpr(jaxpr, *args)
+
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
 
         if not qml.capture.meta_type._USE_DEFAULT_CALL:
-            # shots = shots.total_shots
-            def full_workflow(*inner_args, shots=None, **inner_kwargs):
-                measurements = self.func(*inner_args, **inner_kwargs)
-                return qml.capture.measure(measurements, shots=shots)
-
-            import jax
-
-            jaxpr = jax.make_jaxpr(full_workflow)(*args, **kwargs)
-            return self.device.execute_jaxpr(jaxpr, *args, kwargs["shots"])
+            return self._plexpr_call(*args, **kwargs)
 
         old_interface = self.interface
         if old_interface == "auto":

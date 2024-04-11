@@ -14,10 +14,12 @@
 """Simulate PLEXPR."""
 
 from pennylane.operation import Operator
+from pennylane.measurements import Shots
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 from .measure import measure
+from .sampling import measure_with_samples
 
 has_jax = True
 try:
@@ -32,8 +34,6 @@ def simulate_jaxpr(jaxpr: "jax.core.ClosedJaxpr", n_wires: int, *args):
     if not has_jax:
         raise ImportError
 
-    print(jaxpr)
-
     if isinstance(jaxpr, jax.core.ClosedJaxpr):
         jaxpr = jaxpr.jaxpr
 
@@ -47,17 +47,16 @@ def simulate_jaxpr(jaxpr: "jax.core.ClosedJaxpr", n_wires: int, *args):
     def write(var, val):
         env[var] = val
 
-    print(jaxpr.invars, args)
-    args = tuple(a for a in args if a is not None)
     safe_map(write, jaxpr.invars, args)
 
     for eqn in jaxpr.eqns:
         invals = safe_map(read, eqn.invars)
         if eqn.primitive.name == "measure":
             shots = eqn.params["shots"]
-            print(env)
-            print(shots)
-            outvals = [measure(mp, state) for mp in invals]
+            if shots:
+                outvals = measure_with_samples(invals, state, shots=Shots(shots))
+            else:
+                outvals = [measure(mp, state) for mp in invals]
         else:
             outvals = eqn.primitive.bind(*invals, **eqn.params)
 
