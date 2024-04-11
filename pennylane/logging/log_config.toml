@@ -52,6 +52,12 @@ formatter = "qml_alt_formatter"
 level = "DEBUG"
 stream = "ext://sys.stdout"
 
+[handlers.qml_debug_syslog]
+class = "logging.handlers.SysLogHandler"
+formatter = "local_standard"
+level = "DEBUG"
+address = "/dev/log"
+
 [handlers.qml_debug_file]
 class = "logging.handlers.RotatingFileHandler"
 formatter = "local_standard"
@@ -77,12 +83,24 @@ filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
 # Control JAX logging
 [loggers.jax]
 handlers = ["qml_debug_stream",]
-level = "WARN"
+level = "DEBUG"
+propagate = false
+
+# Control JAXlib logging
+[loggers.jaxlib]
+handlers = ["qml_debug_stream",]
+level = "DEBUG"
 propagate = false
 
 # Control logging across pennylane
 [loggers.pennylane]
 handlers = ["qml_debug_stream",]
+level = "DEBUG" # Set to TRACE for highest verbosity
+propagate = false
+
+# Control logging across catalyst
+[loggers.catalyst]
+handlers = ["qml_debug_stream"] #, "qml_debug_syslog"]
 level = "DEBUG" # Set to TRACE for highest verbosity
 propagate = false
 
