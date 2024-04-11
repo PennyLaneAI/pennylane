@@ -26,14 +26,14 @@ class TestQutritDepolarizingChannel:
 
     def test_p_zero(self, tol):
         """Test p=0 gives correct Kraus matrices"""
-        op = qml.DepolarizingChannel
+        op = qml.QutritDepolarizingChannel
         assert np.allclose(op(0, wires=0).kraus_matrices()[0], np.eye(2), atol=tol, rtol=0)
         assert np.allclose(op(0, wires=0).kraus_matrices()[1], np.zeros((2, 2)), atol=tol, rtol=0)
 
     def test_p_arbitrary(self, tol):
         """Test p=0.1 gives correct Kraus matrices"""
         p = 0.1
-        op = qml.DepolarizingChannel
+        op = qml.QutritDepolarizingChannel
         expected = np.sqrt(p / 3) * X
         assert np.allclose(op(0.1, wires=0).kraus_matrices()[1], expected, atol=tol, rtol=0)
 
@@ -48,7 +48,7 @@ class TestQutritDepolarizingChannel:
         @qml.qnode(dev)
         def circuit(p):
             qml.RX(angle, wires=0)
-            qml.DepolarizingChannel(p, wires=0)
+            qml.QutritDepolarizingChannel(p, wires=0)
             return qml.expval(qml.PauliZ(0))
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
@@ -57,7 +57,7 @@ class TestQutritDepolarizingChannel:
 
     def test_p_invalid_parameter(self):
         with pytest.raises(ValueError, match="p must be in the interval"):
-            qml.DepolarizingChannel(1.5, wires=0).kraus_matrices()
+            qml.QutritDepolarizingChannel(1.5, wires=0).kraus_matrices()
 
     @staticmethod
     def expected_jac_fn(p):
@@ -70,18 +70,18 @@ class TestQutritDepolarizingChannel:
 
     @staticmethod
     def kraus_fn(x):
-        return qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+        return qml.math.stack(channel.QutritDepolarizingChannel(x, wires=0).kraus_matrices())
 
     @staticmethod
     def kraus_fn_real(x):
         return qml.math.real(
-            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+            qml.math.stack(channel.QutritDepolarizingChannel(x, wires=0).kraus_matrices())
         )
 
     @staticmethod
     def kraus_fn_imag(x):
         return qml.math.imag(
-            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+            qml.math.stack(channel.QutritDepolarizingChannel(x, wires=0).kraus_matrices())
         )
 
     @pytest.mark.autograd
