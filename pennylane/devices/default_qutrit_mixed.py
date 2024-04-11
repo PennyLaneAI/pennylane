@@ -222,11 +222,6 @@ class DefaultQutritMixed(Device):
         if config.gradient_method == "backprop":
             transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
 
-        if config.gradient_method == "adjoint":
-            raise NotImplementedError(
-                "adjoint differentiation not yet available for qutrit mixed-state device"
-            )
-
         return transform_program, config
 
     def execute(
@@ -234,4 +229,4 @@ class DefaultQutritMixed(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-        return None  # pragma: not covered
+        return None
