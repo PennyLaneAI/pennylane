@@ -95,6 +95,7 @@ class JaxPRMeta(type):
             return
 
         cls._primitive = jax.core.Primitive(cls.__name__)
+        cls._primitive._class = cls
 
         @cls._primitive.def_impl
         def default_call(*args, **kwargs):
