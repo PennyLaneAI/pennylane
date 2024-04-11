@@ -497,7 +497,7 @@ def draw_mpl(
             plt.rcParams['patch.linewidth'] = 4
             plt.rcParams['patch.force_edgecolor'] = True
             plt.rcParams['lines.color'] = 'indigo'
-            plt.rcParams['lines.linewidth'] = 5
+            plt.rcParams['lines.linewidth'] = 2
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
             fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345,1.2345)
