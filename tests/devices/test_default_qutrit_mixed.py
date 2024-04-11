@@ -17,7 +17,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices.default_qutrit_mixed import DefaultQutritMixed
-from pennylane.devices import ExecutionConfig
 
 
 def test_name():
@@ -83,10 +82,10 @@ class TestRandomSeed:
 class TestPRNGKeySeed:
     """Test that the device behaves correctly when provided with a PRNG key and using the JAX interface"""
 
+    # pylint: disable=too-few-public-methods
+
     def test_prng_key_as_seed(self):
-        """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
-        the same results for sample, even with different seeds"""
-        """Test that a PRNG can be passed as a seed."""
+        """Test that a jax PRNG can be passed as a seed."""
         from jax import random
 
         key1 = random.key(123)
