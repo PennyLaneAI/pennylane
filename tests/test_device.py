@@ -323,6 +323,16 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         dev.check_validity(queue, observables)
 
+    def test_prod_containing_unsupported_nested_observables(self, mock_device_supporting_prod):
+        """Tests that the observables nested within Prod are checked for validity"""
+
+        dev = mock_device_supporting_prod()
+
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliZ(wires=1),
+        ]
+
         unsupported_nested_observables = [
             qml.expval(qml.PauliZ(0) @ (qml.PauliX(1) @ qml.PauliY(2)))
         ]
@@ -1188,6 +1198,20 @@ class TestGrouping:
     def test_batch_transform_expands_not_supported_sums(self, mocker):
         """Tests that batch_transform expand Sums if they are not supported."""
         H = qml.sum(qml.PauliX(0), qml.PauliY(0))
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        spy = mocker.spy(qml.transforms, "sum_expand")
+
+        dev = self.SomeDevice()
+        dev.supports_observable = lambda *args, **kwargs: False
+        new_qscripts, _ = dev.batch_transform(qs)
+
+        assert len(new_qscripts) == 2
+        spy.assert_called()
+
+    def test_batch_transform_expands_prod_containing_sums(self, mocker):
+        """Tests that batch_transform expands a Prod with a nested Sum"""
+
+        H = qml.prod(qml.PauliX(0), qml.sum(qml.PauliY(0), qml.PauliZ(0)))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
         spy = mocker.spy(qml.transforms, "sum_expand")
 
