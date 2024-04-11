@@ -241,6 +241,9 @@
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
+* Add type hints for unimplemented methods of the abstract class `Operator`.
+  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
+
 * A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
@@ -414,6 +417,7 @@ Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
+Kenya Sakka,
 Jay Soni,
 Matthew Silverman,
 David Wierichs.
