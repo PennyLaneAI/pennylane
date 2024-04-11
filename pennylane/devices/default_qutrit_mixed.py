@@ -43,7 +43,7 @@ Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
-channels = {}
+channels = {"empty"}
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
