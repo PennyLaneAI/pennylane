@@ -26,6 +26,7 @@ from .non_parametric_ops import *
 from .parametric_ops import *
 from .state_preparation import *
 from ..identity import Identity
+from .channel import QutritDepolarizingChannel
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
 __ops__ = {
