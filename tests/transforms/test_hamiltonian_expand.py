@@ -298,24 +298,33 @@ class TestHamiltonianExpand:
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
-    def test_processing_function_conditional_clause(self):
-        """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
-        in the processing function returned by hamiltonian_expand, accessed when
-        using a shot vector and grouping if the terms don't commute with each other."""
+    @pytest.mark.parametrize(
+        "H, expected",
+        [
+            # Contains only groups with single coefficients
+            (qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)]), -1),
+            # Contains groups with multiple coefficients
+            (qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]), -3),
+        ],
+    )
+    @pytest.mark.parametrize("theta", [np.pi, [np.pi, np.pi, np.pi]])
+    def test_processing_function_shot_vector(self, H, expected, theta):
+        """Tests that the processing function works with shot vectors, parameter broadcasting,
+        and grouping with different number of coefficients in each group"""
 
-        dev_with_shot_vector = qml.device("default.qubit", shots=(10, 10, 10))
-
-        H = qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)])
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(5000, 4)])
         H.compute_grouping()
 
         @qml.transforms.hamiltonian_expand
         @qml.qnode(dev_with_shot_vector)
-        def circuit():
+        def circuit(inputs):
+            qml.RX(inputs, wires=0)
             return qml.expval(H)
 
-        res = circuit()
-
-        assert res.shape == (3,)
+        res = circuit(theta)
+        shape = (4,) if isinstance(theta, float) else (4, 3)
+        assert res.shape == shape
+        assert np.allclose(res, np.ones(shape) * expected, atol=0.1)
 
     def test_constant_offset_grouping(self):
         """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and grouping."""
