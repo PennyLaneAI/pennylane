@@ -166,6 +166,7 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
+
 <h3>Improvements 🛠</h3>
 
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
