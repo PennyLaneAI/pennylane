@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+[(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
+
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
@@ -402,6 +405,7 @@ Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
 Lillian M. A. Frederiksen,
+Austin Huang,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
