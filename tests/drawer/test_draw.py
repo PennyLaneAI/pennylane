@@ -356,6 +356,26 @@ class TestMidCircuitMeasurements:
 
         assert drawing == expected_drawing
 
+    @pytest.mark.parametrize(
+        "mp, label", [(qml.sample(), "Sample"), (qml.probs(), "Probs"), (qml.counts(), "Counts")]
+    )
+    def test_draw_all_wire_measurements(self, mp, label):
+        """Test that operators acting on all wires are drawn correctly"""
+
+        def func():
+            qml.X(0)
+            qml.X(1)
+            m = qml.measure(0)
+            qml.cond(m, qml.X)(0)
+            return qml.apply(mp)
+
+        # Stripping to remove trailing white-space because length of white-space at the
+        # end of the drawing depends on the length of each individual line
+        drawing = qml.draw(func)().strip()
+        expected_drawing = f"0: ──X──┤↗├──X─┤  {label}\n1: ──X───║───║─┤  {label}\n         ╚═══╝"
+
+        assert drawing == expected_drawing
+
     def test_draw_mid_circuit_measurement_multiple_wires(self):
         """Test that mid-circuit measurements are correctly drawn in circuits
         with multiple wires."""
