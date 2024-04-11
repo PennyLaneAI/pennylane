@@ -56,8 +56,7 @@ def allequal(tensor1, tensor2, **kwargs):
 
 
 def all(a, axis=None, out=None, keepdims=False, *, where=None, **kwargs):
-    """Wrapper around np.all, allowing tensors ``a`` and ``b``
-    to differ in type"""
+    """Wrapper around np.all."""
     try:
         # Some frameworks may provide their own all implementation.
         # Try and use it if available.
@@ -100,6 +99,27 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
 
 
 allclose.__doc__ = _np.allclose.__doc__
+
+
+def any(a, axis=None, out=None, keepdims=False, *, where=None, **kwargs):
+    """Wrapper around np.any."""
+    try:
+        # Some frameworks may provide their own any implementation.
+        # Try and use it if available.
+        res = np.any(a, axis=axis, out=out, keepdims=keepdims, where=where, **kwargs)
+    except (TypeError, AttributeError, ImportError, RuntimeError):
+        # Otherwise, convert the input to NumPy arrays.
+        #
+        # TODO: replace this with a bespoke, framework agnostic
+        # low-level implementation to avoid the NumPy conversion:
+        #
+        t1 = ar.to_numpy(a)
+        res = np.any(t1, axis=axis, out=out, keepdims=keepdims, where=where, **kwargs)
+
+    return res
+
+
+all.__doc__ = _np.all.__doc__
 
 
 def cast(tensor, dtype):
@@ -591,3 +611,29 @@ def in_backprop(tensor, interface=None):
         return False
 
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
+
+
+def where(condition, a, b):
+    """Wrapper around np.where, allowing tensors ``a`` and ``b``
+    to differ in type"""
+    try:
+        # Some frameworks may provide their own where implementation.
+        # Try and use it if available.
+        res = np.where(condition, a, b)
+    except (TypeError, AttributeError, ImportError, RuntimeError):
+        # Otherwise, convert the input to NumPy arrays.
+        #
+        # TODO: replace this with a bespoke, framework agnostic
+        # low-level implementation to avoid the NumPy conversion:
+        #
+        #    np.abs(a - b) <= atol + rtol * np.abs(b)
+        #
+        cond = ar.to_numpy(condition)
+        t1 = ar.to_numpy(a)
+        t2 = ar.to_numpy(b)
+        res = np.where(cond, t1, t2)
+
+    return res
+
+
+where.__doc__ = _np.where.__doc__
