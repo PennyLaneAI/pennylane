@@ -27,9 +27,11 @@ at your own discretion.
     measure
     measure_with_samples
     sample_state
+    simulate
 """
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import sample_state, measure_with_samples
+from .simulate import simulate, get_final_state, measure_final_state
