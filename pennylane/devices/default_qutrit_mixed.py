@@ -16,16 +16,21 @@ The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mix
 """
 
 from dataclasses import replace
-from typing import Union, Tuple, Sequence
+from numbers import Number
+from typing import Union, Tuple, Sequence, Optional
+import inspect
 import logging
 import numpy as np
 
 import pennylane as qml
 from pennylane.transforms.core import TransformProgram
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
+from pennylane.measurements import ExpectationMP
 
 from . import Device
+from .modifiers import single_tape_support, simulator_tracking
+
 from .preprocess import (
     decompose,
     validate_observables,
@@ -34,6 +39,7 @@ from .preprocess import (
     no_sampling,
 )
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .qutrit_mixed.simulate import simulate
 from .default_qutrit import DefaultQutrit
 
 logger = logging.getLogger(__name__)
@@ -42,6 +48,9 @@ logger.addHandler(logging.NullHandler())
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
+
+# always a function from a resultbatch to either a result or a result batch
+PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 channels = set()
 
@@ -67,6 +76,31 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     return isinstance(m, qml.measurements.SampleMeasurement)
 
 
+def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
+    num_executions = 0
+    num_shots = 0
+    for mp in tape.measurements:
+        if isinstance(mp, ExpectationMP) and isinstance(mp.obs, qml.Hamiltonian):
+            num_executions += len(mp.obs.ops)
+            if tape.shots:
+                num_shots += tape.shots.total_shots * len(mp.obs.ops)
+        elif isinstance(mp, ExpectationMP) and isinstance(mp.obs, qml.ops.Sum):
+            num_executions += len(mp.obs)
+            if tape.shots:
+                num_shots += tape.shots.total_shots * len(mp.obs)
+        else:
+            num_executions += 1
+            if tape.shots:
+                num_shots += tape.shots.total_shots
+
+    if tape.batch_size:
+        num_executions *= tape.batch_size
+        if tape.shots:
+            num_shots *= tape.batch_size
+
+
+@simulator_tracking
+@single_tape_support
 class DefaultQutritMixed(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
     Args:
@@ -158,6 +192,27 @@ class DefaultQutritMixed(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
+    def supports_derivatives(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
+    ) -> bool:
+        """Check whether or not derivatives are available for a given configuration and circuit.
+
+        ``DefaultQutritMixed`` supports backpropagation derivatives with analytic results.
+
+        Args:
+            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
+            circuit (QuantumTape): An optional circuit to check derivatives support for.
+
+        Returns:
+            Bool: Whether or not a derivative can be calculated provided the given information
+
+        """
+        if execution_config is None or execution_config.gradient_method in {"backprop", "best"}:
+            return circuit is None or not circuit.shots
+        return False
+
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
         Args:
@@ -234,4 +289,58 @@ class DefaultQutritMixed(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-        return None  # pragma: not covered
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Entry with args=(circuits=%s) called by=%s""",
+                circuits,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+
+        interface = (
+            execution_config.interface
+            if execution_config.gradient_method in {"best", "backprop", None}
+            else None
+        )
+
+        results = tuple(
+            simulate(
+                c,
+                rng=self._rng,
+                prng_key=self._prng_key,
+                debugger=self._debugger,
+                interface=interface,
+            )
+            for c in circuits
+        )
+
+        if self.tracker.active:
+            self.tracker.update(batches=1)
+            self.tracker.record()
+            for i, c in enumerate(circuits):
+                qpu_executions, shots = get_num_shots_and_executions(c)
+                res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
+                if c.shots:
+                    self.tracker.update(
+                        simulations=1,
+                        executions=qpu_executions,
+                        results=res,
+                        shots=shots,
+                        resources=c.specs["resources"],
+                    )
+                else:
+                    self.tracker.update(
+                        simulations=1,
+                        executions=qpu_executions,
+                        results=res,
+                        resources=c.specs["resources"],
+                    )
+                self.tracker.record()
+
+        return results[0] if is_single_circuit else results
