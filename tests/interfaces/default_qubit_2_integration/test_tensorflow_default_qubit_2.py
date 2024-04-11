@@ -811,3 +811,36 @@ class TestHamiltonianWorkflows:
         jac = qml.math.hstack(tape.jacobian(res, [weights, coeffs1, coeffs2]), like="tensorflow")
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
+
+
+@pytest.mark.parametrize("diff_method", ("adjoint", "parameter-shift"))
+def test_device_returns_float32(diff_method):
+    """Test that if the device returns float32, the derivative succeeds."""
+
+    def _to_float32(results):
+        if isinstance(results, (list, tuple)):
+            return tuple(_to_float32(r) for r in results)
+        return np.array(results, dtype=np.float32)
+
+    class Float32Dev(qml.devices.DefaultQubit):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+            results = super().execute(circuits, execution_config)
+            return _to_float32(results)
+
+    dev = Float32Dev()
+
+    @qml.qnode(dev, diff_method=diff_method)
+    def circuit(x):
+        qml.RX(tf.cos(x), wires=0)
+        return qml.expval(qml.Z(0))
+
+    x = tf.Variable(0.1, dtype=tf.float64)
+
+    with tf.GradientTape() as tape:
+        y = circuit(x)
+
+    assert qml.math.allclose(y, np.cos(np.cos(0.1)))
+
+    g = tape.gradient(y, x)
+    expected_g = np.sin(np.cos(0.1)) * np.sin(0.1)
+    assert qml.math.allclose(g, expected_g)

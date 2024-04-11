@@ -127,10 +127,12 @@ def ctrl(op, control, control_values=None, work_wires=None):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
-    return create_controlled_op(op, control, control_values=control_values, work_wires=work_wires)
+    return create_controlled_op(
+        op, control=control, control_values=control_values, work_wires=work_wires
+    )
 
 
-def create_controlled_op(op, control, control_values=None, work_wires=None):
+def create_controlled_op(op, control=None, control_values=None, work_wires=None):
     """Default ``qml.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = qml.wires.Wires(control)
@@ -140,7 +142,9 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
         control_values = [True] * len(control)
 
     if qml.math.is_abstract(op):
-        return Controlled(op, control, control_values, work_wires=work_wires)
+        return Controlled(
+            op, control_wires=control, control_values=control_values, work_wires=work_wires
+        )
 
     ctrl_op = _try_wrap_in_custom_ctrl_op(
         op, control, control_values=control_values, work_wires=work_wires
@@ -178,28 +182,49 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
             "of operations instead of a function or Operator."
         )
 
-    @wraps(op)
-    def wrapper(*args, **kwargs):
-        qscript = qml.tape.make_qscript(op)(*args, **kwargs)
+    if qml.capture.meta_type._USE_DEFAULT_CALL:
 
-        # flip control_values == 0 wires here, so we don't have to do it for each individual op.
-        flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
-        op_control_values = None if flip_control_on_zero else control_values
-        if flip_control_on_zero:
-            _ = [qml.X(w) for w, val in zip(control, control_values) if not val]
+        @wraps(op)
+        def wrapper(*args, **kwargs):
+            qscript = qml.tape.make_qscript(op)(*args, **kwargs)
 
-        _ = [
-            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
-            for op in qscript.operations
-        ]
+            # flip control_values == 0 wires here, so we don't have to do it for each individual op.
+            flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
+            op_control_values = None if flip_control_on_zero else control_values
+            if flip_control_on_zero:
+                _ = [qml.X(w) for w, val in zip(control, control_values) if not val]
 
-        if flip_control_on_zero:
-            _ = [qml.X(w) for w, val in zip(control, control_values) if not val]
+            _ = [
+                ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+                for op in qscript.operations
+            ]
 
-        if qml.QueuingManager.recording():
-            _ = [qml.apply(m) for m in qscript.measurements]
+            if flip_control_on_zero:
+                _ = [qml.X(w) for w, val in zip(control, control_values) if not val]
 
-        return qscript.measurements
+            if qml.QueuingManager.recording():
+                _ = [qml.apply(m) for m in qscript.measurements]
+
+            return qscript.measurements
+
+    else:
+        from jax import make_jaxpr
+        from pennylane.capture.jaxpr_transforms import ctrl_jaxpr
+
+        @wraps(op)
+        def wrapper(*args, **kwargs):
+            closed_jaxpr = make_jaxpr(op)(*args, **kwargs)
+            return ctrl_jaxpr(
+                closed_jaxpr.jaxpr,
+                closed_jaxpr.literals,
+                *args,
+                control_wires=control,
+                control_values=control_values,
+                work_wires=work_wires,
+                **kwargs,
+            )
+
+        return wrapper
 
     return wrapper
 
@@ -399,7 +424,7 @@ class Controlled(SymbolicOp):
         return object.__new__(Controlled)
 
     # pylint: disable=too-many-function-args
-    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
+    def __init__(self, base, control_wires=None, control_values=None, work_wires=None, id=None):
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
@@ -827,7 +852,7 @@ class ControlledOp(Controlled, operation.Operation):
         return object.__new__(cls)
 
     # pylint: disable=too-many-function-args
-    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
+    def __init__(self, base, control_wires=None, control_values=None, work_wires=None, id=None):
         super().__init__(base, control_wires, control_values, work_wires, id)
         # check the grad_recipe validity
         if self.grad_recipe is None:

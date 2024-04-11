@@ -98,7 +98,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
-            be used when is decorated by :func:`~.qjit`.
+            be used when decorated by :func:`~.qjit`.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned

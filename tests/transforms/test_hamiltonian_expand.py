@@ -262,6 +262,8 @@ class TestHamiltonianExpand:
 
         import tensorflow as tf
 
+        inner_dev = qml.device("default.qubit")
+
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
@@ -289,7 +291,7 @@ class TestHamiltonianExpand:
 
             tape = QuantumScript.from_queue(q)
             tapes, fn = hamiltonian_expand(tape)
-            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            res = fn(qml.execute(tapes, inner_dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 
@@ -314,6 +316,50 @@ class TestHamiltonianExpand:
         res = circuit()
 
         assert res.shape == (3,)
+
+    def test_constant_offset_grouping(self):
+        """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and grouping."""
+
+        H = 2.0 * qml.I() + 3 * qml.X(0) + 4 * qml.X(0) @ qml.Y(1) + qml.Z(0)
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
+        batch, fn = qml.transforms.hamiltonian_expand(tape, group=True)
+
+        assert len(batch) == 2
+
+        tape_0 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
+        tape_1 = qml.tape.QuantumScript(
+            [qml.RY(-np.pi / 2, 0), qml.RX(np.pi / 2, 1)],
+            [qml.expval(qml.Z(0)), qml.expval(qml.Z(0) @ qml.Z(1))],
+            shots=50,
+        )
+
+        assert qml.equal(batch[0], tape_0)
+        assert qml.equal(batch[1], tape_1)
+
+        dummy_res = (1.0, (1.0, 1.0))
+        processed_res = fn(dummy_res)
+        assert qml.math.allclose(processed_res, 10.0)
+
+    def test_constant_offset_no_grouping(self):
+        """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and no grouping.."""
+
+        H = 2.0 * qml.I() + 3 * qml.X(0) + 4 * qml.X(0) @ qml.Y(1) + qml.Z(0)
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
+        batch, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+
+        assert len(batch) == 3
+
+        tape_0 = qml.tape.QuantumScript([], [qml.expval(qml.X(0))], shots=50)
+        tape_1 = qml.tape.QuantumScript([], [qml.expval(qml.X(0) @ qml.Y(1))], shots=50)
+        tape_2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
+
+        assert qml.equal(batch[0], tape_0)
+        assert qml.equal(batch[1], tape_1)
+        assert qml.equal(batch[2], tape_2)
+
+        dummy_res = (1.0, 1.0, 1.0)
+        processed_res = fn(dummy_res)
+        assert qml.math.allclose(processed_res, 10.0)
 
 
 with AnnotatedQueue() as s_tape1:

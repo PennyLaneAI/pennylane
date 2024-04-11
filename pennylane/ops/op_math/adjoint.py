@@ -23,6 +23,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
+from pennylane.capture.meta_type import get_abstract_type
 
 from .symbolicop import SymbolicOp
 
@@ -176,15 +177,31 @@ def adjoint(fn, lazy=True):
             "of operations instead of a function or template."
         )
 
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        qscript = make_qscript(fn)(*args, **kwargs)
-        if lazy:
-            adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
-        else:
-            adjoint_ops = [_single_op_eager(op) for op in reversed(qscript.operations)]
+    if qml.capture.meta_type._USE_DEFAULT_CALL:
 
-        return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            qscript = make_qscript(fn)(*args, **kwargs)
+            if lazy:
+                adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
+            else:
+                adjoint_ops = [_single_op_eager(op) for op in reversed(qscript.operations)]
+
+            return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
+
+    else:
+        from jax import make_jaxpr
+        from pennylane.capture.jaxpr_transforms import adjoint_jaxpr
+
+        if lazy is False:
+            raise CompileError("Setting lazy=False is not supported with plexpr.")
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            closed_jaxpr = make_jaxpr(fn)(*args, **kwargs)
+            return adjoint_jaxpr(closed_jaxpr.jaxpr, closed_jaxpr.literals, *args, **kwargs)
+
+        return wrapper
 
     return wrapper
 

@@ -82,16 +82,7 @@ class QFT(Operation):
     @staticmethod
     @functools.lru_cache()
     def compute_matrix(n_wires):  # pylint: disable=arguments-differ
-        dimension = 2**n_wires
-
-        mat = np.zeros((dimension, dimension), dtype=np.complex128)
-        omega = np.exp(2 * np.pi * 1j / dimension)
-
-        for m in range(dimension):
-            for n in range(dimension):
-                mat[m, n] = omega ** (m * n)
-
-        return mat / np.sqrt(dimension)
+        return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
 
     @staticmethod
     def compute_decomposition(wires, n_wires):  # pylint: disable=arguments-differ,unused-argument

@@ -92,6 +92,13 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     return all_mp_groups, all_indices
 
 
+def _get_num_shots_for_expval_H(obs):
+    indices = obs.grouping_indices
+    if indices:
+        return len(indices)
+    return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
+
+
 # pylint: disable=no-member
 def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
     """Get the total number of qpu executions and shots.
@@ -111,8 +118,7 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
         if isinstance(group[0], ExpectationMP) and isinstance(
             group[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
         ):
-            indices = group[0].obs.grouping_indices
-            H_executions = len(indices) if indices else len(group[0].obs.ops)
+            H_executions = _get_num_shots_for_expval_H(group[0].obs)
             num_executions += H_executions
             if tape.shots:
                 num_shots += tape.shots.total_shots * H_executions
@@ -442,10 +448,34 @@ def sample_state(
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
+    # when using the torch interface with float32 as default dtype,
+    # probabilities must be renormalized as they may not sum to one
+    # see https://github.com/PennyLaneAI/pennylane/issues/5444
+    norm = qml.math.sum(probs, axis=-1)
+    abs_diff = np.abs(norm - 1.0)
+    cutoff = 1e-07
+
     if is_state_batched:
+
+        normalize_condition = False
+
+        for s in abs_diff:
+            if s != 0:
+                normalize_condition = True
+            if s > cutoff:
+                normalize_condition = False
+                break
+
+        if normalize_condition:
+            probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
+
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
+
+        if 0 < abs_diff < cutoff:
+            probs /= norm
+
         samples = rng.choice(basis_states, shots, p=probs)
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]

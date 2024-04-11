@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,6 +95,7 @@ class JaxPRMeta(type):
             return
 
         cls._primitive = jax.core.Primitive(cls.__name__)
+        cls._primitive._class = cls
 
         @cls._primitive.def_impl
         def default_call(*args, **kwargs):

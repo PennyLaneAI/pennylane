@@ -1,6 +1,10 @@
 name: Unit Test - All Interfaces
 on:
   workflow_call:
+    secrets:
+      codecov_token:
+        description: The codecov token to use when uploading coverage files
+        required: true
     inputs:
       branch:
         description: The PennyLane branch to checkout and run unit tests for
@@ -567,6 +571,7 @@ jobs:
         uses: actions/download-artifact@v3
 
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.codecov_token }}
           fail_ci_if_error: true  # upload errors should be caught early
