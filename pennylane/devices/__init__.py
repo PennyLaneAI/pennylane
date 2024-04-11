@@ -35,6 +35,7 @@ to verify and test quantum gradient computations.
     default_mixed
     default_qutrit
     default_clifford
+    default_qutrit_mixed
     null_qubit
     tests
 
@@ -155,3 +156,4 @@ from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
+from .default_qutrit_mixed import DefaultQutritMixed
