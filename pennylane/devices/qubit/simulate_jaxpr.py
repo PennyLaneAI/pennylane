@@ -32,6 +32,8 @@ def simulate_jaxpr(jaxpr: "jax.core.ClosedJaxpr", n_wires: int, *args):
     if not has_jax:
         raise ImportError
 
+    print(jaxpr)
+
     if isinstance(jaxpr, jax.core.ClosedJaxpr):
         jaxpr = jaxpr.jaxpr
 
@@ -45,10 +47,16 @@ def simulate_jaxpr(jaxpr: "jax.core.ClosedJaxpr", n_wires: int, *args):
     def write(var, val):
         env[var] = val
 
+    print(jaxpr.invars, args)
+    args = tuple(a for a in args if a is not None)
     safe_map(write, jaxpr.invars, args)
+
     for eqn in jaxpr.eqns:
         invals = safe_map(read, eqn.invars)
         if eqn.primitive.name == "measure":
+            shots = eqn.params["shots"]
+            print(env)
+            print(shots)
             outvals = [measure(mp, state) for mp in invals]
         else:
             outvals = eqn.primitive.bind(*invals, **eqn.params)

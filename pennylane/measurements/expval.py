@@ -15,15 +15,24 @@
 This module contains the qml.expval measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple, Union, Optional
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+from pennylane.typing import TensorLike
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .sample import SampleMP
 from .mid_measure import MeasurementValue
+from .shots import Shots
+
+
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
 
 
 def expval(
@@ -94,6 +103,30 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
+    @classmethod
+    def _abstract_eval(
+        cls,
+        obs: Optional[
+            Union[
+                Operator,
+                "qml.measurements.MeasurementValue",
+                Sequence["qml.measurements.MeasurementValue"],
+            ]
+        ] = None,
+        wires: Optional[Wires] = None,
+        eigvals: Optional[TensorLike] = None,
+        shots: Optional[Shots] = None,
+        id: Optional[str] = None,
+    ):
+        if not has_jax:
+            raise ImportError
+        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+        shots = Shots(shots)
+        shape = (
+            tuple(() for _ in range(shots.num_copies)) if shots.has_partitioned_shots else tuple()
+        )
+        return jax.core.ShapedArray(shape, dtype)
+
     @property
     def return_type(self):
         return Expectation
@@ -105,8 +138,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def shape(self, device, shots):
         if not shots.has_partitioned_shots:
             return ()
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
+        return tuple(() for _ in range(shots.num_copies))
 
     def process_samples(
         self,

@@ -1063,6 +1063,17 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
 
+        if not qml.capture.meta_type._USE_DEFAULT_CALL:
+            # shots = shots.total_shots
+            def full_workflow(*inner_args, shots=None, **inner_kwargs):
+                measurements = self.func(*inner_args, **inner_kwargs)
+                return qml.capture.measure(measurements, shots=shots)
+
+            import jax
+
+            jaxpr = jax.make_jaxpr(full_workflow)(*args, **kwargs)
+            return self.device.execute_jaxpr(jaxpr, *args, kwargs["shots"])
+
         old_interface = self.interface
         if old_interface == "auto":
             interface = qml.math.get_interface(*args, *list(kwargs.values()))

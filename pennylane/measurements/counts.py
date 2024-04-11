@@ -15,15 +15,23 @@
 This module contains the qml.counts measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+from pennylane.typing import TensorLike
 
 from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
+from .shots import Shots
+
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
 
 
 def counts(
@@ -193,6 +201,26 @@ class CountsMP(SampleMeasurement):
         if wires is not None:
             wires = Wires(wires)
         super().__init__(obs, wires, eigvals, id)
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        obs: Optional[
+            Union[
+                Operator,
+                "qml.measurements.MeasurementValue",
+                Sequence["qml.measurements.MeasurementValue"],
+            ]
+        ] = None,
+        wires: Optional[Wires] = None,
+        eigvals: Optional[TensorLike] = None,
+        all_outcomes: bool = False,
+        shots: Optional[Shots] = None,
+        id: Optional[str] = None,
+    ):
+        if not has_jax:
+            raise ImportError
+        i
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
