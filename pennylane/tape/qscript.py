@@ -759,19 +759,8 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-
-        if isinstance(device, qml.devices.Device):
-            # MP.shape (called below) takes 2 arguments: `device` and `shots`.
-            # With the new device interface, shots are stored on tapes rather than the device
-            # TODO: refactor MP.shape to accept `wires` instead of device (not currently done
-            # because probs.shape uses device.cutoff)
-            shots = self.shots
-        else:
-            shots = (
-                Shots(device._raw_shot_sequence)
-                if device.shot_vector is not None
-                else Shots(device.shots)
-            )
+        shots = self.shots
+        # even with the legacy device interface, the shots on the tape will agree with the shots used by the device for the execution
 
         if len(shots.shot_vector) > 1 and self.batch_size is not None:
             raise NotImplementedError(
