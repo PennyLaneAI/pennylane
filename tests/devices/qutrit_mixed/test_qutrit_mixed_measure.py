@@ -438,7 +438,7 @@ class TestSumOfTermsDifferentiability:
         H = qml.Hamiltonian(
             coeffs,
             [
-                reduce(lambda x, y: x@y, (qml.GellMann(i, 3) for i in range(n_wires))),
+                reduce(lambda x, y: x @ y, (qml.GellMann(i, 3) for i in range(n_wires))),
                 reduce(lambda x, y: x @ y, (qml.GellMann(i, 5) for i in range(n_wires))),
             ],
         )
