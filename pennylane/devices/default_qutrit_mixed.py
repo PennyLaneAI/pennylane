@@ -77,7 +77,7 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 
 
 def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
-    """TODO add"""
+    """TODO add comment"""
     num_executions = 0
     num_shots = 0
     for mp in tape.measurements:
@@ -98,6 +98,7 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
         num_executions *= tape.batch_size
         if tape.shots:
             num_shots *= tape.batch_size
+    return num_executions, num_shots
 
 
 @simulator_tracking
