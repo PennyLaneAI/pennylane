@@ -649,6 +649,63 @@ class TestInvalidStateSamples:
                 assert qml.math.all(qml.math.isnan(r))
 
 
+two_qubit_state_to_be_normalized = np.array([[0, 1.0000000005j], [-1, 0]]) / np.sqrt(2)
+two_qubit_state_not_normalized = np.array([[0, 1.0000005j], [-1.00000001, 0]]) / np.sqrt(2)
+
+batched_state_to_be_normalized = np.stack(
+    [
+        np.array([[0, 0], [0, 1.000000000009]]),
+        np.array([[1.00000004, 0], [1, 0]]) / np.sqrt(2),
+        np.array([[1, 1], [1, 0.99999995]]) / 2,
+    ]
+)
+batched_state_not_normalized = np.stack(
+    [
+        np.array([[0, 0], [0, 1]]),
+        np.array([[1.0000004, 0], [1, 0]]) / np.sqrt(2),
+        np.array([[1, 1], [1, 0.9999995]]) / 2,
+    ]
+)
+
+
+class TestRenormalization:
+    """Test suite for renormalization functionality."""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_state_renorm(self, interface):
+        """Test renormalization for a non-batched state."""
+
+        state = qml.math.array(two_qubit_state_to_be_normalized, like=interface)
+        _ = sample_state(state, 10)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_state_renorm_error(self, interface):
+        """Test that renormalization does not occur if the error is too large."""
+
+        state = qml.math.array(two_qubit_state_not_normalized, like=interface)
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+            _ = sample_state(state, 10)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_batched_state_renorm(self, interface):
+        """Test renormalization for a batched state."""
+
+        state = qml.math.array(batched_state_to_be_normalized, like=interface)
+        _ = sample_state(state, 10, is_state_batched=True)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_batched_state_renorm_error(self, interface):
+        """Test that renormalization does not occur if the error is too large."""
+
+        state = qml.math.array(batched_state_not_normalized, like=interface)
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+            _ = sample_state(state, 10, is_state_batched=True)
+
+
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
