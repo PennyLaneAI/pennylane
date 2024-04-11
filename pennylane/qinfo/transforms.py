@@ -57,6 +57,23 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
     tensor([[0.5+0.j, 0. +0.j],
             [0. +0.j, 0.5+0.j]], requires_grad=True)
 
+    This is equivalent to the state of the wire ``0`` after measuring the wire ``1``:
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def measured_circuit(x):
+            qml.IsingXX(x, wires=[0,1])
+            m = qml.measure(1)
+            return qml.density_matrix(wires=[0]), qml.probs(op=m)
+
+    >>> dm, probs = measured_circuit(np.pi/2)
+    >>> dm
+    tensor([[0.5+0.j, 0. +0.j],
+            [0. +0.j, 0.5+0.j]], requires_grad=True)
+    >>> probs
+    tensor([0.5, 0.5], requires_grad=True)
+
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
     # device_wires is provided by the custom QNode transform
