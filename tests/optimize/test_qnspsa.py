@@ -349,7 +349,10 @@ class TestQNSPSAOptimizer:
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
     def test_step_and_cost_with_non_trainable_input(self, device, finite_diff_step, seed):
-        """Test step_and_cost() function with the qnode with non-trainable input."""
+        """
+        Test step_and_cost() function with the qnode with non-trainable input,
+        both using the `default.qubit` and `default.qubit.legacy` device. 
+        """
         regularization = 1e-3
         stepsize = 1e-2
         opt = qml.QNSPSAOptimizer(
