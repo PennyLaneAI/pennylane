@@ -96,3 +96,9 @@ class TestPRNGKeySeed:
 
         second_nums = random.uniform(dev._prng_key, shape=(10,))  # pylint: disable=protected-access
         assert np.all(first_nums == second_nums)
+
+
+def test_execute_stump():
+    """Tests the stump for execute returns None, test is for Codecov."""
+    dev = DefaultQutritMixed()
+    assert dev.execute(None, None) is None
