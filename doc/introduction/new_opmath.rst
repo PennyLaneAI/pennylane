@@ -3,8 +3,8 @@
 Updated Operators
 =================
 
-Version ``0.36`` of PennyLane updated the behaviour of operator arithmetic. This realizes
-a few objectives:
+In version ``0.36`` of PennyLane we changed some things behind the scenes on how operators and arithmetic operations between them are handled.
+This realizes a few objectives:
 
   1. To make it as easy to work with PennyLane operators as it would be with pen and paper.
   2. To improve the efficiency of operator arithmetic.
@@ -30,8 +30,66 @@ used to troubleshoot issues for those affected users.
 Summary of the update
 ---------------------
 
-The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. You can still opt-out via
-``qml.operation.disable_new_opmath()`` for backward compatibility.
+You can now easily access Pauli operators via ``I``, ``X``, ``Y``, and ``Z``.
+
+>>> from pennylane import I, X, Y, Z
+>>> X(0)
+X(0)
+
+The original long-form names :class:`~Identity`, :class:`~PauliX`, :class:`~PauliY`, and :class:`~PauliZ` remain available, but
+use of the short-form names is now recommended.
+
+A new :func:`~commutator` function is now available that allows you to compute commutators between
+PennyLane operators.
+
+>>> qml.commutator(X(0), Y(0))
+2j * Z(0)
+
+Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
+representation will be automatically used for calculations when available.
+
+The Pauli representation can be optionally accessed via ``op.pauli_rep``:
+
+>>> op = X(0) + Y(0)
+>>> op.pauli_rep
+1.0 * X(0)
++ 1.0 * Y(0)
+
+Extensive improvements have been made to the string representations of PennyLane operators,
+making them shorter and possible to copy-paste as valid PennyLane code.
+
+>>> 0.5 * X(0)
+0.5 * X(0)
+>>> 0.5 * (X(0) + Y(1))
+0.5 * (X(0) + Y(1))
+
+Sums with many terms are broken up into multiple lines, but can still be copied back as valid
+code:
+
+>>> 0.5 * (X(0) @ X(1)) + 0.7 * (X(1) @ X(2)) + 0.8 * (X(2) @ X(3))
+(
+    0.5 * (X(0) @ X(1))
+  + 0.7 * (X(1) @ X(2))
+  + 0.8 * (X(2) @ X(3))
+)
+
+Linear combinations of operators and operator multiplication via :class:`~Sum` and :class:`~Prod`, respectively,
+have been updated to reach feature parity with :class:`~Hamiltonian` and :class:`~Tensor`, respectively.
+This should minimize the effort to port over any existing code.
+
+Updates include support for grouping via the `pauli` module:
+
+>>> obs = [X(0) @ Y(1), Z(0), Y(0) @ Z(1), Y(1)]
+>>> qml.pauli.group_observables(obs)
+[[Y(0) @ Z(1)], [X(0) @ Y(1), Y(1)], [Z(0)]]
+
+
+Technical details
+-----------------
+
+The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
+If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting` section.
+You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
 
 The changes between the old and new system mainly concern Python operators ``+ - * / @``,
 that now create the following ``Operator`` subclass instances.
@@ -52,6 +110,8 @@ that now create the following ``Operator`` subclass instances.
 | ``qml.dot(coeffs,ops)``          | ``ops.Sum``          | ``ops.Sum``               |
 +----------------------------------+----------------------+---------------------------+
 | ``qml.Hamiltonian(coeffs, ops)`` | ``ops.Hamiltonian``  | ``ops.LinearCombination`` |
++----------------------------------+----------------------+---------------------------+
+| ``qml.ops.LinearCombination(coeffs, ops)`` | n/a        | ``ops.LinearCombination`` |
 +----------------------------------+----------------------+---------------------------+
 
 
