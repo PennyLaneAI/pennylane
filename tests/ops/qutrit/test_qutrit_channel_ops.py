@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.ops import channel
+from pennylane.ops.qutrit import channel
 
 
 class TestQutritDepolarizingChannel:
