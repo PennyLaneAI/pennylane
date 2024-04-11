@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the cache_execute decoratator, for adding caching to a function
-that executes multiple tapes on a device.
-
-Also contains the general execute function, for exectuting tapes on
-devices with autodifferentiation support.
+Contains the general execute function, for executing tapes on devices with auto-
+differentiation support.
 """
 
 # pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
@@ -26,14 +23,15 @@ devices with autodifferentiation support.
 
 import inspect
 import warnings
-from functools import wraps, partial
-from typing import Callable, Sequence, Optional, Union, Tuple
+from functools import partial
+from typing import Callable, MutableMapping, Sequence, Optional, Union, Tuple
 import logging
 
 from cachetools import LRUCache, Cache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
@@ -83,6 +81,17 @@ INTERFACE_MAP = {
 #: list[str]: allowed interface strings
 SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
+
+
+_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
+    "Cached execution with finite shots detected!\n"
+    "Note that samples as well as all noisy quantities computed via sampling "
+    "will be identical across executions. This situation arises where tapes "
+    "are executed with identical operations, measurements, and parameters.\n"
+    "To avoid this behaviour, provide 'cache=False' to the QNode or execution "
+    "function."
+)
+"""str: warning message to display when cached execution is used with finite shots"""
 
 
 def _adjoint_jacobian_expansion(
@@ -259,13 +268,8 @@ def _make_inner_execute(
 
     if isinstance(device, qml.Device):
         device_execution = set_shots(device, override_shots)(device.batch_execute)
-
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
-
-    cached_device_execution = qml.workflow.cache_execute(
-        device_execution, cache, return_tuple=False
-    )
 
     def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
@@ -273,162 +277,86 @@ def _make_inner_execute(
         Closure Variables:
             expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
             numpy_only (bool): whether or not to convert the data to numpy or leave as is
-            cached_device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
-
+            device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
+            cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
+        transform_program = qml.transforms.core.TransformProgram()
+
+        if cache is not None:
+            transform_program.add_transform(_cache_transform, cache=cache)
+
+        # TODO: Apply expand_fn() and convert_to_numpy_parameters() as transforms.
         if expand_fn:
             tapes = tuple(expand_fn(t) for t in tapes)
         if numpy_only:
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        return cached_device_execution(tapes)
+
+        transformed_tapes, transform_post_processing = transform_program(tapes)
+
+        if transformed_tapes:
+            results = device_execution(transformed_tapes)
+        else:
+            results = ()
+
+        return transform_post_processing(results)
 
     return inner_execute
 
 
-def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
-    """Decorator that adds caching to a function that executes
-    multiple tapes on a device.
+@transform
+def _cache_transform(tape: QuantumTape, cache: MutableMapping):
+    """Caches the result of ``tape`` using the provided ``cache``.
 
-    This decorator makes use of :attr:`.QuantumTape.hash` to identify
-    unique tapes.
+    .. note::
 
-    - If a tape does not match a hash in the cache, then the tape
-      has not been previously executed. It is executed, and the result
-      added to the cache.
-
-    - If a tape matches a hash in the cache, then the tape has been previously
-      executed. The corresponding cached result is
-      extracted, and the tape is not passed to the execution function.
-
-    - Finally, there might be the case where one or more tapes in the current
-      set of tapes to be executed are identical and thus share a hash. If this is the case,
-      duplicates are removed, to avoid redundant evaluations.
-
-    Args:
-        fn (callable): The execution function to add caching to.
-            This function should have the signature ``fn(tapes, **kwargs)``,
-            and it should return ``list[tensor_like]``, with the
-            same length as the input ``tapes``.
-        cache (None or dict or Cache or bool): The cache to use. If ``None``,
-            caching will not occur.
-        pass_kwargs (bool): If ``True``, keyword arguments passed to the
-            wrapped function will be passed directly to ``fn``. If ``False``,
-            they will be ignored.
-        return_tuple (bool): If ``True``, the output of ``fn`` is returned
-            as a tuple ``(fn_ouput, [])``, to match the output of execution functions
-            that also return gradients.
-
-    Returns:
-        function: a wrapped version of the execution function ``fn`` with caching
-        support
+        This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
     """
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "Entry with args=(fn=%s, cache=%s, pass_kwargs=%s, return_tuple=%s, expand_fn=%s) called by=%s",
-            (
-                fn
-                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(fn))
-                else "\n" + inspect.getsource(fn)
-            ),
-            cache,
-            pass_kwargs,
-            return_tuple,
-            (
-                expand_fn
-                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
-                else "\n" + inspect.getsource(expand_fn) + "\n"
-            ),
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+
+    def cache_hit_postprocessing(_results: Tuple[Tuple]) -> Tuple:
+        result = cache[tape.hash]
+        if result is not None:
+            if tape.shots and getattr(cache, "_persistent_cache", True):
+                warnings.warn(_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS, UserWarning)
+            return result
+
+        raise RuntimeError(
+            "Result for tape is missing from the execution cache. "
+            "This is likely the result of a race condition."
         )
 
-    if expand_fn is not None:
-        original_fn = fn
+    if tape.hash in cache:
+        return [], cache_hit_postprocessing
 
-        def fn(tapes: Sequence[QuantumTape], **kwargs):  # pylint: disable=function-redefined
-            tapes = [expand_fn(tape) for tape in tapes]
-            return original_fn(tapes, **kwargs)
+    def cache_miss_postprocessing(results: Tuple[Tuple]) -> Tuple:
+        result = results[0]
+        cache[tape.hash] = result
+        return result
 
-    @wraps(fn)
-    def wrapper(tapes: Sequence[QuantumTape], **kwargs):
-        if not pass_kwargs:
-            kwargs = {}
+    # Adding a ``None`` entry to the cache indicates that a result will eventually be available for
+    # the tape. This assumes that post-processing functions are called in the same order in which
+    # the transforms are invoked. Otherwise, ``cache_hit_postprocessing()`` may be called before the
+    # result of the corresponding tape is placed in the cache by ``cache_miss_postprocessing()``.
+    cache[tape.hash] = None
+    return [tape], cache_miss_postprocessing
 
-        if cache is None or (isinstance(cache, bool) and not cache):
-            # No caching. Simply execute the execution function
-            # and return the results.
 
-            # must convert to list as new device interface returns tuples
-            res = list(fn(tapes, **kwargs))
-            return (res, []) if return_tuple else res
+def _apply_cache_transform(fn: Callable, cache: Optional[MutableMapping]) -> Callable:
+    """Wraps the given execution function with ``_cache_transform()`` using the provided cache.
 
-        execution_tapes = {}
-        cached_results = {}
-        hashes = {}
-        repeated = {}
+    Args:
+        fn (Callable): The execution function to be augmented with caching. This function should
+            have the signature ``fn(tapes, **kwargs)`` and return ``list[tensor_like]`` with the
+            same length as the input ``tapes``.
+        cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
+    """
+    if cache is None:
+        return fn
 
-        for i, tape in enumerate(tapes):
-            h = tape.hash
+    def execution_function_with_caching(tapes):
+        tapes, post_processing_fn = _cache_transform(tapes, cache=cache)
+        return post_processing_fn(fn(tapes))
 
-            if h in hashes.values():
-                # Tape already exists within ``tapes``. Determine the
-                # index of the first occurrence of the tape, store this,
-                # and continue to the next iteration.
-                idx = list(hashes.keys())[list(hashes.values()).index(h)]
-                repeated[i] = idx
-                continue
-
-            hashes[i] = h
-
-            if hashes[i] in cache:
-                # Tape exists within the cache, store the cached result
-                cached_results[i] = cache[hashes[i]]
-                if tape.shots and getattr(cache, "_persistent_cache", True):
-                    warnings.warn(
-                        "Cached execution with finite shots detected!\n"
-                        "Note that samples as well as all noisy quantities computed via sampling "
-                        "will be identical across executions. This situation arises where tapes "
-                        "are executed with identical operations, measurements, and parameters.\n"
-                        "To avoid this behavior, provide 'cache=False' to the QNode or execution "
-                        "function.",
-                        UserWarning,
-                    )
-            else:
-                # Tape does not exist within the cache, store the tape
-                # for execution via the execution function.
-                execution_tapes[i] = tape
-
-        # if there are no execution tapes, simply return!
-        if not execution_tapes:
-            if not repeated:
-                res = list(cached_results.values())
-                return (res, []) if return_tuple else res
-
-        else:
-            # execute all unique tapes that do not exist in the cache
-            # convert to list as new device interface returns a tuple
-            res = list(fn(tuple(execution_tapes.values()), **kwargs))
-
-        final_res = []
-
-        for i, tape in enumerate(tapes):
-            if i in cached_results:
-                # insert cached results into the results vector
-                final_res.append(cached_results[i])
-
-            elif i in repeated:
-                # insert repeated results into the results vector
-                final_res.append(final_res[repeated[i]])
-
-            else:
-                # insert evaluated results into the results vector
-                r = res.pop(0)
-                final_res.append(r)
-                cache[hashes[i]] = r
-
-        return (final_res, []) if return_tuple else final_res
-
-    wrapper.fn = fn
-    return wrapper
+    return execution_function_with_caching
 
 
 def execute(
@@ -440,7 +368,7 @@ def execute(
     config=None,
     grad_on_execution="best",
     gradient_kwargs=None,
-    cache: Union[bool, dict, Cache] = True,
+    cache: Union[None, bool, dict, Cache] = True,
     cachesize=10000,
     max_diff=1,
     override_shots: int = False,
@@ -471,7 +399,7 @@ def execute(
             pass. The 'best' option chooses automatically between the two options and is default.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
-        cache (bool, dict, Cache): Whether to cache evaluations. This can result in
+        cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
         cachesize (int): the size of the cache
         max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
@@ -607,7 +535,7 @@ def execute(
     if (
         device_vjp
         and isinstance(device, qml.Device)
-        and "lightning" not in getattr(device, "short_name", "")
+        and "lightning" not in getattr(device, "short_name", "").lower()
     ):
         raise qml.QuantumFunctionError(
             "device provided jacobian products are not compatible with the old device interface."
@@ -624,10 +552,14 @@ def execute(
         else:
             transform_program = qml.transforms.core.TransformProgram()
 
-    if isinstance(cache, bool) and cache:
-        # cache=True: create a LRUCache object
+    # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
+    if cache is True:
         cache = LRUCache(maxsize=cachesize)
         setattr(cache, "_persistent_cache", False)
+
+    # Ensure that ``cache`` is not a Boolean to simplify downstream code.
+    elif cache is False:
+        cache = None
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
@@ -688,7 +620,7 @@ def execute(
 
     if (
         device_vjp
-        and "lightning" in getattr(device, "short_name", "")
+        and getattr(device, "short_name", "") in ("lightning.gpu", "lightning.kokkos")
         and interface in jpc_interfaces
     ):
         if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
@@ -797,12 +729,7 @@ def execute(
 
             # replace the backward gradient computation
             gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-            cached_gradient_fn = qml.workflow.cache_execute(
-                gradient_fn_with_shots,
-                cache,
-                pass_kwargs=True,
-                return_tuple=False,
-            )
+            cached_gradient_fn = _apply_cache_transform(fn=gradient_fn_with_shots, cache=cache)
 
             def device_gradient_fn(inner_tapes, **gradient_kwargs):
                 numpy_tapes = tuple(

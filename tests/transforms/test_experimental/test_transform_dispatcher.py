@@ -486,7 +486,10 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         # Create a simple device and tape
         tmp_dev = qml.device("default.qubit", wires=3)
-        H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+
+        H = qml.Hamiltonian(
+            [0.5, 1.0, 1.0], [qml.PauliZ(2), qml.PauliY(2) @ qml.PauliZ(1), qml.PauliZ(1)]
+        )
         measur = [qml.expval(H)]
         ops = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
         tape = qml.tape.QuantumTape(ops, measur)

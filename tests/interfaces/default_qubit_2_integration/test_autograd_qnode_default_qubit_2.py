@@ -50,6 +50,10 @@ interface_qubit_device_and_diff_method = [
     ["autograd", DefaultQubit(), "adjoint", False, True],
     ["autograd", DefaultQubit(), "spsa", False, False],
     ["autograd", DefaultQubit(), "hadamard", False, False],
+    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, True],
+    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
     ["auto", DefaultQubit(), "finite-diff", False, False],
     ["auto", DefaultQubit(), "parameter-shift", False, False],
     ["auto", DefaultQubit(), "backprop", True, False],
@@ -57,7 +61,8 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "adjoint", False, False],
     ["auto", DefaultQubit(), "spsa", False, False],
     ["auto", DefaultQubit(), "hadamard", False, False],
-    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -94,9 +99,9 @@ class TestQNode:
 
         assert circuit.qtape.interface is None
 
-        # without the interface, the QNode simply returns a scalar array
-        assert isinstance(res, np.ndarray)
-        assert res.shape == tuple()  # pylint: disable=comparison-with-callable
+        # without the interface, the QNode simply returns a scalar array or float
+        assert isinstance(res, (np.ndarray, float))
+        assert qml.math.shape(res) == tuple()  # pylint: disable=comparison-with-callable
 
     def test_execution_with_interface(
         self, interface, dev, diff_method, grad_on_execution, device_vjp
@@ -563,7 +568,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
-        if "lightning" in getattr(dev, "short_name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
 
         kwargs = dict(
@@ -601,7 +606,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
-        if "lightning" in getattr(dev, "short_name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
@@ -667,7 +672,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if "lightning" in getattr(dev, "short_name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
 
         kwargs = dict(
@@ -719,7 +724,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
-        if "lightning" in getattr(dev, "short_name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
@@ -1318,6 +1323,9 @@ class TestQubitIntegration:
 
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("Lightning does not support state adjoint diff.")
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)

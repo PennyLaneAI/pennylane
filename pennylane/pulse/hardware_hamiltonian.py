@@ -21,7 +21,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import Operator
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
@@ -223,8 +222,8 @@ def drive(amplitude, phase, wires):
         amplitude_and_phase(qml.math.sin, amplitude, phase),
     ]
 
-    drive_x_term = 0.5 * sum(qml.X(wire) for wire in wires)
-    drive_y_term = -0.5 * sum(qml.Y(wire) for wire in wires)
+    drive_x_term = qml.Hamiltonian([0.5] * len(wires), [qml.X(wire) for wire in wires])
+    drive_y_term = qml.Hamiltonian([-0.5] * len(wires), [qml.Y(wire) for wire in wires])
 
     observables = [drive_x_term, drive_y_term]
 
@@ -353,7 +352,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         settings = self.settings
         pulses = self.pulses
 
-        if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
+        if isinstance(
+            other, (qml.ops.Hamiltonian, qml.ops.LinearCombination, ParametrizedHamiltonian)
+        ):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return HardwareHamiltonian(

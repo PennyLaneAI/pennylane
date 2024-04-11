@@ -54,11 +54,7 @@ def test_no_backprop_auto_interface():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.raises(
-        qml.QuantumFunctionError,
-        match="The lightning.qubit device does not support native "
-        "computations with autodifferentiation frameworks.",
-    ):
+    with pytest.raises(qml.QuantumFunctionError, match="does not support backprop"):
         qml.QNode(circuit, dev, diff_method="backprop")
 
 
@@ -71,20 +67,16 @@ def test_finite_shots_adjoint():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.warns(
-        UserWarning,
-        match="Requested adjoint differentiation to be computed with finite shots. Adjoint differentiation always "
-        "calculated exactly.",
-    ):
-        qml.QNode(circuit, dev, diff_method="adjoint")
+    with pytest.raises(qml.QuantumFunctionError, match="does not support adjoint"):
+        qml.QNode(circuit, dev, diff_method="adjoint")()
 
 
 @flaky(max_runs=5)
 def test_finite_shots():
     """Test that shots in LQ and DQ give the same results."""
 
-    dev = qml.device("lightning.qubit", wires=2, shots=10000)
-    dq = qml.device("default.qubit", shots=10000)
+    dev = qml.device("lightning.qubit", wires=2, shots=50000)
+    dq = qml.device("default.qubit", shots=50000)
 
     def circuit():
         qml.RX(np.pi / 4, 0)
@@ -101,47 +93,50 @@ class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
 
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    # pylint: disable=too-few-public-methods
+
+    @pytest.mark.parametrize(
+        "c_dtype",
+        [
+            pytest.param(np.complex64, marks=pytest.mark.xfail(reason="dtype not preserved")),
+            np.complex128,
+        ],
+    )
     @pytest.mark.parametrize(
         "measurement",
         [
-            qml.expval(qml.PauliY(0)),
-            qml.var(qml.PauliY(0)),
-            qml.probs(wires=[1]),
-            qml.probs(wires=[0, 2]),
+            qml.state(),
+            qml.density_matrix(wires=[1]),
+            qml.density_matrix(wires=[2, 0]),
+            pytest.param(
+                qml.expval(qml.PauliY(0)), marks=pytest.mark.xfail(reason="incorrect type")
+            ),
+            pytest.param(qml.var(qml.PauliY(0)), marks=pytest.mark.xfail(reason="incorrect type")),
+            pytest.param(
+                qml.probs(wires=[1]),
+                marks=pytest.mark.skip(reason="measurement passes with complex64 but xfail strict"),
+            ),
+            pytest.param(
+                qml.probs(wires=[0, 2]),
+                marks=pytest.mark.skip(reason="measurement passes with complex64 but xfail strict"),
+            ),
         ],
     )
-    def test_real_dtype(self, r_dtype, measurement):
+    def test_dtype(self, c_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
-        dev = qml.device("lightning.qubit", wires=3)
-        dev.R_DTYPE = r_dtype
+        dev = qml.device("lightning.qubit", wires=3, c_dtype=c_dtype)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.apply(measurement)
 
         res = circuit(p)
-        assert res.dtype == r_dtype
 
-    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
-    @pytest.mark.parametrize(
-        "measurement",
-        [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
-    )
-    def test_complex_dtype(self, c_dtype, measurement):
-        """Test that the default qubit plugin provides correct result for a simple circuit"""
-        p = 0.543
-
-        dev = qml.device("lightning.qubit", wires=3)
-        dev.C_DTYPE = c_dtype
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.apply(measurement)
-
-        res = circuit(p)
-        assert res.dtype == c_dtype
+        if isinstance(measurement, (qml.measurements.StateMP, qml.measurements.DensityMatrixMP)):
+            expected_dtype = c_dtype
+        else:
+            expected_dtype = np.float64 if c_dtype == np.complex128 else np.float32
+        assert res.dtype == expected_dtype

@@ -28,7 +28,6 @@ from pennylane.wires import Wires
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
 
-X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
 no_mat_ops = (
     qml.Barrier,
@@ -299,7 +298,6 @@ class TestInitialization:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
-    qml.operation.enable_new_opmath()
     SUM_REPR = (
         (qml.sum(X(0), Y(1), Z(2)), "X(0) + Y(1) + Z(2)"),
         (X(0) + X(1) + X(2), "X(0) + X(1) + X(2)"),
@@ -314,14 +312,12 @@ class TestInitialization:
             "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * ((X(0) @ Y(1)) @ Z(1))\n)",
         ),
     )
-    qml.operation.disable_new_opmath()
 
     @pytest.mark.parametrize("op, repr_true", SUM_REPR)
     def test_repr(self, op, repr_true):
         """Test the string representation of Sum instances"""
         assert repr(op) == repr_true
 
-    qml.operation.enable_new_opmath()
     SUM_REPR_EVAL = (
         X(0) + Y(1) + Z(2),  # single line output
         0.5 * X(0) + 3.5 * Y(1) + 10 * Z(2),  # single line output
@@ -331,14 +327,11 @@ class TestInitialization:
         + 1000000000 * Z(2),  # multiline output
         # qml.sum(*[0.5 * X(i) for i in range(10)]) # multiline output needs fixing of https://github.com/PennyLaneAI/pennylane/issues/5162 before working
     )
-    qml.operation.disable_new_opmath()
 
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        qml.operation.enable_new_opmath()
         assert qml.equal(eval(repr(op)), op)
-        qml.operation.disable_new_opmath()
 
 
 class TestMatrix:
@@ -845,6 +838,25 @@ class TestProperties:
 
         assert old_coeffs == new_coeffs
         assert old_ops == new_ops
+
+    def test_grouping_indices_setter(self):
+        """Test that grouping indices can be set"""
+        H = qml.sum(*[qml.X("a"), qml.X("b"), qml.Y("b")])
+
+        H.grouping_indices = [[0, 1], [2]]
+
+        assert isinstance(H.grouping_indices, tuple)
+        assert H.grouping_indices == ((0, 1), (2,))
+
+    def test_grouping_indices_setter_error(self):
+        """Test that setting incompatible indices raises an error"""
+        H = qml.sum(*[qml.X("a"), qml.X("b"), qml.Y("b")])
+
+        with pytest.raises(
+            ValueError,
+            match="The grouped index value needs to be a tuple of tuples of integers between 0",
+        ):
+            H.grouping_indices = [[0, 1, 3], [2]]
 
 
 class TestSimplify:
