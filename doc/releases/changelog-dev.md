@@ -334,6 +334,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Operators applied to all wires are now drawn correctly in a circuit with mid-circuit measurements.
+  [(#5501)](https://github.com/PennyLaneAI/pennylane/pull/5501)
 
 * Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
   [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
