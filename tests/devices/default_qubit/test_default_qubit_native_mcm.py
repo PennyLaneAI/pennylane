@@ -57,7 +57,7 @@ def validate_counts(shots, results1, results2, batch_size=None):
     for key1, val1 in results1.items():
         val2 = results2[key1]
         if abs(val1 + val2) > 100:
-            assert np.allclose(val1, val2, rtol=20, atol=0.2)
+            assert np.allclose(val1, val2, atol=20, rtol=0.2)
 
 
 def validate_samples(shots, results1, results2, batch_size=None):
@@ -86,11 +86,11 @@ def validate_samples(shots, results1, results2, batch_size=None):
         return
 
     sh1, sh2 = results1.shape[0], results2.shape[0]
-    assert np.allclose(sh1, sh2, rtol=20, atol=0.2)
+    assert np.allclose(sh1, sh2, atol=20, rtol=0.2)
     assert results1.ndim == results2.ndim
     if results2.ndim > 1:
         assert results1.shape[1] == results2.shape[1]
-    np.allclose(np.sum(results1), np.sum(results2), rtol=20, atol=0.2)
+    np.allclose(np.sum(results1), np.sum(results2), atol=20, rtol=0.2)
 
 
 def validate_expval(shots, results1, results2, batch_size=None):

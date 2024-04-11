@@ -108,10 +108,15 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
         broadcast_fn = None
 
     aux_tapes = [init_auxiliary_tape(t) for t in tapes]
+    # Shape of output_tapes is (batch_size * total_shots,) with broadcasting,
+    # and (total_shots,) otherwise
     output_tapes = [at for at in aux_tapes for _ in range(tape.shots.total_shots)]
 
     def processing_fn(results, has_partitioned_shots=None, batched_results=None):
         if batched_results is None and batch_size is not None:
+            # If broadcasting, recursively process the results for each batch. For each batch
+            # there are tape.shots.total_shots results. The length of the first axis of final_results
+            # will be batch_size.
             results = list(results)
             final_results = []
             for _ in range(batch_size):
@@ -122,6 +127,8 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             return broadcast_fn(final_results)
 
         if has_partitioned_shots is None and tape.shots.has_partitioned_shots:
+            # If using shot vectors, recursively process the results for each shot bin. The length
+            # of the first axis of final_results will be the length of the shot vector.
             results = list(results)
             final_results = []
             for s in tape.shots:
@@ -131,6 +138,8 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 del results[0:s]
             return tuple(final_results)
 
+        # The following code assumes no broadcasting and no shot vectors. The above code should
+        # handle those cases
         all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
         for res in results:
             one_shot_meas, mcm_values_dict = res
@@ -163,9 +172,7 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
         support_mcms = hasattr(qnode.device, "capabilities") and qnode.device.capabilities().get(
             "supports_mid_measure", False
         )
-        support_mcms = support_mcms or isinstance(
-            qnode.device, qml.devices.default_qubit.DefaultQubit
-        )
+        support_mcms = support_mcms or qnode.device.name in ("default.qubit", "lightning.qubit")
         if not support_mcms:
             raise TypeError(
                 f"Device {qnode.device.name} does not support mid-circuit measurements "

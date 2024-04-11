@@ -142,22 +142,23 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             output_tapes.append(new_tape)
 
         def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
-            # The shape of the results should be as follows: results[i][j][k], where i is the shot
-            # vector index, j is the measurement index, and k is the batch index. The shape that
-            # the processing function receives is results[k][i][j].
+            # The shape of the results should be as follows: results[s][m][b], where s is the shot
+            # vector index, m is the measurement index, and b is the batch index. The shape that
+            # the processing function receives is results[b][s][m].
 
             if tape.shots.has_partitioned_shots:
                 if len(tape.measurements) > 1:
                     return tuple(
                         tuple(
                             qml.math.squeeze(
-                                qml.math.stack([results[b][s][i] for b in range(tape.batch_size)])
+                                qml.math.stack([results[b][s][m] for b in range(tape.batch_size)])
                             )
-                            for i in range(len(tape.measurements))
+                            for m in range(len(tape.measurements))
                         )
                         for s in range(tape.shots.num_copies)
                     )
 
+                # Only need to transpose results[b][s] -> results[s][b]
                 return tuple(
                     qml.math.squeeze(
                         qml.math.stack([results[b][s] for b in range(tape.batch_size)])
@@ -166,11 +167,12 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 )
 
             if len(tape.measurements) > 1:
+                # Only need to transpose results[b][m] -> results[m][b]
                 return tuple(
                     qml.math.squeeze(
-                        qml.math.stack([results[b][i] for b in range(tape.batch_size)])
+                        qml.math.stack([results[b][m] for b in range(tape.batch_size)])
                     )
-                    for i in range(len(tape.measurements))
+                    for m in range(len(tape.measurements))
                 )
             return qml.math.squeeze(qml.math.stack(results))
 
