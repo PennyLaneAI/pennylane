@@ -179,13 +179,13 @@ class TestQutritAmplitudeDamping:
 
     def test_gamma_zero(self, tol):
         """Test gamma=0 gives correct Kraus matrices"""
-        op = channel.AmplitudeDamping
+        op = channel.QutritAmplitudeDamping
         assert np.allclose(op(0, wires=0).kraus_matrices()[0], np.eye(2), atol=tol, rtol=0)
         assert np.allclose(op(0, wires=0).kraus_matrices()[1], np.zeros((2, 2)), atol=tol, rtol=0)
 
     def test_gamma_arbitrary(self, tol):
         """Test gamma=0.1 gives correct Kraus matrices"""
-        op = channel.AmplitudeDamping
+        op = channel.QutritAmplitudeDamping
         expected = [
             np.array([[1.0, 0.0], [0.0, 0.9486833]]),
             np.array([[0.0, 0.31622777], [0.0, 0.0]]),
@@ -194,7 +194,7 @@ class TestQutritAmplitudeDamping:
 
     def test_gamma_invalid_parameter(self):
         with pytest.raises(ValueError, match="gamma must be in the interval"):
-            channel.AmplitudeDamping(1.5, wires=0).kraus_matrices()
+            channel.QutritAmplitudeDamping(1.5, wires=0).kraus_matrices()
 
     @staticmethod
     def expected_jac_fn(gamma):
@@ -205,7 +205,7 @@ class TestQutritAmplitudeDamping:
 
     @staticmethod
     def kraus_fn(x):
-        return qml.math.stack(channel.AmplitudeDamping(x, wires=0).kraus_matrices())
+        return qml.math.stack(channel.QutritAmplitudeDamping(x, wires=0).kraus_matrices())
 
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
