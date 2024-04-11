@@ -29,7 +29,7 @@ except ImportError:
     has_jax = False
 
 
-def simulate_jaxpr(jaxpr: "jax.core.ClosedJaxpr", n_wires: int, *args):
+def simulate_plxpr(jaxpr: "jax.core.ClosedJaxpr", n_wires: int, *args):
     """Execute jaxpr using default.qubit utilities."""
     if not has_jax:
         raise ImportError

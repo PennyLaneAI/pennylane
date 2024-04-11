@@ -1061,7 +1061,7 @@ class QNode:
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots
         )
 
-    def _plexpr_call(self, *args, **kwargs) -> qml.typing.Result:
+    def _plxpr_call(self, *args, **kwargs) -> qml.typing.Result:
         # shots = shots.total_shots
         if "shots" in kwargs:
             shots = kwargs.pop("shots")
@@ -1080,12 +1080,12 @@ class QNode:
 
         jaxpr = jax.make_jaxpr(full_workflow)(*args, **kwargs)
         print(jaxpr)
-        return self.device.execute_jaxpr(jaxpr, *args)
+        return self.device.execute_plxpr(jaxpr, *args)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
 
         if not qml.capture.meta_type._USE_DEFAULT_CALL:
-            return self._plexpr_call(*args, **kwargs)
+            return self._plxpr_call(*args, **kwargs)
 
         old_interface = self.interface
         if old_interface == "auto":
