@@ -44,7 +44,7 @@ def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
             r_group = qml.math.stack(r_group)
         if qml.math.shape(r_group) == ():
             r_group = qml.math.reshape(r_group, (1,))
-        if batch_size and len(c_group) > 1:
+        if batch_size and batch_size > 1 and len(c_group) > 1:
             r_group = qml.math.moveaxis(r_group, -1, -2)
 
         if len(c_group) == 1 and len(r_group) != 1:

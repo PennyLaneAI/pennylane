@@ -321,7 +321,7 @@ class TestHamiltonianExpand:
         """Tests that with shot vectors and braodcasting, the output is of the correct shape."""
 
         dev_with_shot_vector = qml.device("default.qubit", shots=(10, 10, 10))
-        H = qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)])
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)])
 
         @qml.transforms.hamiltonian_expand
         @qml.qnode(dev_with_shot_vector)
