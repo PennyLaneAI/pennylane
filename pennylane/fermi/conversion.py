@@ -63,7 +63,7 @@ def jordan_wigner(
 
     **Example**
 
-    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qml.fermi.from_string('0+ 1-')
     >>> jordan_wigner(w)
     (
         -0.25j * (Y(0) @ X(1))
@@ -206,7 +206,7 @@ def parity_transform(
 
     **Example**
 
-    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qml.fermi.from_string('0+ 1-')
     >>> parity_transform(w, n=6)
     (
         -0.25j * Y(0)
@@ -370,7 +370,7 @@ def bravyi_kitaev(
 
     **Example**
 
-    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qml.fermi.from_string('0+ 1-')
     >>> bravyi_kitaev(w, n=6)
     (
     -0.25j * Y(0)
