@@ -18,7 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
-from pennylane.devices.default_qutrit_mixed import DefaultQutritMixed  # , stopping_condition
+from pennylane.devices.default_qutrit_mixed import DefaultQutritMixed, stopping_condition
 
 
 class NoMatOp(qml.operation.Operation):
@@ -135,25 +135,19 @@ class TestPreprocessing:
         assert qml.equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
         assert tape.measurements[1] is exp_z
 
-    # @pytest.mark.parametrize( TODO
-    #     "op, expected",
-    #     [
-    #         (qml.PauliX(0), True),
-    #         (qml.CRX(0.1, wires=[0, 1]), True),
-    #         (qml.Snapshot(), True),
-    #         (qml.Barrier(), False),
-    #         (qml.QFT(wires=range(5)), True),
-    #         (qml.QFT(wires=range(10)), False),
-    #         (qml.GroverOperator(wires=range(10)), True),
-    #         (qml.GroverOperator(wires=range(14)), False),
-    #         (qml.pow(qml.RX(1.1, 0), 3), True),
-    #         (qml.pow(qml.RX(qml.numpy.array(1.1), 0), 3), False),
-    #     ],
-    # )
-    # def test_accepted_operator(self, op, expected):
-    #     """Test that _accepted_operator works correctly"""
-    #     res = stopping_condition(op)
-    #     assert res == expected
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (qml.TShift(0), True),
+            (qml.GellMann(0, 1), False),
+            (qml.Snapshot(), True),
+            (qml.TRX(1.1, 0), True),
+        ],
+    )
+    def test_accepted_operator(self, op, expected):
+        """Test that _accepted_operator works correctly"""
+        res = stopping_condition(op)
+        assert res == expected
 
 
 class TestPreprocessingIntegration:

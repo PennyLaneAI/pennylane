@@ -43,7 +43,7 @@ Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
-channels = {}
+channels = set()
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
@@ -53,7 +53,8 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    return op.name in DefaultQutrit.operations | channels
+    expected_set = DefaultQutrit.operations | {"Snapshot"} | channels
+    return op.name in expected_set
 
 
 def stopping_condition_shots(op: qml.operation.Operator) -> bool:
