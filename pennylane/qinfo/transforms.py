@@ -805,7 +805,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     fidelity is simply
 
     .. math::
-        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
+        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi| \phi}\right|^2
 
     .. note::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
