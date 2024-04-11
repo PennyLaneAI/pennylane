@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation
 
+
 def _positive_coeffs_hamiltonian(hamiltonian):
     """Transforms the Hamiltonian to ensure that the coefficients are positive
 
@@ -39,9 +40,10 @@ def _positive_coeffs_hamiltonian(hamiltonian):
         if terms[0][i] >= 0:
             new_unitaries.append(terms[1][i])
         else:
-            new_unitaries.append(terms[1][i]@qml.GlobalPhase(np.pi))
+            new_unitaries.append(terms[1][i] @ qml.GlobalPhase(np.pi))
 
     return qml.math.abs(qml.math.array(terms[0])), new_unitaries
+
 
 class Qubitization(Operation):
     r"""Applies the Qubitization operator.
@@ -130,13 +132,19 @@ class Qubitization(Operation):
 
         decomp_ops = []
 
-        decomp_ops.append(qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize = True, pad_with = 0, wires=control))
+        decomp_ops.append(
+            qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+        )
         decomp_ops.append(qml.Select(unitaries, control=control))
-        decomp_ops.append(qml.adjoint(qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize = True, pad_with = 0, wires=control)))
+        decomp_ops.append(
+            qml.adjoint(
+                qml.AmplitudeEmbedding(
+                    qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
+                )
+            )
+        )
 
-        decomp_ops.append(qml.FlipSign(0, wires= control))
-        decomp_ops.append(qml.GlobalPhase(np.pi, wires= control))
+        decomp_ops.append(qml.FlipSign(0, wires=control))
+        decomp_ops.append(qml.GlobalPhase(np.pi, wires=control))
 
         return decomp_ops
-
-
