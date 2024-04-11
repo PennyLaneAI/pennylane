@@ -1,7 +1,7 @@
 .. _new_opmath:
 
-New opmath
-==========
+Updated Operators
+=================
 
 Version ``0.36`` of PennyLane updated the default ``Operator`` subclasses, changing the operator arithmetic.
 An end-user should not notice any (breaking) changes.
@@ -30,7 +30,7 @@ that now create the following ``Operator`` subclass instances.
 
 
 +----------------------------------+----------------------+---------------------------+
-|                                  | Legacy               | New opmath                |
+|                                  | Legacy               | Updated Operators         |
 +==================================+======================+===========================+
 | tensor products                  | ``operation.Tensor`` | ``ops.Prod``              |
 | ``X(0) @ X(1)``                  |                      |                           |
