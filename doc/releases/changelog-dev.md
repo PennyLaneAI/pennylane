@@ -317,6 +317,9 @@
   `qml.operation.disable_new_opmath()` to disable the new operator arithmetic.
   [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
+* `LinearCombination._obs_data` is deprecated. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
+  [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
+
 <h3>Documentation 📝</h3>
 
 * Removed some redundant documentation for the `evolve` function.
