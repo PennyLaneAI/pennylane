@@ -66,7 +66,7 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     0.7701511529340698
     """
     if isinstance(op, MeasurementValue):
-        return VarianceMP(obs=op)
+        return VarianceMP(op)
 
     if isinstance(op, Sequence):
         raise ValueError(
@@ -75,7 +75,7 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
 
     if not qml.math.is_abstract(op) and not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
-    return VarianceMP(obs=op)
+    return VarianceMP(op)
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
