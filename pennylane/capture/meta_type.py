@@ -11,10 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Defines a metaclass for automatic integration of any ``Operator`` with jaxpr program capture.
 
+See ``explanations.md`` for technical explanations of how this works.
+"""
+from typing import Iterable
 from functools import lru_cache
 
-_USE_DEFAULT_CALL = False
+from .switches import plxpr_enabled
 
 has_jax = True
 try:
@@ -25,10 +30,18 @@ except ImportError:
 
 @lru_cache  # constrcut the first time lazily
 def _get_abstract_operator():
+    """Create an AbstractOperator once in a way protected from lack of a jax install."""
     if not has_jax:
         raise ImportError("Jax is required for plxpr.")
 
+    # TODO: investigate
+    # pennylane/capture/meta_type.py:37:4: W0223: Method 'at_least_vspace' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
+    # pennylane/capture/meta_type.py:37:4: W0223: Method 'join' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
+    # pennylane/capture/meta_type.py:37:4: W0223: Method 'update' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
+
     class AbstractOperator(jax.core.AbstractValue):
+        """An operator captured into plxpr."""
+
         def __eq__(self, other):
             return isinstance(other, AbstractOperator)
 
@@ -41,7 +54,16 @@ def _get_abstract_operator():
 
 
 class PLXPRMeta(type):
-    """A meta type"""
+    """A metatype that:
+
+    * automatically registers a jax primitive to ``cls._primitive``
+    * Dispatches class creation to ``cls._primitive.bind`` instead of normal class
+    creation when the primitive is defined and plxpr capture is enabled.
+
+    See ``pennylane/capture/explanations.md`` for more detailed information on how this technically
+    works.
+
+    """
 
     def __init__(cls, *_, **__):
 
@@ -57,7 +79,12 @@ class PLXPRMeta(type):
 
         @cls._primitive.def_impl
         def default_call(*args, **kwargs):
-            return type.__call__(cls, *args, **kwargs)
+            if "n_wires" not in kwargs:
+                return type.__call__(cls, *args, **kwargs)
+            n_wires = kwargs.pop("n_wires")
+            wires = args[-n_wires:]
+            args = args[:-n_wires]
+            return type.__call__(cls, *args, wires=wires, **kwargs)
 
         # logic here will be extended when we make more things use this meta class
         abstract_type = _get_abstract_operator()
@@ -71,12 +98,18 @@ class PLXPRMeta(type):
         # default behavior uses __new__ then __init__
         # when tracing is enabled, we want to
 
-        if _USE_DEFAULT_CALL or cls._primitive is None:
+        if not plxpr_enabled() or cls._primitive is None:
             return type.__call__(cls, *args, **kwargs)
         # use bind to construct the class if we want class construction to add it to the jaxpr
-        if "wires" in kwargs:
-            wires = kwargs.pop("wires")
-            args += tuple(wires)
-        if args and isinstance(args[-1], (list, tuple)):
-            args = args[:-1] + tuple(args[-1])
+        if getattr(cls, "_meta_coerce_wires", False):
+            if "wires" in kwargs:
+                wires = kwargs.pop("wires")
+                wires = tuple(wires) if isinstance(wires, Iterable) else (wires,)
+                kwargs["n_wires"] = len(wires)
+                args += wires
+            elif args and isinstance(args[-1], (list, tuple)):
+                kwargs["n_wires"] = len(args[-1])
+                args = args[:-1] + tuple(args[-1])
+            else:
+                kwargs["n_wires"] = 1
         return cls._primitive.bind(*args, **kwargs)

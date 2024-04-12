@@ -46,6 +46,7 @@ class SymbolicOp(Operator):
     """
 
     _name = "Symbolic"
+    _meta_coerce_wires = False
 
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):

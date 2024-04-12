@@ -41,6 +41,8 @@ class CompositeOp(Operator):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
+    _meta_coerce_wires = False
+
     def _flatten(self):
         return tuple(self.operands), tuple()
 
