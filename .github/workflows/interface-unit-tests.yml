@@ -325,7 +325,7 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: true
-      install_pennylane_lightning_master: true
+      install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
       requirements_file: ${{ strategy.job-index == 0 && 'all_interfaces.txt' || '' }}
@@ -358,7 +358,7 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: false
-      install_pennylane_lightning_master: true
+      install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_pip_packages: pyzx pennylane-catalyst matplotlib stim
@@ -392,7 +392,7 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: true
-      install_pennylane_lightning_master: true
+      install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
       additional_pip_packages: kahypar==1.1.7 opt_einsum
@@ -425,7 +425,7 @@ jobs:
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
-      install_pennylane_lightning_master: true
+      install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
       additional_pip_packages: openfermionpyscf basis-set-exchange
@@ -460,7 +460,7 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: true
-      install_pennylane_lightning_master: true
+      install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
@@ -492,7 +492,7 @@ jobs:
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
-      install_pennylane_lightning_master: true
+      install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: data
       additional_pip_packages: h5py
@@ -540,7 +540,7 @@ jobs:
       install_jax: ${{ contains(matrix.config.device, 'jax') }}
       install_tensorflow: ${{ contains(matrix.config.device, 'tf') }}
       install_pytorch: ${{ contains(matrix.config.device, 'torch') }}
-      install_pennylane_lightning_master: true
+      install_pennylane_lightning_master: false
       pytest_test_directory: pennylane/devices/tests
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
