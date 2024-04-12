@@ -2054,9 +2054,7 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("measurement_func", [qml.expval, qml.var])
-    def test_differentiate_jitted_qnode(
-        self, measurement_func
-    ):
+    def test_differentiate_jitted_qnode(self, measurement_func):
         """Test that a jitted qnode can be correctly differentiated"""
         import jax
 
