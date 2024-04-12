@@ -329,6 +329,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Adds a page explaining the shapes and nesting of result objects.
+  [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
+
 * Removed some redundant documentation for the `evolve` function.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
