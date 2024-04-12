@@ -311,7 +311,7 @@ class TestHamiltonianExpand:
         """Tests that the processing function works with shot vectors
         and grouping with different number of coefficients in each group"""
 
-        dev_with_shot_vector = qml.device("default.qubit", shots=[(5000, 4)])
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
         H.compute_grouping()
 
         @qml.transforms.hamiltonian_expand
@@ -340,7 +340,7 @@ class TestHamiltonianExpand:
         """Tests that the processing function works with shot vectors, parameter broadcasting,
         and grouping with different number of coefficients in each group"""
 
-        dev_with_shot_vector = qml.device("default.qubit", shots=[(5000, 4)])
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
         H.compute_grouping()
 
         @qml.transforms.hamiltonian_expand
