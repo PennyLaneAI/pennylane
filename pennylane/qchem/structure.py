@@ -283,7 +283,7 @@ def excitations(electrons, orbitals, delta_sz=0):
 
 
 def _beta_matrix(orbitals):
-    r"""Generate the beta matrix for conversion from occupation number basis to the Bravyi-Kitaev basis.
+    r"""Generate the conversion matrix to transform the occupation number basis to the Bravyi-Kitaev basis.
 
     Args:
         orbitals (int): Number of *spin* orbitals. If an active space is defined,
