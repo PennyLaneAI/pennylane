@@ -352,6 +352,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+  [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
+
 * The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
   [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
 
