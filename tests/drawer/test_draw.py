@@ -284,6 +284,8 @@ class TestLayering:
 class TestMidCircuitMeasurements:
     """Tests for drawing mid-circuit measurements and classical conditions."""
 
+    # pylint: disable=too-many-public-methods
+
     @pytest.mark.parametrize("device_name", ["default.qubit"])
     def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):
         """Test that a circuit containing mid-circuit measurements is transformed by the drawer
@@ -326,6 +328,51 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(func)()
         expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
+
+        assert drawing == expected_drawing
+
+    @pytest.mark.parametrize(
+        "op", [qml.GlobalPhase(0.1), qml.Identity(), qml.Snapshot(), qml.Barrier()]
+    )
+    @pytest.mark.parametrize("decimals", [None, 2])
+    def test_draw_all_wire_ops(self, op, decimals):
+        """Test that operators acting on all wires are drawn correctly"""
+
+        def func():
+            qml.X(0)
+            qml.X(1)
+            m = qml.measure(0)
+            qml.cond(m, qml.X)(0)
+            qml.apply(op)
+            return qml.expval(qml.Z(0))
+
+        # Stripping to remove trailing white-space because length of white-space at the
+        # end of the drawing depends on the length of each individual line
+        drawing = qml.draw(func, decimals=decimals)().strip()
+        label = op.label(decimals=decimals).replace("\n", "")
+        expected_drawing = (
+            f"0: ──X──┤↗├──X──{label}─┤  <Z>\n1: ──X───║───║──{label}─┤     \n         ╚═══╝"
+        )
+
+        assert drawing == expected_drawing
+
+    @pytest.mark.parametrize(
+        "mp, label", [(qml.sample(), "Sample"), (qml.probs(), "Probs"), (qml.counts(), "Counts")]
+    )
+    def test_draw_all_wire_measurements(self, mp, label):
+        """Test that operators acting on all wires are drawn correctly"""
+
+        def func():
+            qml.X(0)
+            qml.X(1)
+            m = qml.measure(0)
+            qml.cond(m, qml.X)(0)
+            return qml.apply(mp)
+
+        # Stripping to remove trailing white-space because length of white-space at the
+        # end of the drawing depends on the length of each individual line
+        drawing = qml.draw(func)().strip()
+        expected_drawing = f"0: ──X──┤↗├──X─┤  {label}\n1: ──X───║───║─┤  {label}\n         ╚═══╝"
 
         assert drawing == expected_drawing
 
