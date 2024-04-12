@@ -78,7 +78,7 @@ def test_legacy_new_opmath():
         # TODO: Waiting to fix this bug: https://github.com/PennyLaneAI/pennylane/issues/5498
         # (qml.dot(np.array([1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]), [qml.PauliX(0), qml.PauliY(0)@qml.GlobalPhase(np.pi), qml.PauliZ(0)]),
         (
-            qml.dot(np.array([1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
+            qml.ops.LinearCombination(np.array([1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
             [
                 qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1]),
                 qml.Select(
@@ -102,9 +102,106 @@ def test_decomposition(hamiltonian, expected_decomposition):
     decomposition = qml.Qubitization.compute_decomposition(hamiltonian=hamiltonian, control=[1])
 
     for i in range(len(decomposition)):
+        print(decomposition[i], "vs", expected_decomposition[i])
         assert qml.equal(decomposition[i], expected_decomposition[i])
 
 
 # def test_lightning_qubit(): #TODO: qml.AmplitudeEmbedding in the middle of the circuit is not supported in lightning
 
-# def test_gradient_integration(): #TODO: Issue extracting coeffs from Hamiltonian
+class TestDifferentiability:
+    """Test that Qubitization is differentiable"""
+
+    @staticmethod
+    def circuit(coeffs):
+        H = qml.ops.LinearCombination(coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)])
+        qml.Qubitization(H, control=(3, 4))
+        return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
+
+    # TODO:
+    # calculated numerically with finite diff method (h = 1e-5)
+    exp_grad = np.array([0.41177729, - 0.21262357,  1.64370435, - 0.74256522])
+
+    params = np.array([0.4, 0.5, 0.1, 0.3])
+
+    @pytest.mark.autograd
+    def test_qnode_autograd(self):
+        """Test that the QNode executes with Autograd."""
+
+        dev = qml.device("default.qubit")
+        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+
+        params = qml.numpy.array(self.params, requires_grad=True)
+        res = qml.grad(qnode)(params)
+        assert qml.math.shape(res) == (4,)
+        assert np.allclose(res, self.exp_grad, atol=1e-5)
+
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [False, True]) #TODO: True jit
+    @pytest.mark.parametrize("shots", [None, 50000])
+    def test_qnode_jax(self, shots, use_jit):
+        """"Test that the QNode executes and is differentiable with JAX. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", shots=shots, seed=10)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        if use_jit:
+            qnode = jax.jit(qnode)
+
+        params = jax.numpy.array(self.params)
+
+        jac_fn = jax.jacobian(qnode)
+        if use_jit:
+            jac_fn = jax.jit(jac_fn)
+
+        jac = jac_fn(params)
+        assert jac.shape == (4,)
+        assert np.allclose(jac, self.exp_grad, atol=0.01)
+
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("shots", [None, 50000])
+    def test_qnode_torch(self, shots):
+        """"Test that the QNode executes and is differentiable with Torch. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import torch
+
+        dev = qml.device("default.qubit", shots=shots, seed=10)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+
+        params = torch.tensor(self.params, requires_grad=True)
+        jac = torch.autograd.functional.jacobian(qnode, params)
+        assert qml.math.shape(jac) == (4,)
+        assert qml.math.allclose(jac, self.exp_grad, atol=0.01)
+
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("shots", [None, 50000])
+    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
+    def test_qnode_tf(self, shots):
+        """"Test that the QNode executes and is differentiable with TensorFlow. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", shots=shots, seed=10)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+
+        params = tf.Variable(self.params)
+        with tf.GradientTape() as tape:
+            res = qnode(params)
+
+        jac = tape.gradient(res, params)
+        assert qml.math.shape(jac) == (4,)
+        assert qml.math.allclose(res, self.exp_grad, atol=0.001)
+
+
+
+
+
+

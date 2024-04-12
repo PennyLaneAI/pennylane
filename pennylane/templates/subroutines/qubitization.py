@@ -22,6 +22,7 @@ from pennylane import numpy as np
 from pennylane.operation import Operation
 
 
+
 def _positive_coeffs_hamiltonian(hamiltonian):
     """Transforms the Hamiltonian to ensure that the coefficients are positive
 
@@ -42,7 +43,7 @@ def _positive_coeffs_hamiltonian(hamiltonian):
         else:
             new_unitaries.append(terms[1][i] @ qml.GlobalPhase(np.pi))
 
-    return qml.math.abs(qml.math.array(terms[0])), new_unitaries
+    return qml.math.abs(hamiltonian.terms()[0]), new_unitaries
 
 
 class Qubitization(Operation):
@@ -135,6 +136,7 @@ class Qubitization(Operation):
         decomp_ops.append(
             qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
         )
+
         decomp_ops.append(qml.Select(unitaries, control=control))
         decomp_ops.append(
             qml.adjoint(
