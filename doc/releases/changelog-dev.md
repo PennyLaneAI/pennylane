@@ -339,6 +339,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
+  [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
+
 * Operators applied to all wires are now drawn correctly in a circuit with mid-circuit measurements.
   [(#5501)](https://github.com/PennyLaneAI/pennylane/pull/5501)
 
