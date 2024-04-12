@@ -64,9 +64,6 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
             "qml.var does not support measuring sequences of measurements or observables"
         )
 
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
-
     return VarianceMP(obs=op)
 
 

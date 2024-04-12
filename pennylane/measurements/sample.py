@@ -173,9 +173,6 @@ class SampleMP(SampleMeasurement):
             super().__init__(obs=obs)
             return
 
-        if obs is not None and not obs.is_hermitian:  # None type is also allowed for op
-            warnings.warn(f"{obs.name} might not be hermitian.")
-
         if wires is not None:
             if obs is not None:
                 raise ValueError(
