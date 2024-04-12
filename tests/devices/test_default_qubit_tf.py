@@ -933,7 +933,7 @@ class TestApplyBroadcasted:
         """Tests that the correct result is returned when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with TF."""
         dev = qml.device("default.qubit.tf", wires=2)
-        ham = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+        ham = qml.ops.LinearCombination(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit():

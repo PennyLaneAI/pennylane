@@ -920,7 +920,7 @@ class TestApplyBroadcasted:
         broadcasting and shots=None directly via its sparse representation with torch."""
 
         dev = device(wires=2, torch_device=torch_device)
-        ham = qml.Hamiltonian(
+        ham = qml.ops.LinearCombination(
             torch.tensor([0.1, 0.2], requires_grad=True), [qml.PauliX(0), qml.PauliZ(1)]
         )
 
