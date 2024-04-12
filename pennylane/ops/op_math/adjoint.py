@@ -159,6 +159,9 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
+    if not qml.capture.meta_type._USE_DEFAULT_CALL and not isinstance(fn, Operator):
+        return qml.capture.adjoint_qfunc(fn)
+
     if active_jit := compiler.active_compiler():
         if lazy is False:
             raise CompileError("Setting lazy=False is not supported with qjit.")

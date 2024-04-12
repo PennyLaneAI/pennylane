@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tools for enabling the capture of pennylane objects into JaxPR.
-"""
-from .meta_type import JaxPRMeta, enable_plexpr, disable_plexpr
-from .measure import measure
-from .nested_jaxpr import adjoint_qfunc
+
+import jax
+
+
+nested_adjoint_prim = jax.core.Primitive("AdjointJaxpr")
+nested_adjoint_prim.multiple_results=True
+
+@nested_adjoint_prim.def_abstract_eval
+def _(inner_jaxpr):
+    return inner_jaxpr.out_avals
+
+def adjoint_qfunc(qfunc):
+    def wrapper(*args, **kwargs):
+        jaxpr = jax.make_jaxpr(qfunc)(*args, **kwargs)
+        return nested_adjoint_prim.bind(inner_jaxpr=jaxpr)
+    return wrapper
