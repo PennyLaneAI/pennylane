@@ -159,6 +159,7 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
+
     if active_jit := compiler.active_compiler():
         if lazy is False:
             raise CompileError("Setting lazy=False is not supported with qjit.")
@@ -176,7 +177,11 @@ def adjoint(fn, lazy=True):
             "of operations instead of a function or template."
         )
 
-    @wraps(fn)
+    return adjoint_qfunc(fn)
+
+
+@qml.capture.bind_nested_jaxpr
+def adjoint_qfunc(fn, lazy=True):
     def wrapper(*args, **kwargs):
         qscript = make_qscript(fn)(*args, **kwargs)
         if lazy:

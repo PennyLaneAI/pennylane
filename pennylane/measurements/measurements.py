@@ -146,6 +146,23 @@ class MeasurementProcess(metaclass=JaxPRMeta):
             return cls(eigvals=data[1], **dict(metadata))
         return cls(**dict(metadata))
 
+    @classmethod
+    def _abstract_eval(
+        cls,
+        obs: Optional[
+            Union[
+                Operator,
+                "qml.measurements.MeasurementValue",
+                Sequence["qml.measurements.MeasurementValue"],
+            ]
+        ] = None,
+        wires: Optional[Wires] = None,
+        eigvals: Optional[TensorLike] = None,
+        shots: Optional[Shots] = None,
+        id: Optional[str] = None,
+    ):
+        raise NotImplementedError
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,

@@ -47,7 +47,7 @@ from .preprocess import (
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.simulate import simulate, get_final_state, measure_final_state
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
-from .qubit.simulate_jaxpr import simulate_jaxpr
+from .qubit.simulate_plxpr import simulate_plxpr
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -839,7 +839,7 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
-    def execute_jaxpr(self, jaxpr, *args):
+    def execute_plxpr(self, jaxpr, *args):
         """Execute jaxpr using python based simulation utilities.
 
         Note that at this point, the device *must* pre-specify how many available wires it has.
@@ -864,7 +864,7 @@ class DefaultQubit(Device):
                 qml.adjoint(qml.RX(y, wires=0))
                 return qml.expval(qml.Z(0))
 
-            res1 = dev.execute_jaxpr(jaxpr, 0.5)
+            res1 = dev.execute_plxpr(jaxpr, 0.5)
             print("jaxpr execution: ", res1)
             res2 = 2 * circuit(0.5) + 4
             print("qnode execution: ", res2)
@@ -876,9 +876,9 @@ class DefaultQubit(Device):
 
         """
         if self.wires is None:
-            raise qml.DeviceError("execute_jaxpr requires wires to be specified on the device.")
+            raise qml.DeviceError("execute_plxpr requires wires to be specified on the device.")
 
-        return simulate_jaxpr(jaxpr, len(self.wires), *args)
+        return simulate_plxpr(jaxpr, len(self.wires), *args)
 
 
 def _adjoint_jac_wrapper(c, rng=None, prng_key=None, debugger=None):
