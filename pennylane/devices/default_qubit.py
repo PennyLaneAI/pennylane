@@ -557,17 +557,28 @@ class DefaultQubit(Device):
             if execution_config.gradient_method in {"backprop", None}
             else None
         )
+        if self._prng_key is not None:
+            import jax
+
+            # Produce separate keys for each circuit
+            key = self._prng_key
+            keys = []
+            for _ in circuits:
+                key, subkey = jax.random.split(key)
+                keys.append(subkey)
+        else:
+            keys = [None] * len(circuits)
         if max_workers is None:
             return tuple(
                 simulate(
                     c,
                     rng=self._rng,
-                    prng_key=self._prng_key,
+                    prng_key=key,
                     debugger=self._debugger,
                     interface=interface,
                     state_cache=self._state_cache,
                 )
-                for c in circuits
+                for c, key in zip(circuits, keys)
             )
 
         vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
@@ -578,7 +589,7 @@ class DefaultQubit(Device):
                 _wrap_simulate,
                 vanilla_circuits,
                 seeds,
-                [self._prng_key] * len(vanilla_circuits),
+                keys,
             )
             results = tuple(exec_map)
 

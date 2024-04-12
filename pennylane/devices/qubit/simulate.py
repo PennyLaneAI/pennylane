@@ -123,6 +123,8 @@ def get_final_state(
             whether the state has a batch dimension.
 
     """
+    if prng_key is not None:
+        import jax
     circuit = circuit.map_to_standard_wires()
 
     prep = None
@@ -134,6 +136,8 @@ def get_final_state(
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
+        if prng_key is not None:
+            prng_key, subkey = jax.random.split(prng_key)
         state = apply_operation(
             op,
             state,
@@ -297,21 +301,23 @@ def simulate_one_shot_native_mcm(
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
     interface = execution_kwargs.get("interface", None)
-
+    if prng_key is not None:
+        import jax
+        key, subkey = jax.random.split(prng_key)
     mid_measurements = {}
     state, is_state_batched = get_final_state(
         circuit,
         debugger=debugger,
         interface=interface,
-        mid_measurements=mid_measurements,
         rng=rng,
-        prng_key=prng_key,
+        prng_key=key,
+        mid_measurements=mid_measurements,
     )
     return measure_final_state(
         circuit,
         state,
         is_state_batched,
         rng=rng,
-        prng_key=prng_key,
+        prng_key=subkey,
         mid_measurements=mid_measurements,
     )
