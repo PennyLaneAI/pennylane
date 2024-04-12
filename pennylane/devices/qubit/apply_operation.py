@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, too-many-arguments
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
@@ -217,7 +217,12 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 @apply_operation.register
 def apply_conditional(
-    op: Conditional, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+    op: Conditional,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    mid_measurements=None,
+    rng=None,
 ):
     """Applies a conditional operation.
 
@@ -238,13 +243,19 @@ def apply_conditional(
             is_state_batched=is_state_batched,
             debugger=debugger,
             mid_measurements=mid_measurements,
+            rng=rng,
         )
     return state
 
 
 @apply_operation.register
 def apply_mid_measure(
-    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+    op: MidMeasureMP,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    mid_measurements=None,
+    rng=None,
 ):
     """Applies a native mid-circuit measurement.
 
@@ -260,21 +271,29 @@ def apply_mid_measure(
     """
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
-    if not np.allclose(np.linalg.norm(state), 1.0):
-        mid_measurements[op] = -1
-        return np.zeros_like(state)
     wire = op.wires
-    probs = qml.devices.qubit.measure(qml.probs(wire), state)
-    sample = np.random.binomial(1, probs[1])
+    # sample = qml.devices.qubit.sampling.measure_with_samples([qml.sample(wires=wire)], state, Shots(1))
+    # sample = int(sample[0])
+    # probs = qml.devices.qubit.measure(qml.probs(wire), state)
+    axes = list(range(state.ndim))
+    axes.pop(wire.toarray()[0])
+    probs = qml.math.sum(qml.math.abs(state * qml.math.conj(state)), axis=tuple(axes))
+    if rng is None:
+        sample = np.random.binomial(1, probs[1])
+    else:
+        sample = rng.choice([0, 1], 1, p=probs)[0]
     mid_measurements[op] = sample
-    if op.postselect is not None and sample != op.postselect:
-        mid_measurements[op] = -1
-        return np.zeros_like(state)
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
-    state_norm = np.linalg.norm(state)
+    state_norm = qml.math.norm(state)
+    if not qml.math.is_abstract(sample) and op.postselect is not None and sample != op.postselect:
+        state_norm = 0.0
+        mid_measurements[op] = -1
+    if not qml.math.is_abstract(state) and qml.math.allclose(state_norm, 0.0):
+        state_norm = 0.0
+        mid_measurements[op] = -1
     state = state / state_norm
     if op.reset and sample == 1:
         state = apply_operation(

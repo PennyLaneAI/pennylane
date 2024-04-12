@@ -98,7 +98,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None, mid_measurements=None):
+def get_final_state(circuit, debugger=None, interface=None, mid_measurements=None, rng=None):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -132,6 +132,7 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
             is_state_batched=is_state_batched,
             debugger=debugger,
             mid_measurements=mid_measurements,
+            rng=rng,
         )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
@@ -286,7 +287,7 @@ def simulate_one_shot_native_mcm(
     """
     mid_measurements = {}
     state, is_state_batched = get_final_state(
-        circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements
+        circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements, rng=rng
     )
     return measure_final_state(
         circuit,
