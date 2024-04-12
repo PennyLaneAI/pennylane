@@ -213,6 +213,9 @@
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
   [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
 
+* `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
+
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
@@ -342,6 +345,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
+  [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
 
 * Operators applied to all wires are now drawn correctly in a circuit with mid-circuit measurements.
   [(#5501)](https://github.com/PennyLaneAI/pennylane/pull/5501)

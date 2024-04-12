@@ -291,7 +291,7 @@ class TestSpecAndTracker:
 
         algo_errors = tracker.latest["errors"]
         assert len(algo_errors) == 2
-        assert all(error in algo_errors for error in ["MultiplicativeError", "AdditiveError"])
+        assert all(error in algo_errors for error in self.errors_types)
         assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
         assert algo_errors["AdditiveError"].error == 0.73 + 0.12
         assert algo_errors["SpectralNormError"].error == 0.25 + 0.17998560822421455
