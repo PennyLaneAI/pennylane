@@ -71,8 +71,8 @@ def expval(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
 
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
+    # if not op.is_hermitian:
+    #     warnings.warn(f"{op.name} might not be hermitian.")
 
     return ExpectationMP(obs=op)
 
