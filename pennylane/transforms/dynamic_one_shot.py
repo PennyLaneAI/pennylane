@@ -214,7 +214,7 @@ def parse_native_mid_circuit_measurements(
             else np.nan
         )
 
-    interface = "numpy"
+    interface = qml.math.get_deep_interface(circuit.data)
 
     n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
     sca_results = len(aux_circuit.measurements) - n_mcms == 0 and len(aux_circuit.measurements) == 1

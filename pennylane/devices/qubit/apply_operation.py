@@ -236,6 +236,23 @@ def apply_conditional(
     Returns:
         ndarray: output state
     """
+    interface = qml.math.get_deep_interface(op)
+    if interface == "jax":
+        from jax.lax import cond
+
+        return cond(
+            op.meas_val.concretize(mid_measurements),
+            lambda x: apply_operation(
+                op.then_op,
+                x,
+                is_state_batched=is_state_batched,
+                debugger=debugger,
+                mid_measurements=mid_measurements,
+                rng=rng,
+            ),
+            lambda x: x,
+        )
+
     if op.meas_val.concretize(mid_measurements):
         return apply_operation(
             op.then_op,
@@ -272,28 +289,27 @@ def apply_mid_measure(
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
-    # sample = qml.devices.qubit.sampling.measure_with_samples([qml.sample(wires=wire)], state, Shots(1))
-    # sample = int(sample[0])
-    # probs = qml.devices.qubit.measure(qml.probs(wire), state)
-    axes = list(range(state.ndim))
-    axes.pop(wire.toarray()[0])
-    probs = qml.math.sum(qml.math.abs(state * qml.math.conj(state)), axis=tuple(axes))
-    if not qml.math.is_abstract(probs) and not qml.math.allclose(qml.math.sum(probs), 1.0):
-        probs = probs / qml.math.sum(probs)
-    if rng is None:
-        sample = np.random.binomial(1, probs[1])
-    else:
-        sample = rng.choice([0, 1], 1, p=probs)[0]
-    mid_measurements[op] = sample
+
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)
+    slices[axis] = 0
+    prob0 = qml.math.norm(state[tuple(slices)]) ** 2
+    if rng is None:
+        sampling_fun = np.random.choice
+    else:
+        sampling_fun = rng.choice
+    sample = sampling_fun([0, 1], 1, p=[prob0, 1.0 - prob0])[0]
+    mid_measurements[op] = sample
     slices[axis] = int(not sample)
     state[tuple(slices)] = 0.0
     state_norm = qml.math.norm(state)
     if not qml.math.is_abstract(sample) and op.postselect is not None and sample != op.postselect:
-        state_norm = 1.0
+        state_norm = 0.0
         mid_measurements[op] = -1
-    if not qml.math.is_abstract(state) and qml.math.allclose(state_norm, 0.0):
+    if not qml.math.is_abstract(state_norm) and qml.math.allclose(state_norm, 0.0):
+        state = 0.0 * state
+        slices = [slice(0, 1, 1)] * qml.math.ndim(state)
+        state[tuple(slices)] = 1.0
         state_norm = 1.0
         mid_measurements[op] = -1
     state = state / state_norm
