@@ -52,6 +52,17 @@ class TestParityWithHamiltonian:
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
         assert isinstance(H, qml.Hamiltonian)
 
+@pytest.mark.filterwarnings("ignore:Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated")
+def test_mixed_legacy_warning():
+    """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
+    op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
+    op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
+
+    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
+        res = op1.compare(op2)
+    
+    assert res
+
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
