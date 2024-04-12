@@ -66,7 +66,7 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     0.7701511529340698
     """
     if isinstance(op, MeasurementValue):
-        return VarianceMP(op)
+        return VarianceMP(obs=op)
 
     if isinstance(op, Sequence):
         raise ValueError(
