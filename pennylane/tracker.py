@@ -82,7 +82,9 @@ class Tracker:
                             gate_types=defaultdict(<class 'int'>, {'RX': 1}),
                             gate_sizes=defaultdict(<class 'int'>, {1: 1}),
                             depth=1,
-                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),)))}
+                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),))),
+     'errors': {}
+    }
     >>> tracker.history.keys()
     dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources'])
     >>> tracker.history['results']
