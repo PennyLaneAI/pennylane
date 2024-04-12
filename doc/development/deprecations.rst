@@ -56,7 +56,7 @@ New operator arithmetic deprecations
 
   - Deprecated in v0.36
 
-* The private `LinearCombination._obs_data` attribute is deprecated. Users can still use `LinearCombination.compare` for checking mathmetical equivalence.
+* The private ``LinearCombination._obs_data`` attribute is deprecated. Users can still use ``LinearCombination.compare`` for checking mathmetical equivalence.
   
   - Deprecated in v0.36
 
