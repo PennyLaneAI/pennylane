@@ -2053,8 +2053,9 @@ class TestIntegration:
         assert circuit() == expected
 
     @pytest.mark.jax
+    @pytest.mark.parametrize("measurement_func", [qml.expval, qml.var])
     def test_differentiate_jitted_qnode(
-        self,
+        self, measurement_func
     ):
         """Test that a jitted qnode can be correctly differentiated"""
         import jax
@@ -2063,7 +2064,7 @@ class TestIntegration:
 
         def qfunc(x, y):
             qml.RX(x, 0)
-            return qml.expval(qml.Hamiltonian(y, [qml.Z(0)]))
+            return measurement_func(qml.Hamiltonian(y, [qml.Z(0)]))
 
         qnode = qml.QNode(qfunc, dev, interface="jax")
         qnode_jit = jax.jit(qml.QNode(qfunc, dev, interface="jax"))
