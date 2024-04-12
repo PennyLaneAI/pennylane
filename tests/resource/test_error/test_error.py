@@ -238,6 +238,7 @@ _HAMILTONIAN = qml.dot([1.0, -0.5], [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.Y(1)])
 class TestSpecAndTracker:
     """Test capture of ErrorOperation in specs and tracker."""
 
+    # TODO: remove this when support for below is present
     # little hack for stopping device-level decomposition for custom ops
     @staticmethod
     def preprocess(execution_config=qml.devices.DefaultExecutionConfig):
