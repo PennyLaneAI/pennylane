@@ -191,10 +191,10 @@ def measure_with_samples(
     """
     # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
     mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
-    if mid_measurements and any(v == -1 for v in mid_measurements.values()):
-        state[:] = 0.0
-        slices = [slice(0, 1, 1)] * qml.math.ndim(state)
-        state[tuple(slices)] = 1.0
+    # if mid_measurements and any(v == -1 for v in mid_measurements.values()):
+    #     state[:] = 0.0
+    #     slices = [slice(0, 1, 1)] * qml.math.ndim(state)
+    #     state[tuple(slices)] = 1.0
 
     groups, indices = _group_measurements(mps)
 
@@ -444,7 +444,12 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    if prng_key is not None:
+    if qml.math.get_deep_interface(state) == "jax":
+        if prng_key is None:
+            # pylint: disable=import-outside-toplevel
+            import jax
+
+            prng_key = jax.random.PRNGKey(0)
         return _sample_state_jax(
             state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
         )
@@ -466,7 +471,7 @@ def sample_state(
     # probabilities must be renormalized as they may not sum to one
     # see https://github.com/PennyLaneAI/pennylane/issues/5444
     norm = qml.math.sum(probs, axis=-1)
-    abs_diff = np.abs(norm - 1.0)
+    abs_diff = qml.math.abs(norm - 1.0)
     cutoff = 1e-07
 
     if is_state_batched:
@@ -487,8 +492,9 @@ def sample_state(
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
 
-        if 0 < abs_diff < cutoff:
-            probs /= norm
+        if not 0 < abs_diff < cutoff:
+            norm = 1.0
+        probs = probs / norm
 
         samples = rng.choice(basis_states, shots, p=probs)
 

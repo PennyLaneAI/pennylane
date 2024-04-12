@@ -239,7 +239,7 @@ def apply_conditional(
     """
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     rng = execution_kwargs.get("rng", None)
-    interface = qml.math.get_deep_interface(op)
+    interface = qml.math.get_deep_interface(state)
     if interface == "jax":
         # pylint: disable=import-outside-toplevel
         from jax.lax import cond
@@ -255,6 +255,7 @@ def apply_conditional(
                 rng=rng,
             ),
             lambda x: x,
+            state,
         )
     if op.meas_val.concretize(mid_measurements):
         return apply_operation(
@@ -289,7 +290,6 @@ def apply_mid_measure(
     """
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     rng = execution_kwargs.get("rng", None)
-
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
@@ -297,14 +297,32 @@ def apply_mid_measure(
     slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = 0
     prob0 = qml.math.norm(state[tuple(slices)]) ** 2
-    if rng is None:
-        sampling_fun = np.random.choice
+    interface = qml.math.get_deep_interface(state)
+    if interface == "jax":
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        key = execution_kwargs.get("prng_key", jax.random.PRNGKey(0))
+        sample = jax.random.choice(
+            key, np.array([0, 1]), shape=(1,), p=jax.numpy.array([prob0, 1.0 - prob0])
+        )[0]
     else:
-        sampling_fun = rng.choice
-    sample = sampling_fun([0, 1], 1, p=[prob0, 1.0 - prob0])[0]
+        if rng is None:
+            sampling_fun = np.random.choice
+        else:
+            sampling_fun = rng.choice
+        sample = sampling_fun([0, 1], 1, p=[prob0, 1.0 - prob0])[0]
     mid_measurements[op] = sample
-    slices[axis] = int(not sample)
-    state[tuple(slices)] = 0.0
+
+    # slices[axis] = int(not sample)
+    # state[tuple(slices)] = 0.0
+
+    matrix = qml.math.array([[0.0, 0.0], [0.0, 0.0]], like=interface)
+    matrix = matrix.at[sample, sample].set(1.0)
+    state = apply_operation(
+        qml.QubitUnitary(matrix, wire), state, is_state_batched=is_state_batched, debugger=debugger
+    )
+
     state_norm = qml.math.norm(state)
     if not qml.math.is_abstract(sample) and op.postselect is not None and sample != op.postselect:
         state_norm = 0.0
