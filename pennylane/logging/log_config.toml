@@ -100,7 +100,7 @@ propagate = false
 
 # Control logging across catalyst
 [loggers.catalyst]
-handlers = ["qml_debug_stream"] #, "qml_debug_syslog"]
+handlers = ["qml_debug_stream",]
 level = "DEBUG" # Set to TRACE for highest verbosity
 propagate = false
 
