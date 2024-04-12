@@ -11,11 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Contains the switches to (de)activate the capturing mechanism, and a 
+status reporting function on whether it is enabled or not.
+"""
 from typing import Callable
 
 has_jax = True
 try:
-    import jax
+    import jax  # pylint: disable=unused-import
 except ImportError:
     has_jax = False
 
