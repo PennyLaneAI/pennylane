@@ -290,7 +290,7 @@ def _beta_matrix(orbitals):
             this is the number of active spin-orbitals.
 
     Returns:
-        (array): Transformation matrix beta
+        (array): The transformation matrix
     """
 
     # Base case for beta_1
