@@ -24,8 +24,6 @@ from pennylane.measurements import (
     Shots,
     StateMeasurement,
     StateMP,
-    expval,
-    var,
 )
 
 from pennylane.wires import Wires

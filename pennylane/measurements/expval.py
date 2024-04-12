@@ -14,7 +14,6 @@
 """
 This module contains the qml.expval measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Union
 
 import pennylane as qml

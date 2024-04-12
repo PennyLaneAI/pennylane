@@ -15,7 +15,6 @@
 """
 This module contains the qml.var measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Union
 
 import pennylane as qml

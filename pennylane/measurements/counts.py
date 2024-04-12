@@ -14,7 +14,6 @@
 """
 This module contains the qml.counts measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Optional
 import numpy as np
 
