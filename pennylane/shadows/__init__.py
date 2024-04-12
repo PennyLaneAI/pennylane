@@ -93,7 +93,7 @@ The easiest way of computing expectation values with classical shadows in PennyL
 The big advantage of this way of computing expectation values is that it is differentiable.
 
 >>> qnode(x)
-array(1.9242)
+array(0.8406)
 >>> qml.grad(qnode)(x)
 -0.49680000000000013
 
