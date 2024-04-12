@@ -159,8 +159,6 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
-    if not qml.capture.meta_type._USE_DEFAULT_CALL and not isinstance(fn, Operator):
-        return qml.capture.adjoint_qfunc(fn)
 
     if active_jit := compiler.active_compiler():
         if lazy is False:
@@ -179,7 +177,11 @@ def adjoint(fn, lazy=True):
             "of operations instead of a function or template."
         )
 
-    @wraps(fn)
+    return adjoint_qfunc(fn)
+
+
+@qml.capture.bind_nested_jaxpr
+def adjoint_qfunc(fn, lazy=True):
     def wrapper(*args, **kwargs):
         qscript = make_qscript(fn)(*args, **kwargs)
         if lazy:

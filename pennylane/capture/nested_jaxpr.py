@@ -12,18 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import wraps
+
 import jax
 
 
-nested_adjoint_prim = jax.core.Primitive("AdjointJaxpr")
-nested_adjoint_prim.multiple_results=True
+def bind_nested_jaxpr(fn):
 
-@nested_adjoint_prim.def_abstract_eval
-def _(inner_jaxpr):
-    return inner_jaxpr.out_avals
+    prim = jax.core.Primitive(fn.__name__)
+    prim.multiple_results = True
 
-def adjoint_qfunc(qfunc):
-    def wrapper(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(qfunc)(*args, **kwargs)
-        return nested_adjoint_prim.bind(inner_jaxpr=jaxpr)
-    return wrapper
+    @prim.def_abstract_eval
+    def _(jaxpr):
+        return jaxpr.out_avals
+
+    def new_version(qfunc):
+        def wrapper(*args, **kwargs):
+            jaxpr = jax.make_jaxpr(qfunc)(*args, **kwargs)
+            return prim.bind(jaxpr=jaxpr)
+
+        return wrapper
+
+    return new_version
