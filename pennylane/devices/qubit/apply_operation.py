@@ -164,6 +164,8 @@ def apply_operation(
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
+        **execution_kwargs (Optional[dict]): Optional keyword arguments needed for applying
+            some operations
 
     Returns:
         ndarray: output state
@@ -221,8 +223,7 @@ def apply_conditional(
     state,
     is_state_batched: bool = False,
     debugger=None,
-    mid_measurements=None,
-    rng=None,
+    **execution_kwargs,
 ):
     """Applies a conditional operation.
 
@@ -236,8 +237,11 @@ def apply_conditional(
     Returns:
         ndarray: output state
     """
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+    rng = execution_kwargs.get("rng", None)
     interface = qml.math.get_deep_interface(op)
     if interface == "jax":
+        # pylint: disable=import-outside-toplevel
         from jax.lax import cond
 
         return cond(
@@ -252,7 +256,6 @@ def apply_conditional(
             ),
             lambda x: x,
         )
-
     if op.meas_val.concretize(mid_measurements):
         return apply_operation(
             op.then_op,
@@ -267,12 +270,7 @@ def apply_conditional(
 
 @apply_operation.register
 def apply_mid_measure(
-    op: MidMeasureMP,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    mid_measurements=None,
-    rng=None,
+    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
     """Applies a native mid-circuit measurement.
 
@@ -282,14 +280,19 @@ def apply_mid_measure(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
 
     Returns:
         ndarray: output state
     """
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+    rng = execution_kwargs.get("rng", None)
+
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
-
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = 0

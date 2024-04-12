@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit preprocessing."""
-from functools import reduce
+from functools import partial, reduce
 from typing import Sequence
 
-from flaky import flaky
+# from flaky import flaky
 import numpy as np
 import pytest
 
@@ -27,6 +27,7 @@ from pennylane.transforms.dynamic_one_shot import (
 )
 
 pytestmark = pytest.mark.slow
+get_device = partial(qml.device, name="default.qubit", seed=8237945)
 
 
 def validate_counts(shots, results1, results2):
@@ -133,7 +134,8 @@ def test_accumulate_native_mcm_unsupported_error():
 
 def test_all_invalid_shots_circuit():
 
-    dev = qml.device("default.qubit")
+    # dev = qml.device("default.qubit")
+    dev = get_device()
 
     @qml.qnode(dev)
     def circuit_op():
@@ -186,7 +188,7 @@ def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
 
 
 def test_unsupported_measurement():
-    dev = qml.device("default.qubit", shots=1000)
+    dev = get_device(shots=1000)
     params = np.pi / 4 * np.ones(2)
 
     @qml.qnode(dev)
@@ -213,7 +215,7 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
     conditional gate. A single measurement of the mid-circuit measurement value is performed at
     the end."""
 
-    dev = qml.device("default.qubit", shots=shots)
+    dev = get_device(shots=shots)
     params = np.pi / 4 * np.ones(2)
 
     @qml.qnode(dev)
@@ -265,7 +267,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
     conditional gate. A single measurement of a common observable is performed at the end."""
 
-    dev = qml.device("default.qubit", shots=shots)
+    dev = get_device(shots=shots)
     params = [np.pi / 7, np.pi / 6, -np.pi / 5]
 
     @qml.qnode(dev)
@@ -321,7 +323,7 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
     conditional gate. A single measurement of one or several wires is performed at the end."""
 
-    dev = qml.device("default.qubit", shots=shots)
+    dev = get_device(shots=shots)
     params = np.pi / 4 * np.ones(2)
 
     @qml.qnode(dev)
@@ -354,7 +356,7 @@ def test_single_mcm_multiple_measurements(shots, postselect, reset, measure_f):
     and a conditional gate. Multiple measurements of the mid-circuit measurement value are
     performed."""
 
-    dev = qml.device("default.qubit", shots=shots)
+    dev = get_device(shots=shots)
     params = [np.pi / 7, np.pi / 6, -np.pi / 5]
     obs = qml.PauliY(1)
 
@@ -425,7 +427,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
     conditional gate. A single measurement of a composite mid-circuit measurement is performed
     at the end."""
 
-    dev = qml.device("default.qubit", shots=shots)
+    dev = get_device(shots=shots)
     param = np.pi / 3
 
     @qml.qnode(dev)
@@ -468,7 +470,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a common observable is performed at the end."""
 
-    dev = qml.device("default.qubit", shots=shots)
+    dev = get_device(shots=shots)
     params = [np.pi / 7, np.pi / 6, -np.pi / 5]
     obs = qml.PauliZ(0) @ qml.PauliY(1)
 
@@ -502,7 +504,7 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
     conditional gate. A single measurement of a composite mid-circuit measurement is performed
     at the end."""
 
-    dev = qml.device("default.qubit", shots=shots)
+    dev = get_device(shots=shots)
     param = np.pi / 3
 
     @qml.qnode(dev)
@@ -534,7 +536,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     measurement and a conditional gate. A single measurement of a common observable is
     performed at the end."""
 
-    dev = qml.device("default.qubit", shots=shots)
+    dev = get_device(shots=shots)
     param = qml.numpy.array([np.pi / 3, np.pi / 6])
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
