@@ -370,7 +370,7 @@ class LinearCombination(Sum):
 
         .. Warning::
 
-            This method does not compare explicit matrix representations, but checks mathetmatical equivalence.
+            While this method does not compute explicit matrices, it is still relatively expensive as it involves simplification of both operators.
 
         Returns:
             (bool): True if equivalent.
