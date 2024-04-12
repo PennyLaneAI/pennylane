@@ -19,12 +19,12 @@ results, you should always allow for a ``list`` to be substituted for a ``tuple`
 improved performance and protection against unintended side-effects, ``tuple``'s are recommended
 over ``list`` where feasible.
 
-The level of priority for dimensions from outer dimension to inner dimension is:
+The nesting for dimensions from outer dimension to inner dimension is:
 
-1. Quantum Script in batch. No squeezing.
-2. Shot choice in a shot vector. Squeezed if no shot vector.
-3. Measurement in the quantum script. Squeezed out if only one measurement.
-4. Parameter broadcasting. Squeezed out if no parameter-broadcasting.  Adds to array shape instead of adding tuple nesting.
+1. Quantum Tape in batch. This dimension will always exist for a batch of tapes.
+2. Shot choice in a shot vector. This dimension will not exist of a shot vector is not present.
+3. Measurement in the quantum tape. This dimension will not exist if the quantum tape only has one measurement.
+4. Parameter broadcasting.  Does not exist if no parameter broadcasting. Adds to array shape instead of adding tuple nesting.
 5. Fundamental measurement shape.
 
 Individual measurements
@@ -34,10 +34,6 @@ Each individual measurement corresponds to its own type of result. This result c
 a Tensor-like (Python number, numpy array, ML array), but may also be any other type of object.
 For example, :class:`~.CountsMP` corresponds to a dictionary. We can also imagine a scenario where
 a measurement corresponds to some other type of custom data structure.
-
-The result corresponding to a given measurement process should also be independent of any other
-measurements present at the same time.  For example, requesting the probability ``qml.probs(wires=0)``
-should not affect the result corresponding to an expectation value ``qml.expval(qml.Z(0))``.
 
 >>> def example_value(m):
 ...     tape = qml.tape.QuantumScript((), (m,), shots=50)
@@ -168,24 +164,6 @@ array([ 1., -1., -1.])
 >>> result[1][2] # second shot value, third measurement, all three parameter values
 [{'0': 74, '1': 26}, {'0': 23, '1': 77}, {'1': 100}]
 
-
-Mid-circuit measurements
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-**Note that this specification is currently under development!**
-
-If the tape has mid circuit measurements and one single shot, then the result object
-should instead be a tuple of the above specification followed by a dictionary mapping the
-circuits mid-circuit measurements to their measured values.
-
->>> m0 = qml.measure(0)
->>> measurements = (qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1)))
->>> tape = qml.tape.QuantumScript(m0.measurements, measurements, shots=1)
->>> qml.device('default.qubit').execute(tape)
-((1.0, array([1., 0., 0., 0.])), {measure(wires=[0]): 0})
-
-Note that while this specification applies to the device and several internal boundaries,
-the ``QNode`` should never return this specification.
 
 Batches
 -------
