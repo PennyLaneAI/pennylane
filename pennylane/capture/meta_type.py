@@ -19,6 +19,8 @@ See ``explanations.md`` for technical explanations of how this works.
 from typing import Iterable
 from functools import lru_cache
 
+import pennylane as qml
+
 from .switches import plxpr_enabled
 
 has_jax = True
@@ -47,6 +49,18 @@ def _get_abstract_operator():
 
         def __hash__(self):
             return hash("AbstractOperator")
+
+        def _matmul(self, *args):
+            return qml.prod(*args)
+
+        def _mul(self, a, b):
+            return qml.s_prod(b, a)
+
+        def _rmul(self, a, b):
+            return qml.s_prod(b, a)
+
+        def _add(self, a, b):
+            return qml.sum(a, b)
 
     jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
 
