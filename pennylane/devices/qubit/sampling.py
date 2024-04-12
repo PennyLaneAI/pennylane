@@ -227,9 +227,7 @@ def measure_with_samples(
 
     # append MCM samples
     if mid_measurements:
-        sorted_res = list(sorted_res)
-        sorted_res.extend(list(mid_measurements.values()))
-        sorted_res = tuple(sorted_res)
+        sorted_res += tuple(mid_measurements.values())
 
     # put the shot vector axis before the measurement axis
     if shots.has_partitioned_shots:
