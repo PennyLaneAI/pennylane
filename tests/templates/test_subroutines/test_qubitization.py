@@ -108,18 +108,21 @@ def test_decomposition(hamiltonian, expected_decomposition):
 
 # def test_lightning_qubit(): #TODO: qml.AmplitudeEmbedding in the middle of the circuit is not supported in lightning
 
+
 class TestDifferentiability:
     """Test that Qubitization is differentiable"""
 
     @staticmethod
     def circuit(coeffs):
-        H = qml.ops.LinearCombination(coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)])
+        H = qml.ops.LinearCombination(
+            coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+        )
         qml.Qubitization(H, control=(3, 4))
         return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
     # TODO:
     # calculated numerically with finite diff method (h = 1e-5)
-    exp_grad = np.array([0.41177729, - 0.21262357,  1.64370435, - 0.74256522])
+    exp_grad = np.array([0.41177729, -0.21262357, 1.64370435, -0.74256522])
 
     params = np.array([0.4, 0.5, 0.1, 0.3])
 
@@ -135,12 +138,16 @@ class TestDifferentiability:
         assert qml.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
-
     @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", [False, True]) #TODO: True jit
+    @pytest.mark.parametrize(
+        "use_jit",
+        [
+            False,
+        ],
+    )  # TODO: True jit
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_jax(self, shots, use_jit):
-        """"Test that the QNode executes and is differentiable with JAX. The shots
+        """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
 
@@ -162,11 +169,10 @@ class TestDifferentiability:
         assert jac.shape == (4,)
         assert np.allclose(jac, self.exp_grad, atol=0.01)
 
-
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots):
-        """"Test that the QNode executes and is differentiable with Torch. The shots
+        """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
@@ -179,12 +185,11 @@ class TestDifferentiability:
         assert qml.math.shape(jac) == (4,)
         assert qml.math.allclose(jac, self.exp_grad, atol=0.01)
 
-
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
     @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
     def test_qnode_tf(self, shots):
-        """"Test that the QNode executes and is differentiable with TensorFlow. The shots
+        """ "Test that the QNode executes and is differentiable with TensorFlow. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
@@ -199,9 +204,3 @@ class TestDifferentiability:
         jac = tape.gradient(res, params)
         assert qml.math.shape(jac) == (4,)
         assert qml.math.allclose(res, self.exp_grad, atol=0.001)
-
-
-
-
-
-

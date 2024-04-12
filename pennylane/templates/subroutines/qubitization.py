@@ -22,7 +22,6 @@ from pennylane import numpy as np
 from pennylane.operation import Operation
 
 
-
 def _positive_coeffs_hamiltonian(hamiltonian):
     """Transforms the Hamiltonian to ensure that the coefficients are positive
 
