@@ -385,19 +385,15 @@ def _decomposition_2_cnots(U, wires):
         # For the non-special case, the eigenvalues come in conjugate pairs.
         # We need to find two non-conjugate eigenvalues to extract the angles.
 
-        # need to perturb x by 5 precision to avoid a discontinuity at a special case.
-        # see https://github.com/PennyLaneAI/pennylane/issues/5308
-        precision = qml.math.finfo(U.dtype).eps
-        x = math.angle(evs[0]) + 5 * precision
+        x = math.angle(evs[0])  # + 5 * precision
         y = math.angle(evs[1])
 
         # If it was the conjugate, grab a different eigenvalue.
         if math.allclose(x, -y):
             y = math.angle(evs[2])
 
-        delta = (x + y) / 2
+        delta = (x + y) / 2  #
         phi = (x - y) / 2
-
         interior_decomp = [
             qml.CNOT(wires=[wires[1], wires[0]]),
             qml.RZ(delta, wires=wires[0]),
@@ -405,7 +401,10 @@ def _decomposition_2_cnots(U, wires):
             qml.CNOT(wires=[wires[1], wires[0]]),
         ]
 
-        RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix()
+        # need to perturb x by 5 precision to avoid a discontinuity at a special case.
+        # see https://github.com/PennyLaneAI/pennylane/issues/5308
+        precision = qml.math.finfo(delta.dtype).eps
+        RZd = qml.RZ(math.cast_like(delta + 5 * precision, 1j), wires=0).matrix()
         RXp = qml.RX(phi, wires=0).matrix()
         inner_matrix = math.kron(RZd, RXp)
 
