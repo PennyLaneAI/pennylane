@@ -178,6 +178,11 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
             "of operations instead of a function or Operator."
         )
 
+    return ctrl_qfunc(op, control=control, control_values=control_values, work_wires=work_wires)
+
+
+@qml.capture.bind_nested_jaxpr
+def ctrl_qfunc(op, control, control_values=None, work_wires=None):
     @wraps(op)
     def wrapper(*args, **kwargs):
         qscript = qml.tape.make_qscript(op)(*args, **kwargs)

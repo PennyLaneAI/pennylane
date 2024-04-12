@@ -177,7 +177,7 @@ def adjoint(fn, lazy=True):
             "of operations instead of a function or template."
         )
 
-    return adjoint_qfunc(fn)
+    return adjoint_qfunc(fn, lazy=lazy)
 
 
 @qml.capture.bind_nested_jaxpr

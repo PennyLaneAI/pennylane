@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from functools import wraps
+from functools import partial
 
 import jax
 
@@ -23,13 +24,18 @@ def bind_nested_jaxpr(fn):
     prim.multiple_results = True
 
     @prim.def_abstract_eval
-    def _(jaxpr):
+    def _(*args, jaxpr, **_):
         return jaxpr.out_avals
 
-    def new_version(qfunc):
+    @prim.def_impl
+    def _(*args, jaxpr, qfunc_kwargs=None, **kwargs):
+        bound = partial(jax.core.eval_jaxpr, jaxpr.jaxpr)
+        return [fn(bound)((), *args)]
+
+    def new_version(qfunc, **qfunc_kwargs):
         def wrapper(*args, **kwargs):
             jaxpr = jax.make_jaxpr(qfunc)(*args, **kwargs)
-            return prim.bind(jaxpr=jaxpr)
+            return prim.bind(*args, jaxpr=jaxpr, qfunc_kwargs=qfunc_kwargs, **kwargs)
 
         return wrapper
 
