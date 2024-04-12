@@ -293,7 +293,6 @@ def _beta_matrix(orbitals):
         (array): The transformation matrix
     """
 
-    # Base case for beta_1
     if orbitals == 1:
         return np.array([[1]])
 
