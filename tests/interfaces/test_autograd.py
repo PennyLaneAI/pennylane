@@ -200,8 +200,12 @@ class TestBatchTransformExecution:
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(dev, "batch_transform")
 
-        res = qml.execute([tape], dev, None, device_batch_transform=False)
-        assert np.allclose(res[0], np.cos(y), atol=0.1)
+        if qml.operation.active_new_opmath():
+            res = qml.execute([tape], dev, None, device_batch_transform=False)
+            assert np.allclose(res[0], np.cos(y), atol=0.1)
+        else:
+            with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
+                qml.execute([tape], dev, None, device_batch_transform=False)
 
         spy.assert_not_called()
 
