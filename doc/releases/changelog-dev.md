@@ -209,6 +209,10 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `qml.specs` and `qml.Tracker` now return information about algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
+  [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
+
 * `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
 
@@ -327,6 +331,9 @@
   [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 <h3>Documentation 📝</h3>
+
+* Adds a page explaining the shapes and nesting of result objects.
+  [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
 
 * Removed some redundant documentation for the `evolve` function.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
