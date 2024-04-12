@@ -103,10 +103,7 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 final_results.append(processing_fn(results[0:s], has_partitioned_shots=False))
                 del results[0:s]
             return tuple(final_results)
-        all_mcms = []
-        for op in aux_tape.operations:
-            if isinstance(op, MidMeasureMP):
-                all_mcms.append(op)
+        all_mcms = [op for op in aux_tape.operations if isinstance(op, MidMeasureMP)]
         n_mcms = len(all_mcms)
         post_process_tape = qml.tape.QuantumScript(
             aux_tape.operations,
@@ -114,20 +111,18 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             shots=aux_tape.shots,
             trainable_params=aux_tape.trainable_params,
         )
-        sca_results = len(post_process_tape.measurements) == 0 and len(aux_tape.measurements) == 1
+        single_measurement = (
+            len(post_process_tape.measurements) == 0 and len(aux_tape.measurements) == 1
+        )
         mcm_samples = np.zeros((len(results), n_mcms), dtype=np.int64)
         for i, res in enumerate(results):
-            mcm_samples[i, :] = [res] if sca_results else res[-n_mcms::]
+            mcm_samples[i, :] = [res] if single_measurement else res[-n_mcms::]
         mcm_mask = qml.math.all(mcm_samples != -1, axis=1)
         mcm_samples = mcm_samples[mcm_mask, :]
         results = list(compress(results, mcm_mask))
         all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
         for i, res in enumerate(results):
-            samples = (
-                [res]
-                if len(post_process_tape.measurements) == 0 and len(aux_tape.measurements) == 1
-                else res[-n_mcms::]
-            )
+            samples = [res] if single_measurement else res[-n_mcms::]
             valid_shots += 1
             mcm_values_dict = dict((k, v) for k, v in zip(all_mcms, samples))
             if len(post_process_tape.measurements) == 0:
