@@ -385,14 +385,14 @@ def _decomposition_2_cnots(U, wires):
         # For the non-special case, the eigenvalues come in conjugate pairs.
         # We need to find two non-conjugate eigenvalues to extract the angles.
 
-        x = math.angle(evs[0])  # + 5 * precision
+        x = math.angle(evs[0])
         y = math.angle(evs[1])
 
         # If it was the conjugate, grab a different eigenvalue.
         if math.allclose(x, -y):
             y = math.angle(evs[2])
 
-        delta = (x + y) / 2  #
+        delta = (x + y) / 2
         phi = (x - y) / 2
         interior_decomp = [
             qml.CNOT(wires=[wires[1], wires[0]]),
