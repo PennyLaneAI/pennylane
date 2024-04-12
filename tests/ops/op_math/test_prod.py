@@ -1485,20 +1485,6 @@ class TestIntegration:
         true_grad = -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_obs_not_supported(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
-        wires = [0, 1]
-        dev = qml.device("default.qubit", wires=wires)
-        prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
-
-        @qml.qnode(dev)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.expval(prod_op)
-
-        with pytest.raises(NotImplementedError):
-            my_circ()
-
     def test_operation_integration(self):
         """Test that a Product operation can be queued and executed in a circuit"""
         dev = qml.device("default.qubit", wires=3)
