@@ -252,22 +252,22 @@ def test_single_expval(mps, expected_exec, expected_shots):
         assert dev.tracker.totals["shots"] == 3 * expected_shots
 
 
-@pytest.mark.xfail  # TODO Prod instances are not automatically
-def test_multiple_expval_with_prods():
-    mps, expected_exec, expected_shots = (
-        [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliY(1))],
-        1,
-        10,
-    )
-    dev = qml.device("default.qubit")
-    tape = qml.tape.QuantumScript([], mps, shots=10)
-
-    with dev.tracker:
-        dev.execute(tape)
-
-    assert dev.tracker.totals["executions"] == expected_exec
-    assert dev.tracker.totals["simulations"] == 1
-    assert dev.tracker.totals["shots"] == expected_shots
+# @pytest.mark.xfail  # TODO Prod instances are not automatically
+# def test_multiple_expval_with_prods():
+#     mps, expected_exec, expected_shots = (
+#         [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliY(1))],
+#         1,
+#         10,
+#     )
+#     dev = qml.device("default.qubit")
+#     tape = qml.tape.QuantumScript([], mps, shots=10)
+#
+#     with dev.tracker:
+#         dev.execute(tape)
+#
+#     assert dev.tracker.totals["executions"] == expected_exec
+#     assert dev.tracker.totals["simulations"] == 1
+#     assert dev.tracker.totals["shots"] == expected_shots
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
