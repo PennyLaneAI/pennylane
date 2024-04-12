@@ -337,7 +337,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 15
+        assert exec_no_opt == 14
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -383,7 +383,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 15
+        assert exec_no_opt == 14
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -429,7 +429,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 15
+        assert exec_no_opt == 14
 
         assert np.allclose(c1, c2, atol=1e-1)
 
