@@ -15,7 +15,7 @@
 LinearCombination class
 """
 # pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
-
+import warnings
 import itertools
 import numbers
 from copy import copy
@@ -341,6 +341,9 @@ class LinearCombination(Sum):
         {(1, frozenset({('Prod', <Wires = [0, 1]>, ())})),
          (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
         """
+        # warnings.warn(""
+            
+        #     qml.PennyLaneDeprecationWarning)
         data = set()
 
         coeffs_arr = qml.math.toarray(self.coeffs)
@@ -404,16 +407,19 @@ class LinearCombination(Sum):
                 pr2.simplify()
                 return pr1 == pr2
 
-            if isinstance(other, (LinearCombination, qml.ops.Hamiltonian)):
+            if isinstance(other, LinearCombination):
                 op1 = self.simplify()
                 op2 = other.simplify()
-                return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
-
-            if isinstance(other, (Tensor, Observable)):
+                return qml.equal(op1, op2)
+            
+            if isinstance(other, (qml.ops.Hamiltonian, Tensor)):
                 op1 = self.simplify()
-                return op1._obs_data() == {
-                    (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
-                }
+                op2 = other.simplify()
+
+                op2 = qml.operation.convert_to_opmath(op2)
+                op2 = qml.ops.LinearCombination(*op2.terms())
+
+                return qml.equal(op1, op2)
 
             op1 = self.simplify()
             op2 = other.simplify()
