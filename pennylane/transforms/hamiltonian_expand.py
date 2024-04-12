@@ -20,7 +20,7 @@ from typing import List, Sequence, Callable
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
-from pennylane.ops import SProd, Sum
+from pennylane.ops import SProd, Sum, Prod
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
 
@@ -340,6 +340,8 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(tape.measurements):
         obs = m.obs
+        if isinstance(obs, Prod) and isinstance(m, ExpectationMP):
+            obs = obs.simplify()
         if isinstance(obs, Sum) and isinstance(m, ExpectationMP):
             for summand in obs.operands:
                 coeff = 1
