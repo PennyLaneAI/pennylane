@@ -77,22 +77,6 @@ class TestVar:
 
         custom_measurement_process(dev, spy)
 
-    def test_not_an_observable(self, mocker):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit.legacy", wires=2)
-        spy = mocker.spy(qml.QubitDevice, "var")
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.var(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
-        custom_measurement_process(dev, spy)
-
     def test_observable_return_type_is_variance(self, mocker):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
         dev = qml.device("default.qubit.legacy", wires=2)

@@ -66,22 +66,6 @@ def test_shape_unrecognized_error():
         mp.shape(dev, Shots(None))
 
 
-@pytest.mark.parametrize("stat_func", [expval, var])
-def test_not_an_observable(stat_func):
-    """Test that a UserWarning is raised if the provided
-    argument might not be hermitian."""
-
-    dev = qml.device("default.qubit.legacy", wires=2)
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.RX(0.52, wires=0)
-        return stat_func(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-    with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-        _ = circuit()
-
-
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
