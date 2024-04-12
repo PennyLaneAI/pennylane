@@ -30,6 +30,10 @@ used to troubleshoot issues for those affected users.
 Summary of the update
 ---------------------
 
+The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
+If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting` section.
+You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
+
 You can now easily access Pauli operators via ``I``, ``X``, ``Y``, and ``Z``.
 
 >>> from pennylane import I, X, Y, Z
@@ -38,12 +42,6 @@ X(0)
 
 The original long-form names :class:`~Identity`, :class:`~PauliX`, :class:`~PauliY`, and :class:`~PauliZ` remain available, but
 use of the short-form names is now recommended.
-
-A new :func:`~commutator` function is now available that allows you to compute commutators between
-PennyLane operators.
-
->>> qml.commutator(X(0), Y(0))
-2j * Z(0)
 
 Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
 representation will be automatically used for calculations when available.
@@ -77,187 +75,151 @@ Linear combinations of operators and operator multiplication via :class:`~Sum` a
 have been updated to reach feature parity with :class:`~Hamiltonian` and :class:`~Tensor`, respectively.
 This should minimize the effort to port over any existing code.
 
-Updates include support for grouping via the `pauli` module:
+.. details::
+    :title: Technical details
+    :href: technical-details
 
->>> obs = [X(0) @ Y(1), Z(0), Y(0) @ Z(1), Y(1)]
->>> qml.pauli.group_observables(obs)
-[[Y(0) @ Z(1)], [X(0) @ Y(1), Y(1)], [Z(0)]]
-
-
-Technical details
------------------
-
-The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
-If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting` section.
-You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
-
-The changes between the old and new system mainly concern Python operators ``+ - * / @``,
-that now create the following ``Operator`` subclass instances.
+    The changes between the old and new system mainly concern Python operators ``+ - * / @``,
+    that now create the following ``Operator`` subclass instances.
 
 
-+----------------------------------+----------------------+---------------------------+
-|                                  | Legacy               | Updated Operators         |
-+==================================+======================+===========================+
-| tensor products                  | ``operation.Tensor`` | ``ops.Prod``              |
-| ``X(0) @ X(1)``                  |                      |                           |
-+----------------------------------+----------------------+---------------------------+
-| sums                             | ``ops.Hamiltonian``  | ``ops.Sum``               |
-| ``X(0) + X(1)``                  |                      |                           |
-+----------------------------------+----------------------+---------------------------+
-| scalar products                  | ``ops.Hamiltonian``  | ``ops.SProd``             |
-| ``1.5 * X(1)``                   |                      |                           |
-+----------------------------------+----------------------+---------------------------+
-| ``qml.dot(coeffs,ops)``          | ``ops.Sum``          | ``ops.Sum``               |
-+----------------------------------+----------------------+---------------------------+
-| ``qml.Hamiltonian(coeffs, ops)`` | ``ops.Hamiltonian``  | ``ops.LinearCombination`` |
-+----------------------------------+----------------------+---------------------------+
-| ``qml.ops.LinearCombination(coeffs, ops)`` | n/a        | ``ops.LinearCombination`` |
-+----------------------------------+----------------------+---------------------------+
+    +----------------------------------+----------------------+---------------------------+
+    |                                  | Legacy               | Updated Operators         |
+    +==================================+======================+===========================+
+    | tensor products                  | ``operation.Tensor`` | ``ops.Prod``              |
+    | ``X(0) @ X(1)``                  |                      |                           |
+    +----------------------------------+----------------------+---------------------------+
+    | sums                             | ``ops.Hamiltonian``  | ``ops.Sum``               |
+    | ``X(0) + X(1)``                  |                      |                           |
+    +----------------------------------+----------------------+---------------------------+
+    | scalar products                  | ``ops.Hamiltonian``  | ``ops.SProd``             |
+    | ``1.5 * X(1)``                   |                      |                           |
+    +----------------------------------+----------------------+---------------------------+
+    | ``qml.dot(coeffs,ops)``          | ``ops.Sum``          | ``ops.Sum``               |
+    +----------------------------------+----------------------+---------------------------+
+    | ``qml.Hamiltonian(coeffs, ops)`` | ``ops.Hamiltonian``  | ``ops.LinearCombination`` |
+    +----------------------------------+----------------------+---------------------------+
+    | ``qml.ops.LinearCombination(coeffs, ops)`` | n/a        | ``ops.LinearCombination`` |
+    +----------------------------------+----------------------+---------------------------+
 
 
-The three main new opmath classes ``SProd``, ``Prod``, and ``Sum`` have already been around for a while.
-E.g. ``qml.dot()`` has always returned a ``Sum`` instance.
+    The three main new opmath classes ``SProd``, ``Prod``, and ``Sum`` have already been around for a while.
+    E.g. ``qml.dot()`` has always returned a ``Sum`` instance.
 
-Usage
-~~~~~
+    Usage
+    ~~~~~
 
-Besides the python operators, you can also use the constructors :func:`~s_prod`, :func:`~prod`, and :func:`~sum`.
-For composite operators, we can access their constituens via the ``op.operands`` attribute.
+    Besides the python operators, you can also use the constructors :func:`~s_prod`, :func:`~prod`, and :func:`~sum`.
+    For composite operators, we can access their constituents via the ``op.operands`` attribute.
 
->>> op = qml.sum(X(0), X(1), X(2))
->>> op.operands
-(X(0), X(1), X(2))
+    >>> op = qml.sum(X(0), X(1), X(2))
+    >>> op.operands
+    (X(0), X(1), X(2))
 
-In case all terms are composed of operators with a valid ``pauli_rep``, then also the composite
-operator has a valid ``pauli_rep`` in terms of a :class:`~pauli.PauliSentence` instance. This is often handy for fast
-arithmetic processing.
+    In case all terms are composed of operators with a valid ``pauli_rep``, then also the composite
+    operator has a valid ``pauli_rep`` in terms of a :class:`~pauli.PauliSentence` instance. This is often handy for fast
+    arithmetic processing.
 
->>> op.pauli_rep
-1.0 * X(0)
-+ 1.0 * X(1)
-+ 1.0 * X(2)
+    >>> op.pauli_rep
+    1.0 * X(0)
+    + 1.0 * X(1)
+    + 1.0 * X(2)
 
-Further, composite operators can be simplified using :func:`~pennylane.simplify` or the ``op.simplify()`` method.
+    Further, composite operators can be simplified using :func:`~pennylane.simplify` or the ``op.simplify()`` method.
 
->>> op = 0.5 * X(0) + 0.5 * Y(0) - 1.5 * X(0) - 0.5 * Y(0) # no simplification by default
->>> op.simplify()
--1.0 * X(0)
->>> qml.simplify(op)
--1.0 * X(0)
+    >>> op = 0.5 * X(0) + 0.5 * Y(0) - 1.5 * X(0) - 0.5 * Y(0) # no simplification by default
+    >>> op.simplify()
+    -1.0 * X(0)
+    >>> qml.simplify(op)
+    -1.0 * X(0)
 
-Note that the simplification never happens in-place, such that the original operator is left unaltered.
+    Note that the simplification never happens in-place, such that the original operator is left unaltered.
 
->>> op
-(
-    0.5 * X(0)
-  + 0.5 * Y(0)
-  + -1 * 1.5 * X(0)
-  + -1 * 0.5 * Y(0)
-)
+    >>> op
+    (
+        0.5 * X(0)
+      + 0.5 * Y(0)
+      + -1 * 1.5 * X(0)
+      + -1 * 0.5 * Y(0)
+    )
 
-We are often interested in obtaining a list of coefficients and `pure` operators.
-We can do so by using the ``op.terms()`` method.
+    We are often interested in obtaining a list of coefficients and `pure` operators.
+    We can do so by using the ``op.terms()`` method.
 
->>> op = 0.5 * (X(0) @ X(1) + Y(0) @ Y(1) + 2 * Z(0) @ Z(1)) - 1.5 * I() + 0.5 * I()
->>> op.terms()
-([0.5, 0.5, 1.0, -1.0], [X(1) @ X(0), Y(1) @ Y(0), Z(1) @ Z(0), I()])
+    >>> op = 0.5 * (X(0) @ X(1) + Y(0) @ Y(1) + 2 * Z(0) @ Z(1)) - 1.5 * I() + 0.5 * I()
+    >>> op.terms()
+    ([0.5, 0.5, 1.0, -1.0], [X(1) @ X(0), Y(1) @ Y(0), Z(1) @ Z(0), I()])
 
-As seen by this example, this method already takes care of arithmetic simplifications.
+    As seen by this example, this method already takes care of arithmetic simplifications.
 
-qml.Hamiltonian
-~~~~~~~~~~~~~~~
+    qml.Hamiltonian
+    ~~~~~~~~~~~~~~~
 
-The legacy classes :class:`~operation.Tensor` and :class:`~ops.Hamiltonian` will soon be deprecated.
-:class:`~ops.LinearCombination` offers the same API as :class:`~ops.Hamiltonian` but works well with new opmath classes.
+    The legacy classes :class:`~operation.Tensor` and :class:`~ops.Hamiltonian` will soon be deprecated.
+    :class:`~ops.LinearCombination` offers the same API as :class:`~ops.Hamiltonian` but works well with new opmath classes.
 
-Depending on whether or not new opmath is active, ``qml.Hamiltonian`` will return either of the two classes.
+    Depending on whether or not new opmath is active, ``qml.Hamiltonian`` will return either of the two classes.
 
->>> import pennylane as qml
->>> from pennylane import X
->>> qml.operation.active_new_opmath()
-True
->>> H = qml.Hamiltonian([0.5, 0.5], [X(0), X(1)])
->>> type(H)
-pennylane.ops.op_math.linear_combination.LinearCombination
+    >>> import pennylane as qml
+    >>> from pennylane import X
+    >>> qml.operation.active_new_opmath()
+    True
+    >>> H = qml.Hamiltonian([0.5, 0.5], [X(0), X(1)])
+    >>> type(H)
+    pennylane.ops.op_math.linear_combination.LinearCombination
 
->>> qml.operation.disable_new_opmath_()
->>> qml.operation.active_new_opmath()
-False
->>> H = qml.Hamiltonian([0.5, 0.5], [X(0), X(1)])
->>> type(H)
-pennylane.ops.qubit.hamiltonian.Hamiltonian
+    >>> qml.operation.disable_new_opmath_()
+    >>> qml.operation.active_new_opmath()
+    False
+    >>> H = qml.Hamiltonian([0.5, 0.5], [X(0), X(1)])
+    >>> type(H)
+    pennylane.ops.qubit.hamiltonian.Hamiltonian
 
-Both classes offer the same API and functionality, so a user does not have to worry about those implementation details.
+    Both classes offer the same API and functionality, so a user does not have to worry about those implementation details.
 
 .. _Troubleshooting:
 
 Troubleshooting
 ---------------
 
-If you are a developer or power-user that explicitly uses ``qml.operation.Tensor`` or ``qml.ops.Hamiltonian``, you
-may run into one of the following common issues.
+You may experience issues with PennyLane's updated operator arithmetic in version ``v0.36`` and above if you have existing code that works with an earlier version of PennyLane.
+To help identify a fix, select the option below that describes your situation.
 
 .. details::
-    :title: Sharp bits about the nesting structure of new opmath instances
-    :href: sharp-bits-nesting
+    :title: My old PennyLane script does not run anymore
+    :href: old-script-broken
 
-    The type of the final operator is determined by the outermost operation. The resulting object is a nested structure (sums of s/prods or s/prods of sums).
+    A quick-and-dirty fix for this issue is to deactivate new opmath at the beginning of the script via ``qml.operation.disable_new_opmath()``.
+    We recommend to do the following checks instead
 
-    >>> qml.operation.enable_new_opmath() # default soon
-    >>> op = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
-    >>> type(op)
-    pennylane.ops.op_math.sum.Sum
+    * Check explicit use of the legacy :class:`~Tensor` class. If you find it in your script it can just be changed from ``Tensor(*terms)`` to ``qml.prod(*terms)`` with the same call signature.
 
-    >>> op.operands
-    (0.5 * (X(0) @ X(1)), 0.5 * (Y(0) @ Y(1)))
+    * Check explicit use of ``op.obs`` attribute, where ``op`` is some operator. This is how the terms of a tensor product is accessed in :class:`~Tensor` instances. Use ``op.operands`` instead.
 
-    >>> type(op.operands[0]), type(op.operands[1])
-    (pennylane.ops.op_math.sprod.SProd, pennylane.ops.op_math.sprod.SProd)
+      .. code-block:: python
 
-    >>> op.operands[0].scalar, op.operands[0].base, type(op.operands[0].base)
-    (0.5, X(0) @ X(1), pennylane.ops.op_math.prod.Prod)
+          # new opmath enabled (default)
+          op = X(0) @ X(1)
+          assert op.operands == (X(0), X(1))
 
-    We could construct an equivalent operator with a different nesting structure.
-
-    >>> op = (0.5 * X(0)) @ X(1) + (0.5 * Y(0)) @ Y(1)
-    >>> op.operands
-    ((0.5 * X(0)) @ X(1), (0.5 * Y(0)) @ Y(1))
-
-    >>> type(op.operands[0]), type(op.operands[1])
-    (pennylane.ops.op_math.prod.Prod, pennylane.ops.op_math.prod.Prod)
-
-    >>> op.operands[0].operands
-    (0.5 * X(0), X(1))
-
-    >>> type(op.operands[0].operands[0]), type(op.operands[0].operands[1])
-    (pennylane.ops.op_math.sprod.SProd,
-     pennylane.ops.qubit.non_parametric_ops.PauliX)
+          with qml.operation.disable_new_opmath_cm():
+              # context manager that disables new opmath temporarilly
+              op = X(0) @ X(1)
+              assert op.obs == [X(0), X(1)]
     
-    There is yet another way to construct the same, equivalent, operator.
-    We can bring all of them to the same format by using ``op.simplify()`` which brings the operator down to 
-    the form :math:`\sum_i c_i \hat{O}_i` where :math:`c_i` is a scalar coefficient and :math:`\hat{O}_i` a pure operator or tensor product of operators.
+    * Check explicit use of ``qml.ops.Hamiltonian``. In that case, simply change to ``qml.Hamiltonian``.
 
-    >>> op1 = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
-    >>> op2 = (0.5 * X(0)) @ X(1) + (0.5 * Y(0)) @ Y(1)
-    >>> op3 = 0.5 * (X(0) @ X(1) + Y(0) @ Y(1))
-    >>> qml.equal(op1, op2), qml.equal(op2, op3), qml.equal(op3, op1)
-    (True, False, False)
-
-    >>> op1 = op1.simplify()
-    >>> op2 = op2.simplify()
-    >>> op3 = op3.simplify()
-    >>> qml.equal(op1, op2), qml.equal(op2, op3), qml.equal(op3, op1)
-    (True, True, True)
-
-    >>> op1, op2, op3
-    (0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)),
-     0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)),
-     0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)))
+      >>> op = qml.ops.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(1) @ X(2)])
+      ValueError: Could not create circuits. Some or all observables are not valid.
+      >>> op = qml.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(1) @ X(2)])
+      >>> isinstance(op, qml.ops.LinearCombination)
+      True
     
-    We can also obtain those scalar coefficients and tensor product operators via the op.terms() method.
+    * Check if you are explicitly enabling and disabling new opmath somewhere in your script. Mixing both systems is not supported.
 
-    >>> coeffs, ops = op1.terms()
-    ([0.5, 0.5], [X(1) @ X(0), Y(1) @ Y(0)])
+    If for some unexpected reason your script still breaks, please post on the PennyLane `discussion forum <https://discuss.pennylane.ai>`_ or open a
+    `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?labels=bug+%3Abug%3A&template=bug_report.yml&title=[BUG]>`_
+    on the PennyLane GitHub page.
 
 .. details::
     :title: Sharp bits about the qml.Hamiltonian dispatch
@@ -288,42 +250,6 @@ may run into one of the following common issues.
 
     >>> H1 = qml.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(0) @ X(1)])
     >>> H1 = H1.simplify() # work for new and legacy opmath
-
-.. details::
-    :title: My old PennyLane script does not run anymore
-    :href: old-script-broken
-
-    A quick-and-dirty fix for this issue is to deactivate new opmath at the beginning of the script via ``qml.operation.disable_new_opmath()``.
-    We recommend to do the following checks instead
-
-    * Check explicit use of the legacy :class:`~Tensor` class. If you find it in your script it can just be changed from ``Tensor(*terms)`` to ``qml.prod(*terms)`` with the same signature.
-
-    * Check explicit use of ``op.obs`` attribute, where ``op`` is some operator. This is how the terms of a tensor product is accessed in :class:`~Tensor` instances. Use ``op.operands`` instead.
-
-      .. code-block:: python
-
-          # new opmath enabled (default)
-          op = X(0) @ X(1)
-          assert op.operands == (X(0), X(1))
-
-          with qml.operation.disable_new_opmath_cm():
-              # context manager that disables new opmath temporarilly
-              op = X(0) @ X(1)
-              assert op.obs == [X(0), X(1)]
-    
-    * Check explicit use of ``qml.ops.Hamiltonian``. In that case, simply change to ``qml.Hamiltonian``.
-
-      >>> op = qml.ops.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(1) @ X(2)])
-      ValueError: Could not create circuits. Some or all observables are not valid.
-      >>> op = qml.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(1) @ X(2)])
-      >>> isinstance(op, qml.ops.LinearCombination)
-      True
-    
-    * Check if you are explicitly enabling and disabling new opmath somewhere in your script. Mixing both systems is not supported.
-
-    If for some unexpected reason your script still breaks, please post on the PennyLane `discussion forum <https://discuss.pennylane.ai>`_ or open a
-    `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?labels=bug+%3Abug%3A&template=bug_report.yml&title=[BUG]>`_
-    on the PennyLane GitHub page.
 
 .. details::
     :title: I want to contribute to PennyLane and need to provide legacy support in tests
@@ -421,6 +347,67 @@ may run into one of the following common issues.
     For all that, keep in mind that ``qml.Hamiltonian`` points to :class:`~Hamiltonian` and :class:`LinearCombination` depending on the status of ``qml.operation.active_new_opmath()``.
     So if you want to test something specifically for the old :class:`~Hamiltonian`` class, use ``qml.ops.Hamiltonian`` instead.
 
+.. details::
+    :title: Sharp bits about the nesting structure of new opmath instances
+    :href: sharp-bits-nesting
+
+    The type of the final operator is determined by the outermost operation. The resulting object is a nested structure (sums of s/prods or s/prods of sums).
+
+    >>> qml.operation.enable_new_opmath() # default soon
+    >>> op = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
+    >>> type(op)
+    pennylane.ops.op_math.sum.Sum
+
+    >>> op.operands
+    (0.5 * (X(0) @ X(1)), 0.5 * (Y(0) @ Y(1)))
+
+    >>> type(op.operands[0]), type(op.operands[1])
+    (pennylane.ops.op_math.sprod.SProd, pennylane.ops.op_math.sprod.SProd)
+
+    >>> op.operands[0].scalar, op.operands[0].base, type(op.operands[0].base)
+    (0.5, X(0) @ X(1), pennylane.ops.op_math.prod.Prod)
+
+    We could construct an equivalent operator with a different nesting structure.
+
+    >>> op = (0.5 * X(0)) @ X(1) + (0.5 * Y(0)) @ Y(1)
+    >>> op.operands
+    ((0.5 * X(0)) @ X(1), (0.5 * Y(0)) @ Y(1))
+
+    >>> type(op.operands[0]), type(op.operands[1])
+    (pennylane.ops.op_math.prod.Prod, pennylane.ops.op_math.prod.Prod)
+
+    >>> op.operands[0].operands
+    (0.5 * X(0), X(1))
+
+    >>> type(op.operands[0].operands[0]), type(op.operands[0].operands[1])
+    (pennylane.ops.op_math.sprod.SProd,
+     pennylane.ops.qubit.non_parametric_ops.PauliX)
+    
+    There is yet another way to construct the same, equivalent, operator.
+    We can bring all of them to the same format by using ``op.simplify()`` which brings the operator down to 
+    the form :math:`\sum_i c_i \hat{O}_i` where :math:`c_i` is a scalar coefficient and :math:`\hat{O}_i` a pure operator or tensor product of operators.
+
+    >>> op1 = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
+    >>> op2 = (0.5 * X(0)) @ X(1) + (0.5 * Y(0)) @ Y(1)
+    >>> op3 = 0.5 * (X(0) @ X(1) + Y(0) @ Y(1))
+    >>> qml.equal(op1, op2), qml.equal(op2, op3), qml.equal(op3, op1)
+    (True, False, False)
+
+    >>> op1 = op1.simplify()
+    >>> op2 = op2.simplify()
+    >>> op3 = op3.simplify()
+    >>> qml.equal(op1, op2), qml.equal(op2, op3), qml.equal(op3, op1)
+    (True, True, True)
+
+    >>> op1, op2, op3
+    (0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)),
+     0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)),
+     0.5 * (X(1) @ X(0)) + 0.5 * (Y(1) @ Y(0)))
+    
+    We can also obtain those scalar coefficients and tensor product operators via the op.terms() method.
+
+    >>> coeffs, ops = op1.terms()
+    ([0.5, 0.5], [X(1) @ X(0), Y(1) @ Y(0)])
 
 .. details::
     :title: I am unsure what to do
