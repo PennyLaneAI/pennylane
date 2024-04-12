@@ -142,7 +142,8 @@ def _add_op(op, layer_str, config):
 
     label = op.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
     if len(op.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
-        for i, s in enumerate(layer_str):
+        n_wires = len(config.wire_map)
+        for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + label
     else:
         for w in op.wires:
@@ -225,7 +226,8 @@ def _add_measurement(m, layer_str, config):
         meas_label = m.return_type.value
 
     if len(m.wires) == 0:  # state or probability across all wires
-        for i, s in enumerate(layer_str):
+        n_wires = len(config.wire_map)
+        for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + meas_label
 
     for w in m.wires:

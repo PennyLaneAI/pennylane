@@ -85,8 +85,20 @@ def skip_if():
     return _skip_if
 
 
-@pytest.fixture(scope="function")
-def device(device_kwargs):
+@pytest.fixture
+def validate_diff_method(device, diff_method, device_kwargs):
+    """Skip tests if a device does not support a diff_method"""
+    if diff_method == "backprop" and device_kwargs.get("shots") is not None:
+        pytest.skip(reason="test should only be run in analytic mode")
+    dev = device(1)
+    if isinstance(dev, qml.Device):
+        passthru_devices = dev.capabilities().get("passthru_devices")
+        if diff_method == "backprop" and passthru_devices is None:
+            pytest.skip(reason="device does not support backprop")
+
+
+@pytest.fixture(scope="function", name="device")
+def fixture_device(device_kwargs):
     """Fixture to create a device."""
 
     # internally used by pytest

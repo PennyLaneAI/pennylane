@@ -527,6 +527,7 @@ jobs:
           #   shots: None
           - device: default.qubit.autograd
             shots: None
+            skip_interface: jax,tf,torch
           - device: default.mixed
             shots: None
         python-version: >-
@@ -542,9 +543,9 @@ jobs:
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_jax: ${{ contains(matrix.config.device, 'jax') }}
-      install_tensorflow: ${{ contains(matrix.config.device, 'tf') }}
-      install_pytorch: ${{ contains(matrix.config.device, 'torch') }}
+      install_jax: ${{ !contains(matrix.config.skip_interface, 'jax') }}
+      install_tensorflow: ${{ !contains(matrix.config.skip_interface, 'tf') }}
+      install_pytorch: ${{ !contains(matrix.config.skip_interface, 'torch') }}
       install_pennylane_lightning_master: true
       pytest_test_directory: pennylane/devices/tests
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}

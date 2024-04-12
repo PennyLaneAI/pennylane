@@ -59,6 +59,7 @@ class TestTracking:
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
             "derivative_batches": [1],
             "derivatives": [1],
+            "errors": [{}, {}, {}],
         }
         assert tracker.totals == {
             "batches": 2,
@@ -73,6 +74,7 @@ class TestTracking:
             "simulations": 1,
             "results": 1,
             "resources": Resources(num_wires=1),
+            "errors": {},
         }
 
     def test_tracking_execute_and_derivatives(self):
@@ -103,6 +105,7 @@ class TestTracking:
             "vjp_batches": [1],
             "execute_and_vjp_batches": [1],
             "resources": [Resources(num_wires=1)] * 12,
+            "errors": [{}] * 12,
         }
 
     def test_tracking_resources(self):
