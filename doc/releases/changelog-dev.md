@@ -230,6 +230,9 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
+* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
+  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
+  
 * Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
   noisy qutrit circuit with measurement and sampling.
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
