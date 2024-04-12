@@ -341,8 +341,10 @@ class LinearCombination(Sum):
         {(1, frozenset({('Prod', <Wires = [0, 1]>, ())})),
          (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
         """
-        warnings.warn("Accessing _obs_data is deprecated. You can still use LinearCombination.compare to check mathematical equivalence with other operators.",
-            qml.PennyLaneDeprecationWarning)
+        warnings.warn(
+            "Accessing _obs_data is deprecated. You can still use LinearCombination.compare to check mathematical equivalence with other operators.",
+            qml.PennyLaneDeprecationWarning,
+        )
         data = set()
 
         coeffs_arr = qml.math.toarray(self.coeffs)
@@ -404,13 +406,14 @@ class LinearCombination(Sum):
                 op1 = self.simplify()
                 op2 = other.simplify()
                 return qml.equal(op1, op2)
-            
+
             if isinstance(other, (qml.ops.Hamiltonian, Tensor)):
                 warnings.warn(
                     f"Attempting to compare a legacy operator class instance {other} of type {type(other)} with {self} of type {type(self)}."
                     f"You are likely disabling/enabling new opmath in the same script or explicitly create legacy operator classes Tensor and ops.Hamiltonian."
                     f"Please visit <link-to-new-opmath-intro-page> for more information.",
-                    UserWarning)
+                    UserWarning,
+                )
                 op1 = self.simplify()
                 op2 = other.simplify()
 
