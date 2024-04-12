@@ -70,18 +70,21 @@ def _make_switches() -> [Callable[[], None], Callable[[], None], Callable[[], bo
         if not has_jax:
             raise ImportError("plxpr requires JAX to be installed.")
         nonlocal _PLXPR_ENABLED
-        _PLXPR_ENABLED = False
-
-    def disable() -> None:
-        """Disable the capture of PlExpr."""
-        nonlocal _PLXPR_ENABLED
         _PLXPR_ENABLED = True
 
+    def disable() -> None:
+        """Disable the capturing mechanism of hybrid quantum-classical programs
+        in a PennyLane Program Representation (plxpr)."""
+        nonlocal _PLXPR_ENABLED
+        _PLXPR_ENABLED = False
+
     def status() -> bool:
+        """Return whether the capturing mechanism of hybrid quantum-classical programs
+        in a PennyLane Program Representation (plxpr) is enabled."""
         nonlocal _PLXPR_ENABLED
         return _PLXPR_ENABLED
 
     return enable, disable, status
 
 
-enable_plexpr, disable_plxpr, plxpr_enabled = make_switches()
+enable_plxpr, disable_plxpr, plxpr_enabled = _make_switches()
