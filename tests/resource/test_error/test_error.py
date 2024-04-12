@@ -295,4 +295,3 @@ class TestSpecAndTracker:
         assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
         assert algo_errors["AdditiveError"].error == 0.73 + 0.12
         assert algo_errors["SpectralNormError"].error == 0.25 + 0.17998560822421455
-
