@@ -278,6 +278,8 @@ def apply_mid_measure(
     axes = list(range(state.ndim))
     axes.pop(wire.toarray()[0])
     probs = qml.math.sum(qml.math.abs(state * qml.math.conj(state)), axis=tuple(axes))
+    if not qml.math.is_abstract(probs) and not qml.math.allclose(qml.math.sum(probs), 1.0):
+        probs = probs / qml.math.sum(probs)
     if rng is None:
         sample = np.random.binomial(1, probs[1])
     else:
@@ -289,10 +291,10 @@ def apply_mid_measure(
     state[tuple(slices)] = 0.0
     state_norm = qml.math.norm(state)
     if not qml.math.is_abstract(sample) and op.postselect is not None and sample != op.postselect:
-        state_norm = 0.0
+        state_norm = 1.0
         mid_measurements[op] = -1
     if not qml.math.is_abstract(state) and qml.math.allclose(state_norm, 0.0):
-        state_norm = 0.0
+        state_norm = 1.0
         mid_measurements[op] = -1
     state = state / state_norm
     if op.reset and sample == 1:
