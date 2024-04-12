@@ -307,8 +307,36 @@ class TestHamiltonianExpand:
             (qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]), -3),
         ],
     )
-    @pytest.mark.parametrize("theta", [np.pi, [np.pi, np.pi, np.pi]])
-    def test_processing_function_shot_vector(self, H, expected, theta):
+    def test_processing_function_shot_vectors(self, H, expected):
+        """Tests that the processing function works with shot vectors
+        and grouping with different number of coefficients in each group"""
+
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(5000, 4)])
+        H.compute_grouping()
+
+        @qml.transforms.hamiltonian_expand
+        @qml.qnode(dev_with_shot_vector)
+        def circuit(inputs):
+            qml.RX(inputs, wires=0)
+            return qml.expval(H)
+
+        res = circuit(np.pi)
+        assert qml.math.shape(res) == (4,)
+        assert qml.math.allclose(res, np.ones((4,)) * expected, atol=0.1)
+
+    @pytest.mark.parametrize(
+        "H, expected",
+        [
+            # Contains only groups with single coefficients
+            (qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)]), [1, 0, -1]),
+            # Contains groups with multiple coefficients
+            (
+                qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]),
+                [3, 0, -3],
+            ),
+        ],
+    )
+    def test_processing_function_shot_vectors_broadcasting(self, H, expected):
         """Tests that the processing function works with shot vectors, parameter broadcasting,
         and grouping with different number of coefficients in each group"""
 
@@ -321,10 +349,9 @@ class TestHamiltonianExpand:
             qml.RX(inputs, wires=0)
             return qml.expval(H)
 
-        res = circuit(theta)
-        shape = (4,) if isinstance(theta, float) else (4, 3)
-        assert res.shape == shape
-        assert np.allclose(res, np.ones(shape) * expected, atol=0.1)
+        res = circuit([0, np.pi / 2, np.pi])
+        assert qml.math.shape(res) == (4, 3)
+        assert qml.math.allclose(res, qml.math.stack([expected] * 4), atol=0.1)
 
     def test_constant_offset_grouping(self):
         """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and grouping."""
