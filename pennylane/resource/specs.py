@@ -52,21 +52,23 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
     .. code-block:: python3
 
         x = np.array([0.1, 0.2])
+        hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
 
         dev = qml.device('default.qubit', wires=2)
         @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
-            qml.TrotterProduct(hamiltonian, time=1.0, order=2)
+            qml.TrotterProduct(hamiltonian, time=1.0, n=4, order=2)
             if add_ry:
                 qml.RY(x[1], wires=1)
+            qml.TrotterProduct(hamiltonian, time=1.0, n=4, order=4)
             return qml.probs(wires=(0,1))
 
     >>> qml.specs(circuit)(x, add_ry=False)
-    {'resources': Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1}),
-    gate_sizes=defaultdict(<class 'int'>, {1: 1, 2: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
-    'errors': {'SpectralNormError': SpectralNormError(4.0)},
+    {'resources': Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1, 'TrotterPro
+    duct': 2}}), gate_sizes=defaultdict(<class 'int'>, {1: 1, 2: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
+    'errors': {'SpectralNormError': SpectralNormError(0.42998560822421455)},
     'num_observables': 1,
     'num_diagonalizing_gates': 0,
     'num_trainable_params': 1,

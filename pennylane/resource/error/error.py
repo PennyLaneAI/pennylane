@@ -153,15 +153,16 @@ def _compute_algo_error(tape) -> Dict[str, AlgorithmicError]:
         tape (.QuantumTape): The quantum circuit for which we compute errors
 
     Returns:
-        dict[str->.AlgorithmicError]: dict with error name and combined error as key-value pair.
+        dict[str->.AlgorithmicError]: dict with error name and combined error as key-value pair
     """
 
-    op_errors = {}
+    algo_errors = {}
     for op in tape.operations:
-        if issubclass(op.__class__, ErrorOperation):
-            error_val = op.error()  # get error object from the op
-            error_str = getattr(error_val.__class__, "__name__")  # get name of the class as str
-            error_obj = op_errors.get(error_str, None)  # attempt obtaining error from dict
-            op_errors[error_str] = error_val if error_obj is None else error_obj.combine(error_val)
+        if isinstance(op, ErrorOperation):
+            op_error = op.error()
+            error_name = op_error.__class__.__name__
+            algo_error = algo_errors.get(error_name, None)
+            error_value = op_error if algo_error is None else algo_error.combine(op_error)
+            algo_errors[error_name] = error_value
 
-    return op_errors
+    return algo_errors
