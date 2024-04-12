@@ -361,20 +361,14 @@ class LinearCombination(Sum):
         return data
 
     def compare(self, other):
-        r"""Determines whether the operator is equivalent to another.
+        r"""Determines mathematical equivalence between operators
 
-        Currently only supported for :class:`~LinearCombination`, :class:`~.Observable`, or :class:`~.Tensor`.
-        LinearCombinations/observables are equivalent if they represent the same operator
-        (their matrix representations are equal), and they are defined on the same wires.
+        ``LinearCombination`` and other operators are equivalent if they mathematically represent the same operator
+        (their matrix representations are equal), acting on the same wires.
 
         .. Warning::
 
-            The compare method does **not** check if the matrix representation
-            of a :class:`~.Hermitian` observable is equal to an equivalent
-            observable expressed in terms of Pauli matrices, or as a
-            linear combination of Hermitians.
-            To do so would require the matrix form of LinearCombinations and Tensors
-            be calculated, which would drastically increase runtime.
+            This method does not compare explicit matrix representations, but checks mathetmatical equivalence.
 
         Returns:
             (bool): True if equivalent.

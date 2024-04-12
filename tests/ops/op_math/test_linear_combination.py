@@ -712,7 +712,8 @@ class TestLinearCombination:
             [1, 1, 0.5],
             [Z(0), Z(0) @ X(1), X(2) @ qml.Identity(1)],
         )
-        data = H._obs_data()
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="Accessing _obs_data is deprecated"):
+            data = H._obs_data()
 
         expected = {
             (0.5, frozenset({("Prod", qml.wires.Wires([2, 1]), ())})),
@@ -733,7 +734,8 @@ class TestLinearCombination:
                 qml.GellMann(wires=2, index=2),
             ],
         )
-        data = H._obs_data()
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="Accessing _obs_data is deprecated"):
+            data = H._obs_data()
 
         expected = {
             (-1.0, frozenset({("Prod", qml.wires.Wires([0, 1]), ())})),
