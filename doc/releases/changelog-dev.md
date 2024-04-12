@@ -248,6 +248,9 @@
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
+* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+  [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+
 * Add type hints for unimplemented methods of the abstract class `Operator`.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
 
