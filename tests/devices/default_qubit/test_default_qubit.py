@@ -2051,11 +2051,14 @@ class TestIntegration:
             return qml.counts(all_outcomes=all_outcomes)
 
         assert circuit() == expected
-    
+
     @pytest.mark.jax
-    def test_differentiate_jitted_qnode(self,):
+    def test_differentiate_jitted_qnode(
+        self,
+    ):
         """Test that a jitted qnode can be correctly differentiated"""
         import jax
+
         dev = DefaultQubit()
 
         def qfunc(x, y):
@@ -2094,5 +2097,3 @@ def test_broadcasted_parameter(max_workers):
     results = dev.execute(batch, config)
     processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))
-
-
