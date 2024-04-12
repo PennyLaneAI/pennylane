@@ -99,7 +99,9 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None, mid_measurements=None, rng=None):
+def get_final_state(
+    circuit, debugger=None, interface=None, mid_measurements=None, rng=None, prng_key=None
+):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -111,6 +113,10 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
         interface (str): The machine learning interface to create the initial state with
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
+            will be for sampling.
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -135,6 +141,7 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
             debugger=debugger,
             mid_measurements=mid_measurements,
             rng=rng,
+            prng_key=prng_key,
         )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
@@ -293,7 +300,12 @@ def simulate_one_shot_native_mcm(
 
     mid_measurements = {}
     state, is_state_batched = get_final_state(
-        circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements, rng=rng
+        circuit,
+        debugger=debugger,
+        interface=interface,
+        mid_measurements=mid_measurements,
+        rng=rng,
+        prng_key=prng_key,
     )
     return measure_final_state(
         circuit,

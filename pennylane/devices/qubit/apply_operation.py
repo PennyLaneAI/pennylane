@@ -239,6 +239,7 @@ def apply_conditional(
     """
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
     interface = qml.math.get_deep_interface(state)
     if interface == "jax":
         # pylint: disable=import-outside-toplevel
@@ -253,6 +254,7 @@ def apply_conditional(
                 debugger=debugger,
                 mid_measurements=mid_measurements,
                 rng=rng,
+                prng_key=prng_key,
             ),
             lambda x: x,
             state,
@@ -265,6 +267,7 @@ def apply_conditional(
             debugger=debugger,
             mid_measurements=mid_measurements,
             rng=rng,
+            prng_key=prng_key,
         )
     return state
 
@@ -290,6 +293,7 @@ def apply_mid_measure(
     """
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
@@ -302,7 +306,7 @@ def apply_mid_measure(
         # pylint: disable=import-outside-toplevel
         import jax
 
-        key = execution_kwargs.get("prng_key", jax.random.PRNGKey(0))
+        _, key = jax.random.split(prng_key)
         sample = jax.random.choice(
             key, np.array([0, 1]), shape=(1,), p=jax.numpy.array([prob0, 1.0 - prob0])
         )[0]
@@ -314,14 +318,18 @@ def apply_mid_measure(
         sample = sampling_fun([0, 1], 1, p=[prob0, 1.0 - prob0])[0]
     mid_measurements[op] = sample
 
-    # slices[axis] = int(not sample)
-    # state[tuple(slices)] = 0.0
-
-    matrix = qml.math.array([[0.0, 0.0], [0.0, 0.0]], like=interface)
-    matrix = matrix.at[sample, sample].set(1.0)
-    state = apply_operation(
-        qml.QubitUnitary(matrix, wire), state, is_state_batched=is_state_batched, debugger=debugger
-    )
+    if interface == "jax":
+        matrix = qml.math.array([[0.0, 0.0], [0.0, 0.0]], like=interface)
+        matrix = matrix.at[sample, sample].set(1.0)
+        state = apply_operation(
+            qml.QubitUnitary(matrix, wire),
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+        )
+    else:
+        slices[axis] = int(not sample)
+        state[tuple(slices)] = 0.0
 
     state_norm = qml.math.norm(state)
     if not qml.math.is_abstract(sample) and op.postselect is not None and sample != op.postselect:

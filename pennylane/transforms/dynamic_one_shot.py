@@ -90,6 +90,7 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
 
+    interface = qml.math.get_deep_interface(tape.data)
     aux_tape = init_auxiliary_tape(tape)
     output_tapes = [aux_tape] * tape.shots.total_shots
 
