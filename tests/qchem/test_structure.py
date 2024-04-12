@@ -233,7 +233,7 @@ def test_hf_state(electrons, orbitals, exp_state):
 
 
 def test_hf_state_basis():
-    r"""Test the correctness of the generated vector in user defined basis"""
+    r"""Test the correctness of the generated HF state in a circuit."""
 
     electrons = 2
     symbols = ["H", "H"]
