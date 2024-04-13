@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the switches to (de)activate the capturing mechanism, and a 
+Contains the switches to (de)activate the capturing mechanism, and a
 status reporting function on whether it is enabled or not.
 """
 from typing import Callable
