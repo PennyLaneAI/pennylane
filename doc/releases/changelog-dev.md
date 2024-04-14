@@ -252,6 +252,9 @@
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
+* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+  [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+
 * Add type hints for unimplemented methods of the abstract class `Operator`.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
 
@@ -333,6 +336,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Adds a page explaining the shapes and nesting of result objects.
+  [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
+
 * Removed some redundant documentation for the `evolve` function.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
@@ -349,6 +355,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+  [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
 
 * The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
   [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
