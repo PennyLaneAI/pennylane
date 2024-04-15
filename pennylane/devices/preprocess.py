@@ -389,7 +389,7 @@ def validate_observables(
     ...    return obj.name in {"PauliX", "PauliY", "PauliZ"}
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0) + qml.Y(0))])
     >>> validate_observables(tape, accepted_observable)
-    DeviceError: Observable <Hamiltonian: terms=2, wires=[0]> not supported on device
+    DeviceError: Observable Z(0) + Y(0) not supported on device
 
     Note that if the observable is a :class:`~.Tensor`, the validation is run on each object in the
     ``Tensor`` instead.
