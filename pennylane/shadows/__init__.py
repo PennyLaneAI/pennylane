@@ -79,7 +79,7 @@ The easiest way of computing expectation values with classical shadows in PennyL
     dev = qml.device("default.qubit", shots=10000)
 
     # shadow_expval + mid-circuit measurements require to defer measurements
-    @qml.defer_measurements 
+    @qml.defer_measurements
     @qml.qnode(dev)
     def qnode(x):
         qml.Hadamard(0)
