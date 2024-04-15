@@ -718,3 +718,31 @@ def test_template_integration():
 
     assert isinstance(weights.grad, torch.Tensor)
     assert weights.grad.shape == weights.shape
+
+
+class TestMeasurements:
+    """Tests for measurements with default.mixed"""
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.counts(qml.PauliZ(0)),
+            qml.counts(wires=[0]),
+            qml.sample(qml.PauliX(0)),
+            qml.sample(wires=[1]),
+        ],
+    )
+    def test_measurements_torch(self, measurement):
+        """Test sampling-based measurements work with `default.mixed` for trainable interfaces"""
+        num_shots = 1024
+        dev = qml.device("default.mixed", wires=2, shots=num_shots)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        res = circuit(torch.tensor(0.5, requires_grad=True))
+
+        assert len(res) == 2 if isinstance(measurement, qml.measurements.CountsMP) else num_shots
