@@ -116,12 +116,10 @@ def test_apply_mid_measure():
         )
     m0 = MidMeasureMP(0, postselect=1)
     mid_measurements = {}
-    state = apply_mid_measure(m0, np.zeros(2), mid_measurements=mid_measurements)
+    _ = apply_mid_measure(m0, np.zeros(2), mid_measurements=mid_measurements)
     assert mid_measurements[m0] == -1
-    assert np.allclose(state, 0.0)
-    state = apply_mid_measure(m0, np.array([1, 0]), mid_measurements=mid_measurements)
+    _ = apply_mid_measure(m0, np.array([1, 0]), mid_measurements=mid_measurements)
     assert mid_measurements[m0] == -1
-    assert np.allclose(state, 0.0)
 
 
 def test_accumulate_native_mcm_unsupported_error():

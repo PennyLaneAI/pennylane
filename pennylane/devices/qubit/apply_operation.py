@@ -316,31 +316,27 @@ def apply_mid_measure(
         else:
             sampling_fun = rng.choice
         sample = sampling_fun([0, 1], 1, p=[prob0, 1.0 - prob0])[0]
-    mid_measurements[op] = sample
-
-    if interface == "jax":
-        matrix = qml.math.array([[0.0, 0.0], [0.0, 0.0]], like=interface)
-        matrix = matrix.at[sample, sample].set(1.0)
-        state = apply_operation(
-            qml.QubitUnitary(matrix, wire),
-            state,
-            is_state_batched=is_state_batched,
-            debugger=debugger,
-        )
+    if op.postselect is not None:
+        mid_measurements[op] = (sample != op.postselect) * -1 + (sample == op.postselect) * sample
     else:
-        slices[axis] = int(not sample)
-        state[tuple(slices)] = 0.0
+        mid_measurements[op] = sample
+
+    # Using apply_operation makes it easier to work with JAX
+    matrix = qml.math.array([[(sample + 1) % 2, 0.0], [0.0, (sample) % 2]], like=interface)
+    state = apply_operation(
+        qml.QubitUnitary(matrix, wire),
+        state,
+        is_state_batched=is_state_batched,
+        debugger=debugger,
+    )
 
     state_norm = qml.math.norm(state)
-    if not qml.math.is_abstract(sample) and op.postselect is not None and sample != op.postselect:
-        state_norm = 0.0
-        mid_measurements[op] = -1
     if not qml.math.is_abstract(state_norm) and qml.math.allclose(state_norm, 0.0):
+        mid_measurements[op] = -1
         state = 0.0 * state
         slices = [slice(0, 1, 1)] * qml.math.ndim(state)
         state[tuple(slices)] = 1.0
         state_norm = 1.0
-        mid_measurements[op] = -1
     state = state / state_norm
     if op.reset and sample == 1:
         state = apply_operation(

@@ -301,16 +301,18 @@ def simulate_one_shot_native_mcm(
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
     interface = execution_kwargs.get("interface", None)
+    subkey = None
     if prng_key is not None:
         import jax
-        key, subkey = jax.random.split(prng_key)
+
+        prng_key, subkey = jax.random.split(prng_key)
     mid_measurements = {}
     state, is_state_batched = get_final_state(
         circuit,
         debugger=debugger,
         interface=interface,
         rng=rng,
-        prng_key=key,
+        prng_key=prng_key,
         mid_measurements=mid_measurements,
     )
     return measure_final_state(
