@@ -419,7 +419,7 @@ def _measure_sum_with_samples(
 
     keys = jax_random_split(prng_key, num=len(shots.shot_vector))
     unsqueezed_results = tuple(
-        _sum_for_single_shot(type(shots)(s, key)) for s, key in zip(shots, keys)
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
     )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
