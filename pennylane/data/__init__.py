@@ -89,8 +89,7 @@ To create a new dataset in-memory, initialize a new :class:`~.Dataset` with the 
 ...   eigen = {"eigvals": eigvals, "eigvecs": eigvecs}
 ... )
 >>> dataset.hamiltonian
-(1.0) [Z0]
-+ (1.0) [Z1]
+1.0 * Z(0) + 1.0 * Z(1)
 >>> dataset.eigen
 {'eigvals': array([-2.,  0.,  0.,  2.]),
 'eigvecs': array([[0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
