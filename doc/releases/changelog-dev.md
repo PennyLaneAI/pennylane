@@ -262,7 +262,14 @@
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
+* Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
+  [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
+
 <h3>Breaking changes 💔</h3>
+
+* Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
+  operators easier to work with.
+  [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
