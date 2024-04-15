@@ -91,6 +91,8 @@ def validate_diff_method(device, diff_method, device_kwargs):
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
+    if diff_method == "backprop" and "lightning" in getattr(dev, "name", "").lower():
+        pytest.skip(reason="device does not support backprop")
     if isinstance(dev, qml.Device):
         passthru_devices = dev.capabilities().get("passthru_devices")
         if diff_method == "backprop" and passthru_devices is None:
