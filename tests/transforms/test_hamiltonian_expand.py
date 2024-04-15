@@ -14,6 +14,8 @@
 """
 Unit tests for the ``hamiltonian_expand`` transform.
 """
+import functools
+
 import numpy as np
 import pytest
 
@@ -307,14 +309,16 @@ class TestHamiltonianExpand:
             (qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]), -3),
         ],
     )
-    def test_processing_function_shot_vectors(self, H, expected):
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_processing_function_shot_vectors(self, H, expected, grouping):
         """Tests that the processing function works with shot vectors
         and grouping with different number of coefficients in each group"""
 
         dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
-        H.compute_grouping()
+        if grouping:
+            H.compute_grouping()
 
-        @qml.transforms.hamiltonian_expand
+        @functools.partial(qml.transforms.hamiltonian_expand, group=grouping)
         @qml.qnode(dev_with_shot_vector)
         def circuit(inputs):
             qml.RX(inputs, wires=0)
@@ -336,14 +340,17 @@ class TestHamiltonianExpand:
             ),
         ],
     )
-    def test_processing_function_shot_vectors_broadcasting(self, H, expected):
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_processing_function_shot_vectors_broadcasting(self, H, expected, grouping):
         """Tests that the processing function works with shot vectors, parameter broadcasting,
         and grouping with different number of coefficients in each group"""
 
         dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
-        H.compute_grouping()
 
-        @qml.transforms.hamiltonian_expand
+        if grouping:
+            H.compute_grouping()
+
+        @functools.partial(qml.transforms.hamiltonian_expand, group=grouping)
         @qml.qnode(dev_with_shot_vector)
         def circuit(inputs):
             qml.RX(inputs, wires=0)
