@@ -95,6 +95,7 @@ def validate_diff_method(device, diff_method, device_kwargs):
         passthru_devices = dev.capabilities().get("passthru_devices")
         if diff_method == "backprop" and passthru_devices is None:
             pytest.skip(reason="device does not support backprop")
+        return
 
     config = qml.devices.ExecutionConfig(gradient_method=diff_method)
     if not dev.supports_derivatives(execution_config=config):
