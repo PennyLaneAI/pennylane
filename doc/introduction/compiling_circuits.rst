@@ -54,7 +54,7 @@ Now lets simplify a nested operator:
 
 >>> sum_op = qml.RX(1, 0) + qml.X(0)
 >>> prod1 = qml.X(0) @ sum_op
->>> nested_op = prod1 @ qml.RX(1, 0)
+>>> nested_op = qml.prod(prod1, qml.RX(1, 0))
 >>> qml.simplify(nested_op)
 (X(0) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
 

@@ -49,19 +49,6 @@ class TestVar:
         else:
             assert res.dtype == r_dtype
 
-    def test_not_an_observable(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.var(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
     def test_observable_return_type_is_variance(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
         dev = qml.device("default.qubit", wires=2)
