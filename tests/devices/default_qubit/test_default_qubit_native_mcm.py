@@ -21,10 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import apply_mid_measure, MidMeasureMP
-from pennylane.transforms.dynamic_one_shot import (
-    accumulate_native_mcm,
-    parse_native_mid_circuit_measurements,
-)
+from pennylane.transforms.dynamic_one_shot import parse_native_mid_circuit_measurements
 
 pytestmark = pytest.mark.slow
 get_device = partial(qml.device, name="default.qubit", seed=8237945)
@@ -122,14 +119,6 @@ def test_apply_mid_measure():
     assert mid_measurements[m0] == -1
 
 
-def test_accumulate_native_mcm_unsupported_error():
-    with pytest.raises(
-        TypeError,
-        match=f"Native mid-circuit measurement mode does not support {type(qml.var(qml.PauliZ(0))).__name__}",
-    ):
-        accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
-
-
 def test_all_invalid_shots_circuit():
 
     # dev = qml.device("default.qubit")
@@ -182,7 +171,7 @@ def test_all_invalid_shots_circuit():
 def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
     circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [measurement])
     with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
-        parse_native_mid_circuit_measurements(circuit, None, None)
+        parse_native_mid_circuit_measurements(circuit, circuit, [[None]])
 
 
 def test_unsupported_measurement():

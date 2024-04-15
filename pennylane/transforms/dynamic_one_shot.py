@@ -90,7 +90,6 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
 
-    interface = qml.math.get_deep_interface(tape.data)
     aux_tape = init_auxiliary_tape(tape)
     output_tapes = [aux_tape] * tape.shots.total_shots
 
@@ -158,42 +157,6 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     )
 
 
-def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_shot_meas):
-    """Incorporates new measurements in current measurement sequence.
-
-    Args:
-        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
-        all_shot_meas (Sequence[Any]): List of accumulated measurement results
-        one_shot_meas (Sequence[Any]): List of measurement results
-
-    Returns:
-        tuple(TensorLike): The results of the simulation
-    """
-    if len(circuit.measurements) == 1:
-        one_shot_meas = [one_shot_meas]
-    if all_shot_meas is None:
-        new_shot_meas = list(one_shot_meas)
-        for i, (m, s) in enumerate(zip(circuit.measurements, new_shot_meas)):
-            if isinstance(m, SampleMP) and isinstance(s, np.ndarray):
-                new_shot_meas[i] = [s]
-        return new_shot_meas
-    new_shot_meas = all_shot_meas
-    for i, m in enumerate(circuit.measurements):
-        if isinstance(m, CountsMP):
-            tmp = Counter(all_shot_meas[i])
-            tmp.update(Counter(one_shot_meas[i]))
-            new_shot_meas[i] = tmp
-        elif isinstance(m, (ExpectationMP, ProbabilityMP)):
-            new_shot_meas[i] = all_shot_meas[i] + one_shot_meas[i]
-        elif isinstance(m, SampleMP):
-            new_shot_meas[i].append(one_shot_meas[i])
-        else:
-            raise TypeError(
-                f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
-            )
-    return new_shot_meas
-
-
 def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript, aux_circuit: qml.tape.QuantumScript, results
 ):
@@ -234,7 +197,7 @@ def parse_native_mid_circuit_measurements(
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
-        if m.mv and not has_valid:
+        if interface != "jax" and m.mv and not has_valid:
             meas = measurement_with_no_shots(m)
         elif m.mv:
             meas = gather_mcm(m, mcm_samples, is_valid)
@@ -292,6 +255,7 @@ def gather_mcm(measurement, samples, is_valid):
     Returns:
         TensorLike: The combined measurement outcome
     """
+    interface = qml.math.get_deep_interface(is_valid)
     mv = measurement.mv
     # The following block handles measurement value lists, like ``qml.counts(op=[mcm0, mcm1, mcm2])``.
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
@@ -301,11 +265,11 @@ def gather_mcm(measurement, samples, is_valid):
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
     if isinstance(measurement, ProbabilityMP):
-        mcm_samples = qml.math.array([samples[mv.measurements[0]]])
-        wires, meas_tmp = mv.wires, measurement
-        probs = meas_tmp.process_samples(mcm_samples, wire_order=wires)
-        return probs / qml.math.sum(is_valid) * is_valid.size
-    mcm_samples = qml.math.array([mv.concretize(samples)]).ravel()
+        mcm_samples = qml.math.array([mv.concretize(samples)], like=interface).ravel()
+        counts = [qml.math.sum(mcm_samples * (samples[mv.measurements[0]] == v)) for v in [0, 1]]
+        counts = qml.math.array(counts, like=interface)
+        return counts / qml.math.sum(counts)
+    mcm_samples = qml.math.array([mv.concretize(samples)], like=interface).ravel()
     if isinstance(measurement, CountsMP):
         mcm_samples = [{s: 1} for s in mcm_samples]
     return gather_non_mcm(measurement, mcm_samples, is_valid)
