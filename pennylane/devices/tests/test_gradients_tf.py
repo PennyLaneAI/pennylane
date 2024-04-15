@@ -153,6 +153,7 @@ class TestGradients:
         dev = device(wires=wires)
         tol = tol(dev.shots)
 
+        # TODO: remove the following lines after tensorflow dtype preservation is fixed
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.skip("tf interfaces not working correctly with lightning")
 
@@ -201,6 +202,7 @@ class TestGradients:
         dev = device(wires=wires)
         tol = tol(dev.shots)
 
+        # TODO: remove the following lines after tensorflow dtype preservation is fixed
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.skip("tf interfaces not working correctly with lightning")
 
