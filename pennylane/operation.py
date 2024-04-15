@@ -248,12 +248,12 @@ import functools
 import itertools
 import warnings
 from enum import IntEnum
-from typing import List
+from typing import List, Tuple
 from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
-from scipy.sparse import coo_matrix, eye, kron
+from scipy.sparse import coo_matrix, csr_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.math import expand_matrix
@@ -749,7 +749,7 @@ class Operator(metaclass=JaxPRMeta):
         return self.hash
 
     @staticmethod
-    def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
+    def compute_matrix(*params, **hyperparams) -> TensorLike:  # pylint:disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -775,7 +775,7 @@ class Operator(metaclass=JaxPRMeta):
         """
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
-    def matrix(self, wire_order=None):
+    def matrix(self, wire_order=None) -> TensorLike:
         r"""Representation of the operator as a matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -810,7 +810,9 @@ class Operator(metaclass=JaxPRMeta):
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
+    def compute_sparse_matrix(
+        *params, **hyperparams
+    ) -> csr_matrix:  # pylint:disable=unused-argument
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -828,7 +830,7 @@ class Operator(metaclass=JaxPRMeta):
         """
         raise SparseMatrixUndefinedError
 
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None) -> csr_matrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -853,7 +855,7 @@ class Operator(metaclass=JaxPRMeta):
         return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
-    def compute_eigvals(*params, **hyperparams):
+    def compute_eigvals(*params, **hyperparams) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1269,7 +1271,7 @@ class Operator(metaclass=JaxPRMeta):
             or cls.decomposition != Operator.decomposition
         )
 
-    def decomposition(self):
+    def decomposition(self) -> List["Operator"]:
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n
@@ -1286,7 +1288,7 @@ class Operator(metaclass=JaxPRMeta):
         )
 
     @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters):
+    def compute_decomposition(*params, wires=None, **hyperparameters) -> List["Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1325,7 +1327,7 @@ class Operator(metaclass=JaxPRMeta):
     @staticmethod
     def compute_diagonalizing_gates(
         *params, wires, **hyperparams
-    ):  # pylint: disable=unused-argument
+    ) -> List["Operator"]:  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1509,11 +1511,15 @@ class Operator(metaclass=JaxPRMeta):
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return qml.sum(self, other)
+            return qml.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
             if qml.math.allequal(other, 0):
                 return self
-            return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+            return qml.sum(
+                self,
+                qml.s_prod(scalar=other, operator=qml.Identity(self.wires), lazy=False),
+                lazy=False,
+            )
         return NotImplemented
 
     __radd__ = __add__
@@ -1523,7 +1529,7 @@ class Operator(metaclass=JaxPRMeta):
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
-            return qml.s_prod(scalar=other, operator=self)
+            return qml.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented
 
     def __truediv__(self, other):
@@ -1536,12 +1542,12 @@ class Operator(metaclass=JaxPRMeta):
 
     def __matmul__(self, other):
         """The product operation between Operator objects."""
-        return qml.prod(self, other) if isinstance(other, Operator) else NotImplemented
+        return qml.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return self + qml.s_prod(-1, other)
+            return self + qml.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
             return self + (qml.math.multiply(-1, other))
         return NotImplemented
@@ -1552,7 +1558,7 @@ class Operator(metaclass=JaxPRMeta):
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return qml.s_prod(scalar=-1, operator=self)
+        return qml.s_prod(scalar=-1, operator=self, lazy=False)
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
@@ -1720,7 +1726,7 @@ class Operation(Operator):
         """
         return Wires([])
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> Tuple[float, float, float]:
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
 
@@ -1815,7 +1821,9 @@ class Channel(Operation):
 
     @staticmethod
     @abc.abstractmethod
-    def compute_kraus_matrices(*params, **hyperparams):  # pylint:disable=unused-argument
+    def compute_kraus_matrices(
+        *params, **hyperparams
+    ) -> List[np.ndarray]:  # pylint:disable=unused-argument
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 

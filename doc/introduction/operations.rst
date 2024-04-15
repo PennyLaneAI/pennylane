@@ -132,10 +132,9 @@ For example:
 >>> mat = np.array([[1, 1], [1, -1]])
 >>> h = qml.pauli_decompose(mat)
 >>> type(h)
-<class 'pennylane.ops.qubit.hamiltonian.Hamiltonian'>
+pennylane.ops.op_math.linear_combination.LinearCombination
 >>> print(h)
-(1.0) [X0]
-+ (1.0) [Z0]
+1.0 * X(0) + 1.0 * Z(0)
 
 .. _intro_ref_ops_qubit:
 
