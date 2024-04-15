@@ -49,7 +49,7 @@ def lie_closure(
             Default is ``False``.
 
     Returns:
-        list[:class:`~.PauliSentence`]: a basis of :class:`~.PauliSentence` instances that is closed under
+        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of :class:`~.PauliSentence` instances that is closed under
         commutators (Lie closure).
 
     **Example**
@@ -58,7 +58,7 @@ def lie_closure(
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
 
-    A first round of commutators between all elements yields the new operators ``Y(0) @ X(1)`` and ``X(0) @ Y(1)`` (omitting scalar prefactors).
+    A first round of commutators between all elements yields:
 
     >>> qml.commutator(X(0) @ X(1), Z(0))
     -2j * (X(1) @ Y(0))
