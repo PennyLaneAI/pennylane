@@ -49,7 +49,7 @@ def lie_closure(
             Default is ``False``.
 
     Returns:
-        list[:class:`~.PauliSentence`]: a basis of :class:`~.PauliSentence` instances that is closed under
+        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of :class:`~.PauliSentence` instances that is closed under
         commutators (Lie closure).
 
     **Example**
@@ -58,7 +58,7 @@ def lie_closure(
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
 
-    A first round of commutators between all elements yields the new operators ``Y(0) @ X(1)`` and ``X(0) @ Y(1)`` (omitting scalar prefactors).
+    A first round of commutators between all elements yields:
 
     >>> qml.commutator(X(0) @ X(1), Z(0))
     -2j * (X(1) @ Y(0))
@@ -110,12 +110,17 @@ def lie_closure(
         pennylane.pauli.pauli_arithmetic.PauliSentence
 
     """
-    # This check and conversion is ignored in pauli=True mode
-    if not pauli and not all(isinstance(op, PauliSentence) for op in generators):
-        generators = [
-            rep if (rep := op.pauli_rep) is not None else qml.pauli.pauli_sentence(op)
-            for op in generators
-        ]
+    if not all(isinstance(op, PauliSentence) for op in generators):
+        if pauli:
+            raise TypeError(
+                "All generators need to be of type PauliSentence when using pauli=True in lie_closure."
+            )
+
+        else:
+            generators = [
+                rep if (rep := op.pauli_rep) is not None else qml.pauli.pauli_sentence(op)
+                for op in generators
+            ]
 
     vspace = PauliVSpace(generators)
 
