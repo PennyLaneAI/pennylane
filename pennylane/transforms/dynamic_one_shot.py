@@ -18,6 +18,7 @@ Contains the batch dimension transform.
 from collections import Counter
 from typing import Callable, Sequence
 
+import itertools
 import numpy as np
 
 import pennylane as qml
@@ -259,11 +260,18 @@ def gather_mcm(measurement, samples, is_valid):
     mv = measurement.mv
     # The following block handles measurement value lists, like ``qml.counts(op=[mcm0, mcm1, mcm2])``.
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
-        wires = qml.wires.Wires(range(len(mv)))
         mcm_samples = [m.concretize(samples) for m in mv]
         mcm_samples = qml.math.concatenate(mcm_samples, axis=1)
-        meas_tmp = measurement.__class__(wires=wires)
-        return meas_tmp.process_samples(mcm_samples, wire_order=wires)
+        if isinstance(measurement, ProbabilityMP):
+            values = [list(m.branches.values()) for m in mv]
+            values = list(itertools.product(*values))
+            values = [qml.math.array([v], like=interface) for v in values]
+            counts = [qml.math.sum(qml.math.all(mcm_samples == v, axis=1)) for v in values]
+            counts = qml.math.array(counts, like=interface)
+            return counts / qml.math.sum(counts)
+        if isinstance(measurement, CountsMP):
+            mcm_samples = [{"".join(str(v) for v in tuple(s)): 1} for s in mcm_samples]
+        return gather_non_mcm(measurement, mcm_samples, is_valid)
     if isinstance(measurement, ProbabilityMP):
         mcm_samples = qml.math.array([mv.concretize(samples)], like=interface).ravel()
         counts = [qml.math.sum(mcm_samples * (samples[mv.measurements[0]] == v)) for v in [0, 1]]
