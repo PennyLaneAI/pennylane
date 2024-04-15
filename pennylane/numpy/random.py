@@ -18,15 +18,19 @@ it works with the PennyLane :class:`~.tensor` class.
 import semantic_version
 
 from autograd.numpy import random as _random
-from numpy import __version__ as np_version
 from numpy.random import MT19937, PCG64, Philox, SFC64  # pylint: disable=unused-import
 
 from .wrapper import wrap_arrays, tensor_wrapper
 
 wrap_arrays(_random.__dict__, globals())
 
-
 np_version_spec = semantic_version.SimpleSpec(">=0.17.0")
+np_version = semantic_version.version("numpy")
+
+# Ensure pre/post release tags are compatible with semver
+if any((match := s) in np_version for s in ["rc", "dev", "post"]):
+    np_version = (f"-{match}").join(np_version.split("rc"))
+
 if np_version_spec.match(semantic_version.Version(np_version)):
     # pylint: disable=too-few-public-methods
     # pylint: disable=missing-class-docstring
