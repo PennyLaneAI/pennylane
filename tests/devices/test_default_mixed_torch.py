@@ -746,3 +746,26 @@ class TestMeasurements:
         res = circuit(torch.tensor(0.5, requires_grad=True))
 
         assert len(res) == 2 if isinstance(measurement, qml.measurements.CountsMP) else num_shots
+
+    @pytest.mark.parametrize(
+        "meas_op",
+        [qml.PauliX(0), qml.PauliZ(0)],
+    )
+    def test_measurement_diff(self, meas_op):
+        """Test sequence of single-shot expectation values work for derivatives"""
+        num_shots = 64
+        dev = qml.device("default.mixed", shots=[(1, num_shots)], wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.expval(meas_op)
+
+        def cost(angle):
+            return qml.math.hstack(circuit(angle))
+
+        angle = torch.tensor(0.1234, requires_grad=True)
+        res = torch.autograd.functional.jacobian(cost, angle)
+
+        assert isinstance(res, torch.Tensor)
+        assert len(res) == num_shots
