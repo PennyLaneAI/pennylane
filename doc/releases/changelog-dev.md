@@ -258,6 +258,9 @@
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
+* Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
+  [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
+
 <h3>Breaking changes 💔</h3>
 
 * Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
