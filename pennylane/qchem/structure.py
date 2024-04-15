@@ -298,16 +298,17 @@ def _beta_matrix(orbitals):
 
     bin_range = int(np.ceil(np.log2(orbitals)))
 
-    beta_previous = _beta_matrix(2 ** (bin_range - 1))
-    beta = np.kron(np.eye(2), beta_previous)
-    # Fill in the last row of the last quadrant with 1's
-    beta[-1, : 2 ** (bin_range - 1)] = 1
+    beta = np.array([[1]])
+
+    for i in range(bin_range):
+        beta = np.kron(np.eye(2), beta)
+        beta[-1, : 2**i] = 1
 
     return beta[:orbitals, :orbitals]
 
 
-def hf_state(electrons, orbitals, basis="occupation_num"):
-    r"""Generate the occupation-number vector representing the Hartree-Fock state.
+def hf_state(electrons, orbitals, basis="occupation_number"):
+    r"""Generate the vector representing the Hartree-Fock state.
 
     The many-particle wave function in the Hartree-Fock (HF) approximation is a `Slater determinant
     <https://en.wikipedia.org/wiki/Slater_determinant>`_. In Fock space, a Slater determinant
@@ -319,6 +320,20 @@ def hf_state(electrons, orbitals, basis="occupation_num"):
         n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right.,
 
     where :math:`n_i` indicates the occupation of the :math:`i`-th orbital.
+
+    This fermionic state is mapped to the qubit basis for quantum simulations.
+    We consider three mappings,
+       * Occupation number basis states, where each qubit :math:`j` stores the occupation number of
+         respective spin orbital :math:`j`.
+       * Parity basis, where each qubit .mathj stores the parity of respective spin orbital j.
+       * Bravyi-Kitaev basis, where a qubit :math:`j` stores occupation state of orbital :math:`j` if :math:`j`
+         is even and stores partial sum of the occupation state of a set of orbitals of
+         index less than :math`j`, if :math:`j` is odd.
+
+    Occupation number basis can be transformed to parity basis using transformation matrix,
+    :math:`\pi` and to Bravyi-Kitaev basis using transformation matrix, :math:`\beta`.
+    [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
+
 
     Args:
         electrons (int): Number of electrons. If an active space is defined, this
@@ -357,12 +372,11 @@ def hf_state(electrons, orbitals, basis="occupation_num"):
             f"The number of active orbitals cannot be smaller than the number of active electrons;"
             f" got 'orbitals'={orbitals} < 'electrons'={electrons}"
         )
-
-    state = np.where(np.arange(orbitals) < electrons, 1, 0)
+    else:
+        state = np.where(np.arange(orbitals) < electrons, 1, 0)
 
     if basis == "parity":
-        pi_matrix = np.ones((orbitals, orbitals))
-        pi_matrix = np.tril(pi_matrix)
+        pi_matrix = np.tril(np.ones((orbitals, orbitals)))
         state = np.matmul(pi_matrix, state) % 2
     elif basis == "bravyi_kitaev":
         beta_matrix = _beta_matrix(orbitals)
