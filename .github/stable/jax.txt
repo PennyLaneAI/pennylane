@@ -1,7 +1,7 @@
 appdirs==1.4.4
 autograd==1.6.2
 autoray==0.6.9
-black==24.3.0
+black==24.4.0
 cachetools==5.3.3
 certifi==2024.2.2
 cfgv==3.4.0
