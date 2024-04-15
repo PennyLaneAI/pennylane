@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+[(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
+
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
@@ -202,6 +205,22 @@
 
   ```
 
+
+* Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
+  [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
+
+  ```python
+  import pennylane as qml
+  fermi_ham = qml.fermi.from_string('0+ 1-')
+
+  qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
+  ```
+
+  ```pycon
+  >>> print(qubit_ham)
+  -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
+  ```
+  
 * A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
   but for usage with new operator arithmetic.
   [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
@@ -247,6 +266,13 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `qml.specs` and `qml.Tracker` now return information about algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
+  [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
+
+* `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
+
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
@@ -268,9 +294,26 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
+* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
+  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
+  
+* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
+  noisy qutrit circuit with measurement and sampling.
+  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
+
 * Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
+
+* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+  [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+
+* Add type hints for unimplemented methods of the abstract class `Operator`.
+  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
+
+* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
+  (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
+  [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
 <h3>Breaking changes 💔</h3>
 
@@ -346,6 +389,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Adds a page explaining the shapes and nesting of result objects.
+  [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
+
 * Removed some redundant documentation for the `evolve` function.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
@@ -362,6 +408,24 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+  [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
+
+* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
+  [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
+
+* Operators applied to all wires are now drawn correctly in a circuit with mid-circuit measurements.
+  [(#5501)](https://github.com/PennyLaneAI/pennylane/pull/5501)
+
+* Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
+  [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
+
+* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+  [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
+
+* Tensorflow can now handle devices with float32 results but float64 input parameters.
+  [(#5446)](https://github.com/PennyLaneAI/pennylane/pull/5446)
 
 * Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
   creating an inconsistency with other differentiation methods and preventing some use cases.
@@ -408,6 +472,9 @@
   differentiation.
   [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
 
+* `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
+  [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -418,14 +485,18 @@ Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
 Astral Cai,
+Diksha Dhawan,
 Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
+Lillian M. A. Frederiksen,
+Austin Huang,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
+Kenya Sakka,
 Jay Soni,
 Matthew Silverman,
 David Wierichs.

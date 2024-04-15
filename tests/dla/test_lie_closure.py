@@ -300,6 +300,13 @@ class TestLieClosure:
         captured = capsys.readouterr()
         assert captured.out == ""
 
+    def test_pauli_true_wrong_inputs(self):
+        """Test that an error with a meaningful error message is raised when inputting the wrong types while using pauli=True"""
+        gens = [X(0), X(1), Y(0) @ Y(1)]
+
+        with pytest.raises(TypeError, match="All generators need to be of type PauliSentence"):
+            _ = qml.dla.lie_closure(gens, pauli=True)
+
     def test_max_iterations(self, capsys):
         """Test that max_iterations truncates the lie closure iteration at the right point"""
         n = 3

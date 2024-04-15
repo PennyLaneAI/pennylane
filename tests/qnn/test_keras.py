@@ -96,6 +96,7 @@ def indices_up_to_dm(n_max):
     return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)]))
 
 
+# pylint: disable=too-many-public-methods
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
@@ -112,6 +113,20 @@ class TestKerasLayer:
         with monkeypatch.context() as m:
             m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
             with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
+                KerasLayer(c, w, output_dim)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_bad_keras_version(
+        self, get_circuit, output_dim, monkeypatch
+    ):  # pylint: disable=no-self-use
+        """Test if an ImportError is raised when instantiated with an incorrect version of
+        Keras."""
+        c, w = get_circuit
+        with monkeypatch.context() as m:
+            m.setattr(qml.qnn.keras, "CORRECT_KERAS_VERSION", False)
+            with pytest.raises(
+                ImportError, match="KerasLayer requires a Keras version lower than 3"
+            ):
                 KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
