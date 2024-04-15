@@ -570,7 +570,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_fn", [qml.expval, qml.sample, qml.probs, qml.counts])
 def test_broadcasting_qnode(shots, postselect, reset, measure_fn):
-    """Test that executing qnodes with broadcasting work as expected"""
+    """Test that executing qnodes with broadcasting works as expected"""
     if measure_fn is qml.sample and postselect is not None:
         pytest.skip("Postselection with samples doesn't work with broadcasting")
 
@@ -605,10 +605,10 @@ def test_sample_with_broadcasting_and_postselection_error():
     tape = qml.tape.QuantumScript(
         [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
     )
-    dev = qml.device("default.qubit", shots=10)
-
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         qml.transforms.dynamic_one_shot(tape)
+
+    dev = qml.device("default.qubit", shots=10)
 
     @qml.qnode(dev)
     def circuit():
