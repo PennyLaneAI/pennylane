@@ -1081,9 +1081,9 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        prod_op = (
-            qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1) @ qml.PauliX(0)
-        )
+        o1 = qml.prod(qml.RZ(1.32, wires=0), qml.I(wires=0))
+        o2 = qml.prod(o1, qml.RX(1.9, wires=1))
+        prod_op = qml.prod(o2, qml.X(0))
         assert prod_op.arithmetic_depth == 3
 
         op_constructed = Prod(
