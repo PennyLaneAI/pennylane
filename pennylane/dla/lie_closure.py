@@ -112,7 +112,9 @@ def lie_closure(
     """
     if not all(isinstance(op, PauliSentence) for op in generators):
         if pauli:
-            raise TypeError("All generators need to be of type PauliSentence when using pauli=True in lie_closure.")
+            raise TypeError(
+                "All generators need to be of type PauliSentence when using pauli=True in lie_closure."
+            )
 
         else:
             generators = [

@@ -299,7 +299,7 @@ class TestLieClosure:
         _ = lie_closure(gen11, verbose=False)
         captured = capsys.readouterr()
         assert captured.out == ""
-    
+
     def test_pauli_true_wrong_inputs(self):
         """Test that an error with a meaningful error message is raised when inputting the wrong types while using pauli=True"""
         gens = [X(0), X(1), Y(0) @ Y(1)]
