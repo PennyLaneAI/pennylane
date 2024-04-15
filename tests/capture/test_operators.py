@@ -114,75 +114,188 @@ def test_pauli_rot():
     qml.capture.disable_plxpr()
 
 
-def test_variable_wire_non_parametrized_template():
-    """Test capturing a variable wire, non-parametrized template like GroverOperator."""
+class TestTemplates:
+    def test_variable_wire_non_parametrized_template(self):
+        """Test capturing a variable wire, non-parametrized template like GroverOperator."""
 
-    qml.capture.enable_plxpr()
+        qml.capture.enable_plxpr()
 
-    jaxpr = jax.make_jaxpr(qml.GroverOperator)(wires=(0, 1, 2, 3, 4, 5))
+        jaxpr = jax.make_jaxpr(qml.GroverOperator)(wires=(0, 1, 2, 3, 4, 5))
 
-    assert len(jaxpr.eqns) == 1
-    eqn = jaxpr.eqns[0]
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
 
-    assert eqn.primitive == qml.GroverOperator._primitive
-    assert eqn.params == {"n_wires": 6}
-    assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.primitive == qml.GroverOperator._primitive
+        assert eqn.params == {"n_wires": 6}
+        assert eqn.invars == jaxpr.jaxpr.invars
 
-    qml.capture.disable_plxpr()
+        qml.capture.disable_plxpr()
+
+    def test_nested_template(self):
+        """Test capturing a template that contains a nested opeartion defined outside the qfunc."""
+
+        qml.capture.enable_plxpr()
+
+        coeffs = [0.25, 0.75]
+        ops = [qml.X(0), qml.Z(0)]
+        H = qml.dot(coeffs, ops)
+
+        def qfunc(Hi):
+            qml.TrotterProduct(Hi, time=2.4, order=2)
+
+        jaxpr = jax.make_jaxpr(qfunc)(H)
+
+        assert len(jaxpr.eqns) == 6
+
+        # due to flattening and unflattening H
+        assert jaxpr.eqns[0].primitive == qml.X._primitive
+        assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[2].primitive == qml.Z._primitive
+        assert jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[4].primitive == qml.ops.Sum._primitive
+
+        eqn = jaxpr.eqns[5]
+        assert eqn.primitive == qml.TrotterProduct._primitive
+        assert eqn.invars == jaxpr.eqns[4].outvars  # the sum op
+
+        assert eqn.params == {"order": 2, "time": 2.4}
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, coeffs[0], coeffs[1])
+
+        assert len(q) == 1
+        assert q.queue[0] == qml.TrotterProduct(H, time=2.4, order=2)
+
+        qml.capture.disable_plxpr()
 
 
-def test_nested_template():
-    """Test capturing a template that contains a nested opeartion defined outside the qfunc."""
+class TestOpmath:
+    """Tests for capturing operator arithmetic."""
 
-    qml.capture.enable_plxpr()
+    def test_adjoint(self):
+        """Test the adjoint on an op can be captured."""
 
-    coeffs = [0.25, 0.75]
-    ops = [qml.X(0), qml.Z(0)]
-    H = qml.dot(coeffs, ops)
+        qml.capture.enable_plxpr()
 
-    def qfunc(Hi):
-        qml.TrotterProduct(Hi, time=2.4, order=2)
+        jaxpr = jax.make_jaxpr(qml.adjoint)(qml.X(0))
 
-    jaxpr = jax.make_jaxpr(qfunc)(H)
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive == qml.X._primitive
 
-    assert len(jaxpr.eqns) == 6
+        eqn = jaxpr.eqns[1]
+        assert eqn.primitive == qml.ops.Adjoint._primitive
+        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        assert eqn.params == {}
 
-    # due to flattening and unflattening H
-    assert jaxpr.eqns[0].primitive == qml.X._primitive
-    assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
-    assert jaxpr.eqns[2].primitive == qml.Z._primitive
-    assert jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
-    assert jaxpr.eqns[4].primitive == qml.ops.Sum._primitive
+        qml.capture.disable_plxpr()
 
-    eqn = jaxpr.eqns[5]
-    assert eqn.primitive == qml.TrotterProduct._primitive
-    assert eqn.invars == jaxpr.eqns[4].outvars  # the sum op
+    def test_control(self):
+        """Test a nested control operation."""
 
-    assert eqn.params == {"order": 2, "time": 2.4}
+        qml.capture.enable_plxpr()
 
-    with qml.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, coeffs[0], coeffs[1])
+        def qfunc(op):
+            qml.ctrl(op, control=3, control_values=[0, 0])
 
-    assert len(q) == 1
-    assert q.queue[0] == qml.TrotterProduct(H, time=2.4, order=2)
+        jaxpr = jax.make_jaxpr(qfunc)(qml.IsingXX(1.2, wires=(0, 1)))
 
-    qml.capture.disable_plxpr()
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive == qml.IsingXX._primitive
+
+        eqn = jaxpr.eqns[1]
+        assert eqn.primitive == qml.ops.Controlled._primitive
+        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # the isingxx
+        assert eqn.invars[1].val == 3
+
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        assert eqn.params == {"control_values": [0, 0], "work_wires": None}
+
+        qml.capture.disable_plxpr()
 
 
-def test_adjoint():
-    """Test the adjoint on an op can be captured."""
+class TestAbstractDunders:
+    """Test that operator dunders work when capturing."""
 
-    qml.capture.enable_plxpr()
+    def test_add(self):
+        """Test that the add dunder works."""
 
-    jaxpr = jax.make_jaxpr(qml.adjoint)(qml.X(0))
+        qml.capture.enable_plxpr()
 
-    assert len(jaxpr.eqns) == 2
-    assert jaxpr.eqns[0].primitive == qml.X._primitive
+        def qfunc():
+            return qml.X(0) + qml.Y(1)
 
-    eqn = jaxpr.eqns[1]
-    assert eqn.primitive == qml.ops.Adjoint._primitive
-    assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
-    assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-    assert eqn.params == {}
+        jaxpr = jax.make_jaxpr(qfunc)()
 
-    qml.capture.disable_plxpr()
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.X._primitive
+        assert jaxpr.eqns[1].primitive == qml.Y._primitive
+
+        eqn = jaxpr.eqns[2]
+
+        assert eqn.primitive == qml.ops.Sum._primitive
+        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
+        assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
+
+        assert eqn.params == {"grouping_type": None, "id": None, "method": "rlf"}
+
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+
+        qml.capture.disable_plxpr()
+
+    def test_matmul(self):
+        """Test that the matmul dunder works."""
+
+        qml.capture.enable_plxpr()
+
+        def qfunc():
+            return qml.X(0) @ qml.Y(1)
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.X._primitive
+        assert jaxpr.eqns[1].primitive == qml.Y._primitive
+
+        eqn = jaxpr.eqns[2]
+
+        assert eqn.primitive == qml.ops.Prod._primitive
+        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
+        assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
+
+        assert eqn.params == {"id": None}
+
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+
+        qml.capture.disable_plxpr()
+
+    def test_mul(self):
+        """Test that the scalar multiplication dunder works."""
+
+        qml.capture.enable_plxpr()
+
+        def qfunc():
+            return 2 * qml.Y(1) * 3
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == qml.Y._primitive
+
+        assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[1].invars[0].val == 2
+        assert jaxpr.eqns[1].invars[1] == jaxpr.eqns[0].outvars[0]  # the y from the previous step
+
+        assert jaxpr.eqns[2].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[2].invars[0].val == 3
+        assert (
+            jaxpr.eqns[2].invars[1] == jaxpr.eqns[1].outvars[0]
+        )  # the sprod from the previous step
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        assert q.queue[0] == 3 * 2 * qml.Y(1)
+
+        qml.capture.disable_plxpr()

@@ -17,6 +17,7 @@ Defines a metaclass for automatic integration of any ``Operator`` with jaxpr pro
 See ``explanations.md`` for technical explanations of how this works.
 """
 
+import abc
 from functools import lru_cache
 
 import pennylane as qml
@@ -36,13 +37,20 @@ def _get_abstract_operator():
     if not has_jax:
         raise ImportError("Jax is required for plxpr.")
 
-    # TODO: investigate
-    # pennylane/capture/meta_type.py:37:4: W0223: Method 'at_least_vspace' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
-    # pennylane/capture/meta_type.py:37:4: W0223: Method 'join' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
-    # pennylane/capture/meta_type.py:37:4: W0223: Method 'update' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
-
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
+
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
 
         def __eq__(self, other):
             return isinstance(other, AbstractOperator)
@@ -67,7 +75,7 @@ def _get_abstract_operator():
     return AbstractOperator
 
 
-class PLXPRMeta(type):
+class PLXPRMeta(abc.ABCMeta):
     """A metatype that:
 
     * automatically registers a jax primitive to ``cls._primitive``
@@ -79,7 +87,9 @@ class PLXPRMeta(type):
 
     """
 
-    def __init__(cls, *_, **__):
+    def __init__(cls, *args, **kwargs):
+
+        super().__init__(cls, args, kwargs)
 
         # Called when constructing a new type that has this metaclass.
         # Similar to __init_subclass__ , this allows us to run this code
@@ -108,16 +118,17 @@ class PLXPRMeta(type):
             return abstract_type()
 
     def _primitive_bind_call(cls, *args, **kwargs):
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, *args, **kwargs)
+
+        iterable_wires_types = (list, tuple, qml.wires.Wires, range)
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            wires = (
-                tuple(wires)
-                if isinstance(wires, (list, tuple, qml.wires.Wires, range))
-                else (wires,)
-            )
+            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
             kwargs["n_wires"] = len(wires)
             args += wires
-        elif args and isinstance(args[-1], (list, tuple, qml.wires.Wires, range)):
+        elif args and isinstance(args[-1], iterable_wires_types):
             kwargs["n_wires"] = len(args[-1])
             args = args[:-1] + tuple(args[-1])
         else:
