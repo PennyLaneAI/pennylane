@@ -16,7 +16,7 @@ Defines a metaclass for automatic integration of any ``Operator`` with jaxpr pro
 
 See ``explanations.md`` for technical explanations of how this works.
 """
-from typing import Iterable
+
 from functools import lru_cache
 
 import pennylane as qml
@@ -107,23 +107,29 @@ class PLXPRMeta(type):
         def abstract_init(*_, **__):
             return abstract_type()
 
+    def _primitive_bind_call(cls, *args, **kwargs):
+        if "wires" in kwargs:
+            wires = kwargs.pop("wires")
+            wires = (
+                tuple(wires)
+                if isinstance(wires, (list, tuple, qml.wires.Wires, range))
+                else (wires,)
+            )
+            kwargs["n_wires"] = len(wires)
+            args += wires
+        elif args and isinstance(args[-1], (list, tuple, qml.wires.Wires, range)):
+            kwargs["n_wires"] = len(args[-1])
+            args = args[:-1] + tuple(args[-1])
+        else:
+            kwargs["n_wires"] = 1
+        return cls._primitive.bind(*args, **kwargs)
+
     def __call__(cls, *args, **kwargs):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
         # when tracing is enabled, we want to
 
-        if not plxpr_enabled() or cls._primitive is None:
+        if not plxpr_enabled():
             return type.__call__(cls, *args, **kwargs)
         # use bind to construct the class if we want class construction to add it to the jaxpr
-        if getattr(cls, "_meta_coerce_wires", False):
-            if "wires" in kwargs:
-                wires = kwargs.pop("wires")
-                wires = tuple(wires) if isinstance(wires, Iterable) else (wires,)
-                kwargs["n_wires"] = len(wires)
-                args += wires
-            elif args and isinstance(args[-1], (list, tuple)):
-                kwargs["n_wires"] = len(args[-1])
-                args = args[:-1] + tuple(args[-1])
-            else:
-                kwargs["n_wires"] = 1
-        return cls._primitive.bind(*args, **kwargs)
+        return cls._primitive_bind_call(*args, **kwargs)

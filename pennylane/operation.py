@@ -698,8 +698,6 @@ class Operator(metaclass=PLXPRMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
-    _meta_coerce_wires: bool = True
-
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
 

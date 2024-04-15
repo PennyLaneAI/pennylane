@@ -41,7 +41,9 @@ class CompositeOp(Operator):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
-    _meta_coerce_wires = False
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     def _flatten(self):
         return tuple(self.operands), tuple()
