@@ -407,6 +407,7 @@ To help identify a fix, select the option below that describes your situation.
     We can also obtain those scalar coefficients and tensor product operators via the op.terms() method.
 
     >>> coeffs, ops = op1.terms()
+    >>> coeffs, ops
     ([0.5, 0.5], [X(1) @ X(0), Y(1) @ Y(0)])
 
 .. details::
