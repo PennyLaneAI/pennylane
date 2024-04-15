@@ -1057,7 +1057,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(0),
         )
 
         spy.assert_called()
