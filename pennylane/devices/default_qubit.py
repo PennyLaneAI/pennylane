@@ -45,6 +45,7 @@ from .preprocess import (
     no_sampling,
 )
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .qubit.sampling import jax_random_split
 from .qubit.simulate import simulate, get_final_state, measure_final_state
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 
@@ -382,26 +383,13 @@ class DefaultQubit(Device):
     @property
     def prng_key(self):
         """Get a new key with ``jax.random.split``."""
-        if self._prng_key is None:
-            return None
-        # pylint: disable=import-outside-toplevel
-        from jax.random import split
-
-        self._prng_key, key = split(self._prng_key)
+        self._prng_key, key = jax_random_split(self._prng_key)
         return key
 
-    def get_prng_key(self, num: int = 1):
+    def get_prng_key(self, num: int = 2):
         """Get ``num`` new keys with ``jax.random.split``."""
-        if self._prng_key is None:
-            return None
-
-        if num == 1:
-            return self.prng_key
-        # pylint: disable=import-outside-toplevel
-        from jax.random import split
-
-        self._prng_key, *key = split(self._prng_key, num + 1)
-        return key
+        self._prng_key, *keys = jax_random_split(self._prng_key, num=num)
+        return keys
 
     _state_cache: Optional[dict] = None
     """
@@ -606,7 +594,7 @@ class DefaultQubit(Device):
                 _wrap_simulate,
                 vanilla_circuits,
                 seeds,
-                self.get_prng_key(num=len(vanilla_circuits)),
+                self.get_prng_key(num=len(vanilla_circuits) + 1),
             )
             results = tuple(exec_map)
 
@@ -658,7 +646,7 @@ class DefaultQubit(Device):
                         _adjoint_jac_wrapper,
                         vanilla_circuits,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits)),
+                        self.get_prng_key(num=len(vanilla_circuits) + 1),
                     )
                 )
 
@@ -731,7 +719,7 @@ class DefaultQubit(Device):
                         vanilla_circuits,
                         tangents,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits)),
+                        self.get_prng_key(num=len(vanilla_circuits) + 1),
                     )
                 )
 
@@ -853,7 +841,7 @@ class DefaultQubit(Device):
                         vanilla_circuits,
                         cotangents,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits)),
+                        self.get_prng_key(num=len(vanilla_circuits) + 1),
                     )
                 )
 

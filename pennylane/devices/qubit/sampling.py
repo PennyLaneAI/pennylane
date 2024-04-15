@@ -30,10 +30,10 @@ from .apply_operation import apply_operation
 from .measure import flatten_state
 
 
-def jax_random_split(prng_key, num: int = 1):
+def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
     if prng_key is None:
-        return None
+        return None, None
     # pylint: disable=import-outside-toplevel
     from jax.random import split
 
@@ -386,7 +386,7 @@ def _measure_hamiltonian_with_samples(
         )
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
-    keys = jax_random_split(prng_key, num=len(shots))
+    keys = jax_random_split(prng_key, num=len(shots.shot_vector))
     unsqueezed_results = tuple(
         _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
     )
@@ -417,7 +417,7 @@ def _measure_sum_with_samples(
         )
         return sum(results)
 
-    keys = jax_random_split(prng_key, num=len(shots))
+    keys = jax_random_split(prng_key, num=len(shots.shot_vector))
     unsqueezed_results = tuple(
         _sum_for_single_shot(type(shots)(s, key)) for s, key in zip(shots, keys)
     )
