@@ -110,12 +110,15 @@ def lie_closure(
         pennylane.pauli.pauli_arithmetic.PauliSentence
 
     """
-    # This check and conversion is ignored in pauli=True mode
-    if not pauli and not all(isinstance(op, PauliSentence) for op in generators):
-        generators = [
-            rep if (rep := op.pauli_rep) is not None else qml.pauli.pauli_sentence(op)
-            for op in generators
-        ]
+    if not all(isinstance(op, PauliSentence) for op in generators):
+        if pauli:
+            raise TypeError("All generators need to be of type PauliSentence when using pauli=True in lie_closure.")
+
+        else:
+            generators = [
+                rep if (rep := op.pauli_rep) is not None else qml.pauli.pauli_sentence(op)
+                for op in generators
+            ]
 
     vspace = PauliVSpace(generators)
 
