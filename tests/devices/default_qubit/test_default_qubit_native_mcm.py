@@ -589,14 +589,15 @@ def test_broadcasting_qnode(shots, postselect, reset, measure_fn):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    if measure_fn is qml.sample and postselect is None:
-        if isinstance(shots, list):
-            for s, r1, r2 in zip(shots, results1, results2):
-                assert len(r1) == len(r2) == s
-        else:
-            assert len(results1) == len(results2) == shots
-
     validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
+
+    if measure_fn is qml.sample and postselect is None:
+        for i in range(2):  # batch_size
+            if isinstance(shots, list):
+                for s, r1, r2 in zip(shots, results1, results2):
+                    assert len(r1[i]) == len(r2[i]) == s
+            else:
+                assert len(results1[i]) == len(results2[i]) == shots
 
 
 def test_sample_with_broadcasting_and_postselection_error():
