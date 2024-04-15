@@ -216,18 +216,21 @@ class Sum(CompositeOp):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        # pylint: disable=protected-access
-        new_op = cls(*data)
-        new_op._grouping_indices = metadata[0]
-        return new_op
+        return cls(*data, grouping_indices=metadata[0])
 
     def __init__(
-        self, *operands: Operator, grouping_type=None, method="rlf", id=None, _pauli_rep=None
+        self,
+        *operands: Operator,
+        grouping_type=None,
+        method="rlf",
+        id=None,
+        _pauli_rep=None,
+        grouping_indices=None,
     ):
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
-        self._grouping_indices = None
-        if grouping_type is not None:
+        self._grouping_indices = grouping_indices
+        if grouping_type is not None and grouping_indices is not None:
             self.compute_grouping(grouping_type=grouping_type, method=method)
 
     @property
