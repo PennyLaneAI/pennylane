@@ -354,7 +354,7 @@ To help identify a fix, select the option below that describes your situation.
     The type of the final operator is determined by the outermost operation. The resulting object is a nested structure (sums of s/prods or s/prods of sums).
 
     >>> qml.operation.enable_new_opmath() # default soon
-    >>> op = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
+    >>> op = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
     >>> type(op)
     pennylane.ops.op_math.sum.Sum
 
