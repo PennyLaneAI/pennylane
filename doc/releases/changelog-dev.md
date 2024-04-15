@@ -169,6 +169,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
+  the operator it wraps.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
 * `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
