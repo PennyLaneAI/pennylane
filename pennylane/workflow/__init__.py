@@ -52,6 +52,8 @@ Jacobian Product Calculation
     ~workflow.jacobian_products.DeviceJacobianProducts
     ~workflow.jacobian_products.LightningVJPs
 
+.. include:: ../../pennylane/workflow/return_types_spec.rst
+
 """
 from .set_shots import set_shots
 from .execution import execute, SUPPORTED_INTERFACES, INTERFACE_MAP

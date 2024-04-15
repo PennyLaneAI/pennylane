@@ -209,6 +209,13 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `qml.specs` and `qml.Tracker` now return information about algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
+  [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
+
+* `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
+
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
@@ -240,6 +247,9 @@
 * Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
+
+* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+  [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
 
 * Add type hints for unimplemented methods of the abstract class `Operator`.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
@@ -322,6 +332,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Adds a page explaining the shapes and nesting of result objects.
+  [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
+
 * Removed some redundant documentation for the `evolve` function.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
@@ -338,6 +351,12 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+  [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
+
+* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
+  [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
 
 * Operators applied to all wires are now drawn correctly in a circuit with mid-circuit measurements.
   [(#5501)](https://github.com/PennyLaneAI/pennylane/pull/5501)
