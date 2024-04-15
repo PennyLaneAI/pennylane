@@ -133,8 +133,7 @@ To create a dataset, we can do the following:
 >>> dataset.data_name
 "Example"
 >>> dataset.hamiltonian
-(0.5) [X1]
-+ (1) [Z0]
+1.0 * Z(0) + 0.5 * X(1)
 >>> dataset.energies
 array([-1.5, -0.5,  0.5,  1.5])
 
@@ -147,8 +146,7 @@ We can then write this :class:`~pennylane.data.Dataset` to storage and read it a
 >>> read_dataset.data_name
 "Example"
 >>> read_dataset.hamiltonian
-(0.5) [X1]
-+ (1) [Z0]
+1.0 * Z(0) + 0.5 * X(1)
 >>> read_dataset.energies
 array([-1.5, -0.5,  0.5,  1.5])
 

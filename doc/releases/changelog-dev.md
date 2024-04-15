@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+[(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
+
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
@@ -213,6 +216,13 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `qml.specs` and `qml.Tracker` now return information about algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
+  [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
+
+* `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
+  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
+
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
@@ -234,6 +244,9 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
+* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
+  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
+  
 * Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
   noisy qutrit circuit with measurement and sampling.
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
@@ -242,11 +255,24 @@
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
+* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+  [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+
+* Add type hints for unimplemented methods of the abstract class `Operator`.
+  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
+
 * A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
+* Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
+  [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
+
 <h3>Breaking changes 💔</h3>
+
+* Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
+  operators easier to work with.
+  [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
@@ -320,6 +346,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Adds a page explaining the shapes and nesting of result objects.
+  [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
+
 * Removed some redundant documentation for the `evolve` function.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
@@ -339,6 +368,15 @@
 
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+  [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
+
+* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
+  [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
+
+* Operators applied to all wires are now drawn correctly in a circuit with mid-circuit measurements.
+  [(#5501)](https://github.com/PennyLaneAI/pennylane/pull/5501)
 
 * Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
   [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
@@ -412,11 +450,13 @@ Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
 Lillian M. A. Frederiksen,
+Austin Huang,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Mudit Pandey,
+Kenya Sakka,
 Jay Soni,
 Matthew Silverman,
 David Wierichs.
