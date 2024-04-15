@@ -1485,8 +1485,8 @@ class TestIntegration:
         true_grad = -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_obs_not_supported(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
+    def test_non_supported_obs_not_supported(self):
+        """Test that non-supported ops in a measurement process will raise an error."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
