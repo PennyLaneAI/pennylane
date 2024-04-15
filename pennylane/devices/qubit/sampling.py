@@ -386,7 +386,8 @@ def _measure_hamiltonian_with_samples(
         )
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
-    keys = jax_random_split(prng_key, num=len(shots.shot_vector))
+    keys = jax_random_split(prng_key, num=shots.num_copies)
+    print(keys)
     unsqueezed_results = tuple(
         _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
     )
@@ -417,7 +418,7 @@ def _measure_sum_with_samples(
         )
         return sum(results)
 
-    keys = jax_random_split(prng_key, num=len(shots.shot_vector))
+    keys = jax_random_split(prng_key, num=shots.num_copies)
     unsqueezed_results = tuple(
         _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
     )
