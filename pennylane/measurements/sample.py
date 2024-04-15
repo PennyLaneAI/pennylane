@@ -15,7 +15,6 @@
 This module contains the qml.sample measurement.
 """
 import functools
-import warnings
 from typing import Sequence, Tuple, Optional, Union
 
 import numpy as np
@@ -172,9 +171,6 @@ class SampleMP(SampleMeasurement):
 
             super().__init__(obs=obs)
             return
-
-        if obs is not None and not obs.is_hermitian:  # None type is also allowed for op
-            warnings.warn(f"{obs.name} might not be hermitian.")
 
         if wires is not None:
             if obs is not None:

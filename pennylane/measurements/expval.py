@@ -14,7 +14,6 @@
 """
 This module contains the qml.expval measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Union
 
 import pennylane as qml
@@ -70,9 +69,6 @@ def expval(
         raise NotImplementedError(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
-
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
 
     return ExpectationMP(obs=op)
 
