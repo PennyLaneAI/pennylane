@@ -386,9 +386,9 @@ class DefaultQubit(Device):
         self._prng_key, key = jax_random_split(self._prng_key)
         return key
 
-    def get_prng_key(self, num: int = 2):
+    def get_prng_key(self, num: int = 1):
         """Get ``num`` new keys with ``jax.random.split``."""
-        self._prng_key, *keys = jax_random_split(self._prng_key, num=num)
+        self._prng_key, *keys = jax_random_split(self._prng_key, num=num + 1)
         return keys
 
     _state_cache: Optional[dict] = None
@@ -594,7 +594,7 @@ class DefaultQubit(Device):
                 _wrap_simulate,
                 vanilla_circuits,
                 seeds,
-                self.get_prng_key(num=len(vanilla_circuits) + 1),
+                self.get_prng_key(num=len(vanilla_circuits)),
             )
             results = tuple(exec_map)
 
@@ -646,7 +646,7 @@ class DefaultQubit(Device):
                         _adjoint_jac_wrapper,
                         vanilla_circuits,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits) + 1),
+                        self.get_prng_key(num=len(vanilla_circuits)),
                     )
                 )
 
@@ -719,7 +719,7 @@ class DefaultQubit(Device):
                         vanilla_circuits,
                         tangents,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits) + 1),
+                        self.get_prng_key(num=len(vanilla_circuits)),
                     )
                 )
 
@@ -841,7 +841,7 @@ class DefaultQubit(Device):
                         vanilla_circuits,
                         cotangents,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits) + 1),
+                        self.get_prng_key(num=len(vanilla_circuits)),
                     )
                 )
 
