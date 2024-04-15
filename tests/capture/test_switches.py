@@ -33,7 +33,7 @@ def test_switches_without_jax():
     """Test switches and status reporting function."""
 
     assert qml.capture.plxpr_enabled() is False
-    with pytest.raises(ImportError, "plxpr requires JAX to be installed."):
+    with pytest.raises(ImportError, match="plxpr requires JAX to be installed."):
         qml.capture.enable_plxpr()
     assert qml.capture.plxpr_enabled() is False
     assert qml.capture.disable_plxpr() is None
