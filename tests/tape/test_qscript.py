@@ -448,7 +448,7 @@ class TestInfomationProperties:
         assert qs.specs["num_diagonalizing_gates"] == 0
         assert qs.specs["num_trainable_params"] == 0
 
-        assert len(qs.specs) == 4
+        assert len(qs.specs) == 5
 
         assert qs._specs is qs.specs
 
@@ -460,7 +460,7 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 4
+        assert len(specs) == 5
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
