@@ -407,7 +407,7 @@ class TestHamiltonianExpand:
 
 with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
-    S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
+    S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1), qml.Identity()))
     qml.expval(S1)
     qml.expval(S1)
     qml.state()
@@ -421,6 +421,7 @@ with AnnotatedQueue() as s_tape2:
         qml.prod(qml.PauliX(0), qml.PauliZ(2)),
         qml.s_prod(3, qml.PauliZ(2)),
         qml.s_prod(-2, qml.PauliX(0)),
+        qml.Identity(),
         qml.PauliX(2),
         qml.prod(qml.PauliZ(0), qml.PauliX(1)),
     )
@@ -429,7 +430,9 @@ with AnnotatedQueue() as s_tape2:
     qml.expval(S2)
 
 S3 = qml.sum(
-    qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))), qml.s_prod(0.3, qml.PauliX(1))
+    qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))),
+    qml.s_prod(0.3, qml.PauliX(1)),
+    qml.Identity(),
 )
 
 with AnnotatedQueue() as s_tape3:
@@ -442,9 +445,10 @@ with AnnotatedQueue() as s_tape3:
 
 
 S4 = qml.sum(
-    qml.prod(qml.PauliX(0), qml.PauliZ(2)),
+    qml.prod(qml.PauliX(0), qml.PauliZ(2), qml.Identity()),
     qml.s_prod(3, qml.PauliZ(2)),
     qml.s_prod(-2, qml.PauliX(0)),
+    qml.Identity(),
     qml.PauliZ(2),
     qml.PauliZ(2),
     qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2)),
@@ -455,7 +459,6 @@ with AnnotatedQueue() as s_tape4:
     qml.Hadamard(1)
     qml.PauliZ(1)
     qml.PauliX(2)
-
     qml.expval(S4)
     qml.expval(qml.PauliX(2))
     qml.expval(S4)
