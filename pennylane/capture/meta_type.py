@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines a metaclass for automatic integration of any ``Operator`` with jaxpr program capture.
+Defines a metaclass for automatic integration of any ``Operator`` with plxpr program capture.
 
 See ``explanations.md`` for technical explanations of how this works.
 """

@@ -1799,7 +1799,7 @@ class Operation(Operator):
             self.grad_recipe = [None] * self.num_params
 
 
-class Channel(Operation):
+class Channel(Operation, abc.ABC):
     r"""Base class for quantum channels.
 
     Quantum channels have to define an additional numerical representation
