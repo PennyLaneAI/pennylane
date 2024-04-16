@@ -357,6 +357,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(DeviceError, match="Tensor observables not supported"):
             dev.check_validity(queue, observables)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_check_validity_on_prod_support(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with prod support capability"""
         dev = mock_device_supporting_paulis()
