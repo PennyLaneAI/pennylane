@@ -28,6 +28,7 @@ def test_switches_with_jax():
     assert qml.capture.disable_plxpr() is None
     assert qml.capture.plxpr_enabled() is False
 
+
 def test_switches_without_jax():
     """Test switches and status reporting function."""
 
