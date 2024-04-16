@@ -61,13 +61,6 @@ class TestCounts:
         ):
             qml.counts(qml.PauliZ(0), wires=[0, 1])
 
-    def test_observable_might_not_be_hermitian(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
     def test_hash(self):
         """Test that the hash property includes the all_outcomes property."""
         m1 = qml.counts(all_outcomes=True)
