@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,14 +40,17 @@ def _get_abstract_operator():
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
 
+        # pylint: disable=missing-function-docstring
         def at_least_vspace(self):
             # TODO: investigate the proper definition of this method
             raise NotImplementedError
 
+        # pylint: disable=missing-function-docstring
         def join(self, other):
             # TODO: investigate the proper definition of this method
             raise NotImplementedError
 
+        # pylint: disable=missing-function-docstring
         def update(self, **kwargs):
             # TODO: investigate the proper definition of this method
             raise NotImplementedError
@@ -58,16 +61,20 @@ def _get_abstract_operator():
         def __hash__(self):
             return hash("AbstractOperator")
 
-        def _matmul(self, *args):
+        @staticmethod
+        def _matmul(*args):
             return qml.prod(*args)
 
-        def _mul(self, a, b):
+        @staticmethod
+        def _mul(a, b):
             return qml.s_prod(b, a)
 
-        def _rmul(self, a, b):
+        @staticmethod
+        def _rmul(a, b):
             return qml.s_prod(b, a)
 
-        def _add(self, a, b):
+        @staticmethod
+        def _add(a, b):
             return qml.sum(a, b)
 
     jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
@@ -102,7 +109,7 @@ class PLXPRMeta(abc.ABCMeta):
         cls._primitive = jax.core.Primitive(cls.__name__)
 
         @cls._primitive.def_impl
-        def default_call(*args, **kwargs):
+        def _(*args, **kwargs):
             if "n_wires" not in kwargs:
                 return type.__call__(cls, *args, **kwargs)
             n_wires = kwargs.pop("n_wires")
@@ -114,7 +121,7 @@ class PLXPRMeta(abc.ABCMeta):
         abstract_type = _get_abstract_operator()
 
         @cls._primitive.def_abstract_eval
-        def abstract_init(*_, **__):
+        def _(*_, **__):
             return abstract_type()
 
     def _primitive_bind_call(cls, *args, **kwargs):
