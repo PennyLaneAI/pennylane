@@ -363,13 +363,14 @@ def hf_state(electrons, orbitals, basis="occupation-number"):
 
     if basis == "occupation-number":
         return np.where(np.arange(orbitals) < electrons, 1, 0)
-
+    
     if basis == "parity":
         pi_matrix = np.tril(np.ones((orbitals, orbitals)))
         return np.matmul(pi_matrix, np.where(np.arange(orbitals) < electrons, 1, 0)) % 2
     if basis == "bravyi-kitaev":
         beta_matrix = _beta_matrix(orbitals)
         return np.matmul(beta_matrix, np.where(np.arange(orbitals) < electrons, 1, 0)) % 2
+
 
 
 def excitations_to_wires(singles, doubles, wires=None):

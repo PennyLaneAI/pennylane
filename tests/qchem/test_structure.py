@@ -230,7 +230,6 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
         (2, 5, "bravyi-kitaev", np.array([1, 0, 0, 0, 0])),
         (1, 5, "bravyi-kitaev", np.array([1, 1, 0, 1, 0])),
         (5, 5, "bravyi-kitaev", np.array([1, 0, 1, 0, 1])),
-
     ],
 )
 def test_hf_state(electrons, orbitals, basis, exp_state):
@@ -244,13 +243,14 @@ def test_hf_state(electrons, orbitals, basis, exp_state):
 
 def test_beta_matrix():
     r"""Test the correctness of beta matrix."""
-    
+
     for i in range(1, 10):
         beta = qml.qchem.structure._beta_matrix(i)
         beta_inv = np.linalg.inv(beta)
         prod = np.matmul(beta, beta_inv)
         assert prod.all() == np.eye((i)).all()
-        
+
+
 @pytest.mark.parametrize(
     ("electrons", "symbols", "geometry", "charge"),
     [
@@ -263,7 +263,6 @@ def test_beta_matrix():
         ),
     ],
 )
-
 def test_hf_state_basis(electrons, symbols, geometry, charge):
     r"""Test the correctness of the generated HF state in a circuit."""
 
