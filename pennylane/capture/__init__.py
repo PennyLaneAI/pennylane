@@ -98,4 +98,4 @@ will be called when constructing a new class instance instead of ``type.__call__
 
 """
 from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
-from .meta_type import PLXPRMeta
+from .meta_type import MetaOperator

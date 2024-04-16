@@ -86,7 +86,7 @@ def _get_abstract_operator():
     return AbstractOperator
 
 
-class PLXPRMeta(abc.ABCMeta):
+class MetaOperator(abc.ABCMeta):
     """A metatype that:
 
     * automatically registers a jax primitive to ``cls._primitive``
@@ -102,7 +102,7 @@ class PLXPRMeta(abc.ABCMeta):
 
         super().__init__(cls, args, kwargs)
 
-        # Called when constructing a new type that has this metaclass.
+        # Called when constructing a new class that has this metaclass.
         # Similar to __init_subclass__ , this allows us to run this code
         # every time we define a new class
 
@@ -129,6 +129,12 @@ class PLXPRMeta(abc.ABCMeta):
             return abstract_type()
 
     def _primitive_bind_call(cls, *args, **kwargs):
+        """This class method should match the call signature of the class itself.
+
+        When plxpr is enabled, this method is used to bind the arguments and keyword arguments
+        the primitive via ``cls._primitive.bind``.
+
+        """
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
