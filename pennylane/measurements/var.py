@@ -15,7 +15,6 @@
 """
 This module contains the qml.var measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Union
 
 import pennylane as qml
@@ -63,9 +62,6 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
         raise ValueError(
             "qml.var does not support measuring sequences of measurements or observables"
         )
-
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
 
     return VarianceMP(obs=op)
 
