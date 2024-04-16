@@ -5716,7 +5716,7 @@ class TestCutCircuitWithHamiltonians:
 
         hamiltonian = qml.Hamiltonian(
             [1.0, 1.0],
-            [qml.prod(qml.PauliZ(1), qml.PauliZ(2), qml.PauliZ(3)), qml.PauliY(0) @ qml.PauliX(1)],
+            [qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3), qml.PauliY(0) @ qml.PauliX(1)],
         )
 
         def two_qubit_unitary(param, wires):
@@ -5840,8 +5840,8 @@ class TestCutCircuitWithHamiltonians:
         hamiltonian = qml.Hamiltonian(
             [1.0, 1.0],
             [
-                qml.prod(qml.PauliZ(1), qml.PauliZ(8), qml.PauliZ(3)),
-                qml.prod(qml.PauliY(5), qml.PauliX(4)),
+                qml.PauliZ(1) @ qml.PauliZ(8) @ qml.PauliZ(3),
+                qml.PauliY(5) @ qml.PauliX(4),
             ],
         )
 
