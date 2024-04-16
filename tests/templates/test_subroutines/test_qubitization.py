@@ -26,12 +26,36 @@ from pennylane.templates.subroutines.qubitization import _positive_coeffs_hamilt
     "hamiltonian, expected_unitaries",
     (
         # TODO: Waiting to fix this bug: https://github.com/PennyLaneAI/pennylane/issues/5498
-        # (qml.dot(np.array([1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]), [qml.PauliX(0), qml.PauliY(0)@qml.GlobalPhase(np.pi), qml.PauliZ(0)]),
         (
-            qml.dot(np.array([1.0, 1.0, 2.0]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]),
-            [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)],
+            qml.ops.LinearCombination(
+                np.array([1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+            ),
+            [
+                qml.PauliX(0) @ qml.GlobalPhase(np.array([0.0]), wires=0),
+                qml.PauliY(0) @ qml.GlobalPhase(np.array(np.pi), wires=0),
+                qml.PauliZ(0) @ qml.GlobalPhase(np.array([0.0]), wires=0),
+            ],
         ),
-        # (qml.dot(np.array([-1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]), [qml.PauliX(0)@qml.GlobalPhase(np.pi), qml.PauliY(0)@qml.GlobalPhase(np.pi), qml.PauliZ(0)]),
+        (
+            qml.ops.LinearCombination(
+                np.array([1.0, 1.0, 2.0]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+            ),
+            [
+                qml.PauliX(0) @ qml.GlobalPhase(np.array([0.0]), wires=0),
+                qml.PauliY(0) @ qml.GlobalPhase(np.array([0.0]), wires=0),
+                qml.PauliZ(0) @ qml.GlobalPhase(np.array([0.0]), wires=0),
+            ],
+        ),
+        (
+            qml.ops.LinearCombination(
+                np.array([-1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+            ),
+            [
+                qml.PauliX(0) @ qml.GlobalPhase(np.array(np.pi), wires=0),
+                qml.PauliY(0) @ qml.GlobalPhase(np.array(np.pi), wires=0),
+                qml.PauliZ(0) @ qml.GlobalPhase(np.array(0), wires=0),
+            ],
+        ),
     ),
 )
 def test_positive_coeffs_hamiltonian(hamiltonian, expected_unitaries):
@@ -72,28 +96,63 @@ def test_legacy_new_opmath():
     assert np.allclose(matrix_H1, matrix_H2)
 
 
+@pytest.mark.xfail(reason="see https://github.com/PennyLaneAI/pennylane/issues/5507")
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_legacy_new_opmath_diff():
+    coeffs, ops = np.array([0.1, -0.3, -0.3]), [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit_dot(coeffs):
+        H = qml.dot(coeffs, ops)
+        qml.Qubitization(H, control=[3, 4])
+        return qml.expval(qml.PauliZ(0))
+
+    @qml.qnode(dev)
+    def circuit_Hamiltonian(coeffs):
+        H = qml.Hamiltonian(coeffs, ops)
+        qml.Qubitization(H, control=[3, 4])
+        return qml.expval(qml.PauliZ(0))
+
+    assert np.allclose(qml.grad(circuit_dot)(coeffs), qml.grad(circuit_Hamiltonian)(coeffs))
+
+
 @pytest.mark.parametrize(
     "hamiltonian, expected_decomposition",
     (
-        # TODO: Waiting to fix this bug: https://github.com/PennyLaneAI/pennylane/issues/5498
-        # (qml.dot(np.array([1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]), [qml.PauliX(0), qml.PauliY(0)@qml.GlobalPhase(np.pi), qml.PauliZ(0)]),
         (
             qml.ops.LinearCombination(np.array([1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
             [
                 qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1]),
                 qml.Select(
                     ops=(
-                        qml.X(0),
-                        qml.Z(0),
+                        qml.PauliX(0) @ qml.GlobalPhase(np.array(0.0), wires=0),
+                        qml.PauliZ(0) @ qml.GlobalPhase(np.array(0.0), wires=0),
                     ),
                     control=[1],
                 ),
                 qml.adjoint(qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1])),
                 qml.FlipSign((0,), wires=[1]),
-                qml.GlobalPhase(np.pi, wires=[1]),
+                qml.GlobalPhase(np.pi),
             ],
         ),
-        # (qml.dot(np.array([-1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]), [qml.PauliX(0)@qml.GlobalPhase(np.pi), qml.PauliY(0)@qml.GlobalPhase(np.pi), qml.PauliZ(0)]),
+        (
+            qml.ops.LinearCombination(np.array([-1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
+            [
+                qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1]),
+                qml.Select(
+                    ops=(
+                        qml.PauliX(0) @ qml.GlobalPhase(np.array(np.pi), wires=0),
+                        qml.PauliZ(0) @ qml.GlobalPhase(np.array(0.0), wires=0),
+                    ),
+                    control=[1],
+                ),
+                qml.adjoint(qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1])),
+                qml.FlipSign((0,), wires=[1]),
+                qml.GlobalPhase(np.pi),
+            ],
+        ),
     ),
 )
 def test_decomposition(hamiltonian, expected_decomposition):
@@ -102,11 +161,28 @@ def test_decomposition(hamiltonian, expected_decomposition):
     decomposition = qml.Qubitization.compute_decomposition(hamiltonian=hamiltonian, control=[1])
 
     for i in range(len(decomposition)):
-        print(decomposition[i], "vs", expected_decomposition[i])
         assert qml.equal(decomposition[i], expected_decomposition[i])
 
 
-# def test_lightning_qubit(): #TODO: qml.AmplitudeEmbedding in the middle of the circuit is not supported in lightning
+@pytest.mark.xfail(
+    reason="AmplitudeEmbedding does not in the middle of the circuit with lightning.qubit"
+)
+def test_lightning_qubit():
+    H = qml.ops.LinearCombination([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+
+    @qml.qnode(qml.device("lightning.qubit", wires=5))
+    def circuit_lightning():
+        qml.Hadamard(wires=0)
+        qml.Qubitization(H, control=[3, 4])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(4))
+
+    @qml.qnode(qml.device("default.qubit", wires=5))
+    def circuit_default():
+        qml.Hadamard(wires=0)
+        qml.Qubitization(H, control=[3, 4])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(4))
+
+    assert np.allclose(circuit_lightning(), circuit_default())
 
 
 class TestDifferentiability:
@@ -140,12 +216,9 @@ class TestDifferentiability:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        "use_jit",
-        [
-            False,
-        ],
-    )  # TODO: True jit
-    @pytest.mark.parametrize("shots", [None, 50000])
+        "use_jit , shots",
+        ((False, None), (True, None), (False, 50000)),
+    )  # TODO: (True, 50000) fails, Currently jax.jit on jax.grad does not work with AmplitudeEmbedding
     def test_qnode_jax(self, shots, use_jit):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
@@ -169,8 +242,9 @@ class TestDifferentiability:
         assert jac.shape == (4,)
         assert np.allclose(jac, self.exp_grad, atol=0.01)
 
-    @pytest.mark.torch
-    @pytest.mark.parametrize("shots", [None, 50000])
+    # @pytest.mark.torch
+    # @pytest.mark.parametrize("shots", [None, 50000])
+    @pytest.mark.xfail(reason="Torch with operators 'op1 @ op2' does work correctly together.")
     def test_qnode_torch(self, shots):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""

@@ -15,8 +15,6 @@
 This submodule contains the template for Qubitization.
 """
 
-import warnings
-
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation
@@ -37,10 +35,12 @@ def _positive_coeffs_hamiltonian(hamiltonian):
     terms = hamiltonian.terms()
 
     for i in range(len(terms[0])):
-        if terms[0][i] >= 0:
-            new_unitaries.append(terms[1][i])
-        else:
-            new_unitaries.append(terms[1][i] @ qml.GlobalPhase(np.pi))
+        new_unitaries.append(
+            terms[1][i]
+            @ qml.GlobalPhase(
+                np.pi * (0.5 * (1 - qml.math.sign(terms[0][i]))), wires=terms[1][i].wires
+            )
+        )
 
     return qml.math.abs(hamiltonian.terms()[0]), new_unitaries
 
@@ -146,6 +146,6 @@ class Qubitization(Operation):
         )
 
         decomp_ops.append(qml.FlipSign(0, wires=control))
-        decomp_ops.append(qml.GlobalPhase(np.pi, wires=control))
+        decomp_ops.append(qml.GlobalPhase(np.pi))
 
         return decomp_ops

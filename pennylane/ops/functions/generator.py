@@ -27,7 +27,7 @@ from pennylane.operation import convert_to_H
 
 # pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
-    """Return the generator as type :class:`~.Hamiltonian`."""
+    """Return the generator as type `:class:`~.Hamiltonian``."""
     wires = op.wires
 
     if isinstance(gen, (Hamiltonian, LinearCombination)):
