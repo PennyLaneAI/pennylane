@@ -17,4 +17,4 @@ algorithmic error from advanced quantum algorithms.
 """
 
 from .trotter_error import _one_norm_error, _commutator_error
-from .error import AlgorithmicError, ErrorOperation, SpectralNormError
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError, _compute_algo_error
