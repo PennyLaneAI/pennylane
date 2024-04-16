@@ -14,6 +14,10 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
+import pdb
+import sys
+import copy
+
 import pennylane as qml
 from pennylane import DeviceError
 
@@ -105,3 +109,71 @@ def snapshots(qnode):
         return dbg.snapshots
 
     return get_snapshots
+
+
+class Pldb(pdb.Pdb):
+    # _debugging_state = []
+    # _debugging_queue = None 
+
+    def __init__(self, *args, **kwargs):
+        super(Pldb, self).__init__(*args, **kwargs)
+        self.prompt = "[pldb]: "
+
+    # @property
+    # def debugging_state(self):
+    #     return self._debugging_state
+    
+    # @debugging_state.setter
+    # def debugging_state(self, new_state):
+    #     self._debugging_state = new_state
+
+    # @property
+    # def debugging_queue(self):
+    #     return self._debugging_queue
+    
+    # @debugging_queue.setter
+    # def debugging_queue(self, new_queue):
+    #     self._debugging_state = new_queue
+
+    # def clean(self):
+    #     self.debugging_state([])
+    #     self.debugging_queue(None)
+        
+    # def do_quit(self, arg: str):
+    #     self.clean()
+    #     return super().do_quit(arg)
+    
+    # def do_EOF(self, arg: str):
+    #     self.clean()
+    #     return super().do_EOF(arg)
+
+
+def pl_breakpoint():
+    debugger = Pldb()
+    debugger.set_trace(sys._getframe().f_back)
+
+
+def state():
+    active_queue = qml.queuing.QueuingManager.active_context()
+    copied_queue = copy.copy(active_queue)
+
+    with qml.queuing.QueuingManager.stop_recording():
+        m = qml.state()
+    
+    copied_queue.append(m)
+    tape = qml.tape.QuantumScript.from_queue(copied_queue)
+    return qml.devices.qubit.simulate(tape)
+
+
+def measure(measurement_value):
+    active_queue = qml.queuing.QueuingManager.active_context()
+    tape = qml.tape.QuantumScript.from_queue(active_queue)
+    
+    result = qml.devices.qubit.simulate(tape)
+    active_queue.remove(measurement_value)
+
+    return result
+
+def tape():
+    active_queue = qml.queuing.QueuingManager.active_context()
+    return qml.tape.QuantumScript.from_queue(active_queue)
