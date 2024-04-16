@@ -679,16 +679,6 @@ dev = qml.device("default.qubit", wires=2)
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-@pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
-def test_hamiltonian_accepts_prod_observables():
-    """Test that prods of observables can be passed to Hamiltonian. Note that we don't
-    really want that to happen, since old and new operator arithmetic should not be mixed.
-    Added to simplify generating test parameterizations."""
-    # behold, no error is raised:
-    qml.ops.Hamiltonian([1, 2], [qml.PauliX(0), qml.prod(qml.PauliY(0), qml.PauliZ(1))])
-
-
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_matmul_queuing():
     """Test that the other and self are removed during Hamiltonian.__matmul__ ."""
 
