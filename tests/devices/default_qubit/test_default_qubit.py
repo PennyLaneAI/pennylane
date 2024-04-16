@@ -1387,15 +1387,9 @@ class TestPRNGKeySeed:
 
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
-        key = jax.random.PRNGKey(77)
 
-        dev = DefaultQubit(max_workers=max_workers, seed=key)
+        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(77))
         result1 = dev.execute(qs, config)
-        result2 = dev.execute(qs, config)
-
-        assert np.any(result1 != result2)
-
-        dev._prng_key = key
         result2 = dev.execute(qs, config)
 
         assert np.all(result1 == result2)

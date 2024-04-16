@@ -391,6 +391,10 @@ class DefaultQubit(Device):
         self._prng_key, *keys = jax_random_split(self._prng_key, num=num + 1)
         return keys
 
+    def reset_prng_key(self):
+        """Reset the RNG key to it's initial value."""
+        self._prng_key = self._prng_seed
+
     _state_cache: Optional[dict] = None
     """
     A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
@@ -414,9 +418,11 @@ class DefaultQubit(Device):
         self._max_workers = max_workers
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         if qml.math.get_interface(seed) == "jax":
+            self._prng_seed = seed
             self._prng_key = seed
             self._rng = np.random.default_rng(None)
         else:
+            self._prng_seed = None
             self._prng_key = None
             self._rng = np.random.default_rng(seed)
         self._debugger = None
@@ -557,6 +563,7 @@ class DefaultQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
+        self.reset_prng_key()
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
@@ -627,7 +634,7 @@ class DefaultQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-
+        self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
@@ -680,7 +687,6 @@ class DefaultQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
@@ -700,6 +706,7 @@ class DefaultQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
@@ -792,7 +799,6 @@ class DefaultQubit(Device):
           then the shape must be ``(batch_size,)``.
 
         """
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
 
@@ -821,7 +827,7 @@ class DefaultQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-
+        self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
