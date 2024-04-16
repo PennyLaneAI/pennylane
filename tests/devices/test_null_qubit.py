@@ -139,6 +139,7 @@ def test_target_gateset():
 def test_target_device():
     """Test that a target device can be provided to mimic."""
 
+    # pylint: disable=unused-argument
     class DummyDev(qml.devices.Device):
         """a device that just defers measurements."""
 
@@ -155,6 +156,42 @@ def test_target_device():
     program = dev.preprocess()[0]
     assert len(program) == 1
     assert program[0].transform == qml.defer_measurements.transform
+
+
+def test_target_device_and_operations():
+    """Test that a target device can be used together with specifying operations."""
+
+    # pylint: disable=unused-argument
+    class DummyDev(qml.devices.Device):
+        """a device that just defers measurements."""
+
+        def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
+            program = qml.transforms.core.TransformProgram()
+            program.add_transform(qml.defer_measurements)
+            return program, execution_config
+
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+            return 0
+
+    dev = qml.device("null.qubit", target_device=DummyDev(), operations={"RX", "CNOT"})
+
+    program = dev.preprocess()[0]
+    assert len(program) == 2
+    assert program[0].transform == qml.defer_measurements.transform
+    assert program[1].transform == qml.devices.preprocess.decompose.transform
+
+    m0 = qml.measure(1)
+    tape = qml.tape.QuantumScript(
+        [qml.IsingXX(1.2, wires=(0, 1)), *m0.measurements], [qml.expval(qml.Z(0))]
+    )
+    batch = (tape,)
+    program = dev.preprocess()[0]
+    batch, _ = program(batch)
+
+    expected = qml.tape.QuantumScript(
+        [qml.CNOT((0, 1)), qml.RX(1.2, 0), qml.CNOT((0, 1))], [qml.expval(qml.Z(0))]
+    )
+    assert qml.equal(batch[0], expected)
 
 
 def test_target_device_error():
