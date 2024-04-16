@@ -2689,16 +2689,15 @@ class TestNewOpMath:
             assert op[1].scalar == 1.1
             assert qml.equal(op[1].base, qml.Identity(1))
 
-        def test_adding_many_does_not_auto_simplify(self):
+        def test_adding_many_does_auto_simplify(self):
             """Tests that adding more than two operators creates nested Sums."""
             op0, op1, op2 = qml.S(0), qml.T(0), qml.PauliZ(0)
             op = op0 + op1 + op2
             assert isinstance(op, Sum)
-            assert len(op) == 2
-            assert isinstance(op[0], Sum)
-            assert qml.equal(op[0][0], op0)
-            assert qml.equal(op[0][1], op1)
-            assert qml.equal(op[1], op2)
+            assert len(op) == 3
+            assert qml.equal(op[0], op0)
+            assert qml.equal(op[1], op1)
+            assert qml.equal(op[2], op2)
 
     class TestMul:
         """Test the __mul__/__rmul__ dunders."""
@@ -2721,13 +2720,13 @@ class TestNewOpMath:
             assert qml.math.allequal(op.scalar, 1 / scalar)
             assert qml.equal(op.base, base)
 
-        def test_mul_does_not_auto_simplify(self):
+        def test_mul_does_auto_simplify(self):
             """Tests that multiplying an SProd with a scalar creates nested SProds."""
             op = 2 * qml.PauliX(0)
             nested = 0.5 * op
             assert isinstance(nested, SProd)
-            assert nested.scalar == 0.5
-            assert qml.equal(nested.base, op)
+            assert nested.scalar == 1.0
+            assert qml.equal(nested.base, qml.X(0))
 
     class TestMatMul:
         """Test the __matmul__/__rmatmul__ dunders."""
@@ -2738,17 +2737,21 @@ class TestNewOpMath:
             op = op0 @ op1
             assert isinstance(op, Prod)
             assert qml.equal(op[0], op0)
-            assert qml.equal(op[1], op1)
+            if isinstance(op1, Prod):
+                assert qml.equal(op[1], op1[0])
+                assert qml.equal(op[2], op1[1])
+            else:
+                assert qml.equal(op[1], op1)
 
-        def test_mul_does_not_auto_simplify(self):
+        def test_mul_does_auto_simplify(self):
             """Tests that matrix-multiplying a Prod with another operator creates nested Prods."""
             op0, op1, op2 = qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)
             op = op0 @ op1 @ op2
             assert isinstance(op, Prod)
-            assert len(op) == 2
-            assert isinstance(op[0], Prod)
-            assert qml.equal(op[0], op0 @ op1)
-            assert qml.equal(op[1], op2)
+            assert len(op) == 3
+            assert qml.equal(op[0], op0)
+            assert qml.equal(op[1], op1)
+            assert qml.equal(op[2], op2)
 
 
 class TestHamiltonianLinearCombinationAlias:
