@@ -294,6 +294,8 @@ class QubitDevice(Device):
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+        is_lightning = self._is_lightning_device()
+
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
             # Lightning does not support apply(rotations) anymore, so we need to rotate here
             # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
