@@ -342,13 +342,15 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.op
     >>> for k, v in edge_weight_data.items():
             g[k[0]][k[1]]["weight"] = v
     >>> h = loss_hamiltonian(g)
-    >>> print(h)
-      (-0.6931471805599453) [Z0]
-    + (0.0) [Z1]
-    + (0.4054651081081644) [Z2]
-    + (0.6931471805599453) [Z3]
-    + (0.9162907318741551) [Z4]
-    + (1.0986122886681098) [Z5]
+    >>> h
+    (
+        -0.6931471805599453 * Z(0)
+      + 0.0 * Z(1)
+      + 0.4054651081081644 * Z(2)
+      + 0.6931471805599453 * Z(3)
+      + 0.9162907318741551 * Z(4)
+      + 1.0986122886681098 * Z(5)
+    )
 
     >>> import rustworkx as rx
     >>> g = rx.generators.directed_mesh_graph(3)
@@ -357,12 +359,14 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.op
             g.update_edge(k[0], k[1], {"weight": v})
     >>> h = loss_hamiltonian(g)
     >>> print(h)
-      (-0.6931471805599453) [Z0]
-    + (0.0) [Z1]
-    + (0.4054651081081644) [Z2]
-    + (0.6931471805599453) [Z3]
-    + (0.9162907318741551) [Z4]
-    + (1.0986122886681098) [Z5]
+    (
+        -0.6931471805599453 * Z(0)
+      + 0.0 * Z(1)
+      + 0.4054651081081644 * Z(2)
+      + 0.6931471805599453 * Z(3)
+      + 0.9162907318741551 * Z(4)
+      + 1.0986122886681098 * Z(5)
+    )
 
     Args:
         graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges

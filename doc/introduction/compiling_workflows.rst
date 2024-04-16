@@ -37,7 +37,7 @@ Check out the Catalyst documentation for
 Just-in-time compilation
 ------------------------
 
-Using Catalyst with PennyLane is a simple as using the :func:`@qjit <.qjit>` decorator to
+Using Catalyst with PennyLane is as simple as using the :func:`@qjit <.qjit>` decorator to
 compile your hybrid workflows:
 
 .. code-block:: python
@@ -53,7 +53,7 @@ compile your hybrid workflows:
         qml.RX(jnp.sin(params[0]) ** 2, wires=1)
         qml.CRY(params[0], wires=[0, 1])
         qml.RX(jnp.sqrt(params[1]), wires=1)
-        return qml.expval(qml.PauliZ(1))
+        return qml.expval(qml.Z(1))
 
 The :func:`~.qjit` decorator can also be used on hybrid functions --
 that is, functions that include both QNodes and classical processing.
@@ -78,7 +78,7 @@ using ``@jax.jit``:
         # initial parameter
         params = jnp.array([0.54, 0.3154])
 
-        # define the optimizer
+        # define the optimizer using a qjit-decorated function
         opt = jaxopt.GradientDescent(circuit, stepsize=0.4)
         update = lambda i, args: tuple(opt.update(*args))
 
@@ -111,7 +111,7 @@ rather than in Python at compile time. You can enable this feature via the
         else:
             qml.T(wires=0)
 
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 >>> circuit(3)
 array(0.)
@@ -149,7 +149,7 @@ decorator:
         qml.RX(x[0], wires=0)
         qml.RY(x[1], wires=1)
         qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliY(0))
+        return qml.expval(qml.Y(0))
 
 >>> circuit(jnp.array([0.5, 1.4]))
 -0.47244976756708373
