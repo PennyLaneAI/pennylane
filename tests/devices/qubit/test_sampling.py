@@ -1134,6 +1134,19 @@ class TestHamiltonianSamples:
         assert np.allclose(res[0], expected, atol=0.01)
         assert np.allclose(res[1], expected, atol=0.01)
 
+    def test_prod_expval(self):
+        """Tests that sampling works for Prod observables"""
+
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(y, wires=0), qml.RX(x, wires=1)]
+        H = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        tape = qml.tape.QuantumScript(
+            ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
+        )
+        res = simulate(tape, rng=200)
+        expected = [np.sin(y), -np.sin(y) * np.sin(x)]
+        assert np.allclose(res, expected, atol=0.05)
+
     def test_multi_wires(self):
         """Test that sampling works for Sums with large numbers of wires"""
         n_wires = 10

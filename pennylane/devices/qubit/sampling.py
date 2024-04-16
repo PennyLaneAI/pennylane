@@ -59,11 +59,6 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
         elif mp.obs is None:
             mp_no_obs.append(mp)
             mp_no_obs_indices.append(i)
-        elif isinstance(mp.obs, (Hamiltonian, Sum, SProd, Prod)):
-            # Sum, Hamiltonian, SProd, and Prod are treated as valid Pauli words, but
-            # aren't accepted in qml.pauli.group_observables
-            mp_other_obs.append([mp])
-            mp_other_obs_indices.append([i])
         elif qml.pauli.is_pauli_word(mp.obs):
             mp_pauli_obs.append((i, mp))
         else:
@@ -72,13 +67,13 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
 
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
-        ob_groups, group_indices = qml.pauli.group_observables(
+        _, group_indices = qml.pauli.group_observables(
             [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
         )
 
         mp_pauli_groups = []
-        for group, indices in zip(ob_groups, group_indices):
-            mp_group = [i_to_pauli_mp[i].__class__(obs=ob) for ob, i in zip(group, indices)]
+        for indices in group_indices:
+            mp_group = [i_to_pauli_mp[i] for i in indices]
             mp_pauli_groups.append(mp_group)
     else:
         mp_pauli_groups, group_indices = [], []
