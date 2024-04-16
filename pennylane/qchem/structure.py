@@ -321,20 +321,7 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
 
     where :math:`n_i` indicates the occupation of the :math:`i`-th orbital.
 
-    This fermionic state is mapped to the qubit basis for quantum simulations.
-    We consider three mappings,
-       * Occupation number basis states, where each qubit :math:`j` stores the occupation number of
-         respective spin orbital :math:`j`.
-       * Parity basis, where each qubit .mathj stores the parity of respective spin orbital j.
-       * Bravyi-Kitaev basis, where a qubit :math:`j` stores occupation state of orbital :math:`j` if :math:`j`
-         is even and stores partial sum of the occupation state of a set of orbitals of
-         index less than :math`j`, if :math:`j` is odd.
-
-    Occupation number basis can be transformed to parity basis using transformation matrix,
-    :math:`\pi` and to Bravyi-Kitaev basis using transformation matrix, :math:`\beta`.
-    [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
-
-
+    In the occupation number basis, each qubit stores the occupation number of its corresponding spin orbital. The Hartree-Fock state can also be generated in the parity basis, where each qubit stores the parity of the spin orbital, and in the Bravyi-Kitaev basis, where a qubit :math:`j` stores occupation state of orbital :math:`j` if :math:`j` is even and stores partial sum of the occupation state of a set of orbitals of indices less than :math`j` if :math:`j` is odd [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
     Args:
         electrons (int): Number of electrons. If an active space is defined, this
             is the number of active electrons.
