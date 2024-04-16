@@ -1307,6 +1307,12 @@ class TestArithmetic:
 class TestGrouping:
     """Test grouping functionality of Sum"""
 
+    def test_set_on_initialization(self):
+        """Test that grouping indices can be set on initialization."""
+
+        op = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_indices=[[0, 1]])
+        assert op.grouping_indices == [[0, 1]]
+
     def test_non_pauli_error(self):
         """Test that grouping non-Pauli observables is not supported."""
         op = Sum(qml.PauliX(0), Prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(2))

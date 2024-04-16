@@ -617,12 +617,11 @@ class TestLinearCombination:
         data, metadata = H._flatten()
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
-        assert len(data) == 3
+        assert len(data) == 2
         assert qml.math.allequal(
             data[0], H._coeffs
         )  # Previously checking "is" instead of "==", problem?
         assert data[1] == H._ops
-        assert data[2] == H.data
 
         new_H = LinearCombination._unflatten(*H._flatten())
         assert qml.equal(H, new_H)
@@ -1456,6 +1455,12 @@ class TestLinearCombinationArithmeticJax:
 
 class TestGrouping:
     """Tests for the grouping functionality"""
+
+    def test_set_on_initialization(self):
+        """Test that grouping indices can be set on initialization."""
+
+        op = qml.ops.LinearCombination([1, 1], [qml.X(0), qml.Y(1)], grouping_indices=[[0, 1]])
+        assert op.grouping_indices == [[0, 1]]
 
     def test_indentities_preserved(self):
         """Tests that the grouping indices do not drop identity terms when the wire order is nonstandard."""

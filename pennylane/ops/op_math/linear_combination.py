@@ -45,6 +45,8 @@ class LinearCombination(Sum):
             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
+        grouping_indices (Optional[List[List[int]]]): Which terms can be computed at the same time. Sets
+            the corresponding property. Takes precedence over ``grouping_type`` and ``method``.
         id (str): name to be assigned to this ``LinearCombination`` instance
 
     **Example:**
@@ -100,14 +102,11 @@ class LinearCombination(Sum):
 
     def _flatten(self):
         # note that we are unable to restore grouping type or method without creating new properties
-        return (self._coeffs, self._ops, self.data), (self.grouping_indices,)
+        return self.terms(), (self.grouping_indices,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        new_op = cls(data[0], data[1])
-        new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
-        new_op.data = data[2]
-        return new_op
+        return cls(data[0], data[1], grouping_indices=metadata[0])
 
     def __init__(
         self,
@@ -115,6 +114,7 @@ class LinearCombination(Sum):
         observables: List[Operator],
         simplify=False,
         grouping_type=None,
+        grouping_indices=None,
         method="rlf",
         _pauli_rep=None,
         id=None,
@@ -147,7 +147,12 @@ class LinearCombination(Sum):
             operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
 
         super().__init__(
-            *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
+            *operands,
+            grouping_type=grouping_type,
+            method=method,
+            grouping_indices=grouping_indices,
+            id=id,
+            _pauli_rep=_pauli_rep,
         )
 
     @staticmethod
