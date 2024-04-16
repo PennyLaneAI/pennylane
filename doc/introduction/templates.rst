@@ -118,6 +118,11 @@ state preparation is typically used as the first operation.
     :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
     :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
 
+.. gallery-item::
+    :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
+    :figure: _static/templates/qubitization/thumbnail_qubitization.png
+
+
 .. raw:: html
 
         <div style='clear:both'></div>

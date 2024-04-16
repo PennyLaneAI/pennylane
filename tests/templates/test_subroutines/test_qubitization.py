@@ -65,8 +65,8 @@ def test_positive_coeffs_hamiltonian(hamiltonian, expected_unitaries):
 
     assert np.allclose(new_coeffs, np.abs(hamiltonian.terms()[0]))
 
-    for i in range(len(new_unitaries)):
-        assert qml.equal(expected_unitaries[i], new_unitaries[i])
+    for i, unitary in enumerate(new_unitaries):
+        assert qml.equal(expected_unitaries[i], unitary)
 
 
 def test_template_definition():
@@ -160,8 +160,8 @@ def test_decomposition(hamiltonian, expected_decomposition):
 
     decomposition = qml.Qubitization.compute_decomposition(hamiltonian=hamiltonian, control=[1])
 
-    for i in range(len(decomposition)):
-        assert qml.equal(decomposition[i], expected_decomposition[i])
+    for i, op in enumerate(decomposition):
+        assert qml.equal(op, expected_decomposition[i])
 
 
 @pytest.mark.xfail(

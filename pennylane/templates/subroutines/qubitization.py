@@ -46,9 +46,10 @@ def _positive_coeffs_hamiltonian(hamiltonian):
 
 
 class Qubitization(Operation):
-    r"""Applies the Qubitization operator.
+    r"""Applies the `Qubitization <https://arxiv.org/pdf/2204.11890.pdf>`__ operator.
 
-    This operator encodes a Hamiltonian into a suitable unitary operator. This can be done by using the evolution:
+    This operator encodes a Hamiltonian into a suitable unitary operator.
+    This can be done by using the evolution:
 
     .. math::
         e^{-i \arccos(\mathcal{H})},
@@ -57,6 +58,8 @@ class Qubitization(Operation):
 
     .. math::
         Q = (2|0\rangle\langle 0| - I) \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}.
+
+    .. seealso:: :class:`~.StatePrep` and :class:`~.Select`.
 
     Args:
         hamiltonian (.Hamiltonian): The Hamiltonian to be qubitized.
@@ -103,7 +106,7 @@ class Qubitization(Operation):
         super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(*args, **kwargs):
+    def compute_decomposition(*args, **kwargs):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
