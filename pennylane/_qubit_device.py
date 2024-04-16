@@ -297,9 +297,7 @@ class QubitDevice(Device):
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
             # Lightning does not support apply(rotations) anymore, so we need to rotate here
             # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
-            diagonalizing_gates = (
-                self._get_diagonalizing_gates(circuit) if self._is_lightning_device() else None
-            )
+            diagonalizing_gates = self._get_diagonalizing_gates(circuit) if self.is_lightning() else None
             if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
