@@ -672,7 +672,7 @@ class QubitDevice(Device):
                 if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
                     self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
-                if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
+                if is_lightning and diagonalizing_gates:  # pragma: no cover
                     self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
