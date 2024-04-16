@@ -15,6 +15,7 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 from functools import wraps
+from typing import Callable
 
 import pennylane as qml
 from pennylane.math import conj, moveaxis, transpose
@@ -176,9 +177,25 @@ def adjoint(fn, lazy=True):
             "of operations instead of a function or template."
         )
 
-    @wraps(fn)
+    return adjoint_qfunc(fn, lazy=lazy)
+
+
+@qml.capture.bind_nested_plxpr
+def adjoint_qfunc(qfunc: Callable, lazy: bool = True) -> Callable:
+    """Takes a quantum function and performs the adjoint its operations.
+
+    Args:
+        qfunc (Callable): a function that queues quantum operations
+        lazy=True (bool): whether or not to lazily wrap all operations in an :class:`~.Adjoint` wrapper.
+
+    Returns:
+        Callable
+
+    """
+
+    @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = make_qscript(fn)(*args, **kwargs)
+        qscript = make_qscript(qfunc)(*args, **kwargs)
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:

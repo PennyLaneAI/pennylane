@@ -19,7 +19,7 @@ import functools
 from copy import copy
 from functools import wraps
 from inspect import signature
-from typing import List
+from typing import List, Callable
 
 import numpy as np
 from scipy import sparse
@@ -135,6 +135,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
 def create_controlled_op(op, control, control_values=None, work_wires=None):
     """Default ``qml.ctrl`` implementation, allowing other implementations to call it when needed."""
 
+    if callable(op):
+        return controlled_qfunc(op, control, control_values=control_values, work_wires=work_wires)
+
     control = qml.wires.Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [control_values]
@@ -170,16 +173,32 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
             op, control_wires=control, control_values=control_values, work_wires=work_wires
         )
 
-    if not callable(op):
-        raise ValueError(
-            f"The object {op} of type {type(op)} is not an Operator or callable. "
-            "This error might occur if you apply ctrl to a list "
-            "of operations instead of a function or Operator."
-        )
+    raise ValueError(
+        f"The object {op} of type {type(op)} is not an Operator or callable. "
+        "This error might occur if you apply ctrl to a list "
+        "of operations instead of a function or Operator."
+    )
 
-    @wraps(op)
+
+@qml.capture.bind_nested_plxpr
+def controlled_qfunc(qfunc: Callable, control, control_values=None, work_wires=None) -> Callable:
+    """A qfunc transform that performs a controlled version of every operator in the qfunc.
+
+    Args:
+        qfunc (Callable): a function that queues quantum operations.
+        control : Any number of control wires
+        control_values (Iterable[bool]): an iterable of booleans indicating whether or not to control
+            on zero or one.
+        work_wires: Any extra wires that can be used in decompositions.
+
+    Returns:
+        Callable
+
+    """
+
+    @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = qml.tape.make_qscript(op)(*args, **kwargs)
+        qscript = qml.tape.make_qscript(qfunc)(*args, **kwargs)
 
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
