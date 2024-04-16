@@ -268,6 +268,7 @@
 
 * `null.qubit` can now accept a target gateset via `operations`, a device to mimic via `target_device`,
   and will assume no parameter broadcasting if `assume_no_broadcasting=True`.
+    [(#5527)](https://github.com/PennyLaneAI/pennylane/pull/5527)
 
 <h3>Breaking changes 💔</h3>
 
