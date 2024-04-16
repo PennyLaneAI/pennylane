@@ -372,17 +372,17 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
             f"The number of active orbitals cannot be smaller than the number of active electrons;"
             f" got 'orbitals'={orbitals} < 'electrons'={electrons}"
         )
-    else:
-        state = np.where(np.arange(orbitals) < electrons, 1, 0)
 
+    if basis == "occupation-number":
+        return np.where(np.arange(orbitals) < electrons, 1, 0)
+    
     if basis == "parity":
         pi_matrix = np.tril(np.ones((orbitals, orbitals)))
-        state = np.matmul(pi_matrix, state) % 2
-    elif basis == "bravyi_kitaev":
+        return np.matmul(pi_matrix, state) % 2
+    if basis == "bravyi_kitaev":
         beta_matrix = _beta_matrix(orbitals)
-        state = np.matmul(beta_matrix, state) % 2
+        return np.matmul(beta_matrix, state) % 2
 
-    return np.array(state)
 
 
 def excitations_to_wires(singles, doubles, wires=None):
