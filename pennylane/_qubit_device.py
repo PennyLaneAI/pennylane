@@ -298,12 +298,12 @@ class QubitDevice(Device):
             # Lightning does not support apply(rotations) anymore, so we need to rotate here
             # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
             diagonalizing_gates = (
-                self._get_diagonalizing_gates(circuit) if self.is_lightning_device() else None
+                self._get_diagonalizing_gates(circuit) if self._is_lightning_device() else None
             )
-            if self.is_lightning_device() and diagonalizing_gates:  # pragma: no cover
+            if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
-            if self.is_lightning_device() and diagonalizing_gates:  # pragma: no cover
+            if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
@@ -667,12 +667,12 @@ class QubitDevice(Device):
             elif isinstance(m, ProbabilityMP):
 
                 diagonalizing_gates = (
-                    self._get_diagonalizing_gates(circuit) if self.is_lightning_device() else None
+                    self._get_diagonalizing_gates(circuit) if self._is_lightning_device() else None
                 )
-                if self.is_lightning_device() and diagonalizing_gates:  # pragma: no cover
+                if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
                     self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
-                if self.is_lightning_device() and diagonalizing_gates:  # pragma: no cover
+                if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
                     self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
@@ -799,15 +799,6 @@ class QubitDevice(Device):
                 results.append(result)
 
         return results
-
-    def is_lightning_device(self):
-        """Returns True if the device is a Lightning plugin with C++ binaries and False otherwise."""
-        return (
-            hasattr(self, "name")
-            and isinstance(self.name, str)
-            and "Lightning" in self.name
-            and getattr(self, "_CPP_BINARY_AVAILABLE", False)
-        )
 
     def access_state(self, wires=None):
         """Check that the device has access to an internal state and return it if available.
@@ -1758,3 +1749,12 @@ class QubitDevice(Device):
         """
         # pylint:disable=no-self-use
         return circuit.diagonalizing_gates
+
+    def _is_lightning_device(self):
+        """Returns True if the device is a Lightning plugin with C++ binaries and False otherwise."""
+        return (
+            hasattr(self, "name")
+            and isinstance(self.name, str)
+            and "Lightning" in self.name
+            and getattr(self, "_CPP_BINARY_AVAILABLE", False)
+        )
