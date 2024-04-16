@@ -22,6 +22,7 @@ import pennylane as qml
 
 from pennylane.operation import Operator
 
+
 class PauliVSpace:
     """
     Class representing the linearly independent basis of a vector space.
