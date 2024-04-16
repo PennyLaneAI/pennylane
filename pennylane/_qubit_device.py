@@ -294,16 +294,17 @@ class QubitDevice(Device):
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
-        is_lightning = self._is_lightning_device()
 
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
             # Lightning does not support apply(rotations) anymore, so we need to rotate here
             # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
-            diagonalizing_gates = self._get_diagonalizing_gates(circuit) if self.is_lightning() else None
+            is_lightning = self._is_lightning_device()
+            diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
             if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
+                # pylint: disable=bad-reversed-sequence
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
@@ -665,12 +666,15 @@ class QubitDevice(Device):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
-
-                diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
+                is_lightning = self._is_lightning_device()
+                diagonalizing_gates = (
+                    self._get_diagonalizing_gates(circuit) if is_lightning else None
+                )
                 if is_lightning and diagonalizing_gates:  # pragma: no cover
                     self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
                 if is_lightning and diagonalizing_gates:  # pragma: no cover
+                    # pylint: disable=bad-reversed-sequence
                     self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
@@ -1752,7 +1756,6 @@ class QubitDevice(Device):
         """Returns True if the device is a Lightning plugin with C++ binaries and False otherwise."""
         return (
             hasattr(self, "name")
-            and isinstance(self.name, str)
-            and "Lightning" in self.name
+            and "Lightning" in str(self.name)
             and getattr(self, "_CPP_BINARY_AVAILABLE", False)
         )
