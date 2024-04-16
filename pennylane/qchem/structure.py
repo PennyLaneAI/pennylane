@@ -307,7 +307,7 @@ def _beta_matrix(orbitals):
     return beta[:orbitals, :orbitals]
 
 
-def hf_state(electrons, orbitals, basis="occupation_number"):
+def hf_state(electrons, orbitals, basis="occupation-number"):
     r"""Generate the vector representing the Hartree-Fock state.
 
     The many-particle wave function in the Hartree-Fock (HF) approximation is a `Slater determinant
