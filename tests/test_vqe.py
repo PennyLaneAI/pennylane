@@ -64,6 +64,18 @@ OBSERVABLES_NO_HERMITIAN = [
     (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
 ]
 
+with qml.operation.disable_new_opmath_cm():
+    OBSERVABLES_LEGACY = [
+        (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
+        (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
+        (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
+    ]
+
+    OBSERVABLES_NO_HERMITIAN_LEGACY = [
+        (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
+        (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
+    ]
+
 hamiltonians_with_expvals = [
     ((-0.6,), (qml.PauliZ(0),), [-0.6 * 1.0]),
     ((1.0,), (qml.PauliX(0),), [0.0]),
@@ -269,6 +281,7 @@ add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES)))
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
@@ -279,10 +292,31 @@ class TestVQE:
         assert expval(params).dtype == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
+    @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES_LEGACY)))
+    def test_cost_evaluate_legacy(self, params, ansatz, coeffs, observables):
+        """Tests that the cost function evaluates properly"""
+        hamiltonian = qml.Hamiltonian(coeffs, observables)
+        dev = qml.device("default.qubit", wires=3)
+        expval = generate_cost_fn(ansatz, hamiltonian, dev)
+        assert expval(params).dtype == np.float64
+        assert np.shape(expval(params)) == ()  # expval should be scalar
+
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize(
         "coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals
     )
     def test_cost_expvals(self, coeffs, observables, expected):
+        """Tests that the cost function returns correct expectation values"""
+        dev = qml.device("default.qubit", wires=2)
+        hamiltonian = qml.Hamiltonian(coeffs, observables)
+        cost = generate_cost_fn(lambda params, **kwargs: None, hamiltonian, dev)
+        assert cost([]) == sum(expected)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
+    def test_cost_expvals_legacy(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.Hamiltonian(coeffs, observables)
@@ -738,9 +772,42 @@ class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
     # pylint: disable=cell-var-from-loop
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
+        """Tests simple VQE evaluations."""
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=3)
+        H = qml.Hamiltonian(coeffs, observables)
+
+        # pass H directly
+        @qml.qnode(dev)
+        def circuit():
+            ansatz(params, wires=range(3))
+            return qml.expval(H)
+
+        res = circuit()
+
+        res_expected = []
+        for obs in observables:
+
+            @qml.qnode(dev)
+            def separate_circuit():
+                ansatz(params, wires=range(3))
+                return qml.expval(obs)
+
+            res_expected.append(separate_circuit())
+
+        res_expected = np.sum([c * r for c, r in zip(coeffs, res_expected)])
+
+        assert np.isclose(res, res_expected, atol=tol)
+
+    # pylint: disable=cell-var-from-loop
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
+    @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN_LEGACY)
+    def test_circuits_evaluate_legacy(self, ansatz, observables, params, tol):
         """Tests simple VQE evaluations."""
         coeffs = [1.0] * len(observables)
         dev = qml.device("default.qubit", wires=3)
