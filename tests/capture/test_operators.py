@@ -153,6 +153,7 @@ class TestTemplates:
         assert jaxpr.eqns[2].primitive == qml.Z._primitive
         assert jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qml.ops.Sum._primitive
+        assert not any(isinstance(eqn.outvars[0], jax.core.DropVar) for eqn in jaxpr.eqns[:5])
 
         eqn = jaxpr.eqns[5]
         assert eqn.primitive == qml.TrotterProduct._primitive

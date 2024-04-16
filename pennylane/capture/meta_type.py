@@ -149,9 +149,9 @@ class PLXPRMeta(abc.ABCMeta):
     def __call__(cls, *args, **kwargs):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
-        # when tracing is enabled, we want to
 
         if not plxpr_enabled():
             return type.__call__(cls, *args, **kwargs)
+        # when tracing is enabled, we want to
         # use bind to construct the class if we want class construction to add it to the jaxpr
         return cls._primitive_bind_call(*args, **kwargs)
