@@ -14,12 +14,13 @@
 """
 Integration tests for the capture of PennyLane templates into plxpr.
 """
+# pylint: disable=protected-access
 from typing import Any
-import pytest
 import inspect
+import pytest
 
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 from pennylane.capture.meta_type import _get_abstract_operator, PLXPRMeta
 
