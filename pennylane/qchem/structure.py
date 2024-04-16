@@ -286,7 +286,7 @@ def _beta_matrix(orbitals):
     r"""Generate the conversion matrix to transform the occupation number basis to the Bravyi-Kitaev basis.
 
     Args:
-        orbitals (int): Number of *spin* orbitals. If an active space is defined,
+        orbitals (int): Number of spin orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
 
     Returns:
