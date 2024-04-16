@@ -867,15 +867,29 @@ class QubitDevice(Device):
             )
 
         shots = self.shots
-
         basis_states = np.arange(number_of_states)
+
+        # pylint:disable = import-outside-toplevel
+        if qml.math.is_abstract(state_probability):
+            import jax
+
+            jax.config.update("jax_enable_x64", True)
+            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
+            if self._ndim(state_probability) == 2:
+                return jax.numpy.array(
+                    [
+                        jax.random.choice(key, basis_states, shape=(shots,), p=prob)
+                        for prob in state_probability
+                    ]
+                )
+            return jax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
+
+        state_probs = qml.math.unwrap(state_probability)
         if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
-            return np.array(
-                [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
-            )
+            return np.array([np.random.choice(basis_states, shots, p=prob) for prob in state_probs])
 
-        return np.random.choice(basis_states, shots, p=state_probability)
+        return np.random.choice(basis_states, shots, p=state_probs)
 
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):

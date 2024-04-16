@@ -113,6 +113,53 @@ class TestQNodeIntegration:
         expected[0, 0] = 1.0
         assert np.array_equal(rho_out, expected)
 
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop", "finite-diff"])
+    def test_channel_jit_compatible(self, diff_method):
+        """Test that `default.mixed` is compatible with jax-jit"""
+
+        a, b, c = jax.numpy.array([0.1, 0.2, 0.1])
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(a, b, c):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.DepolarizingChannel(c, wires=[0])
+            qml.DepolarizingChannel(c, wires=[1])
+            return qml.expval(qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliY(1)]))
+
+        grad_fn = jax.jit(jax.grad(circuit, argnums=[0, 1, 2]))
+        res1 = grad_fn(a, b, c)
+
+        # the tape has reported both arguments as trainable
+        assert circuit.qtape.trainable_params == [0, 1, 2, 3]
+        assert all(isinstance(r_, jax.Array) for r_ in res1)
+
+        # make the second QNode argument a constant
+        grad_fn = jax.grad(circuit, argnums=[0, 1])
+        res2 = grad_fn(a, b, c)
+
+        assert circuit.qtape.trainable_params == [0, 1]
+        assert qml.math.allclose(res1[:2], res2)
+
+    @pytest.mark.parametrize("gradient_func", [qml.gradients.param_shift, None])
+    def test_jit_with_shots(self, gradient_func):
+        """Test that jitted execution works when shots are given."""
+
+        dev = qml.device("default.mixed", wires=1, shots=10)
+
+        @jax.jit
+        def wrapper(x):
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(x, wires=0)
+                qml.expval(qml.PauliZ(0))
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return qml.execute([tape], dev, gradient_fn=gradient_func)
+
+        assert jax.numpy.allclose(wrapper(jax.numpy.array(0.0))[0], 1.0)
+
 
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
@@ -774,3 +821,45 @@ class TestHighLevelIntegration:
             expected.append(circuit(x_indiv))
 
         assert np.allclose(expected, res)
+
+    @pytest.mark.parametrize("gradient_func", [qml.gradients.param_shift, "device", None])
+    def test_tapes(self, gradient_func):
+        """Test that jitted execution works with tapes."""
+
+        def cost(x, y, interface, gradient_func):
+            """Executes tapes"""
+            device = qml.device("default.mixed", wires=2)
+
+            with qml.queuing.AnnotatedQueue() as q1:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+
+            with qml.queuing.AnnotatedQueue() as q2:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.probs(wires=[0])
+                qml.probs(wires=[1])
+
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+            return [
+                device.execute(tape, interface=interface, gradient_func=gradient_func)
+                for tape in [tape1, tape2]
+            ]
+
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
+
+        x_ = np.array(0.543)
+        y_ = np.array(-0.654)
+
+        res = cost(x, y, interface="jax-jit", gradient_func=gradient_func)
+        exp = cost(x_, y_, interface="numpy", gradient_func=gradient_func)
+
+        for r, e in zip(res, exp):
+            assert jax.numpy.allclose(qml.math.array(r), qml.math.array(e), atol=1e-7)
