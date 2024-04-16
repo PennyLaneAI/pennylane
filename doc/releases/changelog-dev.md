@@ -252,6 +252,10 @@
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
+* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+  [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+  [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
+
 * Add type hints for unimplemented methods of the abstract class `Operator`.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
 
@@ -259,7 +263,14 @@
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
+* Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
+  [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
+
 <h3>Breaking changes 💔</h3>
+
+* Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
+  operators easier to work with.
+  [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
@@ -333,6 +344,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Adds a page explaining the shapes and nesting of result objects.
+  [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
+
 * Removed some redundant documentation for the `evolve` function.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
@@ -349,6 +363,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+  [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
 
 * The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
   [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)

@@ -1511,11 +1511,15 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return qml.sum(self, other)
+            return qml.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
             if qml.math.allequal(other, 0):
                 return self
-            return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+            return qml.sum(
+                self,
+                qml.s_prod(scalar=other, operator=qml.Identity(self.wires), lazy=False),
+                lazy=False,
+            )
         return NotImplemented
 
     __radd__ = __add__
@@ -1525,7 +1529,7 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
-            return qml.s_prod(scalar=other, operator=self)
+            return qml.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented
 
     def __truediv__(self, other):
@@ -1538,12 +1542,12 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
 
     def __matmul__(self, other):
         """The product operation between Operator objects."""
-        return qml.prod(self, other) if isinstance(other, Operator) else NotImplemented
+        return qml.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return self + qml.s_prod(-1, other)
+            return self + qml.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
             return self + (qml.math.multiply(-1, other))
         return NotImplemented
@@ -1554,7 +1558,7 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return qml.s_prod(scalar=-1, operator=self)
+        return qml.s_prod(scalar=-1, operator=self, lazy=False)
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
