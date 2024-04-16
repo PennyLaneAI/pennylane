@@ -303,7 +303,7 @@ class QubitDevice(Device):
             if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
-            if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
