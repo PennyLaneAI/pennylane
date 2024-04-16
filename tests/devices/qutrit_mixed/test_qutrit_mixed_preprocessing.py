@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@ class TestPreprocessing:
         ],
     )
     def test_measurement_is_swapped_out(self, mp_fn, mp_cls, shots):
-        """Test that preprocessing swaps out any MP with no wires or obs"""
+        """Test that preprocessing swaps out any MeasurementProcess with no wires or obs"""
         dev = DefaultQutritMixed(wires=3)
         original_mp = mp_fn()
         exp_z = qml.expval(qml.GellMann(0, 3))
@@ -230,8 +230,8 @@ class TestPreprocessingIntegration:
         val = (("a", "b"), "c", "d")
         assert batch_fn(val) == (("a", "b"), "c")
 
-    def test_preprocess_split_and_expand_not_adjoint(self):
-        """Test that preprocess returns the correct tapes when splitting and expanding
+    def test_preprocess_batch_and_expand_not_adjoint(self):
+        """Test that preprocess returns the correct tapes when batching and expanding
         is needed."""
         ops = [qml.THadamard(0), NoMatOp(1), qml.TRX([np.pi, np.pi / 2], wires=1)]
         # Need to specify grouping type to transform tape
@@ -264,7 +264,7 @@ class TestPreprocessingIntegration:
         assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
     def test_preprocess_check_validity_fail(self):
-        """Test that preprocess throws an error if the split and expanded tapes have
+        """Test that preprocess throws an error if the batched and expanded tapes have
         unsupported operators."""
         ops = [qml.THadamard(0), NoMatNoDecompOp(1), qml.TRZ(0.123, wires=1)]
         measurements = [[qml.expval(qml.GellMann(0, 3))], [qml.expval(qml.GellMann(1, 1))]]

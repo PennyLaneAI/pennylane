@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 
 class DefaultQutritMixed(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
+
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
@@ -83,6 +84,7 @@ class DefaultQutritMixed(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
+
     **Example:**
     .. code-block:: python
 
@@ -107,9 +109,11 @@ class DefaultQutritMixed(Device):
     -0.0635052317625]
 
     This device currently supports backpropagation derivatives:
+
     >>> from pennylane.devices import ExecutionConfig
     >>> dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
     True
+
     For example, we can use jax to jit computing the derivative:
     .. code-block:: python
         import jax
@@ -120,10 +124,12 @@ class DefaultQutritMixed(Device):
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
             return post_processing_fn(results)
+
     >>> f(jax.numpy.array(1.2))
     DeviceArray(0.36235774, dtype=float32)
     >>> jax.grad(f)(jax.numpy.array(1.2))
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+
     .. details::
         :title: Tracking
         ``DefaultQutritMixed`` tracks:
@@ -160,8 +166,10 @@ class DefaultQutritMixed(Device):
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
+
         Args:
             execution_config (ExecutionConfig)
+
         Returns:
             ExecutionConfig: a preprocessed execution config
         """
@@ -190,16 +198,19 @@ class DefaultQutritMixed(Device):
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
+
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
+
         Returns:
             TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
+
         This device:
         * Supports any qutrit operations that provide a matrix
-        * Supports any qutrit Channels that provide kraus matrices
+        * Supports any qutrit channel that provide Kraus matrices
         """
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
