@@ -306,6 +306,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_check_validity_containing_prod(self, mock_device_supporting_prod):
         """Tests that the function Device.check_validity works with Prod"""
 
@@ -323,6 +324,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         dev.check_validity(queue, observables)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_prod_containing_unsupported_nested_observables(self, mock_device_supporting_prod):
         """Tests that the observables nested within Prod are checked for validity"""
 
