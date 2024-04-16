@@ -45,6 +45,7 @@ from pennylane.measurements import (
 
 from . import Device, DefaultQubit
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -125,6 +126,7 @@ def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots, batch_size, inte
     return (result,) * shots.num_copies if shots.has_partitioned_shots else result
 
 
+# pylint: disable=too-many-arguments
 @simulator_tracking
 @single_tape_support
 class NullQubit(Device):
@@ -137,6 +139,10 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
+        target_device (Optional[Device]): a device to mimic the preprocessing of. Must obey the new device interface.
+        operations (Optional[Iterable[str, Operator]]): a target gateset for the device
+        assume_no_broadcasting=False (bool): If ``True``, we always assume no parameter batching exists. Useful
+            for profiling and benchmarking.
 
     **Example:**
 
@@ -221,15 +227,33 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    def __init__(self, wires=None, shots=None) -> None:
+    def __init__(
+        self,
+        wires=None,
+        shots=None,
+        target_device=None,
+        operations=None,
+        assume_no_broadcasting=False,
+    ) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
+        self._assume_no_broadcasting = assume_no_broadcasting
+        if target_device and not isinstance(target_device, Device):
+            raise NotImplementedError(
+                "null.qubit only supports target devices that obey the new device interface"
+            )
+        self._target_device = target_device
+        self._operations = operations
+
+    def _get_batch_size(self, circuit):
+        return None if self._assume_no_broadcasting else circuit.batch_size
 
     def _simulate(self, circuit, interface):
         shots = circuit.shots
         obj_with_wires = self if self.wires else circuit
+
         results = tuple(
-            zero_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
+            zero_measurement(mp, obj_with_wires, shots, self._get_batch_size(circuit), interface)
             for mp in circuit.measurements
         )
         if len(results) == 1:
@@ -245,7 +269,9 @@ class NullQubit(Device):
         derivatives = tuple(
             (
                 math.zeros_like(
-                    zero_measurement(mp, obj_with_wires, shots, circuit.batch_size, interface)
+                    zero_measurement(
+                        mp, obj_with_wires, shots, self._get_batch_size(circuit), interface
+                    )
                 ),
             )
             * n
@@ -255,9 +281,8 @@ class NullQubit(Device):
             derivatives = tuple(d[0] for d in derivatives)
         return derivatives[0] if len(derivatives) == 1 else derivatives
 
-    @staticmethod
-    def _vjp(circuit, interface):
-        batch_size = circuit.batch_size
+    def _vjp(self, circuit, interface):
+        batch_size = self._get_batch_size(circuit)
         n = len(circuit.trainable_params)
         res_shape = (n,) if batch_size is None else (n, batch_size)
         return math.zeros(res_shape, like=interface)
@@ -280,7 +305,28 @@ class NullQubit(Device):
     def preprocess(
         self, execution_config=DefaultExecutionConfig
     ) -> Tuple[TransformProgram, ExecutionConfig]:
-        program, _ = DefaultQubit.preprocess(self, execution_config)
+        if self._target_device is not None:
+            program, execution_config = self._target_device.preprocess(execution_config)
+        else:
+            program, _ = DefaultQubit().preprocess(execution_config)
+
+        if self._operations is not None:
+
+            def stopping_condition(op) -> bool:
+                return op.name in self._operations or op in self._operations
+
+            found_decompose = False
+            for container in program:
+                if container.transform == decompose.transform:
+                    found_decompose = True
+                    container.kwargs["stopping_condition"] = stopping_condition
+
+            if not found_decompose:
+                program.add_transform(decompose, stopping_condition=stopping_condition)
+
+        return program, self._setup_execution_config(execution_config)
+
+    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         updated_values = {}
         if execution_config.gradient_method in ["best", "adjoint"]:
             updated_values["gradient_method"] = "device"
@@ -297,7 +343,7 @@ class NullQubit(Device):
             )
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
-        return program, replace(execution_config, **updated_values)
+        return replace(execution_config, **updated_values)
 
     def execute(
         self,
