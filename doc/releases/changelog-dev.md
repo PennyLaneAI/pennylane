@@ -211,7 +211,7 @@
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
-* The `qml.qchem.hf_state` function is upgraded to be compatible with parity and Bravyi-Kitaev basis.
+* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev basis.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
 <h4>Community contributions 🥳</h4>

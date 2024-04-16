@@ -293,9 +293,6 @@ def _beta_matrix(orbitals):
         (array): The transformation matrix
     """
 
-    if orbitals == 1:
-        return np.array([[1]])
-
     bin_range = int(np.ceil(np.log2(orbitals)))
 
     beta = np.array([[1]])
@@ -321,13 +318,17 @@ def hf_state(electrons, orbitals, basis="occupation-number"):
 
     where :math:`n_i` indicates the occupation of the :math:`i`-th orbital.
 
-    In the occupation number basis, each qubit stores the occupation number of its corresponding spin orbital. The Hartree-Fock state can also be generated in the parity basis, where each qubit stores the parity of the spin orbital, and in the Bravyi-Kitaev basis, where a qubit :math:`j` stores occupation state of orbital :math:`j` if :math:`j` is even and stores partial sum of the occupation state of a set of orbitals of indices less than :math`j` if :math:`j` is odd [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
+    In the occupation number basis, each qubit stores the occupation number of its corresponding spin orbital.
+    The Hartree-Fock state can also be generated in the parity basis, where each qubit stores the parity of
+    the spin orbital, and in the Bravyi-Kitaev basis, where a qubit :math:`j` stores occupation state of orbital
+    :math:`j` if :math:`j` is even and stores partial sum of the occupation state of a set of orbitals of indices
+    less than :math`j` if :math:`j` is odd [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
     Args:
         electrons (int): Number of electrons. If an active space is defined, this
             is the number of active electrons.
         orbitals (int): Number of *spin* orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
-        basis (string): Basis in which the HF state is represented.
+        basis (string): Basis(occupation-number, parity, or bravyi-kitaev) in which the HF state is represented.
 
     Returns:
         array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`
@@ -365,10 +366,10 @@ def hf_state(electrons, orbitals, basis="occupation-number"):
     
     if basis == "parity":
         pi_matrix = np.tril(np.ones((orbitals, orbitals)))
-        return np.matmul(pi_matrix, state) % 2
-    if basis == "bravyi_kitaev":
+        return np.matmul(pi_matrix, np.where(np.arange(orbitals) < electrons, 1, 0)) % 2
+    if basis == "bravyi-kitaev":
         beta_matrix = _beta_matrix(orbitals)
-        return np.matmul(beta_matrix, state) % 2
+        return np.matmul(beta_matrix, np.where(np.arange(orbitals) < electrons, 1, 0)) % 2
 
 
 

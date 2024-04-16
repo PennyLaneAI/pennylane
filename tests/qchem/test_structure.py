@@ -218,9 +218,19 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
 @pytest.mark.parametrize(
     ("electrons", "orbitals", "basis", "exp_state"),
     [
-        (2, 5, "occupation_number", np.array([1, 1, 0, 0, 0])),
-        (1, 5, "occupation_number", np.array([1, 0, 0, 0, 0])),
-        (5, 5, "occupation_number", np.array([1, 1, 1, 1, 1])),
+        (1, 1, "occupation-number", np.array([1])),
+        (2, 5, "occupation-number", np.array([1, 1, 0, 0, 0])),
+        (1, 5, "occupation-number", np.array([1, 0, 0, 0, 0])),
+        (5, 5, "occupation-number", np.array([1, 1, 1, 1, 1])),
+        (1, 1, "parity", np.array([1])),
+        (2, 5, "parity", np.array([1, 0, 0, 0, 0])),
+        (1, 5, "parity", np.array([1, 1, 1, 1, 1])),
+        (5, 5, "parity", np.array([1, 0, 1, 0, 1])),
+        (1, 1, "bravyi-kitaev", np.array([1])),
+        (2, 5, "bravyi-kitaev", np.array([1, 0, 0, 0, 0])),
+        (1, 5, "bravyi-kitaev", np.array([1, 1, 0, 1, 0])),
+        (5, 5, "bravyi-kitaev", np.array([1, 0, 1, 0, 1])),
+
     ],
 )
 def test_hf_state(electrons, orbitals, basis, exp_state):
@@ -232,6 +242,15 @@ def test_hf_state(electrons, orbitals, basis, exp_state):
     assert np.allclose(res_state, exp_state)
 
 
+def test_beta_matrix():
+    r"""Test the correctness of beta matrix."""
+    
+    for i in range(1, 10):
+        beta = qml.qchem.structure._beta_matrix(i)
+        beta_inv = np.linalg.inv(beta)
+        prod = np.matmul(beta, beta_inv)
+        assert prod.all() == np.eye((i)).all()
+        
 @pytest.mark.parametrize(
     ("electrons", "symbols", "geometry", "charge"),
     [
@@ -244,6 +263,7 @@ def test_hf_state(electrons, orbitals, basis, exp_state):
         ),
     ],
 )
+
 def test_hf_state_basis(electrons, symbols, geometry, charge):
     r"""Test the correctness of the generated HF state in a circuit."""
 
@@ -251,9 +271,9 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
     h_ferm = qchem.fermionic_hamiltonian(mol)()
     qubits = len(h_ferm.wires)
 
-    state_occ = qchem.hf_state(electrons, qubits, basis="occupation_num")
+    state_occ = qchem.hf_state(electrons, qubits, basis="occupation-number")
     state_parity = qchem.hf_state(electrons, qubits, basis="parity")
-    state_bk = qchem.hf_state(electrons, qubits, basis="bravyi_kitaev")
+    state_bk = qchem.hf_state(electrons, qubits, basis="bravyi-kitaev")
 
     h_occ = qml.jordan_wigner(h_ferm, ps=True, tol=1e-16).hamiltonian()
     h_parity = qml.parity_transform(h_ferm, qubits, ps=True, tol=1e-16).hamiltonian()
