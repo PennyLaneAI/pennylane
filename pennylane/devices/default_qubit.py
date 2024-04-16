@@ -380,13 +380,7 @@ class DefaultQubit(Device):
         """The name of the device."""
         return "default.qubit"
 
-    @property
-    def prng_key(self):
-        """Get a new key with ``jax.random.split``."""
-        self._prng_key, key = jax_random_split(self._prng_key)
-        return key
-
-    def get_prng_key(self, num: int = 1):
+    def get_prng_keys(self, num: int = 1):
         """Get ``num`` new keys with ``jax.random.split``."""
         self._prng_key, *keys = jax_random_split(self._prng_key, num=num + 1)
         return keys
@@ -585,7 +579,7 @@ class DefaultQubit(Device):
                 simulate(
                     c,
                     rng=self._rng,
-                    prng_key=self.prng_key,
+                    prng_key=self.get_prng_keys()[0],
                     debugger=self._debugger,
                     interface=interface,
                     state_cache=self._state_cache,
@@ -601,7 +595,7 @@ class DefaultQubit(Device):
                 _wrap_simulate,
                 vanilla_circuits,
                 seeds,
-                self.get_prng_key(num=len(vanilla_circuits)),
+                self.get_prng_keys(num=len(vanilla_circuits)),
             )
             results = tuple(exec_map)
 
@@ -639,7 +633,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(
                 _adjoint_jac_wrapper(
-                    c, rng=self._rng, debugger=self._debugger, prng_key=self.prng_key
+                    c, rng=self._rng, debugger=self._debugger, prng_key=self.get_prng_keys()[0]
                 )
                 for c in circuits
             )
@@ -653,7 +647,7 @@ class DefaultQubit(Device):
                         _adjoint_jac_wrapper,
                         vanilla_circuits,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits)),
+                        self.get_prng_keys(num=len(vanilla_circuits)),
                     )
                 )
 
@@ -711,7 +705,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(
                 _adjoint_jvp_wrapper(
-                    c, t, rng=self._rng, debugger=self._debugger, prng_key=self.prng_key
+                    c, t, rng=self._rng, debugger=self._debugger, prng_key=self.get_prng_keys()[0]
                 )
                 for c, t in zip(circuits, tangents)
             )
@@ -726,7 +720,7 @@ class DefaultQubit(Device):
                         vanilla_circuits,
                         tangents,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits)),
+                        self.get_prng_keys(num=len(vanilla_circuits)),
                     )
                 )
 
@@ -832,7 +826,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(
                 _adjoint_vjp_wrapper(
-                    c, t, rng=self._rng, prng_key=self.prng_key, debugger=self._debugger
+                    c, t, rng=self._rng, prng_key=self.get_prng_keys()[0], debugger=self._debugger
                 )
                 for c, t in zip(circuits, cotangents)
             )
@@ -847,7 +841,7 @@ class DefaultQubit(Device):
                         vanilla_circuits,
                         cotangents,
                         seeds,
-                        self.get_prng_key(num=len(vanilla_circuits)),
+                        self.get_prng_keys(num=len(vanilla_circuits)),
                     )
                 )
 
