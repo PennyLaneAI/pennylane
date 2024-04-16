@@ -300,7 +300,7 @@ class QubitDevice(Device):
             diagonalizing_gates = (
                 self._get_diagonalizing_gates(circuit) if self._is_lightning_device() else None
             )
-            if self._is_lightning_device() and diagonalizing_gates:  # pragma: no cover
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
