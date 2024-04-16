@@ -262,7 +262,7 @@ class PauliRot(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, theta, pauli_word, wires=None, id=None):
-        return qml.capture.PLXPRMeta._primitive_bind_call(
+        return qml.capture.MetaOperator._primitive_bind_call(
             cls, theta, pauli_word=pauli_word, wires=wires, id=id
         )
 
