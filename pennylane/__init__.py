@@ -26,6 +26,7 @@ from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.capture
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
