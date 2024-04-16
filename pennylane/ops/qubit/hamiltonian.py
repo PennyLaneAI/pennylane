@@ -203,11 +203,6 @@ class Hamiltonian(Observable):
             )
 
         for obs in observables:
-            if isinstance(obs, qml.ops.Prod):
-                # we don't really want this to ever happen, but it makes testing easier during the deprecation phase
-                # because we don't have to generate separate lists of parametrization for old and new opmath testing
-                obs = qml.simplify(obs)
-                obs = qml.operation.Tensor(*obs)
             if not isinstance(obs, Observable):
                 raise ValueError(
                     "Could not create circuits. Some or all observables are not valid."
