@@ -139,8 +139,8 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        target_device (Optional[Device]): a device to mimic the preprocessing of. Must obey the new device interface.
         operations (Optional[Iterable[str, Operator]]): a target gateset for the device
+        target_device (Optional[Device]): a device to mimic the preprocessing of. Must obey the new device interface.
         assume_no_broadcasting=False (bool): If ``True``, we always assume no parameter batching exists. Useful
             for profiling and benchmarking.
 
@@ -313,7 +313,7 @@ class NullQubit(Device):
         if self._operations is not None:
 
             def stopping_condition(op) -> bool:
-                return op.name in self._operations or op in self._operations
+                return op.name in self._operations or type(op) in self._operations
 
             found_decompose = False
             for container in program:

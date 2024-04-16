@@ -110,6 +110,62 @@ def test_tracking():
     }
 
 
+def test_assume_no_broadcasting():
+    """Test that if no batch sizes are added if ``assume_no_broadcasting`` is True."""
+
+    dev = qml.device("null.qubit", assume_no_broadcasting=True)
+
+    tape = qml.tape.QuantumScript([qml.RX((1.2, 2.3), 0)], [qml.expval(qml.Z(0))])
+    results = dev.execute(tape)
+    assert qml.math.allclose(results, np.array(0.0))
+
+
+def test_target_gateset():
+    """Test that a target gateset can be specified."""
+
+    dev = qml.device("null.qubit", operations={"RX", qml.X, qml.CNOT})
+
+    tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0, 1))], [qml.expval(qml.Z(0))])
+    batch = (tape,)
+    program = dev.preprocess()[0]
+    batch, _ = program(batch)
+
+    expected = qml.tape.QuantumScript(
+        [qml.CNOT((0, 1)), qml.RX(1.2, 0), qml.CNOT((0, 1))], [qml.expval(qml.Z(0))]
+    )
+    assert qml.equal(batch[0], expected)
+
+
+def test_target_device():
+    """Test that a target device can be provided to mimic."""
+
+    class DummyDev(qml.devices.Device):
+        """a device that just defers measurements."""
+
+        def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
+            program = qml.transforms.core.TransformProgram()
+            program.add_transform(qml.defer_measurements)
+            return program, execution_config
+
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+            return 0
+
+    dev = qml.device("null.qubit", target_device=DummyDev())
+
+    program = dev.preprocess()[0]
+    assert len(program) == 1
+    assert program[0].transform == qml.defer_measurements.transform
+
+
+def test_target_device_error():
+    """Test that an error is raised in the target device does not obey the new device interface."""
+
+    target = qml.device("default.qubit.legacy", wires=2)
+
+    with pytest.raises(NotImplementedError):
+        NullQubit(target_device=target)
+
+
 class TestSupportsDerivatives:
     """Test that NullQubit states what kind of derivatives it supports."""
 

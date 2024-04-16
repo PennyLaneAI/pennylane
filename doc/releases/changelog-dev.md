@@ -266,6 +266,9 @@
 * Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
 
+* `null.qubit` can now accept a target gateset via `operations`, a device to mimic via `target_device`,
+  and will assume no parameter broadcasting if `assume_no_broadcasting=True`.
+
 <h3>Breaking changes 💔</h3>
 
 * Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
