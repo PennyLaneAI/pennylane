@@ -196,7 +196,7 @@ class TestOpmath:
         qml.capture.enable_plxpr()
 
         def qfunc(op):
-            qml.ctrl(op, control=3, control_values=[0, 0])
+            qml.ctrl(op, control=3, control_values=[0])
 
         jaxpr = jax.make_jaxpr(qfunc)(qml.IsingXX(1.2, wires=(0, 1)))
 
@@ -209,7 +209,7 @@ class TestOpmath:
         assert eqn.invars[1].val == 3
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {"control_values": [0, 0], "work_wires": None}
+        assert eqn.params == {"control_values": [0], "work_wires": None}
 
         qml.capture.disable_plxpr()
 
@@ -297,5 +297,24 @@ class TestAbstractDunders:
 
         assert len(q) == 1
         assert q.queue[0] == 3 * 2 * qml.Y(1)
+
+        qml.capture.disable_plxpr()
+
+    def test_pow(self):
+        """Test that abstract operators can be raised to powers."""
+
+        qml.capture.enable_plxpr()
+
+        def qfunc(z):
+            return qml.IsingZZ(z, (0, 1)) ** 2
+
+        jaxpr = jax.make_jaxpr(qfunc)(1.2)
+
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive == qml.IsingZZ._primitive
+        assert jaxpr.eqns[1].primitive == qml.ops.Pow._primitive
+
+        assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]
+        assert jaxpr.eqns[1].invars[1].val == 2
 
         qml.capture.disable_plxpr()
