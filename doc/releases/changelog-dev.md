@@ -364,6 +364,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
+  [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
+
 * `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
   [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
 
