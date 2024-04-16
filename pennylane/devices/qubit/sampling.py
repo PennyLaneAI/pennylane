@@ -16,7 +16,7 @@ from typing import List, Union, Tuple
 
 import numpy as np
 import pennylane as qml
-from pennylane.ops import Sum, Hamiltonian, SProd, Prod, LinearCombination
+from pennylane.ops import Sum, Hamiltonian, LinearCombination
 from pennylane.measurements import (
     SampleMeasurement,
     Shots,
