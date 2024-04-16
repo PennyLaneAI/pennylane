@@ -21,6 +21,9 @@ quantum-classical programs.
 
     This module is experimental and will change significantly in the future.
 
+.. currentmodule:: pennylane.capture
+.. autosummary::
+    :toctree: api
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable_plxpr`` and ``qml.capture.disable_plxpr``.
