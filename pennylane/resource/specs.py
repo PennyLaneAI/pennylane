@@ -52,19 +52,23 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
     .. code-block:: python3
 
         x = np.array([0.1, 0.2])
+        hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
 
         dev = qml.device('default.qubit', wires=2)
         @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
+            qml.TrotterProduct(hamiltonian, time=1.0, n=4, order=2)
             if add_ry:
                 qml.RY(x[1], wires=1)
+            qml.TrotterProduct(hamiltonian, time=1.0, n=4, order=4)
             return qml.probs(wires=(0,1))
 
     >>> qml.specs(circuit)(x, add_ry=False)
-    {'resources': Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1}),
-    gate_sizes=defaultdict(<class 'int'>, {1: 1, 2: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
+    {'resources': Resources(num_wires=2, num_gates=4, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1, 'TrotterPro
+    duct': 2}}), gate_sizes=defaultdict(<class 'int'>, {1: 3, 2: 1}), depth=4, shots=Shots(total_shots=None, shot_vector=())),
+    'errors': {'SpectralNormError': SpectralNormError(0.42998560822421455)},
     'num_observables': 1,
     'num_diagonalizing_gates': 0,
     'num_trainable_params': 1,
@@ -74,7 +78,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
     'gradient_options': {'shifts': 0.7853981633974483},
     'interface': 'auto',
     'diff_method': 'parameter-shift',
-    'gradient_fn': 'pennylane.transforms.core.transform_dispatcher.param_shift',
+    'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
     'num_gradient_executions': 2}
 
     """
@@ -87,6 +91,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
             * ``"num_observables"`` number of observables in the qnode
             * ``"num_diagonalizing_gates"`` number of diagonalizing gates required for execution of the qnode
             * ``"resources"``: a :class:`~.resource.Resources` object containing resource quantities used by the qnode
+            * ``"errors"``: combined algorithmic errors from the quantum operations executed by the qnode
             * ``"num_used_wires"``: number of wires used by the circuit
             * ``"num_device_wires"``: number of wires in device
             * ``"depth"``: longest path in directed acyclic graph representation
