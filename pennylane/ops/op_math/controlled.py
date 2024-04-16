@@ -139,6 +139,9 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
     elif control_values is None:
         control_values = [True] * len(control)
 
+    if qml.math.is_abstract(op):
+        return Controlled(op, control, control_values, work_wires=work_wires)
+
     ctrl_op = _try_wrap_in_custom_ctrl_op(
         op, control, control_values=control_values, work_wires=work_wires
     )
@@ -175,6 +178,11 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
             "of operations instead of a function or Operator."
         )
 
+    return ctrl_qfunc(op, control=control, control_values=control_values, work_wires=work_wires)
+
+
+@qml.capture.bind_nested_jaxpr
+def ctrl_qfunc(op, control, control_values=None, work_wires=None):
     @wraps(op)
     def wrapper(*args, **kwargs):
         qscript = qml.tape.make_qscript(op)(*args, **kwargs)

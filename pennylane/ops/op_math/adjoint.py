@@ -159,12 +159,15 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
+
     if active_jit := compiler.active_compiler():
         if lazy is False:
             raise CompileError("Setting lazy=False is not supported with qjit.")
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.adjoint(fn)
+    if qml.math.is_abstract(fn):
+        return Adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):
@@ -174,7 +177,11 @@ def adjoint(fn, lazy=True):
             "of operations instead of a function or template."
         )
 
-    @wraps(fn)
+    return adjoint_qfunc(fn, lazy=lazy)
+
+
+@qml.capture.bind_nested_jaxpr
+def adjoint_qfunc(fn, lazy=True):
     def wrapper(*args, **kwargs):
         qscript = make_qscript(fn)(*args, **kwargs)
         if lazy:

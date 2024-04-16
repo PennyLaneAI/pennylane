@@ -19,11 +19,12 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
+from pennylane.capture import JaxPRMeta
 from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
@@ -112,7 +113,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess(ABC):
+class MeasurementProcess(metaclass=JaxPRMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -144,6 +145,23 @@ class MeasurementProcess(ABC):
         if data[1] is not None:
             return cls(eigvals=data[1], **dict(metadata))
         return cls(**dict(metadata))
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        obs: Optional[
+            Union[
+                Operator,
+                "qml.measurements.MeasurementValue",
+                Sequence["qml.measurements.MeasurementValue"],
+            ]
+        ] = None,
+        wires: Optional[Wires] = None,
+        eigvals: Optional[TensorLike] = None,
+        shots: Optional[Shots] = None,
+        id: Optional[str] = None,
+    ):
+        raise NotImplementedError
 
     # pylint: disable=too-many-arguments
     def __init__(
