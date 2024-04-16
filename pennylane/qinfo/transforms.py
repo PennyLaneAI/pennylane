@@ -57,6 +57,23 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
     tensor([[0.5+0.j, 0. +0.j],
             [0. +0.j, 0.5+0.j]], requires_grad=True)
 
+    This is equivalent to the state of the wire ``0`` after measuring the wire ``1``:
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def measured_circuit(x):
+            qml.IsingXX(x, wires=[0,1])
+            m = qml.measure(1)
+            return qml.density_matrix(wires=[0]), qml.probs(op=m)
+
+    >>> dm, probs = measured_circuit(np.pi/2)
+    >>> dm
+    tensor([[0.5+0.j, 0. +0.j],
+            [0. +0.j, 0.5+0.j]], requires_grad=True)
+    >>> probs
+    tensor([0.5, 0.5], requires_grad=True)
+
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
     # device_wires is provided by the custom QNode transform
@@ -541,30 +558,31 @@ def classical_fisher(qnode, argnums=0):
     .. code-block:: python
 
         import pennylane.numpy as pnp
-        n_wires = 2
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circ(params):
             qml.RX(params[0], wires=0)
-            qml.RX(params[1], wires=0)
-            qml.CNOT(wires=(0,1))
-            return qml.probs(wires=range(n_wires))
+            qml.CNOT([0, 1])
+            qml.CRY(params[1], wires=[1, 0])
+            qml.Hadamard(1)
+            return qml.probs(wires=[0, 1])
 
-    Executing this circuit yields the ``2**n_wires`` elements of :math:`p_\ell(\bm{\theta})`
+    Executing this circuit yields the ``2**2=4`` elements of :math:`p_\ell(\bm{\theta})`
 
+    >>> pnp.random.seed(25)
     >>> params = pnp.random.random(2)
     >>> circ(params)
-    [0.61281668 0.         0.         0.38718332]
+    [0.41850088 0.41850088 0.08149912 0.08149912]
 
     We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
     by ``classical_fisher()``:
 
     >>> cfim_func = qml.qinfo.classical_fisher(circ)
     >>> cfim_func(params)
-    [[1. 1.]
-     [1. 1.]]
+    [[ 0.901561 -0.125558]
+     [-0.125558  0.017486]]
 
     This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
@@ -831,7 +849,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     fidelity is simply
 
     .. math::
-        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
+        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi| \phi}\right|^2
 
     .. note::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
