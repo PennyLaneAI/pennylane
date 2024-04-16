@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
+  quantum-classical programs.
+  [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
+
 * The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
 [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
@@ -257,6 +261,7 @@
 
 * Extend the device test suite to cover gradient methods, templates and arithmetic observables.
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+  [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
 
 * Add type hints for unimplemented methods of the abstract class `Operator`.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
