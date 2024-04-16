@@ -406,7 +406,7 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-class Operator(metaclass=PLXPRMeta):
+class Operator(abc.ABC, metaclass=PLXPRMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -697,8 +697,6 @@ class Operator(metaclass=PLXPRMeta):
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
-
-    _meta_coerce_wires: bool = True
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
@@ -1801,7 +1799,7 @@ class Operation(Operator):
             self.grad_recipe = [None] * self.num_params
 
 
-class Channel(Operation):
+class Channel(Operation, abc.ABC):
     r"""Base class for quantum channels.
 
     Quantum channels have to define an additional numerical representation

@@ -40,6 +40,62 @@ By default, the mechanism is disabled:
     >>> qml.capture.plxpr_enabled()
     False
 
+**Custom Operator Behavior**
+
+Any operation that inherits from :class:`~.Operator` gains a default ability to be captured
+by jaxpr.  Any positional argument is bound as a tracer, wires are processed out into individual tracers,
+and any keyword args are passed as keyword metadata.
+
+.. code-block:: python
+
+    class MyOp1(qml.operation.Operator):
+
+        def __init__(self, arg1, wires, key=None):
+            super().__init__(arg1, wires=wires)
+
+    def qfunc(a):
+        MyOp1(a, wires=(0,1), key="a")
+
+    qml.capture.enable_plxpr()
+    print(jax.make_jaxpr(qfunc)(0.1))
+
+.. code-block::
+
+    { lambda ; a:f32[]. let
+        _:AbstractOperator() = MyOp1[key=a n_wires=2] a 0 1
+    in () }
+
+But an operator developer may need to override custom behavior for calling ``cls._primitive.bind`` if:
+
+* The operator does not accept wires like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
+* The operator allows metadata to be provided positionally, like :class:`~.PauliRot`.
+
+In such cases, the operator developer can override ``cls._primitive_bind_call``.  This is what
+will be called when constructing a new class instance instead of ``type.__call__``.  For example,
+
+.. code-block:: python
+
+    class WeirdOp(qml.operation.Operator):
+
+        def __init__(self, metadata="X"):
+            super().__init__(wires=[])
+            self._metadata = metadata
+
+        @classmethod
+        def _primitive_bind_call(cls, metadata):
+            return cls._primitive.bind(metadata=metadata)
+            
+
+    def qfunc():
+        WeirdOp("Y")
+
+    qml.capture.enable_plxpr()
+    print(jax.make_jaxpr(qfunc)())
+
+.. code-block::
+
+    { lambda ; . let _:AbstractOperator() = WeirdOp[metadata=Y]  in () }
+
 """
 from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
 from .meta_type import PLXPRMeta

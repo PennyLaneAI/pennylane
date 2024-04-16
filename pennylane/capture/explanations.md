@@ -25,28 +25,12 @@ def my_func(x):
 
 
 ```python
-jaxpr = jax.make_jaxpr(my_func)(0.1)
-jaxpr
+>>> jaxpr = jax.make_jaxpr(my_func)(0.1)
+>>> jaxpr
+{ lambda ; a:f32[]. let b:f32[1] = my_func a in (b,) }
+>>> jaxpr.jaxpr.eqns
+[a:f32[1] = my_func b]
 ```
-
-
-
-
-    { lambda ; a:f32[]. let b:f32[1] = my_func a in (b,) }
-
-
-
-
-```python
-jaxpr.jaxpr.eqns
-```
-
-
-
-
-    [a:f32[1] = my_func b]
-
-
 
 ## Metaprogramming
 
@@ -88,33 +72,20 @@ And that we have set a class property `a`
 
 
 ```python
-MyClass.a
+>>> MyClass.a
+'a'
 ```
-
-
-
-
-    'a'
-
-
 
 But can we actually create instances of these classes?
 
 
 ```python
-obj = MyClass(0.1, a=2)
-obj
+>> obj = MyClass(0.1, a=2)
+>>> obj
+creating an instance of type <class '__main__.MyClass'> with (0.1,), {'a': 2}. 
+now creating an instance in __init__
+<__main__.MyClass at 0x11c5a2810>
 ```
-
-    creating an instance of type <class '__main__.MyClass'> with (0.1,), {'a': 2}. 
-    now creating an instance in __init__
-
-
-
-
-
-    <__main__.MyClass at 0x11c5a2810>
-
 
 
 So far, we've just added print statements around default behavior.  Let's try something more radical
@@ -139,16 +110,10 @@ Using a metaclass, we can hijack what happens when a type is called.
 
 
 ```python
-out = WeirdClass(1.0)
-out, out == 2.0
+>>> out = WeirdClass(1.0)
+>>> out, out == 2.0
+(2.0, True)
 ```
-
-
-
-
-    (2.0, True)
-
-
 
 ## Putting Primitives and Metaprogramming together
 
@@ -197,29 +162,17 @@ What happens if we just create a class normally as is?
 
 
 ```python
+>>> PrimitiveClass(1.0)
 PrimitiveClass(1.0)
 ```
-
-
-
-
-    PrimitiveClass(1.0)
-
-
 
 But now it can also be used in tracing as well
 
 
 ```python
-jax.make_jaxpr(PrimitiveClass)(1.0)
+>>> jax.make_jaxpr(PrimitiveClass)(1.0)
+{ lambda ; a:f32[]. let b:f32[1] = PrimitiveClass a in (b,) }
 ```
-
-
-
-
-    { lambda ; a:f32[]. let b:f32[1] = PrimitiveClass a in (b,) }
-
-
 
 Great!👍
 
@@ -280,12 +233,6 @@ Now in our jaxpr, we can see thet `PrimitiveClass2` returns something of type `A
 
 
 ```python
-jax.make_jaxpr(PrimitiveClass2)(0.1)
+>>> jax.make_jaxpr(PrimitiveClass2)(0.1)
+{ lambda ; a:f32[]. let b:AbstractPrimitiveClass() = PrimitiveClass2 a in (b,) }
 ```
-
-
-
-
-    { lambda ; a:f32[]. let b:AbstractPrimitiveClass() = PrimitiveClass2 a in (b,) }
-
-

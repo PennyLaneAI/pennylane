@@ -260,6 +260,12 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
+    @classmethod
+    def _primitive_bind_call(cls, theta, pauli_word, wires=None, id=None):
+        return qml.capture.PLXPRMeta._primitive_bind_call(
+            cls, theta, pauli_word=pauli_word, wires=wires, id=id
+        )
+
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)
         self.hyperparameters["pauli_word"] = pauli_word

@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines a metaclass for automatic integration of any ``Operator`` with jaxpr program capture.
+Defines a metaclass for automatic integration of any ``Operator`` with plxpr program capture.
 
 See ``explanations.md`` for technical explanations of how this works.
 """
-from typing import Iterable
+
+import abc
 from functools import lru_cache
 
 import pennylane as qml
@@ -36,13 +37,23 @@ def _get_abstract_operator():
     if not has_jax:
         raise ImportError("Jax is required for plxpr.")
 
-    # TODO: investigate
-    # pennylane/capture/meta_type.py:37:4: W0223: Method 'at_least_vspace' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
-    # pennylane/capture/meta_type.py:37:4: W0223: Method 'join' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
-    # pennylane/capture/meta_type.py:37:4: W0223: Method 'update' is abstract in class 'AbstractValue' but is not overridden in child class 'AbstractOperator' (abstract-method)
-
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
+
+        # pylint: disable=missing-function-docstring
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
 
         def __eq__(self, other):
             return isinstance(other, AbstractOperator)
@@ -50,16 +61,20 @@ def _get_abstract_operator():
         def __hash__(self):
             return hash("AbstractOperator")
 
-        def _matmul(self, *args):
+        @staticmethod
+        def _matmul(*args):
             return qml.prod(*args)
 
-        def _mul(self, a, b):
+        @staticmethod
+        def _mul(a, b):
             return qml.s_prod(b, a)
 
-        def _rmul(self, a, b):
+        @staticmethod
+        def _rmul(a, b):
             return qml.s_prod(b, a)
 
-        def _add(self, a, b):
+        @staticmethod
+        def _add(a, b):
             return qml.sum(a, b)
 
     jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
@@ -67,7 +82,7 @@ def _get_abstract_operator():
     return AbstractOperator
 
 
-class PLXPRMeta(type):
+class PLXPRMeta(abc.ABCMeta):
     """A metatype that:
 
     * automatically registers a jax primitive to ``cls._primitive``
@@ -79,7 +94,9 @@ class PLXPRMeta(type):
 
     """
 
-    def __init__(cls, *_, **__):
+    def __init__(cls, *args, **kwargs):
+
+        super().__init__(cls, args, kwargs)
 
         # Called when constructing a new type that has this metaclass.
         # Similar to __init_subclass__ , this allows us to run this code
@@ -92,7 +109,7 @@ class PLXPRMeta(type):
         cls._primitive = jax.core.Primitive(cls.__name__)
 
         @cls._primitive.def_impl
-        def default_call(*args, **kwargs):
+        def _(*args, **kwargs):
             if "n_wires" not in kwargs:
                 return type.__call__(cls, *args, **kwargs)
             n_wires = kwargs.pop("n_wires")
@@ -104,26 +121,33 @@ class PLXPRMeta(type):
         abstract_type = _get_abstract_operator()
 
         @cls._primitive.def_abstract_eval
-        def abstract_init(*_, **__):
+        def _(*_, **__):
             return abstract_type()
+
+    def _primitive_bind_call(cls, *args, **kwargs):
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, *args, **kwargs)
+
+        iterable_wires_types = (list, tuple, qml.wires.Wires, range)
+        if "wires" in kwargs:
+            wires = kwargs.pop("wires")
+            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
+            kwargs["n_wires"] = len(wires)
+            args += wires
+        elif args and isinstance(args[-1], iterable_wires_types):
+            kwargs["n_wires"] = len(args[-1])
+            args = args[:-1] + tuple(args[-1])
+        else:
+            kwargs["n_wires"] = 1
+        return cls._primitive.bind(*args, **kwargs)
 
     def __call__(cls, *args, **kwargs):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
         # when tracing is enabled, we want to
 
-        if not plxpr_enabled() or cls._primitive is None:
+        if not plxpr_enabled():
             return type.__call__(cls, *args, **kwargs)
         # use bind to construct the class if we want class construction to add it to the jaxpr
-        if getattr(cls, "_meta_coerce_wires", False):
-            if "wires" in kwargs:
-                wires = kwargs.pop("wires")
-                wires = tuple(wires) if isinstance(wires, Iterable) else (wires,)
-                kwargs["n_wires"] = len(wires)
-                args += wires
-            elif args and isinstance(args[-1], (list, tuple)):
-                kwargs["n_wires"] = len(args[-1])
-                args = args[:-1] + tuple(args[-1])
-            else:
-                kwargs["n_wires"] = 1
-        return cls._primitive.bind(*args, **kwargs)
+        return cls._primitive_bind_call(*args, **kwargs)
