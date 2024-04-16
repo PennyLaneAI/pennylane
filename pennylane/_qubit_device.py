@@ -666,9 +666,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, ProbabilityMP):
 
-                diagonalizing_gates = (
-                    self._get_diagonalizing_gates(circuit) if self._is_lightning_device() else None
-                )
+                diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
                 if is_lightning and diagonalizing_gates:  # pragma: no cover
                     self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
