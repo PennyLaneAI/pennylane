@@ -304,8 +304,8 @@ def _beta_matrix(orbitals):
     return beta[:orbitals, :orbitals]
 
 
-def hf_state(electrons, orbitals, basis="occupation-number"):
-    r"""Generate the vector representing the Hartree-Fock state.
+def hf_state(electrons, orbitals, basis="occupation_number"):
+    r"""Generate the Hartree-Fock statevector with respect to a chosen basis.
 
     The many-particle wave function in the Hartree-Fock (HF) approximation is a `Slater determinant
     <https://en.wikipedia.org/wiki/Slater_determinant>`_. In Fock space, a Slater determinant
@@ -323,12 +323,13 @@ def hf_state(electrons, orbitals, basis="occupation-number"):
     the spin orbital, and in the Bravyi-Kitaev basis, where a qubit :math:`j` stores occupation state of orbital
     :math:`j` if :math:`j` is even and stores partial sum of the occupation state of a set of orbitals of indices
     less than :math`j` if :math:`j` is odd [`arXiv:1812.02233 <https://arxiv.org/abs/1812.02233>`_].
+    
     Args:
         electrons (int): Number of electrons. If an active space is defined, this
             is the number of active electrons.
         orbitals (int): Number of *spin* orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
-        basis (string): Basis(occupation-number, parity, or bravyi-kitaev) in which the HF state is represented.
+        basis (string): Basis(occupation_number, parity, or bravyi_kitaev) in which the HF state is represented.
 
     Returns:
         array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`
@@ -361,15 +362,16 @@ def hf_state(electrons, orbitals, basis="occupation-number"):
             f" got 'orbitals'={orbitals} < 'electrons'={electrons}"
         )
 
-    if basis == "occupation-number":
-        return np.where(np.arange(orbitals) < electrons, 1, 0)
+    state = np.where(np.arange(orbitals) < electrons, 1, 0)
 
     if basis == "parity":
         pi_matrix = np.tril(np.ones((orbitals, orbitals)))
-        return np.matmul(pi_matrix, np.where(np.arange(orbitals) < electrons, 1, 0)) % 2
-    if basis == "bravyi-kitaev":
+        return np.matmul(pi_matrix, state) % 2
+    if basis == "bravyi_kitaev":
         beta_matrix = _beta_matrix(orbitals)
-        return np.matmul(beta_matrix, np.where(np.arange(orbitals) < electrons, 1, 0)) % 2
+        return np.matmul(beta_matrix, state) % 2
+
+    return state
 
 
 def excitations_to_wires(singles, doubles, wires=None):
