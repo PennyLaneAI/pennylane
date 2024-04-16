@@ -106,7 +106,7 @@ class Qubitization(Operation):
         super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(*args, **kwargs):  # pylint: disable=arguments-differ
+    def compute_decomposition(*_, **kwargs):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -25,7 +25,6 @@ from pennylane.templates.subroutines.qubitization import _positive_coeffs_hamilt
 @pytest.mark.parametrize(
     "hamiltonian, expected_unitaries",
     (
-        # TODO: Waiting to fix this bug: https://github.com/PennyLaneAI/pennylane/issues/5498
         (
             qml.ops.LinearCombination(
                 np.array([1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
@@ -196,9 +195,8 @@ class TestDifferentiability:
         qml.Qubitization(H, control=(3, 4))
         return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
-    # TODO:
-    # calculated numerically with finite diff method (h = 1e-5)
-    exp_grad = np.array([0.41177729, -0.21262357, 1.64370435, -0.74256522])
+    # calculated numerically with finite diff method (h = 1e-4)
+    exp_grad = np.array([0.41177729, -0.21262358, 1.64370464, -0.74256522])
 
     params = np.array([0.4, 0.5, 0.1, 0.3])
 

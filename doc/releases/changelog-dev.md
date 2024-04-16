@@ -173,6 +173,36 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
+  
+  * Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
+    When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
+  [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
+
+  ```python
+  H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+
+    # initiate the eigenvalue
+    qml.PauliX(2)
+
+    # apply QPE (used iterative qpe here)
+    measurements = qml.iterative_qpe(
+                    qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
+                    )
+    return qml.probs(op = measurements)
+  
+  output = circuit()
+  
+  # post-processing 
+  lambda_ = sum([abs(c) for c in H.terms()[0]])
+  ```
+  
+  ```pycon
+  >>> print(print("eigenvalue: ", lambda_ * np.cos(2 * np.pi * (np.argmax(output)) / 8)))
+  eigenvalue: 0.7
+  ```
 
 <h3>Improvements 🛠</h3>
 
