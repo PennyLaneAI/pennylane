@@ -161,7 +161,7 @@ def test_target_device():
 def test_target_device_and_operations():
     """Test that a target device can be used together with specifying operations."""
 
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument, too-few-public-methods
     class DummyDev(qml.devices.Device):
         """a device that just defers measurements."""
 
