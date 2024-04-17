@@ -830,24 +830,25 @@ class TestParamShiftRaisesWithBroadcasted:
     """Test that an error is raised with broadcasted tapes."""
 
     def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape."""
+        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the parameter-shift rule"
+        _match = r"Computing the gradient of broadcasted tapes .* using the parameter-shift rule"
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.param_shift(tape)
 
 
-# Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
-# See #4462 for details.
-@pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
 class TestParamShiftWithBroadcasted:
     """Tests for the `param_shift` transform on already broadcasted tapes.
     The tests for `param_shift` using broadcasting itself can be found
     further below."""
 
+    # Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
+    # See #4462 for details.
+    @pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
     @pytest.mark.parametrize("dim", [1, 3])
     @pytest.mark.parametrize("pos", [0, 1])
-    def test_with_single_parameter_broadcasted(self, dim, pos):
+    def test_with_single_trainable_parameter_broadcasted(self, dim, pos):
         """Test that the parameter-shift transform works with a tape that has
         one of its parameters broadcasted already."""
         x = np.array([0.23, 9.1, 2.3])
@@ -875,6 +876,9 @@ class TestParamShiftWithBroadcasted:
         assert res[0].shape == (dim,)
         assert res[1].shape == (dim,)
 
+    # Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
+    # See #4462 for details.
+    @pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
     @pytest.mark.parametrize("argnum", [(0, 2), (0, 1), (1,), (2,)])
     @pytest.mark.parametrize("dim", [1, 3])
     def test_with_multiple_parameters_broadcasted(self, dim, argnum):
@@ -901,6 +905,33 @@ class TestParamShiftWithBroadcasted:
         assert len(res) == 3
 
         assert res[0].shape == res[1].shape == res[2].shape == (dim,)
+
+    @pytest.mark.parametrize("dim", [1, 3])
+    @pytest.mark.parametrize("pos", [0, 1])
+    def test_with_single_nontrainable_parameter_broadcasted(self, dim, pos):
+        """Test that the parameter-shift transform works with a tape that has
+        one of its nontrainable parameters broadcasted."""
+        x = np.array([0.23, 9.1, 2.3])
+        x = x[:dim]
+        y = -0.654
+        if pos == 1:
+            x, y = y, x
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[0])  # does not have any impact on the expval
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [1 - pos]
+        assert tape.batch_size == dim
+        tapes, fn = qml.gradients.param_shift(tape, argnum=[0])
+        assert len(tapes) == 2
+        assert np.allclose([t.batch_size for t in tapes], dim)
+
+        dev = qml.device("default.qubit", wires=2)
+        res = fn(dev.execute(tapes))
+        assert res.shape == (dim,)
 
 
 class TestParamShiftUsingBroadcasting:
