@@ -68,5 +68,5 @@ toml==0.10.2
 tomli==2.0.1
 typing_extensions==4.11.0
 urllib3==2.2.1
-virtualenv==20.25.2
+virtualenv==20.25.3
 zipp==3.18.1

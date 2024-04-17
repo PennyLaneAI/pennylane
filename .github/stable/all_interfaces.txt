@@ -57,7 +57,7 @@ optree==0.11.0
 osqp==0.6.5
 packaging==24.0
 pathspec==0.12.1
-PennyLane_Lightning==0.35.1
+PennyLane_Lightning==0.36.0
 pillow==10.3.0
 platformdirs==4.2.0
 pluggy==1.4.0
@@ -97,7 +97,7 @@ tomli==2.0.1
 torch==2.2.0+rocm5.7
 typing_extensions==4.11.0
 urllib3==2.2.1
-virtualenv==20.25.2
+virtualenv==20.25.3
 Werkzeug==3.0.2
 wrapt==1.16.0
 zipp==3.18.1
