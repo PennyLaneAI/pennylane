@@ -868,14 +868,13 @@ class QubitDevice(Device):
 
         shots = self.shots
         basis_states = np.arange(number_of_states)
-
         # pylint:disable = import-outside-toplevel
         if qml.math.is_abstract(state_probability):
             import jax
 
             jax.config.update("jax_enable_x64", True)
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
-            if self._ndim(state_probability) == 2:
+            if jax.numpy.ndim(state_probability) == 2:
                 return jax.numpy.array(
                     [
                         jax.random.choice(key, basis_states, shape=(shots,), p=prob)

@@ -160,6 +160,23 @@ class TestQNodeIntegration:
 
         assert jax.numpy.allclose(wrapper(jax.numpy.array(0.0))[0], 1.0)
 
+    @pytest.mark.parametrize("shots", [10, 100, 1000])
+    def test_jit_sampling_with_broadcasting(self, shots):
+        """Tests that the sampling method works with broadcasting with jax-jit"""
+
+        dev = qml.device("default.mixed", wires=1, shots=shots)
+
+        number_of_states = 4
+        state_probability = jax.numpy.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.2, 0.1, 0.2]])
+
+        @partial(jax.jit, static_argnums=0)
+        def func(number_of_states, state_probability):
+            return dev.sample_basis_states(number_of_states, state_probability)
+
+        res = func(number_of_states, state_probability)
+        assert qml.math.shape(res) == (2, shots)
+        assert set(res.flat).issubset({0, 1, 2, 3})
+
 
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
