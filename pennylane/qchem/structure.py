@@ -318,7 +318,6 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
 
     where :math:`n_i` indicates the occupation of the :math:`i`-th orbital.
 
-    In the occupation number basis, each qubit stores the occupation number of its corresponding spin orbital.
     The Hartree-Fock state can also be generated in the parity basis, where each qubit stores the parity of
     the spin orbital, and in the Bravyi-Kitaev basis, where a qubit :math:`j` stores occupation state of orbital
     :math:`j` if :math:`j` is even and stores partial sum of the occupation state of a set of orbitals of indices
