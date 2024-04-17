@@ -180,11 +180,7 @@ class DefaultQutritMixed(Device):
 
         if execution_config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"
-        if execution_config.use_device_gradient is None:
-            updated_values["use_device_gradient"] = execution_config.gradient_method in {
-                "best",
-                "backprop",
-            }
+        updated_values["use_device_gradient"] = False
         updated_values["grad_on_execution"] = False
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
 
