@@ -217,7 +217,7 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
 
 @pytest.mark.parametrize(
     ("electrons", "orbitals", "basis", "exp_state"),
-    # Obtained manually using Eqs (10, 14) of 
+    # Obtained manually using Eqs (10, 14) of
     # [`Tranter et al. Int. J. Quantum Chem. 115, 1431 (2015)
     # <https://doi.org/10.1002/qua.24969>`_]
     [
