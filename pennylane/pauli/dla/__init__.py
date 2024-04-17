@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""(Dynamical) Lie Algebra functionality in PennyLane"""
+"""
+This subpackage defines functions and classes for dynamical Lie algebra functionality
+"""
 
-from .lie_closure import lie_closure
+from .lie_closure import PauliVSpace, lie_closure

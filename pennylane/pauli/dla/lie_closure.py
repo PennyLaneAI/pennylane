@@ -23,8 +23,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.operation import Operator
-from pennylane.pauli import PauliSentence, PauliWord
-
+from ...pauli import PauliWord, PauliSentence
 
 def lie_closure(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
@@ -264,11 +263,11 @@ class PauliVSpace:
 
     def add(self, other):
         """Adding a list of PauliSentences if they are linearly independent"""
-        if isinstance(other, (PauliWord, PauliSentence, Operator)):
+        if isinstance(other, (qml.pauli.PauliWord, qml.pauli.PauliSentence, Operator)):
             other = [other]
 
         other = [
-            qml.pauli.pauli_sentence(op) if not isinstance(op, PauliSentence) else op
+            qml.pauli.pauli_sentence(op) if not isinstance(op, qml.pauli.PauliSentence) else op
             for op in other
         ]
 

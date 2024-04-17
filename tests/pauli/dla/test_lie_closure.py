@@ -20,9 +20,8 @@ import numpy as np
 import pennylane as qml
 
 from pennylane import X, Y, Z
-from pennylane.dla import lie_closure
-from pennylane.dla.lie_closure import PauliVSpace
-from pennylane.pauli import PauliWord, PauliSentence
+
+from pennylane.pauli import PauliWord, PauliSentence, PauliVSpace, lie_closure
 
 ops1 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
