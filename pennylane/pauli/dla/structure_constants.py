@@ -63,7 +63,7 @@ def structure_constants(
 
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``.
-    
+
     .. see-also:: :func:`~.lie_closure`, :func:`~.center`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
 
     **Example**
