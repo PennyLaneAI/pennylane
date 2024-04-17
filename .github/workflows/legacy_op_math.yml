@@ -3,7 +3,6 @@ name: Legacy opmath tests
 on:
   schedule:
     - cron: "0 0 2 * *"
-  pull_request:  # this should be removed so it only runs on the schedule before merging
   workflow_dispatch:
 
 jobs:
@@ -12,6 +11,6 @@ jobs:
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
-      branch: ${{ github.ref }}  # this should be set back to master before merging
+      branch: 'master'
       run_lightened_ci: false
       disable_new_opmath: "True"
