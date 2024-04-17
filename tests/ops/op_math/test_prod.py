@@ -1081,9 +1081,9 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        prod_op = (
-            qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1) @ qml.PauliX(0)
-        )
+        o1 = qml.prod(qml.RZ(1.32, wires=0), qml.I(wires=0))
+        o2 = qml.prod(o1, qml.RX(1.9, wires=1))
+        prod_op = qml.prod(o2, qml.X(0))
         assert prod_op.arithmetic_depth == 3
 
         op_constructed = Prod(
@@ -1485,8 +1485,8 @@ class TestIntegration:
         true_grad = -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_obs_not_supported(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
+    def test_non_supported_obs_not_supported(self):
+        """Test that non-supported ops in a measurement process will raise an error."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))

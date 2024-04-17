@@ -137,7 +137,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
 
     **Example**
 
-    >>> q_op = 0.1*QubitOperator('X0') + 0.2*QubitOperator('Y0 Z2')
+    >>> q_op = 0.1 * QubitOperator('X0') + 0.2 * QubitOperator('Y0 Z2')
     >>> q_op
     0.1 [X0] +
     0.2 [Y0 Z2]
