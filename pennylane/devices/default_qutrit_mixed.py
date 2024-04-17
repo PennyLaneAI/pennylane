@@ -243,4 +243,5 @@ class DefaultQutritMixed(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
+        """Stub for execute."""
         return None
