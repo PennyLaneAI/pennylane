@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.operation import Operator
-from ...pauli import PauliWord, PauliSentence
+from ..pauli_arithmetic import PauliWord, PauliSentence
 
 
 def lie_closure(
@@ -74,7 +74,7 @@ def lie_closure(
     This can be done in short via ``lie_closure`` as follows.
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.dla.lie_closure(ops)
+    >>> dla = qml.pauli.lie_closure(ops)
     >>> print(dla)
     [X(1) @ X(0),
      Z(0),
@@ -98,7 +98,7 @@ def lie_closure(
         ...     PauliSentence({PauliWord({0: "Z"}): 1.}),
         ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
         ... ]
-        >>> dla = qml.dla.lie_closure(ops, pauli=True)
+        >>> dla = qml.pauli.lie_closure(ops, pauli=True)
         >>> print(dla)
         [1.0 * X(0) @ X(1),
          1.0 * Z(0),
