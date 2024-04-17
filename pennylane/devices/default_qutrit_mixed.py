@@ -309,18 +309,13 @@ class DefaultQutritMixed(Device):
                 ),
             )
 
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}
             else None
         )
 
-        results = tuple(
+        return tuple(
             simulate(
                 c,
                 rng=self._rng,
@@ -330,28 +325,3 @@ class DefaultQutritMixed(Device):
             )
             for c in circuits
         )
-
-        if self.tracker.active:
-            self.tracker.update(batches=1)
-            self.tracker.record()
-            for i, c in enumerate(circuits):
-                qpu_executions, shots = get_num_shots_and_executions(c)
-                res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
-                if c.shots:
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        shots=shots,
-                        resources=c.specs["resources"],
-                    )
-                else:
-                    self.tracker.update(
-                        simulations=1,
-                        executions=qpu_executions,
-                        results=res,
-                        resources=c.specs["resources"],
-                    )
-                self.tracker.record()
-
-        return results[0] if is_single_circuit else results
