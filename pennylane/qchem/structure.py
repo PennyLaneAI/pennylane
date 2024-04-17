@@ -370,7 +370,7 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
 
     if basis == "bravyi_kitaev":
         beta_matrix = _beta_matrix(orbitals)
-        return (np.matmul(beta_matrix, state) % 2).astype("int32")
+        return (np.matmul(beta_matrix, state) % 2).astype(int)
 
     return state
 
