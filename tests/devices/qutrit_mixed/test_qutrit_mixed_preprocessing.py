@@ -44,8 +44,15 @@ class NoMatNoDecompOp(qml.operation.Operation):
         return False
 
 
-class TestConfigSetup:
-    """Tests involving setting up the execution config."""
+def test_dev():
+    dev = qml.devices.DefaultQubit()
+    EC = ExecutionConfig(gradient_method="backprop")
+    assert dev.supports_derivatives(EC)
+
+
+# pylint: disable=too-few-public-methods
+class TestPreprocessing:
+    """Unit tests for the preprocessing method."""
 
     def test_error_if_device_option_not_available(self):
         """Test that an error is raised if a device option is requested but not a valid option."""
@@ -55,28 +62,11 @@ class TestConfigSetup:
         with pytest.raises(qml.DeviceError, match="device option bla"):
             dev.preprocess(config)
 
-    def test_choose_best_gradient_method(self):
-        """Test that preprocessing chooses backprop as the best gradient method."""
-        dev = DefaultQutritMixed()
-
-        config = ExecutionConfig(gradient_method="best")
-        _, config = dev.preprocess(config)
-        assert config.gradient_method == "backprop"
-        assert config.use_device_gradient
-        assert not config.grad_on_execution
-
-
-# pylint: disable=too-few-public-methods
-class TestPreprocessing:
-    """Unit tests for the preprocessing method."""
-
     def test_chooses_best_gradient_method(self):
         """Test that preprocessing chooses backprop as the best gradient method."""
         dev = DefaultQutritMixed()
 
-        config = ExecutionConfig(
-            gradient_method="best", use_device_gradient=None, grad_on_execution=None
-        )
+        config = ExecutionConfig(gradient_method="best")
 
         _, new_config = dev.preprocess(config)
 
@@ -100,16 +90,12 @@ class TestPreprocessing:
         assert circuits[1].circuit == circuit_valid_1.circuit
 
         invalid_circuit = qml.tape.QuantumScript([qml.TShift(4)])
-        with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
-            program, _ = dev.preprocess()
-            program(
-                [
-                    invalid_circuit,
-                ]
-            )
+        program, _ = dev.preprocess()
 
         with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
-            program, _ = dev.preprocess()
+            program([invalid_circuit])
+
+        with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
             program([circuit_valid_0, invalid_circuit])
 
     @pytest.mark.parametrize(
@@ -144,7 +130,7 @@ class TestPreprocessing:
             (qml.TRX(1.1, 0), True),
         ],
     )
-    def test_accepted_operator(self, op, expected):
+    def test_accepted_operator(self, op, expected):  # TODO: Add channel ops once added.
         """Test that _accepted_operator works correctly"""
         res = stopping_condition(op)
         assert res == expected
@@ -164,10 +150,9 @@ class TestPreprocessingIntegration:
         tapes, _ = program([tape])
 
         assert len(tapes) == 1
-        for op, expected in zip(tapes[0].circuit, ops + measurements):
-            assert qml.equal(op, expected)
+        assert tapes[0].circuit == ops + measurements
 
-    def test_batch_transform_broadcast_not_adjoint(self):
+    def test_batch_transform_broadcast(self):
         """Test that batch_transform does nothing when batching is required but
         internal PennyLane broadcasting can be used (diff method != adjoint)"""
         ops = [qml.THadamard(0), qml.TAdd([0, 1]), qml.TRX([np.pi, np.pi / 2], wires=1)]
@@ -181,11 +166,10 @@ class TestPreprocessingIntegration:
         assert len(tapes) == 1
         assert tapes[0].circuit == ops + measurements
 
-    def test_preprocess_batch_transform_not_adjoint(self):  # TODO rename
+    def test_preprocess_batch_transform(self):
         """Test that preprocess returns the correct tapes when a batch transform
         is needed."""
         ops = [qml.THadamard(0), qml.TAdd([0, 1]), qml.TRX([np.pi, np.pi / 2], wires=1)]
-        # Need to specify grouping type to transform tape
         measurements = [qml.expval(qml.GellMann(0, 4)), qml.expval(qml.GellMann(1, 3))]
         tapes = [
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[0]]),
@@ -196,14 +180,10 @@ class TestPreprocessingIntegration:
         res_tapes, batch_fn = program(tapes)
 
         assert len(res_tapes) == 2
-        for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, ops):
+        for res_tape, measurement in zip(res_tapes, measurements):
+            for op, expected_op in zip(res_tape.operations, expected_op):
                 assert qml.equal(op, expected_op)
-            assert len(t.measurements) == 1
-            if i == 0:
-                assert qml.equal(t.measurements[0], measurements[0])
-            else:
-                assert qml.equal(t.measurements[0], measurements[1])
+            assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
         assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
@@ -230,7 +210,7 @@ class TestPreprocessingIntegration:
         val = (("a", "b"), "c", "d")
         assert batch_fn(val) == (("a", "b"), "c")
 
-    def test_preprocess_batch_and_expand_not_adjoint(self):
+    def test_preprocess_batch_and_expand(self):
         """Test that preprocess returns the correct tapes when batching and expanding
         is needed."""
         ops = [qml.THadamard(0), NoMatOp(1), qml.TRX([np.pi, np.pi / 2], wires=1)]
@@ -251,14 +231,10 @@ class TestPreprocessingIntegration:
         ]
 
         assert len(res_tapes) == 2
-        for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, expected_ops):
+        for res_tape, measurement in zip(res_tapes, measurements):
+            for op, expected_op in zip(res_tape.operations, expected_ops):
                 assert qml.equal(op, expected_op)
-            assert len(t.measurements) == 1
-            if i == 0:
-                assert qml.equal(t.measurements[0], measurements[0])
-            else:
-                assert qml.equal(t.measurements[0], measurements[1])
+            assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
         assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
