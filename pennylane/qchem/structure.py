@@ -367,6 +367,7 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
     if basis == "parity":
         pi_matrix = np.tril(np.ones((orbitals, orbitals)))
         return np.matmul(pi_matrix, state) % 2
+
     if basis == "bravyi_kitaev":
         beta_matrix = _beta_matrix(orbitals)
         return np.matmul(beta_matrix, state) % 2
