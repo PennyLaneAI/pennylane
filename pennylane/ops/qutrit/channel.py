@@ -92,10 +92,3 @@ class QutritDepolarizingChannel(Channel):
                 )
 
         return Ks
-
-
-__qutrit_channels__ = {
-    "QutritDepolarizingChannel",
-}
-
-__all__ = list(__qutrit_channels__)

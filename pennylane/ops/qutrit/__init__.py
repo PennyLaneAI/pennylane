@@ -48,5 +48,8 @@ __obs__ = {
     "THermitian",
     "GellMann",
 }
+__channels__ = {
+    "QutritDepolarizingChannel",
+}
 
-__all__ = list(__ops__ | __obs__)
+__all__ = list(__ops__ | __obs__ | __channels__)
