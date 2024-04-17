@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.operation import Operator
-from ...pauli import PauliWord, PauliSentence
+from ..pauli_arithmetic import PauliWord, PauliSentence
 
 
 def lie_closure(
