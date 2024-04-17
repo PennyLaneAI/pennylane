@@ -14,17 +14,20 @@
 """
 This module contains the qml.expval measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
+from .sample import SampleMP
 from .mid_measure import MeasurementValue
 
 
-def expval(op: Union[Operator, MeasurementValue]):
+def expval(
+    op: Union[Operator, MeasurementValue],
+):
     r"""Expectation value of the supplied observable.
 
     **Example:**
@@ -66,9 +69,6 @@ def expval(op: Union[Operator, MeasurementValue]):
         raise NotImplementedError(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
-
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
 
     return ExpectationMP(obs=op)
 
@@ -114,7 +114,11 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = SampleMP(
+                obs=op,
+                eigvals=self._eigvals,
+                wires=self.wires if self._eigvals is not None else None,
+            ).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 

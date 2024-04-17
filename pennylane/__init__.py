@@ -26,6 +26,7 @@ from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.capture
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
@@ -36,7 +37,13 @@ from pennylane.pauli import pauli_decompose
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
-from pennylane.fermi import FermiC, FermiA, jordan_wigner
+from pennylane.fermi import (
+    FermiC,
+    FermiA,
+    jordan_wigner,
+    parity_transform,
+    bravyi_kitaev,
+)
 from pennylane.qchem import (
     taper,
     symmetry_generators,

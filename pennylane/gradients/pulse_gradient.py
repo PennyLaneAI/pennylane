@@ -29,7 +29,7 @@ from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_state_returns,
-    assert_no_tape_batching,
+    assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_params,
     find_and_validate_gradient_methods,
@@ -608,7 +608,7 @@ def stoch_pulse_grad(
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if num_split_times < 1:
         raise ValueError(
@@ -787,8 +787,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
     """
     tapes = []
     gradient_data = []
-    for idx, trainable_idx in enumerate(tape.trainable_params):
-        if trainable_idx not in argnum:
+    for idx in range(tape.num_params):
+        if idx not in argnum:
             # Only the number of tapes is needed to indicate a zero gradient entry
             gradient_data.append((0, None, None, None))
             continue

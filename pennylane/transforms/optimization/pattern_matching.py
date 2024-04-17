@@ -158,7 +158,7 @@ def pattern_matching_optimization(
             ]
             tape = qml.tape.QuantumTape(ops)
 
-        For optimizing the circuit given the given following pattern of CNOTs we apply the `pattern_matching`
+        For optimizing the circuit given the following pattern of CNOTs we apply the ``pattern_matching``
         transform.
 
         >>> dev = qml.device('default.qubit', wires=5)

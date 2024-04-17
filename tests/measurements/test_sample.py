@@ -126,19 +126,6 @@ class TestSample:
         assert result[2].dtype == np.dtype("int")
         assert np.array_equal(result[2].shape, (n_sample,))
 
-    def test_not_an_observable(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.sample(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
     def test_observable_return_type_is_sample(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
         n_shots = 10

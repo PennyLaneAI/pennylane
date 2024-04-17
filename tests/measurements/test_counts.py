@@ -61,13 +61,6 @@ class TestCounts:
         ):
             qml.counts(qml.PauliZ(0), wires=[0, 1])
 
-    def test_observable_might_not_be_hermitian(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
     def test_hash(self):
         """Test that the hash property includes the all_outcomes property."""
         m1 = qml.counts(all_outcomes=True)
@@ -86,8 +79,8 @@ class TestCounts:
         m2 = CountsMP(obs=qml.PauliX(0), all_outcomes=True)
         assert repr(m2) == "CountsMP(X(0), all_outcomes=True)"
 
-        m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
-        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
+        m3 = CountsMP(eigvals=(-1, 1), wires=[0], all_outcomes=False)
+        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[0], all_outcomes=False)"
 
         mv = qml.measure(0)
         m4 = CountsMP(obs=mv, all_outcomes=False)
@@ -159,6 +152,17 @@ class TestProcessSamples:
 
         result = qml.counts(qml.PauliZ(0)).process_samples(samples, wire_order=[0])
 
+        assert len(result) == 2
+        assert set(result.keys()) == {1, -1}
+        assert result[1] == np.count_nonzero(samples[:, 0] == 0)
+        assert result[-1] == np.count_nonzero(samples[:, 0] == 1)
+
+    def test_count_eigvals(self):
+        """Tests that eigvals are used instead of obs for counts"""
+
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        result = CountsMP(eigvals=[1, -1], wires=0).process_samples(samples, wire_order=[0])
         assert len(result) == 2
         assert set(result.keys()) == {1, -1}
         assert result[1] == np.count_nonzero(samples[:, 0] == 0)
