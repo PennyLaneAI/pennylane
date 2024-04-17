@@ -43,6 +43,7 @@ class CompositeOp(Operator):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        # needs to be overwritten because it doesnt take wires
         return cls._primitive.bind(*args, **kwargs)
 
     def _flatten(self):

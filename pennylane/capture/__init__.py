@@ -43,7 +43,7 @@ By default, the mechanism is disabled:
 **Custom Operator Behaviour**
 
 Any operation that inherits from :class:`~.Operator` gains a default ability to be captured
-by jaxpr.  Any positional argument is bound as a tracer, wires are processed out into individual tracers,
+by Jaxpr.  Any positional argument is bound as a tracer, wires are processed out into individual tracers,
 and any keyword args are passed as keyword metadata.
 
 .. code-block:: python
@@ -75,7 +75,7 @@ will be called when constructing a new class instance instead of ``type.__call__
 
 .. code-block:: python
 
-    class WeirdOp(qml.operation.Operator):
+    class JustMetadataOp(qml.operation.Operator):
 
         def __init__(self, metadata="X"):
             super().__init__(wires=[])
@@ -87,14 +87,14 @@ will be called when constructing a new class instance instead of ``type.__call__
             
 
     def qfunc():
-        WeirdOp("Y")
+        JustMetadataOp("Y")
 
     qml.capture.enable_plxpr()
     print(jax.make_jaxpr(qfunc)())
 
 .. code-block::
 
-    { lambda ; . let _:AbstractOperator() = WeirdOp[metadata=Y]  in () }
+    { lambda ; . let _:AbstractOperator() = JustMetadataOp[metadata=Y]  in () }
 
 """
 from .switches import enable_plxpr, disable_plxpr, plxpr_enabled

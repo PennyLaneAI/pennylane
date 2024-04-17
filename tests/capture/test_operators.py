@@ -28,10 +28,15 @@ pytestmark = pytest.mark.jax
 AbstractOperator = _get_abstract_operator()
 
 
+@pytest.fixture(autouse=True)
+def enable_disable_plxpr():
+    qml.capture.enable_plxpr()
+    yield
+    qml.capture.disable_plxpr()
+
+
 def test_operators_constructed_when_plxpr_enabled():
     """Test that normal operators can still be constructed when plxpr is enabled."""
-
-    qml.capture.enable_plxpr()
 
     with qml.queuing.AnnotatedQueue() as q:
         op = qml.adjoint(qml.X(0) + qml.Y(1))
@@ -42,14 +47,45 @@ def test_operators_constructed_when_plxpr_enabled():
     assert op.base[0] == qml.X(0)
     assert op.base[1] == qml.Y(1)
 
-    qml.capture.disable_plxpr()
+
+def test_hybrid_capture_wires():
+    """That a hybrid quantum-classical jaxpr can be captured with wire processing."""
+
+    def f(a, b):
+        qml.X(a + b)
+
+    jaxpr = jax.make_jaxpr(f)(1, 2)
+    assert len(jaxpr.eqns) == 2
+
+    assert jaxpr.eqns[0].primitive.name == "add"
+
+    assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
+    assert jaxpr.eqns[1].primitive == qml.X._primitive
+
+
+def test_hybrid_capture_parametrization():
+    """Test a variety of classical processing with a parametrized operation."""
+
+    def f(a):
+        qml.Rot(2 * a, jax.numpy.sqrt(a), a**2, wires=a)
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+    assert len(jaxpr.eqns) == 4
+
+    in1 = jaxpr.eqns[0].invars[0]
+    assert jaxpr.eqns[1].invars[0] == in1
+    assert jaxpr.enqs[2].invars[0] == in1
+    assert jaxpr.eqns[3].invars[-1] == in1  # the wire
+
+    assert jaxpr.eqns[0].primitive.name == "mul"
+    assert jaxpr.eqns[1].primitive.name == "sqrt"
+    assert jaxpr.eqns[2].primitive.name == "integer_pow"
+    assert jaxpr.eqns[3].primitive == qml.Rot._primitive
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
 @pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0)))
 def test_different_wires(w, as_kwarg):
-    qml.capture.enable_plxpr()
-
     def qfunc():
         if as_kwarg:
             qml.X(wires=w)
@@ -71,12 +107,9 @@ def test_different_wires(w, as_kwarg):
 
     assert eqn.params == {"n_wires": 1}
 
-    qml.capture.disable_plxpr()
-
 
 def test_parametrized_op():
     """Test capturing a parametrized operation."""
-    qml.capture.enable_plxpr()
 
     jaxpr = jax.make_jaxpr(qml.Rot)(1.0, 2.0, 3.0, 10)
 
@@ -90,13 +123,9 @@ def test_parametrized_op():
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
     assert eqn.params == {"n_wires": 1}
 
-    qml.capture.disable_plxpr()
-
 
 def test_pauli_rot():
     """Test a special operation that has positional metadata and overrides binding."""
-
-    qml.capture.enable_plxpr()
 
     def qfunc(a, wire0, wire1):
         qml.PauliRot(a, "XY", (wire0, wire1))
@@ -111,14 +140,10 @@ def test_pauli_rot():
     assert len(eqn.invars) == 3
     assert jaxpr.jaxpr.invars == eqn.invars
 
-    qml.capture.disable_plxpr()
-
 
 class TestTemplates:
     def test_variable_wire_non_parametrized_template(self):
         """Test capturing a variable wire, non-parametrized template like GroverOperator."""
-
-        qml.capture.enable_plxpr()
 
         jaxpr = jax.make_jaxpr(qml.GroverOperator)(wires=(0, 1, 2, 3, 4, 5))
 
@@ -129,12 +154,8 @@ class TestTemplates:
         assert eqn.params == {"n_wires": 6}
         assert eqn.invars == jaxpr.jaxpr.invars
 
-        qml.capture.disable_plxpr()
-
     def test_nested_template(self):
         """Test capturing a template that contains a nested opeartion defined outside the qfunc."""
-
-        qml.capture.enable_plxpr()
 
         coeffs = [0.25, 0.75]
         ops = [qml.X(0), qml.Z(0)]
@@ -167,16 +188,12 @@ class TestTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.TrotterProduct(H, time=2.4, order=2)
 
-        qml.capture.disable_plxpr()
-
 
 class TestOpmath:
     """Tests for capturing operator arithmetic."""
 
     def test_adjoint(self):
         """Test the adjoint on an op can be captured."""
-
-        qml.capture.enable_plxpr()
 
         jaxpr = jax.make_jaxpr(qml.adjoint)(qml.X(0))
 
@@ -189,12 +206,8 @@ class TestOpmath:
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {}
 
-        qml.capture.disable_plxpr()
-
     def test_control(self):
         """Test a nested control operation."""
-
-        qml.capture.enable_plxpr()
 
         def qfunc(op):
             qml.ctrl(op, control=3, control_values=[0])
@@ -212,16 +225,12 @@ class TestOpmath:
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {"control_values": [0], "work_wires": None}
 
-        qml.capture.disable_plxpr()
-
 
 class TestAbstractDunders:
     """Test that operator dunders work when capturing."""
 
     def test_add(self):
         """Test that the add dunder works."""
-
-        qml.capture.enable_plxpr()
 
         def qfunc():
             return qml.X(0) + qml.Y(1)
@@ -242,12 +251,8 @@ class TestAbstractDunders:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
-        qml.capture.disable_plxpr()
-
     def test_matmul(self):
         """Test that the matmul dunder works."""
-
-        qml.capture.enable_plxpr()
 
         def qfunc():
             return qml.X(0) @ qml.Y(1)
@@ -268,12 +273,8 @@ class TestAbstractDunders:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
-        qml.capture.disable_plxpr()
-
     def test_mul(self):
         """Test that the scalar multiplication dunder works."""
-
-        qml.capture.enable_plxpr()
 
         def qfunc():
             return 2 * qml.Y(1) * 3
@@ -299,12 +300,8 @@ class TestAbstractDunders:
         assert len(q) == 1
         assert q.queue[0] == 3 * 2 * qml.Y(1)
 
-        qml.capture.disable_plxpr()
-
     def test_pow(self):
         """Test that abstract operators can be raised to powers."""
-
-        qml.capture.enable_plxpr()
 
         def qfunc(z):
             return qml.IsingZZ(z, (0, 1)) ** 2
@@ -317,5 +314,3 @@ class TestAbstractDunders:
 
         assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]
         assert jaxpr.eqns[1].invars[1].val == 2
-
-        qml.capture.disable_plxpr()
