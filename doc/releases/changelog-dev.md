@@ -73,6 +73,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+  broadcasting is in non-trainable parameters.
+  [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
+
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
   
@@ -175,6 +179,13 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
+  the operator it wraps.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
@@ -363,6 +374,12 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `dynamic_one_shot` transform now works with broadcasting.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
+  [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
 
 * `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
   [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
