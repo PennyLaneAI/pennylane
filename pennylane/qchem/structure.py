@@ -329,7 +329,7 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
             is the number of active electrons.
         orbitals (int): Number of *spin* orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
-        basis (string): Basis(occupation_number, parity, or bravyi_kitaev) in which the HF state is represented.
+        basis (string): Basis in which the HF state is represented. Options are ``occupation_number``, ``parity`` and ``bravyi_kitaev``.
 
     Returns:
         array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`
