@@ -32,7 +32,7 @@ def lie_closure(
     verbose: int = 0,
     pauli: bool = False,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
-    r"""Compute the Lie closure over commutation of a set of generators
+    r"""Compute the dynamical Lie algebra from a set of generators.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
     For such generators, one computes all nested commutators :math:`[G_i, [G_j, .., [G_k, G_\ell]]]` until no new operators are generated from commutation.
@@ -43,13 +43,13 @@ def lie_closure(
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (Union[int, bool]): verbosity during Lie closure calculation. Default is ``0``.
-        pauli (bool): Indicates whether it is assumed that :class:`~PauliSentence` instances are input and returned.
-            This can help with performance to avoid unnecessary conversions from :class:`~PauliSentence` to :class:`~Operator`
-            or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~PauliSentence` instances.
+        pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` instances are input and returned.
+            This can help with performance to avoid unnecessary conversions from :class:`~.PauliSentence` to :class:`~pennylane.operation.Operator`
+            or :class:`~.PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~.PauliSentence` instances.
             Default is ``False``.
 
     Returns:
-        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of :class:`~.PauliSentence` instances that is closed under
+        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
         commutators (Lie closure).
 
     **Example**
@@ -74,7 +74,7 @@ def lie_closure(
     This can be done in short via ``lie_closure`` as follows.
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.dla.lie_closure(ops)
+    >>> dla = qml.pauli.lie_closure(ops)
     >>> print(dla)
     [X(1) @ X(0),
      Z(0),
@@ -91,14 +91,14 @@ def lie_closure(
         Note that by default, ``lie_closure`` returns PennyLane operators. Internally we use the more
         efficient representation in terms of :class:`~pennylane.pauli.PauliSentence` by making use of the ``op.pauli_rep``
         attribute of operators composed of Pauli operators. If desired, this format can be returned by using
-        the keyword ``pauli=True``. In that case, the input is also assumed to be a :class:`~PauliSentence` instance.
+        the keyword ``pauli=True``. In that case, the input is also assumed to be a :class:`~pennylane.pauli.PauliSentence` instance.
 
         >>> ops = [
         ...     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.}),
         ...     PauliSentence({PauliWord({0: "Z"}): 1.}),
         ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
         ... ]
-        >>> dla = qml.dla.lie_closure(ops, pauli=True)
+        >>> dla = qml.pauli.lie_closure(ops, pauli=True)
         >>> print(dla)
         [1.0 * X(0) @ X(1),
          1.0 * Z(0),

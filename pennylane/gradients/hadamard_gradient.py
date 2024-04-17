@@ -28,7 +28,7 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_g
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_state_returns,
-    assert_no_tape_batching,
+    assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_params,
     find_and_validate_gradient_methods,
@@ -234,7 +234,7 @@ def hadamard_grad(
     transform_name = "Hadamard test"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
     if len(tape.measurements) > 1 and tape.shots.has_partitioned_shots:
         raise NotImplementedError(
             "hadamard gradient does not support multiple measurements with partitioned shots."
