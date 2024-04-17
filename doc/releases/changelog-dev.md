@@ -73,6 +73,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+  broadcasting is in non-trainable parameters.
+  [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
+
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
   
