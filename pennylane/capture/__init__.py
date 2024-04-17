@@ -40,7 +40,7 @@ By default, the mechanism is disabled:
     >>> qml.capture.plxpr_enabled()
     False
 
-**Custom Operator Behavior**
+**Custom Operator Behaviour**
 
 Any operation that inherits from :class:`~.Operator` gains a default ability to be captured
 by jaxpr.  Any positional argument is bound as a tracer, wires are processed out into individual tracers,
