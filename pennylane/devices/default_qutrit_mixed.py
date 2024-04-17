@@ -16,7 +16,6 @@ The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mix
 """
 
 from dataclasses import replace
-from numbers import Number
 from typing import Union, Callable, Tuple, Sequence, Optional
 import inspect
 import logging
@@ -24,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.transforms.core import TransformProgram
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
 from pennylane.measurements import ExpectationMP
 
