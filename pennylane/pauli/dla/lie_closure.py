@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from ...pauli import PauliWord, PauliSentence
 
+
 def lie_closure(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
     max_iterations: int = 10000,
