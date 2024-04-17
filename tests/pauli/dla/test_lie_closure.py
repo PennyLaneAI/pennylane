@@ -18,8 +18,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops.op_math.lie_closure import PauliVSpace
-from pennylane.pauli import PauliWord, PauliSentence
+
+from pennylane.pauli import PauliWord, PauliSentence, PauliVSpace
 
 ops1 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
