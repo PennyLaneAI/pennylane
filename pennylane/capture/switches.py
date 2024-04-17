@@ -34,7 +34,7 @@ def _make_switches() -> [Callable[[], None], Callable[[], None], Callable[[], bo
         can be used to make switches for any context.
     """
 
-    _PLXPR_ENABLED = False
+    _FEATURE_ENABLED = False
     # since this changes what happens with tracing, we need to turn the behavior
     # off by default to preserve our ability to jit pennylane circuits.
 
@@ -43,22 +43,22 @@ def _make_switches() -> [Callable[[], None], Callable[[], None], Callable[[], bo
         in a PennyLane Program Representation (plxpr)."""
         if not has_jax:
             raise ImportError("plxpr requires JAX to be installed.")
-        nonlocal _PLXPR_ENABLED
-        _PLXPR_ENABLED = True
+        nonlocal _FEATURE_ENABLED
+        _FEATURE_ENABLED = True
 
     def disable() -> None:
         """Disable the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr)."""
-        nonlocal _PLXPR_ENABLED
-        _PLXPR_ENABLED = False
+        nonlocal _FEATURE_ENABLED
+        _FEATURE_ENABLED = False
 
     def status() -> bool:
         """Return whether the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr) is enabled."""
-        nonlocal _PLXPR_ENABLED
-        return _PLXPR_ENABLED
+        nonlocal _FEATURE_ENABLED
+        return _FEATURE_ENABLED
 
     return enable, disable, status
 
 
-enable_plxpr, disable_plxpr, plxpr_enabled = _make_switches()
+enable, disable, enabled = _make_switches()
