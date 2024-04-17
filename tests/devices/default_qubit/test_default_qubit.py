@@ -2052,6 +2052,37 @@ class TestIntegration:
 
         assert circuit() == expected
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("measurement_func", [qml.expval, qml.var])
+    def test_differentiate_jitted_qnode(self, measurement_func):
+        """Test that a jitted qnode can be correctly differentiated"""
+        import jax
+
+        if measurement_func is qml.var and not qml.operation.active_new_opmath():
+            pytest.skip(reason="Variance for this test circuit not supported with legacy opmath")
+
+        dev = DefaultQubit()
+
+        def qfunc(x, y):
+            qml.RX(x, 0)
+            return measurement_func(qml.Hamiltonian(y, [qml.Z(0)]))
+
+        qnode = qml.QNode(qfunc, dev, interface="jax")
+        qnode_jit = jax.jit(qml.QNode(qfunc, dev, interface="jax"))
+
+        x = jax.numpy.array(0.5)
+        y = jax.numpy.array([0.5])
+
+        res = qnode(x, y)
+        res_jit = qnode_jit(x, y)
+
+        assert qml.math.allclose(res, res_jit)
+
+        grad = jax.grad(qnode)(x, y)
+        grad_jit = jax.grad(qnode_jit)(x, y)
+
+        assert qml.math.allclose(grad, grad_jit)
+
 
 @pytest.mark.parametrize("max_workers", max_workers_list)
 def test_broadcasted_parameter(max_workers):

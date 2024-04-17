@@ -42,7 +42,7 @@ from pennylane.measurements import (
 )
 
 from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
-from pennylane.ops import Hamiltonian, Sum, LinearCombination
+from pennylane.ops import Hamiltonian, Sum, LinearCombination, Prod
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
 from pennylane.queuing import QueuingManager
@@ -744,7 +744,6 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
-
         supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
         grouping_known = all(
@@ -759,7 +758,12 @@ class Device(abc.ABC):
             isinstance(obs, (Hamiltonian, LinearCombination)) for obs in circuit.observables
         )
         expval_sum_in_obs = any(
-            isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
+            (
+                isinstance(m.obs, Sum)
+                or (isinstance(m.obs, Prod) and isinstance(m.obs.simplify(), Sum))
+            )
+            and isinstance(m, ExpectationMP)
+            for m in circuit.measurements
         )
 
         is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
@@ -1007,6 +1011,21 @@ class Device(abc.ABC):
                         raise DeviceError(
                             f"Observable {i.name} not supported on device {self.short_name}"
                         )
+
+            elif isinstance(o, qml.ops.Prod):
+
+                supports_prod = self.supports_observable(o.name)
+                if not supports_prod:
+                    raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
+
+                simplified_op = o.simplify()
+                if isinstance(simplified_op, qml.ops.Prod):
+                    for i in o.simplify().operands:
+                        if not self.supports_observable(i.name):
+                            raise DeviceError(
+                                f"Observable {i.name} not supported on device {self.short_name}"
+                            )
+
             else:
                 observable_name = o.name
 
