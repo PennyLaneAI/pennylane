@@ -319,7 +319,7 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
     where :math:`n_i` indicates the occupation of the :math:`i`-th orbital.
 
     The Hartree-Fock state can also be generated in the parity basis, where each qubit stores the parity of
-    the spin orbital, and in the Bravyi-Kitaev basis, where a qubit :math:`j` stores occupation state of orbital
+    the spin orbital, and in the Bravyi-Kitaev basis, where a qubit :math:`j` stores the occupation state of orbital
     :math:`j` if :math:`j` is even and stores partial sum of the occupation state of a set of orbitals of indices
     less than :math:`j` if :math:`j` is odd [`Tranter et al. Int. J. Quantum Chem. 115, 1431 (2015)
     <https://doi.org/10.1002/qua.24969>`_].
