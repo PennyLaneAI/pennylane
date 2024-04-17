@@ -165,33 +165,11 @@ def test_target_device_and_operations():
     class DummyDev(qml.devices.Device):
         """a device that just defers measurements."""
 
-        def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
-            program = qml.transforms.core.TransformProgram()
-            program.add_transform(qml.defer_measurements)
-            return program, execution_config
-
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0
 
-    dev = qml.device("null.qubit", target_device=DummyDev(), operations={"RX", "CNOT"})
-
-    program = dev.preprocess()[0]
-    assert len(program) == 2
-    assert program[0].transform == qml.defer_measurements.transform
-    assert program[1].transform == qml.devices.preprocess.decompose.transform
-
-    m0 = qml.measure(1)
-    tape = qml.tape.QuantumScript(
-        [qml.IsingXX(1.2, wires=(0, 1)), *m0.measurements], [qml.expval(qml.Z(0))]
-    )
-    batch = (tape,)
-    program = dev.preprocess()[0]
-    batch, _ = program(batch)
-
-    expected = qml.tape.QuantumScript(
-        [qml.CNOT((0, 1)), qml.RX(1.2, 0), qml.CNOT((0, 1))], [qml.expval(qml.Z(0))]
-    )
-    assert qml.equal(batch[0], expected)
+    with pytest.raises(NotImplementedError):
+        qml.device("null.qubit", target_device=DummyDev(), operations={"RX", "CNOT"})
 
 
 def test_target_device_error():
@@ -1030,7 +1008,6 @@ class TestDeviceDifferentiation:
 
         assert new_ec.use_device_gradient
         assert new_ec.grad_on_execution
-        print(actual_grad)
         assert actual_grad == ((0.0,), (0.0,))
 
 
@@ -1215,7 +1192,7 @@ class TestIntegration:
         shape = qml.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
         rng = np.random.default_rng(seed=1239594)
         params = qml.numpy.array(rng.random(shape))
-        dev = qml.device("null.qubit")
+        dev = qml.device("null.qubit", operations={"Rot", "CNOT"})
 
         diff_method = "device"
 

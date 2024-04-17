@@ -43,7 +43,7 @@ from pennylane.measurements import (
     DensityMatrixMP,
 )
 
-from . import Device, DefaultQubit
+from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .preprocess import decompose
 
@@ -139,56 +139,47 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        operations (Optional[Iterable[str, type]]): a target gateset for the device
+        operations (Optional[Iterable[str, type]]): a target gateset for the device.
         target_device (Optional[Device]): a device to mimic the preprocessing of. Must obey the new device interface.
         assume_no_broadcasting=False (bool): If ``True``, we always assume no parameter batching exists. Useful
             for profiling and benchmarking.
 
     **Example:**
 
-    .. code-block:: python
-
-        qs = qml.tape.QuantumScript(
-            [qml.Hadamard(0), qml.CNOT([0, 1])],
-            [qml.expval(qml.PauliZ(0)), qml.probs()],
-        )
-        qscripts = [qs, qs, qs]
-
-    >>> dev = NullQubit()
-    >>> program, execution_config = dev.preprocess()
-    >>> new_batch, post_processing_fn = program(qscripts)
-    >>> results = dev.execute(new_batch, execution_config=execution_config)
-    >>> post_processing_fn(results)
-    ((array(0.), array([1., 0., 0., 0.])),
-     (array(0.), array([1., 0., 0., 0.])),
-     (array(0.), array([1., 0., 0., 0.])))
-
-
-    This device currently supports (trivial) derivatives:
-
-    >>> from pennylane.devices import ExecutionConfig
-    >>> dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
-    True
-
     This device can be used to track resource usage:
 
     .. code-block:: python
 
-        n_layers = 50
-        n_wires = 100
-        shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+        def track_entangling_layers(device):
+            n_layers = 50
+            n_wires = 100
+            shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
 
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-            return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+            @qml.qnode(device)
+            def circuit(params):
+                qml.StronglyEntanglingLayers(params, wires=range(n_wires))
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
-        params = np.random.random(shape)
+            params = np.random.random(shape)
 
-        with qml.Tracker(dev) as tracker:
-            circuit(params)
+            with qml.Tracker(device) as tracker:
+                circuit(params)
+            return tracker
 
-    >>> tracker.history["resources"][0]
+    >>> track_entangling_layers(qml.device('null.qubit')).latest['resources']
+    wires: 100
+    gates: 1
+    depth: 1
+    shots: Shots(total=None)
+    gate_types:
+    {'StronglyEntanglingLayers': 1}
+    gate_sizes:
+    {100: 1}
+
+    Null qubit can also mimic the preprocessing of an existing device:
+
+    >>> target_dev = qml.device('default.qubit')
+    >>> track_entangling_layers(qml.device('null.qubit', target_device=target_dev)).latest['resources']
     wires: 100
     gates: 10000
     depth: 502
@@ -198,6 +189,18 @@ class NullQubit(Device):
     gate_sizes:
     {1: 5000, 2: 5000}
 
+    And decompose to a target gateset, specified by names and/or types:
+
+    >>> ops = {'RX', 'RY', 'RZ', qml.CNOT}
+    >>> track_entangling_layers(qml.device('null.qubit', operations=ops)).latest['resources']
+    wires: 100
+    gates: 20000
+    depth: 602
+    shots: Shots(total=None)
+    gate_types:
+    {'RZ': 10000, 'RY': 5000, 'CNOT': 5000}
+    gate_sizes:
+    {1: 15000, 2: 5000}
 
     .. details::
         :title: Tracking
@@ -242,6 +245,11 @@ class NullQubit(Device):
             raise NotImplementedError(
                 "null.qubit only supports target devices that obey the new device interface"
             )
+        if target_device and operations:
+            raise NotImplementedError(
+                "null.qubit accepts either target_device or operations, but not both."
+            )
+
         self._target_device = target_device
         self._operations = operations
 
@@ -292,11 +300,6 @@ class NullQubit(Device):
         jvps = (math.asarray(0.0, like=interface),) * len(circuit.measurements)
         return jvps[0] if len(jvps) == 1 else jvps
 
-    @staticmethod
-    def _setup_execution_config(execution_config: ExecutionConfig) -> ExecutionConfig:
-        """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
-        return execution_config
-
     @property
     def _max_workers(self):
         """No-op property to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
@@ -305,24 +308,17 @@ class NullQubit(Device):
     def preprocess(
         self, execution_config=DefaultExecutionConfig
     ) -> Tuple[TransformProgram, ExecutionConfig]:
-        if self._target_device is not None:
-            program, execution_config = self._target_device.preprocess(execution_config)
-        else:
-            program, _ = DefaultQubit().preprocess(execution_config)
+        if self._target_device:
+            return self._target_device.preprocess(execution_config)
+
+        program = TransformProgram()
 
         if self._operations is not None:
 
             def stopping_condition(op) -> bool:
                 return op.name in self._operations or type(op) in self._operations
 
-            found_decompose = False
-            for container in program:
-                if container.transform == decompose.transform:
-                    found_decompose = True
-                    container.kwargs["stopping_condition"] = stopping_condition
-
-            if not found_decompose:
-                program.add_transform(decompose, stopping_condition=stopping_condition)
+            program.add_transform(decompose, stopping_condition=stopping_condition)
 
         return program, self._setup_execution_config(execution_config)
 
@@ -364,6 +360,8 @@ class NullQubit(Device):
         )
 
     def supports_derivatives(self, execution_config=None, circuit=None):
+        if self._target_device:
+            return self._target_device.supports_derivatives(execution_config, circuit=circuit)
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
@@ -371,6 +369,8 @@ class NullQubit(Device):
         )
 
     def supports_vjp(self, execution_config=None, circuit=None):
+        if self._target_device:
+            return self._target_device.supports_vjp(execution_config, circuit=circuit)
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
@@ -378,6 +378,8 @@ class NullQubit(Device):
         )
 
     def supports_jvp(self, execution_config=None, circuit=None):
+        if self._target_device:
+            return self._target_device.supports_jvp(execution_config, circuit=circuit)
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
