@@ -34,6 +34,7 @@ to verify and test quantum gradient computations.
     default_gaussian
     default_mixed
     default_qutrit
+    default_qutrit_mixed
     default_clifford
     null_qubit
     tests
