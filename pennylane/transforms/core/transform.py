@@ -180,7 +180,7 @@ def transform(
                 "The expand transform must have the same signature as the transform"
             )
 
-    # 3: CHeck the classical co-transform
+    # 3: Check the classical co-transform
     if classical_cotransform is not None and not callable(classical_cotransform):
         raise TransformError("The classical co-transform must be a valid Python function.")
 
