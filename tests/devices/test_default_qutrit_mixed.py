@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1056,7 +1056,7 @@ class TestRandomSeed:
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
 
     def test_global_seed_no_device_seed_by_default(self):
-        """Test that the global numpy seed initializes the rng if device seed is none."""
+        """Test that the global numpy seed initializes the rng if device seed is None."""
         np.random.seed(42)
         dev = DefaultQutritMixed()
         first_num = dev._rng.random()  # pylint: disable=protected-access
@@ -1073,7 +1073,7 @@ class TestRandomSeed:
 
         assert qml.math.allclose(third_num, first_num)
 
-    def test_None_seed_not_using_global_rng(self):
+    def test_none_seed_not_using_global_rng(self):
         """Test that if the seed is None, it is uncorrelated with the global rng."""
         np.random.seed(42)
         dev = DefaultQutritMixed(seed=None)
@@ -1243,3 +1243,4 @@ def test_broadcasted_parameter():
     results = dev.execute(batch, config)
     processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))
+
