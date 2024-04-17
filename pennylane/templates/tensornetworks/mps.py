@@ -163,6 +163,30 @@ class MPS(Operation):
     par_domain = "A"
 
     @classmethod
+    def _primitive_bind_call(
+        cls,
+        wires,
+        n_block_wires,
+        block,
+        n_params_block,
+        template_weights=None,
+        offset=None,
+        id=None,
+        **kwargs,
+    ):
+        return type(cls)._primitive_bind_call(
+            cls,
+            wires=wires,
+            n_block_wires=n_block_wires,
+            block=block,
+            n_params_block=n_params_block,
+            template_weights=template_weights,
+            id=id,
+            offset=offset,
+            **kwargs,
+        )
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
         setattr(new_op, "_hyperparameters", dict(metadata[1]))

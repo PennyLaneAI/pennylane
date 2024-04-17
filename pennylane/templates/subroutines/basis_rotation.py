@@ -99,6 +99,10 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    @classmethod
+    def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
+        return type(cls)._primitive_bind_call(cls, unitary_matrix, wires=wires, check=check, id=id)
+
     def __init__(self, wires, unitary_matrix, check=False, id=None):
         M, N = unitary_matrix.shape
         if M != N:

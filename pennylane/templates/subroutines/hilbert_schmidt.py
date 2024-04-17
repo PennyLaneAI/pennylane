@@ -106,6 +106,16 @@ class HilbertSchmidt(Operation):
         return self.data, metadata
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        # This is more complicated than it would need to be because of
+        # the three keyword-only arguments of __init__.
+        for kwarg_name in ("u_tape", "v_wires", "v_function"):
+            if kwarg_name not in kwargs:
+                kwargs[kwarg_name] = args[-1]
+                args = args[:-1]
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 

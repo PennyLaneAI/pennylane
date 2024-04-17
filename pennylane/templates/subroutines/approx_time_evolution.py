@@ -122,6 +122,10 @@ class ApproxTimeEvolution(Operation):
         return data, (self.hyperparameters["n"],)
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], n=metadata[0])
 
@@ -138,6 +142,11 @@ class ApproxTimeEvolution(Operation):
 
         # trainable parameters are passed to the base init method
         super().__init__(*hamiltonian.data, time, wires=wires, id=id)
+
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["hamiltonian"])
+        context.append(self)
+        return self
 
     @staticmethod
     def compute_decomposition(

@@ -112,6 +112,10 @@ class CommutingEvolution(Operation):
         return data, (self.hyperparameters["frequencies"], self.hyperparameters["shifts"])
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
         return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
 
@@ -140,6 +144,11 @@ class CommutingEvolution(Operation):
         }
 
         super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
+
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["hamiltonian"])
+        context.append(self)
+        return self
 
     @staticmethod
     def compute_decomposition(
