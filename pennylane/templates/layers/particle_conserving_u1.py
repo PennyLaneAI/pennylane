@@ -266,6 +266,8 @@ class ParticleConservingU1(Operation):
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
 
+        init_state = np.zeros(len(wires)) if init_state is None else init_state
+
         self._hyperparameters = {"init_state": tuple(init_state)}
 
         super().__init__(weights, wires=wires, id=id)

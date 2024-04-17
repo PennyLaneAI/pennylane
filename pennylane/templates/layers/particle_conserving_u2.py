@@ -15,6 +15,7 @@ r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
@@ -170,6 +171,8 @@ class ParticleConservingU2(Operation):
             raise ValueError(
                 f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
             )
+
+        init_state = np.zeros(len(wires)) if init_state is None else init_state
 
         self._hyperparameters = {"init_state": tuple(init_state)}
 
