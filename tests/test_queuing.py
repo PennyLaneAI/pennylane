@@ -224,6 +224,7 @@ class TestAnnotatedQueue:
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_append_prod_ops_overloaded(self):
         """Test that Prod ops created using `@`
         are successfully added to the queue, as well as the `Prod` object."""

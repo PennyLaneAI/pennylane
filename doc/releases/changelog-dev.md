@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
+  quantum-classical programs.
+  [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
+
 * The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
 [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
@@ -68,6 +72,10 @@
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
 <h3>Improvements 🛠</h3>
+
+* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+  broadcasting is in non-trainable parameters.
+  [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
 
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
@@ -250,6 +258,7 @@
 
 * Extend the device test suite to cover gradient methods, templates and arithmetic observables.
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+  [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
 
 * Add type hints for unimplemented methods of the abstract class `Operator`.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
@@ -361,6 +370,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
+  [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
 
 * `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
   [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
