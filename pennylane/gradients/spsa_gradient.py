@@ -29,7 +29,7 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable
 from .finite_difference import _processing_fn, finite_diff_coeffs
 from .gradient_transform import (
     _all_zero_grad,
-    assert_no_tape_batching,
+    assert_no_trainable_tape_batching,
     choose_trainable_params,
     find_and_validate_gradient_methods,
     _no_trainable_grad,
@@ -292,7 +292,7 @@ def spsa_grad(
     """
 
     transform_name = "SPSA"
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)

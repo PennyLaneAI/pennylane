@@ -1,5 +1,5 @@
 qml.compiler
-===============
+============
 
 .. currentmodule:: pennylane.compiler
 

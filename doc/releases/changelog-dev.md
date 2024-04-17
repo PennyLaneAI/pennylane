@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
+  quantum-classical programs.
+  [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
+
 * The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
 [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
@@ -68,6 +72,10 @@
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
 <h3>Improvements 🛠</h3>
+
+* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+  broadcasting is in non-trainable parameters.
+  [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
 
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
@@ -172,6 +180,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
+  the operator it wraps.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
 
@@ -250,6 +265,7 @@
 
 * Extend the device test suite to cover gradient methods, templates and arithmetic observables.
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
+  [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
 
 * Add type hints for unimplemented methods of the abstract class `Operator`.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
@@ -258,7 +274,14 @@
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
+* Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
+  [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
+
 <h3>Breaking changes 💔</h3>
+
+* Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
+  operators easier to work with.
+  [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
@@ -351,6 +374,12 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `dynamic_one_shot` transform now works with broadcasting.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
+  [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
 
 * `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
   [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
