@@ -20,9 +20,8 @@ import numpy as np
 import pennylane as qml
 
 from pennylane import X, Y, Z
-from pennylane.dla import lie_closure
-from pennylane.dla.lie_closure import PauliVSpace
-from pennylane.pauli import PauliWord, PauliSentence
+
+from pennylane.pauli import PauliWord, PauliSentence, PauliVSpace, lie_closure
 
 ops1 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
@@ -282,7 +281,7 @@ dla11 = [
 
 
 class TestLieClosure:
-    """Tests for qml.dla.lie_closure()"""
+    """Tests for qml.pauli.lie_closure()"""
 
     def test_verbose(self, capsys):
         """Test the verbose output"""
@@ -305,7 +304,7 @@ class TestLieClosure:
         gens = [X(0), X(1), Y(0) @ Y(1)]
 
         with pytest.raises(TypeError, match="All generators need to be of type PauliSentence"):
-            _ = qml.dla.lie_closure(gens, pauli=True)
+            _ = qml.pauli.lie_closure(gens, pauli=True)
 
     def test_max_iterations(self, capsys):
         """Test that max_iterations truncates the lie closure iteration at the right point"""
@@ -317,7 +316,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.dla.lie_closure(generators, verbose=True, max_iterations=1)
+        res = qml.pauli.lie_closure(generators, verbose=True, max_iterations=1)
         captured = capsys.readouterr()
         assert (
             captured.out
@@ -389,7 +388,7 @@ class TestLieClosure:
         ]
         gen += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(n)]
 
-        res = qml.dla.lie_closure(gen, pauli=True)
+        res = qml.pauli.lie_closure(gen, pauli=True)
         true_res = [
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
             PauliSentence({PauliWord({1: "X", 2: "X"}): 1.0, PauliWord({1: "Y", 2: "Y"}): 1.0}),
@@ -423,7 +422,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.dla.lie_closure(generators)
+        res = qml.pauli.lie_closure(generators)
         assert len(res) == (2 * n - 1) * (2 * n - 2) // 2
 
     @pytest.mark.parametrize("n", range(3, 5))
@@ -434,7 +433,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n)
         ]
 
-        res = qml.dla.lie_closure(generators)
+        res = qml.pauli.lie_closure(generators)
         assert len(res) == 2 * n * (2 * n - 1)
 
     def test_lie_closure_heisenberg_generators_odd(self):
@@ -452,7 +451,7 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "Z", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.dla.lie_closure(generators)
+        res = qml.pauli.lie_closure(generators)
         assert len(res) == (2 ** (n - 1)) ** 2 - 1
 
     def test_lie_closure_heisenberg_generators_even(self):
@@ -470,5 +469,5 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "Z", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.dla.lie_closure(generators)
+        res = qml.pauli.lie_closure(generators)
         assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
