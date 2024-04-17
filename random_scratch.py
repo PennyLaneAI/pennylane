@@ -1,5 +1,4 @@
 import pennylane as qml
-from pennylane.debugging import pl_breakpoint
 # from pennylane.operation import enable_new_opmath
 # enable_new_opmath()
 
@@ -9,12 +8,18 @@ def main():
     
     @qml.qnode(dev)
     def circ():
-        # pl_breakpoint()
-        
+        qml.pl_breakpoint()
+
         qml.X(0)
 
         for i in range(3):
             qml.Hadamard(i)
+        
+        qml.Y(1)
+
+        qml.pl_breakpoint()
+
+        qml.Z(0)
 
         return qml.expval(qml.Z(0))
     
