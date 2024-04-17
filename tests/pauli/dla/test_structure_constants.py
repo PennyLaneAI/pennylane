@@ -11,20 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/dla/structure_constants.py functionality"""
+"""Tests for pennylane/pauli/dla/structure_constants.py functionality"""
 import pytest
 import numpy as np
 
 import pennylane as qml
 
-from pennylane.dla import structure_constants
-from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.pauli import PauliWord, PauliSentence, structure_constants
 
 ## Construct some example DLAs
 # TFIM
 gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(2)]
 gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-Ising3 = qml.dla.lie_closure(gens, pauli=True)
+Ising3 = qml.pauli.lie_closure(gens, pauli=True)
 
 # XXZ-type DLA, i.e. with true PauliSentences
 gens2 = [
@@ -37,7 +36,7 @@ gens2 = [
     for i in range(2)
 ]
 gens2 += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-XXZ3 = qml.dla.lie_closure(gens2, pauli=True)
+XXZ3 = qml.pauli.lie_closure(gens2, pauli=True)
 
 
 class TestAdjointRepr:
@@ -83,4 +82,4 @@ class TestAdjointRepr:
         with pytest.raises(
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
-            qml.dla.structure_constants(generators)
+            qml.pauli.structure_constants(generators)

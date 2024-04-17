@@ -14,7 +14,6 @@
 """
 This module contains the qml.counts measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Optional
 import numpy as np
 
@@ -145,9 +144,6 @@ def counts(
             )
 
         return CountsMP(obs=op, all_outcomes=all_outcomes)
-
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:

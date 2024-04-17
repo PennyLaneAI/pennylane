@@ -14,6 +14,7 @@ for Pauli-word partitioning functionality used in measurement optimization.
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
+    :skip: PauliVSpace, lie_closure
 
 PauliWord and PauliSentence
 ---------------------------
@@ -151,3 +152,18 @@ the groups of observables:
 
 For a larger example of how grouping can be used with PennyLane, check out the
 `Measurement Optimization demo <https://pennylane.ai/qml/demos/tutorial_measurement_optimize/>`_.
+
+Dynamical Lie Algebras
+----------------------
+
+Dynamical Lie Algebra (DLA) functionality in PennyLane.
+
+See our `introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
+
+.. currentmodule:: pennylane.pauli.dla
+
+.. automodapi:: pennylane.pauli.dla
+    :no-heading:
+    :no-main-docstr:
+    :no-inherited-members:
+

@@ -16,8 +16,8 @@
 import pytest
 
 import pennylane as qml
-from pennylane.dla import center
-from pennylane.pauli import PauliSentence
+
+from pennylane.pauli import PauliSentence, center
 
 
 def test_trivial_center():
@@ -66,6 +66,6 @@ GENERATOR_CENTERS = (
 @pytest.mark.parametrize("generators, true_res", GENERATOR_CENTERS)
 def test_center_dla(generators, true_res):
     """Test computing the center for a non-trivial DLA"""
-    g = qml.dla.lie_closure(generators)
+    g = qml.pauli.lie_closure(generators)
     res = center(g)
     assert res == true_res

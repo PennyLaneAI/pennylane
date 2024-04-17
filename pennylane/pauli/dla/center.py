@@ -47,7 +47,7 @@ def center(
     We can compute the center of a DLA ``g``. For that, we compute the DLA via :func:`~lie_closure`.
 
     >>> generators = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
-    >>> g = qml.dla.lie_closure(generators)
+    >>> g = qml.pauli.lie_closure(generators)
 
     The ``center`` is then the collection of operators that commute with `all` other operators in the DLA.
     In this case, just ``X(0)``.

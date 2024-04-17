@@ -436,7 +436,7 @@ class TestExpval:
 
         res_dq = qml.QNode(circuit, qml.device("default.qubit"))()
         res = qml.QNode(circuit, dev)()
-        assert res.shape == ()
+        assert qml.math.shape(res) == ()
         assert np.isclose(res, res_dq, atol=tol(dev.shots))
 
 
