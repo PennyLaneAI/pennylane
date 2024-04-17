@@ -175,7 +175,7 @@ class TestQNodeIntegration:
 
         res = func(number_of_states, state_probability)
         assert qml.math.shape(res) == (2, shots)
-        assert set(res.flat).issubset({0, 1, 2, 3})
+        assert set(qml.math.unwrap(res.flatten())).issubset({0, 1, 2, 3})
 
 
 class TestDtypePreserved:
