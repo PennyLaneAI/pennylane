@@ -75,31 +75,6 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     return isinstance(m, qml.measurements.SampleMeasurement)
 
 
-def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
-    """TODO add comment"""
-    num_executions = 0
-    num_shots = 0
-    for mp in tape.measurements:
-        if isinstance(mp, ExpectationMP) and isinstance(mp.obs, qml.Hamiltonian):
-            num_executions += len(mp.obs.ops)
-            if tape.shots:
-                num_shots += tape.shots.total_shots * len(mp.obs.ops)
-        elif isinstance(mp, ExpectationMP) and isinstance(mp.obs, qml.ops.Sum):
-            num_executions += len(mp.obs)
-            if tape.shots:
-                num_shots += tape.shots.total_shots * len(mp.obs)
-        else:
-            num_executions += 1
-            if tape.shots:
-                num_shots += tape.shots.total_shots
-
-    if tape.batch_size:
-        num_executions *= tape.batch_size
-        if tape.shots:
-            num_shots *= tape.batch_size
-    return num_executions, num_shots
-
-
 @simulator_tracking
 @single_tape_support
 class DefaultQutritMixed(Device):
