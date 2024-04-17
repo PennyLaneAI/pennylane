@@ -100,16 +100,6 @@ Control Decompositions
     ~ctrl_decomp_zyz
     ~ctrl_decomp_bisect
 
-(Dynamical) Lie Algebra functionality
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.ops.op_math
-
-.. autosummary::
-    :toctree: api
-
-    ~PauliVSpace
-
 """
 
 from .adjoint import Adjoint, adjoint

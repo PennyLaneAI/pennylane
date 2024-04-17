@@ -162,8 +162,8 @@ See our `introduction to Dynamical Lie Algebras for quantum practitioners <https
 
 .. currentmodule:: pennylane.pauli.dla
 
-.. automodapi:: pennylane.pauli.dla
-    :no-heading:
-    :no-main-docstr:
-    :no-inherited-members:
+.. autosummary::
+    :toctree: api
 
+    ~PauliVSpace
+    ~lie_closure
