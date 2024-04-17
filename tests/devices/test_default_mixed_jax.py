@@ -158,7 +158,7 @@ class TestQNodeIntegration:
             tape = qml.tape.QuantumScript.from_queue(q)
             return qml.execute([tape], dev, gradient_fn=gradient_func)
 
-        assert jax.numpy.allclose(wrapper(jax.numpy.array(0.0))[0], 1.0)
+        assert jnp.allclose(wrapper(jnp.array(0.0))[0], 1.0)
 
     @pytest.mark.parametrize("shots", [10, 100, 1000])
     def test_jit_sampling_with_broadcasting(self, shots):
@@ -167,7 +167,7 @@ class TestQNodeIntegration:
         dev = qml.device("default.mixed", wires=1, shots=shots)
 
         number_of_states = 4
-        state_probability = jax.numpy.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.2, 0.1, 0.2]])
+        state_probability = jnp.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.2, 0.1, 0.2]])
 
         @partial(jax.jit, static_argnums=0)
         def func(number_of_states, state_probability):
@@ -869,8 +869,8 @@ class TestHighLevelIntegration:
                 for tape in [tape1, tape2]
             ]
 
-        x = jax.numpy.array(0.543)
-        y = jax.numpy.array(-0.654)
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
 
         x_ = np.array(0.543)
         y_ = np.array(-0.654)
@@ -879,4 +879,4 @@ class TestHighLevelIntegration:
         exp = cost(x_, y_, interface="numpy", gradient_func=gradient_func)
 
         for r, e in zip(res, exp):
-            assert jax.numpy.allclose(qml.math.array(r), qml.math.array(e), atol=1e-7)
+            assert jnp.allclose(qml.math.array(r), qml.math.array(e), atol=1e-7)
