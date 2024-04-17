@@ -287,7 +287,7 @@ def _beta_matrix(orbitals):
 
     Args:
         orbitals (int): Number of spin orbitals. If an active space is defined,
-            this is the number of active spin-orbitals.
+            this is the number of active spin orbitals.
 
     Returns:
         (array): The transformation matrix
