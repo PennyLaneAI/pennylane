@@ -284,7 +284,7 @@ def _measure_with_samples_diagonalizing_gates(
 
     processed_samples = []
     for lower, upper in shots.bins():
-        if len(samples.shape) == 3:
+        if is_state_batched:
             # Handle broadcasting
             processed_samples.append(_process_single_shot(samples[:, lower:upper, :]))
         else:
