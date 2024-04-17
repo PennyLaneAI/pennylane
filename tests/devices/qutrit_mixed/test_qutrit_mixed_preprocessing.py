@@ -71,7 +71,7 @@ class TestPreprocessing:
         _, new_config = dev.preprocess(config)
 
         assert new_config.gradient_method == "backprop"
-        assert new_config.use_device_gradient
+        assert not new_config.use_device_gradient
         assert not new_config.grad_on_execution
 
     def test_circuit_wire_validation(self):
@@ -181,7 +181,7 @@ class TestPreprocessingIntegration:
 
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
-            for op, expected_op in zip(res_tape.operations, expected_op):
+            for op, expected_op in zip(res_tape.operations, ops):
                 assert qml.equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
