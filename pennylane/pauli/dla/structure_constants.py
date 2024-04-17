@@ -71,13 +71,13 @@ def structure_constants(
     >>> n = 2
     >>> gens = [PauliSentence({PauliWord({i:"X", i+1:"X"}): 1.}) for i in range(n-1)]
     >>> gens += [PauliSentence({PauliWord({i:"Z"}): 1.}) for i in range(n)]
-    >>> dla = qml.dla.lie_closure(gens)
+    >>> dla = qml.pauli.lie_closure(gens)
     >>> print(dla)
     [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), -1.0 * Y(0) @ Y(1)]
 
     The dimension of the DLA is :math:`d = 6`. Hence, the structure constants have shape ``(6, 6, 6)``.
 
-    >>> adjoint_rep = qml.dla.structure_constants(dla)
+    >>> adjoint_rep = qml.pauli.structure_constants(dla)
     >>> adjoint_rep.shape
     (6, 6, 6)
 
