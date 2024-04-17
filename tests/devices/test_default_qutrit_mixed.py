@@ -1243,4 +1243,3 @@ def test_broadcasted_parameter():
     results = dev.execute(batch, config)
     processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))
-
