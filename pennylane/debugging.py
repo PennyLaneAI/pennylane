@@ -174,6 +174,7 @@ def measure(measurement_value):
 
     return result
 
+
 def tape():
     active_queue = qml.queuing.QueuingManager.active_context()
     return qml.tape.QuantumScript.from_queue(active_queue)
