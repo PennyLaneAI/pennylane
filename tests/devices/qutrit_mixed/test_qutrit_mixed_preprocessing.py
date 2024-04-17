@@ -44,12 +44,6 @@ class NoMatNoDecompOp(qml.operation.Operation):
         return False
 
 
-def test_dev():
-    dev = qml.devices.DefaultQubit()
-    EC = ExecutionConfig(gradient_method="backprop")
-    assert dev.supports_derivatives(EC)
-
-
 # pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
@@ -214,7 +208,6 @@ class TestPreprocessingIntegration:
         """Test that preprocess returns the correct tapes when batching and expanding
         is needed."""
         ops = [qml.THadamard(0), NoMatOp(1), qml.TRX([np.pi, np.pi / 2], wires=1)]
-        # Need to specify grouping type to transform tape
         measurements = [qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(1, 3))]
         tapes = [
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[0]]),

@@ -214,7 +214,7 @@ class DefaultQutritMixed(Device):
 
         This device:
         * Supports any qutrit operations that provide a matrix
-        * Supports any qutrit channel that provide Kraus matrices
+        * Supports any qutrit channel that provides Kraus matrices
         """
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
