@@ -86,6 +86,7 @@ class DefaultQutritMixed(Device):
             ``numpy.random.default_rng``.
 
     **Example:**
+
     .. code-block:: python
 
         n_wires = 5
@@ -115,8 +116,11 @@ class DefaultQutritMixed(Device):
     True
 
     For example, we can use jax to jit computing the derivative:
+
     .. code-block:: python
+
         import jax
+
         @jax.jit
         def f(x):
             qs = qml.tape.QuantumScript([qml.TRX(x, 0)], [qml.expval(qml.GellMann(0, 3))])
@@ -132,13 +136,17 @@ class DefaultQutritMixed(Device):
 
     .. details::
         :title: Tracking
+
         ``DefaultQutritMixed`` tracks:
+
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
         * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
         * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
+
+
     """
 
     _device_options = ("rng", "prng_key")  # tuple of string names for all the device options.
