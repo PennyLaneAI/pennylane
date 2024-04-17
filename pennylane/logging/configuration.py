@@ -53,7 +53,7 @@ def _add_trace_level():
     lc.trace = trace
 
 
-def _configure_logging(config_file:str , config_override:dict = {}):
+def _configure_logging(config_file: str, config_override: dict = {}):
     """
     This method allows custom logging configuration throughout PennyLane.
     All configurations are read through the ``log_config.toml`` file.
@@ -100,34 +100,37 @@ def config_path():
     path = os.path.join(_path, "log_config.toml")
     return path
 
+
 def show_system_config():
     """
     This function opens the logging configuration file in the system-default browser.
     """
     import webbrowser
+
     webbrowser.open(config_path())
+
 
 def edit_system_config(wait_on_close=False):
     """
     This function opens the log configuration file using OS-specific editors.
 
-    Setting the `EDITOR` environment variable will override xdg-open/open on 
-    Linux and MacOS, and allows use of `wait_on_close` for editor close before 
+    Setting the `EDITOR` environment variable will override xdg-open/open on
+    Linux and MacOS, and allows use of `wait_on_close` for editor close before
     continuing execution.
 
     Warning: As each OS configuration differs user-to-user, you may wish to
     instead open this file manually with the `config_path()` provided path.
     """
-    if (editor := os.getenv("EDITOR")):
+    if editor := os.getenv("EDITOR"):
         p = subprocess.Popen((editor, config_path()))
-        if wait_on_close: # Only valid when editor is known
+        if wait_on_close:  # Only valid when editor is known
             p.wait()
-    elif (s:=platform.system()) in ['Linux', "Darwin"]:
+    elif (s := platform.system()) in ["Linux", "Darwin"]:
         f_cmd = None
         if s == "Linux":
             f_cmd = "xdg-open"
         else:
             f_cmd = "open"
         subprocess.Popen((f_cmd, config_path()))
-    else: # Windows
+    else:  # Windows
         os.startfile(config_path())
