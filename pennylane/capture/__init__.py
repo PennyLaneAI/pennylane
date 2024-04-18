@@ -14,6 +14,7 @@
 """
 Tools for enabling the capture of pennylane objects into JaxPR.
 """
+from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
 from .meta_type import create_operator_primitive, PLXPRObj
 from .measure import measure
 from .nested_jaxpr import bind_nested_jaxpr
