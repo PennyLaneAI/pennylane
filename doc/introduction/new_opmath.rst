@@ -6,8 +6,8 @@ Updated Operators
 In version ``0.36`` of PennyLane we changed some things behind the scenes on how operators and arithmetic operations between them are handled.
 This realizes a few objectives:
 
-  1. To make it as easy to work with PennyLane operators as it would be with pen and paper.
-  2. To improve the efficiency of operator arithmetic.
+1. To make it as easy to work with PennyLane operators as it would be with pen and paper.
+2. To improve the efficiency of operator arithmetic.
 
 In many cases, these changes should not break code and the difference to previous
 versions may not be noticeable.
@@ -30,9 +30,10 @@ used to troubleshoot issues for those affected users.
 Summary of the update
 ---------------------
 
-The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
-If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
-You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
+.. rst-class:: admonition tip
+    The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
+    If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
+    You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
 
   * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
     standard dunder methods like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.
@@ -225,7 +226,7 @@ To help identify a fix, select the option below that describes your situation.
     :href: sharp-bits-hamiltonian
 
     One of the reasons that :class:`~ops.LinearCombination` exists is that the old Hamiltonian class is not compatible with new opmath tensor products.
-    We can try to instantiate a old ``qml.ops.Hamiltonian`` class with a ``X(0) @ X(1)`` tensor product, which returns a :class:`~Prod` instance with opmath enabled.
+    We can try to instantiate an old ``qml.ops.Hamiltonian`` class with a ``X(0) @ X(1)`` tensor product, which returns a :class:`~Prod` instance with opmath enabled.
 
     >>> qml.operation.active_new_opmath() # confirm opmath is active (by default)
     True
