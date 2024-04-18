@@ -1078,6 +1078,7 @@ class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables"""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval(self):
         """Test that sampling works well for Hamiltonian observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -1112,20 +1113,6 @@ class TestHamiltonianSamples:
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
-
-        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
-        res = simulate(qs, rng=200)
-
-        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-        assert np.allclose(res, expected, atol=0.01)
-
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-    def test_hamiltonian_expval(self):
-        """Tests that sampling works for Hamiltonian and LinearCombination observables"""
-
-        x, y = np.array(0.67), np.array(0.95)
-        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
-        meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
 
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
         res = simulate(qs, rng=200)
