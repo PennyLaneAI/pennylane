@@ -370,7 +370,7 @@ class LinearCombination(Sum):
                 warnings.warn(
                     f"Attempting to compare a legacy operator class instance {other} of type {type(other)} with {self} of type {type(self)}."
                     f"You are likely disabling/enabling new opmath in the same script or explicitly create legacy operator classes Tensor and ops.Hamiltonian."
-                    f"Please visit <link-to-new-opmath-intro-page> for more information.",
+                    f"Please visit https://docs.pennylane.ai/en/latest/introduction/new_opmath.html for more information and help troubleshooting.",
                     UserWarning,
                 )
                 op1 = self.simplify()
