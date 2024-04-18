@@ -216,6 +216,17 @@ class TestAdditionalCond:
         assert mapped_cond.meas_val.measurements == [meas.map_wires({0: "a"})]
         assert mapped_cond.then_op == qml.PauliX("b")
 
+    @pytest.mark.parametrize(
+        "op", [qml.RX(0.123, 0), qml.RX([0.123, 4.56], 0), qml.Rot(1.23, 4.56, 7.89, 0)]
+    )
+    def test_data_set_correctly(self, op):
+        """Test that Conditional.data is the same as the data of the conditioned op."""
+        cond_op = qml.ops.Conditional(qml.measure(0), op)
+        assert cond_op.data == op.data
+        assert cond_op.batch_size == op.batch_size
+        assert cond_op.num_params == op.num_params
+        assert cond_op.ndim_params == op.ndim_params
+
 
 @pytest.mark.parametrize("op_class", [qml.PauliY, qml.Toffoli, qml.Hadamard, qml.CZ])
 def test_conditional_label(op_class):
