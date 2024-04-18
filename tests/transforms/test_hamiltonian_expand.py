@@ -409,8 +409,8 @@ with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
     S1 = qml.s_prod(1.5, qml.sum(qml.prod(qml.PauliZ(0), qml.PauliZ(1)), qml.Identity()))
     qml.expval(S1)
-    qml.expval(S1)
     qml.state()
+    qml.expval(S1)
 
 with AnnotatedQueue() as s_tape2:
     qml.Hadamard(0)
@@ -473,7 +473,6 @@ SUM_QSCRIPTS = [s_qscript1, s_qscript2, s_qscript3, s_qscript4]
 SUM_OUTPUTS = [
     [
         0,
-        0,
         np.array(
             [
                 0.0 + 0.0j,
@@ -494,6 +493,7 @@ SUM_OUTPUTS = [
                 0.0 + 0.0j,
             ]
         ),
+        0,
     ],
     [-5, np.array([0.5, 0.5]), -5],
     [-0.5, np.array([1.0, 0.0, 0.0, 0.0]), 0.0, -0.5, np.array([0.5, 0.5])],

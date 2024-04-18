@@ -249,26 +249,47 @@ def _group_measurements(
 ) -> (List[List[MeasurementProcess]], List[List[Tuple[int, int, float]]]):
     """Groups measurements that does not have overlapping wires.
 
-    Returns the grouped measurements, a new indices_and_coeffs is returned which includes the
-    group index as well as the measurement index within each group.
+    Returns:
+        measurements (List[List[MeasurementProcess]]): the grouped measurements. Each group
+            is a list of single-term observable measurements.
+        indices_and_coeffs (List[List[Tuple[int, float]]]): the indices and coefficients of
+            the single-term measurements to be combined for each original measurement. This
+            is a list of lists of tuples. Each list within the list corresponds to an original
+            measurement, and the tuples within the list refer to the single-term measurements
+            to be combined for this original measurement. Each tuple is of the form ``(group_idx,
+            sm_idx, coeff)``, where ``group_idx`` locates the group that this single-term
+            measurement belongs to, ``sm_idx`` is the index of the measurement within the group,
+            and ``coeff`` is the coefficient of the measurement.
 
     """
 
-    groups = []
+    groups = []  # Groups of measurements and the wires each group acts on
     new_indices_and_coeffs = []
+    # Tracks the measurements that have already been grouped, and their location within the groups
     grouped_sm_indices = {}
 
     for mp_indices_and_coeffs in indices_and_coeffs:
+        # For each original measurement, add each single-term measurement associated
+        # with it to an existing group or a new group.
 
         new_mp_indices_and_coeffs = []
 
         for sm_idx, coeff in mp_indices_and_coeffs:
+            # For each single-term measurement currently associated with this measurement
 
             if sm_idx in grouped_sm_indices:
+                # If this single-term measurement has already been grouped, find the group
+                # that it belongs to and its index within the group, add it to the new list
+                # of indices and coefficients
                 new_mp_indices_and_coeffs.append((*grouped_sm_indices[sm_idx], coeff))
                 continue
 
             m = measurements[sm_idx]
+
+            # If this measurement is added to an existing group, the sm_index will be the
+            # length of the group. If the measurement is added to a new group, the sm_index
+            # should be 0 as it's the first measurement in the group, and the group index
+            # will be the current length of the groups.
 
             if len(m.wires) == 0:  # measurement acting on all wires
                 groups.append((m.wires, [m]))
@@ -278,9 +299,7 @@ def _group_measurements(
 
             op_added = False
             for grp_idx, (wires, group) in enumerate(groups):
-                if len(wires) == 0:
-                    continue  # skip groups acting on all wires
-                if len(qml.wires.Wires.shared_wires([wires, m.wires])) == 0:
+                if len(wires) != 0 and len(qml.wires.Wires.shared_wires([wires, m.wires])) == 0:
                     group.append(m)
                     groups[grp_idx] = (wires + m.wires, group)
                     new_mp_indices_and_coeffs.append((grp_idx, len(group) - 1, coeff))
@@ -317,6 +336,7 @@ def _sum_expand_processing_fn_grouping(
             if shots.has_partitioned_shots:
                 r_group = qml.math.stack(r_group, axis=0)
                 if group_size > 1:
+                    # Move dimensions around to make things work
                     r_group = qml.math.moveaxis(r_group, 0, 1)
             sub_res.append(r_group[sm_idx] if group_size > 1 else r_group)
             coeffs.append(coeff)
@@ -339,12 +359,15 @@ def _sum_expand_processing_fn(
     for mp_indices_and_coeffs, offset in zip(indices_and_coeffs, offsets):
         sub_res = []
         coeffs = []
+        # For each original measurement, locate the results corresponding to each single-term
+        # measurement, and construct a subset of results to be processed.
         for sm_idx, coeff in mp_indices_and_coeffs:
             sub_res.append(res[sm_idx])
             coeffs.append(coeff)
         res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
     if shots.has_partitioned_shots:
         res_for_each_mp = qml.math.stack(res_for_each_mp, axis=0)
+        # Move dimensions around to make things work.
         res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, -1)
     return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
 
@@ -439,12 +462,12 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
 
     """
 
-    # The set of each unique single-term observable measurements
+    # The dictionary of all unique single-term observable measurements, and their indices
+    # within the list of all single-term observable measurements.
     single_term_obs_measurements = {}
 
-    # Indices and coefficients of single-term observable measurements to be
-    # combined for each original measurement in the tape. Each entry is a list
-    # of tuples of the form (index, coeff)
+    # Indices and coefficients of single-term observable measurements to be combined for each
+    # original measurement. Each element is a list of tuples of the form (index, coeff)
     all_sm_indices_and_coeffs = []
 
     # Offsets associated with each original measurement in the tape.
@@ -454,21 +477,31 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     for mp in tape.measurements:
         obs = mp.obs
         offset = 0
+        # Indices and coefficients of each single-term observable measurement to be
+        # combined for this original measurement.
         sm_indices_and_coeffs = []
         if isinstance(mp, ExpectationMP) and isinstance(obs, (Sum, Prod, SProd)):
             if isinstance(obs, SProd):
-                obs = obs.simplify()  # SProd doesn't flatten nested structures in terms()
+                # This is necessary because SProd currently does not flatten into
+                # multiple terms if the base is a sum, which is needed here.
+                obs = obs.simplify()
+            # Break the observable into terms, and construct an ExpectationMP with each term.
             for c, o in zip(*obs.terms()):
+                # If the observable is an identity, track it with a constant offset
                 if isinstance(o, qml.Identity):
                     offset += c
-                elif (sm := qml.expval(o)) not in single_term_obs_measurements:
-                    # Using it as a dictionary because the dict maintains insertion order
+                # If the single-term measurement already exists, it can be reused by all
+                # original measurements. In this case, add the existing single-term measurement
+                # to the list corresponding to this original measurement.
+                elif (sm := qml.expval(o)) in single_term_obs_measurements:
+                    sm_indices_and_coeffs.append((single_term_obs_measurements[sm], c))
+                # Otherwise, add this new measurement to the list of single-term measurements.
+                else:
                     single_term_obs_measurements[sm] = sm_idx
                     sm_indices_and_coeffs.append((sm_idx, c))
                     sm_idx += 1
-                else:
-                    sm_indices_and_coeffs.append((single_term_obs_measurements[sm], c))
         else:
+            # For all other measurement types, simply add them to the list of measurements.
             if mp not in single_term_obs_measurements:
                 single_term_obs_measurements[mp] = sm_idx
                 sm_indices_and_coeffs.append((sm_idx, 1))
