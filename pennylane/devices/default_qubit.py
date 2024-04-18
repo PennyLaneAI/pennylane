@@ -382,7 +382,11 @@ class DefaultQubit(Device):
 
     def get_prng_keys(self, num: int = 1):
         """Get ``num`` new keys with ``jax.random.split``."""
-        self._prng_key, *keys = jax_random_split(self._prng_key, num=num + 1)
+        if num < 1:
+            raise ValueError("Argument num must be a positive integer.")
+        if num > 1:
+            return [self.get_prng_keys()[0] for _ in range(num)]
+        self._prng_key, *keys = jax_random_split(self._prng_key)
         return keys
 
     def reset_prng_key(self):
