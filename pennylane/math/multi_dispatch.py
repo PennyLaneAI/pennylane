@@ -18,7 +18,6 @@ from collections.abc import Sequence
 
 import autoray as ar
 import numpy as onp
-import torch
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
