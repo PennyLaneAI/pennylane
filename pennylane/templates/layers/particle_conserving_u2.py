@@ -94,9 +94,9 @@ class ParticleConservingU2(Operation):
         weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
             layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
             ``(N-1)`` gates per layer.
-        wires (Iterable): wires that the template acts on
+        wires (Iterable): wires that the template acts on.
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
-            used to initialize the wires.
+            used to initialize the wires. If ``None``, a ``numpy`` array of zeros is selected as initial state.
 
     .. details::
         :title: Usage Details
