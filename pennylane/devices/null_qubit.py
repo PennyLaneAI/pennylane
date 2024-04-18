@@ -126,6 +126,24 @@ def _(mp: Union[StateMP, ProbabilityMP], obj_with_wires, shots, batch_size, inte
     return (result,) * shots.num_copies if shots.has_partitioned_shots else result
 
 
+def _setup_execution_config(execution_config: ExecutionConfig) -> ExecutionConfig:
+    updated_values = {}
+    if execution_config.gradient_method in ["best", "adjoint"]:
+        updated_values["gradient_method"] = "device"
+    if execution_config.use_device_gradient is None:
+        updated_values["use_device_gradient"] = execution_config.gradient_method in {
+            "best",
+            "device",
+            "adjoint",
+            "backprop",
+        }
+    if execution_config.use_device_jacobian_product is None:
+        updated_values["use_device_jacobian_product"] = execution_config.gradient_method == "device"
+    if execution_config.grad_on_execution is None:
+        updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
+    return replace(execution_config, **updated_values)
+
+
 # pylint: disable=too-many-arguments
 @simulator_tracking
 @single_tape_support
@@ -323,26 +341,7 @@ class NullQubit(Device):
 
             program.add_transform(decompose, stopping_condition=stopping_condition)
 
-        return program, self._setup_execution_config(execution_config)
-
-    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
-        updated_values = {}
-        if execution_config.gradient_method in ["best", "adjoint"]:
-            updated_values["gradient_method"] = "device"
-        if execution_config.use_device_gradient is None:
-            updated_values["use_device_gradient"] = execution_config.gradient_method in {
-                "best",
-                "device",
-                "adjoint",
-                "backprop",
-            }
-        if execution_config.use_device_jacobian_product is None:
-            updated_values["use_device_jacobian_product"] = (
-                execution_config.gradient_method == "device"
-            )
-        if execution_config.grad_on_execution is None:
-            updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
-        return replace(execution_config, **updated_values)
+        return program, _setup_execution_config(execution_config)
 
     def execute(
         self,
