@@ -283,7 +283,7 @@ class Prod(CompositeOp):
 
     @property
     def obs(self):
-        """Access the operands of a ``Prod`` instance"""
+        r"""Access the operands of a ``Prod`` instance"""
         # This is temporary property to smoothen the transition to the new operator arithmetic system.
         # In particular, now that the __matmul__ (@ python operator) method between operators generates Prod instead of Tensor instances.
         warnings.warn(
