@@ -163,8 +163,11 @@ def kron(*args, like=None, **kwargs):
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
 
     if like == "torch":
-        mats = [torch.from_numpy(arg) if isinstance(arg, onp.ndarray) else arg for arg in args]
-        return torch.kron(*mats)
+        mats = [
+            ar.numpy.asarray(arg, like="torch") if isinstance(arg, onp.ndarray) else arg
+            for arg in args
+        ]
+        return ar.numpy.kron(*mats)
 
     return ar.numpy.kron(*args, like=like, **kwargs)
 
