@@ -309,10 +309,9 @@ class TestHamiltonianExpand:
             (qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]), -3),
         ],
     )
-
     @pytest.mark.parametrize("theta", [np.pi, [np.pi, np.pi, np.pi]])
     @pytest.mark.parametrize("grouping", [True, False])
-    def test_processing_function_shot_vectors(self, H, expected, grouping):
+    def test_processing_function_shot_vectors(self, H, expected, theta, grouping):
         """Tests that the processing function works with shot vectors
         and grouping with different number of coefficients in each group"""
 
