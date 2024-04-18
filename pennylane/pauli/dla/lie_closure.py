@@ -30,8 +30,8 @@ class PauliVSpace:
 
     The main purpose of this class is to store and process ``M``, which
     is a dictionary-of-keys (DOK) style sparse representation of the set of basis vectors. You can
-    think of it as the numpy-equivalent of a PauliSentence: each ``PauliWord`` (key of ``PauliSentence``)
-    represents one row of ``M`` with the coefficient (value of ``PauliSentence``).
+    think of it as the numpy-equivalent of a PauliSentence: each :class:`~pennylane.pauli.PauliWord` (key of :class:`~pennylane.pauli.PauliSentence`)
+    represents one row of ``M`` with the coefficient (value of :class:`~pennylane.pauli.PauliSentence`).
     For example the set of 3 linearly independent generators ``X(0) + X(1), X(0) + X(2), X(0) + 0.5 * Y(0)``
     can be represented as
 
@@ -68,16 +68,9 @@ class PauliVSpace:
     .. code-block:: python3
 
         ops = [
-            PauliSentence({
-                PauliWord({0:"X", 1:"X"}) : 1.,
-                PauliWord({0:"Y", 1:"Y"}) : 1.
-            }),
-            PauliSentence({
-                PauliWord({0:"X", 1:"X"}) : 1.,
-            }),
-            PauliSentence({
-                PauliWord({0:"Y", 1:"Y"}) : 1.,
-            }),
+            X(0) @ X(1) + Y(0) @ Y(1),
+            X(0) @ X(1),
+            Y(0) @ Y(1)
         ]
 
         vspace = PauliVSpace(ops)
@@ -91,7 +84,7 @@ class PauliVSpace:
 
     We can also retrospectively add operators.
 
-    >>> vspace.add(PauliWord({0:"X"}))
+    >>> vspace.add(qml.X(0))
     [1.0 * X(0) @ X(1)
      + 1.0 * Y(0) @ Y(1),
      1.0 * X(0) @ X(1),
@@ -99,7 +92,7 @@ class PauliVSpace:
 
     Again, checks of linear independence are always performed. So in the following example no operator is added.
 
-    >>> vspace.add(PauliWord({0:"Y", 1:"Y"}))
+    >>> vspace.add(Y(0) @ Y(1))
     [1.0 * X(0) @ X(1)
      + 1.0 * Y(0) @ Y(1),
      1.0 * X(0) @ X(1),
@@ -224,17 +217,17 @@ class PauliVSpace:
         Args:
             M (ndarray): coefficient matrix for current LIS
             pauli_sentence (`~.PauliSentence`): Pauli sentence for which to add a column if independent
-            pw_to_idx (dict): map from ``PauliWord`` to row index in ``M``
+            pw_to_idx (dict): map from :class:`~pennylane.pauli.PauliWord` to row index in ``M``
             rank (int): current rank of ``M``, equal to its number of columns
-            num_pw (int): current number of ``PauliWord``\ s, equal to the number of rows in ``M``
+            num_pw (int): current number of :class:`~pennylane.pauli.PauliWord`\ s, equal to the number of rows in ``M``
             tol (float): Numerical tolerance for linear independence check.
 
         Returns:
             ndarray: updated coefficient matrix for the LIS
-            dict: updated map from ``PauliWord`` to row index in ``M``. Includes new ``PauliWord`` keys
+            dict: updated map from :class:`~pennylane.pauli.PauliWord` to row index in ``M``. Includes new :class:`~pennylane.pauli.PauliWord` keys
                 from the input ``pauli_sentence`` if it was linearly independent
             int: updated rank/number of columns of ``M``
-            int: updated number of ``PauliWord``\ s/number of rows of ``M``
+            int: updated number of :class:`~pennylane.pauli.PauliWord`\ s/number of rows of ``M``
             bool: whether ``pauli_sentence`` was linearly independent and whether its column was added to ``M``
         """
         new_pws = [pw for pw in pauli_sentence.keys() if pw not in pw_to_idx]
