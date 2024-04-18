@@ -280,31 +280,6 @@ def _measure_with_samples_diagonalizing_gates(
 
         return tuple(processed)
 
-    # if there is a shot vector, build a list containing results for each shot entry
-    if shots.has_partitioned_shots:
-        processed_samples = []
-        for s in shots:
-            # currently we call sample_state for each shot entry, but it may be
-            # better to call sample_state just once with total_shots, then use
-            # the shot_range keyword argument
-            try:
-                samples = sample_state(
-                    state,
-                    shots=s,
-                    is_state_batched=is_state_batched,
-                    wires=wires,
-                    rng=rng,
-                    prng_key=prng_key,
-                )
-            except ValueError as e:
-                if str(e) != "probabilities contain NaN":
-                    raise e
-                samples = qml.math.full((s, len(wires)), 0)
-
-            processed_samples.append(_process_single_shot(samples))
-
-        return tuple(zip(*processed_samples))
-
     try:
         samples = sample_state(
             state,
@@ -319,7 +294,15 @@ def _measure_with_samples_diagonalizing_gates(
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
-    return _process_single_shot(samples)
+    processed_samples = []
+    for lower, upper in shots.bins():
+        shot = _process_single_shot(samples[..., lower:upper, :])
+        processed_samples.append(shot)
+
+    if shots.has_partitioned_shots:
+        return tuple(zip(*processed_samples))
+
+    return processed_samples[0]
 
 
 def _measure_classical_shadow(

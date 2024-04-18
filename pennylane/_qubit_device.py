@@ -1464,7 +1464,7 @@ class QubitDevice(Device):
         if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
-            samples = qml.math.cast_like(samples, qml.math.int8(0))
+            samples = qml.math.cast_like(samples, qml.math.int64(0))
             samples = np.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if mp.all_outcomes:
