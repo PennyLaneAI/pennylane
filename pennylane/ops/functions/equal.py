@@ -573,13 +573,11 @@ def _equal_hilbert_schmidt(
         return False
 
     if check_trainability:
-        print("trainability!")
         for params_1, params_2 in zip(op1.data, op2.data):
             if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
                 return False
 
     if check_interface:
-        print("interface!")
         for params_1, params_2 in zip(op1.data, op2.data):
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
