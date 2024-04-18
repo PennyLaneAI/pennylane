@@ -289,7 +289,7 @@ class TestShotsBins:
     """Tests Shots.bins() method."""
 
     def test_when_shots_is_none(self):
-        """Tests that the method returns an empty list when shots is None."""
+        """Tests that the method returns no bins when shots is None."""
         shots = Shots(None)
         assert not list(shots.bins())
 

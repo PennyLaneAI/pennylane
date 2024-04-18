@@ -284,11 +284,8 @@ def _measure_with_samples_diagonalizing_gates(
 
     processed_samples = []
     for lower, upper in shots.bins():
-        if is_state_batched:
-            # Handle broadcasting
-            processed_samples.append(_process_single_shot(samples[:, lower:upper, :]))
-        else:
-            processed_samples.append(_process_single_shot(samples[lower:upper]))
+        shot = _process_single_shot(samples[..., lower:upper, :])
+        processed_samples.append(shot)
 
     if shots.has_partitioned_shots:
         return tuple(zip(*processed_samples))
