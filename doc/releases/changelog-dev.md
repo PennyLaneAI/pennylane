@@ -207,6 +207,10 @@
   [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411) 
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
+* A new `Prod.obs` property is introduced to smoothen the transition of the new operator arithmetic system.
+  In particular, this aims at preventing breaking code that uses `Tensor.obs`.
+  [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
+
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
