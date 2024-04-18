@@ -283,3 +283,23 @@ class TestProperties:
         scaled_sh1 = 2 * sh1
         rev_scaled_sh1 = sh1 * 2
         assert scaled_sh1.total_shots == rev_scaled_sh1.total_shots
+
+
+class TestShotsBins:
+    """Tests Shots.bins() method."""
+
+    def test_when_shots_is_none(self):
+        """Tests that the method returns no bins when shots is None."""
+        shots = Shots(None)
+        assert not list(shots.bins())
+
+    def test_when_shots_is_int(self):
+        """Tests that the method returns the correct bins when shots is an int."""
+        shots = Shots(10)
+        assert list(shots.bins()) == [(0, 10)]
+
+    @pytest.mark.parametrize("sequence", [[1, 1, 3, 4], [(1, 2), 3, 4]])
+    def test_when_shots_is_sequence_with_copies(self, sequence):
+        """Tests that the method returns the correct bins when shots is a sequence with copies."""
+        shots = Shots(sequence)
+        assert list(shots.bins()) == [(0, 1), (1, 2), (2, 5), (5, 9)]
