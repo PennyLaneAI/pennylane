@@ -168,7 +168,9 @@ def test_target_device_and_operations():
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(
+        NotImplementedError, match="accepts either target_device or operations, but not both."
+    ):
         qml.device("null.qubit", target_device=DummyDev(), operations={"RX", "CNOT"})
 
 
@@ -205,6 +207,33 @@ class TestSupportsDerivatives:
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
+
+    @pytest.mark.parametrize("target_device_supports", (True, False))
+    def test_supports_derivatives_target_device(self, target_device_supports):
+        """Test that the gradient support methods mimic the target device."""
+
+        # pylint: disable=unused-argument
+        class DummyDev(qml.devices.Device):
+            """A device that manually specifies whether or not it supports derivatives, jvp, and vjp."""
+
+            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+                return 0
+
+            def supports_derivatives(self, execution_config=None, circuit=None):
+                return target_device_supports
+
+            def supports_jvp(self, execution_config=None, circuit=None):
+                return target_device_supports
+
+            def supports_vjp(self, execution_config=None, circuit=None):
+                return target_device_supports
+
+        target_dev = DummyDev()
+        dev = qml.device("null.qubit", target_device=target_dev)
+
+        assert dev.supports_derivatves() == target_device_supports
+        assert dev.supports_jvp() == target_device_supports
+        assert dev.supports_vjp() == target_device_supports
 
     @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", None])
     def test_doesnt_support_other_gradient_methods(self, gradient_method):
