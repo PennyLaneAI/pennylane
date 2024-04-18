@@ -476,8 +476,8 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
             group_sizes=group_sizes,
             offsets=offsets,
         )
-    else:
-        tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
-        return tapes, partial(
-            _sum_expand_processing_fn, indices_and_coeffs=all_sm_indices_and_coeffs, offsets=offsets
-        )
+
+    tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
+    return tapes, partial(
+        _sum_expand_processing_fn, indices_and_coeffs=all_sm_indices_and_coeffs, offsets=offsets
+    )
