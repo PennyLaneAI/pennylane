@@ -182,7 +182,7 @@ def measure_final_state(
 
     if not circuit.shots:
         if mid_measurements is not None:
-            raise TypeError("Native mid-circuit measurements are not supported with finite shots.")
+            raise TypeError("Native mid-circuit measurements are only supported with finite shots.")
 
         if len(circuit.measurements) == 1:
             return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
