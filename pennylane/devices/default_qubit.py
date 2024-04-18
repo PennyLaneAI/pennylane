@@ -372,7 +372,15 @@ class DefaultQubit(Device):
             Additional information can be found in the
             `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
 
-        :title: Pseudo Random Numbers in JAX
+    """
+
+    @property
+    def name(self):
+        """The name of the device."""
+        return "default.qubit"
+
+    def get_prng_keys(self, num: int = 1):
+        """Get ``num`` new keys with ``jax.random.split``.
 
         A user may provide a ``jax.random.PRNGKey`` as a random seed.
         It will be used by the device when executing circuits with finite shots.
@@ -386,24 +394,7 @@ class DefaultQubit(Device):
         circuit, and hence can be discarded after returning the results.
         This same key may be split further down the stack if necessary so that no one key is ever
         reused.
-
-        Another example is when simulating native mid-circuit measurements with ``s`` shots. The ``PRNGKey`` is
-        split into ``s`` new keys. Not performing the splitting would lead all samples to be either ``0`` or
-        ``1``, effectively eliminating stochastic behaviour when executing a circuit.
-
-        The user does not need to worry about this in practice as it happens transparently.
-        The original seed (or ``PRNGKey``) can be restored by calling the ``reset_prng_key`` method if required.
-
-
-    """
-
-    @property
-    def name(self):
-        """The name of the device."""
-        return "default.qubit"
-
-    def get_prng_keys(self, num: int = 1):
-        """Get ``num`` new keys with ``jax.random.split``."""
+        """
         if num < 1:
             raise ValueError("Argument num must be a positive integer.")
         if num > 1:
@@ -412,7 +403,7 @@ class DefaultQubit(Device):
         return keys
 
     def reset_prng_key(self):
-        """Reset the RNG key to it's initial value."""
+        """Reset the RNG key to its initial value."""
         self._prng_key = self._prng_seed
 
     _state_cache: Optional[dict] = None
