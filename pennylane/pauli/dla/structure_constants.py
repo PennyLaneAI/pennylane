@@ -62,20 +62,20 @@ def structure_constants(
             Default is ``False``.
 
     Returns:
-        TensorLike: The adjoint representation of shape ``(d, d, d)``.
+        TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
-    .. seealso:: :func:`~pennylane.pauli.lie_closure`, :func:`~pennylane.pauli.center`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~pennylane.pauli.lie_closure`, :func:`~pennylane.pauli.center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
 
     **Example**
 
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
     >>> n = 2
-    >>> gens = [PauliSentence({PauliWord({i:"X", i+1:"X"}): 1.}) for i in range(n-1)]
-    >>> gens += [PauliSentence({PauliWord({i:"Z"}): 1.}) for i in range(n)]
+    >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
+    >>> gens += [Z(i) for i in range(n)]
     >>> dla = qml.pauli.lie_closure(gens)
     >>> print(dla)
-    [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), -1.0 * Y(0) @ Y(1)]
+    [X(1) @ X(0), Z(0), Z(1), -1.0 * (X(1) @ Y(0)), -1.0 * (Y(1) @ X(0)), -1.0 * (Y(1) @ Y(0))]
 
     The dimension of the DLA is :math:`d = 6`. Hence, the structure constants have shape ``(6, 6, 6)``.
 
@@ -93,7 +93,8 @@ def structure_constants(
     >>> adjoint_rep[0, 1, 3]
     -2.
 
-    We can also look at the overall adjoint action of the first element of the DLA on other elements, :math:`G_0`, ``dla[0] = X(0) @ X(1)``.
+    We can also look at the overall adjoint action of the first element :math:`G_0 = X_{0} \otimes X_{1}` of the DLA on other elements.
+    In particular, at :math:`\left(\text{ad}(iG_0)\right)_{\alpha, \beta} = f^0_{\alpha, \beta}`, which corresponds to the following matrix.
 
     >>> adjoint_rep[0]
     array([[ 0.,  0.,  0.,  0.,  0.,  0.],

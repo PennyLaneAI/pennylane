@@ -73,7 +73,7 @@
 
 <h4>Dynamical Lie Algebra functionality</h4>
 
-* A new `qml.dla.lie_closure` function to compute the Lie closure of a list of operators.
+* A new `qml.pauli.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
   [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
 
@@ -108,7 +108,7 @@
 
   ```python
   >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-  >>> dla = qml.dla.lie_closure(ops)
+  >>> dla = qml.pauli.lie_closure(ops)
   >>> print(dla)
   [1.0 * X(1) @ X(0),
    1.0 * Z(0),
@@ -123,8 +123,8 @@
 
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-  >>> dla = [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), -1.0 * Y(0) @ Y(1)]
-  >>> adjoint_rep = qml.dla.adjoint_repr(dla)
+  >>> dla = [X(0) @ X(1), Z(0), 1.0 * Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
+  >>> adjoint_rep = qml.pauli.adjoint_repr(dla)
   >>> adjoint_rep.shape
   (6, 6, 6)
 
@@ -245,6 +245,24 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
+
+<h3>Improvements 🛠</h3>
+
+* `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
+  the operator it wraps.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* `LightningVJPs` is now compatible with Lightning devices using the new device API.
+  [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
+
+* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
+  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
+
+* Operators can now be left multiplied `x * op` by numpy arrays.
+  [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
 
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
@@ -425,6 +443,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `dynamic_one_shot` transform now works with broadcasting.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
 * Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
   [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
 
@@ -493,6 +514,9 @@
 
 * `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
   [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
+
+* Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
+  [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
 
 <h3>Contributors ✍️</h3>
 

@@ -65,6 +65,15 @@ class TestPauliVSpace:
         assert vspace._num_pw == 2
         assert len(vspace._pw_to_idx) == 2
 
+    def test_init_with_ops(self):
+        """Test that initialization with PennyLane operators, PauliWord and PauliSentence works"""
+        ops = [qml.X(0), PauliWord({1: "X"})]
+        vspace = qml.pauli.PauliVSpace(ops)
+        vspace.add(qml.Y(0))
+
+        true_res = qml.pauli.PauliVSpace([qml.X(0), qml.X(1), qml.Y(0)])
+        assert vspace == true_res
+
     ADD_LINEAR_INDEPENDENT = (
         (ops2, PauliWord({10: "Y"}), ops2plusY10),
         (ops2, PauliSentence({PauliWord({10: "Y"}): 1.0}), ops2plusY10),
@@ -77,11 +86,12 @@ class TestPauliVSpace:
             repr(PauliVSpace(ops1)) == "[1.0 * X(0) @ X(1)\n+ 1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]"
         )
 
+    @pytest.mark.parametrize("li_tol", [1e-15, 1e-14])
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
-    def test_add_linear_independent(self, ops, op, true_new_basis):
+    def test_add_linear_independent(self, ops, op, true_new_basis, li_tol):
         """Test that adding new (linearly independent) operators works as expected"""
         vspace = PauliVSpace(ops)
-        new_basis = vspace.add(op)
+        new_basis = vspace.add(op, li_tol)
         assert new_basis == true_new_basis
 
     ADD_LINEAR_DEPENDENT = (
@@ -355,7 +365,8 @@ class TestLieClosure:
         res11 = [op.pauli_rep for op in res11]  # back to pauli_rep for easier comparison
         assert PauliVSpace(res11) == PauliVSpace(dla11)
 
-    def test_lie_closure_with_PauliWords(self):
+    @pytest.mark.parametrize("pauli", [True, False])
+    def test_lie_closure_with_PauliWords(self, pauli):
         """Test that lie_closure works properly with PauliWords"""
         gen = [
             PauliWord({0: "X", 1: "X"}),
@@ -369,7 +380,7 @@ class TestLieClosure:
         ]
         dla = [op.pauli_rep for op in dla]
 
-        res = lie_closure(gen)
+        res = lie_closure(gen, pauli=pauli)
 
         res = [op.pauli_rep for op in res]  # convert to pauli_rep for easier comparison
         assert PauliVSpace(res) == PauliVSpace(dla)

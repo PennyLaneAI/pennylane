@@ -42,7 +42,7 @@ def center(
     Returns:
         List[Union[Operator, PauliSentence]]: Center of ``g``
 
-    .. seealso:: :func:`~pennylane.pauli.lie_closure`, :func:`~pennylane.pauli.structure_constants`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~pennylane.pauli.lie_closure`, :func:`~pennylane.pauli.structure_constants`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
 
     **Example**
 
