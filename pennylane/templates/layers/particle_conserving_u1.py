@@ -185,7 +185,7 @@ class ParticleConservingU1(Operation):
             is the number of exchange gates :math:`U_{1,\mathrm{ex}}` per layer.
         wires (Iterable): wires that the template acts on.
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
-            used to initialize the wires. If ``None``, a ``numpy`` array of zeros is selected as initial state.
+            used to initialize the wires. If ``None``, a tuple of zeros is selected as initial state.
 
     .. details::
         :title: Usage Details
@@ -266,7 +266,7 @@ class ParticleConservingU1(Operation):
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
 
-        init_state = np.zeros(len(wires)) if init_state is None else init_state
+        init_state = tuple(0 for _ in wires) if init_state is None else init_state
 
         self._hyperparameters = {"init_state": tuple(init_state)}
 
