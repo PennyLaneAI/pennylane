@@ -2078,6 +2078,8 @@ class TestBasisRotation:
 class TestHilbertSchmidt:
     """Test that qml.equal works with qml.HilbertSchmidt."""
 
+    # pylint: disable=no-self-argument
+
     def v_function1(params):
         qml.RZ(params[0], wires=1)
 
@@ -2147,12 +2149,6 @@ class TestHilbertSchmidt:
     def test_non_equal_u_tapes(self, op, other_op):
         """Test that differing u_tapes are found."""
         assert qml.equal(op, other_op) is False
-
-    @pytest.mark.parametrize("op, other_op", [(op1, op5)])
-    def test_trainability(self, op, other_op):
-        """Test that differing trainabilities are found."""
-        assert qml.equal(op, other_op) is False
-        assert qml.equal(op, other_op, check_trainability=False) is True
 
     @pytest.mark.parametrize("op, other_op", [(op5, op6), (op1_untrainable, op1_trainable)])
     def test_trainability(self, op, other_op):
