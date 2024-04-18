@@ -287,6 +287,9 @@
   for `preprocess`, `execute` has not been implemented yet.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
+* Added `execute` to `devices.DefaultQutritMixed` device. This addition allows users to simulate qutrit circuits using the new device.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+
 <h3>Breaking changes 💔</h3>
 
 * Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
