@@ -407,7 +407,7 @@ class TestHamiltonianExpand:
 
 with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
-    S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1), qml.Identity()))
+    S1 = qml.s_prod(1.5, qml.sum(qml.prod(qml.PauliZ(0), qml.PauliZ(1)), qml.Identity()))
     qml.expval(S1)
     qml.expval(S1)
     qml.state()
@@ -448,7 +448,7 @@ S4 = qml.sum(
     qml.prod(qml.PauliX(0), qml.PauliZ(2), qml.Identity()),
     qml.s_prod(3, qml.PauliZ(2)),
     qml.s_prod(-2, qml.PauliX(0)),
-    qml.Identity(),
+    qml.s_prod(1.5, qml.Identity()),
     qml.PauliZ(2),
     qml.PauliZ(2),
     qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2)),
@@ -472,8 +472,8 @@ s_qscript4 = QuantumScript.from_queue(s_tape4)
 SUM_QSCRIPTS = [s_qscript1, s_qscript2, s_qscript3, s_qscript4]
 SUM_OUTPUTS = [
     [
-        -1.5,
-        -1.5,
+        0,
+        0,
         np.array(
             [
                 0.0 + 0.0j,
@@ -495,9 +495,9 @@ SUM_OUTPUTS = [
             ]
         ),
     ],
-    [-6, np.array([0.5, 0.5]), -6],
-    [-1.5, np.array([1.0, 0.0, 0.0, 0.0]), 0.0, -1.5, np.array([0.5, 0.5])],
-    [-8, 0, -8, 0],
+    [-5, np.array([0.5, 0.5]), -5],
+    [-0.5, np.array([1.0, 0.0, 0.0, 0.0]), 0.0, -0.5, np.array([0.5, 0.5])],
+    [-6.5, 0, -6.5, 0],
 ]
 
 

@@ -16,13 +16,14 @@ Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
 from functools import partial
-from typing import List, Sequence, Callable
+from typing import List, Sequence, Callable, Tuple
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum, Prod
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
+from pennylane.typing import ResultBatch
 
 
 def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
@@ -243,219 +244,154 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     return _naive_hamiltonian_expand(tape)
 
 
-# pylint: disable=too-many-branches, too-many-statements
+def _group_measurements(
+    measurements: Sequence[MeasurementProcess], indices_and_coeffs: List[List[Tuple[int, float]]]
+) -> (List[List[MeasurementProcess]], List[List[Tuple[int, int, float]]]):
+    """Groups measurements that does not have overlapping wires.
+
+    Returns the grouped measurements, a new indices_and_coeffs is returned which includes the
+    group index as well as the measurement index within each group.
+
+    """
+
+    groups = []
+    new_indices_and_coeffs = []
+    grouped_sm_indices = {}
+
+    for mp_idx, mp_indices_and_coeffs in enumerate(indices_and_coeffs):
+
+        new_mp_indices_and_coeffs = []
+
+        for sm_idx, coeff in mp_indices_and_coeffs:
+
+            if sm_idx in grouped_sm_indices:
+                new_mp_indices_and_coeffs.append((*grouped_sm_indices[sm_idx], coeff))
+                continue
+
+            m = measurements[sm_idx]
+
+            if len(m.wires) == 0:  # measurement acting on all wires
+                groups.append((m.wires, [m]))
+                new_mp_indices_and_coeffs.append((len(groups) - 1, 0, coeff))
+                grouped_sm_indices[sm_idx] = (len(groups) - 1, 0)
+                continue
+
+            op_added = False
+            for grp_idx in range(len(groups)):
+                wires, group = groups[grp_idx]
+                if len(wires) == 0:
+                    continue  # skip groups acting on all wires
+                if len(qml.wires.Wires.shared_wires([wires, m.wires])) == 0:
+                    group.append(m)
+                    groups[grp_idx] = (wires + m.wires, group)
+                    new_mp_indices_and_coeffs.append((grp_idx, len(group) - 1, coeff))
+                    grouped_sm_indices[sm_idx] = (grp_idx, len(group) - 1)
+                    op_added = True
+                    break
+
+            if not op_added:
+                groups.append((m.wires, [m]))
+                new_mp_indices_and_coeffs.append((len(groups) - 1, 0, coeff))
+                grouped_sm_indices[sm_idx] = (len(groups) - 1, 0)
+
+        new_indices_and_coeffs.append(new_mp_indices_and_coeffs)
+
+    return [group[1] for group in groups], new_indices_and_coeffs
+
+
+def _sum_expand_processing_fn_grouping(
+    res: ResultBatch,
+    group_sizes: List[int],
+    indices_and_coeffs: List[List[Tuple[int, int, float]]],
+    offsets: List[int],
+):
+    """The processing function for sum_expand with grouping."""
+
+    res_for_each_mp = []
+    for mp_indices_and_coeffs, offset in zip(indices_and_coeffs, offsets):
+        sub_res = []
+        coeffs = []
+        for group_idx, sm_idx, coeff in mp_indices_and_coeffs:
+            r_group = res[group_idx]
+            group_size = group_sizes[group_idx]
+            sub_res.append(r_group[sm_idx]) if group_size > 1 else sub_res.append(r_group)
+            coeffs.append(coeff)
+        res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
+    return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
+
+
+def _sum_expand_processing_fn(
+    res: ResultBatch, indices_and_coeffs: List[List[Tuple[int, float]]], offsets: List[int]
+):
+    """The processing function for sum_expand without grouping."""
+
+    res_for_each_mp = []
+    for mp_indices_and_coeffs, offset in zip(indices_and_coeffs, offsets):
+        sub_res = []
+        coeffs = []
+        for sm_idx, coeff in mp_indices_and_coeffs:
+            sub_res.append(res[sm_idx])
+            coeffs.append(coeff)
+        res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
+    return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
+
+
 @transform
 def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape], Callable):
-    """Splits a quantum tape measuring a Sum expectation into multiple tapes of summand
-    expectations, and provides a function to recombine the results.
 
-    Args:
-        tape (.QuantumTape): the quantum tape used when calculating the expectation value
-            of the Hamiltonian
-        group (bool): Whether to compute disjoint groups of Pauli observables acting on different
-            wires, leading to fewer tapes.
+    # The set of each unique single-term observable measurements
+    single_term_obs_measurements = {}
 
-    Returns:
-        tuple[Sequence[.QuantumTape], Callable]: Returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions to compute the expectation value.
+    # Indices and coefficients of single-term observable measurements to be
+    # combined for each original measurement in the tape. Each entry is a list
+    # of tuples of the form (index, coeff)
+    all_sm_indices_and_coeffs = []
 
-    **Example**
+    # Offsets associated with each original measurement in the tape.
+    offsets = []
 
-    Given a Sum operator,
-
-    .. code-block:: python3
-
-        S = qml.sum(qml.prod(qml.Y(2), qml.Z(1)), qml.s_prod(0.5, qml.Z(2)), qml.Z(1))
-
-    and a tape of the form,
-
-    .. code-block:: python3
-
-        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
-        measurements = [
-            qml.expval(S),
-            qml.expval(qml.Z(0)),
-            qml.expval(qml.X(1)),
-            qml.expval(qml.Z(2))
-        ]
-        tape = qml.tape.QuantumTape(ops, measurements)
-
-    We can use the ``sum_expand`` transform to generate new tapes and a classical
-    post-processing function to speed-up the computation of the expectation value of the `Sum`.
-
-    >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
-    >>> for tape in tapes:
-    ...     print(tape.measurements)
-    [expval(Y(2) @ Z(1))]
-    [expval(Z(2))]
-    [expval(Z(1))]
-    [expval(Z(0))]
-    [expval(X(1))]
-
-    Five tapes are generated: the first three contain the summands of the `Sum` operator,
-    and the last two contain the remaining observables. Note that the scalars of the scalar products
-    have been removed. In the processing function, these values will be multiplied by the result obtained
-    from executing the tapes.
-
-    Additionally, the observable expval(Z(2)) occurs twice in the original tape, but only once
-    in the transformed tapes. When there are multipe identical measurements in the circuit, the measurement
-    is performed once and the outcome is copied when obtaining the final result. This will also be resolved
-    when the processing function is applied.
-
-    We can evaluate these tapes on a device:
-
-    >>> dev = qml.device("default.qubit", wires=3)
-    >>> res = dev.execute(tapes)
-
-    Applying the processing function results in the expectation value of the Hamiltonian:
-
-    >>> fn(res)
-    [-0.5, 0.0, 0.0, -0.9999999999999996]
-
-    Fewer tapes can be constructed by grouping observables acting on different wires. This can be achieved
-    by the ``group`` keyword argument:
-
-    .. code-block:: python3
-
-        S = qml.sum(qml.Z(0), qml.s_prod(2, qml.X(1)), qml.s_prod(3, qml.X(0)))
-
-        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
-        tape = qml.tape.QuantumTape(ops, [qml.expval(S)])
-
-    With grouping, the Sum gets split into two groups of observables (here
-    ``[qml.Z(0), qml.s_prod(2, qml.X(1))]`` and ``[qml.s_prod(3, qml.X(0))]``):
-
-    >>> tapes, fn = qml.transforms.sum_expand(tape, group=True)
-    >>> for tape in tapes:
-    ...     print(tape.measurements)
-    [expval(Z(0)), expval(X(1))]
-    [expval(X(0))]
-    """
-    # Populate these 2 dictionaries with the unique measurement objects, the index of the
-    # initial measurement on the tape and the coefficient
-    # NOTE: expval(Sum) is expanded into the expectation of each summand
-    # NOTE: expval(SProd) is transformed into expval(SProd.base) and the coeff is updated
-    measurements_dict = {}  # {m_hash: measurement}
-    idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
-    for idx, m in enumerate(tape.measurements):
-        obs = m.obs
-        if isinstance(obs, Prod) and isinstance(m, ExpectationMP):
-            obs = obs.simplify()
-        if isinstance(obs, Sum) and isinstance(m, ExpectationMP):
-            for summand in obs.operands:
-                coeff = 1
-                if isinstance(summand, SProd):
-                    coeff = summand.scalar
-                    summand = summand.base
-                s_m = qml.expval(summand)
-                if s_m.hash not in measurements_dict:
-                    measurements_dict[s_m.hash] = s_m
-                    idxs_coeffs_dict[s_m.hash] = [(idx, coeff)]
+    sm_idx = 0  # Tracks the number of unique single-term observable measurements
+    for mp_idx, mp in enumerate(tape.measurements):
+        obs = mp.obs
+        offset = 0
+        sm_indices_and_coeffs = []
+        if isinstance(mp, ExpectationMP) and isinstance(obs, (Sum, Prod, SProd)):
+            if isinstance(obs, SProd):
+                obs = obs.simplify()  # SProd doesn't flatten nested structures in terms()
+            for c, o in zip(*obs.terms()):
+                if isinstance(o, qml.Identity):
+                    offset += c
+                elif (sm := qml.expval(o)) not in single_term_obs_measurements:
+                    # Using it as a dictionary because the dict maintains insertion order
+                    single_term_obs_measurements[sm] = sm_idx
+                    sm_indices_and_coeffs.append((sm_idx, c))
+                    sm_idx += 1
                 else:
-                    idxs_coeffs_dict[s_m.hash].append((idx, coeff))
-            continue
-
-        coeff = 1 if isinstance(m, ExpectationMP) else None
-        if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
-            coeff = obs.scalar
-            m = qml.expval(obs.base)
-
-        if m.hash not in measurements_dict:
-            measurements_dict[m.hash] = m
-            idxs_coeffs_dict[m.hash] = [(idx, coeff)]
+                    sm_indices_and_coeffs.append((single_term_obs_measurements[sm], c))
         else:
-            idxs_coeffs_dict[m.hash].append((idx, coeff))
+            if mp not in single_term_obs_measurements:
+                single_term_obs_measurements[mp] = sm_idx
+                sm_indices_and_coeffs.append((sm_idx, 1))
+                sm_idx += 1
+            else:
+                sm_indices_and_coeffs.append((single_term_obs_measurements[mp], 1))
 
-    # Cast the dictionaries into lists (we don't need the hashed anymore)
-    measurements = list(measurements_dict.values())
-    idxs_coeffs = list(idxs_coeffs_dict.values())
+        all_sm_indices_and_coeffs.append(sm_indices_and_coeffs)
+        offsets.append(offset)
 
-    # Create the tapes, group observables if group==True
-    # pylint: disable=too-many-nested-blocks
+    measurements = list(single_term_obs_measurements.keys())
     if group:
-        m_groups = _group_measurements(measurements)
-        # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
-        tmp_idxs = []
-        for m_group in m_groups:
-            if len(m_group) == 1:
-                # pylint: disable=undefined-loop-variable
-                for i, m in enumerate(measurements):
-                    if m is m_group[0]:
-                        break
-                tmp_idxs.append(idxs_coeffs[i])
-            else:
-                inds = []
-                for mp in m_group:
-                    # pylint: disable=undefined-loop-variable
-                    for i, m in enumerate(measurements):
-                        if m is mp:
-                            break
-                    inds.append(idxs_coeffs[i])
-                tmp_idxs.append(inds)
-
-        idxs_coeffs = tmp_idxs
-        qscripts = [
-            QuantumScript(ops=tape.operations, measurements=m_group, shots=tape.shots)
-            for m_group in m_groups
-        ]
+        groups, indices_and_coeffs = _group_measurements(measurements, all_sm_indices_and_coeffs)
+        tapes = [tape.__class__(tape.operations, m_group, shots=tape.shots) for m_group in groups]
+        group_sizes = [len(m_group) for m_group in groups]
+        return tapes, partial(
+            _sum_expand_processing_fn_grouping,
+            indices_and_coeffs=indices_and_coeffs,
+            group_sizes=group_sizes,
+            offsets=offsets,
+        )
     else:
-        qscripts = [
-            QuantumScript(ops=tape.operations, measurements=[m], shots=tape.shots)
-            for m in measurements
-        ]
-
-    def processing_fn(expanded_results):
-        results = []  # [(m_idx, result)]
-        for qscript_res, qscript_idxs in zip(expanded_results, idxs_coeffs):
-            if isinstance(qscript_idxs[0], tuple):  # qscript_res contains only one result
-                for idx, coeff in qscript_idxs:
-                    results.append((idx, qscript_res if coeff is None else coeff * qscript_res))
-                continue
-            # qscript_res contains multiple results
-            for res, idxs in zip(qscript_res, qscript_idxs):
-                for idx, coeff in idxs:
-                    results.append((idx, res if coeff is None else coeff * res))
-
-        # sum results by idx
-        res_dict = {}
-        for idx, res in results:
-            if idx in res_dict:
-                res_dict[idx] += res
-            else:
-                res_dict[idx] = res
-
-        # sort results by idx
-        results = [res_dict[key] for key in sorted(res_dict)]
-
-        return results[0] if len(results) == 1 else results
-
-    return qscripts, processing_fn
-
-
-def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[MeasurementProcess]]:
-    """Group observables of ``measurements`` into groups with non overlapping wires.
-
-    Args:
-        measurements (List[MeasurementProcess]): list of measurement processes
-
-    Returns:
-        List[List[MeasurementProcess]]: list of groups of observables with non overlapping wires
-    """
-    qwc_groups = []
-    for m in measurements:
-        if len(m.wires) == 0:  # measurement acts on all wires: e.g. qml.counts()
-            qwc_groups.append((m.wires, [m]))
-            continue
-
-        op_added = False
-        for idx, (wires, group) in enumerate(qwc_groups):
-            if len(wires) > 0 and all(wire not in m.wires for wire in wires):
-                qwc_groups[idx] = (wires + m.wires, group + [m])
-                op_added = True
-                break
-
-        if not op_added:
-            qwc_groups.append((m.wires, [m]))
-
-    return [group[1] for group in qwc_groups]
+        tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
+        return tapes, partial(
+            _sum_expand_processing_fn, indices_and_coeffs=all_sm_indices_and_coeffs, offsets=offsets
+        )
