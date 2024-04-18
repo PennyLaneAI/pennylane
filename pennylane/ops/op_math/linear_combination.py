@@ -321,47 +321,6 @@ class LinearCombination(Sum):
         coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
-    def _obs_data(self):
-        r"""Extracts the data from a ``LinearCombination`` and serializes it in an order-independent fashion.
-
-        This allows for comparison between ``LinearCombination``s that are equivalent, but are defined with terms and tensors
-        expressed in different orders. For example, `qml.X(0) @ qml.Z(1)` and
-        `qml.Z(1) @ qml.X(0)` are equivalent observables with different orderings.
-
-        .. Note::
-
-            In order to store the data from each term of the ``LinearCombination`` in an order-independent serialization,
-            we make use of sets. Note that all data contained within each term must be immutable, hence the use of
-            strings and frozensets.
-
-        **Example**
-
-        >>> H = qml.ops.LinearCombination([1, 1], [qml.X(0) @ qml.X(1), qml.Z(0)])
-        >>> print(H._obs_data())
-        {(1, frozenset({('Prod', <Wires = [0, 1]>, ())})),
-         (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
-        """
-        warnings.warn(
-            "Accessing _obs_data is deprecated. You can still use LinearCombination.compare to check mathematical equivalence with other operators.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        data = set()
-
-        coeffs_arr = qml.math.toarray(self.coeffs)
-        for co, op in zip(coeffs_arr, self.ops):
-            obs = op.non_identity_obs if isinstance(op, Tensor) else [op]
-            tensor = []
-            for ob in obs:
-                parameters = tuple(
-                    str(param) for param in ob.parameters
-                )  # Converts params into immutable type
-                if isinstance(ob, qml.GellMann):
-                    parameters += (ob.hyperparameters["index"],)
-                tensor.append((ob.name, ob.wires, parameters))
-            data.add((co, frozenset(tensor)))
-
-        return data
-
     def compare(self, other):
         r"""Determines mathematical equivalence between operators
 

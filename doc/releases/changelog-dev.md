@@ -334,6 +334,9 @@
 * Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
   [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
 
+* `LinearCombination._obs_data` is removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
+  [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
+
 <h3>Deprecations 👋</h3>
 
 * `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
@@ -354,9 +357,6 @@
   returns a `LinearCombination` instance. Some functionality may not work as expected. To continue using the `Hamiltonian` class, you can use
   `qml.operation.disable_new_opmath()` to disable the new operator arithmetic.
   [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
-
-* `LinearCombination._obs_data` is deprecated. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
-  [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
 
 <h3>Documentation 📝</h3>
 

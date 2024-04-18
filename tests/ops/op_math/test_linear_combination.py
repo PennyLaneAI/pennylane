@@ -730,51 +730,6 @@ class TestLinearCombination:
         # check that the simplified LinearCombination is in the queue
         assert q.get_info(H) is not None
 
-    def test_data(self):
-        """Tests the obs_data method"""
-        # pylint: disable=protected-access
-
-        H = qml.ops.LinearCombination(
-            [1, 1, 0.5],
-            [Z(0), Z(0) @ X(1), X(2) @ qml.Identity(1)],
-        )
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="Accessing _obs_data is deprecated"
-        ):
-            data = H._obs_data()
-
-        expected = {
-            (0.5, frozenset({("Prod", qml.wires.Wires([2, 1]), ())})),
-            (1.0, frozenset({("PauliZ", qml.wires.Wires(0), ())})),
-            (1.0, frozenset({("Prod", qml.wires.Wires([0, 1]), ())})),
-        }
-
-        assert data == expected
-
-    def test_data_gell_mann(self):
-        """Tests that the obs_data method for LinearCombinations with qml.GellMann
-        observables includes the Gell-Mann index."""
-        H = qml.ops.LinearCombination(
-            [1, -1, 0.5],
-            [
-                qml.GellMann(wires=0, index=3),
-                qml.GellMann(wires=0, index=3) @ qml.GellMann(wires=1, index=1),
-                qml.GellMann(wires=2, index=2),
-            ],
-        )
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="Accessing _obs_data is deprecated"
-        ):
-            data = H._obs_data()
-
-        expected = {
-            (-1.0, frozenset({("Prod", qml.wires.Wires([0, 1]), ())})),
-            (0.5, frozenset({("GellMann", qml.wires.Wires(2), (2,))})),
-            (1.0, frozenset({("GellMann", qml.wires.Wires(0), (3,))})),
-        }
-
-        assert data == expected
-
     COMPARE_WITH_OPS = (
         (qml.ops.LinearCombination([0.5], [X(0) @ X(1)]), qml.s_prod(0.5, X(0) @ X(1))),
         (qml.ops.LinearCombination([0.5], [X(0) + X(1)]), qml.s_prod(0.5, qml.sum(X(0), X(1)))),
