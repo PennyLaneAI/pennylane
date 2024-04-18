@@ -17,9 +17,9 @@ used to troubleshoot issues for those affected users.
 
 .. note::
 
-    If you are looking for a quick fix, jump to the :ref:`Troubleshooting` section!
+    If you are looking for a quick fix, jump to the :ref:`Troubleshooting_opmath` section!
 
-    After visiting the :ref:`Troubleshooting` section, if you are still stuck then you can:
+    After visiting the :ref:`Troubleshooting_opmath` section, if you are still stuck then you can:
 
     - Post on the PennyLane `discussion forum <https://discuss.pennylane.ai>`_.
 
@@ -31,7 +31,7 @@ Summary of the update
 ---------------------
 
 The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
-If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting` section.
+If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
 You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
 
 You can now easily access Pauli operators via ``I``, ``X``, ``Y``, and ``Z``.
@@ -177,7 +177,7 @@ This should minimize the effort to port over any existing code.
 
     Both classes offer the same API and functionality, so a user does not have to worry about those implementation details.
 
-.. _Troubleshooting:
+.. _Troubleshooting_opmath:
 
 Troubleshooting
 ---------------
