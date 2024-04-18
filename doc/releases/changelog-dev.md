@@ -230,8 +230,9 @@
 * `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
 
-* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+  [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
 
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)

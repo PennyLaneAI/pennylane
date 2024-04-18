@@ -21,7 +21,7 @@ from typing import List, Sequence, Callable, Tuple
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum, Prod
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
 from pennylane.typing import ResultBatch
 
@@ -258,7 +258,7 @@ def _group_measurements(
     new_indices_and_coeffs = []
     grouped_sm_indices = {}
 
-    for mp_idx, mp_indices_and_coeffs in enumerate(indices_and_coeffs):
+    for mp_indices_and_coeffs in indices_and_coeffs:
 
         new_mp_indices_and_coeffs = []
 
@@ -277,8 +277,7 @@ def _group_measurements(
                 continue
 
             op_added = False
-            for grp_idx in range(len(groups)):
-                wires, group = groups[grp_idx]
+            for grp_idx, (wires, group) in enumerate(groups):
                 if len(wires) == 0:
                     continue  # skip groups acting on all wires
                 if len(qml.wires.Wires.shared_wires([wires, m.wires])) == 0:
@@ -314,7 +313,7 @@ def _sum_expand_processing_fn_grouping(
         for group_idx, sm_idx, coeff in mp_indices_and_coeffs:
             r_group = res[group_idx]
             group_size = group_sizes[group_idx]
-            sub_res.append(r_group[sm_idx]) if group_size > 1 else sub_res.append(r_group)
+            sub_res.append(r_group[sm_idx] if group_size > 1 else r_group)
             coeffs.append(coeff)
         res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
     return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
@@ -338,6 +337,92 @@ def _sum_expand_processing_fn(
 
 @transform
 def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape], Callable):
+    """Splits a quantum tape measuring a Sum expectation into multiple tapes of summand
+    expectations, and provides a function to recombine the results.
+
+    Args:
+        tape (.QuantumTape): the quantum tape used when calculating the expectation value
+            of the Hamiltonian
+        group (bool): Whether to compute disjoint groups of Pauli observables acting on different
+            wires, leading to fewer tapes.
+
+    Returns:
+        tuple[Sequence[.QuantumTape], Callable]: Returns a tuple containing a list of
+            quantum tapes to be evaluated, and a function to be applied to these
+            tape executions to compute the expectation value.
+
+    **Example**
+
+    Given a Sum operator,
+
+    .. code-block:: python3
+        S = qml.sum(qml.prod(qml.Y(2), qml.Z(1)), qml.s_prod(0.5, qml.Z(2)), qml.Z(1))
+
+    and a tape of the form,
+
+    .. code-block:: python3
+
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
+        measurements = [
+            qml.expval(S),
+            qml.expval(qml.Z(0)),
+            qml.expval(qml.X(1)),
+            qml.expval(qml.Z(2))
+        ]
+        tape = qml.tape.QuantumTape(ops, measurements)
+
+    We can use the ``sum_expand`` transform to generate new tapes and a classical
+    post-processing function to speed-up the computation of the expectation value of the `Sum`.
+
+    >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
+    >>> for tape in tapes:
+    ...     print(tape.measurements)
+    [expval(Y(2) @ Z(1))]
+    [expval(Z(2))]
+    [expval(Z(1))]
+    [expval(Z(0))]
+    [expval(X(1))]
+
+    Five tapes are generated: the first three contain the summands of the `Sum` operator,
+    and the last two contain the remaining observables. Note that the scalars of the scalar products
+    have been removed. In the processing function, these values will be multiplied by the result obtained
+    from executing the tapes.
+
+    Additionally, the observable expval(Z(2)) occurs twice in the original tape, but only once
+    in the transformed tapes. When there are multipe identical measurements in the circuit, the measurement
+    is performed once and the outcome is copied when obtaining the final result. This will also be resolved
+    when the processing function is applied.
+
+    We can evaluate these tapes on a device:
+
+    >>> dev = qml.device("default.qubit", wires=3)
+    >>> res = dev.execute(tapes)
+
+    Applying the processing function results in the expectation value of the Hamiltonian:
+
+    >>> fn(res)
+    [-0.5, 0.0, 0.0, -0.9999999999999996]
+
+    Fewer tapes can be constructed by grouping observables acting on different wires. This can be achieved
+    by the ``group`` keyword argument:
+
+    .. code-block:: python3
+
+        S = qml.sum(qml.Z(0), qml.s_prod(2, qml.X(1)), qml.s_prod(3, qml.X(0)))
+
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.X(2)]
+        tape = qml.tape.QuantumTape(ops, [qml.expval(S)])
+
+    With grouping, the Sum gets split into two groups of observables (here
+    ``[qml.Z(0), qml.s_prod(2, qml.X(1))]`` and ``[qml.s_prod(3, qml.X(0))]``):
+
+    >>> tapes, fn = qml.transforms.sum_expand(tape, group=True)
+    >>> for tape in tapes:
+    ...     print(tape.measurements)
+    [expval(Z(0)), expval(X(1))]
+    [expval(X(0))]
+
+    """
 
     # The set of each unique single-term observable measurements
     single_term_obs_measurements = {}
@@ -351,7 +436,7 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     offsets = []
 
     sm_idx = 0  # Tracks the number of unique single-term observable measurements
-    for mp_idx, mp in enumerate(tape.measurements):
+    for mp in tape.measurements:
         obs = mp.obs
         offset = 0
         sm_indices_and_coeffs = []
