@@ -166,7 +166,8 @@ class NullQubit(Device):
                 circuit(params)
             return tracker
 
-    >>> track_entangling_layers(qml.device('null.qubit')).latest['resources']
+    >>> dev = qml.device('null.qubit')
+    >>> track_entangling_layers(dev).latest['resources']
     wires: 100
     gates: 1
     depth: 1
@@ -179,7 +180,8 @@ class NullQubit(Device):
     Null qubit can also mimic the preprocessing of an existing device:
 
     >>> target_dev = qml.device('default.qubit')
-    >>> track_entangling_layers(qml.device('null.qubit', target_device=target_dev)).latest['resources']
+    >>> dev = qml.device('null.qubit', target_device=target_dev)
+    >>> track_entangling_layers(dev).latest['resources']
     wires: 100
     gates: 10000
     depth: 502
@@ -192,7 +194,8 @@ class NullQubit(Device):
     And decompose to a target gateset, specified by names and/or types:
 
     >>> ops = {'RX', 'RY', 'RZ', qml.CNOT}
-    >>> track_entangling_layers(qml.device('null.qubit', operations=ops)).latest['resources']
+    >>> dev = qml.device('null.qubit', operations=ops)
+    >>> track_entangling_layers(dev).latest['resources']
     wires: 100
     gates: 20000
     depth: 602

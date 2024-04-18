@@ -141,7 +141,7 @@ def test_target_device():
 
     # pylint: disable=unused-argument
     class DummyDev(qml.devices.Device):
-        """a device that just defers measurements."""
+        """A device that just defers measurements."""
 
         def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
             program = qml.transforms.core.TransformProgram()
@@ -163,7 +163,7 @@ def test_target_device_and_operations():
 
     # pylint: disable=unused-argument, too-few-public-methods
     class DummyDev(qml.devices.Device):
-        """a device that just defers measurements."""
+        """A device that just defers measurements."""
 
         def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0
