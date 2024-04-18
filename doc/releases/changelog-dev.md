@@ -177,7 +177,6 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
-
 <h3>Improvements 🛠</h3>
 
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
@@ -234,6 +233,9 @@
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
+* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
+  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -280,6 +282,9 @@
 
 * Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
+
+* Implement `Shots.bins()` method.
+  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
 <h3>Breaking changes 💔</h3>
 
@@ -378,6 +383,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.counts` no longer returns negative samples when measuring 8 or more wires.
+  [(#5544)](https://github.com/PennyLaneAI/pennylane/pull/5544)
 
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
