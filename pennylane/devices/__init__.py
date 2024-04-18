@@ -90,7 +90,7 @@ Other transforms that may be relevant to device preprocessing include:
 Modifiers
 ---------
 
-The ``modifiers`` allow for the easy addition of default behavior to a device.
+The ``modifiers`` allow for the easy addition of default behaviour to a device.
 
 .. currentmodule:: pennylane.devices.modifiers
 .. autosummary::

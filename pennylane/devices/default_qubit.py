@@ -392,7 +392,7 @@ class DefaultQubit(Device):
         ``1``, effectively eliminating stochastic behaviour when executing a circuit.
 
         The user does not need to worry about this in practice as it happens transparently.
-        The original seed (or ``PRNGKey``) can be restored calling the ``reset_prng_key`` method if required.
+        The original seed (or ``PRNGKey``) can be restored by calling the ``reset_prng_key`` method if required.
 
 
     """
@@ -625,7 +625,7 @@ class DefaultQubit(Device):
             )
             results = tuple(exec_map)
 
-        # reset _rng to mimic serial behavior
+        # reset _rng to mimic serial behaviour
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return results
@@ -644,7 +644,7 @@ class DefaultQubit(Device):
             exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
             res = tuple(exec_map)
 
-        # reset _rng to mimic serial behavior
+        # reset _rng to mimic serial behaviour
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return res
@@ -677,7 +677,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-            # reset _rng to mimic serial behavior
+            # reset _rng to mimic serial behaviour
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return tuple(zip(*results))
@@ -715,7 +715,7 @@ class DefaultQubit(Device):
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
 
-        # reset _rng to mimic serial behavior
+        # reset _rng to mimic serial behaviour
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return res
@@ -750,7 +750,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-            # reset _rng to mimic serial behavior
+            # reset _rng to mimic serial behaviour
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return tuple(zip(*results))
@@ -836,7 +836,7 @@ class DefaultQubit(Device):
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
-        # reset _rng to mimic serial behavior
+        # reset _rng to mimic serial behaviour
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return res
@@ -871,7 +871,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-            # reset _rng to mimic serial behavior
+            # reset _rng to mimic serial behaviour
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return tuple(zip(*results))
