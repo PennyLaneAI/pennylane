@@ -143,6 +143,7 @@ class TestDecomposition:
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -162,6 +163,7 @@ class TestDecomposition:
         tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
         assert all(len(tensor.obs) == n for tensor in tensors)
 
+    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -266,6 +268,7 @@ class TestPhasedDecomposition:
         ).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -288,6 +291,7 @@ class TestPhasedDecomposition:
         tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
         assert all(len(tensor.obs) == n for tensor in tensors)
 
+    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -314,6 +318,7 @@ class TestPhasedDecomposition:
         assert isinstance(ps, qml.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
+    # pylint: disable = consider-using-generator
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
@@ -342,6 +347,8 @@ class TestPhasedDecomposition:
             tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
             assert all(len(tensor.obs) == num_qubits for tensor in tensors)
 
+    # pylint: disable = consider-using-generator
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
     def test_observable_types_general(self, matrix, hide_identity):
@@ -428,6 +435,7 @@ class TestPhasedDecomposition:
             coeffs = qml.pauli_decompose(mat).coeffs
             assert qml.math.get_interface(coeffs[0]) == interface
 
+    # pylint: disable = superfluous-parens
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
