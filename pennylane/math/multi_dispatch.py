@@ -18,6 +18,7 @@ from collections.abc import Sequence
 
 import autoray as ar
 import numpy as onp
+import torch
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
@@ -160,6 +161,11 @@ def kron(*args, like=None, **kwargs):
     """The kronecker/tensor product of args."""
     if like == "scipy":
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
+
+    if like == "torch":
+        mats = [torch.from_numpy(arg) if isinstance(arg, onp.ndarray) else arg for arg in args]
+        return torch.kron(*mats)
+
     return ar.numpy.kron(*args, like=like, **kwargs)
 
 
