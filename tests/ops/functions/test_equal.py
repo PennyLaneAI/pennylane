@@ -2084,6 +2084,8 @@ class TestHilbertSchmidt:
     v_wires2 = [1]
     u_tape1 = qml.tape.QuantumScript([qml.RX(0.2, 0)])
     u_tape1_eps = qml.tape.QuantumScript([qml.RX(0.2 + 1e-7, 0)])
+    u_tape1_trainable = qml.tape.QuantumScript([qml.RX(npp.array(0.2, requires_grad=True), 0)])
+    u_tape1_untrainable = qml.tape.QuantumScript([qml.RX(npp.array(0.2, requires_grad=False), 0)])
     u_tape2 = qml.tape.QuantumScript([qml.Hadamard(2)])
     v_params1 = [0.2, 0.3]
     v_params2 = [0.1, 0.5]
@@ -2092,6 +2094,12 @@ class TestHilbertSchmidt:
     v_params1_untrainable = npp.array(v_params1, requires_grad=False)
 
     op1 = qml.HilbertSchmidt(v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1)
+    op1_trainable = qml.HilbertSchmidt(
+        v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1_trainable
+    )
+    op1_untrainable = qml.HilbertSchmidt(
+        v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1_untrainable
+    )
     op1_eps = qml.HilbertSchmidt(
         v_params1_eps, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1
     )
@@ -2149,14 +2157,22 @@ class TestHilbertSchmidt:
         assert qml.equal(op, other_op) is False
         assert qml.equal(op, other_op, check_trainability=False) is True
 
-    @pytest.mark.parametrize("op, other_op", [(op6, op7)])
+    @pytest.mark.parametrize("op, other_op", [(op6, op7), (op1_untrainable, op1_trainable)])
     def test_trainability(self, op, other_op):
         """Test that differing trainabilities are found."""
         assert qml.equal(op, other_op) is False
         assert qml.equal(op, other_op, check_trainability=False) is True
 
-    @pytest.mark.parametrize("op, other_op", [(op1, op7)])
+    @pytest.mark.parametrize("op, other_op", [(op1, op7), (op1, op1_untrainable)])
     def test_interface(self, op, other_op):
-        """Test that differing trainabilities are found."""
+        """Test that differing interfaces are found."""
         assert qml.equal(op, other_op) is False
         assert qml.equal(op, other_op, check_interface=False) is True
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op6), (op1, op1_trainable)])
+    def test_interface_and_trainability(self, op, other_op):
+        """Test that simultaneously differing interfaces and trainabilities are found."""
+        assert qml.equal(op, other_op) is False
+        assert qml.equal(op, other_op, check_interface=False) is False
+        assert qml.equal(op, other_op, check_trainability=False) is False
+        assert qml.equal(op, other_op, check_interface=False, check_trainability=False) is True
