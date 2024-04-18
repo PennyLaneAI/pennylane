@@ -618,10 +618,10 @@ class TestSumExpand:
     def test_sum_expand_broadcasting(self, grouping):
         """Tests that the sum_expand transform works with broadcasting"""
 
-        dev = qml.device("default.qubit", wires=3)
+        _dev = qml.device("default.qubit", wires=3)
 
         @functools.partial(qml.transforms.sum_expand, group=grouping)
-        @qml.qnode(dev)
+        @qml.qnode(_dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(x, wires=1)
@@ -651,10 +651,10 @@ class TestSumExpand:
     def test_sum_expand_shot_vector(self, grouping, theta):
         """Tests that the sum_expand transform works with shot vectors"""
 
-        dev = qml.device("default.qubit", wires=3, shots=[(20000, 5)])
+        _dev = qml.device("default.qubit", wires=3, shots=[(20000, 5)])
 
         @functools.partial(qml.transforms.sum_expand, group=grouping)
-        @qml.qnode(dev)
+        @qml.qnode(_dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(x, wires=1)
