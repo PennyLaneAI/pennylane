@@ -65,6 +65,27 @@ def test_broadcasted_postselection(mocker):
     assert spy.call_count == 1
 
 
+def test_broadcasted_postselection_with_sample_error():
+    """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
+    tape = qml.tape.QuantumScript(
+        [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
+    )
+    dev = qml.device("default.qubit", shots=10)
+
+    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
+        qml.defer_measurements(tape)
+
+    @qml.defer_measurements
+    @qml.qnode(dev)
+    def circuit():
+        qml.RX([0.1, 0.2], 0)
+        qml.measure(0, postselect=1)
+        return qml.sample(wires=0)
+
+    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
+        _ = circuit()
+
+
 def test_postselection_error_with_wrong_device():
     """Test that an error is raised when postselection is used with a device
     other than `default.qubit`."""
