@@ -106,7 +106,10 @@ class PauliVSpace:
     def __init__(self, generators):
 
         if any(not isinstance(g, PauliSentence) for g in generators):
-            generators = [qml.pauli.pauli_sentence(g) if not isinstance(g, PauliSentence) else g for g in generators]
+            generators = [
+                qml.pauli.pauli_sentence(g) if not isinstance(g, PauliSentence) else g
+                for g in generators
+            ]
 
         # Get all Pauli words that are present in at least one Pauli sentence
         all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
@@ -170,7 +173,9 @@ class PauliVSpace:
         for ps in other:
             # TODO: Potential speed-up by computing the maximal linear independent set for all current basis vectors + other, essentially algorithm1 in https://arxiv.org/abs/1012.5256
             self._M, self._pw_to_idx, self._rank, self._num_pw, is_independent = (
-                self._check_independence(self._M, ps, self._pw_to_idx, self._rank, self._num_pw, tol)
+                self._check_independence(
+                    self._M, ps, self._pw_to_idx, self._rank, self._num_pw, tol
+                )
             )
             if is_independent:
                 self._basis.append(ps)

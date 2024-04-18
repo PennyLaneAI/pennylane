@@ -62,16 +62,15 @@ class TestPauliVSpace:
         assert vspace._rank == 2
         assert vspace._num_pw == 2
         assert len(vspace._pw_to_idx) == 2
-    
+
     def test_init_with_ops(self):
         """Test that initialization with PennyLane operators, PauliWord and PauliSentence works"""
-        ops = [qml.X(0), PauliWord({1:"X"})]
+        ops = [qml.X(0), PauliWord({1: "X"})]
         vspace = qml.pauli.PauliVSpace(ops)
         vspace.add(qml.Y(0))
 
         true_res = qml.pauli.PauliVSpace([qml.X(0), qml.X(1), qml.Y(0)])
         assert vspace == true_res
-        
 
     ADD_LINEAR_INDEPENDENT = (
         (ops2, PauliWord({10: "Y"}), ops2plusY10),
