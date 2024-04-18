@@ -160,7 +160,7 @@ Dynamical Lie Algebra (DLA) functionality in PennyLane.
 
 See our `introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
-.. currentmodule:: pennylane.pauli.dla
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api

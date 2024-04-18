@@ -365,7 +365,8 @@ class TestLieClosure:
         res11 = [op.pauli_rep for op in res11]  # back to pauli_rep for easier comparison
         assert PauliVSpace(res11) == PauliVSpace(dla11)
 
-    def test_lie_closure_with_PauliWords(self):
+    @pytest.mark.parametrize("pauli", [True, False])
+    def test_lie_closure_with_PauliWords(self, pauli):
         """Test that lie_closure works properly with PauliWords"""
         gen = [
             PauliWord({0: "X", 1: "X"}),
@@ -379,7 +380,7 @@ class TestLieClosure:
         ]
         dla = [op.pauli_rep for op in dla]
 
-        res = lie_closure(gen)
+        res = lie_closure(gen, pauli=pauli)
 
         res = [op.pauli_rep for op in res]  # convert to pauli_rep for easier comparison
         assert PauliVSpace(res) == PauliVSpace(dla)

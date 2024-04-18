@@ -43,9 +43,9 @@ def lie_closure(
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (Union[int, bool]): verbosity during Lie closure calculation. Default is ``0``.
-        pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` instances are input and returned.
-            This can help with performance to avoid unnecessary conversions from :class:`~.PauliSentence` to :class:`~pennylane.operation.Operator`
-            or :class:`~.PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~.PauliSentence` instances.
+        pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
+            This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
+            and vice versa. Note that the input in that case also has to be a list of :class:`~.PauliSentence` or :class:`~.PauliWord` instances.
             Default is ``False``.
 
     Returns:
@@ -110,7 +110,7 @@ def lie_closure(
         pennylane.pauli.pauli_arithmetic.PauliSentence
 
     """
-    if not all(isinstance(op, PauliSentence) for op in generators):
+    if not all(isinstance(op, (PauliSentence, PauliWord)) for op in generators):
         if pauli:
             raise TypeError(
                 "All generators need to be of type PauliSentence when using pauli=True in lie_closure."
