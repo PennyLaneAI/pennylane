@@ -46,7 +46,7 @@ Summary of the update
   >>> X(0)
   X(0)
 
-  The original long-form names :class:`~Identity`, :class:`~PauliX`, :class:`~PauliY`, and :class:`~PauliZ` remain available, but
+  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available, but
   use of the short-form names is now recommended.
 
 * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
