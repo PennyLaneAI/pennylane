@@ -452,6 +452,9 @@
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
 
+* Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
+  [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
