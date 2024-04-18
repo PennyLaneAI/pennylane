@@ -62,7 +62,7 @@ def structure_constants(
             Default is ``False``.
 
     Returns:
-        TensorLike: The adjoint representation of shape ``(d, d, d)``.
+        TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
     **Example**
 
@@ -91,7 +91,8 @@ def structure_constants(
     >>> adjoint_rep[0, 1, 3]
     -2.
 
-    We can also look at the overall adjoint action of the first element of the DLA on other elements, :math:`G_0`, ``dla[0] = X(0) @ X(1)``.
+    We can also look at the overall adjoint action of the first element :math:`G_0 = X_{0} \otimes X_{1}` of the DLA on other elements.
+    In particular, at :math:`\left(\text{ad}(iG_0)\right)_{\alpha, \beta} = f^0_{\alpha, \beta}`, which corresponds to the following matrix.
 
     >>> adjoint_rep[0]
     array([[ 0.,  0.,  0.,  0.,  0.,  0.],
