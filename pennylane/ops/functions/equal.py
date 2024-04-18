@@ -562,16 +562,6 @@ def _equal_hilbert_schmidt(
         "atol": atol,
         "rtol": rtol,
     }
-    # Check tape hyperparameters using qml.equal rather than == where necessary
-    if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
-        return False
-    if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
-        return False
-    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
-        return False
-    if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
-        return False
-
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
             if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
@@ -581,5 +571,15 @@ def _equal_hilbert_schmidt(
         for params_1, params_2 in zip(op1.data, op2.data):
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
+
+    # Check tape hyperparameters using qml.equal rather than == where necessary
+    if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
+        return False
+    if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
+        return False
+    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
+        return False
+    if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
+        return False
 
     return True
