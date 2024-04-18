@@ -375,6 +375,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* (In)equality of `qml.HilbertSchmidt` instances is now reported correctly by `qml.equal`.
+  [(#5538)](https://github.com/PennyLaneAI/pennylane/pull/5538)
+
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
