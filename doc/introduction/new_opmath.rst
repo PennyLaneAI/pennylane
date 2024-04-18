@@ -34,46 +34,46 @@ The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ide
 If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
 You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
 
-You can now easily access Pauli operators via ``I``, ``X``, ``Y``, and ``Z``.
+  * You can now easily access Pauli operators via ``I``, ``X``, ``Y``, and ``Z``.
 
->>> from pennylane import I, X, Y, Z
->>> X(0)
-X(0)
+    >>> from pennylane import I, X, Y, Z
+    >>> X(0)
+    X(0)
 
-The original long-form names :class:`~Identity`, :class:`~PauliX`, :class:`~PauliY`, and :class:`~PauliZ` remain available, but
-use of the short-form names is now recommended.
+    The original long-form names :class:`~Identity`, :class:`~PauliX`, :class:`~PauliY`, and :class:`~PauliZ` remain available, but
+    use of the short-form names is now recommended.
 
-Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
-representation will be automatically used for calculations when available.
+  * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
+    representation will be automatically used for calculations when available.
 
-The Pauli representation can be optionally accessed via ``op.pauli_rep``:
+    The Pauli representation can be optionally accessed via ``op.pauli_rep``:
 
->>> op = X(0) + Y(0)
->>> op.pauli_rep
-1.0 * X(0)
-+ 1.0 * Y(0)
+    >>> op = X(0) + Y(0)
+    >>> op.pauli_rep
+    1.0 * X(0)
+    + 1.0 * Y(0)
 
-Extensive improvements have been made to the string representations of PennyLane operators,
-making them shorter and possible to copy-paste as valid PennyLane code.
+  * Extensive improvements have been made to the string representations of PennyLane operators,
+    making them shorter and possible to copy-paste as valid PennyLane code.
 
->>> 0.5 * X(0)
-0.5 * X(0)
->>> 0.5 * (X(0) + Y(1))
-0.5 * (X(0) + Y(1))
+    >>> 0.5 * X(0)
+    0.5 * X(0)
+    >>> 0.5 * (X(0) + Y(1))
+    0.5 * (X(0) + Y(1))
 
-Sums with many terms are broken up into multiple lines, but can still be copied back as valid
-code:
+    Sums with many terms are broken up into multiple lines, but can still be copied back as valid
+    code:
 
->>> 0.5 * (X(0) @ X(1)) + 0.7 * (X(1) @ X(2)) + 0.8 * (X(2) @ X(3))
-(
-    0.5 * (X(0) @ X(1))
-  + 0.7 * (X(1) @ X(2))
-  + 0.8 * (X(2) @ X(3))
-)
+    >>> 0.5 * (X(0) @ X(1)) + 0.7 * (X(1) @ X(2)) + 0.8 * (X(2) @ X(3))
+    (
+        0.5 * (X(0) @ X(1))
+      + 0.7 * (X(1) @ X(2))
+      + 0.8 * (X(2) @ X(3))
+    )
 
-Linear combinations of operators and operator multiplication via :class:`~Sum` and :class:`~Prod`, respectively,
-have been updated to reach feature parity with :class:`~Hamiltonian` and :class:`~Tensor`, respectively.
-This should minimize the effort to port over any existing code.
+  * Linear combinations of operators and operator multiplication via :class:`~Sum` and :class:`~Prod`, respectively,
+    have been updated to reach feature parity with :class:`~Hamiltonian` and :class:`~Tensor`, respectively.
+    This should minimize the effort to port over any existing code.
 
 .. details::
     :title: Technical details
