@@ -26,7 +26,7 @@ fonttools==4.51.0
 future==1.0.0
 gast==0.5.4
 google-pasta==0.2.0
-grpcio==1.62.1
+grpcio==1.62.2
 h5py==3.11.0
 identify==2.5.35
 idna==3.7
@@ -72,7 +72,7 @@ pytest-split==0.8.2
 pytest-xdist==3.5.0
 python-dateutil==2.9.0.post0
 PyYAML==6.0.1
-qdldl==0.1.7.post1
+qdldl==0.1.7.post2
 requests==2.31.0
 rich==13.7.1
 rustworkx==0.14.2

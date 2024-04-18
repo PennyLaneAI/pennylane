@@ -56,7 +56,7 @@ pytest-xdist==3.5.0
 python-dateutil==2.9.0.post0
 pytorch-triton-rocm==2.2.0
 PyYAML==6.0.1
-qdldl==0.1.7.post1
+qdldl==0.1.7.post2
 requests==2.31.0
 rustworkx==0.14.2
 scipy==1.11.4
