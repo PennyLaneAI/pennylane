@@ -734,7 +734,7 @@ class TestLinearCombination:
         (qml.ops.LinearCombination([0.5], [X(0) @ X(1)]), qml.s_prod(0.5, X(0) @ X(1))),
         (qml.ops.LinearCombination([0.5], [X(0) + X(1)]), qml.s_prod(0.5, qml.sum(X(0), X(1)))),
         (qml.ops.LinearCombination([1.0], [X(0)]), X(0)),
-        # (qml.ops.LinearCombination([1.0], [qml.Hadamard(0)]), qml.Hadamard(0)), # TODO fix in qml.equal
+        # (qml.ops.LinearCombination([1.0], [qml.Hadamard(0)]), qml.Hadamard(0)), # TODO fix qml.equal check for Observables having to be the same type
         (qml.ops.LinearCombination([1.0], [X(0) @ X(1)]), X(0) @ X(1)),
     )
 
