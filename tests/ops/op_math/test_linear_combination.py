@@ -560,6 +560,7 @@ def circuit2(param):
 dev = qml.device("default.qubit", wires=2)
 
 
+@pytest.mark.usefixtures("use_new_opmath")
 class TestLinearCombination:
     """Test the LinearCombination class"""
 
@@ -943,7 +944,6 @@ class TestLinearCombination:
 
     def test_LinearCombination_queue_inside(self):
         """Tests that LinearCombination are queued correctly when components are instantiated inside the recording context."""
-        assert qml.operation.active_new_opmath()
         with qml.queuing.AnnotatedQueue() as q:
             m = qml.expval(qml.ops.LinearCombination([1, 3, 1], [X(1), Z(0) @ Z(2), Z(1)]))
 
