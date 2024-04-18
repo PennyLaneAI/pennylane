@@ -56,6 +56,7 @@ accessible from the ``pennylane.devices`` submodule.
     Device
     DefaultQubit
     NullQubit
+    DefaultQutritMixed
 
 Preprocessing Transforms
 ------------------------
