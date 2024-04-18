@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 
-from pennylane.capture.meta_type import _get_abstract_operator
+from pennylane.capture.meta_type import _get_abstract_operator, PLXPRObj
 
 jax = pytest.importorskip("jax")
 
@@ -33,6 +33,44 @@ def enable_disable_plxpr():
     qml.capture.enable_plxpr()
     yield
     qml.capture.disable_plxpr()
+
+
+def test_custom_PLXPRObj():
+    """Test that we can capture custom classes with the PLXPRObj metaclass by defining
+    the _primitive_bind_call method."""
+
+    p = jax.core.Primitive("p")
+
+    @p.def_abstract_eval
+    def _(a):
+        return jax.core.ShapedArray(a.shape, a.dtype)
+
+    # pylint: disable=too-few-public-methods
+    class MyObj(metaclass=PLXPRObj):
+        """A PLXPRObj class with a _primitive_bind_call class method."""
+
+        @classmethod
+        def _primitive_bind_call(cls, *args, **kwargs):
+            return p.bind(*args, **kwargs)
+
+    jaxpr = jax.make_jaxpr(MyObj)(0.5)
+
+    assert len(jaxpr.eqns) == 1
+    assert jaxpr.eqns[0].primitive == p
+
+
+def test_custom_plxprobj_no_bind_primitive_call():
+    """Test that an NotImplementedError is raised if the type does not define _primitive_bind_call."""
+
+    # pylint: disable=too-few-public-methods
+    class MyObj(metaclass=PLXPRObj):
+        """A class that does not define _primitive_bind_call."""
+
+        def __init__(self, a):
+            self.a = a
+
+    with pytest.raises(NotImplementedError, match="Types using PLXPRObj must implement"):
+        MyObj(0.5)
 
 
 def test_operators_constructed_when_plxpr_enabled():
@@ -72,9 +110,9 @@ def test_hybrid_capture_parametrization():
     jaxpr = jax.make_jaxpr(f)(0.5)
     assert len(jaxpr.eqns) == 4
 
-    in1 = jaxpr.eqns[0].invars[0]
+    in1 = jaxpr.eqns[0].invars[1]
     assert jaxpr.eqns[1].invars[0] == in1
-    assert jaxpr.enqs[2].invars[0] == in1
+    assert jaxpr.eqns[2].invars[0] == in1
     assert jaxpr.eqns[3].invars[-1] == in1  # the wire
 
     assert jaxpr.eqns[0].primitive.name == "mul"
