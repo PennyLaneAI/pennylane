@@ -462,7 +462,11 @@ class TestModifiedTemplates:
 
         v_params = np.array([0.6])
 
-        kwargs = {"u_tape": qml.tape.QuantumScript([qml.Hadamard(0)]), "v_function": lambda params: qml.RZ(params[0], wires=1), "v_wires":[1]}
+        kwargs = {
+            "u_tape": qml.tape.QuantumScript([qml.Hadamard(0)]),
+            "v_function": lambda params: qml.RZ(params[0], wires=1),
+            "v_wires": [1],
+        }
 
         def qfunc(v_params):
             template(v_params, **kwargs)
@@ -507,7 +511,13 @@ class TestModifiedTemplates:
         n_block_wires = 2
         n_blocks = template.get_n_blocks(wires, n_block_wires)
 
-        kwargs = {"wires": wires, "n_block_wires": n_block_wires, "block": block, "n_params_block": 2, "template_weights":[[0.1, -0.3]] * n_blocks}
+        kwargs = {
+            "wires": wires,
+            "n_block_wires": n_block_wires,
+            "block": block,
+            "n_params_block": 2,
+            "template_weights": [[0.1, -0.3]] * n_blocks,
+        }
 
         def qfunc():
             template(**kwargs)
@@ -597,6 +607,7 @@ class TestModifiedTemplates:
         xs = np.linspace(-np.pi, np.pi, M)
         probs = np.array([norm().pdf(x) for x in xs])
         probs /= np.sum(probs)
+
         def func(i):
             return np.sin(xs[i]) ** 2
 
