@@ -348,14 +348,15 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
 
     Returns:
         tuple[Sequence[.QuantumTape], Callable]: Returns a tuple containing a list of
-            quantum tapes to be evaluated, and a function to be applied to these
-            tape executions to compute the expectation value.
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions to compute the expectation value.
 
     **Example**
 
     Given a Sum operator,
 
     .. code-block:: python3
+
         S = qml.sum(qml.prod(qml.Y(2), qml.Z(1)), qml.s_prod(0.5, qml.Z(2)), qml.Z(1))
 
     and a tape of the form,
