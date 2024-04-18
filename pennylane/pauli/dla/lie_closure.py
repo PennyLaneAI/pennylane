@@ -140,7 +140,7 @@ class PauliVSpace:
         return len(self.basis)
 
     def add(self, other, tol=1e-15):
-        r"""Adding Pauli sentences if they are linearly independent``.
+        r"""Adding Pauli sentences if they are linearly independent.
 
         Args:
             other (List[:class:`~.PauliWord`, :class:`~.PauliSentence`, :class:`~.Operator`]): List of candidate operators to add to the ``PauliVSpace``, if they are linearly independent.
