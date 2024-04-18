@@ -34,6 +34,9 @@ The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ide
 If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
 You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
 
+  * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
+    standard dunder methods like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.
+
   * You can now easily access Pauli operators via ``I``, ``X``, ``Y``, and ``Z``.
 
     >>> from pennylane import I, X, Y, Z
@@ -70,10 +73,6 @@ You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath
       + 0.7 * (X(1) @ X(2))
       + 0.8 * (X(2) @ X(3))
     )
-
-  * Linear combinations of operators and operator multiplication via :class:`~Sum` and :class:`~Prod`, respectively,
-    have been updated to reach feature parity with :class:`~Hamiltonian` and :class:`~Tensor`, respectively.
-    This should minimize the effort to port over any existing code.
 
 .. details::
     :title: Technical details
