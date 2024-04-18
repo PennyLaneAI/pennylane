@@ -195,7 +195,10 @@ class SampleMP(SampleMeasurement):
             # Computational basis samples
             return int
         int_eigval_obs = {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-        tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+        if not isinstance(self.obs, qml.ops.Prod):
+            tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+        else:
+            tensor_terms = [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
