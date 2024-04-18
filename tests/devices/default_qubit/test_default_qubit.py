@@ -1362,6 +1362,19 @@ class TestPRNGKeySeed:
 
         assert np.all(result1 == result2)
 
+    def test_get_prng_keys(self):
+        """Test the get_prng_keys method."""
+        import jax
+
+        dev = DefaultQubit(seed=jax.random.PRNGKey(123))
+
+        assert len(dev.get_prng_keys()) == 1
+        assert len(dev.get_prng_keys(num=1)) == 1
+        assert len(dev.get_prng_keys(num=2)) == 2
+
+        with pytest.raises(ValueError):
+            dev.get_prng_keys(num=0)
+
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_different_prng_key(self, max_workers):
         """Test that different devices given different jax.random.PRNGKey values will produce
