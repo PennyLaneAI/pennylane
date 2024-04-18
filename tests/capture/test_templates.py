@@ -316,7 +316,7 @@ class TestModifiedTemplates:
         O = qml.FlipSign(1, 0)
         iters = 3
 
-        kwargs = dict(iters=iters, fixed_point=False, p_min=0.4)
+        kwargs = {"iters": iters, "fixed_point": False, "p_min": 0.4}
 
         def qfunc(U, O):
             qml.AmplitudeAmplification(U, O, **kwargs)
@@ -427,7 +427,7 @@ class TestModifiedTemplates:
 
         weight = 0.251
 
-        kwargs = dict(wires1=[0, 6], wires2=[2, 3])
+        kwargs = {"wires1": [0, 6], "wires2": [2, 3]}
 
         def qfunc(weight):
             qml.FermionicDoubleExcitation(weight, **kwargs)
@@ -462,11 +462,7 @@ class TestModifiedTemplates:
 
         v_params = np.array([0.6])
 
-        kwargs = dict(
-            u_tape=qml.tape.QuantumScript([qml.Hadamard(0)]),
-            v_function=lambda params: qml.RZ(params[0], wires=1),
-            v_wires=[1],
-        )
+        kwargs = {"u_tape": qml.tape.QuantumScript([qml.Hadamard(0)]), "v_function": lambda params: qml.RZ(params[0], wires=1), "v_wires":[1]}
 
         def qfunc(v_params):
             template(v_params, **kwargs)
@@ -500,23 +496,18 @@ class TestModifiedTemplates:
         """Test the primitive bind call of MERA, MPS, and TTN."""
         qml.capture.enable_plxpr()
 
-        block = lambda weights, wires: [
-            qml.CNOT(wires),
-            qml.RY(weights[0], wires[0]),
-            qml.RY(weights[1], wires[1]),
-        ]
+        def block(weights, wires):
+            return [
+                qml.CNOT(wires),
+                qml.RY(weights[0], wires[0]),
+                qml.RY(weights[1], wires[1]),
+            ]
 
         wires = list(range(4))
         n_block_wires = 2
         n_blocks = template.get_n_blocks(wires, n_block_wires)
 
-        kwargs = dict(
-            wires=wires,
-            n_block_wires=n_block_wires,
-            block=block,
-            n_params_block=2,
-            template_weights=[[0.1, -0.3]] * n_blocks,
-        )
+        kwargs = {"wires": wires, "n_block_wires": n_block_wires, "block": block, "n_params_block": 2, "template_weights":[[0.1, -0.3]] * n_blocks}
 
         def qfunc():
             template(**kwargs)
@@ -602,16 +593,17 @@ class TestModifiedTemplates:
         m = 5
         M = 2**m
         n = 10
-        N = 2**n
 
         xs = np.linspace(-np.pi, np.pi, M)
         probs = np.array([norm().pdf(x) for x in xs])
         probs /= np.sum(probs)
-        func = lambda i: np.sin(xs[i]) ** 2
+        def func(i):
+            return np.sin(xs[i]) ** 2
+
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
 
-        kwargs = dict(func=func, target_wires=target_wires, estimation_wires=estimation_wires)
+        kwargs = {"func": func, "target_wires": target_wires, "estimation_wires": estimation_wires}
 
         def qfunc(probs):
             qml.QuantumMonteCarlo(probs, **kwargs)
@@ -651,7 +643,6 @@ class TestModifiedTemplates:
         qml.capture.enable_plxpr()
 
         op = qml.RX(np.pi / 2, 0) @ qml.Hadamard(1)
-        estimation_wires = range(1, 4)
 
         def qfunc(op):
             template(op, **kwargs)
