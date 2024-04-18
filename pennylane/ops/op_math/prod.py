@@ -280,6 +280,13 @@ class Prod(CompositeOp):
     @property
     def has_decomposition(self):
         return True
+    
+    @property
+    def obs(self):
+        warnings.warn(
+            "Accessing the terms of a tensor product operator via op.obs is deprecated, please use op.operands instead.",
+            qml.PennyLaneDeprecationWarning)
+        return self.operands
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
