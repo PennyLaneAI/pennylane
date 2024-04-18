@@ -348,6 +348,7 @@ class TestObservableReturn:
         assert gen.name == "Hamiltonian"
         assert gen.compare(ObservableOp(0.5, wires=0).generator())
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_observable_opmath(self):
         """Test a generator that returns a single observable is correct with opmath enabled"""
         gen = qml.generator(ObservableOp, format="observable")(0.5, wires=0)
@@ -361,6 +362,7 @@ class TestObservableReturn:
         assert gen.name == "Hamiltonian"
         assert gen.compare(TensorOp(0.5, wires=[0, 1]).generator())
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_tensor_observable_opmath(self):
         """Test a generator that returns a tensor observable is correct with opmath enabled"""
         gen = qml.generator(TensorOp, format="observable")(0.5, wires=[0, 1])
