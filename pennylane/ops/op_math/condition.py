@@ -52,10 +52,18 @@ class Conditional(Operation):
     def __init__(self, expr, then_op: Type[Operation], id=None):
         self.meas_val = expr
         self.then_op = then_op
-        super().__init__(wires=then_op.wires, id=id)
+        super().__init__(*then_op.data, wires=then_op.wires, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return self.then_op.label(decimals=decimals, base_label=base_label, cache=cache)
+
+    @property
+    def num_params(self):
+        return self.then_op.num_params
+
+    @property
+    def ndim_params(self):
+        return self.then_op.ndim_params
 
     def map_wires(self, wire_map):
         meas_val = self.meas_val.map_wires(wire_map)
@@ -98,7 +106,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
-            be used when is decorated by :func:`~.qjit`.
+            be used when decorated by :func:`~.qjit`.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned

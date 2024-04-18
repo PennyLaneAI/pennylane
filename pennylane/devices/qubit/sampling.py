@@ -268,31 +268,6 @@ def _measure_with_samples_diagonalizing_gates(
 
         return tuple(processed)
 
-    # if there is a shot vector, build a list containing results for each shot entry
-    if shots.has_partitioned_shots:
-        processed_samples = []
-        for s in shots:
-            # currently we call sample_state for each shot entry, but it may be
-            # better to call sample_state just once with total_shots, then use
-            # the shot_range keyword argument
-            try:
-                samples = sample_state(
-                    state,
-                    shots=s,
-                    is_state_batched=is_state_batched,
-                    wires=wires,
-                    rng=rng,
-                    prng_key=prng_key,
-                )
-            except ValueError as e:
-                if str(e) != "probabilities contain NaN":
-                    raise e
-                samples = qml.math.full((s, len(wires)), 0)
-
-            processed_samples.append(_process_single_shot(samples))
-
-        return tuple(zip(*processed_samples))
-
     try:
         samples = sample_state(
             state,
@@ -307,7 +282,15 @@ def _measure_with_samples_diagonalizing_gates(
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
-    return _process_single_shot(samples)
+    processed_samples = []
+    for lower, upper in shots.bins():
+        shot = _process_single_shot(samples[..., lower:upper, :])
+        processed_samples.append(shot)
+
+    if shots.has_partitioned_shots:
+        return tuple(zip(*processed_samples))
+
+    return processed_samples[0]
 
 
 def _measure_classical_shadow(
@@ -448,10 +431,34 @@ def sample_state(
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
+    # when using the torch interface with float32 as default dtype,
+    # probabilities must be renormalized as they may not sum to one
+    # see https://github.com/PennyLaneAI/pennylane/issues/5444
+    norm = qml.math.sum(probs, axis=-1)
+    abs_diff = np.abs(norm - 1.0)
+    cutoff = 1e-07
+
     if is_state_batched:
+
+        normalize_condition = False
+
+        for s in abs_diff:
+            if s != 0:
+                normalize_condition = True
+            if s > cutoff:
+                normalize_condition = False
+                break
+
+        if normalize_condition:
+            probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
+
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
+
+        if 0 < abs_diff < cutoff:
+            probs /= norm
+
         samples = rng.choice(basis_states, shots, p=probs)
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]

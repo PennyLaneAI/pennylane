@@ -14,7 +14,6 @@
 """
 This module contains the qml.counts measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Optional
 import numpy as np
 
@@ -26,7 +25,11 @@ from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
+def counts(
+    op=None,
+    wires=None,
+    all_outcomes=False,
+) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -142,14 +145,11 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
 
         return CountsMP(obs=op, all_outcomes=all_outcomes)
 
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
-
     if wires is not None:
         if op is not None:
             raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
+                "Cannot specify the wires to sample if an observable is provided. The wires "
+                "to sample will be determined directly from the observable."
             )
         wires = Wires(wires)
 
@@ -186,6 +186,8 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
+        if wires is not None:
+            wires = Wires(wires)
         super().__init__(obs, wires, eigvals, id)
 
     def _flatten(self):
@@ -312,7 +314,7 @@ class CountsMP(SampleMeasurement):
             exp2 = 2 ** np.arange(num_wires - 1, -1, -1)
             samples = np.einsum("...i,i", samples, exp2)
             new_shape = samples.shape
-            samples = qml.math.cast_like(samples, qml.math.int8(0))
+            samples = qml.math.cast_like(samples, qml.math.int64(0))
             samples = list(map(convert, samples.ravel()))
             samples = np.array(samples).reshape(new_shape)
 
@@ -339,6 +341,15 @@ class CountsMP(SampleMeasurement):
             states, _counts = result
             for state, count in zip(qml.math.unwrap(states), _counts):
                 outcome_dict[state] = count
+
+        def outcome_to_eigval(outcome: str):
+            return self.eigvals()[int(outcome, 2)]
+
+        if self._eigvals is not None:
+            outcome_dicts = [
+                {outcome_to_eigval(outcome): count for outcome, count in outcome_dict.items()}
+                for outcome_dict in outcome_dicts
+            ]
 
         return outcome_dicts if batched else outcome_dicts[0]
 

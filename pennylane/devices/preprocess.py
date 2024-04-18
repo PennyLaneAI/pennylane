@@ -157,7 +157,7 @@ def mid_circuit_measurements(
     and use the ``qml.defer_measurements`` transform otherwise.
     """
 
-    if tape.shots and tape.batch_size is None:
+    if tape.shots:
         return qml.dynamic_one_shot(tape)
     return qml.defer_measurements(tape, device=device)
 
@@ -389,7 +389,7 @@ def validate_observables(
     ...    return obj.name in {"PauliX", "PauliY", "PauliZ"}
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0) + qml.Y(0))])
     >>> validate_observables(tape, accepted_observable)
-    DeviceError: Observable <Hamiltonian: terms=2, wires=[0]> not supported on device
+    DeviceError: Observable Z(0) + Y(0) not supported on device
 
     Note that if the observable is a :class:`~.Tensor`, the validation is run on each object in the
     ``Tensor`` instead.

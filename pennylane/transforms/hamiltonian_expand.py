@@ -20,7 +20,7 @@ from typing import List, Sequence, Callable
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
-from pennylane.ops import SProd, Sum
+from pennylane.ops import SProd, Sum, Prod
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
 
@@ -44,13 +44,14 @@ def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
             r_group = qml.math.stack(r_group)
         if qml.math.shape(r_group) == ():
             r_group = qml.math.reshape(r_group, (1,))
-        if batch_size:
-            r_group = r_group.T
+        if batch_size and batch_size > 1 and len(c_group) > 1:
+            r_group = qml.math.moveaxis(r_group, -1, -2)
 
         if len(c_group) == 1 and len(r_group) != 1:
             dot_products.append(r_group * c_group)
         else:
             dot_products.append(qml.math.dot(r_group, c_group))
+
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
     interface = qml.math.get_deep_interface(res_groupings)
     return qml.math.asarray(summed_dot_products + offset, like=interface)
@@ -88,12 +89,10 @@ def _grouping_hamiltonian_expand(tape):
         new_tape = new_tape.expand(stop_at=lambda obj: True)
         tapes.append(new_tape)
 
-    batch_size = tape.batch_size
-
     return tapes, partial(
         grouping_processing_fn,
         coeff_groupings=coeff_groupings,
-        batch_size=batch_size,
+        batch_size=tape.batch_size,
         offset=offset,
     )
 
@@ -341,6 +340,8 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(tape.measurements):
         obs = m.obs
+        if isinstance(obs, Prod) and isinstance(m, ExpectationMP):
+            obs = obs.simplify()
         if isinstance(obs, Sum) and isinstance(m, ExpectationMP):
             for summand in obs.operands:
                 coeff = 1

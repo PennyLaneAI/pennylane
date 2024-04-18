@@ -124,6 +124,7 @@ class TestInheritanceMixins:
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_nonparametric_ops(self):
         """Test adjoint initialization for a non parameteric operation."""
         base = qml.PauliX("a")
@@ -1049,7 +1050,6 @@ class TestAdjointConstructorOutsideofQueuing:
         assert isinstance(out, qml.RX)
         assert out.data == (-x,)
 
-    @pytest.mark.xfail  # TODO not sure what the expected behavior here is with new opmath
     def test_observable(self):
         """Test providing a preconstructed Observable outside of a queuing context."""
 
@@ -1057,7 +1057,9 @@ class TestAdjointConstructorOutsideofQueuing:
         obs = adjoint(base)
 
         assert isinstance(obs, Adjoint)
-        assert isinstance(obs, qml.operation.Observable)
+        assert isinstance(base, qml.operation.Observable) == isinstance(
+            obs, qml.operation.Observable
+        )
         assert obs.base is base
 
     def test_single_op_function(self):
