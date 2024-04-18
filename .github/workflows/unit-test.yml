@@ -177,6 +177,14 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
 
+      - name: Upload durations
+        if: inputs.pipeline_mode == 'unit-tests'
+        uses: actions/upload-artifact@v3
+        with:
+          name: durations
+          path: .test_durations
+          if-no-files-found: warn
+
       - name: Adjust coverage file for Codecov
         if: inputs.pipeline_mode == 'unit-tests'
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
