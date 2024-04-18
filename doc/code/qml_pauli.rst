@@ -14,7 +14,7 @@ for Pauli-word partitioning functionality used in measurement optimization.
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
-    :skip: PauliVSpace, lie_closure
+    :skip: lie_closure
 
 PauliWord and PauliSentence
 ---------------------------
@@ -164,5 +164,4 @@ See our `introduction to Dynamical Lie Algebras for quantum practitioners <https
 .. autosummary::
     :toctree: api
 
-    ~PauliVSpace
     ~lie_closure
