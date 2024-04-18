@@ -177,7 +177,6 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
-
 <h3>Improvements 🛠</h3>
 
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
@@ -233,6 +232,9 @@
 
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+
+* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
+  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
 <h4>Community contributions 🥳</h4>
 
