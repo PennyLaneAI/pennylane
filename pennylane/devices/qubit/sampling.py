@@ -279,34 +279,8 @@ def _measure_with_samples_diagonalizing_gates(
 
         return tuple(processed)
 
-    # if there is a shot vector, build a list containing results for each shot entry
-    if shots.has_partitioned_shots:
-        processed_samples = []
-        for s in shots:
-            # currently we call sample_state for each shot entry, but it may be
-            # better to call sample_state just once with total_shots, then use
-            # the shot_range keyword argument
-            try:
-                prng_key, key = jax_random_split(prng_key)
-                samples = sample_state(
-                    state,
-                    shots=s,
-                    is_state_batched=is_state_batched,
-                    wires=wires,
-                    rng=rng,
-                    prng_key=key,
-                )
-            except ValueError as e:
-                if str(e) != "probabilities contain NaN":
-                    raise e
-                samples = qml.math.full((s, len(wires)), 0)
-
-            processed_samples.append(_process_single_shot(samples))
-
-        return tuple(zip(*processed_samples))
-
     try:
-        prng_key, key = jax_random_split(prng_key)
+        prng_key, _ = jax_random_split(prng_key)
         samples = sample_state(
             state,
             shots=shots.total_shots,
