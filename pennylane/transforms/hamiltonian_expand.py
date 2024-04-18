@@ -493,6 +493,7 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
                 # If the single-term measurement already exists, it can be reused by all
                 # original measurements. In this case, add the existing single-term measurement
                 # to the list corresponding to this original measurement.
+                # pylint: disable=superfluous-parens
                 elif (sm := qml.expval(o)) in single_term_obs_measurements:
                     sm_indices_and_coeffs.append((single_term_obs_measurements[sm], c))
                 # Otherwise, add this new measurement to the list of single-term measurements.
