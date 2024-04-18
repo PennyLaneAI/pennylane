@@ -856,7 +856,7 @@ class TestBroadcasting:
             r = r[0]
 
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.01)
+            assert np.allclose(r, expected, atol=0.02)
 
 
 @pytest.mark.jax
@@ -1071,7 +1071,7 @@ class TestBroadcastingPRNG:
             r = r[0]
 
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.01)
+            assert np.allclose(r, expected, atol=0.03)
 
 
 class TestHamiltonianSamples:

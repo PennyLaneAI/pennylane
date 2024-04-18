@@ -320,7 +320,15 @@ def _measure_with_samples_diagonalizing_gates(
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
-    return _process_single_shot(samples)
+    processed_samples = []
+    for lower, upper in shots.bins():
+        shot = _process_single_shot(samples[..., lower:upper, :])
+        processed_samples.append(shot)
+
+    if shots.has_partitioned_shots:
+        return tuple(zip(*processed_samples))
+
+    return processed_samples[0]
 
 
 def _measure_classical_shadow(
