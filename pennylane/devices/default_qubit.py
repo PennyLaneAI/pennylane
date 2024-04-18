@@ -372,6 +372,28 @@ class DefaultQubit(Device):
             Additional information can be found in the
             `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
 
+        :title: Pseudo Random Numbers in JAX
+
+        A user may provide a ``jax.random.PRNGKey`` as a random seed.
+        It will be used by the device when executing circuits with finite shots.
+        The JAX RNG is notably different than the NumPy RNG as highlighted in the
+        `JAX documentation <https://jax.readthedocs.io/en/latest/jax-101/05-random-numbers.html>`_.
+        JAX does not keep track of a global seed or key, but needs one anytime it draws from a random number distribution.
+        Generating randomness therefore requires changing the key every time, which is done by "splitting" the key.
+        For example, when executing ``n`` circuits, the ``PRNGkey`` is split ``n`` times into 2 new keys
+        using ``jax.random.split`` to simulate a non-deterministic behaviour.
+        The device seed is modified in-place using the first key, and the second key is fed to the
+        circuit, and hence can be discarded after returning the results.
+        This same key may be split further down the stack if necessary so that no one key is ever
+        reused.
+
+        Another example is when simulating native mid-circuit measurements with ``s`` shots. The ``PRNGKey`` is
+        split into ``s`` new keys. Not performing the splitting would lead all samples to be either ``0`` or
+        ``1``, effectively eliminating stochastic behaviour when executing a circuit.
+
+        The user does not need to worry about this in practice as it happens transparently.
+        The original seed (or ``PRNGKey``) can be restored calling the ``reset_prng_key`` method if required.
+
 
     """
 
