@@ -31,9 +31,11 @@ Summary of the update
 ---------------------
 
 .. rst-class:: admonition tip
+
     The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
     If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
     You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
+
 
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
   standard dunder methods like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.
