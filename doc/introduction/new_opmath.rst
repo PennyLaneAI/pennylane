@@ -284,7 +284,7 @@ To help identify a fix, select the option below that describes your situation.
 
     * Use ``@pytest.mark.usefixtures("use_legacy_opmath")`` to test functionality that is explicitly only supported by legacy opmath, e.g. for backward compatibility.
       
-      .. code-bock:: python3
+      .. code-block:: python3
         @pytest.mark.usefixtures("use_legacy_opmath")
         def test_qml_hamiltonian_legacy_opmath():
             assert qml.Hamiltonian == qml.ops.Hamiltonian
@@ -295,7 +295,7 @@ To help identify a fix, select the option below that describes your situation.
     * Use ``@pytest.mark.usefixtures("use_new_opmath")`` to test functionality that `only` works with new opmath. That is because for the intermittent period 
       of supporting both systems, we periodically run the test suite with new opmath disabled.
 
-      .. code-bock:: python3
+      .. code-block:: python3
         @pytest.mark.usefixtures("use_new_opmath")
         def test_qml_hamiltonian_new_opmath():
             assert qml.Hamiltonian == qml.ops.LinearCombination
@@ -303,7 +303,7 @@ To help identify a fix, select the option below that describes your situation.
     * Use ``@pytest.mark.usefixtures("use_legacy_and_new_opmath")`` if you want to test support for both systems in one single test. You can use ``qml.operation.active_new_opmath``
       inside the test to account for minor differences between both systems.
 
-      .. code-bock:: python3
+      .. code-block:: python3
         @pytest.mark.usefixtures("use_legacy_and_new_opmath")
         def test_qml_hamiltonian_new_opmath():
             if qml.operation.active_new_opmath():
