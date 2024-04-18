@@ -152,8 +152,8 @@ class PauliVSpace:
         r"""Check if the :class:`~PauliSentence` ``pauli_sentence`` is linearly independent of the basis of ``PauliVSpace``.
 
         Args:
-            pauli_sentence (`~.PauliSentence`): Pauli sentence for which to add a column if independent.
-            tol (float): Numerical tolerance for linear independence check.
+            pauli_sentence (`~.PauliSentence`): Candidate Pauli sentence to check against the ``PauliVSpace`` basis for linear independence.
+            tol (float): Numerical tolerance for linear independence check. Defaults to ``1e-15``.
 
         Returns:
             bool: whether ``pauli_sentence`` was linearly independent
