@@ -56,6 +56,16 @@ def _check_tape_validity(tape: QuantumTape):
                 "measurements on a device that does not support them."
             )
 
+    samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
+    postselect_present = any(
+        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+    )
+    if postselect_present and samples_present and tape.batch_size is not None:
+        raise ValueError(
+            "Returning qml.sample is not supported when postselecting mid-circuit "
+            "measurements with broadcasting"
+        )
+
 
 def _collect_mid_measure_info(tape: QuantumTape):
     """Helper function to collect information related to mid-circuit measurements in the tape."""
