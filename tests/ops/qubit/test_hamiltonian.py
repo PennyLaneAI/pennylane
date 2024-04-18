@@ -14,7 +14,7 @@
 """
 Tests for the Hamiltonian class.
 """
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, superfluous-parens, unnecessary-dunder-call
 from collections.abc import Iterable
 from unittest.mock import patch
 

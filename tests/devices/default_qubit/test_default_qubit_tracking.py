@@ -255,8 +255,11 @@ def test_single_expval(mps, expected_exec, expected_shots):
         assert dev.tracker.totals["shots"] == 3 * expected_shots
 
 
-@pytest.mark.xfail  # TODO Prod instances are not automatically
+@pytest.mark.usefixtures("use_new_opmath")
+@pytest.mark.xfail(reason="bug in grouping for tracker with new opmath")
 def test_multiple_expval_with_prods():
+    """Can be combined with test below once the bug is fixed - there shouldn't
+    be a difference in behaviour between old and new opmath here"""
     mps, expected_exec, expected_shots = (
         [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliY(1))],
         1,
@@ -274,7 +277,7 @@ def test_multiple_expval_with_prods():
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
-def test_multiple_expval_with_Tensors_legacy_opmath():
+def test_multiple_expval_with_tensors_legacy_opmath():
     mps, expected_exec, expected_shots = (
         [qml.expval(qml.PauliX(0)), qml.expval(qml.operation.Tensor(qml.PauliX(0), qml.PauliY(1)))],
         1,
