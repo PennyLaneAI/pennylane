@@ -35,7 +35,8 @@ class PauliVSpace:
     For example the set of 3 linearly independent generators ``X(0) + X(1), X(0) + X(2), X(0) + 0.5 * Y(0)``
     can be represented as
 
-    .. code-block::python3
+    .. code-block:: python3
+
         [
             [1, 1, 1],
             [1, 0, 0],
@@ -46,7 +47,8 @@ class PauliVSpace:
     where each column represents one sentence, and each row represents the coefficient of the respective word in the sentence.
     To make sense of this representation one additionally needs to keep track of the mapping between keys and rows. In this case we have
 
-    .. code-block::python3
+    .. code-block:: python3
+
         pw_to_idx = {
             X(0) : 0,
             X(1) : 1,
@@ -57,13 +59,14 @@ class PauliVSpace:
     where we have set the numbering based on appearance in the list of generators. This mapping is in general not unique.
 
     Args:
-        generators [Iterable[Union[PauliWord, PauliSentence, Operator]]]: Operators that span the vector space.
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): Operators that span the vector space.
 
     **Example**
 
     Take a linearly dependent set of operators and span the PauliVSpace.
 
-    .. code-block::python3
+    .. code-block:: python3
+
         ops = [
             PauliSentence({
                 PauliWord({0:"X", 1:"X"}) : 1.,
@@ -182,7 +185,7 @@ class PauliVSpace:
         return self._basis
 
     def is_independent(self, pauli_sentence, tol=1e-15):
-        r"""Check if the :class:`~PauliSentence` ``pauli_sentence`` is linearly independent of the basis of ``PauliVSpace``.
+        r"""Check if the ``pauli_sentence`` is linearly independent of the basis of ``PauliVSpace``.
 
         Args:
             pauli_sentence (`~.PauliSentence`): Candidate Pauli sentence to check against the ``PauliVSpace`` basis for linear independence.
