@@ -167,7 +167,8 @@ class PauliVSpace:
     For example the set of 3 linearly independent generators ``X(0) + X(1), X(0) + X(2), X(0) + 0.5 * Y(0)``
     can be represented as
 
-    .. code-block::python3
+    .. code-block:: python3
+
         [
             [1, 1, 1],
             [1, 0, 0],
@@ -178,7 +179,8 @@ class PauliVSpace:
     where each column represents one sentence, and each row represents the coefficient of the respective word in the sentence.
     To make sense of this representation one additionally needs to keep track of the mapping between keys and rows. In this case we have
 
-    .. code-block::python3
+    .. code-block:: python3
+
         pw_to_idx = {
             X(0) : 0,
             X(1) : 1,
@@ -189,13 +191,14 @@ class PauliVSpace:
     where we have set the numbering based on appearance in the list of generators. This mapping is in general not unique.
 
     Args:
-        generators [Iterable[Union[PauliWord, PauliSentence, Operator]]]: Operators that span the vector space.
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): Operators that span the vector space.
 
     **Example**
 
     Take a linearly dependent set of operators and span the PauliVSpace.
 
-    .. code-block::python3
+    .. code-block:: python3
+
         ops = [
             PauliSentence({
                 PauliWord({0:"X", 1:"X"}) : 1.,
@@ -237,6 +240,12 @@ class PauliVSpace:
 
     def __init__(self, generators):
 
+        if any(not isinstance(g, PauliSentence) for g in generators):
+            generators = [
+                qml.pauli.pauli_sentence(g) if not isinstance(g, PauliSentence) else g
+                for g in generators
+            ]
+
         # Get all Pauli words that are present in at least one Pauli sentence
         all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
         num_pw = len(all_pws)
@@ -262,8 +271,32 @@ class PauliVSpace:
     def __len__(self):
         return len(self.basis)
 
-    def add(self, other):
-        """Adding a list of PauliSentences if they are linearly independent"""
+    def add(self, other, tol=1e-15):
+        r"""Adding Pauli sentences if they are linearly independent``.
+
+        Args:
+            other (List[:class:`~.PauliWord`, :class:`~.PauliSentence`, :class:`~.Operator`]): List of candidate operators to add to the ``PauliVSpace``, if they are linearly independent.
+            tol (float): Numerical tolerance for linear independence check. Defaults to ``1e-15``.
+
+        Returns:
+            List: New basis vectors after adding the linearly independent ones from ``other``.
+
+        **Example**
+
+        We can generate a ``PauliVSpace`` and add a linearly independent operator to its basis.
+
+        >>> ops = [X(0), X(1)]
+        >>> vspace = qml.pauli.PauliVSpace(ops)
+        >>> vspace.add(Y(0))
+        >>> vspace
+        [1.0 * X(0), 1.0 * X(1), 1.0 * Y(0)]
+
+        We can add a list of operators at once. Only those that are linearly dependent with the current ``PauliVSpace`` are added.
+
+        >>> vspace.add([Z(0), X(0)])
+        [1.0 * X(0), 1.0 * X(1), 1.0 * Y(0), 1.0 * Z(0)]
+
+        """
         if isinstance(other, (qml.pauli.PauliWord, qml.pauli.PauliSentence, Operator)):
             other = [other]
 
@@ -275,18 +308,20 @@ class PauliVSpace:
         for ps in other:
             # TODO: Potential speed-up by computing the maximal linear independent set for all current basis vectors + other, essentially algorithm1 in https://arxiv.org/abs/1012.5256
             self._M, self._pw_to_idx, self._rank, self._num_pw, is_independent = (
-                self._check_independence(self._M, ps, self._pw_to_idx, self._rank, self._num_pw)
+                self._check_independence(
+                    self._M, ps, self._pw_to_idx, self._rank, self._num_pw, tol
+                )
             )
             if is_independent:
                 self._basis.append(ps)
         return self._basis
 
     def is_independent(self, pauli_sentence, tol=1e-15):
-        r"""Check if the :class:`~PauliSentence` ``pauli_sentence`` is linearly independent of the basis of ``PauliVSpace``.
+        r"""Check if the ``pauli_sentence`` is linearly independent of the basis of ``PauliVSpace``.
 
         Args:
-            pauli_sentence (`~.PauliSentence`): Pauli sentence for which to add a column if independent.
-            tol (float): Numerical tolerance for linear independence check.
+            pauli_sentence (`~.PauliSentence`): Candidate Pauli sentence to check against the ``PauliVSpace`` basis for linear independence.
+            tol (float): Numerical tolerance for linear independence check. Defaults to ``1e-15``.
 
         Returns:
             bool: whether ``pauli_sentence`` was linearly independent
