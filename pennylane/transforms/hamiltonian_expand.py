@@ -19,7 +19,7 @@ from functools import partial
 from typing import List, Sequence, Callable, Tuple
 
 import pennylane as qml
-from pennylane.measurements import ExpectationMP, MeasurementProcess
+from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots
 from pennylane.ops import SProd, Sum, Prod
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
@@ -301,6 +301,7 @@ def _group_measurements(
 def _sum_expand_processing_fn_grouping(
     res: ResultBatch,
     group_sizes: List[int],
+    shots: Shots,
     indices_and_coeffs: List[List[Tuple[int, int, float]]],
     offsets: List[int],
 ):
@@ -313,14 +314,24 @@ def _sum_expand_processing_fn_grouping(
         for group_idx, sm_idx, coeff in mp_indices_and_coeffs:
             r_group = res[group_idx]
             group_size = group_sizes[group_idx]
+            if shots.has_partitioned_shots:
+                r_group = qml.math.stack(r_group, axis=0)
+                if group_size > 1:
+                    r_group = qml.math.moveaxis(r_group, 0, 1)
             sub_res.append(r_group[sm_idx] if group_size > 1 else r_group)
             coeffs.append(coeff)
         res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
+    if shots.has_partitioned_shots:
+        res_for_each_mp = qml.math.stack(res_for_each_mp, axis=0)
+        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, -1)
     return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
 
 
 def _sum_expand_processing_fn(
-    res: ResultBatch, indices_and_coeffs: List[List[Tuple[int, float]]], offsets: List[int]
+    res: ResultBatch,
+    shots: Shots,
+    indices_and_coeffs: List[List[Tuple[int, float]]],
+    offsets: List[int],
 ):
     """The processing function for sum_expand without grouping."""
 
@@ -332,6 +343,9 @@ def _sum_expand_processing_fn(
             sub_res.append(res[sm_idx])
             coeffs.append(coeff)
         res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
+    if shots.has_partitioned_shots:
+        res_for_each_mp = qml.math.stack(res_for_each_mp, axis=0)
+        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, -1)
     return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
 
 
@@ -474,10 +488,14 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
             _sum_expand_processing_fn_grouping,
             indices_and_coeffs=indices_and_coeffs,
             group_sizes=group_sizes,
+            shots=tape.shots,
             offsets=offsets,
         )
 
     tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
     return tapes, partial(
-        _sum_expand_processing_fn, indices_and_coeffs=all_sm_indices_and_coeffs, offsets=offsets
+        _sum_expand_processing_fn,
+        indices_and_coeffs=all_sm_indices_and_coeffs,
+        shots=tape.shots,
+        offsets=offsets,
     )

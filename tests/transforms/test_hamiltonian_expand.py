@@ -314,7 +314,7 @@ class TestHamiltonianExpand:
         """Tests that the processing function works with shot vectors
         and grouping with different number of coefficients in each group"""
 
-        dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(20000, 4)])
         if grouping:
             H.compute_grouping()
 
@@ -345,7 +345,7 @@ class TestHamiltonianExpand:
         """Tests that the processing function works with shot vectors, parameter broadcasting,
         and grouping with different number of coefficients in each group"""
 
-        dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(20000, 4)])
 
         if grouping:
             H.compute_grouping()
@@ -614,8 +614,76 @@ class TestSumExpand:
         res = [1.23]
         assert fn(res) == 1.23
 
-    def test_multiple_sum_tape(self):
-        """Test that the ``sum_expand`` function can expand tapes with multiple sum observables"""
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_sum_expand_broadcasting(self, grouping):
+        """Tests that the sum_expand transform works with broadcasting"""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(x, wires=1)
+            qml.RX(x, wires=2)
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.prod(qml.PauliZ(1), qml.sum(qml.PauliY(2), qml.PauliX(2)))),
+                qml.expval(qml.sum(qml.PauliZ(0), qml.s_prod(1.5, qml.PauliX(1)))),
+            )
+
+        res = circuit([0, np.pi / 3, np.pi / 2, np.pi])
+
+        def _expected(theta):
+            return [
+                np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2,
+                -(np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2) * np.sin(theta),
+                np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2 + 1.5 * np.sin(theta),
+            ]
+
+        expected = np.array([_expected(t) for t in [0, np.pi / 3, np.pi / 2, np.pi]]).T
+        assert qml.math.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "theta", [0, np.pi / 3, np.pi / 2, np.pi, [0, np.pi / 3, np.pi / 2, np.pi]]
+    )
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_sum_expand_shot_vector(self, grouping, theta):
+        """Tests that the sum_expand transform works with shot vectors"""
+
+        dev = qml.device("default.qubit", wires=3, shots=[(20000, 5)])
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(x, wires=1)
+            qml.RX(x, wires=2)
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.prod(qml.PauliZ(1), qml.sum(qml.PauliY(2), qml.PauliX(2)))),
+                qml.expval(qml.sum(qml.PauliZ(0), qml.s_prod(1.5, qml.PauliX(1)))),
+            )
+
+        if isinstance(theta, list):
+            theta = np.array(theta)
+
+        expected = [
+            np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2,
+            -(np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2) * np.sin(theta),
+            np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2 + 1.5 * np.sin(theta),
+        ]
+
+        res = circuit(theta)
+
+        if isinstance(theta, np.ndarray):
+            expected = np.stack(expected).T
+            assert qml.math.shape(res) == (5, 4, 3)
+        else:
+            assert qml.math.shape(res) == (5, 3)
+
+        for r in res:
+            assert qml.math.allclose(r, expected, atol=0.05)
 
     @pytest.mark.autograd
     def test_sum_dif_autograd(self, tol):
