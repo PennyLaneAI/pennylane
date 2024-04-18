@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines a metaclass that pennylane objects can inherit from.
+Defines a metaclass for automatic integration of any ``Operator`` with plxpr program capture.
+
+See ``explanations.md`` for technical explanations of how this works.
 """
+
+import abc
+from functools import lru_cache
+
+import pennylane as qml
+
+from .switches import plxpr_enabled
 
 has_jax = True
 try:
@@ -22,113 +31,115 @@ except ImportError:
     has_jax = False
 
 
-_USE_DEFAULT_CALL = True
-# since this changes what happens with tracing, we need to turn the behavior
-# off by default to preserve our ability to jit pennylane circuits.
-
-
-def enable_plexpr():
-    """Enable the capture of PlExpr."""
+@lru_cache  # constrcut the first time lazily
+def _get_abstract_operator():
+    """Create an AbstractOperator once in a way protected from lack of a jax install."""
     if not has_jax:
-        raise ImportError("plexpr requires jax.")
-    global _USE_DEFAULT_CALL
-    _USE_DEFAULT_CALL = False
+        raise ImportError("Jax is required for plxpr.")
+
+    class AbstractOperator(jax.core.AbstractValue):
+        """An operator captured into plxpr."""
+
+        # pylint: disable=missing-function-docstring
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractOperator)
+
+        def __hash__(self):
+            return hash("AbstractOperator")
+
+        @staticmethod
+        def _matmul(*args):
+            return qml.prod(*args)
+
+        @staticmethod
+        def _mul(a, b):
+            return qml.s_prod(b, a)
+
+        @staticmethod
+        def _rmul(a, b):
+            return qml.s_prod(b, a)
+
+        @staticmethod
+        def _add(a, b):
+            return qml.sum(a, b)
+
+        @staticmethod
+        def _pow(a, b):
+            return qml.pow(a, b)
+
+    jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
+
+    return AbstractOperator
 
 
-def disable_plexpr():
-    """Disable the capture of PlExpr."""
-    global _USE_DEFAULT_CALL
-    _USE_DEFAULT_CALL = True
+def create_operator_primitive(operator_type: type) -> "Optional[jax.core.Primitive]":
+    """Create a primitive corresponding to an operator type.
+
+    Args:
+        operator_type (type): a subclass of qml.operation.Operator
+
+    Returns:
+        Optional[jax.core.Primitive]: None is returned if jax is not available.
+
+    """
+    if not has_jax:
+        return None
+
+    primitive = jax.core.Primitive(operator_type.__name__)
+
+    @primitive.def_impl
+    def _(*args, **kwargs):
+        if "n_wires" not in kwargs:
+            return type.__call__(operator_type, *args, **kwargs)
+        n_wires = kwargs.pop("n_wires")
+        wires = args[-n_wires:]
+        args = args[:-n_wires]
+        return type.__call__(operator_type, *args, wires=wires, **kwargs)
+
+    # logic here will be extended when we make more things use this meta class
+    abstract_type = _get_abstract_operator()
+
+    @primitive.def_abstract_eval
+    def _(*_, **__):
+        return abstract_type()
+
+    return primitive
 
 
+class PLXPRObj(abc.ABCMeta):
+    """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
+    of normal class creation.
 
-class AbstractMeasurement(jax.core.AbstractValue):
-
-    def __init__(self, has_obs: bool, has_eigvals: bool, has_wires: bool):
-        self.has_obs = has_obs
-        self.has_eigvals = has_eigvals
-        self.has_wires = has_wires
-
-    def __eq__(self, other):
-        return isinstance(other, AbstractMeasurement)
-
-    def __hash__(self):
-        return hash("AbstractMeasurement")
-
-
-jax.core.raise_to_shaped_mappings[AbstractMeasurement] = lambda aval, _: aval
-
-ABSTRACT_TYPE_CACHE = {"MeasurementProcess": AbstractMeasurement}
-
-
-def get_abstract_type(class_type: type) -> type:
-    """Construct or retrieve an abstract type corresponding to the "top parent"
-    of the inheritance tree (Operator, MeasurementProcess, etc.)
+    See ``pennylane/capture/explanations.md`` for more detailed information on how this technically
+    works.
     """
 
-    if not has_jax:
-        raise ImportError("Abstract types require jax to be installed.")
-
-    # -1 is object, -2 is top parent (Operator, MeasurementProcess, etc.)
-    top_parent = class_type.__mro__[-2]
-
-    if top_parent.__name__ in ABSTRACT_TYPE_CACHE:
-        return ABSTRACT_TYPE_CACHE[top_parent.__name__]
-
-    # since there's only three right now, we could just create them via the normal
-    # class AbstractOperator(jax.core.AbstractValue): syntax
-    # but this will extend a bit easier and makes it so we dont need to manually maintain
-    # a list of things that can be abstract
-    # If this proves too fragile and black-magicy, we can revert to direct construction of
-    # all possible abstract types.
-
-    type_name = f"Abstract{top_parent.__name__}"
-    namespace = {
-        "__eq__": lambda self, other: isinstance(other, type(self)),
-        "__hash__": lambda self: hash(type_name),
-    }
-
-    AbstractType = type(type_name, (jax.core.AbstractValue,), namespace)
-
-    # hopefully this API stays constant over jax versions... fingers crossed
-    jax.core.raise_to_shaped_mappings[AbstractType] = lambda aval, _: aval
-
-    ABSTRACT_TYPE_CACHE[top_parent.__name__] = AbstractType
-
-    return AbstractType
-
-
-class JaxPRMeta(type):
-    """A meta type"""
-
-    def __init__(cls, *_, **__):
-
-        # Called when constructing a new type that has this metaclass.
-        # Similar to __init_subclass__ , this allows us to run this code
-        # every time we define a new class
-
-        if not has_jax:
-            cls._primitive = None
-            return
-
-        cls._primitive = jax.core.Primitive(cls.__name__)
-
-        @cls._primitive.def_impl
-        def default_call(*args, **kwargs):
-            return type.__call__(cls, *args, **kwargs)
-
-        abstract_type = get_abstract_type(cls)
-
-        @cls._primitive.def_abstract_eval
-        def abstract_init(*_, **__):
-            return abstract_type()
+    def _primitive_bind_call(cls, *args, **kwargs):
+        raise NotImplementedError(
+            "Types using PLXPRObj must implement cls._primitive_bind_call to"
+            " gain integration with plxpr program capture."
+        )
 
     def __call__(cls, *args, **kwargs):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
-        # when tracing is enabled, we want to
 
-        if _USE_DEFAULT_CALL:
-            return type.__call__(cls, *args, **kwargs)
-        # use bind to construct the class if we want class construction to add it to the jaxpr
-        return cls._primitive.bind(*args, **kwargs)
+        if plxpr_enabled():
+            # when tracing is enabled, we want to
+            # use bind to construct the class if we want class construction to add it to the jaxpr
+            return cls._primitive_bind_call(*args, **kwargs)
+        return type.__call__(cls, *args, **kwargs)

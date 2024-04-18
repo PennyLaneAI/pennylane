@@ -20,19 +20,10 @@ from typing import Sequence, Tuple, Union
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-from pennylane.typing import TensorLike
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .sample import SampleMP
 from .mid_measure import MeasurementValue
-from .shots import Shots
-
-
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
 
 
 def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
@@ -65,14 +56,14 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     0.7701511529340698
     """
     if isinstance(op, MeasurementValue):
-        return VarianceMP(op)
+        return VarianceMP(obs=op)
 
     if isinstance(op, Sequence):
         raise ValueError(
             "qml.var does not support measuring sequences of measurements or observables"
         )
 
-    return VarianceMP(op)
+    return VarianceMP(obs=op)
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
@@ -91,30 +82,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
-
-    @classmethod
-    def _abstract_eval(
-        cls,
-        obs: Optional[
-            Union[
-                Operator,
-                "qml.measurements.MeasurementValue",
-                Sequence["qml.measurements.MeasurementValue"],
-            ]
-        ] = None,
-        wires: Optional[Wires] = None,
-        eigvals: Optional[TensorLike] = None,
-        shots: Optional[Shots] = None,
-        id: Optional[str] = None,
-    ):
-        if not has_jax:
-            raise ImportError
-        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
-        shots = Shots(shots)
-        shape = (
-            tuple(() for _ in range(shots.num_copies)) if shots.has_partitioned_shots else tuple()
-        )
-        return jax.core.ShapedArray(shape, dtype)
 
     @property
     def return_type(self):
