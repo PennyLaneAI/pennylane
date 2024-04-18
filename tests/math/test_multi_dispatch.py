@@ -41,6 +41,17 @@ test_multi_dispatch_stack_data = [
     tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
 
+test_multi_dispatch_stack_data_complete = [
+    [[1.0, 0.0], [2.0, 3.0]],
+    ([1.0, 0.0], [2.0, 3.0]),
+    onp.array([[1.0, 0.0], [2.0, 3.0]]),
+    anp.array([[1.0, 0.0], [2.0, 3.0]]),
+    np.array([[1.0, 0.0], [2.0, 3.0]]),
+    jnp.array([[1.0, 0.0], [2.0, 3.0]]),
+    tf.constant([[1.0, 0.0], [2.0, 3.0]]),
+    torch.tensor([[1.0, 0.0], [2.0, 3.0]]),
+]
+
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("dev", ["cpu", "cuda"])
@@ -65,7 +76,7 @@ def test_multi_dispatch_stack(x):
     assert fn.allequal(res, [[1.0, 0.0], [2.0, 3.0]])
 
 
-@pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
+@pytest.mark.parametrize("x", test_multi_dispatch_stack_data_complete)
 def test_multi_dispatch_decorate(x):
     """Test decorating a standard numpy function for PennyLane"""
 
