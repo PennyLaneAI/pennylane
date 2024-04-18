@@ -73,7 +73,7 @@
 
 <h4>Dynamical Lie Algebra functionality</h4>
 
-* A new `qml.dla.lie_closure` function to compute the Lie closure of a list of operators.
+* A new `qml.pauli.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
   [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
 
@@ -108,7 +108,7 @@
 
   ```python
   >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-  >>> dla = qml.dla.lie_closure(ops)
+  >>> dla = qml.pauli.lie_closure(ops)
   >>> print(dla)
   [1.0 * X(1) @ X(0),
    1.0 * Z(0),
@@ -123,8 +123,8 @@
 
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-  >>> dla = [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), -1.0 * Y(0) @ Y(1)]
-  >>> adjoint_rep = qml.dla.adjoint_repr(dla)
+  >>> dla = [X(0) @ X(1), Z(0), 1.0 * Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
+  >>> adjoint_rep = qml.pauli.adjoint_repr(dla)
   >>> adjoint_rep.shape
   (6, 6, 6)
 
