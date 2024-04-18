@@ -34,7 +34,7 @@ from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
-    assert_no_tape_batching,
+    assert_no_trainable_tape_batching,
     choose_trainable_params,
     find_and_validate_gradient_methods,
     _no_trainable_grad,
@@ -369,7 +369,7 @@ def finite_diff(
     """
 
     transform_name = "finite difference"
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if any(qml.math.get_dtype_name(p) == "float32" for p in tape.get_parameters()):
         warn(

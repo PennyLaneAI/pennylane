@@ -73,6 +73,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+  broadcasting is in non-trainable parameters.
+  [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
+
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
   
@@ -173,8 +177,14 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
-
 <h3>Improvements 🛠</h3>
+
+* `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
+  the operator it wraps.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
@@ -222,6 +232,9 @@
 
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+
+* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
+  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
 <h4>Community contributions 🥳</h4>
 
@@ -372,6 +385,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `dynamic_one_shot` transform now works with broadcasting.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
 * Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
   [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
 
@@ -440,6 +456,9 @@
 
 * `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
   [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
+
+* Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
+  [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
 
 <h3>Contributors ✍️</h3>
 

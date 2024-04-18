@@ -37,7 +37,7 @@ from .general_shift_rules import (
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_state_returns,
-    assert_no_tape_batching,
+    assert_no_trainable_tape_batching,
     assert_multimeasure_not_broadcasted,
     choose_trainable_params,
     find_and_validate_gradient_methods,
@@ -727,7 +727,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 
     pdA2_fn = None
     if non_involutory_indices:
-
         new_measurements = list(tape.measurements)
         for i in non_involutory_indices:
             # We need to calculate d<A^2>/dp; to do so, we replace the
@@ -1078,7 +1077,7 @@ def param_shift(
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
