@@ -52,10 +52,18 @@ class Conditional(Operation):
     def __init__(self, expr, then_op: Type[Operation], id=None):
         self.meas_val = expr
         self.then_op = then_op
-        super().__init__(wires=then_op.wires, id=id)
+        super().__init__(*then_op.data, wires=then_op.wires, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return self.then_op.label(decimals=decimals, base_label=base_label, cache=cache)
+
+    @property
+    def num_params(self):
+        return self.then_op.num_params
+
+    @property
+    def ndim_params(self):
+        return self.then_op.ndim_params
 
     def map_wires(self, wire_map):
         meas_val = self.meas_val.map_wires(wire_map)
