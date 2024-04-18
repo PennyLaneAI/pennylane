@@ -163,9 +163,6 @@ def test_decomposition(hamiltonian, expected_decomposition):
         assert qml.equal(op, expected_decomposition[i])
 
 
-@pytest.mark.xfail(
-    reason="AmplitudeEmbedding does not in the middle of the circuit with lightning.qubit"
-)
 def test_lightning_qubit():
     H = qml.ops.LinearCombination([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
 
