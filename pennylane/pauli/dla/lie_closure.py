@@ -29,7 +29,7 @@ from ..pauli_arithmetic import PauliWord, PauliSentence
 def lie_closure(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
     max_iterations: int = 10000,
-    verbose: int = 0,
+    verbose: bool = False,
     pauli: bool = False,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
@@ -42,7 +42,7 @@ def lie_closure(
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
-        verbose (Union[int, bool]): verbosity during Lie closure calculation. Default is ``0``.
+        verbose (bool): verbosity during Lie closure calculation. Default is ``False``.
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Note that the input in that case also has to be a list of :class:`~.PauliSentence` or :class:`~.PauliWord` instances.
@@ -128,7 +128,7 @@ def lie_closure(
     new_length = len(vspace)
 
     while (new_length > old_length) and (epoch < max_iterations):
-        if verbose > 0:
+        if verbose:
             print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
