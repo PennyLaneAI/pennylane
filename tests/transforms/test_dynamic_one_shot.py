@@ -66,7 +66,7 @@ def test_postselection_error_with_wrong_device():
 
         @qml.dynamic_one_shot
         @qml.qnode(dev)
-        def circ():
+        def _():
             qml.measure(0, postselect=1)
             return qml.probs(wires=[0])
 
