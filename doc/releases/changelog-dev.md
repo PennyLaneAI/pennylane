@@ -234,6 +234,9 @@
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
   [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
 
+* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
+  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
@@ -381,6 +384,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.ParticleConservingU1` and `qml.ParticleConservingU2` no longer raise an error when the initial state is not specified but default to the all-zeros state.
+  [(#5535)](https://github.com/PennyLaneAI/pennylane/pull/5535)
+
 * `qml.counts` no longer returns negative samples when measuring 8 or more wires.
   [(#5544)](https://github.com/PennyLaneAI/pennylane/pull/5544)
 
@@ -458,6 +464,9 @@
 
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
+* Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
+  [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
 
 <h3>Contributors ✍️</h3>
 
