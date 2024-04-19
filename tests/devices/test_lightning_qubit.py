@@ -98,7 +98,7 @@ class TestDtypePreserved:
     @pytest.mark.parametrize(
         "c_dtype",
         [
-            pytest.param(np.complex64, marks=pytest.mark.xfail(reason="dtype not preserved")),
+            np.complex64,
             np.complex128,
         ],
     )
