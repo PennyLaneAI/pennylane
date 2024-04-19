@@ -188,14 +188,6 @@ jobs:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
 
-      - name: Upload durations
-        if: inputs.pipeline_mode == 'unit-tests'
-        uses: actions/upload-artifact@v3
-        with:
-          name: durations-${{ inputs.coverage_artifact_name }}
-          path: .test_durations
-          if-no-files-found: warn
-
       # If this is a reference benchmark move file to the cached directory, and we have a non-empty reference benchmark file.
       - name: Move reference pytest benchmark file to cache
         if: inputs.pipeline_mode == 'reference-benchmarks' && hashFiles('benchmarks.json') != ''
