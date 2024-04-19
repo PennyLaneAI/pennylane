@@ -15,6 +15,7 @@
 
 import pytest
 import numpy as np
+from functools import reduce
 
 import pennylane as qml
 from pennylane import math
