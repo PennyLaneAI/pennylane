@@ -1084,7 +1084,7 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
 
-        if not qml.capture.meta_type._USE_DEFAULT_CALL:
+        if qml.capture.plxpr_enabled():
             return self._plxpr_call(*args, **kwargs)
 
         old_interface = self.interface

@@ -14,7 +14,23 @@
 """
 Tools for enabling the capture of pennylane objects into JaxPR.
 """
+
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
+
+
 from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
 from .meta_type import create_operator_primitive, PLXPRObj
-from .measure import measure
 from .nested_jaxpr import bind_nested_jaxpr
+
+if has_jax:
+    from .measurements import measure
+
+
+def __getattr__(name):
+    raise ImportError(
+        "Some contents of the capture module may only be available if jax is installed."
+    )

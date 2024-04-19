@@ -16,6 +16,8 @@ This module contains the qml.expval measurement.
 """
 from typing import Sequence, Tuple, Union
 
+import jax
+
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -70,10 +72,10 @@ def expval(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
 
-    return ExpectationMP(obs=op)
+    return ExpectationMP(op)
 
 
-class ExpectationMP(SampleMeasurement, StateMeasurement):
+class ExpectationMP(SampleMeasurement, StateMeasurement, metaclass=qml.capture.PLXPRObj):
     """Measurement process that computes the expectation value of the supplied observable.
 
     Please refer to :func:`expval` for detailed documentation.
