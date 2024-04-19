@@ -1312,6 +1312,10 @@ class TestGrouping:
 
         op = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_indices=[[0, 1]])
         assert op.grouping_indices == [[0, 1]]
+        op_ac = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_type="anticommuting")
+        assert op_ac.grouping_indices == ((0,), (1,))
+        op_not_ac = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_type="anticommuting", grouping_indices=[[0, 1]])
+        assert op_not_ac.grouping_indices == [[0, 1]]
 
     def test_non_pauli_error(self):
         """Test that grouping non-Pauli observables is not supported."""
