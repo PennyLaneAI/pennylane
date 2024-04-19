@@ -600,42 +600,6 @@ class TestSampleMeasurements:
 class TestExecutingBatches:
     """Tests involving executing multiple circuits at the same time."""
 
-    # @staticmethod
-    # def f_unhashable(dev, phi):
-    #     """A function that executes a batch of scripts on DefaultQutritMixed without preprocessing."""
-    #
-    #     ops = [
-    #         qml.TShift("a"),
-    #         qml.TShift("b"),
-    #         qml.TShift("b"),
-    #         qml.ControlledQutritUnitary(
-    #             qml.TRX.compute_matrix(phi),
-    #             control_wires=("a", "b", -3),
-    #             wires=("target"),
-    #             control_values="120",
-    #         ),
-    #     ]
-    #
-    #     qs1 = qml.tape.QuantumScript(
-    #         ops,
-    #         [
-    #             qml.expval(qml.sum(qml.GellMann("target", 2), qml.GellMann("b", 3))),
-    #             qml.expval(qml.s_prod(3, qml.GellMann("target", 8))),
-    #         ],
-    #     )
-    #
-    #     ops = [
-    #         qml.THadamard(0),
-    #         qml.TAdd((0, 1)),
-    #         qml.TRX(phi, 1),
-    #         qml.TRX(phi, 1, subspace=(1, 2)),
-    #         qml.TAdd((0, 1)),
-    #         qml.TAdd((0, 1)),
-    #     ]
-    #     qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-    #
-    #     return dev.execute((qs1, qs2))
-
     @staticmethod
     def f(phi):
         """A function that executes a batch of scripts on DefaultQutritMixed without preprocessing."""
