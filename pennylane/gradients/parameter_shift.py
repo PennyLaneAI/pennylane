@@ -22,7 +22,7 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import VarianceMP
+from pennylane.measurements import VarianceMP, MidMeasureMP, MeasurementValue
 from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
@@ -39,6 +39,7 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_multimeasure_not_broadcasted,
+    assert_compatible_mcms,
     choose_trainable_params,
     find_and_validate_gradient_methods,
     _no_trainable_grad,
@@ -324,9 +325,38 @@ def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
         return tuple(map(zero_entry, g))
     return tuple(tuple(map(zero_entry, shot_comp_g)) for shot_comp_g in g)
 
+'''
+def _analyze_mcm_causal_cones(tape):
+    r"""Analyze the causal relationship between trainable operations and
+    mid-circuit measurements within a circuit.
+    """
+    mcm_data = {}
+    # A mapping mcm_mp.id : pos
+    all_causal_mcm_ids = {}
+    mcm_idx = 0
+    for idx, _ in enumerate(tape.trainable_params):
+        if idx not in argnum:
+            continue
+        op, op_idx, _ = tape.get_operation(idx)
+        desc = tape.graph.descendants([op])
+        causal_mcm_ids = []
+        for op in desc:
+            if not isinstance(op, MidMeasureMP):
+                continue
+            if op.id not in all_causal_mcm_ids:
+                all_causal_mcm_ids[op.id] = mcm_idx
+                mcm_idx += 1
+
+            causal_mcm_ids.append(all_causal_mcm_ids[op.id])
+
+        mcm_data[idx] = causal_mcm_ids
+
+    return all_causal_mcm_ids, mcm_data
+'''
+
 
 def expval_param_shift(
-    tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
+    tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False, return_unshifted=False,
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
         to compute the gradient of a gate parameter with respect to an
@@ -363,12 +393,16 @@ def expval_param_shift(
 
     argnum = argnum or tape.trainable_params
 
-    gradient_tapes = []
     # Each entry for gradient_data will be a tuple with entries
     # (num_tapes, coeffs, fn, unshifted_coeff, batch_size)
     gradient_data = []
     # Keep track of whether there is at least one unshifted term in all the parameter-shift rules
-    at_least_one_unshifted = False
+    if return_unshifted:
+        at_least_one_unshifted = True
+        gradient_tapes = [tape]
+    else:
+        at_least_one_unshifted = False
+        gradient_tapes = []
 
     for idx, _ in enumerate(tape.trainable_params):
         if idx not in argnum:
@@ -439,6 +473,9 @@ def expval_param_shift(
 
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
+
+        if return_unshifted:
+            return f0, reorder_grads(grads, tape_specs)
 
         return reorder_grads(grads, tape_specs)
 
@@ -753,6 +790,18 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     )
     return gradient_tapes, processing_fn
 
+def _make_mcm_probs_tape(tape):
+    after_mcm_ops = []
+    num_ops = len(tape.operations)
+    for i, op in enumerate(tape.operations[::-1]):
+        if isinstance(op, MidMeasureMP) and op.postselect is not None:
+            mcm_mp = MidMeasureMP(op.wires, op.reset, postselect=None)
+            mv = MeasurementValue([mcm_mp], processing_fn=lambda v: v)
+            new_ops = tape.operations[:num_ops-i-1] + [mcm_mp] + tape.operations[num_ops-i:]
+            break
+
+    return qml.tape.QuantumScript(new_ops, [qml.probs(op=mv)], shots=tape.shots, trainable_params=tape.trainable_params)
+
 
 def _expand_transform_param_shift(
     tape: qml.tape.QuantumTape,
@@ -765,14 +814,28 @@ def _expand_transform_param_shift(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before parameter shift."""
     expanded_tape = expand_invalid_trainable(tape)
+    probs_tape = _make_mcm_probs_tape(tape)
+    expanded_tape.gimme_unshifted = True
+    probs_tape.gimme_unshifted = True
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
+        print(results)
+        assert False
+        orig_results, probs_results = results[:split], results[split:]
+        *orig_deriv, orig_unshifted = orig_results
+        *probs_deriv, probs_unshifted = probs_results
+
+        print(f"{orig_deriv=}")
+        print(f"{orig_unshifted=}")
+        print(f"{probs_deriv=}")
+        print(f"{probs_unshifted=}")
+
         return results[0]
 
-    return [expanded_tape], null_postprocessing
+    return [expanded_tape, probs_tape], null_postprocessing
 
 
 @partial(
@@ -1078,6 +1141,8 @@ def param_shift(
     assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
     assert_no_trainable_tape_batching(tape, transform_name)
+    assert_compatible_mcms(tape, transform_name)
+
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -1107,10 +1172,11 @@ def param_shift(
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)
 
+    return_unshifted = getattr(tape, "gimme_unshifted", False)
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
     else:
-        g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+        g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast, return_unshifted)
 
     gradient_tapes.extend(g_tapes)
 
@@ -1148,6 +1214,7 @@ def param_shift(
         def processing_fn(results):
             unsupported_res = results[:fallback_len]
             supported_res = results[fallback_len:]
+
 
             if not tape.shots.has_partitioned_shots:
                 unsupported_grads = fallback_proc_fn(unsupported_res)

@@ -354,6 +354,23 @@ class TestParamShift:
         with pytest.raises(ValueError, match=_match):
             qml.gradients.param_shift(tape)
 
+    def test_conditional_ops_not_supported_raises(self):
+        """Test error raised if attempting to differentiate a tape with conditional ops."""
+        measure_op = qml.measurements.MidMeasureMP(0)
+        cond_op = qml.ops.op_math.Conditional(measure_op, qml.RZ(0.1, 1))
+        tape = qml.tape.QuantumScript([qml.RX(0.4, 0), measure_op, cond_op], [qml.expval(qml.Z(0))])
+        _match = r"Conditional operations are currently .* parameter-shift"
+        with pytest.raises(ValueError, match=_match):
+            qml.gradients.param_shift(tape)
+
+    def test_postselected_mcm_not_supported_raises(self):
+        """Test error raised if attempting to differentiate a tape with postselected MCMs."""
+        measure_op = qml.measurements.MidMeasureMP(0, postselect=1)
+        tape = qml.tape.QuantumScript([qml.RX(0.4, 0), measure_op], [qml.expval(qml.Z(0))])
+        _match = r"Postselected mid-circuit measurements are currently .* parameter-shift"
+        with pytest.raises(ValueError, match=_match):
+            qml.gradients.param_shift(tape)
+
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
