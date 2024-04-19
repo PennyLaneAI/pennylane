@@ -212,7 +212,7 @@ class DensityMatrixMP(StateMP):
         # pylint:disable=redefined-outer-name
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        kwargs = {"indices": mapped_wires}
-        if qml.math.any(qml.math.iscomplex(state)):
+        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
+        if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
             kwargs["c_dtype"] = state.dtype
         return qml.math.reduce_statevector(state, **kwargs)
