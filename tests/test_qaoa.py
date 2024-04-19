@@ -2018,6 +2018,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_inner_out_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with
