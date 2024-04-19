@@ -460,6 +460,10 @@
 * The computational basis convention used for `qml.measure` — 0 and 1 rather than ±1 — has been clarified in its docstring.
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
+* A new *Release news* section has been added to the table of contents, containing release notes,
+  deprecations, and other pages focusing on recent changes.
+  [(#5548)](https://github.com/PennyLaneAI/pennylane/pull/5548)
+
 <h3>Bug fixes 🐛</h3>
 
 * (In)equality of `qml.HilbertSchmidt` instances is now reported correctly by `qml.equal`.
