@@ -168,6 +168,28 @@ def sum_of_terms_method(
     )
 
 
+def identity_expval(
+    measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
+) -> TensorLike:
+    """Measure the expectation value of the state when the measured observable is the
+    identity. Always returns 1.
+
+    Args:
+        measurementprocess (ExpectationMP): measurement process to apply to the state
+        state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
+
+    Returns:
+        TensorLike: A single ``1`` or multiple ``1`` entries with batching.
+    """
+    shape = math.shape(state)[0] if is_state_batched else 1
+    ones_with_type_and_interface = math.convert_like(math.cast_like(math.ones(shape), state), state)
+    real_out = math.real(ones_with_type_and_interface)
+    if measurementprocess.obs.name == "SProd":
+        return real_out * measurementprocess.obs.scalar
+    return real_out
+
+
 # pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess, state: TensorLike
@@ -186,32 +208,36 @@ def get_measurement_function(
         if isinstance(measurementprocess.mv, MeasurementValue):
             return state_diagonalizing_gates
 
+        obs = measurementprocess.obs
+        print(obs)
+
         if isinstance(measurementprocess, ExpectationMP):
-            if measurementprocess.obs.name == "SparseHamiltonian":
+            obs
+            if obs.name == "Identity" or obs.name == "SProd" and obs.base.name == "Identity":
+                return identity_expval
+
+            if obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
-            if measurementprocess.obs.name == "Hermitian":
+            if obs.name == "Hermitian":
                 return full_dot_products
 
-            backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
-            if isinstance(measurementprocess.obs, (Hamiltonian, LinearCombination)):
+            backprop_mode = math.get_interface(state, *obs.data) != "numpy"
+            if isinstance(obs, (Hamiltonian, LinearCombination)):
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
                 return sum_of_terms_method if backprop_mode else csr_dot_products
 
-            if isinstance(measurementprocess.obs, Sum):
+            if isinstance(obs, Sum):
                 if backprop_mode:
                     # always use sum_of_terms_method for Sum observables in backprop mode
                     return sum_of_terms_method
-                if (
-                    measurementprocess.obs.has_overlapping_wires
-                    and len(measurementprocess.obs.wires) > 7
-                ):
+                if obs.has_overlapping_wires and len(obs.wires) > 7:
                     # Use tensor contraction for `Sum` expectation values with non-commuting summands
                     # and 8 or more wires as it's faster than using eigenvalues.
 
                     return csr_dot_products
 
-        if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
+        if obs is None or obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
 
     raise NotImplementedError

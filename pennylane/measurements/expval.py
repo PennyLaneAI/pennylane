@@ -64,12 +64,6 @@ def expval(
             "qml.expval does not support measuring sequences of measurements or observables"
         )
 
-    if isinstance(op, qml.Identity) and len(op.wires) == 0:
-        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
-        raise NotImplementedError(
-            "Expectation values of qml.Identity() without wires are currently not allowed."
-        )
-
     return ExpectationMP(obs=op)
 
 
