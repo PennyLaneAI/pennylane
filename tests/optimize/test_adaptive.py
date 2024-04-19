@@ -86,6 +86,7 @@ def test_step(circuit, energy_ref, pool):
     assert np.allclose(energy, energy_ref)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
@@ -106,6 +107,7 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
     assert len(set(selected_excitations)) == len(selected_excitations)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
@@ -116,7 +118,7 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qml.AdaptiveOptimizer()
     for _ in range(4):
-        circuit, energy, __ = opt.step_and_cost(circuit, pool, drain_pool=False)
+        circuit, energy, _ = opt.step_and_cost(circuit, pool, drain_pool=False)
 
     circuit()
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]

@@ -94,6 +94,11 @@ on:
         required: false
         type: string
         default: ''
+      disable_new_opmath:
+        description: Whether to disable the new op_math or not when running the tests
+        required: false
+        type: string
+        default: "False"
 
 jobs:
   test:
@@ -168,8 +173,9 @@ jobs:
           COV_CORE_SOURCE: pennylane
           COV_CORE_CONFIG: .coveragerc
           COV_CORE_DATAFILE: .coverage.eager
+          TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
 
       - name: Adjust coverage file for Codecov
         if: inputs.pipeline_mode == 'unit-tests'

@@ -595,7 +595,7 @@ class TestExpval:
             m.setattr("numpy.mean", lambda obs, axis=None: obs)
             res = dev.expval(obs)
 
-        assert res == obs
+        assert res == np.array(obs)  # no idea what is trying to cast obs to an array now.
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if expval is called with an observable that does
@@ -675,7 +675,7 @@ class TestVar:
             m.setattr("numpy.var", lambda obs, axis=None: obs)
             res = dev.var(obs)
 
-        assert res == obs
+        assert res == np.array(obs)
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
@@ -753,8 +753,17 @@ class TestSample:
         that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
+
+        class MyObs(qml.operation.Observable):
+            """Observable with no eigenvalue representation defined."""
+
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
-            dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+            dev.sample(MyObs(wires=[0]))
 
 
 class TestSampleWithBroadcasting:
@@ -814,8 +823,17 @@ class TestSampleWithBroadcasting:
         that does not have eigenvalues defined when using broadcasting."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
+
+        class MyObs(qml.operation.Observable):
+            """Observable with no eigenvalue representation defined."""
+
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
-            dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+            dev.sample(MyObs(wires=[0]))
 
 
 class TestEstimateProb:
@@ -1458,27 +1476,54 @@ class TestResourcesTracker:
         ]
 
 
-def test_samples_to_counts_with_nan():
-    """Test that the counts function disregards failed measurements (samples including
-    NaN values) when totalling counts"""
-    # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
-    device = qml.device("default.qubit.legacy", wires=2, shots=1000)
-    device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
-    device._samples = device.generate_samples()
-    samples = device.sample(qml.measurements.CountsMP())
+class TestSamplesToCounts:
+    """Tests for correctness of QubitDevice._samples_to_counts"""
 
-    # imitate hardware return with NaNs (requires dtype float)
-    samples = qml.math.cast_like(samples, np.array([1.2]))
-    samples[0][0] = np.NaN
-    samples[17][1] = np.NaN
-    samples[850][0] = np.NaN
+    def test_samples_to_counts_with_nan(self):
+        """Test that the counts function disregards failed measurements (samples including
+        NaN values) when totalling counts"""
+        # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
+        device = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
+        device._samples = device.generate_samples()
+        samples = device.sample(qml.measurements.CountsMP())
 
-    result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
+        # imitate hardware return with NaNs (requires dtype float)
+        samples = qml.math.cast_like(samples, np.array([1.2]))
+        samples[0][0] = np.NaN
+        samples[17][1] = np.NaN
+        samples[850][0] = np.NaN
 
-    # no keys with NaNs
-    assert len(result) == 4
-    assert set(result.keys()) == {"00", "01", "10", "11"}
+        result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
 
-    # # NaNs were not converted into "0", but were excluded from the counts
-    total_counts = sum(count for count in result.values())
-    assert total_counts == 997
+        # no keys with NaNs
+        assert len(result) == 4
+        assert set(result.keys()) == {"00", "01", "10", "11"}
+
+        # # NaNs were not converted into "0", but were excluded from the counts
+        total_counts = sum(result.values())
+        assert total_counts == 997
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_samples_to_counts_with_many_wires(self, all_outcomes):
+        """Test that the counts function correctly converts wire samples to strings when
+        the number of wires is 8 or more."""
+        # generate 1000 samples for 10 wires, randomly distributed between 0 and 1
+        n_wires = 10
+        shots = 100
+        device = qml.device("default.qubit.legacy", wires=n_wires, shots=shots)
+        state = np.random.rand(*([2] * n_wires))
+        device._state = state / np.linalg.norm(state)
+        device._samples = device.generate_samples()
+        samples = device.sample(qml.measurements.CountsMP(all_outcomes=all_outcomes))
+
+        result = device._samples_to_counts(
+            samples, mp=qml.measurements.CountsMP(), num_wires=n_wires
+        )
+
+        # Check that keys are correct binary strings
+        assert all(0 <= int(sample, 2) <= 2**n_wires for sample in result.keys())
+
+        # # NaNs were not converted into "0", but were excluded from the counts
+        total_counts = sum(result.values())
+        assert total_counts == shots

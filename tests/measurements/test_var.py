@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the var module"""
+
 from flaky import flaky
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Variance, Shots
+from pennylane.measurements import Variance, Shots, VarianceMP
 
 
 class TestVar:
     """Tests for the var function"""
 
-    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
+    @pytest.mark.parametrize("shots", [None, 5000, [5000, 5000]])
     def test_value(self, tol, shots):
         """Test that the var function works"""
+
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -46,19 +48,6 @@ class TestVar:
             assert res[1].dtype == r_dtype
         else:
             assert res.dtype == r_dtype
-
-    def test_not_an_observable(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.var(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
 
     def test_observable_return_type_is_variance(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
@@ -132,6 +121,14 @@ class TestVar:
         for func in [circuit, qml.defer_measurements(circuit)]:
             res = func(phi, shots=shots)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+    def test_eigvals_instead_of_observable(self):
+        """Tests process samples with eigvals instead of observables"""
+
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        expected = qml.var(qml.PauliZ(0)).process_samples(samples, [0, 1])
+        assert VarianceMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""
@@ -213,3 +210,20 @@ class TestVar:
             return qml.var(obs_2)
 
         assert circuit() == circuit2()
+
+    @pytest.mark.parametrize(
+        "wire, expected",
+        [
+            (0, 1.0),
+            (1, 0.0),
+        ],
+    )
+    def test_estimate_variance_with_counts(self, wire, expected):
+        """Test that the variance of an observable is estimated correctly using counts."""
+        counts = {"000": 100, "100": 100}
+
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        res = qml.var(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
+
+        assert np.allclose(res, expected)

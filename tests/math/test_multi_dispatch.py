@@ -197,6 +197,17 @@ def test_dot_autograd():
     assert fn.allclose(qml_grad(fn.dot)(x, y), x)
 
 
+def test_kron():
+    """Test the kronecker product function."""
+    x = torch.tensor([[1, 2], [3, 4]])
+    y = np.array([[0, 5], [6, 7]])
+
+    res = fn.kron(x, y)
+    expected = torch.tensor([[0, 5, 0, 10], [6, 7, 12, 14], [0, 15, 0, 20], [18, 21, 24, 28]])
+
+    assert fn.allclose(res, expected)
+
+
 class TestMatmul:
     @pytest.mark.torch
     def test_matmul_torch(self):

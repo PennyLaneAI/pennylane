@@ -73,19 +73,6 @@ class TestExpval:
         else:
             assert res.dtype == r_dtype
 
-    def test_not_an_observable(self):
-        """Test that a warning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
     def test_observable_return_type_is_expectation(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
         dev = qml.device("default.qubit", wires=2)
@@ -125,6 +112,7 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
+        np.random.seed(478437894)
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -155,6 +143,16 @@ class TestExpval:
         for func in [circuit, qml.defer_measurements(circuit)]:
             res = func(phi, shots=shots)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+    def test_eigvals_instead_of_observable(self):
+        """Tests process samples with eigvals instead of observables"""
+
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        expected = qml.expval(qml.PauliZ(0)).process_samples(samples, [0, 1])
+        assert (
+            ExpectationMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
+        )
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""
@@ -318,3 +316,20 @@ class TestExpval:
         energy_batched = cost_circuit(params)
 
         assert qml.math.allequal(energy_batched, energy)
+
+    @pytest.mark.parametrize(
+        "wire, expected",
+        [
+            (0, 0.0),
+            (1, 1.0),
+        ],
+    )
+    def test_estimate_expectation_with_counts(self, wire, expected):
+        """Test that the expectation value of an observable is estimated correctly using counts"""
+        counts = {"000": 100, "100": 100}
+
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        res = qml.expval(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
+
+        assert np.allclose(res, expected)

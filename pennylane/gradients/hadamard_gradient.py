@@ -28,7 +28,7 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_g
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_state_returns,
-    assert_no_tape_batching,
+    assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_params,
     find_and_validate_gradient_methods,
@@ -234,7 +234,7 @@ def hadamard_grad(
     transform_name = "Hadamard test"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
     if len(tape.measurements) > 1 and tape.shots.has_partitioned_shots:
         raise NotImplementedError(
             "hadamard gradient does not support multiple measurements with partitioned shots."
@@ -329,7 +329,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                     obs_new = [qml.Z(i) for i in m.wires]
 
                 obs_new.append(qml.Y(aux_wire))
-                obs_new = qml.operation.Tensor(*obs_new)
+                obs_type = qml.prod if qml.operation.active_new_opmath() else qml.operation.Tensor
+                obs_new = obs_type(*obs_new)
 
                 if isinstance(m, qml.measurements.ExpectationMP):
                     measurements.append(qml.expval(op=obs_new))
@@ -460,9 +461,6 @@ def _get_generators(trainable_op):
     elif isinstance(trainable_op, qml.Rot):
         generators = [qml.Z(trainable_op.wires)]
         coeffs = [-0.5]
-    elif isinstance(trainable_op, (qml.RX, qml.RY, qml.RZ)):
-        generators = [trainable_op.generator().base]
-        coeffs = [trainable_op.generator().scalar]
     else:
         generators = trainable_op.generator().ops
         coeffs = trainable_op.generator().coeffs

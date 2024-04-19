@@ -317,8 +317,13 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
         ops_l.append(ops_l_)
 
     ops = [ops_t] + ops_l
-    c_group = [op.coeffs for op in ops]
-    o_group = [op.ops for op in ops]
+
+    c_group, o_group = [], []
+    for op in ops:
+        c_g, o_g = op.simplify().terms()
+        c_group.append(c_g)
+        o_group.append(o_g)
+
     u_transform = list([t_eigvecs] + list(v_unitaries))  # Inverse of diagonalizing unitaries
 
     return c_group, o_group, u_transform

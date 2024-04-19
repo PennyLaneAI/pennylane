@@ -284,6 +284,8 @@ class TestLayering:
 class TestMidCircuitMeasurements:
     """Tests for drawing mid-circuit measurements and classical conditions."""
 
+    # pylint: disable=too-many-public-methods
+
     @pytest.mark.parametrize("device_name", ["default.qubit"])
     def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):
         """Test that a circuit containing mid-circuit measurements is transformed by the drawer
@@ -326,6 +328,51 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(func)()
         expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
+
+        assert drawing == expected_drawing
+
+    @pytest.mark.parametrize(
+        "op", [qml.GlobalPhase(0.1), qml.Identity(), qml.Snapshot(), qml.Barrier()]
+    )
+    @pytest.mark.parametrize("decimals", [None, 2])
+    def test_draw_all_wire_ops(self, op, decimals):
+        """Test that operators acting on all wires are drawn correctly"""
+
+        def func():
+            qml.X(0)
+            qml.X(1)
+            m = qml.measure(0)
+            qml.cond(m, qml.X)(0)
+            qml.apply(op)
+            return qml.expval(qml.Z(0))
+
+        # Stripping to remove trailing white-space because length of white-space at the
+        # end of the drawing depends on the length of each individual line
+        drawing = qml.draw(func, decimals=decimals)().strip()
+        label = op.label(decimals=decimals).replace("\n", "")
+        expected_drawing = (
+            f"0: ──X──┤↗├──X──{label}─┤  <Z>\n1: ──X───║───║──{label}─┤     \n         ╚═══╝"
+        )
+
+        assert drawing == expected_drawing
+
+    @pytest.mark.parametrize(
+        "mp, label", [(qml.sample(), "Sample"), (qml.probs(), "Probs"), (qml.counts(), "Counts")]
+    )
+    def test_draw_all_wire_measurements(self, mp, label):
+        """Test that operators acting on all wires are drawn correctly"""
+
+        def func():
+            qml.X(0)
+            qml.X(1)
+            m = qml.measure(0)
+            qml.cond(m, qml.X)(0)
+            return qml.apply(mp)
+
+        # Stripping to remove trailing white-space because length of white-space at the
+        # end of the drawing depends on the length of each individual line
+        drawing = qml.draw(func)().strip()
+        expected_drawing = f"0: ──X──┤↗├──X─┤  {label}\n1: ──X───║───║─┤  {label}\n         ╚═══╝"
 
         assert drawing == expected_drawing
 
@@ -400,7 +447,7 @@ class TestMidCircuitMeasurements:
             qml.RX(0.5, 0)
             qml.RX(0.5, 1)
             m0 = qml.measure(1, reset=True)
-            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
             qml.CNOT([3, 2])
             qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
                 0.5, wires=[0, 3]
@@ -427,7 +474,7 @@ class TestMidCircuitMeasurements:
             qml.RX(0.5, 0)
             qml.RX(0.5, 1)
             m0 = qml.measure(1, postselect=1)
-            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
             qml.CNOT([3, 2])
             qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
                 0.5, wires=[0, 3]
@@ -482,7 +529,7 @@ class TestMidCircuitMeasurements:
 
             m0 = qml.measure(0, reset=True, postselect=1)
             m1 = qml.measure(1)
-            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values="110")
+            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
             qml.cond(m1, qml.PauliZ)(2)
 
             m2 = qml.measure(1)
@@ -628,7 +675,7 @@ class TestMidCircuitMeasurements:
 
             m0 = qml.measure(0, reset=True, postselect=1)
             m1 = qml.measure(1)
-            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values="110")
+            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
             qml.cond(m1, qml.PauliZ)(2)
 
             m2 = qml.measure(1)

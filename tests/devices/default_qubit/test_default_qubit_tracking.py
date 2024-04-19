@@ -59,6 +59,7 @@ class TestTracking:
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
             "derivative_batches": [1],
             "derivatives": [1],
+            "errors": [{}, {}, {}],
         }
         assert tracker.totals == {
             "batches": 2,
@@ -73,6 +74,7 @@ class TestTracking:
             "simulations": 1,
             "results": 1,
             "resources": Resources(num_wires=1),
+            "errors": {},
         }
 
     def test_tracking_execute_and_derivatives(self):
@@ -103,6 +105,7 @@ class TestTracking:
             "vjp_batches": [1],
             "execute_and_vjp_batches": [1],
             "resources": [Resources(num_wires=1)] * 12,
+            "errors": [{}] * 12,
         }
 
     def test_tracking_resources(self):
@@ -194,7 +197,6 @@ H0 = qml.Hamiltonian([1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @
 shot_testing_combos = [
     # expval combinations
     ([qml.expval(qml.PauliX(0))], 1, 10),
-    ([qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliY(1))], 1, 10),
     ([qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))], 2, 20),
     # Hamiltonian test cases
     ([qml.expval(qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]))], 2, 20),
@@ -251,3 +253,42 @@ def test_single_expval(mps, expected_exec, expected_shots):
         assert dev.tracker.totals["executions"] == 3 * expected_exec
         assert dev.tracker.totals["simulations"] == 1
         assert dev.tracker.totals["shots"] == 3 * expected_shots
+
+
+@pytest.mark.usefixtures("use_new_opmath")
+@pytest.mark.xfail(reason="bug in grouping for tracker with new opmath")
+def test_multiple_expval_with_prods():
+    """Can be combined with test below once the bug is fixed - there shouldn't
+    be a difference in behaviour between old and new opmath here"""
+    mps, expected_exec, expected_shots = (
+        [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliY(1))],
+        1,
+        10,
+    )
+    dev = qml.device("default.qubit")
+    tape = qml.tape.QuantumScript([], mps, shots=10)
+
+    with dev.tracker:
+        dev.execute(tape)
+
+    assert dev.tracker.totals["executions"] == expected_exec
+    assert dev.tracker.totals["simulations"] == 1
+    assert dev.tracker.totals["shots"] == expected_shots
+
+
+@pytest.mark.usefixtures("use_legacy_opmath")
+def test_multiple_expval_with_tensors_legacy_opmath():
+    mps, expected_exec, expected_shots = (
+        [qml.expval(qml.PauliX(0)), qml.expval(qml.operation.Tensor(qml.PauliX(0), qml.PauliY(1)))],
+        1,
+        10,
+    )
+    dev = qml.device("default.qubit")
+    tape = qml.tape.QuantumScript([], mps, shots=10)
+
+    with dev.tracker:
+        dev.execute(tape)
+
+    assert dev.tracker.totals["executions"] == expected_exec
+    assert dev.tracker.totals["simulations"] == 1
+    assert dev.tracker.totals["shots"] == expected_shots

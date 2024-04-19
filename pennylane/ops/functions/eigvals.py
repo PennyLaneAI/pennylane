@@ -22,7 +22,7 @@ from functools import reduce, partial
 import scipy
 
 import pennylane as qml
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
 from pennylane import transform
 from pennylane.typing import TensorLike
 
@@ -111,12 +111,11 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
-            raise OperationTransformError(
-                "Input is not an Operator, tape, QNode, or quantum function"
-            )
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
         return _eigvals_tranform(op, k=k, which=which)
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, qml.ops.Hamiltonian):
+
         warnings.warn(
             "For Hamiltonians, the eigenvalues will be computed numerically. "
             "This may be computationally intensive for a large number of wires. "

@@ -14,7 +14,6 @@
 """
 This module contains the qml.counts measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Optional
 import numpy as np
 
@@ -26,7 +25,11 @@ from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
+def counts(
+    op=None,
+    wires=None,
+    all_outcomes=False,
+) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -142,14 +145,11 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
 
         return CountsMP(obs=op, all_outcomes=all_outcomes)
 
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
-
     if wires is not None:
         if op is not None:
             raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
+                "Cannot specify the wires to sample if an observable is provided. The wires "
+                "to sample will be determined directly from the observable."
             )
         wires = Wires(wires)
 
@@ -186,6 +186,8 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
+        if wires is not None:
+            wires = Wires(wires)
         super().__init__(obs, wires, eigvals, id)
 
     def _flatten(self):
@@ -312,7 +314,7 @@ class CountsMP(SampleMeasurement):
             exp2 = 2 ** np.arange(num_wires - 1, -1, -1)
             samples = np.einsum("...i,i", samples, exp2)
             new_shape = samples.shape
-            samples = qml.math.cast_like(samples, qml.math.int8(0))
+            samples = qml.math.cast_like(samples, qml.math.int64(0))
             samples = list(map(convert, samples.ravel()))
             samples = np.array(samples).reshape(new_shape)
 
@@ -340,4 +342,72 @@ class CountsMP(SampleMeasurement):
             for state, count in zip(qml.math.unwrap(states), _counts):
                 outcome_dict[state] = count
 
+        def outcome_to_eigval(outcome: str):
+            return self.eigvals()[int(outcome, 2)]
+
+        if self._eigvals is not None:
+            outcome_dicts = [
+                {outcome_to_eigval(outcome): count for outcome, count in outcome_dict.items()}
+                for outcome_dict in outcome_dicts
+            ]
+
         return outcome_dicts if batched else outcome_dicts[0]
+
+    # pylint: disable=redefined-outer-name
+    def process_counts(self, counts: dict, wire_order: Wires) -> dict:
+        mapped_counts = self._map_counts(counts, wire_order)
+        if self.all_outcomes:
+            self._include_all_outcomes(mapped_counts)
+        else:
+            _remove_unobserved_outcomes(mapped_counts)
+        return mapped_counts
+
+    def _map_counts(self, counts_to_map: dict, wire_order: Wires) -> dict:
+        """
+        Args:
+            counts_to_map: Dictionary where key is binary representation of the outcome and value is its count
+            wire_order: Order of wires to which counts_to_map should be ordered in
+
+        Returns:
+            Dictionary where counts_to_map has been reordered according to wire_order
+        """
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+
+        mapped_counts = {}
+        for outcome, occurrence in counts_to_map.items():
+            mapped_outcome = "".join(outcome[i] for i in mapped_wires)
+            mapped_counts[mapped_outcome] = mapped_counts.get(mapped_outcome, 0) + occurrence
+
+        return mapped_counts
+
+    def _include_all_outcomes(self, outcome_counts: dict) -> None:
+        """
+        Includes missing outcomes in outcome_counts.
+        If an outcome is not present in outcome_counts, it's count is considered 0
+
+        Args:
+            outcome_counts(dict): Dictionary where key is binary representation of the outcome and value is its count
+        """
+        num_wires = len(self.wires)
+        num_outcomes = 2**num_wires
+        if num_outcomes == len(outcome_counts.keys()):
+            return
+
+        binary_pattern = "{0:0" + str(num_wires) + "b}"
+        for outcome in range(num_outcomes):
+            outcome_binary = binary_pattern.format(outcome)
+            if outcome_binary not in outcome_counts:
+                outcome_counts[outcome_binary] = 0
+
+
+def _remove_unobserved_outcomes(outcome_counts: dict):
+    """
+    Removes unobserved outcomes, i.e. whose count is 0 from the outcome_count dictionary.
+
+    Args:
+        outcome_counts(dict): Dictionary where key is binary representation of the outcome and value is its count
+    """
+    for outcome in list(outcome_counts.keys()):
+        if outcome_counts[outcome] == 0:
+            del outcome_counts[outcome]

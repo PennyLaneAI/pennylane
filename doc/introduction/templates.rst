@@ -216,6 +216,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/reflection.png
 
 .. gallery-item::
+    :description: :doc:`Amplitude Amplification <../code/api/pennylane.AmplitudeAmplification>`
+    :figure: _static/templates/subroutines/ampamp.png
+
+.. gallery-item::
     :description: :doc:`Interferometer <../code/api/pennylane.Interferometer>`
     :figure: _static/templates/subroutines/interferometer.png
 
@@ -290,6 +294,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
     :figure: _static/templates/subroutines/small_ctrl.png
+
+.. gallery-item::
+    :description: :doc:`FABLE <../code/api/pennylane.FABLE>`
+    :figure: _static/templates/subroutines/fable.png
 
 .. raw:: html
 

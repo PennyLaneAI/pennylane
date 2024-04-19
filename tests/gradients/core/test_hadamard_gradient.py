@@ -66,12 +66,34 @@ def cost6(x):
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
-    def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape."""
+    def test_trainable_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the Hadamard test gradient"
+        _match = r"Computing the gradient of broadcasted tapes .* using the Hadamard test gradient"
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.hadamard_grad(tape)
+
+    def test_nontrainable_batched_tape(self):
+        """Test that no error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is not differentiated, and that the results correspond to the stacked
+        results of the single-tape derivatives."""
+        dev = qml.device("default.qubit")
+        x = [0.4, 0.2]
+        tape = qml.tape.QuantumScript(
+            [qml.RY(0.6, 0), qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
+        batched_tapes, batched_fn = qml.gradients.hadamard_grad(tape)
+        batched_grad = batched_fn(dev.execute(batched_tapes))
+        separate_tapes = [
+            qml.tape.QuantumScript(
+                [qml.RY(0.6, 0), qml.RX(_x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            )
+            for _x in x
+        ]
+        separate_tapes_and_fns = [qml.gradients.hadamard_grad(t) for t in separate_tapes]
+        separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
+        assert np.allclose(batched_grad, separate_grad)
 
     def test_tape_with_partitioned_shots_multiple_measurements_raises(self):
         """Test that an error is raised with multiple measurements and partitioned shots."""
@@ -779,7 +801,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd_legacy(self):
+    def test_no_trainable_params_qnode_autograd_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -795,7 +817,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch_legacy(self):
+    def test_no_trainable_params_qnode_torch_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.torch", wires=2)
@@ -811,7 +833,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf_legacy(self):
+    def test_no_trainable_params_qnode_tf_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -827,7 +849,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax_legacy(self):
+    def test_no_trainable_params_qnode_jax_legacy_opmath(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.jax", wires=2)

@@ -24,9 +24,10 @@ from pennylane.measurements import (
     Shots,
     StateMeasurement,
     StateMP,
-    expval,
-    var,
 )
+
+from pennylane.wires import Wires
+
 
 # pylint: disable=too-few-public-methods, unused-argument
 
@@ -63,22 +64,6 @@ def test_shape_unrecognized_error():
         mp.shape(dev, Shots(None))
 
 
-@pytest.mark.parametrize("stat_func", [expval, var])
-def test_not_an_observable(stat_func):
-    """Test that a UserWarning is raised if the provided
-    argument might not be hermitian."""
-
-    dev = qml.device("default.qubit.legacy", wires=2)
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.RX(0.52, wires=0)
-        return stat_func(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-    with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-        _ = circuit()
-
-
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
@@ -89,6 +74,9 @@ class TestSampleMeasurement:
             # pylint: disable=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
+
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
 
         dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
@@ -107,6 +95,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
+
         dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
@@ -119,12 +110,12 @@ class TestSampleMeasurement:
         ):
             circuit()
 
-    def test_method_overriden_by_device(self):
+    def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""
 
         dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.PauliX(0)
             return qml.sample(wires=[0]), qml.sample(wires=[1])
@@ -177,7 +168,7 @@ class TestStateMeasurement:
 
         dev = qml.device("default.qubit.legacy", wires=2)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit():
             return qml.state()
 

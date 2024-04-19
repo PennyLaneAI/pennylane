@@ -23,7 +23,7 @@ from pennylane.devices import DefaultQubit
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
 
-
+# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [DefaultQubit(), "finite-diff", False, False],
     [DefaultQubit(), "parameter-shift", False, False],
@@ -33,6 +33,10 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, True],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
+    [qml.device("lightning.qubit", wires=4), "adjoint", False, True],
+    [qml.device("lightning.qubit", wires=4), "adjoint", False, False],
+    [qml.device("lightning.qubit", wires=4), "adjoint", True, True],
+    [qml.device("lightning.qubit", wires=4), "adjoint", True, False],
 ]
 
 TOL_FOR_SPSA = 1.0
@@ -535,11 +539,12 @@ class TestShotsIntegration:
         circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert circuit.gradient_fn == "backprop"
+        assert circuit.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
+        assert circuit.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
@@ -555,6 +560,10 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple probs outputs"""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
+
         kwargs = {
             "diff_method": diff_method,
             "grad_on_execution": grad_on_execution,
@@ -608,6 +617,10 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
+
         kwargs = {
             "diff_method": diff_method,
             "grad_on_execution": grad_on_execution,
@@ -905,6 +918,9 @@ class TestQubitIntegration:
 
     def test_state(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface):
         """Test that the state can be returned and differentiated"""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
 
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
@@ -1755,6 +1771,9 @@ class TestReturn:
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
 
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
+
         @qnode(
             dev,
             interface=interface,
@@ -1782,6 +1801,9 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
 
         @qnode(
             dev,
@@ -1816,6 +1838,9 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned."""
 
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
+
         @qnode(
             dev,
             interface=interface,
@@ -1842,6 +1867,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
 
         @qnode(
             dev,
@@ -1870,6 +1898,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
 
         @qnode(
             dev,
@@ -1905,6 +1936,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("state adjoint diff not supported with lightning")
 
         @qnode(
             dev,

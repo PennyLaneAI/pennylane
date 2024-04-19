@@ -293,22 +293,6 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-    def test_not_an_observable(self, stat_func, return_type):  # pylint: disable=unused-argument
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        if stat_func is sample:
-            pytest.skip("Sampling is not yet supported with symbolic operators.")
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return stat_func(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
 
 class TestProperties:
     """Test for the properties"""
@@ -413,18 +397,6 @@ class TestProperties:
         mp2 = qml.sample(op=m0 * m1)
         mapped_mp2 = mp2.map_wires(wire_map)
         assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
-
-    def test_name_and_data_are_deprecated(self):
-        """Test that MP.name and MP.data are deprecated."""
-        mp = qml.expval(qml.PauliZ(0))
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="MeasurementProcess.name is deprecated"
-        ):
-            _ = mp.name
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="MeasurementProcess.data is deprecated"
-        ):
-            _ = mp.data
 
 
 class TestExpansion:
@@ -595,6 +567,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qml.math.sum(samples[..., self.wires])
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
+
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
@@ -612,6 +587,9 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
+
             @property
             def return_type(self):
                 return Sample
@@ -628,22 +606,6 @@ class TestSampleMeasurement:
             match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
-
-    def test_process_counts_not_implemented(self):
-        """Test that process_counts is not implemented by default."""
-
-        class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
-            def process_samples(self, samples, wire_order, shot_range, bin_size):
-                return qml.math.sum(samples[..., self.wires])
-
-            @property
-            def return_type(self):
-                return Sample
-
-        m = MyMeasurement(wires=[0])
-        with pytest.raises(NotImplementedError):
-            m.process_counts({"0": 10}, wire_order=qml.wires.Wires(0))
 
 
 class TestStateMeasurement:
@@ -701,6 +663,9 @@ class TestMeasurementTransform:
 
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return [True]
+
+            def process_counts(self, counts: dict, wire_order: Wires):
+                return counts
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 

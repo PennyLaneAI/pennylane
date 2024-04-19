@@ -21,12 +21,12 @@ This module contains the :class:`QubitDevice` abstract base class.
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 # pylint: disable=too-many-arguments
 import abc
+import inspect
 import itertools
+import logging
 import warnings
 from collections import defaultdict
-from typing import Union, List
-import inspect
-import logging
+from typing import List, Union
 
 import numpy as np
 
@@ -41,19 +41,20 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     MeasurementValue,
+    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
+    Shots,
     StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
-    Shots,
 )
+from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
-from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
@@ -151,7 +152,7 @@ class QubitDevice(Device):
         "Identity",
         "Projector",
         "Sum",
-        "Sprod",
+        "SProd",
         "Prod",
     }
 
@@ -273,13 +274,38 @@ class QubitDevice(Device):
 
         self.check_validity(circuit.operations, circuit.observables)
 
+        has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
+        if has_mcm:
+            kwargs["mid_measurements"] = {}
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
+        self.apply(
+            circuit.operations,
+            rotations=self._get_diagonalizing_gates(circuit),
+            **kwargs,
+        )
+        if has_mcm:
+            mid_measurements = kwargs["mid_measurements"]
+            mid_values = np.array(tuple(mid_measurements.values()))
+            if np.any(mid_values == -1):
+                for k, v in tuple(mid_measurements.items()):
+                    if v == -1:
+                        mid_measurements.pop(k)
+                return None, mid_measurements
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
+            # Lightning does not support apply(rotations) anymore, so we need to rotate here
+            # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
+            is_lightning = self._is_lightning_device()
+            diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
+                self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
+            if is_lightning and diagonalizing_gates:  # pragma: no cover
+                # pylint: disable=bad-reversed-sequence
+                self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
         if self._shot_vector is not None:
@@ -310,7 +336,7 @@ class QubitDevice(Device):
             )
             self.tracker.record()
 
-        return results
+        return (results, mid_measurements) if has_mcm else results
 
     def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device
@@ -640,8 +666,16 @@ class QubitDevice(Device):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
+                is_lightning = self._is_lightning_device()
+                diagonalizing_gates = (
+                    self._get_diagonalizing_gates(circuit) if is_lightning else None
+                )
+                if is_lightning and diagonalizing_gates:  # pragma: no cover
+                    self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
-
+                if is_lightning and diagonalizing_gates:  # pragma: no cover
+                    # pylint: disable=bad-reversed-sequence
+                    self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
@@ -838,15 +872,13 @@ class QubitDevice(Device):
             )
 
         shots = self.shots
-
+        state_probs = qml.math.unwrap(state_probability)
         basis_states = np.arange(number_of_states)
         if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
-            return np.array(
-                [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
-            )
+            return np.array([np.random.choice(basis_states, shots, p=prob) for prob in state_probs])
 
-        return np.random.choice(basis_states, shots, p=state_probability)
+        return np.random.choice(basis_states, shots, p=state_probs)
 
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):
@@ -1425,7 +1457,7 @@ class QubitDevice(Device):
         if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
-            samples = qml.math.cast_like(samples, qml.math.int8(0))
+            samples = qml.math.cast_like(samples, qml.math.int64(0))
             samples = np.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if mp.all_outcomes:
@@ -1602,7 +1634,7 @@ class QubitDevice(Device):
                     f" measurement {m.__class__.__name__}"
                 )
 
-            if m.obs.name == "Hamiltonian":
+            if not m.obs.has_matrix:
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support Hamiltonian observables."
                 )
@@ -1717,3 +1749,11 @@ class QubitDevice(Device):
         """
         # pylint:disable=no-self-use
         return circuit.diagonalizing_gates
+
+    def _is_lightning_device(self):
+        """Returns True if the device is a Lightning plugin with C++ binaries and False otherwise."""
+        return (
+            hasattr(self, "name")
+            and "Lightning" in str(self.name)
+            and getattr(self, "_CPP_BINARY_AVAILABLE", False)
+        )
