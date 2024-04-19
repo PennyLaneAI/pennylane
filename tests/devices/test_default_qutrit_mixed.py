@@ -86,9 +86,9 @@ class TestPRNGKeySeed:
 
     def test_prng_key_as_seed(self):
         """Test that a jax PRNG can be passed as a seed."""
-        from jax.config import update
+        from jax.config import config
 
-        update("jax_enable_x64", True)
+        config.update("jax_enable_x64", True)
 
         from jax import random
 
