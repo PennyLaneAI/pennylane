@@ -95,6 +95,12 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
     """
+    if qml.capture.plxpr_enabled():
+        if wires is not None:
+            wires = qml.wires.Wires(wires)
+            return qml.capture.probs_p.bind(*wires)
+        raise NotImplementedError
+
     if isinstance(op, MeasurementValue):
         if len(op.measurements) > 1:
             raise ValueError(
@@ -132,39 +138,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     return ProbabilityMP(obs=op, wires=wires)
 
 
-class AbstractProbs(jax.core.AbstractValue):
-    def __init__(self, n_wires: int):
-        self.n_wires = n_wires
-
-    def __eq__(self, other):
-        return isinstance(other, AbstractProbs)
-
-    def __hash__(self):
-        return hash("AbstractProbs")
-
-    def abstract_measurement(self, shots, num_device_wires):
-        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
-        n_wires = num_device_wires if self.n_wires == 0 else self.n_wires
-        shape = (2**n_wires,)
-        return jax.core.ShapedArray(shape, dtype)
-
-
-jax.core.raise_to_shaped_mappings[AbstractProbs] = lambda aval, _: aval
-
-primitive = jax.core.Primitive("probs")
-
-
-@primitive.def_impl
-def _(*wires):
-    return type.__call__(ProbabilityMP, wires)
-
-
-@primitive.def_abstract_eval
-def _(*wires):
-    return AbstractProbs(len(wires))
-
-
-class ProbabilityMP(SampleMeasurement, StateMeasurement, metaclass=qml.capture.PLXPRObj):
+class ProbabilityMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state.
 
     Please refer to :func:`probs` for detailed documentation.
@@ -180,14 +154,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement, metaclass=qml.capture.P
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
-
-    _primitive = primitive
-
-    @classmethod
-    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None):
-        if wires is None:
-            raise NotImplementedError
-        return cls._primitive.bind(*wires)
 
     @property
     def return_type(self):

@@ -58,6 +58,9 @@ def expval(
     Returns:
         ExpectationMP: measurement process instance
     """
+    if qml.capture.plxpr_enabled():
+        return qml.capture.expval_p.bind(op)
+
     if isinstance(op, MeasurementValue):
         return ExpectationMP(obs=op)
 
@@ -75,7 +78,7 @@ def expval(
     return ExpectationMP(op)
 
 
-class ExpectationMP(SampleMeasurement, StateMeasurement, metaclass=qml.capture.PLXPRObj):
+class ExpectationMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the expectation value of the supplied observable.
 
     Please refer to :func:`expval` for detailed documentation.

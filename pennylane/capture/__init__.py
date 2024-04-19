@@ -27,7 +27,7 @@ from .meta_type import create_operator_primitive, PLXPRObj
 from .nested_jaxpr import bind_nested_jaxpr
 
 if has_jax:
-    from .measurements import measure
+    from .measurements import measure, expval_p, probs_p, state_p, sample_p, sample_obs_p
 
 
 def __getattr__(name):

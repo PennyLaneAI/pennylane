@@ -80,6 +80,8 @@ def state() -> "StateMP":
         >>> qml.grad(cost)(x)
         tensor(-0.02498958, requires_grad=True)
     """
+    if qml.capture.plxpr_enabled():
+        return qml.capture.state_p.bind()
     return StateMP()
 
 
@@ -127,35 +129,7 @@ def density_matrix(wires) -> "DensityMatrixMP":
     return DensityMatrixMP(wires=wires)
 
 
-class AbstractState(jax.core.AbstractValue):
-    def __eq__(self, other):
-        return isinstance(other, AbstractState)
-
-    def __hash__(self):
-        return hash("AbstractState")
-
-    def abstract_measurement(self, shots, num_device_wires):
-        dtype = jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
-        shape = (2**num_device_wires,)
-        return jax.core.ShapedArray(shape, dtype)
-
-
-jax.core.raise_to_shaped_mappings[AbstractState] = lambda aval, _: aval
-
-primitive = jax.core.Primitive("state")
-
-
-@primitive.def_impl
-def _():
-    return type.__call__(StateMP)
-
-
-@primitive.def_abstract_eval
-def _():
-    return AbstractState()
-
-
-class StateMP(StateMeasurement, metaclass=qml.capture.PLXPRObj):
+class StateMP(StateMeasurement):
     """Measurement process that returns the quantum state in the computational basis.
 
     Please refer to :func:`state` for detailed documentation.
@@ -165,12 +139,6 @@ class StateMP(StateMeasurement, metaclass=qml.capture.PLXPRObj):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
-
-    _primitive = primitive
-
-    @classmethod
-    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None):
-        return cls._primitive.bind()
 
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)

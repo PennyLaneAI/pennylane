@@ -79,6 +79,71 @@ class AbstractProbs(AbstractMeasurement):
 
 #### Primitives #####
 
+expval_p = jax.core.Primitive("expval")
+
+
+@expval_p.def_impl
+def _(obs):
+    return qml.measurements.ExpectationMP(obs)
+
+
+@expval_p.def_abstract_eval
+def _(obs):
+    return AbstractMeasurement()
+
+
+probs_p = jax.core.Primitive("probs")
+
+
+@probs_p.def_impl
+def _(*wires):
+    wires = qml.wires.Wires(wires)
+    return qml.measurements.ProbabilityMP(wires=wires)
+
+
+@probs_p.def_abstract_eval
+def _(*wires):
+    return AbstractProbs(n_wires=len(wires))
+
+
+state_p = jax.core.Primitive("state")
+
+
+@state_p.def_impl
+def _():
+    return qml.measurements.StateMP()
+
+
+@state_p.def_abstract_eval
+def _():
+    return AbstractState()
+
+
+sample_p = jax.core.Primitive("sample")
+
+
+@sample_p.def_impl
+def _(*wires):
+    return qml.measurements.SampleMP(wires=wires)
+
+
+@sample_p.def_abstract_eval
+def _(*wires):
+    return AbstractSample(n_wires=len(wires))
+
+
+sample_obs_p = jax.core.Primitive("sample_obs")
+
+
+@sample_obs_p.def_impl
+def _(obs):
+    return qml.measurements.SampleMP(obs=obs)
+
+
+@sample_obs_p.def_abstract_eval
+def _(obs):
+    return AbstractObsSample()
+
 
 ### The measure primitive ###############
 
