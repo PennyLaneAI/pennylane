@@ -573,11 +573,11 @@ def _equal_hilbert_schmidt(
                 return False
 
     # Check tape hyperparameters using qml.equal rather than == where necessary
+    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
+        return False
     if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
         return False
     if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
-        return False
-    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
         return False
     if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
         return False
