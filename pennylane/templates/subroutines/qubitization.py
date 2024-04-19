@@ -24,7 +24,7 @@ def _positive_coeffs_hamiltonian(hamiltonian):
     """Transforms the Hamiltonian to ensure that the coefficients are positive
 
     Args:
-        hamiltonian (Union[.Hamiltonian, .Sum, .SProd]): The Hamiltonian written as a linear combination of operators.
+        hamiltonian (Union[.Hamiltonian, .Sum, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of operators.
 
     Returns:
         list(float), list(.Operation): The coefficients and unitaries of the transformed Hamiltonian.
