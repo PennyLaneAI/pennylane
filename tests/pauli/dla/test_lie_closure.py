@@ -62,7 +62,7 @@ class TestPauliVSpace:
         assert vspace._rank == 2
         assert vspace._num_pw == 2
         assert len(vspace._pw_to_idx) == 2
-    
+
     @pytest.mark.parametrize("dtype", [float, complex])
     def test_dtype(self, dtype):
         vspace = PauliVSpace(ops1, dtype=dtype)
