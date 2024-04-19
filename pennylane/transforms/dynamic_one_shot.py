@@ -14,11 +14,12 @@
 """
 Contains the batch dimension transform.
 """
+import warnings
+
 # pylint: disable=import-outside-toplevel
 from collections import Counter
 from itertools import compress
 from typing import Callable, Sequence
-import warnings
 
 import numpy as np
 
@@ -92,6 +93,9 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} "
                 "measurements."
             )
+
+    if not tape.shots:
+        raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
     postselect_present = any(

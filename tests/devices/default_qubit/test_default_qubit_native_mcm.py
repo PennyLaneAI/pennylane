@@ -13,18 +13,14 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 from functools import reduce
-from typing import Sequence, Iterable
+from typing import Iterable, Sequence
 
-from flaky import flaky
 import numpy as np
 import pytest
+from flaky import flaky
 
 import pennylane as qml
-from pennylane.devices.qubit.apply_operation import apply_mid_measure, MidMeasureMP
-from pennylane.transforms.dynamic_one_shot import (
-    accumulate_native_mcm,
-    parse_native_mid_circuit_measurements,
-)
+from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
 
 pytestmark = pytest.mark.slow
 
@@ -150,14 +146,6 @@ def test_apply_mid_measure():
     assert np.allclose(state, 0.0)
 
 
-def test_accumulate_native_mcm_unsupported_error():
-    with pytest.raises(
-        TypeError,
-        match=f"Native mid-circuit measurement mode does not support {type(qml.var(qml.PauliZ(0))).__name__}",
-    ):
-        accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
-
-
 def test_all_invalid_shots_circuit():
 
     dev = qml.device("default.qubit")
@@ -193,23 +181,6 @@ def test_all_invalid_shots_circuit():
             assert len(r1) == len(r2)
         assert np.all(np.isnan(r1))
         assert np.all(np.isnan(r2))
-
-
-@pytest.mark.parametrize(
-    "measurement",
-    [
-        qml.state(),
-        qml.density_matrix(0),
-        qml.vn_entropy(0),
-        qml.mutual_info(0, 1),
-        qml.purity(0),
-        qml.classical_shadow(0),
-    ],
-)
-def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
-    circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [measurement])
-    with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
-        parse_native_mid_circuit_measurements(circuit, None, None)
 
 
 def test_unsupported_measurement():
