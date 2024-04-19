@@ -177,6 +177,33 @@ class TestQNodeIntegration:
         assert qml.math.shape(res) == (2, shots)
         assert set(qml.math.unwrap(res.flatten())).issubset({0, 1, 2, 3})
 
+    @pytest.mark.parametrize("shots", [10, 100, 1000])
+    def test_jit_with_qnode(self, shots):
+        """Test that qnode can be jitted when shots are given"""
+
+        dev = qml.device("default.mixed", wires=2, shots=shots)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(state_ini, a, b, c):
+            qml.QubitDensityMatrix(state_ini, wires=[0, 1])
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.DepolarizingChannel(c, wires=[0])
+            qml.DepolarizingChannel(c, wires=[1])
+            return qml.probs(wires=[0, 1])
+
+        state_ini = jnp.array([1, 0, 0, 0])
+        a, b, c = jax.numpy.array([0.1, 0.2, 0.1])
+
+        rho_ini = jnp.tensordot(state_ini, state_ini, axes=0)
+        res = circuit(rho_ini, a, b, c)
+        jacobian = jax.jacobian(circuit, argnums=[1, 2, 3])(rho_ini, a, b, c)
+
+        assert qml.math.get_interface(res) == "jax"
+        assert all(isinstance(r_, jax.Array) for r_ in jacobian)
+
 
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
