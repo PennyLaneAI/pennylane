@@ -180,7 +180,7 @@ def adjoint(fn, lazy=True):
     return adjoint_qfunc(fn, lazy=lazy)
 
 
-@qml.capture.bind_nested_jaxpr
+@qml.capture.bind_nested_plxpr
 def adjoint_qfunc(fn, lazy=True):
     def wrapper(*args, **kwargs):
         qscript = make_qscript(fn)(*args, **kwargs)

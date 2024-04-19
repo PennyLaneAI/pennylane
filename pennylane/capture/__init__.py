@@ -24,10 +24,10 @@ except ImportError:
 
 from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
 from .meta_type import create_operator_primitive, PLXPRObj
-from .nested_jaxpr import bind_nested_jaxpr
+from .bind_nested_plxpr import bind_nested_plxpr
 
 if has_jax:
-    from .measurements import measure, expval_p, probs_p, state_p, sample_p, sample_obs_p
+    from .measurements import measure, expval_p, probs_p, state_p, sample_p, sample_obs_p, mid_measure_p
 
 
 def __getattr__(name):

@@ -1069,12 +1069,14 @@ class QNode:
             shots = _get_device_shots(self.device)
 
         shots = qml.measurements.Shots(shots)
+        num_wires = len(self.device.wires) if self.device.wires else 0
+
 
         def full_workflow(*inner_args, **inner_kwargs):
             measurements = self.func(*inner_args, **inner_kwargs)
             if not isinstance(measurements, (list, tuple)):
                 measurements = (measurements,)
-            return qml.capture.measure(*measurements, shots=shots)
+            return qml.capture.measure(*measurements, shots=shots, num_device_wires=num_wires)
 
         import jax
 

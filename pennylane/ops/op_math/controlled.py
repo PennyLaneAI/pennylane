@@ -181,7 +181,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
     return ctrl_qfunc(op, control=control, control_values=control_values, work_wires=work_wires)
 
 
-@qml.capture.bind_nested_jaxpr
+@qml.capture.bind_nested_plxpr
 def ctrl_qfunc(op, control, control_values=None, work_wires=None):
     @wraps(op)
     def wrapper(*args, **kwargs):

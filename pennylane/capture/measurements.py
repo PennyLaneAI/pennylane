@@ -53,7 +53,11 @@ class AbstractSample(AbstractMeasurement):
     def abstract_measurement(self, shots, num_device_wires):
         dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         n_wires = num_device_wires if self.n_wires == 0 else self.n_wires
-        shape = (n_wires, shots)
+        shape = []
+        if n_wires != 1:
+            shape.append(n_wires)
+        if shots != 1:
+            shape.append(shots)
         return jax.core.ShapedArray(shape, dtype)
 
 
@@ -78,6 +82,17 @@ class AbstractProbs(AbstractMeasurement):
 
 
 #### Primitives #####
+
+mid_measure_p = jax.core.Primitive("mid_measure")
+
+@mid_measure_p.def_impl
+def _(*wires, reset, postselect):
+    wires = qml.wires.Wires(wires)
+    return qml.measurements.MidMeasureMP(wires, reset=reset, postselect=postselect)
+
+@mid_measure_p.def_abstract_eval
+def _(*wires, reset, postselect):
+    return AbstractSample(n_wires=len(wires))    
 
 expval_p = jax.core.Primitive("expval")
 

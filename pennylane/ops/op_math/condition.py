@@ -17,6 +17,7 @@ Contains the condition transform.
 from functools import wraps
 from typing import Type
 
+import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.tape import make_qscript
@@ -327,49 +328,54 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
-        with_meas_err = (
-            "Only quantum functions that contain no measurements can be applied conditionally."
-        )
 
-        @wraps(true_fn)
-        def wrapper(*args, **kwargs):
-            # We assume that the callable is a quantum function
 
-            recorded_ops = [a for a in args if isinstance(a, Operator)] + [
-                k for k in kwargs.values() if isinstance(k, Operator)
-            ]
+        return cond_qfunc(true_fn, condition)
 
-            # This will dequeue all operators passed in as arguments to the qfunc that is
-            # being conditioned. These are queued incorrectly due to be fully constructed
-            # before the wrapper function is called.
-            if recorded_ops and QueuingManager.recording():
-                for op in recorded_ops:
-                    QueuingManager.remove(op)
+    raise ConditionalTransformError(
+        "Only operations and quantum functions with no measurements can be applied conditionally."
+    )
 
-            # 1. Apply true_fn conditionally
-            qscript = make_qscript(true_fn)(*args, **kwargs)
+    
+@qml.capture.bind_nested_plxpr
+def cond_qfunc(true_fn, condition):
 
-            if qscript.measurements:
+    with_meas_err = (
+        "Only quantum functions that contain no measurements can be applied conditionally."
+    )
+
+    @wraps(true_fn)
+    def wrapper(*args, **kwargs):
+        # We assume that the callable is a quantum function
+
+        recorded_ops = [a for a in args if isinstance(a, Operator)] + [
+            k for k in kwargs.values() if isinstance(k, Operator)
+        ]
+
+        # This will dequeue all operators passed in as arguments to the qfunc that is
+        # being conditioned. These are queued incorrectly due to be fully constructed
+        # before the wrapper function is called.
+        if recorded_ops and QueuingManager.recording():
+            for op in recorded_ops:
+                QueuingManager.remove(op)
+
+        # 1. Apply true_fn conditionally
+        qscript = make_qscript(true_fn)(*args, **kwargs)
+
+        if qscript.measurements:
+            raise ConditionalTransformError(with_meas_err)
+
+        for op in qscript.operations:
+            Conditional(condition, op)
+
+        if False: #false_fn is not None:
+            # 2. Apply false_fn conditionally
+            else_qscript = make_qscript(false_fn)(*args, **kwargs)
+
+            if else_qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)
 
-            for op in qscript.operations:
-                Conditional(condition, op)
+            inverted_condition = ~condition
 
-            if false_fn is not None:
-                # 2. Apply false_fn conditionally
-                else_qscript = make_qscript(false_fn)(*args, **kwargs)
-
-                if else_qscript.measurements:
-                    raise ConditionalTransformError(with_meas_err)
-
-                inverted_condition = ~condition
-
-                for op in else_qscript.operations:
-                    Conditional(inverted_condition, op)
-
-    else:
-        raise ConditionalTransformError(
-            "Only operations and quantum functions with no measurements can be applied conditionally."
-        )
-
-    return wrapper
+            for op in else_qscript.operations:
+                Conditional(inverted_condition, op)

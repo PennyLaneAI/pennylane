@@ -208,6 +208,10 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
               samples, leading to unexpected or incorrect results.
 
     """
+    if qml.capture.plxpr_enabled():
+        wires = Wires(wires)
+        mp = qml.capture.mid_measure_p.bind(*wires, reset=reset, postselect=postselect)
+        return qml.capture.measure(mp, shots=1)[0]
 
     wire = Wires(wires)
     if len(wire) > 1:
