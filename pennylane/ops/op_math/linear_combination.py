@@ -114,8 +114,8 @@ class LinearCombination(Sum):
         observables: List[Operator],
         simplify=False,
         grouping_type=None,
-        grouping_indices=None,
         method="rlf",
+        grouping_indices=None,
         _pauli_rep=None,
         id=None,
     ):
