@@ -233,6 +233,9 @@
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
+* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
+  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
