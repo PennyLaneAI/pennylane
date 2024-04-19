@@ -65,7 +65,8 @@ and any keyword args are passed as keyword metadata.
         _:AbstractOperator() = MyOp1[key=a n_wires=2] a 0 1
     in () }
 
-But an operator developer may need to override custom behavior for calling ``cls._primitive.bind`` if:
+But an operator developer may need to override custom behavior for calling ``cls._primitive.bind`` 
+(where ``cls`` indicates the class) if:
 
 * The operator does not accept wires like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
 * The operator allows metadata to be provided positionally, like :class:`~.PauliRot`.
@@ -84,7 +85,7 @@ will be called when constructing a new class instance instead of ``type.__call__
         @classmethod
         def _primitive_bind_call(cls, metadata):
             return cls._primitive.bind(metadata=metadata)
-            
+
 
     def qfunc():
         JustMetadataOp("Y")
@@ -98,4 +99,4 @@ will be called when constructing a new class instance instead of ``type.__call__
 
 """
 from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
-from .meta_type import PLXPRObj, create_operator_primitive
+from .meta_type import PLXPRMeta, create_operator_primitive

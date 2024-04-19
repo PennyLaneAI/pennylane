@@ -120,7 +120,7 @@ def create_operator_primitive(operator_type: type) -> "Optional[jax.core.Primiti
     return primitive
 
 
-class PLXPRObj(abc.ABCMeta):
+class PLXPRMeta(abc.ABCMeta):
     """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
     of normal class creation.
 
@@ -130,7 +130,7 @@ class PLXPRObj(abc.ABCMeta):
 
     def _primitive_bind_call(cls, *args, **kwargs):
         raise NotImplementedError(
-            "Types using PLXPRObj must implement cls._primitive_bind_call to"
+            "Types using PLXPRMeta must implement cls._primitive_bind_call to"
             " gain integration with plxpr program capture."
         )
 

@@ -223,6 +223,9 @@
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
+* Operators can now be automatically captured by `jax.make_jaxpr` via use of the new `qml.capture.PLXPRMeta`.
+  [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
