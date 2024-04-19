@@ -377,7 +377,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.ParticleConservingU1` and `qml.ParticleConservingU2` no longer raise an error when the initial state is not specified.
+* `qml.ParticleConservingU1` and `qml.ParticleConservingU2` no longer raise an error when the initial state is not specified but default to the all-zeros state.
   [(#5535)](https://github.com/PennyLaneAI/pennylane/pull/5535)
 
 * The `dynamic_one_shot` transform now works with broadcasting.
