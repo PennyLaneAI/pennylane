@@ -117,7 +117,7 @@ class TestQNodeIntegration:
     def test_channel_jit_compatible(self, diff_method):
         """Test that `default.mixed` is compatible with jax-jit"""
 
-        a, b, c = jax.numpy.array([0.1, 0.2, 0.1])
+        a, b, c = jnp.array([0.1, 0.2, 0.1])
 
         dev = qml.device("default.mixed", wires=2)
 
@@ -195,7 +195,7 @@ class TestQNodeIntegration:
             return qml.probs(wires=[0, 1])
 
         state_ini = jnp.array([1, 0, 0, 0])
-        a, b, c = jax.numpy.array([0.1, 0.2, 0.1])
+        a, b, c = jnp.array([0.1, 0.2, 0.1])
 
         rho_ini = jnp.tensordot(state_ini, state_ini, axes=0)
         res = circuit(rho_ini, a, b, c)
