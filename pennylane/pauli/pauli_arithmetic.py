@@ -904,6 +904,29 @@ class PauliSentence(dict):
         matrix.eliminate_zeros()
         return matrix
 
+    def _to_dense_mat(self, wire_order):
+        """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
+        that it is composed of. See pauli_sparse_matrices.md for the technical details."""
+        pauli_words = list(self)  # Ensure consistent ordering
+
+        op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
+        _, unique_sparse_structures, unique_invs = np.unique(
+            op_sparse_idx, axis=0, return_index=True, return_inverse=True
+        )
+        pw_sparse_structures = unique_sparse_structures[unique_invs]
+
+        full_matrix = None
+        for sparse_structure in unique_sparse_structures:
+            indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
+            mat = self._sum_same_structure_pws_dense([pauli_words[i] for i in indices], wire_order)
+
+            if full_matrix is None:
+                full_matrix = mat
+            else:
+                full_matrix += mat
+
+        return full_matrix
+
     def dot(self, vector, wire_order=None):
         """Computes the matrix-vector product of the Pauli sentence with a state vector.
         See pauli_sparse_matrices.md for the technical details."""
@@ -945,6 +968,24 @@ class PauliSentence(dict):
             )
         data = outer.T @ inner
         return indices, data.ravel()
+
+    def _sum_same_structure_pws_dense(self, pauli_words, wire_order):
+        matrix_size = 2 ** (len(wire_order))
+        base_matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
+
+        data0 = pauli_words[0]._get_csr_data(wire_order, 1)
+        base_matrix.data = np.ones_like(data0)
+        base_matrix.indices = pauli_words[0]._get_csr_indices(wire_order)
+        base_matrix.indptr = _cached_arange(
+            matrix_size + 1
+        )  # Non-zero entries by row (starting from 0)
+        base_matrix = base_matrix.toarray()
+
+        data = self[pauli_words[0]] * data0
+        for pw in pauli_words[1:]:
+            data += self[pw] * pw._get_csr_data(wire_order, 1)
+
+        return data * base_matrix
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
