@@ -115,6 +115,8 @@ def naive_processing_fn(res, coeffs, offset):
             dot_products.append(qml.math.squeeze(r) * c)
         else:
             dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
+    if len(dot_products) == 0:
+        return offset
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
     return qml.math.convert_like(summed_dot_products + offset, res[0])
 

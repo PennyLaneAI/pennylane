@@ -404,6 +404,18 @@ class TestHamiltonianExpand:
         processed_res = fn(dummy_res)
         assert qml.math.allclose(processed_res, 10.0)
 
+    def test_only_constant_offset(self):
+        """Tests that hamiltonian_expand can handle a single Identity observable"""
+
+        H = qml.Hamiltonian([1.5, 2.5], [qml.I(), qml.I()])
+
+        @functools.partial(qml.transforms.hamiltonian_expand, group=False)
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(H)
+
+        assert qml.math.allclose(circuit(), 4.0)
+
 
 with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
@@ -613,6 +625,60 @@ class TestSumExpand:
         # e.g. qml.expval(qml.PauliX(0)) = [1.23]
         res = [1.23]
         assert fn(res) == 1.23
+
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_prod_tape(self, grouping):
+        """Tests that ``sum_expand`` works with a single Prod measurement"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit():
+            return qml.expval(qml.prod(qml.PauliZ(0), qml.I()))
+
+        assert circuit() == 1.0
+
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_sprod_tape(self, grouping):
+        """Tests that ``sum_expand`` works with a single SProd measurement"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit():
+            return qml.expval(qml.s_prod(1.5, qml.Z(0)))
+
+        assert circuit() == 1.5
+
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_no_obs_tape(self, grouping):
+        """Tests tapes with only constant offsets (only measurements on Identity)"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit():
+            return qml.expval(qml.s_prod(1.5, qml.I(0)))
+
+        res = circuit()
+        assert qml.math.allclose(res, 1.5)
+
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_no_obs_tape_multi_measurement(self, grouping):
+        """Tests tapes with only constant offsets (only measurements on Identity)"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit():
+            return qml.expval(qml.s_prod(1.5, qml.I())), qml.expval(qml.s_prod(2.5, qml.I()))
+
+        res = circuit()
+        assert qml.math.allclose(res, [1.5, 2.5])
 
     @pytest.mark.parametrize("grouping", [True, False])
     def test_sum_expand_broadcasting(self, grouping):

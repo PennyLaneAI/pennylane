@@ -1877,7 +1877,8 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
-    def test_multiple_hamiltonian_expansion_finite_shots(self):
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""
 
         dev = qml.device("default.qubit.legacy", wires=3, shots=50000)
@@ -1885,6 +1886,10 @@ class TestTapeExpansion:
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
         H = qml.Hamiltonian(c, obs)
+
+        if grouping:
+            H.compute_grouping()
+            assert len(H.grouping_indices) == 2
 
         @qnode(dev)
         def circuit():
