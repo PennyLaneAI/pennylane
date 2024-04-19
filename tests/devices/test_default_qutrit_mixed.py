@@ -13,9 +13,10 @@
 # limitations under the License.
 """Tests for default qutrit mixed."""
 
+from functools import reduce
 import pytest
 import numpy as np
-from functools import reduce
+
 
 import pennylane as qml
 from pennylane import math
@@ -758,7 +759,7 @@ class TestSumOfTermsDifferentiability:
     x = 0.52
 
     @staticmethod
-    def f(scale, coeffs, n_wires=5, offset=0.1, convert_to_hamiltonian=False):
+    def f(scale, coeffs, n_wires=5, offset=0.1):
         """Function to differentiate that implements a circuit with a SumOfTerms operator"""
         ops = [qml.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(n_wires)]
         H = qml.Hamiltonian(
