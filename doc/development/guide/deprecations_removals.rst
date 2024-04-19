@@ -4,7 +4,8 @@ Deprecations and Removals
 PennyLane is under continuous development and we sometimes need to make breaking changes to improve
 the library. When these breaking changes are necessary, we should make sure to give our users time
 to update their workflows to adhere to any new implementation before completely removing the old
-one. All ongoing and completed deprecations can be found in :doc:`the deprecations page <../deprecations>`.
+one. All ongoing and completed deprecations can be found in
+:doc:`the deprecations page <../../news/deprecations>`.
 
 Deprecating a feature
 ---------------------
@@ -55,7 +56,7 @@ a feature:
    ``pytest.warns`` context as shown above. For tests that depend on it but are not written to
    test it specifically, update them to use the new/preferred code.
 
-7. Add an entry to the top of the "Pending deprecations" section of ``doc/development/deprecations.rst``.
+7. Add an entry to the top of the "Pending deprecations" section of ``doc/news/deprecations.rst``.
    There should be existing examples to follow for style.
 
 8. Add a similar entry to the bottom of the "Deprecations" section in ``doc/releases/changelog-dev.md``.
@@ -78,7 +79,7 @@ Here are the steps needed to properly remove a deprecated feature:
 
 1. Remove the deprecated source code, along with all tests that cover it.
 
-2. In ``doc/development/deprecations.rst``, move the existing deprecation entry to the "Completed
+2. In ``doc/news/deprecations.rst``, move the existing deprecation entry to the "Completed
    deprecation cycles" section below. Be sure to update the language to state that it has been
    removed, and ensure that the PennyLane version in which it's being removed is correct.
 

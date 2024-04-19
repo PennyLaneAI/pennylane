@@ -139,7 +139,7 @@ class TransformDispatcher:
             "removed. Please decorate with @functools.partial(transform_fn, **transform_kwargs) "
             "instead, or call the transform directly using qnode = transform_fn(qnode, "
             "**transform_kwargs). Visit the deprecations page for more details: "
-            "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
+            "https://docs.pennylane.ai/en/stable/news/deprecations.html#completed-deprecation-cycles",
         )
 
     def __repr__(self):
