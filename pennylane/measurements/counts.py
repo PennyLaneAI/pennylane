@@ -314,7 +314,7 @@ class CountsMP(SampleMeasurement):
             exp2 = 2 ** np.arange(num_wires - 1, -1, -1)
             samples = np.einsum("...i,i", samples, exp2)
             new_shape = samples.shape
-            samples = qml.math.cast_like(samples, qml.math.int8(0))
+            samples = qml.math.cast_like(samples, qml.math.int64(0))
             samples = list(map(convert, samples.ravel()))
             samples = np.array(samples).reshape(new_shape)
 
