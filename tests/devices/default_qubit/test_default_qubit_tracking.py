@@ -255,10 +255,9 @@ def test_single_expval(mps, expected_exec, expected_shots):
         assert dev.tracker.totals["shots"] == 3 * expected_shots
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
-def test_multiple_expval_with_tensors_legacy_opmath():
+def test_multiple_expval_with_prod():
     mps, expected_exec, expected_shots = (
-        [qml.expval(qml.PauliX(0)), qml.expval(qml.operation.Tensor(qml.PauliX(0), qml.PauliY(1)))],
+        [qml.expval(qml.PauliX(0)), qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1)))],
         1,
         10,
     )
