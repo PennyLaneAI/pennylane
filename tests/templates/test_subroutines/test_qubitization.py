@@ -237,9 +237,8 @@ class TestDifferentiability:
         assert jac.shape == (4,)
         assert np.allclose(jac, self.exp_grad, atol=0.01)
 
-    # @pytest.mark.torch
-    # @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.xfail(reason="Torch with operators 'op1 @ op2' does work correctly together.")
+    @pytest.mark.torch
+    @pytest.mark.parametrize("shots", [None])
     def test_qnode_torch(self, shots):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
