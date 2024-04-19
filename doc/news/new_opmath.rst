@@ -233,7 +233,7 @@ To help identify a fix, select the option below that describes your situation.
     >>> qml.operation.active_new_opmath() # confirm opmath is active (by default)
     True
     >>> qml.ops.Hamiltonian([0.5], [X(0) @ X(1)])
-    PennyLaneDeprecationWarning: Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. Instead, use 'qml.Hamiltonian', or use 'qml.operation.disable_new_opmath()' to continue to access the legacy functionality. See https://docs.pennylane.ai/en/stable/news/deprecations.html for more details.
+    PennyLaneDeprecationWarning: Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. Instead, use 'qml.Hamiltonian', or use 'qml.operation.disable_new_opmath()' to continue to access the legacy functionality. See https://docs.pennylane.ai/en/stable/development/deprecations.html for more details.
     ValueError: Could not create circuits. Some or all observables are not valid.
 
     However, using ``qml.Hamiltonian`` works as expected.
