@@ -25,7 +25,6 @@ import pennylane as qml
 from pennylane.transforms.core import TransformProgram
 from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
-from pennylane.measurements import ExpectationMP
 
 from . import Device
 from .modifiers import single_tape_support, simulator_tracking
