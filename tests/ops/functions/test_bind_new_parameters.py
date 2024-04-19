@@ -474,6 +474,30 @@ def test_projector(op, new_params, expected_op):
     assert new_op is not op
 
 
+@pytest.mark.parametrize(
+    "op, new_params, expected_op",
+    [
+        (qml.RX(0.123, 0), (0.456,), qml.RX(0.456, 0)),
+        (
+            qml.QubitUnitary([[1, 0], [0, -1]], 0),
+            ([[0, 1], [1, 0]],),
+            qml.QubitUnitary([[0, 1], [1, 0]], 0),
+        ),
+        (qml.Rot(1.23, 4.56, 7.89, 0), (9.87, 6.54, 3.21), qml.Rot(9.87, 6.54, 3.21, 0)),
+    ],
+)
+def test_conditional_ops(op, new_params, expected_op):
+    """Test that Conditional ops are bound correctly."""
+    mp0 = qml.measurements.MidMeasureMP(qml.wires.Wires(0), reset=True, id="foo")
+    mv0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
+    cond_op = qml.ops.Conditional(mv0, op)
+    new_op = bind_new_parameters(cond_op, new_params)
+
+    assert isinstance(new_op, qml.ops.Conditional)
+    assert new_op.then_op == expected_op
+    assert new_op.meas_val.measurements == [mp0]
+
+
 def test_unsupported_op_copy_and_set():
     """Test that trying to use `bind_new_parameters` on an operator without
     a supported dispatcher will fall back to copying the operator and setting
