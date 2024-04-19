@@ -781,6 +781,7 @@ class TestHighLevelIntegration:
         # compare results to results of non-decorated circuit
         assert np.allclose(circuit(x), res)
 
+
 class TestMeasurements:
     """Tests for measurements with default.mixed"""
 

@@ -661,6 +661,7 @@ class TestHighLevelIntegration:
         grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
 
+
 class TestMeasurements:
     """Tests for measurements with default.mixed"""
 

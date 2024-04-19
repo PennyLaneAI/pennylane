@@ -775,6 +775,7 @@ class TestHighLevelIntegration:
 
         assert np.allclose(expected, res)
 
+
 class TestMeasurements:
     """Tests for measurements with default.mixed"""
 
