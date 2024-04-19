@@ -166,9 +166,17 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/importing_workflows
    introduction/chemistry
    introduction/data
+   introduction/logging
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Release news
+   :hidden:
+
+   development/release_notes.md
+   development/deprecations
    introduction/returns
    introduction/new_opmath
-   introduction/logging
 
 .. toctree::
    :maxdepth: 1
@@ -178,8 +186,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    development/guide
    development/plugins
    development/adding_operators
-   development/deprecations
-   development/release_notes.md
 
 .. toctree::
    :maxdepth: 1
