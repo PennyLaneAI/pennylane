@@ -877,15 +877,13 @@ class QubitDevice(Device):
             )
 
         shots = self.shots
-
+        state_probs = qml.math.unwrap(state_probability)
         basis_states = np.arange(number_of_states)
         if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
-            return np.array(
-                [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
-            )
+            return np.array([np.random.choice(basis_states, shots, p=prob) for prob in state_probs])
 
-        return np.random.choice(basis_states, shots, p=state_probability)
+        return np.random.choice(basis_states, shots, p=state_probs)
 
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):

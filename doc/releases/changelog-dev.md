@@ -233,6 +233,9 @@
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
+* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
+  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
@@ -463,6 +466,9 @@
 
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
+* Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
+  [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
 
 <h3>Contributors ✍️</h3>
 
