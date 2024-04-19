@@ -82,6 +82,17 @@ def test_unsupported_measurements():
         _, _ = qml.dynamic_one_shot(tape)
 
 
+def test_unsupported_shots():
+    """Test that using shots=None raises an error."""
+    tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.probs(wires=0)], shots=None)
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="dynamic_one_shot is only supported with finite shots.",
+    ):
+        _, _ = qml.dynamic_one_shot(tape)
+
+
 @pytest.mark.parametrize("n_shots", range(1, 10))
 def test_len_tapes(n_shots):
     """Test that the transform produces the correct number of tapes."""
