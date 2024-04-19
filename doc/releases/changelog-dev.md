@@ -283,9 +283,8 @@
 * Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
 
-* Created the `DefaultQutritMixed` class which implements `device.Device` with an implementation 
-  for `preprocess`, `execute` has not been implemented yet.
-  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
+* Implement `Shots.bins()` method.
+  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
 * Added `execute` to `devices.DefaultQutritMixed` device. This addition allows users to simulate qutrit circuits using the new device.
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
@@ -387,6 +386,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.counts` no longer returns negative samples when measuring 8 or more wires.
+  [(#5544)](https://github.com/PennyLaneAI/pennylane/pull/5544)
 
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
