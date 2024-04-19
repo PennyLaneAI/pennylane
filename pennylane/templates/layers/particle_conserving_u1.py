@@ -183,9 +183,9 @@ class ParticleConservingU1(Operation):
         weights (tensor_like): Array of weights of shape ``(D, M, 2)``.
             ``D`` is the number of entangler block layers and :math:`M=N-1`
             is the number of exchange gates :math:`U_{1,\mathrm{ex}}` per layer.
-        wires (Iterable): wires that the template acts on
+        wires (Iterable): wires that the template acts on.
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
-            used to initialize the wires
+            used to initialize the wires. If ``None``, a tuple of zeros is selected as initial state.
 
     .. details::
         :title: Usage Details
@@ -265,6 +265,8 @@ class ParticleConservingU1(Operation):
             raise ValueError(
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
+
+        init_state = tuple(0 for _ in wires) if init_state is None else init_state
 
         self._hyperparameters = {"init_state": tuple(init_state)}
 
