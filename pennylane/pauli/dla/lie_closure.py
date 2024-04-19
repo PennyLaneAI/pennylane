@@ -194,6 +194,7 @@ class PauliVSpace:
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): Operators that span the vector space.
+        dtype (type): ``dtype`` of the underlying DOK sparse matrix ``M``. Default is ``float``.
 
     **Example**
 
@@ -233,7 +234,9 @@ class PauliVSpace:
      1.0 * X(0)]
     """
 
-    def __init__(self, generators):
+    def __init__(self, generators, dtype=float):
+
+        self.dtype = dtype
 
         if any(not isinstance(g, PauliSentence) for g in generators):
             generators = [
@@ -251,7 +254,7 @@ class PauliVSpace:
         self._basis = []
         rank = 0
 
-        self._M = np.zeros((num_pw, rank), dtype=float)
+        self._M = np.zeros((num_pw, rank), dtype=self.dtype)
         self._rank = rank
         self._num_pw = num_pw
 
