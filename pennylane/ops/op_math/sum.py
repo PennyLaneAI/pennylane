@@ -232,7 +232,7 @@ class Sum(CompositeOp):
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
         self._grouping_indices = grouping_indices
-        if grouping_type is not None and grouping_indices is None:
+        if grouping_indices is None and grouping_type is not None:
             self.compute_grouping(grouping_type=grouping_type, method=method)
 
     @property
