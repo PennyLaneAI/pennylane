@@ -153,18 +153,13 @@ class TestSupportsDerivatives:
 
 
 class TestBasicCircuit:
-    """Tests a basic circuit with one RX gate and two simple expectation values."""
+    """Tests a basic circuit with one TRX gate and two simple expectation values."""
 
     @staticmethod
     def get_TRX_quantum_script(phi, subspace):
         """Get the quantum script where TRX is applied then GellMann observables are measured"""
         ops = [qml.TRX(phi, wires=0, subspace=subspace)]
-        obs = [
-            qml.expval(qml.GellMann(0, 2)),
-            qml.expval(qml.GellMann(0, 3)),
-            qml.expval(qml.GellMann(0, 5)),
-            qml.expval(qml.GellMann(0, 8)),
-        ]
+        obs = [qml.expval(qml.GellMann(0, index)) for index in [2, 3, 5, 8]]
         return qml.tape.QuantumScript(ops, obs)
 
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
@@ -242,19 +237,14 @@ class TestBasicCircuit:
 
         result = f(phi)
         expected = expected_TRX_circ_expval_values(phi.detach().numpy(), subspace)
-        assert qml.math.allclose(result[0], expected[0])
-        assert qml.math.allclose(result[1], expected[1])
-        assert qml.math.allclose(result[2], expected[2])
-        assert qml.math.allclose(result[3], expected[3])
 
-        g = torch.autograd.functional.jacobian(f, phi + 0j)
+        result_detached = math.asarray(result, like="torch").detach().numpy()
+        assert math.allclose(result_detached, expected)
+
+        jacobian = math.asarray(torch.autograd.functional.jacobian(f, phi + 0j), like="torch")
         expected = expected_TRX_circ_expval_jacobians(phi.detach().numpy(), subspace)
-        assert qml.math.allclose(g[0], expected[0])
-        assert qml.math.allclose(g[1], expected[1])
-        assert qml.math.allclose(g[2], expected[2])
-        assert qml.math.allclose(g[3], expected[3])
+        assert math.allclose(jacobian.detach().numpy(), expected)
 
-    # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_tf_results_and_backprop(self, subspace):
@@ -272,16 +262,13 @@ class TestBasicCircuit:
         expected = expected_TRX_circ_expval_values(phi, subspace)
         assert qml.math.allclose(result, expected)
 
-        grad0 = grad_tape.jacobian(result[0], [phi])
-        grad1 = grad_tape.jacobian(result[1], [phi])
-        grad2 = grad_tape.jacobian(result[2], [phi])
-        grad3 = grad_tape.jacobian(result[3], [phi])
-
         expected = expected_TRX_circ_expval_jacobians(phi, subspace)
-        assert qml.math.allclose(grad0[0], expected[0])
-        assert qml.math.allclose(grad1[0], expected[1])
-        assert qml.math.allclose(grad2[0], expected[2])
-        assert qml.math.allclose(grad3[0], expected[3])
+        assert math.all(
+            [
+                math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
+                for one_obs_result, one_obs_expected in zip(result, expected)
+            ]
+        )
 
     @pytest.mark.tf
     @pytest.mark.parametrize("op,param", [(qml.TRX, np.pi), (qml.QutritBasisState, [1])])
@@ -318,23 +305,29 @@ class TestSampleMeasurements:
     @staticmethod
     def expval_of_TRY_circ(x, subspace):
         """Find the expval of GellMann_3 on simple TRY circuit"""
-        if subspace[1] == 1:
+        if subspace == (0, 1):
             return np.cos(x)
-        return np.cos(x / 2) ** 2
+        if subspace == (0, 2):
+            return np.cos(x / 2) ** 2
+        raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
     @staticmethod
     def sample_sum_of_TRY_circ(x, subspace):
-        """Find the expval of computational basis for both wires on simple TRY circuit"""
-        if subspace[1] == 1:
+        """Find the expval of computational basis bitstring value for both wires on simple TRY circuit"""
+        if subspace == (0, 1):
             return [np.sin(x / 2) ** 2, 0]
-        return [2 * np.sin(x / 2) ** 2, 0]
+        if subspace == (0, 2):
+            return [2 * np.sin(x / 2) ** 2, 0]
+        raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
     @staticmethod
     def expval_of_2_qutrit_circ(x, subspace):
-        """expval of GellMann_3 on wire=0 on the 2 qutrit circuit used"""
-        if subspace[1] == 1:
+        """Gets the expval of GellMann_3 on wire=0 on the 2-qutrit circuit used"""
+        if subspace == (0, 1):
             return np.cos(x)
-        return np.cos(x / 2) ** 2
+        if subspace == (0, 2):
+            return np.cos(x / 2) ** 2
+        raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
     @staticmethod
     def probs_of_2_qutrit_circ(x, y, subspace):
@@ -348,10 +341,12 @@ class TestSampleMeasurements:
             ]
         )
         probs **= 2
-        if subspace[1] == 1:
+        if subspace == (0, 1):
             keys = ["00", "01", "10", "11"]
-        else:
+        elif subspace == (0, 2):
             keys = ["00", "02", "20", "22"]
+        else:
+            raise ValueError(f"Test cases doesn't support subspace {subspace}")
         return keys, probs
 
     def test_single_expval(self, subspace):
@@ -791,7 +786,7 @@ class TestExecutingBatches:
         assert qml.math.allclose(jacobian_1, jacobian_3)
 
 
-@pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestSumOfTermsDifferentiability:
     """Basically a copy of the `qutrit_mixed.measure` test but using the device instead."""
 
@@ -801,20 +796,13 @@ class TestSumOfTermsDifferentiability:
     def f(scale, coeffs, n_wires=5, offset=0.1, convert_to_hamiltonian=False):
         """Function to differentiate that implements a circuit with a SumOfTerms operator"""
         ops = [qml.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(n_wires)]
-
-        if convert_to_hamiltonian:
-            H = qml.Hamiltonian(
-                coeffs,
-                [
-                    qml.operation.Tensor(*(qml.GellMann(i, 3) for i in range(n_wires))),
-                    qml.operation.Tensor(*(qml.GellMann(i, 5) for i in range(n_wires))),
-                ],
-            )
-        else:
-            t1 = qml.s_prod(coeffs[0], qml.prod(*(qml.GellMann(i, 3) for i in range(n_wires))))
-            t2 = qml.s_prod(coeffs[1], qml.prod(*(qml.GellMann(i, 5) for i in range(n_wires))))
-            H = t1 + t2
-
+        H = qml.Hamiltonian(
+            coeffs,
+            [
+                reduce(lambda x, y: x @ y, (qml.GellMann(i, 3) for i in range(n_wires))),
+                reduce(lambda x, y: x @ y, (qml.GellMann(i, 5) for i in range(n_wires))),
+            ],
+        )
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return DefaultQutritMixed().execute(qs)
 
@@ -830,36 +818,39 @@ class TestSumOfTermsDifferentiability:
         "coeffs",
         [
             (qml.numpy.array(2.5), qml.numpy.array(6.2)),
-            # (qml.numpy.array(2.5, requires_grad=False),  # TODO: add once diff testing added
-            #  qml.numpy.array(6.2, requires_grad=False)),
+            (qml.numpy.array(2.5, requires_grad=False), qml.numpy.array(6.2, requires_grad=False)),
         ],
     )
-    def test_autograd_backprop(self, convert_to_hamiltonian, coeffs):
-        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
+    def test_autograd_backprop(self, coeffs):
+        """Test that backpropagation derivatives work in autograd with
+        Hamiltonians using new and old math."""
+
         x = qml.numpy.array(self.x)
-        out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        out = self.f(x, coeffs)
         expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        gradient = qml.grad(self.f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        gradient = qml.grad(self.f)(x, coeffs)
         expected_gradient = qml.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.autograd
-    def test_autograd_backprop_coeffs(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
+    def test_autograd_backprop_coeffs(self):
+        """Test that backpropagation derivatives work in autograd with
+        the coefficients of Hamiltonians using new and old math."""
+
         coeffs = qml.numpy.array((2.5, 6.2), requires_grad=True)
-        gradient = qml.grad(self.f, argnum=1)(
-            self.x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian
-        )
+        gradient = qml.grad(self.f, argnum=1)(self.x, coeffs)
         expected_gradient = qml.grad(self.expected)(self.x, coeffs)
+
         assert len(gradient) == 2
         assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
-        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
+    def test_jax_backprop(self, use_jit):
+        """Test that backpropagation derivatives work with jax with
+        Hamiltonians using new and old math."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
@@ -868,37 +859,32 @@ class TestSumOfTermsDifferentiability:
         coeffs = (5.2, 6.7)
         f = jax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
 
-        out = f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        out = f(x, coeffs)
         expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        gradient = jax.grad(f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        gradient = jax.grad(f)(x, coeffs)
         expected_gradient = jax.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", (True, False))
-    def test_jax_backprop_coeffs(self, convert_to_hamiltonian, use_jit):
-        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
-        if use_jit and not convert_to_hamiltonian:
-            pytest.skip("Jit will fail in making sum due to checking if Hermitian")
+    def test_jax_backprop_coeffs(self):
+        """Test that backpropagation derivatives work with jax with
+        the coefficients of Hamiltonians using new and old math."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
         coeffs = jax.numpy.array((5.2, 6.7), dtype=jax.numpy.float64)
 
-        f = jax.jit(self.f, static_argnums=(0, 2, 3, 4)) if use_jit else self.f
-
-        gradient = jax.grad(f, argnums=1)(
-            self.x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian
-        )
+        gradient = jax.grad(self.f, argnums=1)(self.x, coeffs)
         expected_gradient = jax.grad(self.expected, argnums=1)(self.x, coeffs)
         assert len(gradient) == 2
         assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.torch
-    def test_torch_backprop(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
+    def test_torch_backprop(self):
+        """Test that backpropagation derivatives work with torch with
+        Hamiltonians using new and old math."""
         import torch
 
         coeffs = [
@@ -908,7 +894,7 @@ class TestSumOfTermsDifferentiability:
 
         x = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
         x2 = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
-        out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        out = self.f(x, coeffs)
         expected_out = self.expected(x2, coeffs, like="torch")
         assert qml.math.allclose(out, expected_out)
 
@@ -917,15 +903,16 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(x.grad, x2.grad)
 
     @pytest.mark.torch
-    def test_torch_backprop_coeffs(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
+    def test_torch_backprop_coeffs(self):
+        """Test that backpropagation derivatives work with torch with
+        the coefficients of Hamiltonians using new and old math."""
         import torch
 
         coeffs = torch.tensor((9.2, 6.2), requires_grad=True, dtype=torch.float64)
         coeffs_expected = torch.tensor((9.2, 6.2), requires_grad=True, dtype=torch.float64)
 
         x = torch.tensor(-0.289, requires_grad=False, dtype=torch.float64)
-        out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        out = self.f(x, coeffs)
         expected_out = self.expected(x, coeffs_expected, like="torch")
         assert qml.math.allclose(out, expected_out)
 
@@ -935,15 +922,16 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(coeffs.grad, coeffs_expected.grad)
 
     @pytest.mark.tf
-    def test_tf_backprop(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
+    def test_tf_backprop(self):
+        """Test that backpropagation derivatives work with tensorflow with
+        Hamiltonians using new and old math."""
         import tensorflow as tf
 
         x = tf.Variable(self.x)
         coeffs = [8.3, 5.7]
 
         with tf.GradientTape() as tape1:
-            out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+            out = self.f(x, coeffs)
 
         with tf.GradientTape() as tape2:
             expected_out = self.expected(x, coeffs)
@@ -954,14 +942,15 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.tf
-    def test_tf_backprop_coeffs(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
+    def test_tf_backprop_coeffs(self):
+        """Test that backpropagation derivatives work with tensorflow with
+        the coefficients of Hamiltonians using new and old math."""
         import tensorflow as tf
 
         coeffs = tf.Variable([8.3, 5.7])
 
         with tf.GradientTape() as tape1:
-            out = self.f(self.x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+            out = self.f(self.x, coeffs)
 
         with tf.GradientTape() as tape2:
             expected_out = self.expected(self.x, coeffs)
