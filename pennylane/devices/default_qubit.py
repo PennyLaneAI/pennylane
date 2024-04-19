@@ -648,28 +648,17 @@ class DefaultQubit(Device):
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            results = tuple(
-                _adjoint_jac_wrapper(
-                    c, rng=self._rng, debugger=self._debugger, prng_key=self.get_prng_keys()[0]
-                )
-                for c in circuits
-            )
+            results = tuple(_adjoint_jac_wrapper(c, debugger=self._debugger) for c in circuits)
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
                     executor.map(
                         _adjoint_jac_wrapper,
                         vanilla_circuits,
-                        seeds,
-                        self.get_prng_keys(num=len(vanilla_circuits)),
                     )
                 )
-
-            # reset _rng to mimic serial behaviour
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return tuple(zip(*results))
 
@@ -721,14 +710,11 @@ class DefaultQubit(Device):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
-                _adjoint_jvp_wrapper(
-                    c, t, rng=self._rng, debugger=self._debugger, prng_key=self.get_prng_keys()[0]
-                )
+                _adjoint_jvp_wrapper(c, t, debugger=self._debugger)
                 for c, t in zip(circuits, tangents)
             )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -736,13 +722,8 @@ class DefaultQubit(Device):
                         _adjoint_jvp_wrapper,
                         vanilla_circuits,
                         tangents,
-                        seeds,
-                        self.get_prng_keys(num=len(vanilla_circuits)),
                     )
                 )
-
-            # reset _rng to mimic serial behaviour
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return tuple(zip(*results))
 
@@ -842,14 +823,11 @@ class DefaultQubit(Device):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
-                _adjoint_vjp_wrapper(
-                    c, t, rng=self._rng, prng_key=self.get_prng_keys()[0], debugger=self._debugger
-                )
+                _adjoint_vjp_wrapper(c, t, debugger=self._debugger)
                 for c, t in zip(circuits, cotangents)
             )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -857,33 +835,28 @@ class DefaultQubit(Device):
                         _adjoint_vjp_wrapper,
                         vanilla_circuits,
                         cotangents,
-                        seeds,
-                        self.get_prng_keys(num=len(vanilla_circuits)),
                     )
                 )
-
-            # reset _rng to mimic serial behaviour
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return tuple(zip(*results))
 
 
-def _adjoint_jac_wrapper(c, rng=None, prng_key=None, debugger=None):
+def _adjoint_jac_wrapper(c, debugger=None):
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jac = adjoint_jacobian(c, state=state)
-    res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
+    res = measure_final_state(c, state, is_state_batched)
     return res, jac
 
 
-def _adjoint_jvp_wrapper(c, t, rng=None, prng_key=None, debugger=None):
+def _adjoint_jvp_wrapper(c, t, debugger=None):
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jvp = adjoint_jvp(c, t, state=state)
-    res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
+    res = measure_final_state(c, state, is_state_batched)
     return res, jvp
 
 
-def _adjoint_vjp_wrapper(c, t, rng=None, prng_key=None, debugger=None):
+def _adjoint_vjp_wrapper(c, t, debugger=None):
     state, is_state_batched = get_final_state(c, debugger=debugger)
     vjp = adjoint_vjp(c, t, state=state)
-    res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
+    res = measure_final_state(c, state, is_state_batched)
     return res, vjp

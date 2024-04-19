@@ -1361,6 +1361,20 @@ class TestPRNGKeySeed:
 
             assert np.all(result1 == result2)
 
+    @pytest.mark.parametrize("max_workers", max_workers_list)
+    def test_prng_key_multi_tapes(self, max_workers):
+        """Test a device with a given jax.random.PRNGKey will produce
+        different results for the same (batched) tape."""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result1, result2 = dev.execute([qs] * 2, config)
+
+        assert not np.all(result1 == result2)
+
     def test_different_max_workers_same_prng_key(self):
         """Test that devices with the same jax.random.PRNGKey but different threading will produce
         the same samples."""
@@ -1370,12 +1384,14 @@ class TestPRNGKeySeed:
         config = ExecutionConfig(interface="jax")
 
         dev1 = DefaultQubit(max_workers=None, seed=jax.random.PRNGKey(123))
-        result1 = dev1.execute(qs, config)
+        result1 = dev1.execute([qs] * 10, config)
         for max_workers in range(1, 3):
             dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
-            result2 = dev2.execute(qs, config)
+            result2 = dev2.execute([qs] * 10, config)
 
-            assert np.all(result1 == result2)
+            assert len(result1) == len(result2)
+            for r1, r2 in zip(result1, result2):
+                assert np.all(r1 == r2)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_same_prng_key(self, max_workers):
