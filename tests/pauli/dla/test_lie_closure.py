@@ -62,6 +62,11 @@ class TestPauliVSpace:
         assert vspace._rank == 2
         assert vspace._num_pw == 2
         assert len(vspace._pw_to_idx) == 2
+    
+    @pytest.mark.parametrize("dtype", [float, complex])
+    def test_dtype(self, dtype):
+        vspace = PauliVSpace(ops1, dtype=dtype)
+        assert vspace._M.dtype == dtype
 
     def test_init_with_ops(self):
         """Test that initialization with PennyLane operators, PauliWord and PauliSentence works"""
