@@ -25,43 +25,6 @@ from pennylane.devices import DefaultQutritMixed, ExecutionConfig
 np.random.seed(0)
 
 
-def expected_trx_circ_expval_values(phi, subspace):
-    """Find the expect-values of GellManns 2,3,5,8
-    on a circuit with a TRX gate on subspace (0,1) or (0,2)."""
-    if subspace == (0, 1):
-        return np.array([-np.sin(phi), np.cos(phi), 0, np.sqrt(1 / 3)])
-    if subspace == (0, 2):
-        return np.array(
-            [
-                0,
-                np.cos(phi / 2) ** 2,
-                -np.sin(phi),
-                np.sqrt(1 / 3) * (np.cos(phi) - np.sin(phi / 2) ** 2),
-            ]
-        )
-    pytest.skip(f"Test cases doesn't support subspace {subspace}")
-    return None
-
-
-def expected_trx_circ_expval_jacobians(phi, subspace):
-    """Find the Jacobians of expect-values of GellManns 2,3,5,8
-    on a circuit with a TRX gate on subspace (0,1) or (0,2)."""
-    if subspace == (0, 1):
-        return np.array([-np.cos(phi), -np.sin(phi), 0, 0])
-    if subspace == (0, 2):
-        return np.array([0, -np.sin(phi) / 2, -np.cos(phi), np.sqrt(1 / 3) * -(1.5 * np.sin(phi))])
-    pytest.skip(f"Test cases doesn't support subspace {subspace}")
-    return None
-
-
-def expected_trx_circ_state(phi, subspace):
-    """Find the state after applying TRX gate on |0>"""
-    expected_vector = np.array([0, 0, 0], dtype=complex)
-    expected_vector[subspace[0]] = np.cos(phi / 2)
-    expected_vector[subspace[1]] = -1j * np.sin(phi / 2)
-    return np.outer(expected_vector, np.conj(expected_vector))
-
-
 def test_name():
     """Tests the name of DefaultQutritMixed."""
     assert DefaultQutritMixed().name == "default.qutrit.mixed"
@@ -157,7 +120,37 @@ class TestBasicCircuit:
     observables."""
 
     @staticmethod
-    def get_TRX_quantum_script(phi, subspace):
+    def expected_trx_circ_expval_values(phi, subspace):
+        """Find the expect-values of GellManns 2,3,5,8
+        on a circuit with a TRX gate on subspace (0,1) or (0,2)."""
+        if subspace == (0, 1):
+            return np.array([-np.sin(phi), np.cos(phi), 0, np.sqrt(1 / 3)])
+        if subspace == (0, 2):
+            return np.array(
+                [
+                    0,
+                    np.cos(phi / 2) ** 2,
+                    -np.sin(phi),
+                    np.sqrt(1 / 3) * (np.cos(phi) - np.sin(phi / 2) ** 2),
+                ]
+            )
+        pytest.skip(f"Test cases doesn't support subspace {subspace}")
+        return None
+
+    @staticmethod
+    def expected_trx_circ_expval_jacobians(phi, subspace):
+        """Find the Jacobians of expect-values of GellManns 2,3,5,8
+        on a circuit with a TRX gate on subspace (0,1) or (0,2)."""
+        if subspace == (0, 1):
+            return np.array([-np.cos(phi), -np.sin(phi), 0, 0])
+        if subspace == (0, 2):
+            return np.array(
+                [0, -np.sin(phi) / 2, -np.cos(phi), np.sqrt(1 / 3) * -(1.5 * np.sin(phi))])
+        pytest.skip(f"Test cases doesn't support subspace {subspace}")
+        return None
+
+    @staticmethod
+    def get_trx_quantum_script(phi, subspace):
         """Get the quantum script where TRX is applied then GellMann observables are measured"""
         ops = [qml.TRX(phi, wires=0, subspace=subspace)]
         obs = [qml.expval(qml.GellMann(0, index)) for index in [2, 3, 5, 8]]
@@ -167,12 +160,12 @@ class TestBasicCircuit:
     def test_basic_circuit_numpy(self, subspace):
         """Test execution with a basic circuit."""
         phi = np.array(0.397)
-        qs = self.get_TRX_quantum_script(phi, subspace)
+        qs = self.get_trx_quantum_script(phi, subspace)
 
         dev = DefaultQutritMixed()
         result = dev.execute(qs)
 
-        expected_measurements = expected_TRX_circ_expval_values(phi, subspace)
+        expected_measurements = self.expected_trx_circ_expval_values(phi, subspace)
         assert isinstance(result, tuple)
         assert len(result) == 4
         assert np.allclose(result, expected_measurements)
@@ -185,15 +178,15 @@ class TestBasicCircuit:
         dev = DefaultQutritMixed()
 
         def f(x):
-            qs = self.get_TRX_quantum_script(x, subspace)
+            qs = self.get_trx_quantum_script(x, subspace)
             return qml.numpy.array(dev.execute(qs))
 
         result = f(phi)
-        expected = expected_TRX_circ_expval_values(phi, subspace)
+        expected = self.expected_trx_circ_expval_values(phi, subspace)
         assert qml.math.allclose(result, expected)
 
         g = qml.jacobian(f)(phi)
-        expected = expected_TRX_circ_expval_jacobians(phi, subspace)
+        expected = self.expected_trx_circ_expval_jacobians(phi, subspace)
         assert qml.math.allclose(g, expected)
 
     @pytest.mark.jax
@@ -207,18 +200,18 @@ class TestBasicCircuit:
         dev = DefaultQutritMixed()
 
         def f(x):
-            qs = self.get_TRX_quantum_script(x, subspace)
+            qs = self.get_trx_quantum_script(x, subspace)
             return dev.execute(qs)
 
         if use_jit:
             f = jax.jit(f)
 
         result = f(phi)
-        expected = expected_TRX_circ_expval_values(phi, subspace)
+        expected = self.expected_trx_circ_expval_values(phi, subspace)
         assert qml.math.allclose(result, expected)
 
         g = jax.jacobian(f)(phi)
-        expected = expected_TRX_circ_expval_jacobians(phi, subspace)
+        expected = self.expected_trx_circ_expval_jacobians(phi, subspace)
         assert qml.math.allclose(g, expected)
 
     @pytest.mark.torch
@@ -232,17 +225,17 @@ class TestBasicCircuit:
         dev = DefaultQutritMixed()
 
         def f(x):
-            qs = self.get_TRX_quantum_script(x, subspace)
+            qs = self.get_trx_quantum_script(x, subspace)
             return dev.execute(qs)
 
         result = f(phi)
-        expected = expected_TRX_circ_expval_values(phi.detach().numpy(), subspace)
+        expected = self.expected_trx_circ_expval_values(phi.detach().numpy(), subspace)
 
         result_detached = math.asarray(result, like="torch").detach().numpy()
         assert math.allclose(result_detached, expected)
 
         jacobian = math.asarray(torch.autograd.functional.jacobian(f, phi + 0j), like="torch")
-        expected = expected_TRX_circ_expval_jacobians(phi.detach().numpy(), subspace)
+        expected = self.expected_trx_circ_expval_jacobians(phi.detach().numpy(), subspace)
         assert math.allclose(jacobian.detach().numpy(), expected)
 
     @pytest.mark.tf
@@ -256,13 +249,13 @@ class TestBasicCircuit:
         dev = DefaultQutritMixed()
 
         with tf.GradientTape(persistent=True) as grad_tape:
-            qs = self.get_TRX_quantum_script(phi, subspace)
+            qs = self.get_trx_quantum_script(phi, subspace)
             result = dev.execute(qs)
 
-        expected = expected_TRX_circ_expval_values(phi, subspace)
+        expected = self.expected_trx_circ_expval_values(phi, subspace)
         assert qml.math.allclose(result, expected)
 
-        expected = expected_TRX_circ_expval_jacobians(phi, subspace)
+        expected = self.expected_trx_circ_expval_jacobians(phi, subspace)
         assert math.all(
             [
                 math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
