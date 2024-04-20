@@ -872,6 +872,7 @@ class QubitDevice(Device):
             )
 
         shots = self.shots
+
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel
         if qml.math.is_abstract(state_probability):
