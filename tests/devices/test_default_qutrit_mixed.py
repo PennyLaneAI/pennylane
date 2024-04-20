@@ -174,7 +174,7 @@ class TestBasicCircuit:
     @pytest.mark.autograd
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_autograd_results_and_backprop(self, subspace):
-        """Tests execution and gradients of a basic circuit using torch."""
+        """Tests execution and gradients of a basic circuit using autograd."""
         phi = qml.numpy.array(-0.52)
         dev = DefaultQutritMixed()
 
