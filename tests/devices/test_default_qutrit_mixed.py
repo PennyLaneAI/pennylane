@@ -25,49 +25,47 @@ from pennylane.devices import DefaultQutritMixed, ExecutionConfig
 np.random.seed(0)
 
 
-def test_name():
-    """Tests the name of DefaultQutritMixed."""
-    assert DefaultQutritMixed().name == "default.qutrit.mixed"
+class TestDeviceProperties:
+    """Tests for general device properties."""
 
+    def test_name(self):
+        """Tests the name of DefaultQutritMixed."""
+        assert DefaultQutritMixed().name == "default.qutrit.mixed"
 
-def test_shots():
-    """Test the shots property of DefaultQutritMixed."""
-    assert DefaultQutritMixed().shots == qml.measurements.Shots(None)
-    assert DefaultQutritMixed(shots=100).shots == qml.measurements.Shots(100)
+    def test_shots(self):
+        """Test the shots property of DefaultQutritMixed."""
+        assert DefaultQutritMixed().shots == qml.measurements.Shots(None)
+        assert DefaultQutritMixed(shots=100).shots == qml.measurements.Shots(100)
 
-    with pytest.raises(AttributeError):
-        DefaultQutritMixed().shots = 10
+        with pytest.raises(AttributeError):
+            DefaultQutritMixed().shots = 10
 
+    def test_wires(self):
+        """Test that a device can be created with wires."""
+        assert DefaultQutritMixed().wires is None
+        assert DefaultQutritMixed(wires=2).wires == qml.wires.Wires([0, 1])
+        assert DefaultQutritMixed(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
 
-def test_wires():
-    """Test that a device can be created with wires."""
-    assert DefaultQutritMixed().wires is None
-    assert DefaultQutritMixed(wires=2).wires == qml.wires.Wires([0, 1])
-    assert DefaultQutritMixed(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
+        with pytest.raises(AttributeError):
+            DefaultQutritMixed().wires = [0, 1]
 
-    with pytest.raises(AttributeError):
-        DefaultQutritMixed().wires = [0, 1]
+    def test_debugger_attribute(self):
+        """Test that DefaultQutritMixed has a debugger attribute and that it is `None`"""
+        # pylint: disable=protected-access
+        dev = DefaultQutritMixed()
 
+        assert hasattr(dev, "_debugger")
+        assert dev._debugger is None
 
-def test_debugger_attribute():
-    """Test that DefaultQutritMixed has a debugger attribute and that it is `None`"""
-    # pylint: disable=protected-access
-    dev = DefaultQutritMixed()
-
-    assert hasattr(dev, "_debugger")
-    assert dev._debugger is None
-
-
-# pylint: disable=protected-access
-def test_applied_modifiers():
-    """Test that DefaultQutritMixed has the `single_tape_support` and `simulator_tracking`
-    modifiers applied.
-    """
-    dev = DefaultQutritMixed()
-    assert dev._applied_modifiers == [
-        qml.devices.modifiers.single_tape_support,
-        qml.devices.modifiers.simulator_tracking,
-    ]
+    def test_applied_modifiers(self):
+        """Test that DefaultQutritMixed has the `single_tape_support` and `simulator_tracking`
+        modifiers applied.
+        """
+        dev = DefaultQutritMixed()
+        assert dev._applied_modifiers == [  # pylint: disable=protected-access
+            qml.devices.modifiers.single_tape_support,
+            qml.devices.modifiers.simulator_tracking,
+        ]
 
 
 class TestSupportsDerivatives:
