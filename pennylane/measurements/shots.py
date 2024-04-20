@@ -261,3 +261,20 @@ class Shots:
     def num_copies(self):
         """The total number of copies of any shot quantity."""
         return sum(s.copies for s in self.shot_vector)
+
+    def bins(self):
+        """
+        Yields:
+            tuple: A tuple containing the lower and upper bounds for each shot quantity in shot_vector.
+
+        Example:
+            >>> shots = Shots((1, 1, 2, 3))
+            >>> list(shots.bins())
+            [(0,1), (1,2), (2,4), (4,7)]
+        """
+        lower_bound = 0
+        for sc in self.shot_vector:
+            for _ in range(sc.copies):
+                upper_bound = lower_bound + sc.shots
+                yield lower_bound, upper_bound
+                lower_bound = upper_bound

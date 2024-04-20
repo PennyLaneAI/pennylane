@@ -3028,6 +3028,7 @@ class TestPauliRot:
         assert gen.operands[0].name == expected.obs[0].name
         assert gen.operands[1].wires == expected.obs[1].wires
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
