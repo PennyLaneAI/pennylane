@@ -289,7 +289,7 @@
 * Implement `Shots.bins()` method.
   [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
-* Added `execute` to `devices.DefaultQutritMixed` device. This addition allows users to simulate qutrit circuits using the new device.
+* Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
 
 <h3>Breaking changes 💔</h3>
