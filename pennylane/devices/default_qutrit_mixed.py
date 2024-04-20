@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state computations.
-"""
+"""The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
+computations."""
 
 from dataclasses import replace
 from typing import Union, Callable, Tuple, Sequence, Optional
@@ -191,11 +190,11 @@ class DefaultQutritMixed(Device):
         ``DefaultQutritMixed`` supports backpropagation derivatives with analytic results.
 
         Args:
-            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
+            execution_config (ExecutionConfig): The configuration of the desired derivative calculation.
             circuit (QuantumTape): An optional circuit to check derivatives support for.
 
         Returns:
-            Bool: Whether or not a derivative can be calculated provided the given information
+            Bool: Whether or not a derivative can be calculated provided the given information.
 
         """
         if execution_config is None or execution_config.gradient_method in {"backprop", "best"}:
@@ -206,10 +205,10 @@ class DefaultQutritMixed(Device):
         """This is a private helper for ``preprocess`` that sets up the execution config.
 
         Args:
-            execution_config (ExecutionConfig)
+            execution_config (ExecutionConfig): an unprocessed execution config.
 
         Returns:
-            ExecutionConfig: a preprocessed execution config
+            ExecutionConfig: a preprocessed execution config.
         """
         updated_values = {}
         for option in execution_config.device_options:
@@ -231,16 +230,18 @@ class DefaultQutritMixed(Device):
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[TransformProgram, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device configuration.
+        """This function defines the device transform program to be applied and an updated device
+        configuration.
 
         Args:
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
-                parameters needed to fully describe the execution.
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure
+                describing the parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
-            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
-            unset specifications filled in.
+            TransformProgram, ExecutionConfig: A transform program that when called returns
+                QuantumTapes that the device can natively execute as well as a postprocessing
+                function to be called after execution, and a configuration with unset
+                specifications filled in.
 
         This device:
         * Supports any qutrit operations that provide a matrix
