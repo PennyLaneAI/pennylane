@@ -25,7 +25,7 @@ from pennylane.devices import DefaultQutritMixed, ExecutionConfig
 np.random.seed(0)
 
 
-def expected_TRX_circ_expval_values(phi, subspace):
+def expected_trx_circ_expval_values(phi, subspace):
     """Find the expect-values of GellManns 2,3,5,8
     on a circuit with a TRX gate on subspace (0,1) or (0,2)."""
     if subspace == (0, 1):
@@ -40,9 +40,10 @@ def expected_TRX_circ_expval_values(phi, subspace):
             ]
         )
     pytest.skip(f"Test cases doesn't support subspace {subspace}")
+    return None
 
 
-def expected_TRX_circ_expval_jacobians(phi, subspace):
+def expected_trx_circ_expval_jacobians(phi, subspace):
     """Find the Jacobians of expect-values of GellManns 2,3,5,8
     on a circuit with a TRX gate on subspace (0,1) or (0,2)."""
     if subspace == (0, 1):
@@ -50,9 +51,10 @@ def expected_TRX_circ_expval_jacobians(phi, subspace):
     if subspace == (0, 2):
         return np.array([0, -np.sin(phi) / 2, -np.cos(phi), np.sqrt(1 / 3) * -(1.5 * np.sin(phi))])
     pytest.skip(f"Test cases doesn't support subspace {subspace}")
+    return None
 
 
-def expected_TRX_circ_state(phi, subspace):
+def expected_trx_circ_state(phi, subspace):
     """Find the state after applying TRX gate on |0>"""
     expected_vector = np.array([0, 0, 0], dtype=complex)
     expected_vector[subspace[0]] = np.cos(phi / 2)
