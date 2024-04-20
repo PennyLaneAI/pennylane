@@ -956,4 +956,3 @@ class TestMeasurements:
         angle = jnp.array(0.1234)
         assert isinstance(jax.jacobian(cost)(angle), jax.Array)
         assert len(cost(angle)) == num_shots
-
