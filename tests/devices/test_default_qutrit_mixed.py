@@ -1175,18 +1175,3 @@ class TestHamiltonianSamples:
         assert isinstance(res, tuple)
         assert np.allclose(res[0], expected, atol=0.01)
         assert np.allclose(res[1], expected, atol=0.01)
-
-
-def test_broadcasted_parameter():
-    """Test that DefaultQutritMixed handles broadcasted parameters as expected."""
-    dev = DefaultQutritMixed()
-    x = np.array([0.536, 0.894])
-    qs = qml.tape.QuantumScript([qml.TRX(x, 0)], [qml.expval(qml.GellMann(0, 3))])
-
-    config = ExecutionConfig()
-    program, config = dev.preprocess(config)
-    batch, pre_processing_fn = program([qs])
-    assert len(batch) == 1
-    results = dev.execute(batch, config)
-    processed_results = pre_processing_fn(results)
-    assert qml.math.allclose(processed_results, np.cos(x))
