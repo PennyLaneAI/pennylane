@@ -279,6 +279,10 @@
 * A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
+ 
+ * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
+  for `preprocess`.
+  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
 * Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
