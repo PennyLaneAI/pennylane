@@ -145,7 +145,8 @@ class TestBasicCircuit:
             return np.array([-np.cos(phi), -np.sin(phi), 0, 0])
         if subspace == (0, 2):
             return np.array(
-                [0, -np.sin(phi) / 2, -np.cos(phi), np.sqrt(1 / 3) * -(1.5 * np.sin(phi))])
+                [0, -np.sin(phi) / 2, -np.cos(phi), np.sqrt(1 / 3) * -(1.5 * np.sin(phi))]
+            )
         pytest.skip(f"Test cases doesn't support subspace {subspace}")
         return None
 
