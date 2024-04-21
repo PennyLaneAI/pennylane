@@ -1078,6 +1078,7 @@ class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables"""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval(self):
         """Test that sampling works well for Hamiltonian observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -1108,6 +1109,7 @@ class TestHamiltonianSamples:
 
     def test_sum_expval(self):
         """Test that sampling works well for Sum observables"""
+
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
@@ -1133,6 +1135,32 @@ class TestHamiltonianSamples:
         assert isinstance(res, tuple)
         assert np.allclose(res[0], expected, atol=0.01)
         assert np.allclose(res[1], expected, atol=0.01)
+
+    def test_prod_expval(self):
+        """Tests that sampling works for Prod observables"""
+
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(y, wires=0), qml.RX(x, wires=1)]
+        H = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        tape = qml.tape.QuantumScript(
+            ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
+        )
+        res = simulate(tape, rng=200)
+        expected = [np.sin(y), -np.sin(y) * np.sin(x)]
+        assert np.allclose(res, expected, atol=0.05)
+
+    def test_sprod_expval(self):
+        """Tests that sampling works for SProd observables"""
+
+        y = np.array(0.95)
+        ops = [qml.RY(y, wires=0)]
+        H = qml.s_prod(1.5, qml.PauliX(0))
+        tape = qml.tape.QuantumScript(
+            ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
+        )
+        res = simulate(tape, rng=200)
+        expected = [np.sin(y), 1.5 * np.sin(y)]
+        assert np.allclose(res, expected, atol=0.05)
 
     def test_multi_wires(self):
         """Test that sampling works for Sums with large numbers of wires"""
