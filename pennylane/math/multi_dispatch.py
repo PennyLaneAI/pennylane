@@ -1005,7 +1005,7 @@ def detach(tensor, like=None):
 
 def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
-    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behaviour
     of Jax in order to mark trainable parameters.
 
     Args:

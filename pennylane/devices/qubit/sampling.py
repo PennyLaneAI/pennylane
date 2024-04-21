@@ -30,6 +30,16 @@ from .apply_operation import apply_operation
 from .measure import flatten_state
 
 
+def jax_random_split(prng_key, num: int = 2):
+    """Get a new key with ``jax.random.split``."""
+    if prng_key is None:
+        return [None] * num
+    # pylint: disable=import-outside-toplevel
+    from jax.random import split
+
+    return split(prng_key, num=num)
+
+
 def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
     """
     Group the measurements such that:
@@ -204,9 +214,10 @@ def measure_with_samples(
             # measure with the usual method (rotate into the measurement basis)
             measure_fn = _measure_with_samples_diagonalizing_gates
 
+        prng_key, key = jax_random_split(prng_key)
         all_res.extend(
             measure_fn(
-                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=prng_key
+                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=key
             )
         )
 
@@ -269,6 +280,7 @@ def _measure_with_samples_diagonalizing_gates(
         return tuple(processed)
 
     try:
+        prng_key, _ = jax_random_split(prng_key)
         samples = sample_state(
             state,
             shots=shots.total_shots,
@@ -345,7 +357,7 @@ def _measure_hamiltonian_with_samples(
 
     # if the measurement process involves a Hamiltonian, measure each
     # of the terms separately and sum
-    def _sum_for_single_shot(s):
+    def _sum_for_single_shot(s, prng_key=None):
         results = measure_with_samples(
             [ExpectationMP(t) for t in mp.obs.terms()[1]],
             state,
@@ -356,7 +368,10 @@ def _measure_hamiltonian_with_samples(
         )
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
-    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+    keys = jax_random_split(prng_key, num=shots.num_copies)
+    unsqueezed_results = tuple(
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
+    )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
@@ -373,7 +388,7 @@ def _measure_sum_with_samples(
 
     # if the measurement process involves a Sum, measure each
     # of the terms separately and sum
-    def _sum_for_single_shot(s):
+    def _sum_for_single_shot(s, prng_key=None):
         results = measure_with_samples(
             [ExpectationMP(t) for t in mp.obs],
             state,
@@ -384,7 +399,10 @@ def _measure_sum_with_samples(
         )
         return sum(results)
 
-    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+    keys = jax_random_split(prng_key, num=shots.num_copies)
+    unsqueezed_results = tuple(
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
+    )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
@@ -506,11 +524,7 @@ def _sample_state_jax(
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
-        # Produce separate keys for each of the probabilities along the broadcasted axis
-        keys = []
-        for _ in state:
-            key, subkey = jax.random.split(key)
-            keys.append(subkey)
+        keys = jax_random_split(prng_key, num=len(state))
         samples = jnp.array(
             [
                 jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
@@ -518,6 +532,7 @@ def _sample_state_jax(
             ]
         )
     else:
+        _, key = jax_random_split(prng_key)
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
