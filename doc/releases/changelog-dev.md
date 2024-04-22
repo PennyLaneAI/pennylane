@@ -163,9 +163,7 @@
    -1.0 * Y(1) @ Y(0)]
   ```
 
-<h4>Work easily and efficiently with operators 🔧</h4>
-
-<h4>Support for mixed-state qutrit simulation 3️⃣</h4>
+<h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
  `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
@@ -181,6 +179,8 @@
  * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
+
+<h4>Work easily and efficiently with operators 🔧</h4>
 
 <h3>Improvements 🛠</h3>
 
@@ -286,7 +286,7 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
-<h4>Mid-circuit measurements</h4>
+<h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
@@ -294,13 +294,11 @@
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
-<h4>Capturing dynamic circuits</h4>
-
 * Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
   quantum-classical programs.
   [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
 
-<h4>Other improvements</h4>
+<h4>Performance and broadcasting</h4>
 
 * Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
   broadcasting is in non-trainable parameters.
@@ -309,15 +307,17 @@
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
-* `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
-  the operator it wraps.
-  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
-
 * `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
+
+<h4>Other improvements</h4>
+
+* `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
+  the operator it wraps.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
