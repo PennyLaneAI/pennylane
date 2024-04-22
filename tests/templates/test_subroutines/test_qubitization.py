@@ -47,7 +47,7 @@ from pennylane.templates.subroutines.qubitization import _positive_coeffs_hamilt
         ),
         (
             qml.ops.LinearCombination(
-                np.array([-1, -1, 2]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+                np.array([-0.2, -0.6, 2.1]), [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
             ),
             [
                 qml.PauliX(0) @ qml.GlobalPhase(np.array(np.pi), wires=0),

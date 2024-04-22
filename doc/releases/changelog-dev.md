@@ -94,11 +94,11 @@
   output = circuit()
   
   # post-processing 
-  lambda_ = sum([abs(c) for c in H.terms()[0]])
+  lamb = sum([abs(c) for c in H.terms()[0]])
   ```
   
   ```pycon
-  >>> print(print("eigenvalue: ", lambda_ * np.cos(2 * np.pi * (np.argmax(output)) / 8)))
+  >>> print(print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8)))
   eigenvalue: 0.7
   ```
 

@@ -32,17 +32,13 @@ def _positive_coeffs_hamiltonian(hamiltonian):
 
     new_unitaries = []
 
-    terms = hamiltonian.terms()
+    coeffs, ops = hamiltonian.terms()
 
-    for i in range(len(terms[0])):
-        new_unitaries.append(
-            terms[1][i]
-            @ qml.GlobalPhase(
-                np.pi * (0.5 * (1 - qml.math.sign(terms[0][i]))), wires=terms[1][i].wires
-            )
-        )
+    for i in range(len(coeffs)):
+        angle = np.pi * (0.5 * (1 - qml.math.sign(coeffs[i])))
+        new_unitaries.append(coeffs[i] @ qml.GlobalPhase(angle, wires=ops[i].wires))
 
-    return qml.math.abs(hamiltonian.terms()[0]), new_unitaries
+    return qml.math.abs(coeffs), new_unitaries
 
 
 class Qubitization(Operation):
@@ -75,7 +71,7 @@ class Qubitization(Operation):
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
 
-          # initiate the eigenvalue
+          # initiate the eigenvector
           qml.PauliX(2)
 
           # apply QPE (used iterative qpe here)
@@ -87,11 +83,11 @@ class Qubitization(Operation):
         output = circuit()
 
         # post-processing
-        lambda_ = sum([abs(c) for c in H.terms()[0]])
+        lamb = sum([abs(c) for c in H.terms()[0]])
 
     .. code-block:: pycon
 
-        >>> print("eigenvalue: ", lambda_ * np.cos(2 * np.pi * (np.argmax(output)) / 8))
+        >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
         eigenvalue: 0.7
     """
 
