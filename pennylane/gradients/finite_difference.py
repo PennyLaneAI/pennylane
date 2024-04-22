@@ -179,7 +179,7 @@ def _processing_fn(results, shots, single_shot_batch_fn):
 def _expand_transform_finite_diff(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    h=1e-7,
+    h=None,
     approx_order=1,
     n=1,
     strategy="forward",
@@ -207,7 +207,7 @@ def _expand_transform_finite_diff(
 def finite_diff(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    h=1e-7,
+    h=None,
     approx_order=1,
     n=1,
     strategy="forward",
@@ -358,7 +358,7 @@ def finite_diff(
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.finite_diff(circuit, h=10e-2)(params)
+        >>> qml.gradients.finite_diff(circuit, h=0.1)(params)
         (((array(-2.), array(-2.), array(0.)), (array(3.6), array(3.6), array(0.))),
          ((array(1.), array(0.4), array(1.)),
           (array(-1.62), array(-0.624), array(-1.62))),
@@ -394,6 +394,8 @@ def finite_diff(
     gradient_tapes = []
     shapes = []
     c0 = None
+    if h is None:
+        h = 1e-7 if tape.shots is None else 0.1
 
     coeffs, shifts = finite_diff_coeffs(n=n, approx_order=approx_order, strategy=strategy)
 
