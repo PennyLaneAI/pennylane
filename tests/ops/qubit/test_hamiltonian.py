@@ -185,7 +185,7 @@ with qml.operation.disable_new_opmath_cm():
         ),
         (
             qml.Hamiltonian([0], [qml.Identity(0)]),
-            qml.Hamiltonian([0], [qml.Identity(0)]),
+            qml.Hamiltonian([], []),
         ),
     ]
 
@@ -817,7 +817,7 @@ class TestHamiltonian:
     def test_simplify(self, old_H, new_H):
         """Tests the simplify method"""
         old_H.simplify()
-        assert old_H.compare(new_H)
+        assert old_H.terms() == new_H.terms()
 
     def test_simplify_while_queueing(self):
         """Tests that simplifying a Hamiltonian in a tape context

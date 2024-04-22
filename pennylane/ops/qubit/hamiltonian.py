@@ -471,7 +471,7 @@ class Hamiltonian(Observable):
         matrix += sum(temp_mats)
         return matrix
 
-    def simplify(self):
+    def simplify(self, cutoff=1e-12):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
         **Example**
@@ -507,6 +507,8 @@ class Hamiltonian(Observable):
                     del new_coeffs[ind]
                     del new_ops[ind]
             else:
+                if qml.math.abs(c) < cutoff:
+                    continue
                 new_ops.append(op.prune())
                 new_coeffs.append(c)
 

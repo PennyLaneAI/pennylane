@@ -686,7 +686,7 @@ class TestLinearCombination:
     def test_simplify(self, old_H, new_H):
         """Tests the simplify method"""
         old_H = old_H.simplify()
-        assert old_H.compare(new_H)
+        assert old_H.terms() == new_H.terms()
 
     def test_simplify_while_queueing(self):
         """Tests that simplifying a LinearCombination in a tape context

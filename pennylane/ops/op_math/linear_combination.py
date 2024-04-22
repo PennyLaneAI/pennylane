@@ -303,9 +303,10 @@ class LinearCombination(Sum):
             new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=pr.wires)
-                new_ops.append(pw_op)
-                new_coeffs.append(coeff)
+                if qml.math.abs(coeff) > cutoff:
+                    pw_op = pw.operation(wire_order=pr.wires)
+                    new_ops.append(pw_op)
+                    new_coeffs.append(coeff)
 
             return new_coeffs, new_ops, pr
 
