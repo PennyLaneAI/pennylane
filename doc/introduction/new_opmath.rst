@@ -51,13 +51,19 @@ Summary of the update
 
 * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
   representation will be automatically used for calculations when available.
-
-  The Pauli representation can be optionally accessed via ``op.pauli_rep``:
+  You can access the ``pauli_rep`` attribute of any operator whenever it is available.
 
   >>> op = X(0) + Y(0)
   >>> op.pauli_rep
   1.0 * X(0)
   + 1.0 * Y(0)
+  >>> type(op.pauli_rep)
+  pennylane.pauli.pauli_arithmetic.PauliSentence
+
+  You can transform the ``PauliSentence`` back to a suitable ``Operator`` via the :meth:`~pennylane.ops.PauliSentence.operation` or :meth:`~pennylane.ops.PauliSentence.hamiltonian` method.
+
+  >>> op.pauli_rep.operation()
+  X(0) + Y(0)
 
 * Extensive improvements have been made to the string representations of PennyLane operators,
   making them shorter and possible to copy-paste as valid PennyLane code.
