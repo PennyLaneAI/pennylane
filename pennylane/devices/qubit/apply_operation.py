@@ -16,12 +16,12 @@
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
+
 import numpy as np
 
 import pennylane as qml
-
 from pennylane import math
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.ops import Conditional
 
 SQRT2INV = 1 / math.sqrt(2)
@@ -275,21 +275,16 @@ def apply_mid_measure(
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     if not np.allclose(np.linalg.norm(state), 1.0):
-        mid_measurements[op] = 0
+        mid_measurements[op] = -1
         return np.zeros_like(state)
     wire = op.wires
-    probs = qml.devices.qubit.measure(qml.probs(wire), state)
-
-    try:  # pragma: no cover
-        sample = np.random.binomial(1, probs[1])
-    except ValueError as e:  # pragma: no cover
-        if probs[1] > 1:  # MachEps error, safe to catch
-            sample = np.random.binomial(1, np.round(probs[1], 15))
-        else:  # Other general error, continue to fail
-            raise e
-
+    sample = qml.devices.qubit.sampling.measure_with_samples(
+        [qml.sample(wires=wire)], state, Shots(1)
+    )
+    sample = int(sample[0])
     mid_measurements[op] = sample
     if op.postselect is not None and sample != op.postselect:
+        mid_measurements[op] = -1
         return np.zeros_like(state)
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)

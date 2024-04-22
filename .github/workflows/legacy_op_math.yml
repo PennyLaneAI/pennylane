@@ -2,7 +2,7 @@ name: Legacy opmath tests
 
 on:
   schedule:
-    - cron: "0 0 2 * *"
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
 jobs:

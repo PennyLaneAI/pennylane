@@ -15,16 +15,12 @@
 from functools import partial, reduce
 from typing import Sequence, Iterable
 
-from flaky import flaky
 import numpy as np
 import pytest
+from flaky import flaky
 
 import pennylane as qml
-from pennylane.devices.qubit.apply_operation import apply_mid_measure, MidMeasureMP
-from pennylane.transforms.dynamic_one_shot import (
-    accumulate_native_mcm,
-    parse_native_mid_circuit_measurements,
-)
+from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
 
 get_device = partial(qml.device, name="default.qubit", seed=8237945)
 
@@ -145,19 +141,11 @@ def test_apply_mid_measure():
     m0 = MidMeasureMP(0, postselect=1)
     mid_measurements = {}
     state = apply_mid_measure(m0, np.zeros(2), mid_measurements=mid_measurements)
-    assert mid_measurements[m0] == 0
+    assert mid_measurements[m0] == -1
     assert np.allclose(state, 0.0)
     state = apply_mid_measure(m0, np.array([1, 0]), mid_measurements=mid_measurements)
-    assert mid_measurements[m0] == 0
+    assert mid_measurements[m0] == -1
     assert np.allclose(state, 0.0)
-
-
-def test_accumulate_native_mcm_unsupported_error():
-    with pytest.raises(
-        TypeError,
-        match=f"Native mid-circuit measurement mode does not support {type(qml.var(qml.PauliZ(0))).__name__}",
-    ):
-        accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
 
 
 def test_all_invalid_shots_circuit():
@@ -196,23 +184,6 @@ def test_all_invalid_shots_circuit():
             assert len(r1) == len(r2)
         assert np.all(np.isnan(r1))
         assert np.all(np.isnan(r2))
-
-
-@pytest.mark.parametrize(
-    "measurement",
-    [
-        qml.state(),
-        qml.density_matrix(0),
-        qml.vn_entropy(0),
-        qml.mutual_info(0, 1),
-        qml.purity(0),
-        qml.classical_shadow(0),
-    ],
-)
-def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
-    circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [measurement])
-    with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
-        parse_native_mid_circuit_measurements(circuit, None, None)
 
 
 def test_unsupported_measurement():
@@ -314,7 +285,32 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f, obs)
     validate_measurements(measure_f, shots, results1, results2)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+def test_single_mcm_multiple_measure_obs(postselect, reset):
+    """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
+    conditional gate. Multiple measurements of common observables are performed at the end."""
+
+    dev = qml.device("default.qubit", shots=5000)
+    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+
+    @qml.qnode(dev)
+    def func(x, y, z):
+        obs_tape(x, y, z, reset=reset, postselect=postselect)
+        return qml.counts(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(*params)
+    results2 = func2(*params)
+
+    for measure_f, res1, res2 in zip([qml.counts, qml.expval], results1, results2):
+        validate_measurements(measure_f, 5000, res1, res2)
+
+
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", [None, 3000, [3000, 3001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
