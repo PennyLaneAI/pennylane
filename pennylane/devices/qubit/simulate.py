@@ -13,6 +13,7 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
+from functools import partial
 from typing import Optional
 
 import numpy as np
@@ -62,7 +63,7 @@ class _FlexShots(qml.measurements.Shots):
         self._frozen = True
 
 
-def _postselection_postprocess(state, is_state_batched, shots, rng=None):
+def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_key=None):
     """Update state after projector is applied."""
     if is_state_batched:
         raise ValueError(
@@ -84,7 +85,14 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None):
     if shots:
         # Clip the number of shots using a binomial distribution using the probability of
         # measuring the postselected state.
-        binomial_fn = np.random.binomial if rng is None else rng.binomial
+        if prng_key is not None:
+            # pylint: disable=import-outside-toplevel
+            from jax.random import binomial
+
+            binomial_fn = partial(binomial, prng_key)
+        else:
+            binomial_fn = np.random.binomial if rng is None else rng.binomial
+
         postselected_shots = (
             [binomial_fn(s, float(norm**2)) for s in shots]
             if not qml.math.is_abstract(norm)
@@ -99,7 +107,7 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None):
     return state, shots
 
 
-def get_final_state(circuit, debugger=None, interface=None, mid_measurements=None, rng=None):
+def get_final_state(circuit, debugger=None, **execution_kwargs):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -111,12 +119,20 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
         interface (str): The machine learning interface to create the initial state with
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
+            will be for sampling.
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
             whether the state has a batch dimension.
 
     """
+    rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
+    interface = execution_kwargs.get("interface", None)
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
     circuit = circuit.map_to_standard_wires()
 
     prep = None
@@ -127,7 +143,11 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
+    key = prng_key
+
     for op in circuit.operations[bool(prep) :]:
+        if isinstance(op, MidMeasureMP):
+            prng_key, key = jax_random_split(prng_key)
         state = apply_operation(
             op,
             state,
@@ -135,11 +155,13 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
             debugger=debugger,
             mid_measurements=mid_measurements,
             rng=rng,
+            prng_key=key,
         )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
+            prng_key, key = jax_random_split(prng_key)
             state, circuit._shots = _postselection_postprocess(
-                state, is_state_batched, circuit.shots, rng=rng
+                state, is_state_batched, circuit.shots, rng=rng, prng_key=key
             )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
@@ -154,9 +176,7 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
 
 
 # pylint: disable=too-many-arguments
-def measure_final_state(
-    circuit, state, is_state_batched, rng=None, prng_key=None, mid_measurements: dict = None
-) -> Result:
+def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -178,6 +198,9 @@ def measure_final_state(
     Returns:
         Tuple[TensorLike]: The measurement results
     """
+    rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
 
     circuit = circuit.map_to_standard_wires()
 
@@ -258,14 +281,16 @@ def simulate(
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
         return simulate_one_shot_native_mcm(
-            circuit, rng, prng_key=prng_key, debugger=debugger, interface=interface
+            circuit, debugger=debugger, rng=rng, prng_key=prng_key, interface=interface
         )
-    _, key = jax_random_split(prng_key)
-    state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface, rng=rng)
 
+    ops_key, meas_key = jax_random_split(prng_key)
+    state, is_state_batched = get_final_state(
+        circuit, debugger=debugger, rng=rng, prng_key=ops_key, interface=interface
+    )
     if state_cache is not None:
         state_cache[circuit.hash] = state
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=key)
+    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=meas_key)
 
 
 def simulate_one_shot_native_mcm(
@@ -290,16 +315,21 @@ def simulate_one_shot_native_mcm(
     prng_key = execution_kwargs.get("prng_key", None)
     interface = execution_kwargs.get("interface", None)
 
-    _, key = jax_random_split(prng_key)
+    ops_key, meas_key = jax_random_split(prng_key)
     mid_measurements = {}
     state, is_state_batched = get_final_state(
-        circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements
+        circuit,
+        debugger=debugger,
+        interface=interface,
+        mid_measurements=mid_measurements,
+        rng=rng,
+        prng_key=ops_key,
     )
     return measure_final_state(
         circuit,
         state,
         is_state_batched,
         rng=rng,
-        prng_key=key,
+        prng_key=meas_key,
         mid_measurements=mid_measurements,
     )

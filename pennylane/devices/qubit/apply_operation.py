@@ -271,6 +271,7 @@ def apply_mid_measure(
     """
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
 
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
@@ -279,7 +280,7 @@ def apply_mid_measure(
         return np.zeros_like(state)
     wire = op.wires
     sample = qml.devices.qubit.sampling.measure_with_samples(
-        [qml.sample(wires=wire)], state, Shots(1)
+        [qml.sample(wires=wire)], state, Shots(1), rng=rng, prng_key=prng_key
     )
     sample = int(sample[0])
     mid_measurements[op] = sample
