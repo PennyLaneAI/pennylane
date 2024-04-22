@@ -25,7 +25,7 @@ from pennylane.typing import Result
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
-from .sampling import measure_with_samples
+from .sampling import jax_random_split, measure_with_samples
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
@@ -253,11 +253,14 @@ def simulate(
     """
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
-        return simulate_one_shot_native_mcm(circuit, rng, prng_key, debugger, interface)
+        return simulate_one_shot_native_mcm(
+            circuit, rng, prng_key=prng_key, debugger=debugger, interface=interface
+        )
+    _, key = jax_random_split(prng_key)
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=key)
 
 
 def simulate_one_shot_native_mcm(
@@ -284,6 +287,7 @@ def simulate_one_shot_native_mcm(
         tuple(TensorLike): The results of the simulation
         dict: The mid-circuit measurement results of the simulation
     """
+    _, key = jax_random_split(prng_key)
     mid_measurements = {}
     state, is_state_batched = get_final_state(
         circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements
@@ -293,6 +297,6 @@ def simulate_one_shot_native_mcm(
         state,
         is_state_batched,
         rng=rng,
-        prng_key=prng_key,
+        prng_key=key,
         mid_measurements=mid_measurements,
     )

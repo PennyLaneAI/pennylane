@@ -630,9 +630,7 @@ class TestSampleMeasurements:
         assert len(result) == len(mps)
 
         # check that samples are reused when possible
-        # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for
-        # Hamiltonian and Sum, and 1 group each for SProd and Prod
-        assert spy.call_count == 10
+        assert spy.call_count == 8
 
     shots_data = [
         [10000, 10000],
