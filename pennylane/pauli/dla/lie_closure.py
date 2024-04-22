@@ -45,8 +45,7 @@ def lie_closure(
         verbose (bool): verbosity during Lie closure calculation. Default is ``False``.
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
-            and vice versa. Note that the input in that case also has to be a list of :class:`~.PauliSentence` or :class:`~.PauliWord` instances.
-            Default is ``False``.
+            and vice versa. Default is ``False``.
 
     Returns:
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
@@ -113,7 +112,7 @@ def lie_closure(
     if not all(isinstance(op, (PauliSentence, PauliWord)) for op in generators):
         if pauli:
             raise TypeError(
-                "All generators need to be of type PauliSentence when using pauli=True in lie_closure."
+                "All generators need to be of type PauliSentence or PauliWord when using pauli=True in lie_closure."
             )
 
         generators = [
