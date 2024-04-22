@@ -143,47 +143,6 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 del results[0:s]
             return tuple(final_results)
         return parse_native_mid_circuit_measurements(tape, aux_tapes, results)
-        # all_mcms = [op for op in aux_tapes[0].operations if isinstance(op, MidMeasureMP)]
-        # n_mcms = len(all_mcms)
-        # post_process_tape = qml.tape.QuantumScript(
-        #     aux_tapes[0].operations,
-        #     aux_tapes[0].measurements[0:-n_mcms],
-        #     shots=aux_tapes[0].shots,
-        #     trainable_params=aux_tapes[0].trainable_params,
-        # )
-        # single_measurement = (
-        #     len(post_process_tape.measurements) == 0 and len(aux_tapes[0].measurements) == 1
-        # )
-        # mcm_samples = np.zeros((len(results), n_mcms), dtype=np.int64)
-        # for i, res in enumerate(results):
-        #     mcm_samples[i, :] = [res] if single_measurement else res[-n_mcms::]
-        # mcm_mask = qml.math.all(mcm_samples != -1, axis=1)
-        # mcm_samples = mcm_samples[mcm_mask, :]
-        # results = list(compress(results, mcm_mask))
-
-        # # The following code assumes no broadcasting and no shot vectors. The above code should
-        # # handle those cases
-        # all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
-        # for i, res in enumerate(results):
-        #     samples = [res] if single_measurement else res[-n_mcms::]
-        #     valid_shots += 1
-        #     mcm_values_dict = dict((k, v) for k, v in zip(all_mcms, samples))
-        #     if len(post_process_tape.measurements) == 0:
-        #         one_shot_meas = []
-        #     elif len(post_process_tape.measurements) == 1:
-        #         one_shot_meas = res[0]
-        #     else:
-        #         one_shot_meas = res[0:-n_mcms]
-        #     all_shot_meas = accumulate_native_mcm(post_process_tape, all_shot_meas, one_shot_meas)
-        #     list_mcm_values_dict.append(mcm_values_dict)
-        # if not valid_shots:
-        #     warnings.warn(
-        #         "All shots were thrown away as invalid. This can happen for example when "
-        #         "post-selecting the 1-branch of a 0-state. Make sure your circuit has some "
-        #         "probability of producing a valid shot.",
-        #         UserWarning,
-        #     )
-        # return parse_native_mid_circuit_measurements(tape, all_shot_meas, list_mcm_values_dict)
 
     return output_tapes, processing_fn
 
@@ -331,9 +290,14 @@ def gather_non_mcm(circuit_measurement, measurement, is_valid):
             is_valid
         )
     if isinstance(circuit_measurement, SampleMP):
-        if measurement.ndim == 2:
+        is_interface_jax = qml.math.get_deep_interface(is_valid) == "jax"
+        if is_interface_jax and measurement.ndim == 2:
             is_valid = is_valid.reshape((-1, 1))
-        return qml.math.where(is_valid, measurement, -123456)
+        return (
+            qml.math.where(is_valid, measurement, -123456)
+            if is_interface_jax
+            else measurement[is_valid]
+        )
     # VarianceMP
     expval = qml.math.sum(measurement * is_valid) / qml.math.sum(is_valid)
     return qml.math.sum((measurement - expval) ** 2 * is_valid) / qml.math.sum(is_valid)

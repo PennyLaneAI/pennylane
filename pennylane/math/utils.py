@@ -80,27 +80,6 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
 allclose.__doc__ = _np.allclose.__doc__
 
 
-# def any(a, axis=None, out=None, keepdims=False, *, where=None, **kwargs):
-#     """Wrapper around np.any."""
-#     try:
-#         # Some frameworks may provide their own any implementation.
-#         # Try and use it if available.
-#         res = np.any(a, axis=axis, out=out, keepdims=keepdims, where=where, **kwargs)
-#     except (TypeError, AttributeError, ImportError, RuntimeError):
-#         # Otherwise, convert the input to NumPy arrays.
-#         #
-#         # TODO: replace this with a bespoke, framework agnostic
-#         # low-level implementation to avoid the NumPy conversion:
-#         #
-#         t1 = ar.to_numpy(a)
-#         res = np.any(t1, axis=axis, out=out, keepdims=keepdims, where=where, **kwargs)
-
-#     return res
-
-
-# all.__doc__ = _np.all.__doc__
-
-
 def cast(tensor, dtype):
     """Casts the given tensor to a new type.
 

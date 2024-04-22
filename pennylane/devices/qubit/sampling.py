@@ -198,10 +198,6 @@ def measure_with_samples(
     """
     # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
     mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
-    # if mid_measurements and any(v == -1 for v in mid_measurements.values()):
-    #     state[:] = 0.0
-    #     slices = [slice(0, 1, 1)] * qml.math.ndim(state)
-    #     state[tuple(slices)] = 1.0
 
     groups, indices = _group_measurements(mps)
 
@@ -441,11 +437,6 @@ def sample_state(
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
     if qml.math.get_deep_interface(state) == "jax":
-        if prng_key is None:
-            # pylint: disable=import-outside-toplevel
-            import jax
-
-            prng_key = jax.random.PRNGKey(0)
         return _sample_state_jax(
             state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
         )
