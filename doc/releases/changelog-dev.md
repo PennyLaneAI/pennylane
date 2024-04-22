@@ -531,6 +531,12 @@
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
 
+* Fixes a bug where `TorchLayer` does not work with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
+
+* Fixes a bug where the output shape of a qnode returning a list containing a single measurement is incorrect when combined with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
+
 * Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
   [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
 

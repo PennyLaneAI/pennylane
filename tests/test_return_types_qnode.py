@@ -104,6 +104,25 @@ class TestIntegrationSingleReturn:
         assert isinstance(res, (np.ndarray, np.float64, float))
 
     @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("shots", [[10, 10]])
+    def test_expval_single_return_in_list(self, device, shots):
+        """Test that the return shape is expected for a single expectation value in a list."""
+
+        dev = qml.device(device, wires=2, shots=shots)
+        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
+
+        obs = qml.PauliZ(wires=1) if device != "default.qutrit" else qml.GellMann(1, 3)
+
+        def circuit(x):
+            func(x)
+            return [qml.expval(obs)]
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        assert qml.math.shape(res) == ((1,) if shots is None else (2, 1))
+
+    @pytest.mark.parametrize("device", devices)
     def test_var(self, device):
         """Return a single var."""
         dev = qml.device(device, wires=2)
