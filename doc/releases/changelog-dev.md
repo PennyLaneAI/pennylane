@@ -73,7 +73,7 @@
 
 <h4>Dynamical Lie Algebra functionality</h4>
 
-* A new `qml.dla.lie_closure` function to compute the Lie closure of a list of operators.
+* A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
   [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
 
@@ -104,7 +104,7 @@
   ```
 
   After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
-  This can now be done in short via `qml.dla.lie_closure` as follows.
+  This can now be done in short via `qml.lie_closure` as follows.
 
   ```python
   >>> ops = [X(0) @ X(1), Z(0), Z(1)]
