@@ -49,3 +49,5 @@ from .grouping import (
     optimize_measurements,
     graph_colouring,
 )
+
+from .dla import PauliVSpace
