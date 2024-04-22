@@ -108,7 +108,7 @@
 
   ```python
   >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-  >>> dla = qml.pauli.lie_closure(ops)
+  >>> dla = qml.lie_closure(ops)
   >>> print(dla)
   [1.0 * X(1) @ X(0),
    1.0 * Z(0),
@@ -124,7 +124,7 @@
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
   >>> dla = [X(0) @ X(1), Z(0), 1.0 * Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
-  >>> adjoint_rep = qml.pauli.adjoint_repr(dla)
+  >>> adjoint_rep = qml.adjoint_repr(dla)
   >>> adjoint_rep.shape
   (6, 6, 6)
 
