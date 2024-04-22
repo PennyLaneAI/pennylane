@@ -593,11 +593,11 @@ class DefaultMixed(QubitDevice):
             self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
             self._pre_rotated_state = self._state
 
+    # pylint: disable=too-many-branches
     def _apply_snapshot(self, operation):
         """Applies the snapshot operation"""
         measurement = operation.hyperparameters["measurement"]
 
-        # pylint: disable=too-many-branches
         if self._debugger and self._debugger.active:
             dim = 2**self.num_wires
             density_matrix = qnp.reshape(self._state, (dim, dim))
