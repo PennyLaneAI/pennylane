@@ -12,22 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to sample a state."""
-from typing import List, Union, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
+
 import pennylane as qml
-from pennylane.ops import Sum, Hamiltonian, SProd, Prod, LinearCombination
 from pennylane.measurements import (
-    SampleMeasurement,
-    Shots,
-    ExpectationMP,
     ClassicalShadowMP,
-    ShadowExpvalMP,
     CountsMP,
+    ExpectationMP,
+    SampleMeasurement,
+    ShadowExpvalMP,
+    Shots,
 )
+from pennylane.ops import Hamiltonian, LinearCombination, Sum
 from pennylane.typing import TensorLike
+
 from .apply_operation import apply_operation
 from .measure import flatten_state
+
+
+def jax_random_split(prng_key, num: int = 2):
+    """Get a new key with ``jax.random.split``."""
+    if prng_key is None:
+        return [None] * num
+    # pylint: disable=import-outside-toplevel
+    from jax.random import split
+
+    return split(prng_key, num=num)
 
 
 def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
@@ -59,11 +71,6 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
         elif mp.obs is None:
             mp_no_obs.append(mp)
             mp_no_obs_indices.append(i)
-        elif isinstance(mp.obs, (Hamiltonian, Sum, SProd, Prod)):
-            # Sum, Hamiltonian, SProd, and Prod are treated as valid Pauli words, but
-            # aren't accepted in qml.pauli.group_observables
-            mp_other_obs.append([mp])
-            mp_other_obs_indices.append([i])
         elif qml.pauli.is_pauli_word(mp.obs):
             mp_pauli_obs.append((i, mp))
         else:
@@ -72,13 +79,13 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
 
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
-        ob_groups, group_indices = qml.pauli.group_observables(
+        _, group_indices = qml.pauli.group_observables(
             [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
         )
 
         mp_pauli_groups = []
-        for group, indices in zip(ob_groups, group_indices):
-            mp_group = [i_to_pauli_mp[i].__class__(obs=ob) for ob, i in zip(group, indices)]
+        for indices in group_indices:
+            mp_group = [i_to_pauli_mp[i] for i in indices]
             mp_pauli_groups.append(mp_group)
     else:
         mp_pauli_groups, group_indices = [], []
@@ -160,12 +167,13 @@ def _apply_diagonalizing_gates(
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    measurements: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
+    mid_measurements: dict = None,
 ) -> List[TensorLike]:
     """
     Returns the samples of the measurement process performed on the given state.
@@ -173,7 +181,7 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mp (List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
+        measurements (List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
             The sample measurements to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (Shots): The number of samples to take
@@ -183,15 +191,22 @@ def measure_with_samples(
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
+    # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
+    mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
+    skip_measure = any(v == -1 for v in mid_measurements.values()) if mid_measurements else False
 
     groups, indices = _group_measurements(mps)
 
     all_res = []
     for group in groups:
+        if skip_measure:
+            all_res.extend([None] * len(group))
+            continue
         if isinstance(group[0], ExpectationMP) and isinstance(
             group[0].obs, (Hamiltonian, LinearCombination)
         ):
@@ -204,9 +219,10 @@ def measure_with_samples(
             # measure with the usual method (rotate into the measurement basis)
             measure_fn = _measure_with_samples_diagonalizing_gates
 
+        prng_key, key = jax_random_split(prng_key)
         all_res.extend(
             measure_fn(
-                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=prng_key
+                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=key
             )
         )
 
@@ -216,6 +232,10 @@ def measure_with_samples(
     sorted_res = tuple(
         res for _, res in sorted(list(enumerate(all_res)), key=lambda r: flat_indices[r[0]])
     )
+
+    # append MCM samples
+    if mid_measurements:
+        sorted_res += tuple(mid_measurements.values())
 
     # put the shot vector axis before the measurement axis
     if shots.has_partitioned_shots:
@@ -269,6 +289,7 @@ def _measure_with_samples_diagonalizing_gates(
         return tuple(processed)
 
     try:
+        prng_key, _ = jax_random_split(prng_key)
         samples = sample_state(
             state,
             shots=shots.total_shots,
@@ -345,7 +366,7 @@ def _measure_hamiltonian_with_samples(
 
     # if the measurement process involves a Hamiltonian, measure each
     # of the terms separately and sum
-    def _sum_for_single_shot(s):
+    def _sum_for_single_shot(s, prng_key=None):
         results = measure_with_samples(
             [ExpectationMP(t) for t in mp.obs.terms()[1]],
             state,
@@ -356,7 +377,10 @@ def _measure_hamiltonian_with_samples(
         )
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
-    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+    keys = jax_random_split(prng_key, num=shots.num_copies)
+    unsqueezed_results = tuple(
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
+    )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
@@ -373,7 +397,7 @@ def _measure_sum_with_samples(
 
     # if the measurement process involves a Sum, measure each
     # of the terms separately and sum
-    def _sum_for_single_shot(s):
+    def _sum_for_single_shot(s, prng_key=None):
         results = measure_with_samples(
             [ExpectationMP(t) for t in mp.obs],
             state,
@@ -384,7 +408,10 @@ def _measure_sum_with_samples(
         )
         return sum(results)
 
-    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+    keys = jax_random_split(prng_key, num=shots.num_copies)
+    unsqueezed_results = tuple(
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
+    )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
@@ -506,11 +533,7 @@ def _sample_state_jax(
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
-        # Produce separate keys for each of the probabilities along the broadcasted axis
-        keys = []
-        for _ in state:
-            key, subkey = jax.random.split(key)
-            keys.append(subkey)
+        keys = jax_random_split(prng_key, num=len(state))
         samples = jnp.array(
             [
                 jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
@@ -518,6 +541,7 @@ def _sample_state_jax(
             ]
         )
     else:
+        _, key = jax_random_split(prng_key)
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]

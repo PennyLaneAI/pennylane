@@ -100,6 +100,53 @@
   ```pycon
   >>> print(print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8)))
   eigenvalue: 0.7
+
+<h4>Dynamical Lie Algebra functionality</h4>
+
+* A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
+  [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
+  [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+
+  The Lie closure, pronounced "Lee closure", is a way to compute the so-called dynamical Lie algebra (DLA) of a set of operators.
+  For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
+  All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
+
+  Take for example the following ops
+
+  ```python
+  ops = [X(0) @ X(1), Z(0), Z(1)]
+  ```
+
+  A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
+
+  ```python
+  >>> qml.commutator(X(0) @ X(1), Z(0))
+  -2j * (X(1) @ Y(0))
+  >>> qml.commutator(X(0) @ X(1), Z(1))
+  -2j * (Y(1) @ X(0))
+  ```
+
+  A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
+
+  ```python
+  >>> qml.commutator(X(0) @ Y(1), Z(0))
+  -2j * (Y(1) @ Y(0))
+  ```
+
+  After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
+  This can now be done in short via `qml.lie_closure` as follows.
+
+  ```python
+  >>> ops = [X(0) @ X(1), Z(0), Z(1)]
+  >>> dla = qml.dla.lie_closure(ops)
+  >>> print(dla)
+  [1.0 * X(1) @ X(0),
+   1.0 * Z(0),
+   1.0 * Z(1),
+   -1.0 * X(1) @ Y(0),
+   -1.0 * Y(1) @ X(0),
+   -1.0 * Y(1) @ Y(0)]
+
   ```
 
 <h3>Improvements 🛠</h3>
@@ -145,7 +192,7 @@
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
-  
+
 * The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
 
@@ -169,7 +216,7 @@
       return qml.probs(wires=range(3))
 
   ```
-  
+
   ```pycon
   >>> print(np.round(circuit(), 3))
   [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
@@ -196,7 +243,7 @@
   but for usage with new operator arithmetic.
   [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
 
-* The `qml.TrotterProduct` operator now supports error estimation functionality. 
+* The `qml.TrotterProduct` operator now supports error estimation functionality.
   [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
   ```pycon
@@ -230,18 +277,18 @@
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
-* The generators in the source code return operators consistent with the global setting for 
-  `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances 
-  will be returned even after disabling the new operator arithmetic in cases where they offer 
+* The generators in the source code return operators consistent with the global setting for
+  `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances
+  will be returned even after disabling the new operator arithmetic in cases where they offer
   additional functionality not available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
   [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
-  [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411) 
+  [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411)
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
-  
+
 * `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
@@ -264,6 +311,9 @@
 
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+
+* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
+  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
 
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
@@ -307,6 +357,10 @@
 * A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
+ 
+ * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
+  for `preprocess`.
+  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
 * Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
@@ -316,12 +370,18 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Use `SampleMP`s in the `dynamic_one_shot` transform to get back the values of the mid-circuit measurements.
+  [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
+
 * Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
   operators easier to work with.
   [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
+  
+* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
+  [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
 
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
   * tapes with more than one wire.
@@ -334,7 +394,7 @@
 
 * `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now removed. Instead, you  should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
   [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
-  
+
   ```pycon
   >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
   >>> op
@@ -411,6 +471,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* (In)equality of `qml.HilbertSchmidt` instances is now reported correctly by `qml.equal`.
+  [(#5538)](https://github.com/PennyLaneAI/pennylane/pull/5538)
 
 * `qml.ParticleConservingU1` and `qml.ParticleConservingU2` no longer raise an error when the initial state is not specified but default to the all-zeros state.
   [(#5535)](https://github.com/PennyLaneAI/pennylane/pull/5535)
@@ -493,8 +556,17 @@
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
 
+* Fixes a bug where `TorchLayer` does not work with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
+
+* Fixes a bug where the output shape of a qnode returning a list containing a single measurement is incorrect when combined with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
+
 * Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
   [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
+
+* Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
+  [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
 
 <h3>Contributors ✍️</h3>
 
