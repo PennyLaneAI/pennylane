@@ -494,7 +494,6 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         layer_out = layer.forward(x)
         assert layer_out.shape == torch.Size((2, output_dim))
 
-    @pytest.mark.usefixtures("get_circuit_shots")  # this fixture is in tests/qnn/conftest.py
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [4, 6])
     @pytest.mark.parametrize("shots", [[10, 10]])
