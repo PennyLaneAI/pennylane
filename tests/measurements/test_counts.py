@@ -145,6 +145,20 @@ class TestProcessSamples:
         total_counts = sum(count for count in result.values())
         assert total_counts == 997
 
+    @pytest.mark.parametrize("n_wires", [5, 8, 10])
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_counts_multi_wires_no_overflow(self, n_wires, all_outcomes):
+        """Test that binary strings for wire samples are not negative due to overflow."""
+        shots = 1000
+        total_wires = 10
+        samples = np.random.choice([0, 1], size=(shots, total_wires)).astype(np.float64)
+        result = qml.counts(wires=list(range(n_wires)), all_outcomes=all_outcomes).process_samples(
+            samples, wire_order=list(range(total_wires))
+        )
+
+        assert sum(result.values()) == shots
+        assert all(0 <= int(sample, 2) <= 2**n_wires for sample in result.keys())
+
     def test_counts_obs(self):
         """Test that the counts function outputs counts of the right size for observables"""
         shots = 1000

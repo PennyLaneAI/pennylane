@@ -1675,7 +1675,7 @@ class Operation(Operator):
     transformations such as gradient transforms.
 
     The following three class attributes are optional, but in most cases
-    at least one should be clearly defined to avoid unexpected behavior during
+    at least one should be clearly defined to avoid unexpected behaviour during
     differentiation.
 
     * :attr:`~.Operation.grad_recipe`

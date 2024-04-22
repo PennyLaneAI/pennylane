@@ -71,7 +71,58 @@
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
+<h4>Dynamical Lie Algebra functionality</h4>
+
+* A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
+  [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
+  [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+
+  The Lie closure, pronounced "Lee closure", is a way to compute the so-called dynamical Lie algebra (DLA) of a set of operators.
+  For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
+  All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
+
+  Take for example the following ops
+
+  ```python
+  ops = [X(0) @ X(1), Z(0), Z(1)]
+  ```
+
+  A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
+
+  ```python
+  >>> qml.commutator(X(0) @ X(1), Z(0))
+  -2j * (X(1) @ Y(0))
+  >>> qml.commutator(X(0) @ X(1), Z(1))
+  -2j * (Y(1) @ X(0))
+  ```
+
+  A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
+
+  ```python
+  >>> qml.commutator(X(0) @ Y(1), Z(0))
+  -2j * (Y(1) @ Y(0))
+  ```
+
+  After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
+  This can now be done in short via `qml.lie_closure` as follows.
+
+  ```python
+  >>> ops = [X(0) @ X(1), Z(0), Z(1)]
+  >>> dla = qml.dla.lie_closure(ops)
+  >>> print(dla)
+  [1.0 * X(1) @ X(0),
+   1.0 * Z(0),
+   1.0 * Z(1),
+   -1.0 * X(1) @ Y(0),
+   -1.0 * Y(1) @ X(0),
+   -1.0 * Y(1) @ Y(0)]
+  ```
+
 <h3>Improvements 🛠</h3>
+
+* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+  broadcasting is in non-trainable parameters.
+  [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
 
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
@@ -173,8 +224,14 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
-
 <h3>Improvements 🛠</h3>
+
+* `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
+  the operator it wraps.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
@@ -226,6 +283,12 @@
 * Operators can now be automatically captured by `jax.make_jaxpr` via use of the new `qml.capture.PLXPRMeta`.
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
 
+* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
+  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+
+* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
+  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
+
 <h4>Community contributions 🥳</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -265,9 +328,16 @@
 * A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
+ 
+ * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
+  for `preprocess`.
+  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
 * Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
+
+* Implement `Shots.bins()` method.
+  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
 <h3>Breaking changes 💔</h3>
 
@@ -277,6 +347,9 @@
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
+  
+* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
+  [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
 
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
   * tapes with more than one wire.
@@ -367,6 +440,21 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* (In)equality of `qml.HilbertSchmidt` instances is now reported correctly by `qml.equal`.
+  [(#5538)](https://github.com/PennyLaneAI/pennylane/pull/5538)
+
+* `qml.ParticleConservingU1` and `qml.ParticleConservingU2` no longer raise an error when the initial state is not specified but default to the all-zeros state.
+  [(#5535)](https://github.com/PennyLaneAI/pennylane/pull/5535)
+
+* `qml.counts` no longer returns negative samples when measuring 8 or more wires.
+  [(#5544)](https://github.com/PennyLaneAI/pennylane/pull/5544)
+
+* The `dynamic_one_shot` transform now works with broadcasting.
+  [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
+
+* Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
+  [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
+
 * `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
   [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
 
@@ -432,6 +520,21 @@
 
 * `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
   [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
+
+* Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
+  [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
+* Fixes a bug where `TorchLayer` does not work with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
+
+* Fixes a bug where the output shape of a qnode returning a list containing a single measurement is incorrect when combined with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
+
+* Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
+  [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
+
+* Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
+  [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
 
 <h3>Contributors ✍️</h3>
 
