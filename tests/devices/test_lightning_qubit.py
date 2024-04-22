@@ -54,7 +54,10 @@ def test_no_backprop_auto_interface():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.raises(qml.QuantumFunctionError, match="does not support backprop"):
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="does not support native computations with autodifferentiation frameworks",
+    ):
         qml.QNode(circuit, dev, diff_method="backprop")
 
 
@@ -108,18 +111,10 @@ class TestDtypePreserved:
             qml.state(),
             qml.density_matrix(wires=[1]),
             qml.density_matrix(wires=[2, 0]),
-            pytest.param(
-                qml.expval(qml.PauliY(0)), marks=pytest.mark.xfail(reason="incorrect type")
-            ),
-            pytest.param(qml.var(qml.PauliY(0)), marks=pytest.mark.xfail(reason="incorrect type")),
-            pytest.param(
-                qml.probs(wires=[1]),
-                marks=pytest.mark.skip(reason="measurement passes with complex64 but xfail strict"),
-            ),
-            pytest.param(
-                qml.probs(wires=[0, 2]),
-                marks=pytest.mark.skip(reason="measurement passes with complex64 but xfail strict"),
-            ),
+            qml.expval(qml.PauliY(0)),
+            qml.var(qml.PauliY(0)),
+            qml.probs(wires=[1]),
+            qml.probs(wires=[0, 2]),
         ],
     )
     def test_dtype(self, c_dtype, measurement):
