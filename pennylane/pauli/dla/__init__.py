@@ -15,4 +15,4 @@
 This subpackage defines functions and classes for dynamical Lie algebra functionality
 """
 
-from .lie_closure import PauliVSpace
+from .lie_closure import PauliVSpace, lie_closure
