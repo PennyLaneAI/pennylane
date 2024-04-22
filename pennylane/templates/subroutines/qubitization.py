@@ -24,7 +24,7 @@ def _positive_coeffs_hamiltonian(hamiltonian):
     """Transforms a Hamiltonian to ensure that the coefficients are positive.
 
     Args:
-        hamiltonian (Union[.Hamiltonian, .Sum, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of operators.
+        hamiltonian (Union[.Hamiltonian, .Sum, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
 
     Returns:
         list(float), list(.Operation): The coefficients and unitaries of the transformed Hamiltonian.
@@ -34,9 +34,9 @@ def _positive_coeffs_hamiltonian(hamiltonian):
 
     coeffs, ops = hamiltonian.terms()
 
-    for i in range(len(coeffs)):
-        angle = np.pi * (0.5 * (1 - qml.math.sign(coeffs[i])))
-        new_unitaries.append(coeffs[i] @ qml.GlobalPhase(angle, wires=ops[i].wires))
+    for i, coeff in enumerate(coeffs):
+        angle = np.pi * (0.5 * (1 - qml.math.sign(coeff)))
+        new_unitaries.append(coeff @ qml.GlobalPhase(angle, wires=ops[i].wires))
 
     return qml.math.abs(coeffs), new_unitaries
 
@@ -44,7 +44,7 @@ def _positive_coeffs_hamiltonian(hamiltonian):
 class Qubitization(Operation):
     r"""Applies the `Qubitization <https://arxiv.org/abs/2204.11890>`__ operator.
 
-    This operator encodes a Hamiltonian into unitary operator using the evolution:
+    This operator encodes a Hamiltonian written as a linear combination of unitaries into unitary operator using the evolution:
 
     .. math::
         e^{-i \arccos(\mathcal{H})}.
@@ -57,7 +57,7 @@ class Qubitization(Operation):
     .. seealso:: :class:`~.StatePrep` and :class:`~.Select`.
 
     Args:
-        hamiltonian (.Hamiltonian): The Hamiltonian to be qubitized.
+        hamiltonian (Union[.Hamiltonian, .Sum, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
         control (Iterable[Any], Wires): The control qubits for the Qubitization operator.
 
     **Example**
