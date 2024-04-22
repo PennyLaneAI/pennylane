@@ -361,11 +361,6 @@ class LinearCombination(Sum):
                 pr2.simplify()
                 return pr1 == pr2
 
-            if isinstance(other, LinearCombination):
-                op1 = self.simplify()
-                op2 = other.simplify()
-                return qml.equal(op1, op2)
-
             if isinstance(other, (qml.ops.Hamiltonian, Tensor)):
                 warnings.warn(
                     f"Attempting to compare a legacy operator class instance {other} of type {type(other)} with {self} of type {type(self)}."
