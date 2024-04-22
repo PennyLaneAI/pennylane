@@ -979,13 +979,14 @@ class QuantumScript:
         gate_sizes:
         {1: 4, 2: 2}
         """
+        # pylint: disable=protected-access
         if self._specs is None:
-            resources = qml.resource.resource._count_resources(
-                self
-            )  # pylint: disable=protected-access
+            resources = qml.resource.resource._count_resources(self)
+            algo_errors = qml.resource.error._compute_algo_error(self)
 
             self._specs = {
                 "resources": resources,
+                "errors": algo_errors,
                 "num_observables": len(self.observables),
                 "num_diagonalizing_gates": len(self.diagonalizing_gates),
                 "num_trainable_params": self.num_params,

@@ -25,7 +25,7 @@ from pennylane.typing import Result
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
-from .sampling import measure_with_samples
+from .sampling import jax_random_split, measure_with_samples
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
@@ -99,6 +99,7 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None):
     return state, shots
 
 
+# pylint: disable=too-many-arguments
 def get_final_state(
     circuit, debugger=None, interface=None, mid_measurements=None, rng=None, prng_key=None
 ):
@@ -123,8 +124,6 @@ def get_final_state(
             whether the state has a batch dimension.
 
     """
-    if prng_key is not None:
-        import jax
     circuit = circuit.map_to_standard_wires()
 
     prep = None
@@ -136,8 +135,7 @@ def get_final_state(
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
-        if prng_key is not None:
-            prng_key, subkey = jax.random.split(prng_key)
+        prng_key, subkey = jax_random_split(prng_key)
         state = apply_operation(
             op,
             state,
@@ -145,7 +143,7 @@ def get_final_state(
             debugger=debugger,
             mid_measurements=mid_measurements,
             rng=rng,
-            prng_key=prng_key,
+            prng_key=subkey,
         )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
@@ -196,7 +194,7 @@ def measure_final_state(
 
     if not circuit.shots:
         if mid_measurements is not None:
-            raise TypeError("Native mid-circuit measurements are not supported with finite shots.")
+            raise TypeError("Native mid-circuit measurements are only supported with finite shots.")
 
         if len(circuit.measurements) == 1:
             return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
@@ -271,13 +269,13 @@ def simulate(
         return simulate_one_shot_native_mcm(
             circuit, rng=rng, prng_key=prng_key, debugger=debugger, interface=interface
         )
-
+    _, key_state, key_measure = jax_random_split(prng_key, num=3)
     state, is_state_batched = get_final_state(
-        circuit, debugger=debugger, interface=interface, rng=rng
+        circuit, debugger=debugger, interface=interface, rng=rng, prng_key=key_state
     )
     if state_cache is not None:
         state_cache[circuit.hash] = state
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=key_measure)
 
 
 def simulate_one_shot_native_mcm(
@@ -301,18 +299,15 @@ def simulate_one_shot_native_mcm(
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
     interface = execution_kwargs.get("interface", None)
-    subkey = None
-    if prng_key is not None:
-        import jax
 
-        prng_key, subkey = jax.random.split(prng_key)
+    _, key_state, key_measure = jax_random_split(prng_key, num=3)
     mid_measurements = {}
     state, is_state_batched = get_final_state(
         circuit,
         debugger=debugger,
         interface=interface,
         rng=rng,
-        prng_key=prng_key,
+        prng_key=key_state,
         mid_measurements=mid_measurements,
     )
     return measure_final_state(
@@ -320,6 +315,6 @@ def simulate_one_shot_native_mcm(
         state,
         is_state_batched,
         rng=rng,
-        prng_key=subkey,
+        prng_key=key_measure,
         mid_measurements=mid_measurements,
     )

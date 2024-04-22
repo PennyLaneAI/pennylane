@@ -37,6 +37,11 @@ on:
         required: false
         type: string
         default: ''
+      disable_new_opmath:
+        description: Whether to disable the new op_math or not when running the tests
+        required: false
+        type: string
+        default: "False"
 
 jobs:
   setup-ci-load:
@@ -155,6 +160,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
       requirements_file: ${{ strategy.job-index == 0 && 'torch.txt' || '' }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   autograd-tests:
@@ -186,6 +192,7 @@ jobs:
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: autograd and not qcut and not finite-diff and not param-shift
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   tf-tests:
@@ -221,6 +228,7 @@ jobs:
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
       additional_pip_packages: pytest-split
       requirements_file: ${{ strategy.job-index == 0 && 'tf.txt' || '' }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   jax-tests:
@@ -256,6 +264,7 @@ jobs:
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
       additional_pip_packages: pytest-split
       requirements_file: ${{ strategy.job-index == 0 && 'jax.txt' || '' }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   core-tests:
@@ -291,6 +300,7 @@ jobs:
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/core_tests_durations.json'
       additional_pip_packages: pytest-split
       requirements_file: ${{ strategy.job-index == 0 && 'core.txt' || '' }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   all-interfaces-tests:
@@ -319,10 +329,11 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: true
-      install_pennylane_lightning_master: false
+      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
       requirements_file: ${{ strategy.job-index == 0 && 'all_interfaces.txt' || '' }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   external-libraries-tests:
@@ -351,11 +362,13 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: false
+      # using lightning master does not work for the tests with external libraries
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_pip_packages: pyzx pennylane-catalyst matplotlib stim
       requirements_file: ${{ strategy.job-index == 0 && 'external.txt' || '' }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   qcut-tests:
@@ -384,10 +397,11 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: true
-      install_pennylane_lightning_master: false
+      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
       additional_pip_packages: kahypar==1.1.7 opt_einsum
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   qchem-tests:
@@ -416,10 +430,11 @@ jobs:
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
-      install_pennylane_lightning_master: false
+      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
       additional_pip_packages: openfermionpyscf basis-set-exchange
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
   gradients-tests:
     needs:
@@ -450,9 +465,10 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: true
-      install_pennylane_lightning_master: false
+      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   data-tests:
@@ -481,10 +497,11 @@ jobs:
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
-      install_pennylane_lightning_master: false
+      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: data
       additional_pip_packages: h5py
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   device-tests:
@@ -510,6 +527,7 @@ jobs:
           #   shots: None
           - device: default.qubit.autograd
             shots: None
+            skip_interface: jax,tf,torch
           - device: default.mixed
             shots: None
         python-version: >-
@@ -525,13 +543,14 @@ jobs:
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_jax: ${{ contains(matrix.config.device, 'jax') }}
-      install_tensorflow: ${{ contains(matrix.config.device, 'tf') }}
-      install_pytorch: ${{ contains(matrix.config.device, 'torch') }}
-      install_pennylane_lightning_master: false
+      install_jax: ${{ !contains(matrix.config.skip_interface, 'jax') }}
+      install_tensorflow: ${{ !contains(matrix.config.skip_interface, 'tf') }}
+      install_pytorch: ${{ !contains(matrix.config.skip_interface, 'torch') }}
+      install_pennylane_lightning_master: true
       pytest_test_directory: pennylane/devices/tests
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   upload-to-codecov:

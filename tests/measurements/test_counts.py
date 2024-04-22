@@ -61,13 +61,6 @@ class TestCounts:
         ):
             qml.counts(qml.PauliZ(0), wires=[0, 1])
 
-    def test_observable_might_not_be_hermitian(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
     def test_hash(self):
         """Test that the hash property includes the all_outcomes property."""
         m1 = qml.counts(all_outcomes=True)
@@ -151,6 +144,20 @@ class TestProcessSamples:
         # NaNs were not converted into "0", but were excluded from the counts
         total_counts = sum(count for count in result.values())
         assert total_counts == 997
+
+    @pytest.mark.parametrize("n_wires", [5, 8, 10])
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_counts_multi_wires_no_overflow(self, n_wires, all_outcomes):
+        """Test that binary strings for wire samples are not negative due to overflow."""
+        shots = 1000
+        total_wires = 10
+        samples = np.random.choice([0, 1], size=(shots, total_wires)).astype(np.float64)
+        result = qml.counts(wires=list(range(n_wires)), all_outcomes=all_outcomes).process_samples(
+            samples, wire_order=list(range(total_wires))
+        )
+
+        assert sum(result.values()) == shots
+        assert all(0 <= int(sample, 2) <= 2**n_wires for sample in result.keys())
 
     def test_counts_obs(self):
         """Test that the counts function outputs counts of the right size for observables"""

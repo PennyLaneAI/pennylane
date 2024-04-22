@@ -178,16 +178,25 @@ def tear_down_thermitian():
 # Fixtures for testing under new and old opmath
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
+    )
+
+
+# pylint: disable=eval-used
+@pytest.fixture(scope="session", autouse=True)
+def disable_opmath_if_requested(request):
+    disable_opmath = request.config.getoption("--disable-opmath")
+    # value from yaml file is a string, convert to boolean
+    if eval(disable_opmath):
+        qml.operation.disable_new_opmath()
+
+
 @pytest.fixture(scope="function")
 def use_legacy_opmath():
     with disable_new_opmath_cm() as cm:
         yield cm
-
-
-# @pytest.fixture(scope="function")
-# def use_legacy_opmath():
-#     with disable_new_opmath_cm():
-#         yield
 
 
 @pytest.fixture(scope="function")
