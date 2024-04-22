@@ -19,6 +19,7 @@ core parameterized gates.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
 from operator import matmul
+
 import numpy as np
 
 import pennylane as qml
@@ -28,7 +29,7 @@ from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
-from .parametric_ops_single_qubit import _can_replace, stack_last, RX, RY, RZ, PhaseShift
+from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last
 
 
 class MultiRZ(Operation):

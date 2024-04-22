@@ -14,8 +14,8 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
-from pennylane.ops import Controlled, Conditional
-from pennylane.measurements import MeasurementProcess, MidMeasureMP, MeasurementValue
+from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
+from pennylane.ops import Conditional, Controlled
 
 
 def default_wire_map(tape):

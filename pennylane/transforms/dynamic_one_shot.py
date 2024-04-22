@@ -15,11 +15,12 @@
 Contains the batch dimension transform.
 """
 
+import itertools
+
 # pylint: disable=import-outside-toplevel
 from collections import Counter
 from typing import Callable, Sequence
 
-import itertools
 import numpy as np
 
 import pennylane as qml
