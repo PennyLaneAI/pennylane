@@ -438,7 +438,7 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-        By default, text is rotated and/or shrunk to fit within the box. This behavior can be turned off
+        By default, text is rotated and/or shrunk to fit within the box. This behaviour can be turned off
         with the ``autosize=False`` keyword.
 
         .. code-block:: python
