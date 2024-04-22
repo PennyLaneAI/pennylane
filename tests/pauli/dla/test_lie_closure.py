@@ -19,7 +19,9 @@ import numpy as np
 
 import pennylane as qml
 
-from pennylane.pauli import PauliWord, PauliSentence, PauliVSpace
+from pennylane import X, Y, Z
+
+from pennylane.pauli import PauliWord, PauliSentence, PauliVSpace, lie_closure
 
 ops1 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
@@ -283,3 +285,205 @@ class TestPauliVSpace:
         assert v1._pw_to_idx == vcopy._pw_to_idx
         assert v1._rank == vcopy._rank
         assert v1._num_pw == vcopy._num_pw
+
+
+dla11 = [
+    PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
+    PauliSentence({PauliWord({0: "Z"}): 1.0}),
+    PauliSentence({PauliWord({1: "Z"}): 1.0}),
+    PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
+]
+
+
+class TestLieClosure:
+    """Tests for qml.pauli.lie_closure()"""
+
+    def test_verbose(self, capsys):
+        """Test the verbose output"""
+        gen11 = dla11[:-1]
+        _ = lie_closure(gen11, verbose=True)
+        captured = capsys.readouterr()
+        assert "epoch 1 of lie_closure, DLA size is 3" in captured.out
+        assert "epoch 2 of lie_closure, DLA size is 4" in captured.out
+        assert "After 2 epochs, reached a DLA size of 4" in captured.out
+
+    def test_verbose_false(self, capsys):
+        """Test that there is no output when verbose is False"""
+        gen11 = dla11[:-1]
+        _ = lie_closure(gen11, verbose=False)
+        captured = capsys.readouterr()
+        assert captured.out == ""
+
+    def test_pauli_true_wrong_inputs(self):
+        """Test that an error with a meaningful error message is raised when inputting the wrong types while using pauli=True"""
+        gens = [X(0), X(1), Y(0) @ Y(1)]
+
+        with pytest.raises(TypeError, match="All generators need to be of type PauliSentence"):
+            _ = qml.pauli.lie_closure(gens, pauli=True)
+
+    def test_max_iterations(self, capsys):
+        """Test that max_iterations truncates the lie closure iteration at the right point"""
+        n = 3
+        generators = [
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n - 1)
+        ]
+        generators += [
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
+        ]
+
+        res = qml.pauli.lie_closure(generators, verbose=True, max_iterations=1)
+        captured = capsys.readouterr()
+        assert (
+            captured.out
+            == "epoch 1 of lie_closure, DLA size is 4\nAfter 1 epochs, reached a DLA size of 8\n"
+        )
+        assert len(res) == 8
+
+    def test_simple_lie_closure(self):
+        """Test simple lie_closure example"""
+        gen11 = dla11[:-1]
+        res11 = lie_closure(gen11, pauli=True)
+        assert res11 == dla11
+
+        dla12 = [
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): 1.0}),
+            PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
+            PauliSentence({PauliWord({0: "Z"}): -2.0, PauliWord({1: "Z"}): 2.0}),
+        ]
+
+        gen12 = dla12[:-1]
+        res12 = lie_closure(gen12, pauli=True)
+        assert PauliVSpace(res12) == PauliVSpace(dla12)
+
+    def test_lie_closure_with_pl_ops(self):
+        """Test that lie_closure works properly with PennyLane ops instead of PauliSentences"""
+        dla = [
+            qml.sum(qml.prod(X(0), X(1)), qml.prod(Y(0), Y(1))),
+            Z(0),
+            Z(1),
+            qml.sum(qml.prod(Y(0), X(1)), qml.s_prod(-1.0, qml.prod(X(0), Y(1)))),
+        ]
+        gen11 = dla[:-1]
+        res11 = lie_closure(gen11)
+
+        res11 = [op.pauli_rep for op in res11]  # back to pauli_rep for easier comparison
+        assert PauliVSpace(res11) == PauliVSpace(dla11)
+
+    @pytest.mark.parametrize("pauli", [True, False])
+    def test_lie_closure_with_PauliWords(self, pauli):
+        """Test that lie_closure works properly with PauliWords"""
+        gen = [
+            PauliWord({0: "X", 1: "X"}),
+            PauliWord({0: "Z"}),
+            PauliWord({1: "Z"}),
+        ]
+        dla = gen + [
+            PauliWord({0: "Y", 1: "X"}),
+            PauliWord({0: "X", 1: "Y"}),
+            PauliWord({0: "Y", 1: "Y"}),
+        ]
+        dla = [op.pauli_rep for op in dla]
+
+        res = lie_closure(gen, pauli=pauli)
+
+        res = [op.pauli_rep for op in res]  # convert to pauli_rep for easier comparison
+        assert PauliVSpace(res) == PauliVSpace(dla)
+
+    def test_lie_closure_with_sentences(self):
+        """Test that lie_closure returns the correct results when using (true) PauliSentences, i.e. not just single PauliWords"""
+        n = 3
+        gen = [
+            PauliSentence(
+                {
+                    PauliWord({i: "X", (i + 1) % n: "X"}): 1.0,
+                    PauliWord({i: "Y", (i + 1) % n: "Y"}): 1.0,
+                }
+            )
+            for i in range(n - 1)
+        ]
+        gen += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(n)]
+
+        res = qml.pauli.lie_closure(gen, pauli=True)
+        true_res = [
+            PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
+            PauliSentence({PauliWord({1: "X", 2: "X"}): 1.0, PauliWord({1: "Y", 2: "Y"}): 1.0}),
+            PauliSentence({PauliWord({0: "Y", 1: "X"}): -1.0, PauliWord({0: "X", 1: "Y"}): 1.0}),
+            PauliSentence({PauliWord({1: "Y", 2: "X"}): -1.0, PauliWord({1: "X", 2: "Y"}): 1.0}),
+            PauliSentence(
+                {
+                    PauliWord({0: "X", 1: "Z", 2: "Y"}): 1.0,
+                    PauliWord({0: "Y", 1: "Z", 2: "X"}): -1.0,
+                }
+            ),
+            PauliSentence(
+                {
+                    PauliWord({0: "X", 1: "Z", 2: "X"}): -1.0,
+                    PauliWord({0: "Y", 1: "Z", 2: "Y"}): -1.0,
+                }
+            ),
+            PauliSentence({PauliWord({0: "Z"}): 1.0}),
+            PauliSentence({PauliWord({1: "Z"}): 1.0}),
+            PauliSentence({PauliWord({2: "Z"}): 1.0}),
+        ]
+        assert PauliVSpace(res) == PauliVSpace(true_res)
+
+    @pytest.mark.parametrize("n", range(2, 5))
+    def test_lie_closure_transverse_field_ising_1D_open(self, n):
+        """Test the lie closure works correctly for the transverse Field Ising model with open boundary conditions, a8 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
+        generators = [
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n - 1)
+        ]
+        generators += [
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
+        ]
+
+        res = qml.pauli.lie_closure(generators)
+        assert len(res) == (2 * n - 1) * (2 * n - 2) // 2
+
+    @pytest.mark.parametrize("n", range(3, 5))
+    def test_lie_closure_transverse_field_ising_1D_cyclic(self, n):
+        """Test the lie closure works correctly for the transverse Field Ising model with cyclic boundary conditions, a8 in theorem IV.2 in https://arxiv.org/pdf/2309.05690.pdf"""
+        generators = [PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n)]
+        generators += [
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n)
+        ]
+
+        res = qml.pauli.lie_closure(generators)
+        assert len(res) == 2 * n * (2 * n - 1)
+
+    def test_lie_closure_heisenberg_generators_odd(self):
+        """Test the resulting DLA from Heisenberg generators with odd n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
+        n = 3
+        # dim of su(N) is N ** 2 - 1
+        # Heisenberg generates su(2**(n-1)) for n odd            => dim should be (2**(n-1))**2 - 1
+        generators = [
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n - 1)
+        ]
+        generators += [
+            PauliSentence({PauliWord({i: "Y", (i + 1) % n: "Y"}): 1.0}) for i in range(n - 1)
+        ]
+        generators += [
+            PauliSentence({PauliWord({i: "Z", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
+        ]
+
+        res = qml.pauli.lie_closure(generators)
+        assert len(res) == (2 ** (n - 1)) ** 2 - 1
+
+    def test_lie_closure_heisenberg_generators_even(self):
+        """Test the resulting DLA from Heisenberg generators with even n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
+        n = 4
+        # dim of su(N) is N ** 2 - 1
+        # Heisenberg generates (su(2**(n-2)))**4 for n>=4 even   => dim should be 4*((2**(n-2))**2 - 1)
+        generators = [
+            PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n - 1)
+        ]
+        generators += [
+            PauliSentence({PauliWord({i: "Y", (i + 1) % n: "Y"}): 1.0}) for i in range(n - 1)
+        ]
+        generators += [
+            PauliSentence({PauliWord({i: "Z", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
+        ]
+
+        res = qml.pauli.lie_closure(generators)
+        assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
