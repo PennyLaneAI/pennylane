@@ -156,10 +156,10 @@ class StateMP(StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        interface = qml.math.get_deep_interface(state)
+        is_tf_interface = qml.math.get_deep_interface(state) == "tensorflow"
         wires = self.wires
         if not wires or wire_order == wires:
-            return state + 0.0j if interface != "tensorflow" else qml.math.cast(state, "complex128")
+            return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
 
         if set(wires) != set(wire_order):
             raise WireError(
@@ -179,7 +179,7 @@ class StateMP(StateMeasurement):
         state = qml.math.reshape(state, shape)
         state = qml.math.transpose(state, desired_axes)
         state = qml.math.reshape(state, flat_shape)
-        return state + 0.0j if interface != "tensorflow" else qml.math.cast(state, "complex128")
+        return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
 
 
 class DensityMatrixMP(StateMP):

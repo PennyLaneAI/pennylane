@@ -291,6 +291,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* State measurements preserve `dtype`.
+  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
+
 * Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
   operators easier to work with.
   [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
