@@ -437,6 +437,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* (In)equality of `qml.HilbertSchmidt` instances is now reported correctly by `qml.equal`.
+  [(#5538)](https://github.com/PennyLaneAI/pennylane/pull/5538)
+
 * `qml.ParticleConservingU1` and `qml.ParticleConservingU2` no longer raise an error when the initial state is not specified but default to the all-zeros state.
   [(#5535)](https://github.com/PennyLaneAI/pennylane/pull/5535)
 
