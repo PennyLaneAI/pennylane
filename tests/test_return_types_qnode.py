@@ -106,7 +106,7 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("shots", [[10, 10]])
     def test_expval_single_return_in_list(self, device, shots):
-        """Returns a single expval but in a list"""
+        """Test that the return shape is expected for a single expectation value in a list."""
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
