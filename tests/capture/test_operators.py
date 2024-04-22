@@ -100,15 +100,21 @@ def test_hybrid_capture_wires():
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
     assert jaxpr.eqns[1].primitive == qml.X._primitive
 
+    with qml.queuing.AnnotatedQueue() as q:
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
+
+    assert len(q) == 1
+    assert qml.equal(q.queue[0], qml.X(3))
+
 
 def test_hybrid_capture_parametrization():
     """Test a variety of classical processing with a parametrized operation."""
 
     def f(a):
-        qml.Rot(2 * a, jax.numpy.sqrt(a), a**2, wires=a)
+        qml.Rot(2 * a, jax.numpy.sqrt(a), a**2, wires=2 * a)
 
     jaxpr = jax.make_jaxpr(f)(0.5)
-    assert len(jaxpr.eqns) == 4
+    assert len(jaxpr.eqns) == 5
 
     in1 = jaxpr.eqns[0].invars[1]
     assert jaxpr.eqns[1].invars[0] == in1
@@ -118,7 +124,16 @@ def test_hybrid_capture_parametrization():
     assert jaxpr.eqns[0].primitive.name == "mul"
     assert jaxpr.eqns[1].primitive.name == "sqrt"
     assert jaxpr.eqns[2].primitive.name == "integer_pow"
-    assert jaxpr.eqns[3].primitive == qml.Rot._primitive
+    assert jaxpr.eqns[3].primitive.name == "mul"
+    assert jaxpr.eqns[4].primitive == qml.Rot._primitive
+
+    with qml.queuing.AnnotatedQueue() as q:
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
+
+    assert len(q) == 1
+    assert qml.equal(
+        q.queue[0], qml.Rot(1.0, jax.numpy.sqrt(0.5), 0.25, wires=1), check_interface=False
+    )
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
@@ -145,6 +160,12 @@ def test_different_wires(w, as_kwarg):
 
     assert eqn.params == {"n_wires": 1}
 
+    with qml.queuing.AnnotatedQueue() as q:
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+    assert len(q) == 1
+    assert qml.equal(q.queue[0], qml.X(0))
+
 
 def test_parametrized_op():
     """Test capturing a parametrized operation."""
@@ -160,6 +181,12 @@ def test_parametrized_op():
 
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
     assert eqn.params == {"n_wires": 1}
+
+    with qml.queuing.AnnotatedQueue() as q:
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, 2.0, 3.0, 10)
+
+    assert len(q) == 1
+    assert qml.equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
 
 
 def test_pauli_rot():
@@ -177,6 +204,12 @@ def test_pauli_rot():
 
     assert len(eqn.invars) == 3
     assert jaxpr.jaxpr.invars == eqn.invars
+
+    with qml.queuing.AnnotatedQueue() as q:
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+
+    assert len(q) == 1
+    assert qml.equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
 
 
 class TestTemplates:
@@ -244,6 +277,12 @@ class TestOpmath:
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {}
 
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        assert qml.equal(q.queue[0], qml.adjoint(qml.X(0)))
+
     def test_control(self):
         """Test a nested control operation."""
 
@@ -262,6 +301,13 @@ class TestOpmath:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {"control_values": [0], "work_wires": None}
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)
+
+        assert len(q) == 1
+        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=3, control_values=[0])
+        assert qml.equal(q.queue[0], expected)
 
 
 class TestAbstractDunders:

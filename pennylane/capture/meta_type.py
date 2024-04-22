@@ -19,6 +19,7 @@ See ``explanations.md`` for technical explanations of how this works.
 
 import abc
 from functools import lru_cache
+from typing import Optional
 
 import pennylane as qml
 
@@ -32,7 +33,7 @@ except ImportError:
 
 
 @lru_cache  # constrcut the first time lazily
-def _get_abstract_operator():
+def _get_abstract_operator() -> type:
     """Create an AbstractOperator once in a way protected from lack of a jax install."""
     if not has_jax:
         raise ImportError("Jax is required for plxpr.")
@@ -86,7 +87,7 @@ def _get_abstract_operator():
     return AbstractOperator
 
 
-def create_operator_primitive(operator_type: type) -> "Optional[jax.core.Primitive]":
+def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
     Args:
@@ -106,7 +107,10 @@ def create_operator_primitive(operator_type: type) -> "Optional[jax.core.Primiti
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
-        wires = args[-n_wires:]
+
+        # need to convert array values into integers
+        # for plxpr, all wires must be integers
+        wires = tuple(int(w) for w in args[-n_wires:])
         args = args[:-n_wires]
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 
