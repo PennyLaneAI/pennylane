@@ -11,153 +11,101 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import jax
 
+from functools import lru_cache
+from typing import Callable, Optional
 
 import pennylane as qml
 
-### All the abstract types
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
 
 
-def _register_abstract_class(cls):
-    jax.core.raise_to_shaped_mappings[cls] = lambda aval, _: aval
-    return cls
+@lru_cache
+def _get_abstract_measurement():
+    if not has_jax:
+        raise ImportError("Jax is required for plxpr.")
+
+    class AbstractMeasurement(jax.core.AbstractValue):
+        def __init__(self, abstract_eval: Callable, n_wires: Optional[int] = None):
+            self.abstract_eval = abstract_eval
+            self.n_wires = n_wires
+
+        def __repr__(self):
+            return f"AbstractMeasurement(n_wires={self.n_wires})"
+
+        # pylint: disable=missing-function-docstring
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractMeasurement)
+
+        def __hash__(self):
+            return hash("AbstractMeasurement")
+
+    jax.core.raise_to_shaped_mappings[AbstractMeasurement] = lambda aval, _: aval
+
+    return AbstractMeasurement
 
 
-@_register_abstract_class
-class AbstractMeasurement(jax.core.AbstractValue):
-    def __eq__(self, other):
-        return isinstance(other, type(self))
+def create_measurement_obs_primitive(
+    measurement_type: type, name: str
+) -> Optional["jax.core.Primitive"]:
+    if not has_jax:
+        return None
 
-    def __hash__(self):
-        return hash(type(self).__name__)
+    primitive = jax.core.Primitive(name)
 
-    def abstract_measurement(self, shots: int, num_device_wires: int):
-        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
-        return jax.core.ShapedArray((), dtype)
+    @primitive.def_impl
+    def _(obs):
+        return measurement_type(obs=obs)
 
+    abstract_type = _get_abstract_measurement()
 
-@_register_abstract_class
-class AbstractState(AbstractMeasurement):
-    def abstract_measurement(self, shots, num_device_wires):
-        dtype = jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
-        shape = (2**num_device_wires,)
-        return jax.core.ShapedArray(shape, dtype)
+    @primitive.def_abstract_eval
+    def _(obs):
+        abstract_eval = measurement_type._abstract_eval
+        return abstract_type(abstract_eval, n_wires=None)
 
-
-@_register_abstract_class
-class AbstractSample(AbstractMeasurement):
-    def __init__(self, n_wires: int):
-        self.n_wires = n_wires
-
-    def abstract_measurement(self, shots, num_device_wires):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-        n_wires = num_device_wires if self.n_wires == 0 else self.n_wires
-        shape = []
-        if n_wires != 1:
-            shape.append(n_wires)
-        if shots != 1:
-            shape.append(shots)
-        return jax.core.ShapedArray(shape, dtype)
+    return primitive
 
 
-@_register_abstract_class
-class AbstractObsSample(AbstractMeasurement):
-    def abstract_measurement(self, shots, num_device_wires):
-        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
-        shape = (shots,)
-        return jax.core.ShapedArray(shape, dtype)
+def create_measurement_wires_primitive(
+    measurement_type: type, name: str
+) -> Optional["jax.core.Primitive"]:
+    if not has_jax:
+        return None
 
+    primitive = jax.core.Primitive(name)
 
-@_register_abstract_class
-class AbstractProbs(AbstractMeasurement):
-    def __init__(self, n_wires: int):
-        self.n_wires = n_wires
+    @primitive.def_impl
+    def _(*wires, **kwargs):
+        wires = qml.wires.Wires(wires)
+        return measurement_type(wires=wires)
 
-    def abstract_measurement(self, shots, num_device_wires):
-        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
-        n_wires = num_device_wires if self.n_wires == 0 else self.n_wires
-        shape = (2**n_wires,)
-        return jax.core.ShapedArray(shape, dtype)
+    abstract_type = _get_abstract_measurement()
 
+    @primitive.def_abstract_eval
+    def _(*wires, **kwargs):
+        abstract_eval = measurement_type._abstract_eval
+        return abstract_type(abstract_eval, n_wires=len(wires))
 
-#### Primitives #####
-
-mid_measure_p = jax.core.Primitive("mid_measure")
-
-@mid_measure_p.def_impl
-def _(*wires, reset, postselect):
-    wires = qml.wires.Wires(wires)
-    return qml.measurements.MidMeasureMP(wires, reset=reset, postselect=postselect)
-
-@mid_measure_p.def_abstract_eval
-def _(*wires, reset, postselect):
-    return AbstractSample(n_wires=len(wires))    
-
-expval_p = jax.core.Primitive("expval")
-
-
-@expval_p.def_impl
-def _(obs):
-    return qml.measurements.ExpectationMP(obs)
-
-
-@expval_p.def_abstract_eval
-def _(obs):
-    return AbstractMeasurement()
-
-
-probs_p = jax.core.Primitive("probs")
-
-
-@probs_p.def_impl
-def _(*wires):
-    wires = qml.wires.Wires(wires)
-    return qml.measurements.ProbabilityMP(wires=wires)
-
-
-@probs_p.def_abstract_eval
-def _(*wires):
-    return AbstractProbs(n_wires=len(wires))
-
-
-state_p = jax.core.Primitive("state")
-
-
-@state_p.def_impl
-def _():
-    return qml.measurements.StateMP()
-
-
-@state_p.def_abstract_eval
-def _():
-    return AbstractState()
-
-
-sample_p = jax.core.Primitive("sample")
-
-
-@sample_p.def_impl
-def _(*wires):
-    return qml.measurements.SampleMP(wires=wires)
-
-
-@sample_p.def_abstract_eval
-def _(*wires):
-    return AbstractSample(n_wires=len(wires))
-
-
-sample_obs_p = jax.core.Primitive("sample_obs")
-
-
-@sample_obs_p.def_impl
-def _(obs):
-    return qml.measurements.SampleMP(obs=obs)
-
-
-@sample_obs_p.def_abstract_eval
-def _(obs):
-    return AbstractObsSample()
+    return primitive
 
 
 ### The measure primitive ###############
@@ -166,21 +114,30 @@ measure_prim = jax.core.Primitive("measure")
 measure_prim.multiple_results = True
 
 
+def trivial_processing(results):
+    return results
+
+
 @measure_prim.def_impl
 def _(*measurements, shots, num_device_wires):
     # depends on the jax interpreter
-    raise NotImplementedError
+    if not all(isinstance(m, qml.measurements.MidMeasureMP) for m in measurements):
+        raise NotImplementedError("requires an interpreter to perform a measurement.")
+    return qml.measurements.MeasurementValue(measurements, trivial_processing)
 
 
 @measure_prim.def_abstract_eval
 def _(*measurements, shots, num_device_wires):
+
     if not shots.has_partitioned_shots:
-        return tuple(
-            m.abstract_measurement(shots.total_shots, num_device_wires) for m in measurements
-        )
+        kwargs = {"shots": shots.total_shots, "num_device_wires": num_device_wires}
+        return tuple(m.abstract_eval(n_wires=m.n_wires, **kwargs) for m in measurements)
     vals = []
     for s in shots:
-        v = tuple(m.abstract_measurement(s, num_device_wires) for m in measurements)
+        v = tuple(
+            m.abstract_eval(n_wires=m.n_wires, shots=s, num_device_wires=num_device_wires)
+            for m in measurements
+        )
         vals.extend(v)
     return vals
 

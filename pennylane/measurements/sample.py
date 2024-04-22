@@ -26,8 +26,11 @@ from pennylane.wires import Wires
 from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
 
-
-import jax
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
 
 
 def sample(
@@ -137,11 +140,6 @@ def sample(
            [0, 0]])
 
     """
-    if qml.capture.plxpr_enabled():
-        if wires is not None:
-            return qml.capture.sample_p.bind(*wires)
-        return qml.capture.sample_obs_p.bind(op)
-
     return SampleMP(obs=op, wires=wires)
 
 
@@ -162,6 +160,8 @@ class SampleMP(SampleMeasurement):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    return_type = Sample
 
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
 
@@ -190,9 +190,21 @@ class SampleMP(SampleMeasurement):
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
-    @property
-    def return_type(self):
-        return Sample
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ):
+        if n_wires == 0:
+            n_wires = num_device_wires
+        n_wires = n_wires or 1  # if no wires, will have a single output dimension
+
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        shape = []
+        if n_wires != 1:
+            shape.append(n_wires)
+        if shots != 1:
+            shape.append(shots)
+        return jax.core.ShapedArray(shape, dtype)
 
     @property
     @functools.lru_cache()

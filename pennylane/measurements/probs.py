@@ -24,7 +24,11 @@ from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
-import jax
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
 
 
 def probs(wires=None, op=None) -> "ProbabilityMP":
@@ -95,11 +99,6 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
     """
-    if qml.capture.plxpr_enabled():
-        if wires is not None:
-            wires = qml.wires.Wires(wires)
-            return qml.capture.probs_p.bind(*wires)
-        raise NotImplementedError
 
     if isinstance(op, MeasurementValue):
         if len(op.measurements) > 1:
@@ -155,9 +154,14 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    @property
-    def return_type(self):
-        return Probability
+    return_type = Probability
+
+    @classmethod
+    def _abstract_eval(cls, n_wires=None, shots=None, num_device_wires=0):
+        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+        n_wires = num_device_wires if n_wires == 0 else n_wires
+        shape = (2**n_wires,)
+        return jax.core.ShapedArray(shape, dtype)
 
     @property
     def numeric_type(self):

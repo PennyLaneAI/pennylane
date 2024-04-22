@@ -21,7 +21,11 @@ from pennylane.wires import Wires, WireError
 
 from .measurements import State, StateMeasurement
 
-import jax
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
 
 
 def state() -> "StateMP":
@@ -140,12 +144,19 @@ class StateMP(StateMeasurement):
             where the instance has to be identified
     """
 
+    return_type = State
+
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
 
-    @property
-    def return_type(self):
-        return State
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ):
+        dtype = jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires, 2**n_wires)
+        return jax.core.ShapedArray(shape, dtype)
 
     @property
     def numeric_type(self):

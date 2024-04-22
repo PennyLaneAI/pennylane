@@ -176,6 +176,10 @@ class CountsMP(SampleMeasurement):
             outcomes (default), or whether it will display all possible outcomes for the system
     """
 
+    @classmethod
+    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None):
+        raise NotImplementedError("counts are not compatible with plxpr.")
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,

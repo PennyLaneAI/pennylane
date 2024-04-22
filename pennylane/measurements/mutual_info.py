@@ -99,6 +99,8 @@ class MutualInfoMP(StateMeasurement):
 
     """
 
+    return_type = MutualInfo
+
     def _flatten(self):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
         return (None, None), metadata
@@ -127,10 +129,6 @@ class MutualInfoMP(StateMeasurement):
         )
 
         return hash(fingerprint)
-
-    @property
-    def return_type(self):
-        return MutualInfo
 
     @property
     def numeric_type(self):

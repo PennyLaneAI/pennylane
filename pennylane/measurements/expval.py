@@ -58,8 +58,6 @@ def expval(
     Returns:
         ExpectationMP: measurement process instance
     """
-    if qml.capture.plxpr_enabled():
-        return qml.capture.expval_p.bind(op)
 
     if isinstance(op, MeasurementValue):
         return ExpectationMP(obs=op)
@@ -95,9 +93,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    @property
-    def return_type(self):
-        return Expectation
+    return_type = Expectation
 
     @property
     def numeric_type(self):

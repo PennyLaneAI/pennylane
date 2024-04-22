@@ -83,9 +83,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    @property
-    def return_type(self):
-        return Variance
+    return_type = Variance
 
     @property
     def numeric_type(self):

@@ -28,6 +28,13 @@ from pennylane.wires import Wires
 from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
 
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
+
+
 def shadow_expval(H, k=1, seed=None):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
@@ -225,6 +232,8 @@ class ClassicalShadowMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    return_type = Shadow
 
     def __init__(
         self, wires: Optional[Wires] = None, seed: Optional[int] = None, id: Optional[str] = None
@@ -432,13 +441,19 @@ class ClassicalShadowMP(MeasurementTransform):
     def samples_computational_basis(self):
         return False
 
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ):
+        if not shots:
+            raise NotImplementedError("shots are required for shadow measurements.")
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        shape = (2, shots, n_wires)
+        return jax.core.ShapedArray(shape, dtype)
+
     @property
     def numeric_type(self):
         return int
-
-    @property
-    def return_type(self):
-        return Shadow
 
     def shape(self, device, shots):  # pylint: disable=unused-argument
         # otherwise, the return type requires a device
@@ -473,6 +488,8 @@ class ShadowExpvalMP(MeasurementTransform):
             where the instance has to be identified
     """
 
+    return_type = ShadowExpval
+
     def _flatten(self):
         metadata = (
             ("seed", self.seed),
@@ -483,6 +500,10 @@ class ShadowExpvalMP(MeasurementTransform):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
+
+    @classmethod
+    def _primitive_bind_call(cls, H, seed=None, k=1, id=None):
+        return cls._obs_primitive.bind(H, seed=seed, k=k)
 
     def __init__(
         self,
@@ -531,10 +552,6 @@ class ShadowExpvalMP(MeasurementTransform):
     @property
     def numeric_type(self):
         return float
-
-    @property
-    def return_type(self):
-        return ShadowExpval
 
     def shape(self, device, shots):
         is_single_op = isinstance(self.H, Operator)

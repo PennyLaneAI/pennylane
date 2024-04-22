@@ -73,12 +73,10 @@ class PurityMP(StateMeasurement):
             applications where the instance has to be identified
     """
 
+    return_type = Purity
+
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
-
-    @property
-    def return_type(self):
-        return Purity
 
     @property
     def numeric_type(self):

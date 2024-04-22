@@ -23,6 +23,12 @@ from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, MidMeasure
 
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
+
 
 def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[int] = None):
     r"""Perform a mid-circuit measurement in the computational basis on the
@@ -208,20 +214,16 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
               samples, leading to unexpected or incorrect results.
 
     """
-    if qml.capture.plxpr_enabled():
-        wires = Wires(wires)
-        mp = qml.capture.mid_measure_p.bind(*wires, reset=reset, postselect=postselect)
-        return qml.capture.measure(mp, shots=1)[0]
-
     wire = Wires(wires)
     if len(wire) > 1:
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
-
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
+    if qml.capture.plxpr_enabled():
+        return qml.capture.measure(mp, shots=1)[0]
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
@@ -246,9 +248,22 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
+    return_type = MidMeasure
+
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
         return (None, None), metadata
+
+    @classmethod
+    def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
+        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect)
+
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ):
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        return jax.core.ShapedArray((), dtype)
 
     def __init__(
         self,
@@ -283,10 +298,6 @@ class MidMeasureMP(MeasurementProcess):
         _label += "├" if not self.reset else "│  │0⟩"
 
         return _label
-
-    @property
-    def return_type(self):
-        return MidMeasure
 
     @property
     def samples_computational_basis(self):

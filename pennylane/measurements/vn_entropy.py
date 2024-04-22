@@ -83,6 +83,8 @@ class VnEntropyMP(StateMeasurement):
         log_base (float): Base for the logarithm.
     """
 
+    return_type = VnEntropy
+
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("log_base", self.log_base))
         return (None, None), metadata
@@ -103,10 +105,6 @@ class VnEntropyMP(StateMeasurement):
         fingerprint = (self.__class__.__name__, tuple(self.wires.tolist()), self.log_base)
 
         return hash(fingerprint)
-
-    @property
-    def return_type(self):
-        return VnEntropy
 
     @property
     def numeric_type(self):

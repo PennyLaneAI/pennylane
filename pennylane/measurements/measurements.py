@@ -31,6 +31,12 @@ from pennylane.wires import Wires
 
 from .shots import Shots
 
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
+
 # =============================================================================
 # ObservableReturnTypes types
 # =============================================================================
@@ -112,7 +118,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess(ABC):
+class MeasurementProcess(ABC, metaclass=qml.capture.PLXPRObj):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -132,6 +138,23 @@ class MeasurementProcess(ABC):
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
+        try:
+            name_obs = f"{cls.return_type.value}_obs"
+        except Exception:
+            name_obs = f"{cls}_obs"
+        try:
+            name_wires = f"{cls.return_type.value}_wires"
+        except Exception:
+            name_wires = f"{cls}_wires"
+        cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name_obs)
+        cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name_wires)
+
+    @classmethod
+    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None):
+        if obs is not None:
+            return cls._obs_primitive.bind(obs)
+        wires = () if wires is None else wires
+        return cls._wires_primitive.bind(*wires)
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires),)
@@ -188,6 +211,16 @@ class MeasurementProcess(ABC):
 
         # Queue the measurement process
         self.queue()
+
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ):
+        # by default, we assume a single float return
+        if not has_jax:
+            raise ImportError("MeasurementProcesss.abstract_eval requires jax to be installed")
+        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+        return jax.core.ShapedArray((), dtype)
 
     @property
     def return_type(self) -> Optional[ObservableReturnTypes]:
