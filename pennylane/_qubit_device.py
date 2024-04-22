@@ -21,12 +21,12 @@ This module contains the :class:`QubitDevice` abstract base class.
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 # pylint: disable=too-many-arguments
 import abc
+import inspect
 import itertools
+import logging
 import warnings
 from collections import defaultdict
-from typing import Union, List
-import inspect
-import logging
+from typing import List, Union
 
 import numpy as np
 
@@ -47,14 +47,14 @@ from pennylane.measurements import (
     SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
+    Shots,
     StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
-    Shots,
 )
+from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
-from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
@@ -152,7 +152,7 @@ class QubitDevice(Device):
         "Identity",
         "Projector",
         "Sum",
-        "Sprod",
+        "SProd",
         "Prod",
     }
 
@@ -294,20 +294,17 @@ class QubitDevice(Device):
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
             # Lightning does not support apply(rotations) anymore, so we need to rotate here
             # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
-            is_lightning = (
-                hasattr(self, "name")
-                and isinstance(self.name, str)
-                and "Lightning" in self.name
-                and getattr(self, "_CPP_BINARY_AVAILABLE", False)
-            )
+            is_lightning = self._is_lightning_device()
             diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
             if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
+                # pylint: disable=bad-reversed-sequence
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
@@ -669,8 +666,16 @@ class QubitDevice(Device):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
+                is_lightning = self._is_lightning_device()
+                diagonalizing_gates = (
+                    self._get_diagonalizing_gates(circuit) if is_lightning else None
+                )
+                if is_lightning and diagonalizing_gates:  # pragma: no cover
+                    self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
-
+                if is_lightning and diagonalizing_gates:  # pragma: no cover
+                    # pylint: disable=bad-reversed-sequence
+                    self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
@@ -867,15 +872,13 @@ class QubitDevice(Device):
             )
 
         shots = self.shots
-
+        state_probs = qml.math.unwrap(state_probability)
         basis_states = np.arange(number_of_states)
         if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
-            return np.array(
-                [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
-            )
+            return np.array([np.random.choice(basis_states, shots, p=prob) for prob in state_probs])
 
-        return np.random.choice(basis_states, shots, p=state_probability)
+        return np.random.choice(basis_states, shots, p=state_probs)
 
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):
@@ -1454,7 +1457,7 @@ class QubitDevice(Device):
         if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
-            samples = qml.math.cast_like(samples, qml.math.int8(0))
+            samples = qml.math.cast_like(samples, qml.math.int64(0))
             samples = np.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if mp.all_outcomes:
@@ -1746,3 +1749,11 @@ class QubitDevice(Device):
         """
         # pylint:disable=no-self-use
         return circuit.diagonalizing_gates
+
+    def _is_lightning_device(self):
+        """Returns True if the device is a Lightning plugin with C++ binaries and False otherwise."""
+        return (
+            hasattr(self, "name")
+            and "Lightning" in str(self.name)
+            and getattr(self, "_CPP_BINARY_AVAILABLE", False)
+        )

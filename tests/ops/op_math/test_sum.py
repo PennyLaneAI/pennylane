@@ -28,7 +28,6 @@ from pennylane.wires import Wires
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
 
-X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
 no_mat_ops = (
     qml.Barrier,
@@ -310,7 +309,7 @@ class TestInitialization:
         ),
         (
             0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1) + 0.8 * (X(0) @ Y(1) @ Z(1)),
-            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * ((X(0) @ Y(1)) @ Z(1))\n)",
+            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * (X(0) @ Y(1) @ Z(1))\n)",
         ),
     )
 
@@ -329,6 +328,7 @@ class TestInitialization:
         # qml.sum(*[0.5 * X(i) for i in range(10)]) # multiline output needs fixing of https://github.com/PennyLaneAI/pennylane/issues/5162 before working
     )
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
@@ -871,9 +871,11 @@ class TestSimplify:
             qml.RX(1.9, wires=1),
             qml.PauliX(0),
         )
-        dunder_sum_op = sum(ops_to_sum)
+        s1 = qml.sum(ops_to_sum[0], ops_to_sum[1])
+        s2 = qml.sum(s1, ops_to_sum[2])
+        nested_sum = qml.sum(s2, ops_to_sum[3])
         class_sum_op = Sum(*ops_to_sum)
-        assert dunder_sum_op.arithmetic_depth == 3
+        assert nested_sum.arithmetic_depth == 3
         assert class_sum_op.arithmetic_depth == 1
 
     def test_simplify_method(self):
@@ -1267,20 +1269,6 @@ class TestIntegration:
 
         true_grad = qnp.array([-0.09347337, -0.18884787, -0.28818254])
         assert qnp.allclose(grad, true_grad)
-
-    def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
-        wires = [0, 1]
-        dev = qml.device("default.qubit", wires=wires)
-        sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
-
-        @qml.qnode(dev, interface=None)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.expval(sum_op)
-
-        with pytest.warns(UserWarning, match="Sum might not be hermitian."):
-            my_circ()
 
     def test_params_can_be_considered_trainable(self):
         """Tests that the parameters of a Sum are considered trainable."""

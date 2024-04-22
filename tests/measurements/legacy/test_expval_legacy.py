@@ -80,24 +80,6 @@ class TestExpval:
 
         custom_measurement_process(new_dev, spy)
 
-    def test_not_an_observable(self, mocker):
-        """Test that a warning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        new_dev = circuit.device
-        spy = mocker.spy(qml.QubitDevice, "expval")
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
-        custom_measurement_process(new_dev, spy)
-
     def test_observable_return_type_is_expectation(self, mocker):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
         dev = qml.device("default.qubit.legacy", wires=2)

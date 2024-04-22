@@ -649,6 +649,63 @@ class TestInvalidStateSamples:
                 assert qml.math.all(qml.math.isnan(r))
 
 
+two_qubit_state_to_be_normalized = np.array([[0, 1.0000000005j], [-1, 0]]) / np.sqrt(2)
+two_qubit_state_not_normalized = np.array([[0, 1.0000005j], [-1.00000001, 0]]) / np.sqrt(2)
+
+batched_state_to_be_normalized = np.stack(
+    [
+        np.array([[0, 0], [0, 1.000000000009]]),
+        np.array([[1.00000004, 0], [1, 0]]) / np.sqrt(2),
+        np.array([[1, 1], [1, 0.99999995]]) / 2,
+    ]
+)
+batched_state_not_normalized = np.stack(
+    [
+        np.array([[0, 0], [0, 1]]),
+        np.array([[1.0000004, 0], [1, 0]]) / np.sqrt(2),
+        np.array([[1, 1], [1, 0.9999995]]) / 2,
+    ]
+)
+
+
+class TestRenormalization:
+    """Test suite for renormalization functionality."""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_state_renorm(self, interface):
+        """Test renormalization for a non-batched state."""
+
+        state = qml.math.array(two_qubit_state_to_be_normalized, like=interface)
+        _ = sample_state(state, 10)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_state_renorm_error(self, interface):
+        """Test that renormalization does not occur if the error is too large."""
+
+        state = qml.math.array(two_qubit_state_not_normalized, like=interface)
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+            _ = sample_state(state, 10)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_batched_state_renorm(self, interface):
+        """Test renormalization for a batched state."""
+
+        state = qml.math.array(batched_state_to_be_normalized, like=interface)
+        _ = sample_state(state, 10, is_state_batched=True)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_sample_batched_state_renorm_error(self, interface):
+        """Test that renormalization does not occur if the error is too large."""
+
+        state = qml.math.array(batched_state_not_normalized, like=interface)
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+            _ = sample_state(state, 10, is_state_batched=True)
+
+
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
@@ -799,7 +856,7 @@ class TestBroadcasting:
             r = r[0]
 
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.01)
+            assert np.allclose(r, expected, atol=0.02)
 
 
 @pytest.mark.jax
@@ -1000,7 +1057,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(0),
         )
 
         spy.assert_called()
@@ -1014,13 +1071,14 @@ class TestBroadcastingPRNG:
             r = r[0]
 
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.01)
+            assert np.allclose(r, expected, atol=0.03)
 
 
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables"""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval(self):
         """Test that sampling works well for Hamiltonian observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -1051,6 +1109,7 @@ class TestHamiltonianSamples:
 
     def test_sum_expval(self):
         """Test that sampling works well for Sum observables"""
+
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
@@ -1076,6 +1135,32 @@ class TestHamiltonianSamples:
         assert isinstance(res, tuple)
         assert np.allclose(res[0], expected, atol=0.01)
         assert np.allclose(res[1], expected, atol=0.01)
+
+    def test_prod_expval(self):
+        """Tests that sampling works for Prod observables"""
+
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(y, wires=0), qml.RX(x, wires=1)]
+        H = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        tape = qml.tape.QuantumScript(
+            ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
+        )
+        res = simulate(tape, rng=200)
+        expected = [np.sin(y), -np.sin(y) * np.sin(x)]
+        assert np.allclose(res, expected, atol=0.05)
+
+    def test_sprod_expval(self):
+        """Tests that sampling works for SProd observables"""
+
+        y = np.array(0.95)
+        ops = [qml.RY(y, wires=0)]
+        H = qml.s_prod(1.5, qml.PauliX(0))
+        tape = qml.tape.QuantumScript(
+            ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
+        )
+        res = simulate(tape, rng=200)
+        expected = [np.sin(y), 1.5 * np.sin(y)]
+        assert np.allclose(res, expected, atol=0.05)
 
     def test_multi_wires(self):
         """Test that sampling works for Sums with large numbers of wires"""

@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains decorators that can modify an implementation of the :class:`pennylane.devices.Device`
-class and add default behavior.
+class and add default behaviour.
 
 """
 from .single_tape_support import single_tape_support

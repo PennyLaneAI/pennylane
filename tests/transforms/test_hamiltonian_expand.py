@@ -14,6 +14,8 @@
 """
 Unit tests for the ``hamiltonian_expand`` transform.
 """
+import functools
+
 import numpy as np
 import pytest
 
@@ -262,6 +264,8 @@ class TestHamiltonianExpand:
 
         import tensorflow as tf
 
+        inner_dev = qml.device("default.qubit")
+
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
@@ -289,31 +293,116 @@ class TestHamiltonianExpand:
 
             tape = QuantumScript.from_queue(q)
             tapes, fn = hamiltonian_expand(tape)
-            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            res = fn(qml.execute(tapes, inner_dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
-    def test_processing_function_conditional_clause(self):
-        """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
-        in the processing function returned by hamiltonian_expand, accessed when
-        using a shot vector and grouping if the terms don't commute with each other."""
+    @pytest.mark.parametrize(
+        "H, expected",
+        [
+            # Contains only groups with single coefficients
+            (qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)]), -1),
+            # Contains groups with multiple coefficients
+            (qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]), -3),
+        ],
+    )
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_processing_function_shot_vectors(self, H, expected, grouping):
+        """Tests that the processing function works with shot vectors
+        and grouping with different number of coefficients in each group"""
 
-        dev_with_shot_vector = qml.device("default.qubit", shots=(10, 10, 10))
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
+        if grouping:
+            H.compute_grouping()
 
-        H = qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)])
-        H.compute_grouping()
-
-        @qml.transforms.hamiltonian_expand
+        @functools.partial(qml.transforms.hamiltonian_expand, group=grouping)
         @qml.qnode(dev_with_shot_vector)
-        def circuit():
+        def circuit(inputs):
+            qml.RX(inputs, wires=0)
             return qml.expval(H)
 
-        res = circuit()
+        res = circuit(np.pi)
+        assert qml.math.shape(res) == (4,)
+        assert qml.math.allclose(res, np.ones((4,)) * expected, atol=0.1)
 
-        assert res.shape == (3,)
+    @pytest.mark.parametrize(
+        "H, expected",
+        [
+            # Contains only groups with single coefficients
+            (qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)]), [1, 0, -1]),
+            # Contains groups with multiple coefficients
+            (
+                qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]),
+                [3, 0, -3],
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_processing_function_shot_vectors_broadcasting(self, H, expected, grouping):
+        """Tests that the processing function works with shot vectors, parameter broadcasting,
+        and grouping with different number of coefficients in each group"""
+
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
+
+        if grouping:
+            H.compute_grouping()
+
+        @functools.partial(qml.transforms.hamiltonian_expand, group=grouping)
+        @qml.qnode(dev_with_shot_vector)
+        def circuit(inputs):
+            qml.RX(inputs, wires=0)
+            return qml.expval(H)
+
+        res = circuit([0, np.pi / 2, np.pi])
+        assert qml.math.shape(res) == (4, 3)
+        assert qml.math.allclose(res, qml.math.stack([expected] * 4), atol=0.1)
+
+    def test_constant_offset_grouping(self):
+        """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and grouping."""
+
+        H = 2.0 * qml.I() + 3 * qml.X(0) + 4 * qml.X(0) @ qml.Y(1) + qml.Z(0)
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
+        batch, fn = qml.transforms.hamiltonian_expand(tape, group=True)
+
+        assert len(batch) == 2
+
+        tape_0 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
+        tape_1 = qml.tape.QuantumScript(
+            [qml.RY(-np.pi / 2, 0), qml.RX(np.pi / 2, 1)],
+            [qml.expval(qml.Z(0)), qml.expval(qml.Z(0) @ qml.Z(1))],
+            shots=50,
+        )
+
+        assert qml.equal(batch[0], tape_0)
+        assert qml.equal(batch[1], tape_1)
+
+        dummy_res = (1.0, (1.0, 1.0))
+        processed_res = fn(dummy_res)
+        assert qml.math.allclose(processed_res, 10.0)
+
+    def test_constant_offset_no_grouping(self):
+        """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and no grouping.."""
+
+        H = 2.0 * qml.I() + 3 * qml.X(0) + 4 * qml.X(0) @ qml.Y(1) + qml.Z(0)
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
+        batch, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+
+        assert len(batch) == 3
+
+        tape_0 = qml.tape.QuantumScript([], [qml.expval(qml.X(0))], shots=50)
+        tape_1 = qml.tape.QuantumScript([], [qml.expval(qml.X(0) @ qml.Y(1))], shots=50)
+        tape_2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
+
+        assert qml.equal(batch[0], tape_0)
+        assert qml.equal(batch[1], tape_1)
+        assert qml.equal(batch[2], tape_2)
+
+        dummy_res = (1.0, 1.0, 1.0)
+        processed_res = fn(dummy_res)
+        assert qml.math.allclose(processed_res, 10.0)
 
 
 with AnnotatedQueue() as s_tape1:
