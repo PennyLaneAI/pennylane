@@ -40,7 +40,7 @@ Summary of the update
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
   standard Python operations like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.
 
-* You can now easily access Pauli operators via ``I``, ``X``, ``Y``, and ``Z``.
+* You can now easily access Pauli operators via :class:`~.I`, :class:`~.X`, :class:`~.Y`, and :class:`~.Z`.
 
   >>> from pennylane import I, X, Y, Z
   >>> X(0)
@@ -111,13 +111,13 @@ Summary of the update
     +--------------------------------------------+----------------------+---------------------------+
 
 
-    The three main new opmath classes ``SProd``, ``Prod``, and ``Sum`` have already been around for a while.
-    E.g., ``qml.dot()`` has always returned a ``Sum`` instance.
+    The three main new opmath classes :class:`~pennylane.ops.SProd`, :class:`~pennylane.ops.Prod`, and :class:`~pennylane.ops.Sum` have already been around for a while.
+    E.g., :func:`~pennylane.dot` has always returned a :class:`~pennylane.ops.Sum` instance.
 
     Usage
-    ~~~~~
+    =====
 
-    Besides the python operators, you can also use the constructors :func:`~s_prod`, :func:`~prod`, and :func:`~sum`.
+    Besides the python operators, you can also use the constructors :func:`~pennylane.s_prod`, :func:`~pennylane.prod`, and :func:`~pennylane.sum`.
     For composite operators, we can access their constituents via the ``op.operands`` attribute.
 
     >>> op = qml.sum(X(0), X(1), X(2))
@@ -125,7 +125,7 @@ Summary of the update
     (X(0), X(1), X(2))
 
     In case all terms are composed of operators with a valid ``pauli_rep``, then the composite
-    operator also has a valid ``pauli_rep`` in terms of a :class:`~pauli.PauliSentence` instance. This is often handy for fast
+    operator also has a valid ``pauli_rep`` in terms of a :class:`~pennylane.pauli.PauliSentence` instance. This is often handy for fast
     arithmetic processing.
 
     >>> op.pauli_rep
@@ -161,10 +161,10 @@ Summary of the update
     As seen by this example, this method already takes care of arithmetic simplifications.
 
     qml.Hamiltonian
-    ~~~~~~~~~~~~~~~
+    ===============
 
-    The legacy classes :class:`~operation.Tensor` and :class:`~ops.Hamiltonian` will soon be deprecated.
-    :class:`~ops.LinearCombination` offers the same API as :class:`~ops.Hamiltonian` but works well with new opmath classes.
+    The legacy classes :class:`~pennylane.operation.Tensor` and :class:`~pennylane.ops.Hamiltonian` will soon be deprecated.
+    :class:`~pennylane.ops.LinearCombination` offers the same API as :class:`~pennylane.ops.Hamiltonian` but works well with new opmath classes.
 
     Depending on whether or not new opmath is active, ``qml.Hamiltonian`` will return either of the two classes.
 
@@ -202,7 +202,7 @@ To help identify a fix, select the option below that describes your situation.
 
     * Check explicit use of the legacy :class:`~Tensor` class. If you find it in your script it can just be changed from ``Tensor(*terms)`` to ``qml.prod(*terms)`` with the same call signature.
 
-    * Check explicit use of the ``op.obs`` attribute, where ``op`` is some operator. This is how the terms of a tensor product are accessed in :class:`~Tensor` instances. Use ``op.operands`` instead.
+    * Check explicit use of the ``op.obs`` attribute, where ``op`` is some operator. This is how the terms of a tensor product are accessed in :class:`~pennylane.operation.Tensor` instances. Use ``op.operands`` instead.
 
       .. code-block:: python
 
@@ -233,8 +233,8 @@ To help identify a fix, select the option below that describes your situation.
     :title: Sharp bits about the qml.Hamiltonian dispatch
     :href: sharp-bits-hamiltonian
 
-    One of the reasons that :class:`~ops.LinearCombination` exists is that the old Hamiltonian class is not compatible with new opmath tensor products.
-    We can try to instantiate an old ``qml.ops.Hamiltonian`` class with a ``X(0) @ X(1)`` tensor product, which returns a :class:`~Prod` instance with new opmath enabled.
+    One of the reasons that :class:`~pennylane.ops.LinearCombination` exists is that the old Hamiltonian class is not compatible with new opmath tensor products.
+    We can try to instantiate an old ``qml.ops.Hamiltonian`` class with a ``X(0) @ X(1)`` tensor product, which returns a :class:`~pennylane.ops.Prod` instance with new opmath enabled.
 
     >>> qml.operation.active_new_opmath() # confirm opmath is active (by default)
     True
@@ -247,7 +247,7 @@ To help identify a fix, select the option below that describes your situation.
     >>> qml.Hamiltonian([0.5], [X(0) @ X(1)])
     0.5 * (X(0) @ X(1))
 
-    The API of ``LinearCombination`` is identical to that of ``Hamiltonian``. We can group observables or simplify upon initialization.
+    The API of :class:`~pennylane.ops.LinearCombination` is identical to that of :class:`~pennylane.ops.Hamiltonian`. We can group observables or simplify upon initialization.
 
     >>> H1 = qml.Hamiltonian([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
     >>> H2 = qml.ops.LinearCombination([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
