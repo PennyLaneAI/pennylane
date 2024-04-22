@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+<h4>Estimate errors in a quantum circuit 🧮</h4>
+
+<h4>Access an extended arsenal of quantum algorithms 🏹</h4>
+
+<h4>Make use of more methods to map from molecules 🗺️</h4>
+
+<h4>Calculate dynamical Lie algebras 👾</h4>
+
 * Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
   quantum-classical programs.
   [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
