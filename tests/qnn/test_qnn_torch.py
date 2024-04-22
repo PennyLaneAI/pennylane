@@ -367,7 +367,6 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
 
         assert torch.allclose(layer_out, circuit_out)
 
-    @pytest.mark.usefixtures("get_circuit_shots")  # this fixture is in tests/qnn/conftest.py
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     def test_evaluate_qnode_shots(

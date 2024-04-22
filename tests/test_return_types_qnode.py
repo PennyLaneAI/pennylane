@@ -111,13 +111,11 @@ class TestIntegrationSingleReturn:
         dev = qml.device(device, wires=2, shots=shots)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
+        obs = qml.PauliZ(wires=1) if device != "default.qutrit" else qml.GellMann(1, 3)
+
         def circuit(x):
             func(x)
-            return [
-                qml.expval(
-                    qml.PauliZ(wires=1) if device != "default.qutrit" else qml.GellMann(1, 3)
-                )
-            ]
+            return [qml.expval(obs)]
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
