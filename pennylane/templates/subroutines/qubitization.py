@@ -21,7 +21,7 @@ from pennylane.operation import Operation
 
 
 def _positive_coeffs_hamiltonian(hamiltonian):
-    """Transforms the Hamiltonian to ensure that the coefficients are positive
+    """Transforms a Hamiltonian to ensure that the coefficients are positive.
 
     Args:
         hamiltonian (Union[.Hamiltonian, .Sum, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of operators.
@@ -46,15 +46,14 @@ def _positive_coeffs_hamiltonian(hamiltonian):
 
 
 class Qubitization(Operation):
-    r"""Applies the `Qubitization <https://arxiv.org/pdf/2204.11890.pdf>`__ operator.
+    r"""Applies the `Qubitization <https://arxiv.org/abs/2204.11890>`__ operator.
 
-    This operator encodes a Hamiltonian into a suitable unitary operator.
-    This can be done by using the evolution:
+    This operator encodes a Hamiltonian into unitary operator using the evolution:
 
     .. math::
-        e^{-i \arccos(\mathcal{H})},
+        e^{-i \arccos(\mathcal{H})}.
 
-    which can be implemented with a quantum walk operator that takes a Hamiltonian as input and generates:
+    This evolution is implemented with a quantum walk operator that takes a Hamiltonian as input and generates:
 
     .. math::
         Q = (2|0\rangle\langle 0| - I) \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}.

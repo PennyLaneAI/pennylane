@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the Qubitization Operator template
+Tests for the Qubitization template.
 """
 
 import pytest
@@ -70,7 +70,7 @@ def test_positive_coeffs_hamiltonian(hamiltonian, expected_unitaries):
 
 def test_template_definition():
     """Tests that the Qubitization template is correctly defined.
-    Based on eq.(65): https://arxiv.org/pdf/2204.11890.pdf"""
+    Based on eq.(65): https://arxiv.org/abs/2204.11890"""
 
     H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
     lambda_ = sum([abs(term) for term in H.terms()[0]])
@@ -213,7 +213,7 @@ class TestDifferentiability:
     @pytest.mark.parametrize(
         "use_jit , shots",
         ((False, None), (True, None), (False, 50000)),
-    )  # TODO: (True, 50000) fails, Currently jax.jit on jax.grad does not work with AmplitudeEmbedding
+    )  # TODO: (True, 50000) fails because jax.jit on jax.grad does not work with AmplitudeEmbedding
     def test_qnode_jax(self, shots, use_jit):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
