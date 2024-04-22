@@ -18,10 +18,9 @@ Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 # pylint: disable=protected-access,cell-var-from-loop
 import cmath
 import copy
-
 import math
-
 from functools import partial
+
 import pytest
 
 import pennylane as qml

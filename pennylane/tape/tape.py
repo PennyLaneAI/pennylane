@@ -21,14 +21,14 @@ from threading import RLock
 import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
+    MeasurementProcess,
     MidMeasureMP,
     ProbabilityMP,
     SampleMP,
-    MeasurementProcess,
 )
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
-from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 from pennylane.pytrees import register_pytree
+from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
 

@@ -13,12 +13,11 @@
 # limitations under the License.
 """Unit tests for simulate in devices/qubit."""
 
+import numpy as np
 import pytest
 
-import numpy as np
-
 import pennylane as qml
-from pennylane.devices.qubit import simulate, get_final_state, measure_final_state
+from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 
 
 class TestCurrentlyUnsupportedCases:

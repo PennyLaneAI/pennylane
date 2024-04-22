@@ -16,6 +16,7 @@ Tests for the transform implementing the deferred measurement principle.
 """
 # pylint: disable=too-few-public-methods, too-many-arguments
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -99,6 +100,20 @@ def test_len_tapes(n_shots):
     tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.expval(qml.PauliZ(0))], shots=n_shots)
     tapes, _ = qml.dynamic_one_shot(tape)
     assert len(tapes) == n_shots
+
+
+@pytest.mark.parametrize("n_batch", range(1, 4))
+@pytest.mark.parametrize("n_shots", range(1, 4))
+def test_len_tape_batched(n_batch, n_shots):
+    """Test that the transform produces the correct number of tapes with batches."""
+    params = np.random.rand(n_batch)
+    tape = qml.tape.QuantumScript(
+        [qml.RX(params, 0), MidMeasureMP(0, postselect=1), qml.CNOT([0, 1])],
+        [qml.expval(qml.PauliZ(0))],
+        shots=n_shots,
+    )
+    tapes, _ = qml.dynamic_one_shot(tape)
+    assert len(tapes) == n_shots * n_batch
 
 
 @pytest.mark.parametrize(
