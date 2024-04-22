@@ -384,3 +384,13 @@ class TestProperties:
         op = ValidOp(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
         overlapping_ops = op.overlapping_ops
         assert op._overlapping_ops == overlapping_ops
+
+    def test_grad_recipe_and_grad_method(self):
+        """Test that the grad_method and grad_recipe properties are obtained correctly."""
+        op = ValidOp(qml.S(0), qml.T(0))
+        assert op.grad_recipe is None
+        assert op.grad_method is None
+
+        op = ValidOp(qml.RZ(0.2, 0), qml.RX(0.1, 2))
+        assert op.grad_recipe == [None, None]
+        assert op.grad_method == "F"

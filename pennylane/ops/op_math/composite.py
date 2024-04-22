@@ -21,7 +21,7 @@ import copy
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, _UNSET_BATCH_SIZE
+from pennylane.operation import Operator, Operation, _UNSET_BATCH_SIZE
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -129,7 +129,17 @@ class CompositeOp(Operator):
 
     @property
     def num_params(self):
+        """Compute the number of parameters as the sum of the numbers of parameters
+        of the constituents."""
         return sum(op.num_params for op in self)
+
+    @property
+    def grad_recipe(self):
+        """The gradient recipe of the composite operator. By defauly, the recipe is
+        set to None (no parameters) or ([None]*num_params) (parameters)."""
+        if (num_params := self.num_params) == 0:
+            return None
+        return [None] * num_params
 
     @property
     def has_overlapping_wires(self) -> bool:
@@ -366,3 +376,6 @@ class CompositeOp(Operator):
     @abc.abstractmethod
     def _build_pauli_rep(self):
         """The function to generate the pauli representation for the composite operator."""
+
+
+CompositeOp.grad_method = Operation.grad_method

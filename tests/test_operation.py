@@ -798,7 +798,7 @@ class TestOperationConstruction:
         op = DummyOp(x, wires=0)
         assert op.grad_method == "A"
 
-    def test_default_grad_no_param(self):
+    def test_default_grad_method_no_param(self):
         """Test that the correct ``grad_method`` is returned by default
         if an operation does not have a parameter.
         """
@@ -810,6 +810,22 @@ class TestOperationConstruction:
 
         op = DummyOp(wires=0)
         assert op.grad_method is None
+
+    def test_default_grad_method_no_parameter_frequencies_property(self):
+        """Test that if an inheriting type has no parameter frequencies
+        property defined, grad_method is set to `"F"` as if it was the default
+        `ParameterFrequenciesUndefined`."""
+
+        class null_class:
+            r"""Dummy class without parameter-frequencies"""
+
+            grad_recipe = [None]
+            num_params = 1
+
+        null_class.grad_method = qml.operation.Operation.grad_method
+
+        op = null_class()
+        assert op.grad_method == "F"
 
     def test_frequencies_default_single_param(self):
         """Test that an operation with default parameter frequencies
