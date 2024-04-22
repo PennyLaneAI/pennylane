@@ -150,10 +150,10 @@ class TestProcessSamples:
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_multi_wires_no_overflow(self, n_wires, all_outcomes, batch_size):
         """Test that binary strings for wire samples are not negative due to overflow."""
-        if all_outcomes and n_wires == 70:
+        if all_outcomes and n_wires == 65:
             pytest.skip("Too much memory being used, skipping")
         shots = 1000
-        total_wires = 70
+        total_wires = 65
         shape = (batch_size, shots, total_wires) if batch_size else (shots, total_wires)
         samples = np.random.choice([0, 1], size=shape).astype(np.float64)
         result = qml.counts(wires=list(range(n_wires)), all_outcomes=all_outcomes).process_samples(
