@@ -233,6 +233,9 @@
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
+* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
+  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
@@ -275,9 +278,16 @@
 * A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
+ 
+ * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
+  for `preprocess`.
+  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
 * Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
+
+* Implement `Shots.bins()` method.
+  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
 <h3>Breaking changes 💔</h3>
 
@@ -287,6 +297,9 @@
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
+  
+* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
+  [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
 
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
   * tapes with more than one wire.
@@ -380,6 +393,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.ParticleConservingU1` and `qml.ParticleConservingU2` no longer raise an error when the initial state is not specified but default to the all-zeros state.
+  [(#5535)](https://github.com/PennyLaneAI/pennylane/pull/5535)
+
+* `qml.counts` no longer returns negative samples when measuring 8 or more wires.
+  [(#5544)](https://github.com/PennyLaneAI/pennylane/pull/5544)
+
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
@@ -454,6 +473,12 @@
 
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
+* Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
+  [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
+
+* Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
+  [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
 
 <h3>Contributors ✍️</h3>
 
