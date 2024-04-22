@@ -23,7 +23,7 @@ from .qnode import QNode, _make_execution_config, _get_device_shots
 
 
 def null_postprocessing(results):
-    """A postprocessing function with null behavior."""
+    """A postprocessing function with null behaviour."""
     return results[0]
 
 
