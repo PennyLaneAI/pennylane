@@ -89,11 +89,10 @@ class Qubitization(Operation):
 
         # post-processing
         lambda_ = sum([abs(c) for c in H.terms()[0]])
-        print("eigenvalue: ", lambda_ * np.cos(2 * np.pi * (np.argmax(output)) / 8))
-
 
     .. code-block:: pycon
     
+        >>> print("eigenvalue: ", lambda_ * np.cos(2 * np.pi * (np.argmax(output)) / 8))
         eigenvalue: 0.7
     """
 
