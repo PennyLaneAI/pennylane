@@ -114,8 +114,7 @@ Summary of the update
     The three main new opmath classes :class:`~pennylane.ops.SProd`, :class:`~pennylane.ops.Prod`, and :class:`~pennylane.ops.Sum` have already been around for a while.
     E.g., :func:`~pennylane.dot` has always returned a :class:`~pennylane.ops.Sum` instance.
 
-    Usage
-    =====
+    **Usage**
 
     Besides the python operators, you can also use the constructors :func:`~pennylane.s_prod`, :func:`~pennylane.prod`, and :func:`~pennylane.sum`.
     For composite operators, we can access their constituents via the ``op.operands`` attribute.
@@ -160,8 +159,7 @@ Summary of the update
 
     As seen by this example, this method already takes care of arithmetic simplifications.
 
-    qml.Hamiltonian
-    ===============
+    **qml.Hamiltonian**
 
     The legacy classes :class:`~pennylane.operation.Tensor` and :class:`~pennylane.ops.Hamiltonian` will soon be deprecated.
     :class:`~pennylane.ops.LinearCombination` offers the same API as :class:`~pennylane.ops.Hamiltonian` but works well with new opmath classes.
