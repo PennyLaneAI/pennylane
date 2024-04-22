@@ -29,8 +29,6 @@
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
   [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
 
-* `qml.specs` now returns information regarding algorithmic errors for the qnode as well.
-  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
