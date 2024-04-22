@@ -471,7 +471,7 @@ class Hamiltonian(Observable):
         matrix += sum(temp_mats)
         return matrix
 
-    def simplify(self, cutoff=1e-12):
+    def simplify(self, cutoff=1e-12):  # pylint: disable=arguments-differ
         r"""Simplifies the Hamiltonian by combining like-terms.
 
         **Example**
