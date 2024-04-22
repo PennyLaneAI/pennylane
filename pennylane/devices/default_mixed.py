@@ -654,7 +654,7 @@ class DefaultMixed(QubitDevice):
                         base=base,
                     )
 
-                else:
+                else:  # pragma: no cover
                     raise DeviceError(
                         "Snapshots of {measurement} are not yet supported on default.mixed"
                     )
