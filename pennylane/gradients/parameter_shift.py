@@ -446,6 +446,8 @@ def expval_param_shift(
     tape_specs = (single_measure, num_params, num_measurements, tape.shots)
 
     def processing_fn(results):
+
+        print(f" in expval_param_shift: {results=}")
         start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
         grads = []
         for data in gradient_data:
@@ -790,19 +792,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     )
     return gradient_tapes, processing_fn
 
-def _make_mcm_probs_tape(tape):
-    after_mcm_ops = []
-    num_ops = len(tape.operations)
-    for i, op in enumerate(tape.operations[::-1]):
-        if isinstance(op, MidMeasureMP) and op.postselect is not None:
-            mcm_mp = MidMeasureMP(op.wires, op.reset, postselect=None)
-            mv = MeasurementValue([mcm_mp], processing_fn=lambda v: v)
-            new_ops = tape.operations[:num_ops-i-1] + [mcm_mp] + tape.operations[num_ops-i:]
-            break
-
-    return qml.tape.QuantumScript(new_ops, [qml.probs(op=mv)], shots=tape.shots, trainable_params=tape.trainable_params)
-
-
 def _expand_transform_param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,
@@ -814,28 +803,14 @@ def _expand_transform_param_shift(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before parameter shift."""
     expanded_tape = expand_invalid_trainable(tape)
-    probs_tape = _make_mcm_probs_tape(tape)
-    expanded_tape.gimme_unshifted = True
-    probs_tape.gimme_unshifted = True
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
-        print(results)
-        assert False
-        orig_results, probs_results = results[:split], results[split:]
-        *orig_deriv, orig_unshifted = orig_results
-        *probs_deriv, probs_unshifted = probs_results
-
-        print(f"{orig_deriv=}")
-        print(f"{orig_unshifted=}")
-        print(f"{probs_deriv=}")
-        print(f"{probs_unshifted=}")
-
         return results[0]
 
-    return [expanded_tape, probs_tape], null_postprocessing
+    return [expanded_tape], null_postprocessing
 
 
 @partial(
@@ -1234,3 +1209,47 @@ def param_shift(
         return gradient_tapes, processing_fn
 
     return gradient_tapes, fn
+
+def _make_mcm_probs_tape(tape):
+    after_mcm_ops = []
+    num_ops = len(tape.operations)
+    for i, op in enumerate(reversed(tape.operations)):
+        if isinstance(op, MidMeasureMP) and op.postselect is not None:
+            mcm_mp = MidMeasureMP(op.wires, op.reset, postselect=None)
+            mv = MeasurementValue([mcm_mp], processing_fn=lambda v: v)
+            new_ops = tape.operations[:num_ops-i-1] + [mcm_mp] + tape.operations[num_ops-i:]
+            break
+    else:
+        return None
+
+    return qml.tape.QuantumScript(new_ops, [qml.probs(op=mv)], shots=tape.shots, trainable_params=tape.trainable_params)
+
+
+def _param_shift_rdt(tape):
+    probs_tape = _make_mcm_probs_tape(tape)
+    if probs_tape is None:
+        return [tape], lambda res: res[0]
+
+    tape.gimme_unshifted = True
+    probs_tape.gimme_unshifted = True
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        print(results)
+        assert False
+        orig_results, probs_results = results[:split], results[split:]
+        *orig_deriv, orig_unshifted = orig_results
+        *probs_deriv, probs_unshifted = probs_results
+
+        print(f"{orig_deriv=}")
+        print(f"{orig_unshifted=}")
+        print(f"{probs_deriv=}")
+        print(f"{probs_unshifted=}")
+
+        return results[0]
+
+    return [tape, probs_tape], null_postprocessing
+
+param_shift.recursive_derivative_transform = _param_shift_rdt
