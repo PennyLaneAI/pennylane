@@ -14,17 +14,16 @@
 """
 This module contains the qml.matrix function.
 """
+# pylint: disable=protected-access,too-many-branches
+from typing import Sequence, Callable, Union
 from functools import partial
 
-# pylint: disable=protected-access,too-many-branches
-from typing import Callable, Sequence, Union
-
 import pennylane as qml
-from pennylane import transform
-from pennylane.operation import Operator
-from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.transforms import TransformError
+from pennylane import transform
 from pennylane.typing import TensorLike
+from pennylane.operation import Operator
+from pennylane.pauli import PauliWord, PauliSentence
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
@@ -178,6 +177,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
     """
     if not isinstance(op, Operator):
+
         if isinstance(op, (PauliWord, PauliSentence)):
             if wire_order is None and len(op.wires) > 1:
                 raise ValueError(
@@ -212,6 +212,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
         op = 1.0 * op  # convert to a Hamiltonian
 
     if isinstance(op, qml.ops.Hamiltonian):
+
         return op.sparse_matrix(wire_order=wire_order).toarray()
 
     try:

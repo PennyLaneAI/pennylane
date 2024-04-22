@@ -16,10 +16,9 @@ Defines `is_commuting`, an function for determining if two functions commute.
 """
 
 import numpy as np
-
 import pennylane as qml
-from pennylane.ops.op_math import Prod, SProd, Sum
 from pennylane.pauli.utils import _wire_map_from_pauli_pair
+from pennylane.ops.op_math import SProd, Prod, Sum
 
 
 def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
@@ -165,6 +164,7 @@ def _check_opmath_operations(operation1, operation2):
     """Check that `Tensor`, `SProd`, `Prod`, and `Sum` instances only contain Pauli words."""
 
     for op in [operation1, operation2]:
+
         if op.pauli_rep is not None:
             continue
 

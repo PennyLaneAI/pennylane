@@ -14,16 +14,16 @@
 """A function to compute the Lie closure of a set of operators"""
 # pylint: disable=too-many-arguments
 import itertools
-from copy import copy
 from functools import reduce
-from typing import Iterable, Union
 
+from typing import Union, Iterable
+from copy import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator
 
-from ..pauli_arithmetic import PauliSentence, PauliWord
+from pennylane.operation import Operator
+from ..pauli_arithmetic import PauliWord, PauliSentence
 
 
 def lie_closure(
@@ -233,6 +233,7 @@ class PauliVSpace:
     """
 
     def __init__(self, generators, dtype=float):
+
         self.dtype = dtype
 
         if any(not isinstance(g, PauliSentence) for g in generators):

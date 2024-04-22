@@ -14,8 +14,8 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
-from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
-from pennylane.ops import Conditional, Controlled
+from pennylane.ops import Controlled, Conditional
+from pennylane.measurements import MeasurementProcess, MidMeasureMP, MeasurementValue
 
 
 def default_wire_map(tape):
@@ -121,6 +121,7 @@ def unwrap_controls(op):
         next_ctrl = op
 
         while hasattr(next_ctrl, "base"):
+
             if isinstance(next_ctrl.base, Controlled):
                 base_control_wires = getattr(next_ctrl.base, "control_wires", [])
                 control_wires += base_control_wires

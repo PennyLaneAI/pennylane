@@ -234,8 +234,6 @@ def parse_native_mid_circuit_measurements(
     single_measurement = (
         len(post_process_tape.measurements) == 0 and len(aux_tapes[0].measurements) == 1
     )
-    # n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
-    # single_measurement = len(aux_circuit.measurements) - n_mcms == 0 and len(aux_circuit.measurements) == 1
     mcm_samples = qml.math.array(
         [[res] if single_measurement else res[-n_mcms::] for res in results], like=interface
     )

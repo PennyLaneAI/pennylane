@@ -16,19 +16,22 @@ This submodule contains controlled operators based on the ControlledOp class.
 """
 # pylint: disable=no-value-for-parameter
 import warnings
-from functools import lru_cache
 from typing import Iterable
+from functools import lru_cache
 
 import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Wires
+from pennylane.operation import (
+    AnyWires,
+    Wires,
+)
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
-
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
+
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -1036,6 +1039,7 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=too-many-arguments
     def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
+
         # First raise deprecation warnings regardless of the validity of other arguments
         if isinstance(control_values, str):
             warnings.warn(

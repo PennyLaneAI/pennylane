@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify
 
+
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
 
@@ -31,8 +32,7 @@ def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
         # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
-        import openfermion
-        import openfermionpyscf
+        import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermionpyscf. "
@@ -934,6 +934,7 @@ def molecular_hamiltonian(
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
 
     if method == "dhf":
+
         if mapping != "jordan_wigner":
             raise ValueError(
                 "Only 'jordan_wigner' mapping is supported for the differentiable workflow."

@@ -14,17 +14,16 @@
 """
 This module contains the qml.eigvals function.
 """
+from typing import Sequence, Callable
 import warnings
 
 # pylint: disable=protected-access
-from functools import partial, reduce
-from typing import Callable, Sequence
-
+from functools import reduce, partial
 import scipy
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.transforms import TransformError
+from pennylane import transform
 from pennylane.typing import TensorLike
 
 
@@ -116,6 +115,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         return _eigvals_tranform(op, k=k, which=which)
 
     if isinstance(op, qml.ops.Hamiltonian):
+
         warnings.warn(
             "For Hamiltonians, the eigenvalues will be computed numerically. "
             "This may be computationally intensive for a large number of wires. "

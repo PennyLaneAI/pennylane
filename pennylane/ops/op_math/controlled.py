@@ -14,8 +14,8 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-import functools
 import warnings
+import functools
 from copy import copy
 from functools import wraps
 from inspect import signature
@@ -25,14 +25,14 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import math as qmlmath
 from pennylane import operation
-from pennylane.compiler import compiler
+from pennylane import math as qmlmath
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+from pennylane.compiler import compiler
 
-from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
+from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -633,6 +633,7 @@ class Controlled(SymbolicOp):
         return False
 
     def decomposition(self):
+
         if self.compute_decomposition is not Operator.compute_decomposition:
             return self.compute_decomposition(*self.data, self.wires)
 

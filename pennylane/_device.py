@@ -27,10 +27,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
+    MeasurementProcess,
     CountsMP,
     Expectation,
     ExpectationMP,
-    MeasurementProcess,
     MidMeasureMP,
     Probability,
     ProbabilityMP,
@@ -40,11 +40,12 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-from pennylane.operation import Observable, Operation, Operator, StatePrepBase, Tensor
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, Sum
-from pennylane.queuing import QueuingManager
+
+from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
+from pennylane.ops import Hamiltonian, Sum, LinearCombination, Prod
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
+from pennylane.queuing import QueuingManager
 
 
 def _local_tape_expand(tape, depth, stop_at):
@@ -1012,6 +1013,7 @@ class Device(abc.ABC):
                         )
 
             elif isinstance(o, qml.ops.Prod):
+
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:
                     raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
