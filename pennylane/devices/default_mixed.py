@@ -35,7 +35,18 @@ from pennylane import (
     StatePrep,
     Snapshot,
 )
-from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP, PurityMP
+from pennylane.measurements import (
+    CountsMP,
+    MutualInfoMP,
+    SampleMP,
+    StateMP,
+    VnEntropyMP,
+    PurityMP,
+    DensityMatrixMP,
+    ExpectationMP,
+    VarianceMP,
+    ProbabilityMP,
+)
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
@@ -585,15 +596,59 @@ class DefaultMixed(QubitDevice):
     def _apply_snapshot(self, operation):
         """Applies the snapshot operation"""
         measurement = operation.hyperparameters["measurement"]
-        if measurement:
-            raise DeviceError("Snapshots of measurements are not yet supported on default.mixed")
+
         if self._debugger and self._debugger.active:
             dim = 2**self.num_wires
             density_matrix = qnp.reshape(self._state, (dim, dim))
+            snap_result = density_matrix
+
+            if measurement:
+                meas_wires = measurement.wires
+
+                if isinstance(measurement, (StateMP, DensityMatrixMP)):
+                    snap_result = density_matrix
+
+                elif isinstance(measurement, PurityMP):
+                    snap_result = self.purity(measurement)
+
+                elif isinstance(measurement, ProbabilityMP):
+                    pre_rotated_state = self._state
+                    for diag_gate in measurement.diagonalizing_gates():
+                        self._apply_operation(diag_gate)
+
+                    snap_result = self.analytic_probability(wires=meas_wires)
+
+                    self._state = pre_rotated_state
+                    self._pre_rotated_state = self._state
+
+                elif isinstance(measurement, ExpectationMP):
+                    eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
+                    probs = self.analytic_probability(wires=meas_wires)
+                    snap_result = self._dot(probs, eigvals)
+
+                elif isinstance(measurement, VarianceMP):
+                    eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
+                    probs = self.analytic_probability(wires=meas_wires)
+                    snap_result = self._dot(probs, (eigvals**2)) - self._dot(probs, eigvals) ** 2
+
+                elif isinstance(measurement, VnEntropyMP):
+                    base = measurement.log_base
+                    snap_result = super().vn_entropy(wires=meas_wires, log_base=base)
+
+                elif isinstance(measurement, MutualInfoMP):
+                    base = measurement.log_base
+                    wires0, wires1 = measurement.raw_wires
+                    snap_result = super().mutual_info(wires0=wires0, wires1=wires1, log_base=base)
+
+                else:
+                    raise DeviceError(
+                        "Snapshots of {measurement} are not yet supported on default.mixed"
+                    )
+
             if operation.tag:
-                self._debugger.snapshots[operation.tag] = density_matrix
+                self._debugger.snapshots[operation.tag] = snap_result
             else:
-                self._debugger.snapshots[len(self._debugger.snapshots)] = density_matrix
+                self._debugger.snapshots[len(self._debugger.snapshots)] = snap_result
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
