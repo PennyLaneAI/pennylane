@@ -593,7 +593,64 @@ class DefaultMixed(QubitDevice):
             self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
             self._pre_rotated_state = self._state
 
-    # pylint: disable=too-many-branches
+    def _snapshot_measurements(self, density_matrix, measurement):
+        """Perform state-based snapshot measurement"""
+        meas_wires = measurement.wires
+
+        pre_rotated_state = self._state
+        if isinstance(measurement, (ProbabilityMP, ExpectationMP, VarianceMP)):
+            for diag_gate in measurement.diagonalizing_gates():
+                self._apply_operation(diag_gate)
+
+        if isinstance(measurement, (StateMP, DensityMatrixMP)):
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.reduce_dm(
+                density_matrix, indices=map_wires, c_dtype=self.C_DTYPE
+            )
+
+        elif isinstance(measurement, PurityMP):
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.purity(density_matrix, indices=map_wires, c_dtype=self.C_DTYPE)
+
+        elif isinstance(measurement, ProbabilityMP):
+            snap_result = self.analytic_probability(wires=meas_wires)
+
+        elif isinstance(measurement, ExpectationMP):
+            eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
+            probs = self.analytic_probability(wires=meas_wires)
+            snap_result = self._dot(probs, eigvals)
+
+        elif isinstance(measurement, VarianceMP):
+            eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
+            probs = self.analytic_probability(wires=meas_wires)
+            snap_result = self._dot(probs, (eigvals**2)) - self._dot(probs, eigvals) ** 2
+
+        elif isinstance(measurement, VnEntropyMP):
+            base = measurement.log_base
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.vn_entropy(
+                density_matrix, indices=map_wires, c_dtype=self.C_DTYPE, base=base
+            )
+
+        elif isinstance(measurement, MutualInfoMP):
+            base = measurement.log_base
+            wires0, wires1 = list(map(self.map_wires, measurement.raw_wires))
+            snap_result = qml.math.mutual_info(
+                density_matrix,
+                indices0=wires0,
+                indices1=wires1,
+                c_dtype=self.C_DTYPE,
+                base=base,
+            )
+
+        else:  # pragma: no cover
+            raise DeviceError("Snapshots of {measurement} are not yet supported on default.mixed")
+
+        self._state = pre_rotated_state
+        self._pre_rotated_state = self._state
+
+        return snap_result
+
     def _apply_snapshot(self, operation):
         """Applies the snapshot operation"""
         measurement = operation.hyperparameters["measurement"]
@@ -604,63 +661,7 @@ class DefaultMixed(QubitDevice):
             snap_result = density_matrix
 
             if measurement:
-                meas_wires = measurement.wires
-
-                pre_rotated_state = self._state
-                if isinstance(measurement, (ProbabilityMP, ExpectationMP, VarianceMP)):
-                    for diag_gate in measurement.diagonalizing_gates():
-                        self._apply_operation(diag_gate)
-
-                if isinstance(measurement, (StateMP, DensityMatrixMP)):
-                    map_wires = self.map_wires(meas_wires)
-                    snap_result = qml.math.reduce_dm(
-                        density_matrix, indices=map_wires, c_dtype=self.C_DTYPE
-                    )
-
-                elif isinstance(measurement, PurityMP):
-                    map_wires = self.map_wires(meas_wires)
-                    snap_result = qml.math.purity(
-                        density_matrix, indices=map_wires, c_dtype=self.C_DTYPE
-                    )
-
-                elif isinstance(measurement, ProbabilityMP):
-                    snap_result = self.analytic_probability(wires=meas_wires)
-
-                elif isinstance(measurement, ExpectationMP):
-                    eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
-                    probs = self.analytic_probability(wires=meas_wires)
-                    snap_result = self._dot(probs, eigvals)
-
-                elif isinstance(measurement, VarianceMP):
-                    eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
-                    probs = self.analytic_probability(wires=meas_wires)
-                    snap_result = self._dot(probs, (eigvals**2)) - self._dot(probs, eigvals) ** 2
-
-                elif isinstance(measurement, VnEntropyMP):
-                    base = measurement.log_base
-                    map_wires = self.map_wires(meas_wires)
-                    snap_result = qml.math.vn_entropy(
-                        density_matrix, indices=map_wires, c_dtype=self.C_DTYPE, base=base
-                    )
-
-                elif isinstance(measurement, MutualInfoMP):
-                    base = measurement.log_base
-                    wires0, wires1 = list(map(self.map_wires, measurement.raw_wires))
-                    snap_result = qml.math.mutual_info(
-                        density_matrix,
-                        indices0=wires0,
-                        indices1=wires1,
-                        c_dtype=self.C_DTYPE,
-                        base=base,
-                    )
-
-                else:  # pragma: no cover
-                    raise DeviceError(
-                        "Snapshots of {measurement} are not yet supported on default.mixed"
-                    )
-
-                self._state = pre_rotated_state
-                self._pre_rotated_state = self._state
+                snap_result = self._snapshot_measurements(density_matrix, measurement)
 
             if operation.tag:
                 self._debugger.snapshots[operation.tag] = snap_result
