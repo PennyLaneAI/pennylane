@@ -208,7 +208,6 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
               samples, leading to unexpected or incorrect results.
 
     """
-
     wire = Wires(wires)
     if len(wire) > 1:
         raise qml.QuantumFunctionError(
@@ -218,6 +217,8 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
+    if qml.captue.enable_plxpr():
+        return qml.capture.measure(mp, shots=1)[0]
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 

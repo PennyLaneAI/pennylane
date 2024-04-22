@@ -99,4 +99,11 @@ will be called when constructing a new class instance instead of ``type.__call__
 
 """
 from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
-from .meta_type import PLXPRMeta, create_operator_primitive
+from .meta_type import (
+    PLXPRMeta,
+    create_operator_primitive,
+    create_measurement_obs_primitive,
+    create_measurement_wires_primitive,
+)
+
+from .measure import measure

@@ -31,6 +31,7 @@ from pennylane.wires import Wires
 
 from .shots import Shots
 
+
 # =============================================================================
 # ObservableReturnTypes types
 # =============================================================================
@@ -112,7 +113,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess(ABC):
+class MeasurementProcess(ABC, metaclass=qml.capture.PLXPRMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -130,8 +131,36 @@ class MeasurementProcess(ABC):
 
     # pylint:disable=too-many-instance-attributes
 
+    _obs_primitive = None
+    _wires_primitive = None
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
+        name = getattr(cls.return_type, "value", cls.__name__)
+        cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
+        cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
+
+    @classmethod
+    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None):
+        if cls._obs_primitive is None or cls._wires_primitive is None:
+            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id)
+        if obs is not None:
+            return cls._obs_primitive.bind(obs)
+        wires = () if wires is None else wires
+        return cls._wires_primitive.bind(*wires)
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ) -> tuple:
+        """Calculate the shape and dtype that will be returned when a measurement is performed.
+
+        This information is similar to ``numeric_type`` and ``shape``, but is provided through
+        a class method and does not require the creation of an instance.
+
+        """
+        return (), float
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires),)

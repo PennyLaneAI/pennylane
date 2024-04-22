@@ -19,7 +19,7 @@ See ``explanations.md`` for technical explanations of how this works.
 
 import abc
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, Callable
 
 import pennylane as qml
 
@@ -87,6 +87,47 @@ def _get_abstract_operator() -> type:
     return AbstractOperator
 
 
+@lru_cache
+def _get_abstract_measurement():
+    if not has_jax:
+        raise ImportError("Jax is required for plxpr.")
+
+    class AbstractMeasurement(jax.core.AbstractValue):
+        """An abstract measurement."""
+
+        def __init__(self, abstract_eval: Callable, n_wires: Optional[int] = None):
+            self.abstract_eval = abstract_eval
+            self.n_wires = n_wires
+
+        def __repr__(self):
+            return f"AbstractMeasurement(n_wires={self.n_wires})"
+
+        # pylint: disable=missing-function-docstring
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractMeasurement)
+
+        def __hash__(self):
+            return hash("AbstractMeasurement")
+
+    jax.core.raise_to_shaped_mappings[AbstractMeasurement] = lambda aval, _: aval
+
+    return AbstractMeasurement
+
+
 def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
@@ -120,6 +161,53 @@ def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primiti
     @primitive.def_abstract_eval
     def _(*_, **__):
         return abstract_type()
+
+    return primitive
+
+
+def create_measurement_obs_primitive(
+    measurement_type: type, name: str
+) -> Optional["jax.core.Primitive"]:
+    """Create a primitive corresponding to the input type where the abstract inputs are an operator."""
+    if not has_jax:
+        return None
+
+    primitive = jax.core.Primitive(name)
+
+    @primitive.def_impl
+    def _(obs, **kwargs):
+        return measurement_type(obs=obs, **kwargs)
+
+    abstract_type = _get_abstract_measurement()
+
+    @primitive.def_abstract_eval
+    def _(*_, **__):
+        abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
+        return abstract_type(abstract_eval, n_wires=None)
+
+    return primitive
+
+
+def create_measurement_wires_primitive(
+    measurement_type: type, name: str
+) -> Optional["jax.core.Primitive"]:
+    """Create a primitive corresponding to the input type where the abstract inputs are the wires."""
+    if not has_jax:
+        return None
+
+    primitive = jax.core.Primitive(name)
+
+    @primitive.def_impl
+    def _(*wires, **kwargs):
+        wires = qml.wires.Wires(wires)
+        return measurement_type(wires=wires, **kwargs)
+
+    abstract_type = _get_abstract_measurement()
+
+    @primitive.def_abstract_eval
+    def _(*wires, **_):
+        abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
+        return abstract_type(abstract_eval, n_wires=len(wires))
 
     return primitive
 

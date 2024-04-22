@@ -182,9 +182,25 @@ class SampleMP(SampleMeasurement):
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
-    @property
-    def return_type(self):
-        return Sample
+    return_type = Sample
+
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ):
+        if shots is None:
+            raise ValueError("finite shots are required to SampleMP")
+        dtype = float if n_wires is None else int
+        if n_wires == 0:
+            n_wires = num_device_wires
+        n_wires = n_wires or 1  # if no wires, will have a single output dimension
+
+        shape = []
+        if n_wires != 1:
+            shape.append(n_wires)
+        if shots != 1:
+            shape.append(shots)
+        return shape, dtype
 
     @property
     @functools.lru_cache()
