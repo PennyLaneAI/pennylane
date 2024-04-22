@@ -197,7 +197,7 @@ class RiemannianGradientOptimizer:
     but will quickly get out of control as the number of qubits increases.
 
     To resolve this issue, we can restrict the Riemannian gradient to a subspace of the Lie algebra and calculate an
-    approximate Riemannian gradient flow. The choice of restriction will affect the optimization behavior
+    approximate Riemannian gradient flow. The choice of restriction will affect the optimization behaviour
     and quality of the final solution.
 
     For more information on Riemannian gradient flows on Lie groups see
