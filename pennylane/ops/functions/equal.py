@@ -556,12 +556,6 @@ def _equal_hilbert_schmidt(
     ):
         return False
 
-    equal_kwargs = {
-        "check_interface": check_interface,
-        "check_trainability": check_trainability,
-        "atol": atol,
-        "rtol": rtol,
-    }
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
             if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
@@ -572,7 +566,13 @@ def _equal_hilbert_schmidt(
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
 
-    # Check tape hyperparameters using qml.equal rather than == where necessary
+    equal_kwargs = {
+        "check_interface": check_interface,
+        "check_trainability": check_trainability,
+        "atol": atol,
+        "rtol": rtol,
+    }
+    # Check hyperparameters using qml.equal rather than == where necessary
     if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
         return False
     if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):

@@ -2081,58 +2081,65 @@ class TestHilbertSchmidt:
     # pylint: disable=no-self-argument
 
     def v_function1(params):
+        """A quantum function."""
         qml.RZ(params[0], wires=1)
 
     def v_function2(params):
+        """Differs from v_function1 by operation type and used parameter."""
         qml.RX(params[1], wires=1)
 
     def v_function3(params):
-        qml.RX(params[1], wires=2)
+        """Differs from v_function1 by the used wire."""
+        qml.RZ(params[0], wires=2)
 
-    def v_function4(params):  # A version of v_function1 that produces the same type by accident.
+    def v_function4(params):
+        """Differs from v_function1 by the functional parameter dependence, but
+        produces the same tape at params[0]=0.2."""
         qml.RZ(params[0] * 2 - 0.2, wires=1)
 
-    v_wires = [1]
-    v_wires_alt = [2]  # Only trigger a difference together with v_function being different
+    v_wires1 = [1]
+    v_wires2 = [2]
+
     u_tape1 = qml.tape.QuantumScript([qml.RX(0.2, 0)])
     u_tape1_eps = qml.tape.QuantumScript([qml.RX(0.2 + 1e-7, 0)])
     u_tape1_trainable = qml.tape.QuantumScript([qml.RX(npp.array(0.2, requires_grad=True), 0)])
     u_tape1_untrainable = qml.tape.QuantumScript([qml.RX(npp.array(0.2, requires_grad=False), 0)])
     u_tape2 = qml.tape.QuantumScript([qml.Hadamard(2)])
+
     v_params1 = [0.2, 0.3]
     v_params2 = [0.1, 0.5]
     v_params1_eps = [0.2 + 1e-7, 0.3]
     v_params1_trainable = npp.array(v_params1, requires_grad=True)
     v_params1_untrainable = npp.array(v_params1, requires_grad=False)
 
-    op1 = qml.HilbertSchmidt(v_params1, v_function=v_function1, v_wires=v_wires, u_tape=u_tape1)
+    op1 = qml.HilbertSchmidt(v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1)
     op1_trainable = qml.HilbertSchmidt(
-        v_params1, v_function=v_function1, v_wires=v_wires, u_tape=u_tape1_trainable
+        v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1_trainable
     )
     op1_untrainable = qml.HilbertSchmidt(
-        v_params1, v_function=v_function1, v_wires=v_wires, u_tape=u_tape1_untrainable
+        v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1_untrainable
     )
     op1_eps = qml.HilbertSchmidt(
-        v_params1_eps, v_function=v_function1, v_wires=v_wires, u_tape=u_tape1
+        v_params1_eps, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1
     )
     op1_eps_tape = qml.HilbertSchmidt(
-        v_params1, v_function=v_function1, v_wires=v_wires, u_tape=u_tape1_eps
+        v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1_eps
     )
-    op2 = qml.HilbertSchmidt(v_params2, v_function=v_function1, v_wires=v_wires, u_tape=u_tape1)
+    op2 = qml.HilbertSchmidt(v_params2, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1)
     op3_tapediff = qml.HilbertSchmidt(
-        v_params1, v_function=v_function2, v_wires=v_wires, u_tape=u_tape1
+        v_params1, v_function=v_function2, v_wires=v_wires1, u_tape=u_tape1
     )
     op3_fundiff = qml.HilbertSchmidt(
-        v_params1, v_function=v_function4, v_wires=v_wires, u_tape=u_tape1
+        v_params1, v_function=v_function4, v_wires=v_wires1, u_tape=u_tape1
     )
-    op4 = qml.HilbertSchmidt(v_params1, v_function=v_function1, v_wires=v_wires, u_tape=u_tape2)
+    op4 = qml.HilbertSchmidt(v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape2)
     op5 = qml.HilbertSchmidt(
-        v_params1_trainable, v_function=v_function1, v_wires=v_wires, u_tape=u_tape1
+        v_params1_trainable, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1
     )
     op6 = qml.HilbertSchmidt(
-        v_params1_untrainable, v_function=v_function1, v_wires=v_wires, u_tape=u_tape1
+        v_params1_untrainable, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1
     )
-    op7 = qml.HilbertSchmidt(v_params1, v_function=v_function3, v_wires=v_wires_alt, u_tape=u_tape1)
+    op7 = qml.HilbertSchmidt(v_params1, v_function=v_function3, v_wires=v_wires2, u_tape=u_tape1)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op1), (op2, op2), (op4, op4)])
     def test_equality(self, op, other_op):
