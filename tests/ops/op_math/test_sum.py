@@ -1310,12 +1310,14 @@ class TestGrouping:
     def test_set_on_initialization(self):
         """Test that grouping indices can be set on initialization."""
 
-        op = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_indices=[[0, 1]])
+        op = qml.ops.Sum(qml.X(0), qml.Y(1), _grouping_indices=[[0, 1]])
         assert op.grouping_indices == [[0, 1]]
         op_ac = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_type="anticommuting")
         assert op_ac.grouping_indices == ((0,), (1,))
-        op_not_ac = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_type="anticommuting", grouping_indices=[[0, 1]])
-        assert op_not_ac.grouping_indices == [[0, 1]]
+        with pytest.raises(ValueError, match=r"cannot be specified at the same time."):
+            qml.ops.Sum(
+                qml.X(0), qml.Y(1), grouping_type="anticommuting", _grouping_indices=[[0, 1]]
+            )
 
     def test_non_pauli_error(self):
         """Test that grouping non-Pauli observables is not supported."""

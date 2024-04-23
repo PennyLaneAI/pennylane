@@ -45,8 +45,6 @@ class LinearCombination(Sum):
             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
-        grouping_indices (Optional[List[List[int]]]): Which terms can be computed at the same time. Sets
-            the corresponding property. Takes precedence over ``grouping_type`` and ``method``.
         id (str): name to be assigned to this ``LinearCombination`` instance
 
     **Example:**
@@ -106,7 +104,7 @@ class LinearCombination(Sum):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(data[0], data[1], grouping_indices=metadata[0])
+        return cls(data[0], data[1], _grouping_indices=metadata[0])
 
     def __init__(
         self,
@@ -115,7 +113,7 @@ class LinearCombination(Sum):
         simplify=False,
         grouping_type=None,
         method="rlf",
-        grouping_indices=None,
+        _grouping_indices=None,
         _pauli_rep=None,
         id=None,
     ):
@@ -150,8 +148,8 @@ class LinearCombination(Sum):
             *operands,
             grouping_type=grouping_type,
             method=method,
-            grouping_indices=grouping_indices,
             id=id,
+            _grouping_indices=_grouping_indices,
             _pauli_rep=_pauli_rep,
         )
 

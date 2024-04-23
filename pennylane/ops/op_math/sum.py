@@ -132,8 +132,6 @@ class Sum(CompositeOp):
         method (str): The graph coloring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
             First). This keyword argument is ignored if ``grouping_type`` is ``None``.
-        grouping_indices (Optional[List[List[int]]]): Which terms can be computed at the same time. Sets
-            the corresponding property. Takes precedence over ``grouping_type`` and ``method``.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::
@@ -218,21 +216,25 @@ class Sum(CompositeOp):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(*data, grouping_indices=metadata[0])
+        return cls(*data, _grouping_indices=metadata[0])
 
     def __init__(
         self,
         *operands: Operator,
         grouping_type=None,
         method="rlf",
-        grouping_indices=None,
         id=None,
+        _grouping_indices=None,
         _pauli_rep=None,
     ):
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
-        self._grouping_indices = grouping_indices
-        if grouping_indices is None and grouping_type is not None:
+        self._grouping_indices = _grouping_indices
+        if _grouping_indices is not None and grouping_type is not None:
+            raise ValueError(
+                "_grouping_indices and grouping_type cannot be specified at the same time."
+            )
+        if grouping_type is not None:
             self.compute_grouping(grouping_type=grouping_type, method=method)
 
     @property
