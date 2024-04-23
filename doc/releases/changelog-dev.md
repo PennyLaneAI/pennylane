@@ -108,7 +108,7 @@
 
   ```python
   >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-  >>> dla = qml.dla.lie_closure(ops)
+  >>> dla = qml.lie_closure(ops)
   >>> print(dla)
   [1.0 * X(1) @ X(0),
    1.0 * Z(0),
@@ -117,6 +117,16 @@
    -1.0 * Y(1) @ X(0),
    -1.0 * Y(1) @ Y(0)]
   ```
+
+* We can compute the structure constants (the adjoint representation) of a dynamical Lie algebra.
+  [(5406)](https://github.com/PennyLaneAI/pennylane/pull/5406)
+
+  For example, we can compute the adjoint representation of the transverse field Ising model DLA.
+
+  >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
+  >>> structure_const = qml.structure_constants(dla)
+  >>> structure_constp.shape
+  (6, 6, 6)
 
 <h3>Improvements 🛠</h3>
 
