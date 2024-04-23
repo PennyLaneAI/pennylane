@@ -507,6 +507,7 @@ class TestMeasurementCompositeValueManipulation:
 
 class TestMeasurementValueItems:
     """Test that a MeasurementValue returns its items correctly."""
+    # pylint: disable=protected-access
 
     funcs_and_expected_single = [
         ((lambda v: v), [0, 1]),
@@ -531,9 +532,9 @@ class TestMeasurementValueItems:
     @pytest.mark.parametrize("func, expected", funcs_and_expected_multi)
     def test_items_multiple_mps(self, func, expected):
         """Test the full items."""
-        mp0 = MidMeasureMP(0)
-        mp1 = MidMeasureMP(0)
-        mp2 = MidMeasureMP(0)
+        MP0 = MidMeasureMP(0)
+        MP1 = MidMeasureMP(1)
+        MP2 = MidMeasureMP(2)
         branches3 = [
             (0, 0, 0),
             (0, 0, 1),
@@ -544,7 +545,7 @@ class TestMeasurementValueItems:
             (1, 1, 0),
             (1, 1, 1),
         ]
-        mv = MeasurementValue([mp0, mp1, mp2], func)
+        mv = MeasurementValue([MP0, MP1, MP2], func)
         items = list(mv._items())
         assert len(items) == len(branches3) == len(expected)
         for item, branch, exp in zip(items, branches3, expected):
@@ -586,13 +587,13 @@ class TestMeasurementValueItems:
     @pytest.mark.parametrize("func, expected", funcs_and_expected_multi)
     def test_postselected_items_multiple_mps(self, func, expected, postselects, branches):
         """Test the full items."""
-        mp0 = MidMeasureMP(0, postselect=postselects[0])
-        mp1 = MidMeasureMP(0, postselect=postselects[1])
-        mp2 = MidMeasureMP(0, postselect=postselects[2])
+        MP0 = MidMeasureMP(0, postselect=postselects[0])
+        MP1 = MidMeasureMP(1, postselect=postselects[1])
+        MP2 = MidMeasureMP(2, postselect=postselects[2])
 
-        mv = MeasurementValue([mp0, mp1, mp2], func)
+        mv = MeasurementValue([MP0, MP1, MP2], func)
         items = list(mv._postselected_items())
         assert len(items) == len(branches)
         for item, branch in zip(items, branches):
             pruned_branch = tuple(b for i, b in enumerate(branch) if postselects[i] is None)
-            assert item == (pruned_branch, func(*branch))
+            assert item == (pruned_branch, expected[self.branches3.index(branch)])
