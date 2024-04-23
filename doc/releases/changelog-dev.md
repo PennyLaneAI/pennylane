@@ -477,6 +477,7 @@
 
 * `qml.counts` no longer returns negative samples when measuring 8 or more wires.
   [(#5544)](https://github.com/PennyLaneAI/pennylane/pull/5544)
+  [(#5556)](https://github.com/PennyLaneAI/pennylane/pull/5556)
 
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
