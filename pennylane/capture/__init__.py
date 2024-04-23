@@ -23,9 +23,9 @@ quantum-classical programs.
 
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
-the switches ``qml.capture.enable_plxpr`` and ``qml.capture.disable_plxpr``.
+the switches ``qml.capture.enable`` and ``qml.capture.disable``.
 Whether or not the capturing mechanism is currently being used can be
-queried with ``qml.capture.plxpr_enabled``.
+queried with ``qml.capture.enabled``.
 By default, the mechanism is disabled:
 
 .. code-block:: pycon
@@ -112,5 +112,5 @@ If needed, developers can also override the implementation method of the primiti
     def _(*args, **kwargs):
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
-from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
+from .switches import enable, disable, enabled
 from .meta_type import PLXPRMeta, create_operator_primitive
