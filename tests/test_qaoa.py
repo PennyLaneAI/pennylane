@@ -1166,12 +1166,12 @@ def make_mixer_layer_test_cases():
         [
             qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
             [
-                qml.PauliRot(1.0, "XX", wires=[1, 0]),
-                qml.PauliRot(1.0, "YY", wires=[1, 0]),
-                qml.PauliRot(1.0, "XX", wires=[2, 0]),
-                qml.PauliRot(1.0, "YY", wires=[2, 0]),
-                qml.PauliRot(1.0, "XX", wires=[2, 1]),
-                qml.PauliRot(1.0, "YY", wires=[2, 1]),
+                qml.PauliRot(1.0, "XX", wires=[0, 1]),
+                qml.PauliRot(1.0, "YY", wires=[0, 1]),
+                qml.PauliRot(1.0, "XX", wires=[0, 2]),
+                qml.PauliRot(1.0, "YY", wires=[0, 2]),
+                qml.PauliRot(1.0, "XX", wires=[1, 2]),
+                qml.PauliRot(1.0, "YY", wires=[1, 2]),
             ],
         ],
     ]
@@ -1186,9 +1186,9 @@ def make_cost_layer_test_cases():
         [
             qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
             [
-                qml.PauliRot(1.0, "ZZ", wires=[1, 0]),
-                qml.PauliRot(1.0, "ZZ", wires=[2, 0]),
-                qml.PauliRot(1.0, "ZZ", wires=[2, 1]),
+                qml.PauliRot(1.0, "ZZ", wires=[0, 1]),
+                qml.PauliRot(1.0, "ZZ", wires=[0, 2]),
+                qml.PauliRot(1.0, "ZZ", wires=[1, 2]),
             ],
         ],
     ]
@@ -2018,6 +2018,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_inner_out_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with

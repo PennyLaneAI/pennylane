@@ -1346,6 +1346,54 @@ class TestPRNGKeySeed:
     """Test that the device behaves correctly when provided with a PRNG key and using the JAX interface"""
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
+    def test_same_device_prng_key(self, max_workers):
+        """Test a device with a given jax.random.PRNGKey will produce
+        the same samples repeatedly."""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result1 = dev.execute(qs, config)
+        for _ in range(10):
+            result2 = dev.execute(qs, config)
+
+            assert np.all(result1 == result2)
+
+    @pytest.mark.parametrize("max_workers", max_workers_list)
+    def test_prng_key_multi_tapes(self, max_workers):
+        """Test a device with a given jax.random.PRNGKey will produce
+        different results for the same (batched) tape."""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result1, result2 = dev.execute([qs] * 2, config)
+
+        assert not np.all(result1 == result2)
+
+    def test_different_max_workers_same_prng_key(self):
+        """Test that devices with the same jax.random.PRNGKey but different threading will produce
+        the same samples."""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev1 = DefaultQubit(max_workers=None, seed=jax.random.PRNGKey(123))
+        result1 = dev1.execute([qs] * 10, config)
+        for max_workers in range(1, 3):
+            dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+            result2 = dev2.execute([qs] * 10, config)
+
+            assert len(result1) == len(result2)
+            for r1, r2 in zip(result1, result2):
+                assert np.all(r1 == r2)
+
+    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_same_prng_key(self, max_workers):
         """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
         the same results for sample, even with different seeds"""
@@ -1361,6 +1409,19 @@ class TestPRNGKeySeed:
         result2 = dev2.execute(qs, config)
 
         assert np.all(result1 == result2)
+
+    def test_get_prng_keys(self):
+        """Test the get_prng_keys method."""
+        import jax
+
+        dev = DefaultQubit(seed=jax.random.PRNGKey(123))
+
+        assert len(dev.get_prng_keys()) == 1
+        assert len(dev.get_prng_keys(num=1)) == 1
+        assert len(dev.get_prng_keys(num=2)) == 2
+
+        with pytest.raises(ValueError):
+            dev.get_prng_keys(num=0)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_different_prng_key(self, max_workers):
@@ -2057,6 +2118,9 @@ class TestIntegration:
     def test_differentiate_jitted_qnode(self, measurement_func):
         """Test that a jitted qnode can be correctly differentiated"""
         import jax
+
+        if measurement_func is qml.var and not qml.operation.active_new_opmath():
+            pytest.skip(reason="Variance for this test circuit not supported with legacy opmath")
 
         dev = DefaultQubit()
 

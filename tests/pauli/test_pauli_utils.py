@@ -471,6 +471,7 @@ class TestGroupingUtils:
         with pytest.raises(TypeError):
             pauli_word_to_string(non_pauli_word)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize(
         "pauli_string,wire_map,expected_pauli",
         [
@@ -925,10 +926,7 @@ class TestMeasurementTransformations:
         (
             [PauliX(0) @ PauliY(1), PauliX(0) @ PauliZ(2)],
             (
-                [
-                    RX(np.pi / 2, wires=[1]),
-                    RY(-np.pi / 2, wires=[0]),
-                ],
+                [RY(-np.pi / 2, wires=[0]), RX(np.pi / 2, wires=[1])],
                 [PauliZ(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[0]) @ PauliZ(wires=[2])],
             ),
         ),
