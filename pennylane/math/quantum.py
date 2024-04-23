@@ -743,8 +743,8 @@ def vn_entanglement_entropy(
 
         S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
 
-    where :math:`S` is the von Neumann entropy, and :math:`\rho_A = \text{Tr}_B[\rho_{AB}]` and
-    :math:`\rho_B = \text{Tr}_A[\rho_{AB}]` are the reduced density matrices for each partition.
+    where :math:`S` is the von Neumann entropy, and :math:`\rho_A = \text{Tr}_B [\rho_{AB}]` and
+    :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
 
     The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
     two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the

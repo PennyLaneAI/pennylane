@@ -432,8 +432,8 @@ def vn_entanglement_entropy(
 
         S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
 
-    where :math:`S` is the von Neumann entropy; :math:`\rho_A = \text{Tr}_B[\rho_{AB}]` and
-    :math:`\rho_B = \text{Tr}_A[\rho_{AB}]` are the reduced density matrices for each partition.
+    where :math:`S` is the von Neumann entropy; :math:`\rho_A = \text{Tr}_B [\rho_{AB}]` and
+    :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
 
     The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
     two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
@@ -445,10 +445,6 @@ def vn_entanglement_entropy(
         wires0 (Sequence(int)): List of wires in the first subsystem.
         wires1 (Sequence(int)): List of wires in the second subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
-
-    Keyword Arguments:
-        device (Device): The device to execute the circuit on.
-        device_wires (Sequence[int] or Wires): The wires the device acts on.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
