@@ -510,7 +510,7 @@ class TestMeasurementValueItems:
 
     funcs_and_expected_single = [
         ((lambda v: v), [0, 1]),
-        ((lambda v: 1- v), [1, 0]),
+        ((lambda v: 1 - v), [1, 0]),
     ]
 
     @pytest.mark.parametrize("postselect", [None, 0, 1])
@@ -524,7 +524,7 @@ class TestMeasurementValueItems:
         assert items == [((0,), expected[0]), ((1,), expected[1])]
 
     funcs_and_expected_multi = [
-        ((lambda *v: sum(v)==1), [0, 1, 1, 0, 1, 0, 0, 0]),
+        ((lambda *v: sum(v) == 1), [0, 1, 1, 0, 1, 0, 0, 0]),
         ((lambda *v: v[0]), [0, 0, 0, 0, 1, 1, 1, 1]),
     ]
 

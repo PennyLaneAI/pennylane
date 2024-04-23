@@ -322,7 +322,7 @@ class TestQNode:
             qml.RX(phi, 0),
             qml.Projector([1], wires=0),
             qml.X(1),
-            #qml.CNOT([0, 1]),
+            # qml.CNOT([0, 1]),
             qml.probs(wires=1),
         ]
 
@@ -379,20 +379,20 @@ class TestQNode:
             qml.Projector([0], wires=1),
             qml.CNOT([1, 4]),
             qml.RY(theta, wires=[2]),
-            #qml.ops.Controlled(
-                #qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[False, False]
-            #),
-            #qml.ops.Controlled(
-                #qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[False, True]
-            #),
-            #qml.ops.Controlled(
-                #qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[True, False]
-            #),
+            # qml.ops.Controlled(
+            # qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[False, False]
+            # ),
+            # qml.ops.Controlled(
+            # qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[False, True]
+            # ),
+            # qml.ops.Controlled(
+            # qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[True, False]
+            # ),
             qml.Projector([1], wires=2),
             qml.CNOT([2, 5]),
             qml.PauliX(2),
             qml.PauliX(1),
-            #qml.CNOT([5, 1]),
+            # qml.CNOT([5, 1]),
             qml.probs(wires=[0, 1, 2]),
         ]
 

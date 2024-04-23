@@ -339,17 +339,20 @@ class MeasurementValue(Generic[T]):
     def _postselected_items(self):
         """A generator representing all the possible outcomes of the MeasurementValue,
         taking postselection into account."""
-        ps = {i: p for i, m in enumerate(self.measurements) if (p:=m.postselect) is not None}
-        num_non_ps = len(self.measurements)-len(ps)
+        ps = {i: p for i, m in enumerate(self.measurements) if (p := m.postselect) is not None}
+        num_non_ps = len(self.measurements) - len(ps)
         if num_non_ps == 0:
             yield (), self.processing_fn(*ps.values())
             return
-        for i in range(2 ** num_non_ps):
+        for i in range(2**num_non_ps):
             # Create the branch ignoring postselected measurements
             non_ps_branch = tuple(int(b) for b in np.binary_repr(i, width=num_non_ps))
             pos = -1
             # Extend the branch to include postselected measurements
-            full_branch = tuple(ps[j] if j in ps else non_ps_branch[pos:=pos+1] for j in range(len(self.measurements)))
+            full_branch = tuple(
+                ps[j] if j in ps else non_ps_branch[pos := pos + 1]
+                for j in range(len(self.measurements))
+            )
             # Return the reduced non-postselected branch and the procesing function
             # evaluated on the full branch
             yield non_ps_branch, self.processing_fn(*full_branch)
