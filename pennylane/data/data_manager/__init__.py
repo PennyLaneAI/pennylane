@@ -29,7 +29,7 @@ from requests import get
 try:
     from tqdm import tqdm
 except ImportError:
-    tqdm = lambda x, total: x
+    tqdm = lambda x, total: x  # pylint:disable=unnecessary-lambda-assignment
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
