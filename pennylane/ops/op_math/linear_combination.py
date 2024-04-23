@@ -329,7 +329,9 @@ class LinearCombination(Sum):
 
         .. Warning::
 
-            While this method does not compute explicit matrices, it is still relatively expensive as it involves simplification of both operators.
+            This method does not compute explicit matrices but uses the underlyding operators and coefficients for comparisons. When both operators
+            consist purely of Pauli operators, and therefore have a valid ``op.pauli_rep``, the comparison is cheap.
+            When that is not the case (e.g. one of the operators contains a ``Hadamard`` gate), it can be more expensive as it involves mathematical simplification of both operators.
 
         Returns:
             (bool): True if equivalent.
