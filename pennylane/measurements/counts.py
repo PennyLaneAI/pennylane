@@ -313,8 +313,10 @@ class CountsMP(SampleMeasurement):
                 return "".join(str(s) for s in sample)
 
             new_shape = samples.shape[:-1]
-            samples = list(map(convert, samples.reshape(-1, shape[-1])))
-            samples = np.array(samples).reshape(new_shape)
+            # Flatten broadcasting axis
+            flattened_samples = np.reshape(samples, (-1, shape[-1])).astype(np.int8)
+            samples = list(map(convert, flattened_samples))
+            samples = np.reshape(np.array(samples), new_shape)
 
             if self.all_outcomes:
 
