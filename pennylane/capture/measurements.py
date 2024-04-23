@@ -73,7 +73,7 @@ def create_measurement_obs_primitive(
 
     @primitive.def_impl
     def _(obs):
-        return measurement_type(obs=obs)
+        return type.__call__(measurement_type, obs=obs)
 
     abstract_type = _get_abstract_measurement()
 
@@ -96,7 +96,7 @@ def create_measurement_wires_primitive(
     @primitive.def_impl
     def _(*wires, **kwargs):
         wires = qml.wires.Wires(wires)
-        return measurement_type(wires=wires)
+        return type.__call__(measurement_type, wires=wires, **kwargs)
 
     abstract_type = _get_abstract_measurement()
 
