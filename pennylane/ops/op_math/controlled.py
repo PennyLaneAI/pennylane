@@ -822,7 +822,7 @@ class ControlledOp(Controlled, operation.Operation):
     """
 
     def __new__(cls, *_, **__):
-        # overrides dispatch behavior of ``Controlled``
+        # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
     # pylint: disable=too-many-function-args
