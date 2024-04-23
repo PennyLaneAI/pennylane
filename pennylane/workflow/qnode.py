@@ -86,6 +86,10 @@ def _make_execution_config(
 def _to_qfunc_output_type(
     results: qml.typing.Result, qfunc_output, has_partitioned_shots
 ) -> qml.typing.Result:
+
+    if has_partitioned_shots:
+        return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
+
     # Special case of single Measurement in a list
     if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
         results = [results]
@@ -93,8 +97,7 @@ def _to_qfunc_output_type(
     # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
         return results
-    if has_partitioned_shots:
-        return tuple(type(qfunc_output)(r) for r in results)
+
     return type(qfunc_output)(results)
 
 
