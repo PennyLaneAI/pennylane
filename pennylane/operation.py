@@ -256,7 +256,7 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, csr_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.capture import PLXPRMeta
+from pennylane.capture import PLXPRMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -698,8 +698,39 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
+    _primitive = None
+    """
+    Optional[jax.core.Primitive]
+    """
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
+        cls._primitive = create_operator_primitive(cls)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        """This class method should match the call signature of the class itself.
+
+        When plxpr is enabled, this method is used to bind the arguments and keyword arguments
+        to the primitive via ``cls._primitive.bind``.
+
+        """
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, *args, **kwargs)
+
+        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
+        if "wires" in kwargs:
+            wires = kwargs.pop("wires")
+            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
+            kwargs["n_wires"] = len(wires)
+            args += wires
+        elif args and isinstance(args[-1], iterable_wires_types):
+            kwargs["n_wires"] = len(args[-1])
+            args = args[:-1] + tuple(args[-1])
+        else:
+            kwargs["n_wires"] = 1
+        return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self):
         cls = self.__class__

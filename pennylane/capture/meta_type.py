@@ -19,6 +19,7 @@ See ``explanations.md`` for technical explanations of how this works.
 
 import abc
 from functools import lru_cache
+from typing import Optional
 
 import pennylane as qml
 
@@ -31,10 +32,10 @@ except ImportError:
     has_jax = False
 
 
-@lru_cache  # constrcut the first time lazily
-def _get_abstract_operator():
+@lru_cache  # construct the first time lazily
+def _get_abstract_operator() -> type:
     """Create an AbstractOperator once in a way protected from lack of a jax install."""
-    if not has_jax:
+    if not has_jax:  # pragma: no-cover
         raise ImportError("Jax is required for plxpr.")
 
     class AbstractOperator(jax.core.AbstractValue):
@@ -77,77 +78,72 @@ def _get_abstract_operator():
         def _add(a, b):
             return qml.sum(a, b)
 
+        @staticmethod
+        def _pow(a, b):
+            return qml.pow(a, b)
+
     jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
 
     return AbstractOperator
 
 
-class PLXPRMeta(abc.ABCMeta):
-    """A metatype that:
+def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primitive"]:
+    """Create a primitive corresponding to an operator type.
 
-    * automatically registers a jax primitive to ``cls._primitive``
-    * Dispatches class creation to ``cls._primitive.bind`` instead of normal class
-    creation when the primitive is defined and plxpr capture is enabled.
+    Args:
+        operator_type (type): a subclass of qml.operation.Operator
+
+    Returns:
+        Optional[jax.core.Primitive]: A new jax primitive with the same name as the operator subclass.
+        ``None`` is returned if jax is not available.
+
+    """
+    if not has_jax:
+        return None
+
+    primitive = jax.core.Primitive(operator_type.__name__)
+
+    @primitive.def_impl
+    def _(*args, **kwargs):
+        if "n_wires" not in kwargs:
+            return type.__call__(operator_type, *args, **kwargs)
+        n_wires = kwargs.pop("n_wires")
+
+        # need to convert array values into integers
+        # for plxpr, all wires must be integers
+        wires = tuple(int(w) for w in args[-n_wires:])
+        args = args[:-n_wires]
+        return type.__call__(operator_type, *args, wires=wires, **kwargs)
+
+    abstract_type = _get_abstract_operator()
+
+    @primitive.def_abstract_eval
+    def _(*_, **__):
+        return abstract_type()
+
+    return primitive
+
+
+class PLXPRMeta(abc.ABCMeta):
+    """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
+    of normal class creation.
 
     See ``pennylane/capture/explanations.md`` for more detailed information on how this technically
     works.
-
     """
 
-    def __init__(cls, *args, **kwargs):
-
-        super().__init__(cls, args, kwargs)
-
-        # Called when constructing a new type that has this metaclass.
-        # Similar to __init_subclass__ , this allows us to run this code
-        # every time we define a new class
-
-        if not has_jax:
-            cls._primitive = None
-            return
-
-        cls._primitive = jax.core.Primitive(cls.__name__)
-
-        @cls._primitive.def_impl
-        def _(*args, **kwargs):
-            if "n_wires" not in kwargs:
-                return type.__call__(cls, *args, **kwargs)
-            n_wires = kwargs.pop("n_wires")
-            wires = args[-n_wires:]
-            args = args[:-n_wires]
-            return type.__call__(cls, *args, wires=wires, **kwargs)
-
-        # logic here will be extended when we make more things use this meta class
-        abstract_type = _get_abstract_operator()
-
-        @cls._primitive.def_abstract_eval
-        def _(*_, **__):
-            return abstract_type()
-
     def _primitive_bind_call(cls, *args, **kwargs):
-        if cls._primitive is None:
-            # guard against this being called when primitive is not defined.
-            return type.__call__(cls, *args, **kwargs)
-
-        iterable_wires_types = (list, tuple, qml.wires.Wires, range)
-        if "wires" in kwargs:
-            wires = kwargs.pop("wires")
-            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
-            kwargs["n_wires"] = len(wires)
-            args += wires
-        elif args and isinstance(args[-1], iterable_wires_types):
-            kwargs["n_wires"] = len(args[-1])
-            args = args[:-1] + tuple(args[-1])
-        else:
-            kwargs["n_wires"] = 1
-        return cls._primitive.bind(*args, **kwargs)
+        raise NotImplementedError(
+            "Types using PLXPRMeta must implement cls._primitive_bind_call to"
+            " gain integration with plxpr program capture."
+        )
 
     def __call__(cls, *args, **kwargs):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
-        # when tracing is enabled, we want to
 
-        if not plxpr_enabled():
-            return type.__call__(cls, *args, **kwargs)
-        # use bind to construct the class if we want class construction to add it to the jaxpr
-        return cls._primitive_bind_call(*args, **kwargs)
+        if plxpr_enabled():
+            # when tracing is enabled, we want to
+            # use bind to construct the class if we want class construction to add it to the jaxpr
+            return cls._primitive_bind_call(*args, **kwargs)
+        return type.__call__(cls, *args, **kwargs)
