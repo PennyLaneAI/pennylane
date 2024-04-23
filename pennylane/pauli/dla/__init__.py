@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains decorators that can modify an implementation of the :class:`pennylane.devices.Device`
-class and add default behaviour.
-
+This subpackage defines functions and classes for dynamical Lie algebra functionality
 """
-from .single_tape_support import single_tape_support
-from .simulator_tracking import simulator_tracking
+
+from .structure_constants import structure_constants
+from .lie_closure import PauliVSpace, lie_closure
