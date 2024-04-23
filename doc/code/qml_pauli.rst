@@ -14,11 +14,7 @@ for Pauli-word partitioning functionality used in measurement optimization.
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
-<<<<<<< HEAD
     :skip: lie_closure, structure_constants
-=======
-    :skip: lie_closure
->>>>>>> 44018e9ae06ae11590288ffef2f8ec348560bb28
 
 PauliWord and PauliSentence
 ---------------------------
