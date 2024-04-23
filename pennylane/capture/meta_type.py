@@ -23,7 +23,7 @@ from typing import Optional
 
 import pennylane as qml
 
-from .switches import enabled
+from .switches import plxpr_enabled
 
 has_jax = True
 try:
@@ -35,7 +35,7 @@ except ImportError:
 @lru_cache  # construct the first time lazily
 def _get_abstract_operator() -> type:
     """Create an AbstractOperator once in a way protected from lack of a jax install."""
-    if not has_jax:
+    if not has_jax:  # pragma: no-cover
         raise ImportError("Jax is required for plxpr.")
 
     class AbstractOperator(jax.core.AbstractValue):
@@ -142,7 +142,7 @@ class PLXPRMeta(abc.ABCMeta):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
 
-        if enabled():
+        if plxpr_enabled():
             # when tracing is enabled, we want to
             # use bind to construct the class if we want class construction to add it to the jaxpr
             return cls._primitive_bind_call(*args, **kwargs)

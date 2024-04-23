@@ -31,13 +31,13 @@ By default, the mechanism is disabled:
 .. code-block:: pycon
 
     >>> import pennylane as qml
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.enabled()
     False
-    >>> qml.capture.enable_plxpr()
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.enable()
+    >>> qml.capture.enabled()
     True
-    >>> qml.capture.disable_plxpr()
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.disable()
+    >>> qml.capture.enabled()
     False
 
 **Custom Operator Behaviour**
@@ -99,6 +99,18 @@ will be called when constructing a new class instance instead of ``type.__call__
 
 As you can see, the input ``"Y"``, while being passed as a positional argument, is converted to 
 metadata within the custom ``_primitive_bind_call`` method.
+
+If needed, developers can also override the implementation method of the primitive like was done with ``Controlled``.
+``Controlled`` needs to do so to handle packing and unpacking the control wires.
+
+.. code-block:: python
+
+    class MyCustomOp(qml.operation.Operator):
+        pass
+
+    @MyCustomOp._primitive.def_impl
+    def _(*args, **kwargs):
+        return type.__call__(MyCustomOp, *args, **kwargs)
 """
 from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
 from .meta_type import PLXPRMeta, create_operator_primitive

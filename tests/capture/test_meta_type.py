@@ -1,0 +1,71 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Integration tests for the capture of pennylane operations into jaxpr.
+"""
+# pylint: disable=protected-access
+import pytest
+
+import pennylane as qml
+
+from pennylane.capture.meta_type import PLXPRMeta
+
+jax = pytest.importorskip("jax")
+
+pytestmark = pytest.mark.jax
+
+
+@pytest.fixture(autouse=True)
+def enable_disable_plxpr():
+    qml.capture.enable()
+    yield
+    qml.capture.disable()
+
+
+def test_custom_PLXPRMeta():
+    """Test that we can capture custom classes with the PLXPRMeta metaclass by defining
+    the _primitive_bind_call method."""
+
+    p = jax.core.Primitive("p")
+
+    @p.def_abstract_eval
+    def _(a):
+        return jax.core.ShapedArray(a.shape, a.dtype)
+
+    # pylint: disable=too-few-public-methods
+    class MyObj(metaclass=PLXPRMeta):
+        """A PLXPRMeta class with a _primitive_bind_call class method."""
+
+        @classmethod
+        def _primitive_bind_call(cls, *args, **kwargs):
+            return p.bind(*args, **kwargs)
+
+    jaxpr = jax.make_jaxpr(MyObj)(0.5)
+
+    assert len(jaxpr.eqns) == 1
+    assert jaxpr.eqns[0].primitive == p
+
+
+def test_custom_plxprmeta_no_bind_primitive_call():
+    """Test that an NotImplementedError is raised if the type does not define _primitive_bind_call."""
+
+    # pylint: disable=too-few-public-methods
+    class MyObj(metaclass=PLXPRMeta):
+        """A class that does not define _primitive_bind_call."""
+
+        def __init__(self, a):
+            self.a = a
+
+    with pytest.raises(NotImplementedError, match="Types using PLXPRMeta must implement"):
+        MyObj(0.5)
