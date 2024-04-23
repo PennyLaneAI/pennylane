@@ -764,12 +764,10 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(
-        self, execute_kwargs, cost_fn, shots, use_new_op_math
-    ):
+    def test_multiple_hamiltonians_not_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
 
-        if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
+        if execute_kwargs["gradient_fn"] == "adjoint" and not qml.operation.active_new_opmath():
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
@@ -792,11 +790,11 @@ class TestHamiltonianWorkflows:
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
+    def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
-        if use_new_op_math:
+        if qml.operation.active_new_opmath():
             pytest.skip("parameter shift derivatives do not yet support sums.")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
