@@ -24,6 +24,8 @@ from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_meas
 pytestmark = pytest.mark.slow
 get_device = partial(qml.device, name="default.qubit", seed=8237945)
 
+pytestmark = pytest.mark.slow
+
 
 def validate_counts(shots, results1, results2, batch_size=None):
     """Compares two counts.

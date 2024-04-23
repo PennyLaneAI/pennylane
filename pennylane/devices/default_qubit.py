@@ -603,14 +603,14 @@ class DefaultQubit(Device):
 
         vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-        _wrap_simulate = partial(simulate, debugger=None, interface=interface)
+        prng_keys = self.get_prng_keys(num=len(vanilla_circuits))
+        execution_kwargs = [
+            {"debugger": None, "interface": interface, "rng": _rng, "prng_key": _key}
+            for _rng, _key in zip(seeds, prng_keys)
+        ]
+
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            exec_map = executor.map(
-                _wrap_simulate,
-                vanilla_circuits,
-                seeds,
-                self.get_prng_keys(num=len(vanilla_circuits)),
-            )
+            exec_map = executor.map(_simulate_wrapper, vanilla_circuits, execution_kwargs)
             results = tuple(exec_map)
 
         # reset _rng to mimic serial behaviour
@@ -836,6 +836,10 @@ class DefaultQubit(Device):
                 )
 
         return tuple(zip(*results))
+
+
+def _simulate_wrapper(circuit, kwargs):
+    return simulate(circuit, **kwargs)
 
 
 def _adjoint_jac_wrapper(c, debugger=None):
