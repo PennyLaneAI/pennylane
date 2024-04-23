@@ -18,8 +18,8 @@ them.
 
 import typing
 import urllib.parse
-from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
-from functools import lru_cache, partial
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
 from pathlib import Path
 from time import sleep
 from typing import List, Optional, Union
@@ -29,7 +29,19 @@ from requests import get
 try:
     from tqdm import tqdm
 except ImportError:
-    tqdm = lambda x, total: x  # pylint:disable=unnecessary-lambda-assignment
+    from contextlib import contextmanager
+
+    class DummyPBar:  # pylint:disable=too-few-public-methods
+        """Dummy progress-bar object."""
+
+        def update(self, *_):
+            """Update the progress bar."""
+
+    @contextmanager
+    def tqdm(**_):
+        """Dummy tqdm context manager."""
+        yield DummyPBar()
+
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
@@ -266,9 +278,23 @@ def load(  # pylint: disable=too-many-arguments
     for path_parents in set(path.parent for path in dest_paths):
         path_parents.mkdir(parents=True, exist_ok=True)
 
-    get_fn = partial(_download_dataset, attributes=attributes, force=force, block_size=block_size)
-    with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
-        _ = list(tqdm(pool.map(get_fn, data_paths, dest_paths), total=len(data_paths)))
+    with tqdm(total=len(data_paths)) as pbar:
+        with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
+            futures = [
+                pool.submit(
+                    _download_dataset,
+                    data_path,
+                    dest_path,
+                    attributes,
+                    force=force,
+                    block_size=block_size,
+                )
+                for data_path, dest_path in zip(data_paths, dest_paths)
+            ]
+            for result in as_completed(futures, timeout=60):
+                if result.exception() is not None:
+                    raise result.exception()
+                pbar.update(1)
 
     return [Dataset.open(Path(dest_path), "a") for dest_path in dest_paths]
 
