@@ -223,7 +223,7 @@
 * `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
-* `LinearCombination` and `Sum` now accept `grouping_indices` on initialization.
+* `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 
 <h4>Community contributions 🥳</h4>
@@ -367,7 +367,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `TrotterProduct` now de-queues the input linear combination observable.
+* `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
+  now de-queue their input observable.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 
 * `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
