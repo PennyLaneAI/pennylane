@@ -23,7 +23,7 @@ from typing import Optional
 
 import pennylane as qml
 
-from .switches import plxpr_enabled
+from .switches import enabled
 
 has_jax = True
 try:
@@ -32,7 +32,7 @@ except ImportError:
     has_jax = False
 
 
-@lru_cache  # constrcut the first time lazily
+@lru_cache  # construct the first time lazily
 def _get_abstract_operator() -> type:
     """Create an AbstractOperator once in a way protected from lack of a jax install."""
     if not has_jax:
@@ -94,7 +94,8 @@ def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primiti
         operator_type (type): a subclass of qml.operation.Operator
 
     Returns:
-        Optional[jax.core.Primitive]: None is returned if jax is not available.
+        Optional[jax.core.Primitive]: A new jax primitive with the same name as the operator subclass.
+        ``None`` is returned if jax is not available.
 
     """
     if not has_jax:
@@ -114,7 +115,6 @@ def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primiti
         args = args[:-n_wires]
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 
-    # logic here will be extended when we make more things use this meta class
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
@@ -142,7 +142,7 @@ class PLXPRMeta(abc.ABCMeta):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
 
-        if plxpr_enabled():
+        if enabled():
             # when tracing is enabled, we want to
             # use bind to construct the class if we want class construction to add it to the jaxpr
             return cls._primitive_bind_call(*args, **kwargs)

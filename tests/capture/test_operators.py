@@ -30,9 +30,9 @@ AbstractOperator = _get_abstract_operator()
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
-    qml.capture.enable_plxpr()
+    qml.capture.enable()
     yield
-    qml.capture.disable_plxpr()
+    qml.capture.disable()
 
 
 def test_custom_PLXPRMeta():
@@ -79,6 +79,7 @@ def test_operators_constructed_when_plxpr_enabled():
     with qml.queuing.AnnotatedQueue() as q:
         op = qml.adjoint(qml.X(0) + qml.Y(1))
 
+    assert len(q) == 1
     assert q.queue[0] is op
     assert isinstance(op, qml.ops.Adjoint)
     assert isinstance(op.base, qml.ops.Sum)
@@ -202,7 +203,7 @@ def test_pauli_rot():
     assert eqn.primitive == qml.PauliRot._primitive
     assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
 
-    assert len(eqn.invars) == 3
+    assert len(eqn.invars) == 3 # The rotation parameter and the two wires
     assert jaxpr.jaxpr.invars == eqn.invars
 
     with qml.queuing.AnnotatedQueue() as q:
@@ -224,9 +225,10 @@ class TestTemplates:
         assert eqn.primitive == qml.GroverOperator._primitive
         assert eqn.params == {"n_wires": 6}
         assert eqn.invars == jaxpr.jaxpr.invars
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
     def test_nested_template(self):
-        """Test capturing a template that contains a nested opeartion defined outside the qfunc."""
+        """Test capturing a template that contains a nested operation defined outside the qfunc."""
 
         coeffs = [0.25, 0.75]
         ops = [qml.X(0), qml.Z(0)]

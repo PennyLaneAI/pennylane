@@ -712,7 +712,7 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
         """This class method should match the call signature of the class itself.
 
         When plxpr is enabled, this method is used to bind the arguments and keyword arguments
-        the primitive via ``cls._primitive.bind``.
+        to the primitive via ``cls._primitive.bind``.
 
         """
         if cls._primitive is None:
