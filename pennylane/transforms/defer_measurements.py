@@ -346,11 +346,14 @@ def _defer_measurements_qnode(self, qnode, targs, tkwargs):
 
 def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
-    control = [control_wires[m.id] for m in op.meas_val.measurements]
+    control = [control_wires[m.id] for m in op.meas_val.measurements if m.postselect is None]
     new_ops = []
 
-    for branch, value in op.meas_val._items():
+    for branch, value in op.meas_val._postselected_items():
         if value:
+            if branch == ():
+                new_ops.append(op.then_op)
+                continue
             qscript = qml.tape.make_qscript(
                 ctrl(
                     lambda: qml.apply(op.then_op),  # pylint: disable=cell-var-from-loop
