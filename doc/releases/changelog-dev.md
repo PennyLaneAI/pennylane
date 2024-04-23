@@ -118,14 +118,14 @@
    -1.0 * Y(1) @ Y(0)]
   ```
 
-* We can compute the adjoint representation of a dynamical Lie algebra.
+* We can compute the structure constants (the adjoint representation) of a dynamical Lie algebra.
   [(5406)](https://github.com/PennyLaneAI/pennylane/pull/5406)
 
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-  >>> dla = [X(0) @ X(1), Z(0), 1.0 * Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
-  >>> adjoint_rep = qml.adjoint_repr(dla)
-  >>> adjoint_rep.shape
+  >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
+  >>> structure_const = qml.structure_constants(dla)
+  >>> structure_constp.shape
   (6, 6, 6)
 
 <h3>Improvements 🛠</h3>
@@ -171,7 +171,7 @@
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
-  
+
 * The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
 
@@ -195,7 +195,7 @@
       return qml.probs(wires=range(3))
 
   ```
-  
+
   ```pycon
   >>> print(np.round(circuit(), 3))
   [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
@@ -222,7 +222,7 @@
   but for usage with new operator arithmetic.
   [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
 
-* The `qml.TrotterProduct` operator now supports error estimation functionality. 
+* The `qml.TrotterProduct` operator now supports error estimation functionality.
   [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
   ```pycon
@@ -255,18 +255,18 @@
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
-* The generators in the source code return operators consistent with the global setting for 
-  `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances 
-  will be returned even after disabling the new operator arithmetic in cases where they offer 
+* The generators in the source code return operators consistent with the global setting for
+  `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances
+  will be returned even after disabling the new operator arithmetic in cases where they offer
   additional functionality not available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
   [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
-  [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411) 
+  [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411)
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
 * Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
-  
+
 * `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
@@ -348,6 +348,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Use `SampleMP`s in the `dynamic_one_shot` transform to get back the values of the mid-circuit measurements.
+  [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
+
 * Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
   operators easier to work with.
   [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
@@ -369,7 +372,7 @@
 
 * `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now removed. Instead, you  should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
   [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
-  
+
   ```pycon
   >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
   >>> op
@@ -446,6 +449,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* (In)equality of `qml.HilbertSchmidt` instances is now reported correctly by `qml.equal`.
+  [(#5538)](https://github.com/PennyLaneAI/pennylane/pull/5538)
 
 * `qml.ParticleConservingU1` and `qml.ParticleConservingU2` no longer raise an error when the initial state is not specified but default to the all-zeros state.
   [(#5535)](https://github.com/PennyLaneAI/pennylane/pull/5535)
@@ -527,6 +533,12 @@
 
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
+* Fixes a bug where `TorchLayer` does not work with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
+
+* Fixes a bug where the output shape of a qnode returning a list containing a single measurement is incorrect when combined with shot vectors.
+  [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
 
 * Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
   [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
