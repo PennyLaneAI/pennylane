@@ -217,7 +217,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
-    if qml.captue.enable_plxpr():
+    if qml.capture.enable_plxpr():
         return qml.capture.measure(mp, shots=1)[0]
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
@@ -258,6 +258,12 @@ class MidMeasureMP(MeasurementProcess):
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
+
+    # pylint: disable=arguments-renamed
+    @classmethod
+    def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
+        wires = () if wires is None else wires
+        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect)
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
