@@ -108,10 +108,8 @@ class TestDtypePreserved:
             qml.state(),
             qml.density_matrix(wires=[1]),
             qml.density_matrix(wires=[2, 0]),
-            pytest.param(
-                qml.expval(qml.PauliY(0)), marks=pytest.mark.xfail(reason="incorrect type")
-            ),
-            pytest.param(qml.var(qml.PauliY(0)), marks=pytest.mark.xfail(reason="incorrect type")),
+            qml.expval(qml.PauliY(0)),
+            qml.var(qml.PauliY(0)),
             qml.probs(wires=[1]),
             qml.probs(wires=[0, 2]),
         ],
@@ -133,4 +131,7 @@ class TestDtypePreserved:
             expected_dtype = c_dtype
         else:
             expected_dtype = np.float64 if c_dtype == np.complex128 else np.float32
-        assert res.dtype == expected_dtype
+        if isinstance(res, np.ndarray):
+            assert res.dtype == expected_dtype
+        else:
+            assert isinstance(res, float)
