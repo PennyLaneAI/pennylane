@@ -8,7 +8,7 @@
   quantum-classical programs.
   [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
 
-* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level.
 [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
@@ -142,7 +142,7 @@
 
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
-  
+
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
@@ -223,7 +223,7 @@
   >>> print(qubit_ham)
   -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
   ```
-  
+
 * A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
   but for usage with new operator arithmetic.
   [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
@@ -320,10 +320,10 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
-* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
+* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module.
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
-  
-* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
+
+* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a
   noisy qutrit circuit with measurement and sampling.
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
@@ -338,11 +338,11 @@
 * Add type hints for unimplemented methods of the abstract class `Operator`.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
 
-* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
+* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
- 
- * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
+
+ * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
@@ -363,8 +363,8 @@
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
-  
-* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
+
+* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call.
   [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
 
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
@@ -483,7 +483,7 @@
 * Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
   [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
 
-* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`.
   [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
 
 * Tensorflow can now handle devices with float32 results but float64 input parameters.
