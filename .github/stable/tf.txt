@@ -11,7 +11,7 @@ charset-normalizer==3.3.2
 clarabel==0.7.1
 click==8.1.7
 contourpy==1.2.1
-coverage==7.4.4
+coverage==7.5.0
 cvxopt==1.3.2
 cvxpy==1.4.3
 cycler==0.12.1
@@ -54,7 +54,7 @@ packaging==24.0
 pathspec==0.12.1
 PennyLane_Lightning==0.36.0
 pillow==10.3.0
-platformdirs==4.2.0
+platformdirs==4.2.1
 pluggy==1.5.0
 pre-commit==3.7.0
 protobuf==4.25.3
@@ -90,7 +90,7 @@ toml==0.10.2
 tomli==2.0.1
 typing_extensions==4.11.0
 urllib3==2.2.1
-virtualenv==20.25.3
+virtualenv==20.26.0
 Werkzeug==3.0.2
 wrapt==1.16.0
 zipp==3.18.1
