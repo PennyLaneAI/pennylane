@@ -945,6 +945,16 @@ class TestApplyOperation:
             assert key1 == key2
             assert qml.math.allclose(snaps_qubit[key1], snaps_mixed[key2])
 
+    def test_snapshot_not_supported(self):
+        """Tests that an error is raised when applying snapshot of sample-based measurements"""
+
+        dev = qml.device("default.mixed", wires=1)
+        measurement = qml.sample(op=qml.Z(0))
+        with pytest.raises(
+            DeviceError, match=f"Snapshots of {type(measurement)} are not yet supported"
+        ):
+            dev._snapshot_measurements(dev.state, measurement)
+
 
 class TestApply:
     """Unit tests for the main method `apply()`. We check that lists of operations are applied

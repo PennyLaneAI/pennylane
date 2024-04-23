@@ -596,7 +596,7 @@ class DefaultMixed(QubitDevice):
     def _snapshot_measurements(self, density_matrix, measurement):
         """Perform state-based snapshot measurement"""
         meas_wires = measurement.wires
-
+        print(measurement, type(measurement))
         pre_rotated_state = self._state
         if isinstance(measurement, (ProbabilityMP, ExpectationMP, VarianceMP)):
             for diag_gate in measurement.diagonalizing_gates():
@@ -643,8 +643,10 @@ class DefaultMixed(QubitDevice):
                 base=base,
             )
 
-        else:  # pragma: no cover
-            raise DeviceError("Snapshots of {measurement} are not yet supported on default.mixed")
+        else:
+            raise DeviceError(
+                f"Snapshots of {type(measurement)} are not yet supported on default.mixed"
+            )
 
         self._state = pre_rotated_state
         self._pre_rotated_state = self._state

@@ -286,7 +286,7 @@
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
-* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshots`.
+* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
 
 <h4>Community contributions 🥳</h4>
