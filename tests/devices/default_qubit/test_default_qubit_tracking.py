@@ -215,6 +215,11 @@ shot_testing_combos = [
     ([qml.expval(qml.sum(qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)))], 1, 10),
     ([qml.expval(qml.sum(qml.PauliX(0), qml.Hadamard(0)))], 2, 20),
     (
+        [qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(1) @ qml.PauliX(1), grouping_type="qwc"))],
+        1,
+        10,
+    ),
+    (
         [
             qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1))),
             qml.expval(qml.prod(qml.PauliX(1), qml.PauliX(2))),

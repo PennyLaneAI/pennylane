@@ -108,6 +108,9 @@ def _get_num_shots_for_expval_H(obs):
 
 def _get_num_shots_for_sum(obs):
 
+    if obs.grouping_indices:
+        return len(obs.grouping_indices)
+
     if not obs.pauli_rep:
         return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
 
