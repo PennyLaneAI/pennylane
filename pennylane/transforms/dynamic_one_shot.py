@@ -14,10 +14,12 @@
 """
 Contains the batch dimension transform.
 """
+import warnings
+
 # pylint: disable=import-outside-toplevel
 from collections import Counter
+from itertools import compress
 from typing import Callable, Sequence
-import warnings
 
 import numpy as np
 
@@ -25,6 +27,7 @@ import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
+    MeasurementValue,
     MidMeasureMP,
     ProbabilityMP,
     SampleMP,
@@ -91,6 +94,9 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 "measurements."
             )
 
+    if not tape.shots:
+        raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
+
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
     postselect_present = any(
         op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
@@ -137,16 +143,38 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 )
                 del results[0:s]
             return tuple(final_results)
+        all_mcms = [op for op in aux_tapes[0].operations if isinstance(op, MidMeasureMP)]
+        n_mcms = len(all_mcms)
+        post_process_tape = qml.tape.QuantumScript(
+            aux_tapes[0].operations,
+            aux_tapes[0].measurements[0:-n_mcms],
+            shots=aux_tapes[0].shots,
+            trainable_params=aux_tapes[0].trainable_params,
+        )
+        single_measurement = (
+            len(post_process_tape.measurements) == 0 and len(aux_tapes[0].measurements) == 1
+        )
+        mcm_samples = np.zeros((len(results), n_mcms), dtype=np.int64)
+        for i, res in enumerate(results):
+            mcm_samples[i, :] = [res] if single_measurement else res[-n_mcms::]
+        mcm_mask = qml.math.all(mcm_samples != -1, axis=1)
+        mcm_samples = mcm_samples[mcm_mask, :]
+        results = list(compress(results, mcm_mask))
 
         # The following code assumes no broadcasting and no shot vectors. The above code should
         # handle those cases
         all_shot_meas, list_mcm_values_dict, valid_shots = None, [], 0
-        for res in results:
-            one_shot_meas, mcm_values_dict = res
-            if one_shot_meas is None:
-                continue
+        for i, res in enumerate(results):
+            samples = [res] if single_measurement else res[-n_mcms::]
             valid_shots += 1
-            all_shot_meas = accumulate_native_mcm(aux_tapes[0], all_shot_meas, one_shot_meas)
+            mcm_values_dict = dict((k, v) for k, v in zip(all_mcms, samples))
+            if len(post_process_tape.measurements) == 0:
+                one_shot_meas = []
+            elif len(post_process_tape.measurements) == 1:
+                one_shot_meas = res[0]
+            else:
+                one_shot_meas = res[0:-n_mcms]
+            all_shot_meas = accumulate_native_mcm(post_process_tape, all_shot_meas, one_shot_meas)
             list_mcm_values_dict.append(mcm_values_dict)
         if not valid_shots:
             warnings.warn(
@@ -203,6 +231,10 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
                 new_measurements.append(m)
+    for op in circuit:
+        if isinstance(op, MidMeasureMP):
+            new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
+
     return qml.tape.QuantumScript(
         circuit.operations, new_measurements, shots=1, trainable_params=circuit.trainable_params
     )
@@ -327,11 +359,14 @@ def gather_mcm(measurement, samples):
         mcm_samples = np.concatenate(mcm_samples, axis=1)
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
+    mcm_samples = np.zeros((len(samples), 1), dtype=np.int64)
     if isinstance(measurement, ProbabilityMP):
-        mcm_samples = np.array([dct[mv.measurements[0]] for dct in samples]).reshape((-1, 1))
+        for i, dct in enumerate(samples):
+            mcm_samples[i, 0] = dct[mv.measurements[0]]
         use_as_is = True
     else:
-        mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
+        for i, dct in enumerate(samples):
+            mcm_samples[i, 0] = mv.concretize(dct)
         use_as_is = mv.branches == {(0,): 0, (1,): 1}
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement

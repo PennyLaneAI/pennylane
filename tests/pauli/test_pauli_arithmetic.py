@@ -107,9 +107,10 @@ class TestPauliWord:
         assert 3 not in pw.keys()
         assert pw[3] == I
 
-    def test_pauli_rep(self):
-        """Test trivial pauli_rep property"""
-        pw = PauliWord({0: "I", 1: "X", 2: Y})
+    @pytest.mark.parametrize("pw", words)
+    def test_trivial_pauli_rep(self, pw):
+        """Test the pauli_rep property of PauliWord instances"""
+        assert pw.pauli_rep is not None
         assert pw.pauli_rep == PauliSentence({pw: 1})
 
     def test_set_items(self):
@@ -490,6 +491,16 @@ class TestPauliWord:
         """Test the map_wires conversion method."""
         assert word.map_wires(wire_map) == expected
 
+    TEST_TRACE = (
+        (PauliSentence({PauliWord({0: "X"}): 1.0, PauliWord({}): 3.0}), 3.0),
+        (PauliSentence({PauliWord({0: "Y"}): 1.0, PauliWord({1: "X"}): 3.0}), 0.0),
+    )
+
+    @pytest.mark.parametrize("op, res", TEST_TRACE)
+    def test_trace(self, op, res):
+        """Test the trace method of PauliSentence"""
+        assert op.trace() == res
+
 
 class TestPauliSentence:
     def test_missing(self):
@@ -507,6 +518,12 @@ class TestPauliSentence:
         true_wires = pw.wires
         ps = PauliSentence({pw: 1.0})
         assert ps.wires == true_wires
+
+    @pytest.mark.parametrize("ps", sentences)
+    def test_trivial_pauli_rep(self, ps):
+        """Test the pauli_rep property of PauliSentence instances"""
+        assert ps.pauli_rep is not None
+        assert ps.pauli_rep == ps
 
     def test_set_items(self):
         """Test that we can add to a PauliSentence"""
