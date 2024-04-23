@@ -346,7 +346,6 @@ class TestHamiltonianExpand:
         and grouping with different number of coefficients in each group"""
 
         dev_with_shot_vector = qml.device("default.qubit", shots=[(10000, 4)])
-
         if grouping:
             H.compute_grouping()
 
