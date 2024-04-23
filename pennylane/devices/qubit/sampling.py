@@ -35,7 +35,7 @@ from .measure import flatten_state
 def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
     if prng_key is None:
-        return [None] * num
+        return tuple([None] * num)
     # pylint: disable=import-outside-toplevel
     from jax.random import split
 
@@ -436,7 +436,7 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    if qml.math.get_deep_interface(state) == "jax":
+    if prng_key is not None:
         return _sample_state_jax(
             state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
         )
