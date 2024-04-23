@@ -166,7 +166,4 @@ See our `introduction to Dynamical Lie Algebras for quantum practitioners <https
 
     ~lie_closure
     ~structure_constants
-<<<<<<< HEAD
     ~center
-=======
->>>>>>> a8bba509e16a8582d57a0baa978ddb89a6d4d75a
