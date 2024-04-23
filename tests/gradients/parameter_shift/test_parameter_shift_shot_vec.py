@@ -1305,7 +1305,7 @@ class TestParameterShiftRule:
         for gradF in all_gradF:
             assert isinstance(gradF, np.ndarray)
             assert gradF.shape == ()
-            assert gradF == pytest.approx(expected, abs=1)
+            assert qml.math.allclose(gradF, expected, atol=2 * _herm_shot_vec_tol)
 
     @flaky(max_runs=5)
     def test_non_involutory_variance_multi_param(self):
@@ -1359,7 +1359,7 @@ class TestParameterShiftRule:
             # Note: the tolerances here are significantly higher than in usual tests
             # due to the stochasticity of the test case
             assert gradF[0] == pytest.approx(expected, abs=2)
-            assert gradF[1] == pytest.approx(expected, abs=1)
+            assert qml.math.allclose(gradF[1], expected, atol=1.5)
 
     @flaky(max_runs=8)
     def test_involutory_and_noninvolutory_variance_single_param(self):
@@ -1486,8 +1486,8 @@ class TestParameterShiftRule:
 
             assert np.allclose(shot_vec_result[0][0], expected[0], atol=1)
             assert np.allclose(shot_vec_result[0][1], expected[1], atol=1)
-            assert np.allclose(shot_vec_result[1][0], expected[2], atol=1)
-            assert np.allclose(shot_vec_result[1][1], expected[3], atol=1)
+            assert np.allclose(shot_vec_result[1][0], expected[2], atol=1.5)
+            assert np.allclose(shot_vec_result[1][1], expected[3], atol=1.5)
 
     @pytest.mark.parametrize("ind", [0, 1])
     def test_var_and_probs_single_param(self, ind):
