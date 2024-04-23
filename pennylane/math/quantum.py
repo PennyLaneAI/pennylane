@@ -755,10 +755,10 @@ def vn_entanglement_entropy(
     a pure state, call :func:`~.math.dm_from_state_vector` first.
 
     Args:
-        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
         indices0 (list[int]): List of indices in the first subsystem.
         indices1 (list[int]): List of indices in the second subsystem.
-        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        base (float): Base for the logarithm. If ``None``, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
@@ -768,15 +768,18 @@ def vn_entanglement_entropy(
     **Examples**
 
     The entanglement entropy between subsystems for a state vector can be returned as follows:
+
     >>> x = np.array([0, -1, 1, 0]) / np.sqrt(2)
     >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1])
     0.6931471805599453
 
     It is also possible to change the logarithm base:
+
     >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1], base=2)
     1
 
     Similarly, the quantum state can be provided as a density matrix:
+
     >>> y = np.array([[1, 1, -1, -1], [1, 1, -1, -1], [-1, -1, 1, 1], [-1, -1, 1, 1]]) * 0.25
     >>> qml.math.vn_entanglement_entropy(y, indices0=[0], indices1=[1])
     0
