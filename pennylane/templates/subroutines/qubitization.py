@@ -44,17 +44,14 @@ def _positive_coeffs_hamiltonian(hamiltonian):
 class Qubitization(Operation):
     r"""Applies the `Qubitization <https://arxiv.org/abs/2204.11890>`__ operator.
 
-    This operator encodes a Hamiltonian written as a linear combination of unitaries into unitary operator using the evolution:
-
-    .. math::
-        e^{-i \arccos(\mathcal{H})}.
-
-    This evolution is implemented with a quantum walk operator that takes a Hamiltonian as input and generates:
+    This operator encodes a Hamiltonian written as a linear combination of unitaries into unitary operator.
+    It is implemented with a quantum walk operator that takes a Hamiltonian as input and generates:
 
     .. math::
         Q = (2|0\rangle\langle 0| - I) \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}.
 
-    .. seealso:: :class:`~.StatePrep` and :class:`~.Select`.
+
+    .. seealso:: :class:`~.AmplitudeEmbedding` and :class:`~.Select`.
 
     Args:
         hamiltonian (Union[.Hamiltonian, .Sum, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
