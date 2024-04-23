@@ -213,6 +213,7 @@ shot_testing_combos = [
     # op arithmetic test cases
     ([qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(0)))], 2, 20),
     ([qml.expval(qml.sum(qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)))], 1, 10),
+    ([qml.expval(qml.sum(qml.PauliX(0), qml.Hadamard(0)))], 2, 20),
     (
         [
             qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1))),
