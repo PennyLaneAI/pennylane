@@ -226,8 +226,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     _check_tape_validity(tape)
 
     device = kwargs.get("device", None)
-
-    device = kwargs.get("device", None)
+    reduce_postselected = kwargs.get("reduce_postselected", True)
 
     new_operations = []
 
@@ -286,7 +285,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
         elif op.__class__.__name__ == "Conditional":
             with QueuingManager.stop_recording():
-                new_operations.extend(_add_control_gate(op, control_wires))
+                new_operations.extend(_add_control_gate(op, control_wires, reduce_postselected))
         else:
             new_operations.append(op)
 
@@ -344,13 +343,20 @@ def _defer_measurements_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-def _add_control_gate(op, control_wires):
+def _add_control_gate(op, control_wires, reduce_postselected):
     """Helper function to add control gates"""
-    control = [control_wires[m.id] for m in op.meas_val.measurements if m.postselect is None]
+    if reduce_postselected:
+        control = [control_wires[m.id] for m in op.meas_val.measurements if m.postselect is None]
+        items = op.meas_val._postselected_items()
+    else:
+        control = [control_wires[m.id] for m in op.meas_val.measurements]
+        items = op.meas_val._items()
+
     new_ops = []
 
-    for branch, value in op.meas_val._postselected_items():
+    for branch, value in items:
         if value:
+            # Empty sampling branches can occur when using _postselected_items
             if branch == ():
                 new_ops.append(op.then_op)
                 continue
