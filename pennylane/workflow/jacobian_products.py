@@ -221,7 +221,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     Keyword Args:
         cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
             instead of treating each call as independent. This keyword argument is used to patch problematic
-            autograd behavior when caching is turned off. In this case, caching will be based on the identity
+            autograd behaviour when caching is turned off. In this case, caching will be based on the identity
             of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
             by the cache.
 
