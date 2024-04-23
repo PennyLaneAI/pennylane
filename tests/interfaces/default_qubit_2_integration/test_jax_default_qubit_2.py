@@ -701,24 +701,24 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
-@pytest.mark.parametrize("use_new_op_math", (True, False))
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
     @pytest.fixture
-    def cost_fn(self, execute_kwargs, shots, device, use_new_op_math):
+    def cost_fn(self, execute_kwargs, shots, device):
         """Cost function for gradient tests"""
 
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             H1 = qml.Hamiltonian(coeffs1, obs1)
-            if use_new_op_math:
+            if qml.operation.active_new_opmath():
                 H1 = qml.pauli.pauli_sentence(H1).operation()
 
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
-            if use_new_op_math:
+            if qml.operation.active_new_opmath():
                 H2 = qml.pauli.pauli_sentence(H2).operation()
 
             with qml.queuing.AnnotatedQueue() as q:

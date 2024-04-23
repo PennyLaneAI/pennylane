@@ -259,6 +259,12 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for ind, observable in enumerate(observables):
+                if isinstance(observable, qml.ops.Hamiltonian):
+                    # Converts single-term Hamiltonian to SProd because
+                    # are_identical_pauli_words cannot handle Hamiltonian
+                    coeffs, ops = observable.terms()
+                    # Assuming the Hamiltonian has only one term
+                    observable = qml.s_prod(coeffs[0], ops[0])
                 if are_identical_pauli_words(pauli_word, observable):
                     indices.append(coeff_indices[ind])
                     observables.pop(ind)
