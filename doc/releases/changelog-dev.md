@@ -94,9 +94,6 @@
 
   ```
 
-* The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
-  [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
-
 <h4>Make use of more methods to map from molecules 🗺️</h4>
 
 * Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
