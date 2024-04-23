@@ -130,6 +130,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* When using `defer_measurements` with postselecting mid-circuit measurements, operations
+  that will never be active due to the postselected state are skipped in the transformed
+  quantum circuit. In addition, postselected controls are skipped, as they are evaluated
+  at transform time.
+  [(#5558)](https://github.com/PennyLaneAI/pennylane/pull/5558)
+
 * Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
   broadcasting is in non-trainable parameters.
   [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
