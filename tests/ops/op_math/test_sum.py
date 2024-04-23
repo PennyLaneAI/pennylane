@@ -1127,6 +1127,16 @@ class TestSortWires:
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
+    def test_sorting_operators_with_no_wires(self):
+        """Test that sorting can occur when an operator acts on no wires."""
+
+        op_list = [qml.GlobalPhase(0.5), qml.X(0), qml.Y(1), qml.I(), qml.CNOT((1, 2)), qml.I()]
+
+        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
+
+        expected = [qml.GlobalPhase(0.5), qml.I(), qml.I(), qml.X(0), qml.Y(1), qml.CNOT((1, 2))]
+        assert sorted_list == expected
+
 
 class TestWrapperFunc:
     """Test wrapper function."""

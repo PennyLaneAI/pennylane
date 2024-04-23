@@ -1650,6 +1650,14 @@ class TestSortWires:
             assert op1.wires == op2.wires
             assert op1.data == op2.data
 
+    def test_sorting_operators_with_no_wires(self):
+        """Test that sorting can occur when an operator acts on no wires."""
+
+        op_list = [qml.GlobalPhase(0.5), qml.X(0), qml.I(), qml.CNOT((1, 2)), qml.I()]
+
+        sorted_list = Prod._sort(op_list)
+        assert op_list == sorted_list
+
 
 swappable_ops = [
     (qml.PauliX(1), qml.PauliY(0)),
