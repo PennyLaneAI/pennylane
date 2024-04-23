@@ -25,7 +25,11 @@ from time import sleep
 from typing import List, Optional, Union
 
 from requests import get
-from tqdm import tqdm
+
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = lambda x, total: x
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
