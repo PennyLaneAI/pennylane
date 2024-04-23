@@ -309,7 +309,7 @@ class CountsMP(SampleMeasurement):
                 samples = samples[mask, ...]
 
             def convert(sample):
-                # convert to string
+                # convert array of ints to string
                 return "".join(str(s) for s in sample)
 
             new_shape = samples.shape[:-1]
