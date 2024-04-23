@@ -737,14 +737,14 @@ def _compute_mutual_info(
 def vn_entanglement_entropy(
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
-    r"""Compute the Von Neumann entanglement entropy between two subsystems in a given state
+    r"""Compute the Von Neumann entanglement entropy between two subsystems in a given state.
 
     .. math::
 
-        S(\rho_A) = -\text{Tr}[\rho_A log \rho_A] = -\text{Tr}[\rho_B log \rho_B] = S(\rho_B)
+        S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
 
-    where :math:`S` is the von Neumann entropy, and :math:`\rho_A = \text{Tr_B}[\rho_{AB}]` and
-    :math:`\rho_B = \text{Tr_A}[\rho_{AB}]` are the reduced density matrices for each partition.
+    where :math:`S` is the von Neumann entropy, and :math:`\rho_A = \text{Tr}_B[\rho_{AB}]` and
+    :math:`\rho_B = \text{Tr}_A[\rho_{AB}]` are the reduced density matrices for each partition.
 
     The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
     two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
@@ -772,7 +772,7 @@ def vn_entanglement_entropy(
     >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1])
     0.6931471805599453
 
-    It is also possible to change the log basis.
+    It is also possible to change the logarithm base:
     >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1], base=2)
     1
 
