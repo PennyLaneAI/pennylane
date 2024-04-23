@@ -66,7 +66,7 @@ class TestDecomposition:
             ),
             (
                 2,
-                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliZ("b") @ qml.PauliX("a")]),
+                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliX("a") @ qml.PauliZ("b")]),
                 2,
                 [
                     qml.PauliRot(4.0, "X", wires=["a"]),
@@ -87,7 +87,7 @@ class TestDecomposition:
                     [2, 0.5, 0.5],
                     [
                         qml.PauliX("a"),
-                        qml.PauliZ(-15) @ qml.PauliX("a"),
+                        qml.PauliX("a") @ qml.PauliZ(-15),
                         qml.Identity(0) @ qml.PauliY(-15),
                     ],
                 ),

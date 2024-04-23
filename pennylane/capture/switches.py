@@ -35,7 +35,7 @@ def _make_switches() -> [Callable[[], None], Callable[[], None], Callable[[], bo
     """
 
     _FEATURE_ENABLED = False
-    # since this changes what happens with tracing, we need to turn the behavior
+    # since this changes what happens with tracing, we need to turn the behaviour
     # off by default to preserve our ability to jit pennylane circuits.
 
     def enable_fn() -> None:
