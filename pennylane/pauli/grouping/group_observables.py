@@ -177,6 +177,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         return self.grouped_paulis
 
 
+# pylint: disable=too-many-branches
 def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
     """Partitions a list of observables (Pauli operations and tensor products thereof) into
     groupings according to a binary relation (qubit-wise commuting, fully-commuting, or
@@ -227,9 +228,28 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
                 "The coefficients list must be the same length as the observables list."
             )
 
-    partitioned_paulis, partitioned_coeffs = _partition_paulis(
-        observables, coefficients, grouping_type, method
+    pauli_grouping = PauliGroupingStrategy(
+        observables, grouping_type=grouping_type, graph_colourer=method
     )
+
+    temp_opmath = not qml.operation.active_new_opmath() and any(
+        isinstance(o, (Prod, SProd)) for o in observables
+    )
+    if temp_opmath:
+        qml.operation.enable_new_opmath()
+
+    try:
+        partitioned_paulis = pauli_grouping.colour_pauli_graph()
+    finally:
+        if temp_opmath:
+            qml.operation.disable_new_opmath()
+
+    if coefficients is None:
+        return partitioned_paulis
+
+    partitioned_coeffs = [
+        qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
+    ]
 
     observables = copy(observables)
     # we cannot delete elements from the coefficients tensor, so we
@@ -259,34 +279,5 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     # for these two frequent cases
     if isinstance(coefficients, list):
         partitioned_coeffs = [list(p) for p in partitioned_coeffs]
-
-    return partitioned_paulis, partitioned_coeffs
-
-
-def _partition_paulis(observables, coefficients=None, grouping_type="qwc", method="rlf"):
-    """Partitions a list of Pauli observables"""
-
-    pauli_grouping = PauliGroupingStrategy(
-        observables, grouping_type=grouping_type, graph_colourer=method
-    )
-
-    temp_opmath = not qml.operation.active_new_opmath() and any(
-        isinstance(o, (Prod, SProd)) for o in observables
-    )
-    if temp_opmath:
-        qml.operation.enable_new_opmath()
-
-    try:
-        partitioned_paulis = pauli_grouping.colour_pauli_graph()
-    finally:
-        if temp_opmath:
-            qml.operation.disable_new_opmath()
-
-    if coefficients is None:
-        return partitioned_paulis
-
-    partitioned_coeffs = [
-        qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
-    ]
 
     return partitioned_paulis, partitioned_coeffs
