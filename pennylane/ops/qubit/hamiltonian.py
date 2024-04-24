@@ -189,10 +189,8 @@ class Hamiltonian(Observable):
         if qml.operation.active_new_opmath():
             warn(
                 "Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. "
-                "Instead, use 'qml.Hamiltonian', or use 'qml.operation.disable_new_opmath()' "
-                "to continue to access the legacy functionality. See "
-                "https://docs.pennylane.ai/en/stable/development/deprecations.html for more "
-                "details.",
+                "Instead, use 'qml.Hamiltonian'."
+                f"Please visit https://docs.pennylane.ai/en/latest/news/new_opmath.html for more information and help troubleshooting.",
                 qml.PennyLaneDeprecationWarning,
             )
 
