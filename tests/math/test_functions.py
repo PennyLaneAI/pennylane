@@ -186,6 +186,42 @@ def test_allequal(t1, t2):
     assert res == expected
 
 
+test_all_vectors = [
+    ((False, False, False), False),
+    ((True, True, False), False),
+    ((True, True, True), True),
+]
+
+
+@pytest.mark.parametrize(
+    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
+)
+@pytest.mark.parametrize("t1, expected", test_all_vectors)
+def test_all(array_fn, t1, expected):
+    """Test that the all function works for a variety of inputs."""
+    res = fn.all(array_fn(t1))
+
+    assert res == expected
+
+
+test_any_vectors = [
+    ((False, False, False), False),
+    ((True, True, False), True),
+    ((True, True, True), True),
+]
+
+
+@pytest.mark.parametrize(
+    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
+)
+@pytest.mark.parametrize("t1, expected", test_any_vectors)
+def test_any(array_fn, t1, expected):
+    """Test that the any function works for a variety of inputs."""
+    res = fn.any(array_fn(t1))
+
+    assert res == expected
+
+
 @pytest.mark.parametrize(
     "t1,t2",
     list(
