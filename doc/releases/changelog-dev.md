@@ -173,6 +173,17 @@
   (6, 6, 6)
   ```
 
+* We can compute the center of a dynamical Lie algebra.
+  [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
+
+  Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+
+  ```pycon
+  >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
+  >>> qml.center(g)
+  [X(0)]
+  ```
+
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -189,19 +200,6 @@
  * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
-
-<h4>Work easily and efficiently with operators 🔧</h4>
-
-* We can compute the center of a dynamical Lie algebra.
-  [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
-
-  Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
-
-  ```pycon
-  >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
-  >>> qml.center(g)
-  [X(0)]
-  ```
 
 <h3>Improvements 🛠</h3>
 
