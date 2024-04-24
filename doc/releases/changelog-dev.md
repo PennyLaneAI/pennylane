@@ -6,9 +6,6 @@
 
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
-* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level.
-[(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
-
 * Added `error` method to `QuantumPhaseEstimation` template.
   [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
 
@@ -184,16 +181,6 @@
   at transform time.
   [(#5558)](https://github.com/PennyLaneAI/pennylane/pull/5558)
 
-* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
-  broadcasting is in non-trainable parameters.
-  [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
-
-* Improve the performance of computing the matrix of `qml.QFT`
-  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
-
-* The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
-  [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
-
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
@@ -265,13 +252,6 @@
 
   op = qml.dot(coeffs, obs)
   ```
-
-* A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
-  but for usage with new operator arithmetic.
-  [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
-
-* The `qml.TrotterProduct` operator now supports error estimation functionality.
-  [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
   ```pycon
   >>> op.grouping_indices is None
@@ -350,13 +330,6 @@
 * Improve the performance of computing the matrix of `qml.QFT`
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
-* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module.
-  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
-
-* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a
-  noisy qutrit circuit with measurement and sampling.
-  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
-
 * `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
@@ -391,23 +364,6 @@
 * Extend the device test suite to cover gradient methods, templates and arithmetic observables.
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
   [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
-
-* Add type hints for unimplemented methods of the abstract class `Operator`.
-  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
-
-* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3
-  (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
-  [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
-
- * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation
-  for `preprocess`.
-  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
-
-* Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
-  [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
-
-* Implement `Shots.bins()` method.
-  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
 * A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
