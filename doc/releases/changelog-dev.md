@@ -363,6 +363,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* State measurements preserve `dtype`.
+  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
+
 * Use `SampleMP`s in the `dynamic_one_shot` transform to get back the values of the mid-circuit measurements.
   [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
 
