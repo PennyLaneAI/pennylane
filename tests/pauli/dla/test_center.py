@@ -38,20 +38,33 @@ DLA_CENTERS = (
 
 @pytest.mark.parametrize("ops, true_res", DLA_CENTERS)
 def test_center(ops, true_res):
-    """Test a trivial centers with Identity operators or non-overlapping wires"""
+    """Test centers with Identity operators or non-overlapping wires"""
     res = center(ops)
     assert res == true_res
 
 
 @pytest.mark.parametrize("ops, true_res", DLA_CENTERS)
 def test_center_pauli(ops, true_res):
-    """Test a trivial centers with Identity operators or non-overlapping wires using their pauli_rep"""
+    """Test centers with Identity operators or non-overlapping wires using their pauli_rep"""
     ops = [op.pauli_rep for op in ops]
     res = center(ops, pauli=True)
 
     assert all(isinstance(op, PauliSentence) for op in res)
     true_res = [op.pauli_rep for op in true_res]
     assert res == true_res
+
+@pytest.mark.parametrize("pauli", [False, True])
+def test_center_pauli_word_pauli_True(pauli):
+    """Test that PauliWord instances can be passed for both pauli=True/False""" 
+    ops = [
+        qml.pauli.PauliWord({0: "X"}),
+        qml.pauli.PauliWord({0: "X", 1: "X"}),
+        qml.pauli.PauliWord({1: "Y"})
+    ]
+    if pauli:
+        assert qml.center(ops, pauli=pauli) == [qml.pauli.PauliWord({0: "X"})]
+    else:
+        assert qml.center(ops, pauli=pauli) == [qml.X(0)]
 
 
 GENERATOR_CENTERS = (
