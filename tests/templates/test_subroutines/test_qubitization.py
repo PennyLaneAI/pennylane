@@ -288,7 +288,7 @@ class TestDifferentiability:
 
     @pytest.mark.xfail(reason="see https://github.com/PennyLaneAI/pennylane/issues/5507")
     @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-    def test_legacy_new_opmath_diff():
+    def test_legacy_new_opmath_diff(self):
         coeffs, ops = np.array([0.1, -0.3, -0.3]), [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]
 
         dev = qml.device("default.qubit")
