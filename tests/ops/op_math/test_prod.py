@@ -1653,10 +1653,11 @@ class TestSortWires:
     def test_sorting_operators_with_no_wires(self):
         """Test that sorting can occur when an operator acts on no wires."""
 
-        op_list = [qml.GlobalPhase(0.5), qml.X(0), qml.I(), qml.CNOT((1, 2)), qml.I()]
+        op_list = (qml.GlobalPhase(0.5), qml.X(0), qml.I(), qml.CNOT((1, 2)), qml.I())
 
-        sorted_list = Prod._sort(op_list)
-        assert op_list == sorted_list
+        sorted_list = qml.ops.Prod._sort(op_list)
+        expected = [qml.X(0), qml.CNOT((1, 2)), qml.I(), qml.I(), qml.GlobalPhase(0.5)]
+        assert sorted_list == expected
 
 
 swappable_ops = [
