@@ -166,7 +166,7 @@
 
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-  ```pycon
+  ```python
   >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
   >>> structure_const = qml.structure_constants(dla)
   >>> structure_constp.shape
