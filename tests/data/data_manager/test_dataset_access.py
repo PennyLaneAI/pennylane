@@ -15,6 +15,7 @@
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
 import os
+from typing import NamedTuple
 from pathlib import Path, PosixPath
 from unittest.mock import MagicMock, patch
 
@@ -80,6 +81,11 @@ def get_mock(url, timeout=1.0):
     return resp
 
 
+def head_mock(url):
+    """Return a fake header stating content-length is 1."""
+    return NamedTuple("Head", headers=dict)(headers={"Content-Length": 10000})
+
+
 @pytest.fixture
 def mock_get_args():
     """A Mock object that tracks the arguments passed to ``mock_requests_get``."""
@@ -138,6 +144,7 @@ def mock_load(monkeypatch):
 
 
 @patch.object(requests, "get", get_mock)
+@patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch("pennylane.data.data_manager.sleep")
 @patch("builtins.input")
 class TestLoadInteractive:
@@ -234,7 +241,8 @@ class TestMiscHelpers:
 
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
-    def mock(data_path, dest, attributes, force, block_size):
+    # pylint:disable=too-many-arguments
+    def mock(data_path, dest, attributes, force, block_size, progress):
         dset = Dataset.open(Path(dest), "w")
         dset.close()
 
@@ -243,6 +251,7 @@ def mock_download_dataset(monkeypatch):
     return mock
 
 
+@patch.object(pennylane.data.data_manager, "head", head_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
 @pytest.mark.parametrize(
     "data_name, params, expect_paths",
@@ -271,6 +280,7 @@ def test_load(tmp_path, data_name, params, expect_paths):
     }
 
 
+@patch.object(pennylane.data.data_manager, "head", head_mock)
 def test_load_except(monkeypatch, tmp_path):
     """Test that an exception raised by _download_dataset is propagated."""
     monkeypatch.setattr(
