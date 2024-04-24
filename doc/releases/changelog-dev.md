@@ -344,6 +344,10 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now handle multi-term observables with a constant offset.
+  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+  [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
+
 * `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
 
@@ -571,6 +575,9 @@
 
 * Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
   [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
+
+* `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
+  [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
 
 <h3>Contributors ✍️</h3>
 
