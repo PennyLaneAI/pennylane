@@ -19,10 +19,16 @@ import copy
 from threading import RLock
 
 import pennylane as qml
-from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP, MeasurementProcess
+from pennylane.measurements import (
+    CountsMP,
+    MeasurementProcess,
+    MidMeasureMP,
+    ProbabilityMP,
+    SampleMP,
+)
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
-from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 from pennylane.pytrees import register_pytree
+from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
 
@@ -40,28 +46,39 @@ def _err_msg_for_some_meas_not_qwc(measurements):
     )
 
 
-def _validate_computational_basis_sampling(measurements):
+def _validate_computational_basis_sampling(tape):
     """Auxiliary function for validating computational basis state sampling with other measurements considering the
     qubit-wise commutativity relation."""
+    measurements = tape.measurements
+    n_meas = len(measurements)
+    n_mcms = sum(isinstance(op, MidMeasureMP) for op in tape.operations)
     non_comp_basis_sampling_obs = []
     comp_basis_sampling_obs = []
-    for o in measurements:
+    comp_basis_indices = []
+    for i, o in enumerate(measurements):
         if o.samples_computational_basis:
             comp_basis_sampling_obs.append(o)
+            comp_basis_indices.append(i)
         else:
             non_comp_basis_sampling_obs.append(o)
 
     if non_comp_basis_sampling_obs:
         all_wires = []
         empty_wires = qml.wires.Wires([])
-        for idx, cb_obs in enumerate(comp_basis_sampling_obs):
+        for idx, (cb_obs, global_idx) in enumerate(
+            zip(comp_basis_sampling_obs, comp_basis_indices)
+        ):
             if cb_obs.wires == empty_wires:
                 all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
                 break
-
-            all_wires.append(cb_obs.wires)
+            if global_idx < n_meas - n_mcms:
+                all_wires.append(cb_obs.wires)
             if idx == len(comp_basis_sampling_obs) - 1:
                 all_wires = qml.wires.Wires.all_wires(all_wires)
+
+        # This happens when a MeasurementRegisterMP is the only computational basis state measurement
+        if all_wires == empty_wires:
+            return
 
         with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
             pauliz_for_cb_obs = (
@@ -176,7 +193,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape.samples_computational_basis and len(tape.measurements) > 1:
-        _validate_computational_basis_sampling(tape.measurements)
+        _validate_computational_basis_sampling(tape)
 
     diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     for queue, new_queue in [
