@@ -333,6 +333,9 @@
 
 <h4>Other improvements</h4>
 
+* `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
+  [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
+
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
   the operator it wraps.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
