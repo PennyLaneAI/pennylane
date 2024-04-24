@@ -82,14 +82,14 @@
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
 
-    # initiate the eigenvector
-    qml.PauliX(2)
+      # initiate the eigenvector
+      qml.PauliX(2)
 
-    # apply QPE (used iterative qpe here)
-    measurements = qml.iterative_qpe(
+      # apply QPE (used iterative qpe here)
+      measurements = qml.iterative_qpe(
                     qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
                     )
-    return qml.probs(op = measurements)
+      return qml.probs(op = measurements)
   
   output = circuit()
   

@@ -38,6 +38,7 @@ def _positive_coeffs_hamiltonian(hamiltonian):
         angle = np.pi * (0.5 * (1 - qml.math.sign(coeff)))
         new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
 
+
     return qml.math.abs(coeffs), new_unitaries
 
 
@@ -49,6 +50,7 @@ class Qubitization(Operation):
 
     .. math::
         Q = (2|0\rangle\langle 0| - I) \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}.
+
 
 
     .. seealso:: :class:`~.AmplitudeEmbedding` and :class:`~.Select`.
@@ -68,14 +70,14 @@ class Qubitization(Operation):
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
 
-          # initiate the eigenvector
-          qml.PauliX(2)
+            # initiate the eigenvector
+            qml.PauliX(2)
 
-          # apply QPE (used iterative qpe here)
-          measurements = qml.iterative_qpe(
+            # apply QPE (used iterative qpe here)
+            measurements = qml.iterative_qpe(
                          qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
                          )
-          return qml.probs(op = measurements)
+            return qml.probs(op = measurements)
 
         output = circuit()
 
