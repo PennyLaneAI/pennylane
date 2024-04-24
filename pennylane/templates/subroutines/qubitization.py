@@ -142,7 +142,6 @@ class Qubitization(Operation):
             )
         )
 
-        decomp_ops.append(qml.FlipSign(0, wires=control))
-        decomp_ops.append(qml.GlobalPhase(np.pi))
+        decomp_ops.append(qml.Reflection(qml.Identity(control)))
 
         return decomp_ops
