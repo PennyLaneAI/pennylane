@@ -572,6 +572,9 @@
 * Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
   [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
 
+* `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
+  [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

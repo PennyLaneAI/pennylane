@@ -536,6 +536,11 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     Returns:
         bool: True if operators should be swapped, False otherwise.
     """
+    # one is broadcasted onto all wires.
+    if not op1.wires:
+        return True
+    if not op2.wires:
+        return False
     wires1 = op1.wires
     wires2 = op2.wires
     if wire_map is not None:
