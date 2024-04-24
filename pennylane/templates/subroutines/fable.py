@@ -34,7 +34,7 @@ class FABLE(Operation):
         input_matrix (tensor_like): a :math:`(2^n \times 2^n)` matrix to be encoded,
             where :math:`n` is an integer
         wires (Iterable[int, str], Wires): the wires the operation acts on. The number of wires can
-            be computed as :math:`(2 \times n + 1)`, where the additional wire is for the ancilla
+            be computed as :math:`(2 \times n + 1)`, where the additional wire is an auxiliary wire.
         tol (float): rotation gates that have an angle value smaller than this tolerance are removed
         id (str or None): string representing the operation (optional)
 
