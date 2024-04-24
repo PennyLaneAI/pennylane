@@ -33,42 +33,95 @@
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
-TODO
-
-* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+* The Fast Approximate BLock-Encodings (FABLE) algorithm 
+  (https://arxiv.org/abs/2205.00081) is now accessible via the `qml.FABLE` 
+  template.
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
-* Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
-  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+  The usage of `qml.FABLE` is similar to `qml.BlockEncode` but provides a more
+  efficient circuit construction at the cost of a user-defined approximation 
+  level, `tol`. The number of wires that `qml.FABLE` operates on is `2*n + 1`, 
+  where `n` defines the dimension of the $2^n \times 2^n$ matrix that we want to 
+  block-encode.
 
   ```python
-  @qml.prod
-  def generator(wires):
-        qml.Hadamard(wires=wires)
+  A = np.random.random((2, 2)) # n = 1, 2*n + 1 = 3
+  dev = qml.device('default.qubit')
 
-  U = generator(wires=0)
+  @qml.qnode(dev)
+  def circuit():
+      qml.FABLE(A, tol = 0.1, wires=range(3))
+      return qml.state()
+  ``` 
+
+  ```pycon
+  >>> circuit()
+  tensor([0.29906437+0.j, 0.20579772+0.j, 0.29906437+0.j, 0.20579772+0.j,
+          0.40070002+0.j, 0.45568333+0.j, 0.40070002+0.j, 0.45568333+0.j], requires_grad=True)
+  ```
+
+* Reflecting about a given quantum state is now available via `qml.Reflection`.
+  This operation is very useful in, say, the amplitude amplification algorithm.
+  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+
+  `qml.Reflection` works by providing an operation, $U$, that *prepares* the 
+  desired state, $\vert \psi \rangle$, that we want to reflect about. In other 
+  words, $U$ is such that $U \vert 0 \rangle = \vert \psi \rangle$. 
+  
+  For example, if we want to reflect about 
+  $\vert \psi \rangle = \vert + \rangle$, then $U = H$:
+
+  ```python
+  U = qml.Hadamard(wires=wires)
 
   dev = qml.device('default.qubit')
   @qml.qnode(dev)
   def circuit():
-
-        # Initialize to the state |1>
-        qml.PauliX(wires=0)
-
-        # Apply the reflection
         qml.Reflection(U)
-
         return qml.state()
-
   ```
 
   ```pycon
   >>> circuit()
-  tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
+  tensor([0.-6.123234e-17j, 1.+6.123234e-17j], requires_grad=True)
+  ```
+
+  For cases when $U$ comprises many operations, you can create a quantum 
+  function containing each operation, one per line, then decorate the quantum
+  function with `@qml.prod`:
+
+  ```python
+  @qml.prod
+  def U(wires):
+      qml.Hadamard(wires=wires[0])
+      qml.RY(0.1, wires=wires[1])
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Reflection(U([0, 1]))
+      return qml.state()
+
+  circuit()
+  ```
+
+  ```pycon
+  >>> circuit()
+  tensor([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
+         0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j], requires_grad=True)
   ```
   
-* The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
+* A high-level interface for amplitude amplification and its variants is now 
+  available via the new `qml.AmplitudeAmplification` template.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
+
+  Based on [arXiv:quant-ph/0005055](https://arxiv.org/abs/quant-ph/0005055), 
+  given a state $\vert \Psi \rangle = \alpha \vert \phi \rangle + \beta \vert \phi^{\perp} \rangle$, 
+  `qml.AmplitudeAmplification` amplifies the amplitude of $\vert \phi \rangle$. 
+  Mathematically, 
+  $\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle$.
+
+  
+  TODO
 
   ```python
   @qml.prod
@@ -88,13 +141,11 @@ TODO
       qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
 
       return qml.probs(wires=range(3))
-
   ```
   
   ```pycon
   >>> print(np.round(circuit(), 3))
   [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
-
   ```
 
 <h4>Make use of more methods to map from molecules 🗺️</h4>
