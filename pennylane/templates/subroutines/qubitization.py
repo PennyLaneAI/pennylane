@@ -34,9 +34,9 @@ def _positive_coeffs_hamiltonian(hamiltonian):
 
     coeffs, ops = hamiltonian.terms()
 
-    for i, coeff in enumerate(coeffs):
+    for op, coeff in zip(ops, coeffs):
         angle = np.pi * (0.5 * (1 - qml.math.sign(coeff)))
-        new_unitaries.append(ops[i] @ qml.GlobalPhase(angle, wires=ops[i].wires))
+        new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
 
     return qml.math.abs(coeffs), new_unitaries
 
