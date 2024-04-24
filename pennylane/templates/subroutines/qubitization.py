@@ -131,7 +131,7 @@ class Qubitization(Operation):
         **Example:**
 
         >>> print(qml.Qubitization.compute_decomposition(hamiltonian = 0.1 * qml.Z(0), control = 1))
-        [AmplitudeEmbedding(array([1., 0.]), wires=[1]), Select(ops=(Z(0),), control=<Wires = [1]>), Adjoint(AmplitudeEmbedding(array([1., 0.]), wires=[1])), FlipSign((0,), wires=[0]), GlobalPhase(3.141592653589793, wires=[1])]
+        [AmplitudeEmbedding(array([1., 0.]), wires=[1]), Select(ops=(Z(0),), control=<Wires = [1]>), Adjoint(AmplitudeEmbedding(array([1., 0.]), wires=[1])), Reflection(, wires=[0])]
 
         """
 
