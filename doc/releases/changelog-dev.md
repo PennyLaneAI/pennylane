@@ -353,6 +353,10 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now handle multi-term observables with a constant offset.
+  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+  [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
+
 * `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
 
@@ -433,6 +437,9 @@
 
 * Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
   [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
+
+* `LinearCombination._obs_data` is removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
+  [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
 
 <h3>Deprecations 👋</h3>
 
@@ -577,6 +584,9 @@
 
 * Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
   [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
+
+* `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
+  [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
 
 <h3>Contributors ✍️</h3>
 
