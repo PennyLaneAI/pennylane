@@ -212,6 +212,24 @@ class TestInitialization:
         assert coeffs == coeffs_true
         assert ops1 == ops_true
 
+    def test_terms_pauli_rep_wire_order(self):
+        """Test that the wire order of the terms is the same as the wire order of the original
+        operands when the Sum has a valid pauli_rep"""
+        w0, w1, w2, w3 = [0, 1, 2, 3]
+        coeffs = [0.5, -0.5]
+
+        obs = [
+            qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Z(w3),
+            qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Z(w3),
+        ]
+
+        H = qml.dot(coeffs, obs)
+        _, H_ops = H.terms()
+
+        assert all(o1.wires == o2.wires for o1, o2 in zip(obs, H_ops))
+        assert H_ops[0] == qml.prod(qml.X(w0), qml.Y(w1), qml.X(w2), qml.Z(w3))
+        assert H_ops[1] == qml.prod(qml.X(w0), qml.X(w1), qml.Y(w2), qml.Z(w3))
+
     coeffs_ = [1.0, 1.0, 1.0, 3.0, 4.0, 4.0, 5.0]
     h6 = qml.sum(
         qml.s_prod(2.0, qml.prod(qml.Hadamard(0), qml.PauliZ(10))),
@@ -1317,6 +1335,18 @@ class TestArithmetic:
 
 class TestGrouping:
     """Test grouping functionality of Sum"""
+
+    def test_set_on_initialization(self):
+        """Test that grouping indices can be set on initialization."""
+
+        op = qml.ops.Sum(qml.X(0), qml.Y(1), _grouping_indices=[[0, 1]])
+        assert op.grouping_indices == [[0, 1]]
+        op_ac = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_type="anticommuting")
+        assert op_ac.grouping_indices == ((0,), (1,))
+        with pytest.raises(ValueError, match=r"cannot be specified at the same time."):
+            qml.ops.Sum(
+                qml.X(0), qml.Y(1), grouping_type="anticommuting", _grouping_indices=[[0, 1]]
+            )
 
     def test_non_pauli_error(self):
         """Test that grouping non-Pauli observables is not supported."""
