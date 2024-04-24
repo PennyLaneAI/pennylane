@@ -399,6 +399,16 @@ class TestInitialization:
             qml.matrix(op2, wire_order=hamiltonian.wires),
         )
 
+    def test_queuing(self):
+        """Test that the target operator is removed from the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            H = qml.X(0) + qml.Y(1)
+            op = qml.TrotterProduct(H, time=2)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] is op
+
 
 class TestPrivateFunctions:
     """Test the private helper functions."""
