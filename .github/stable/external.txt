@@ -12,7 +12,7 @@ autograd==1.6.2
 autoray==0.6.9
 Babel==2.14.0
 beautifulsoup4==4.12.3
-black==24.4.0
+black==24.4.1
 bleach==6.1.0
 cachetools==5.3.3
 certifi==2024.2.2
