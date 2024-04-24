@@ -68,18 +68,45 @@ def test_positive_coeffs_hamiltonian(hamiltonian, expected_unitaries):
         assert qml.equal(expected_unitaries[i], unitary)
 
 
-def test_template_definition():
-    """Tests that the Qubitization template is correctly defined.
-    Based on eq.(65): https://arxiv.org/abs/2204.11890"""
+@pytest.mark.parametrize(
+    "hamiltonian",
+    [
+        qml.dot([0.2, -0.5, 0.3], [qml.Y(0) @ qml.X(1), qml.Z(1), qml.X(0) @ qml.Z(2)]),
+        qml.dot([0.3, -0.5, 0.3], [qml.Z(0) @ qml.X(1), qml.X(1), qml.X(0) @ qml.Y(2)]),
+        qml.dot([0.4, -0.5, -0.3], [qml.Z(0) @ qml.X(2), qml.Z(0), qml.X(1) @ qml.Z(2)]),
+    ],
+)
+def test_operator_definition_qpe(hamiltonian):
+    """Tests Check that we can obtain the eigenvalues of H by applying the Qubitization Operator."""
 
-    H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
-    lambda_ = sum([abs(term) for term in H.terms()[0]])
+    from scipy.signal import find_peaks
 
-    diag_H = np.diag(qml.matrix(H))
-    diag_Q = np.diag(
-        qml.matrix(qml.Qubitization(H, control=[3, 4]), wire_order=[3, 4, 0, 1, 2])[:8, :8]
-    )
-    assert np.allclose(diag_H, diag_Q * lambda_)
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit(theta):
+
+        # initial state
+        qml.RX(theta[2], wires=0)
+        qml.CRY(theta[3], wires=[0, 2])
+        qml.RY(theta[0], wires=2)
+        qml.CRY(theta[4], wires=[1, 2])
+        qml.RX(theta[1], wires=1)
+
+        # apply QPE (used iterative qpe here)
+        measurements = qml.iterative_qpe(
+            qml.Qubitization(hamiltonian, control=[3, 4]), ancilla=5, iters=8
+        )
+
+        return qml.probs(op=measurements)
+
+    theta = np.array([0.1, 0.2, 0.3, 0.4, 0.5]) * 100
+
+    peaks, _ = find_peaks(circuit(theta))
+
+    # Calculates the eigenvalues from the obtained output
+    lamb = sum([abs(c) for c in hamiltonian.terms()[0]])
+    estimated_eigenvalues = lamb * np.cos(2 * np.pi * peaks / 2**8)
+
+    assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
