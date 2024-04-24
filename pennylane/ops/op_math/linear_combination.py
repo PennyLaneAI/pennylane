@@ -100,14 +100,11 @@ class LinearCombination(Sum):
 
     def _flatten(self):
         # note that we are unable to restore grouping type or method without creating new properties
-        return (self._coeffs, self._ops, self.data), (self.grouping_indices,)
+        return self.terms(), (self.grouping_indices,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        new_op = cls(data[0], data[1])
-        new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
-        new_op.data = data[2]
-        return new_op
+        return cls(data[0], data[1], _grouping_indices=metadata[0])
 
     def __init__(
         self,
@@ -116,6 +113,7 @@ class LinearCombination(Sum):
         simplify=False,
         grouping_type=None,
         method="rlf",
+        _grouping_indices=None,
         _pauli_rep=None,
         id=None,
     ):
@@ -147,7 +145,12 @@ class LinearCombination(Sum):
             operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
 
         super().__init__(
-            *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
+            *operands,
+            grouping_type=grouping_type,
+            method=method,
+            id=id,
+            _grouping_indices=_grouping_indices,
+            _pauli_rep=_pauli_rep,
         )
 
     @staticmethod
