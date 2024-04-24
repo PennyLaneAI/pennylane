@@ -44,10 +44,21 @@ class TestLabelling:
         assert split_str[1][:6] == "    a:"
         assert split_str[2][:6] == "1.234:"
 
-    def test_wire_order(self):
+    @pytest.mark.parametrize("as_qnode", (True, False))
+    def test_wire_order(self, as_qnode):
         """Test wire_order keyword changes order of the wires."""
 
-        split_str = draw(circuit, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
+        def f(x, y, z):
+            """A quantum circuit on three wires."""
+            qml.RX(x, wires=0)
+            qml.RY(y, wires="a")
+            qml.RZ(z, wires=1.234)
+            return qml.expval(qml.PauliZ(0))
+
+        if as_qnode:
+            f = qml.QNode(f, qml.device("default.qubit", wires=(0, "a", 1.234)))
+
+        split_str = draw(f, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
         assert split_str[0][:6] == "1.234:"
         assert split_str[1][:6] == "    a:"
         assert split_str[2][:6] == "    0:"
