@@ -6,7 +6,6 @@
 
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
-
 * Added `error` method to `QuantumPhaseEstimation` template.
   [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
 
@@ -96,27 +95,38 @@
 
   ```
 
-<h4>Make use of more methods to map from molecules 🗺️</h4>
+<h4>More methods to map molecules to qubits 🗺️</h4>
 
-TODO
-
-* Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
+* A new function called `qml.fermi.bravyi_kitaev` has been added to map fermionic 
+  Hamiltonians to qubit Hamiltonians.
   [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
-  ```python
-  import pennylane as qml
-  fermi_ham = qml.fermi.from_string('0+ 1-')
-
-  qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
-  ```
+  In addition to `qml.fermi.jordan_wigner` and `qml.fermi.parity_transform`, the
+  Bravyi-Kitaev mapping is available via `qml.fermi.bravyi_kitaev` to map
+  fermionic Hamiltonians to qubit Hamiltonians. Simply provide a fermionic 
+  Hamiltonian (created from `from_string`, `FermiA`, `FermiC`, `FermiSentence`, 
+  or `FermiWord`) and the number of qubits / spin orbitals in the system, `n`:
 
   ```pycon
+  >>> fermi_ham = qml.fermi.from_string('0+ 1-')
+  >>> qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
   >>> print(qubit_ham)
   -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
   ```
 
-* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
+* The `qml.qchem.hf_state` function has been upgraded to be compatible with
+  `qml.fermi.parity_transform` and the new Bravyi-Kitaev mapping 
+  (`qml.fermi.bravyi_kitaev`).
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
+
+  ```pycon
+  >>> state_bk = qml.qchem.hf_state(2, 6, basis="bravyi_kitaev")
+  >>> print(state_bk)
+  [1 0 0 0 0 0]
+  >>> state_parity = hf_state(2, 6, basis="parity")
+  >>> print(state_parity)
+  [1 0 0 0 0 0]
+  ```
 
 <h4>Calculate dynamical Lie algebras 👾</h4>
 
