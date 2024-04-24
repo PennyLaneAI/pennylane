@@ -301,6 +301,9 @@
 * Operators can now be automatically captured by `jax.make_jaxpr` via use of the new `qml.capture.PLXPRMeta`.
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
 
+* `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
+  [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
@@ -363,6 +366,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* State measurements preserve `dtype`.
+  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
+
 * Use `SampleMP`s in the `dynamic_one_shot` transform to get back the values of the mid-circuit measurements.
   [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
 
@@ -422,6 +428,9 @@
 * Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
   [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
 
+* `LinearCombination._obs_data` is removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
+  [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
+
 <h3>Deprecations 👋</h3>
 
 * `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
@@ -465,6 +474,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
+  now de-queue their input observable.
+  [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
+
 * (In)equality of `qml.HilbertSchmidt` instances is now reported correctly by `qml.equal`.
   [(#5538)](https://github.com/PennyLaneAI/pennylane/pull/5538)
 
@@ -473,6 +486,7 @@
 
 * `qml.counts` no longer returns negative samples when measuring 8 or more wires.
   [(#5544)](https://github.com/PennyLaneAI/pennylane/pull/5544)
+  [(#5556)](https://github.com/PennyLaneAI/pennylane/pull/5556)
 
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)

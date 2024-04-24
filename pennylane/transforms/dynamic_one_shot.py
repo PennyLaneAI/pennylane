@@ -381,5 +381,5 @@ def gather_mcm(measurement, samples):
         meas_tmp = measurement.__class__(wires=wires)
     new_measurement = meas_tmp.process_samples(mcm_samples, wire_order=wires)
     if isinstance(measurement, CountsMP) and not use_as_is:
-        new_measurement = dict(sorted((int(x, 2), y) for x, y in new_measurement.items()))
+        new_measurement = dict(sorted((int(x), y) for x, y in new_measurement.items()))
     return new_measurement
