@@ -348,22 +348,6 @@
   which results in faster computation of the matrix.
   [(5392)](https://github.com/PennyLaneAI/pennylane/pull/5392)
 
-* `qml.specs` and `qml.Tracker` now return information about algorithmic errors for the qnode as well.
-  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
-  [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
-
-* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
-  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
-
-* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
-  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
-
-<h4>Community contributions 🥳</h4>
-
-* Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
- `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
-  [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
-
 * `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
 
