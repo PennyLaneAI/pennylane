@@ -566,6 +566,7 @@
 
 * Allows `default.qubit` to measure Identity on no wires, and observables containing Identity on
   no wires.
+  [(#5570)](https://github.com/PennyLaneAI/pennylane/pull/5570/)
 
 * Fixes a bug where `TorchLayer` does not work with shot vectors.
   [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)

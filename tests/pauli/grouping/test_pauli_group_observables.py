@@ -441,6 +441,34 @@ class TestGroupObservables:
 
         assert all(isinstance(o, qml.ops.Prod) for g in old_groups for o in g)
 
+    def test_observables_on_no_wires(self):
+        """Test that observables on no wires are stuck in the first group."""
+
+        observables = [
+            qml.I(),
+            qml.X(0) @ qml.Y(1),
+            qml.Z(0),
+            2 * qml.I(),
+        ]
+
+        groups = group_observables(observables)
+        assert groups == [[qml.X(0) @ qml.Y(1), qml.I(), 2 * qml.I()], [qml.Z(0)]]
+
+    def test_observables_on_no_wires_coeffs(self):
+        """Test that observables on no wires are stuck in the first group and
+        coefficients are tracked when provided."""
+
+        observables = [
+            qml.X(0),
+            qml.Z(0),
+            2 * qml.I(),
+            qml.I() @ qml.I(),
+        ]
+        coeffs = [1, 2, 3, 4]
+        groups, out_coeffs = group_observables(observables, coeffs)
+        assert groups == [[qml.X(0), 2 * qml.I(), qml.I() @ qml.I()], [qml.Z(0)]]
+        assert out_coeffs == [[1, 3, 4], [2]]
+
 
 class TestDifferentiable:
     """Tests that grouping observables is differentiable with respect to the coefficients."""

@@ -56,6 +56,12 @@ def expval(
     Returns:
         ExpectationMP: measurement process instance
     """
+    if isinstance(op, qml.Identity) and len(op.wires) == 0:
+        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+        raise NotImplementedError(
+            "Expectation values of qml.Identity() without wires are currently not allowed."
+        )
+
     if isinstance(op, MeasurementValue):
         return ExpectationMP(obs=op)
 

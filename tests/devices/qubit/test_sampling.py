@@ -509,6 +509,35 @@ class TestMeasureSamples:
         assert result.shape == ()
         assert result == -1.0
 
+    def test_identity_on_no_wires(self):
+        """Test that measure_with_samples can handle observables on no wires when no other measurements exist."""
+
+        state = np.array([0, 1])
+        mp = qml.expval(qml.I())
+
+        [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
+        assert qml.math.allclose(result, 1.0)
+
+    def test_identity_on_no_wires_with_other_observables(self):
+        """Test that measuring an identity on no wires can be used in conjunction with other measurements."""
+
+        state = np.array([0, 1])
+
+        mps = [qml.expval(2 * qml.I()), qml.expval(qml.Z(0)), qml.probs(wires=0)]
+
+        results = measure_with_samples(mps, state, qml.measurements.Shots(1))
+        assert qml.math.allclose(results[0], 2.0)
+        assert qml.math.allclose(results[1], -1.0)
+
+    def test_measuring_sum_with_identity_on_no_wires(self):
+        """Test that we can measure a sum with an identity on no wires."""
+
+        state = np.array([0, 1])
+
+        mp = qml.expval(qml.Z(0) + 2 * qml.I())
+        [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
+        assert qml.math.allclose(result, 1)  # -1 + 2
+
 
 class TestInvalidStateSamples:
     """Tests for state vectors containing nan values or shot vectors with zero shots."""
