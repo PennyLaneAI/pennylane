@@ -6,6 +6,7 @@
 
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
+
 * Added `error` method to `QuantumPhaseEstimation` template.
   [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
 
@@ -31,6 +32,7 @@
 
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
+
 
 * The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
@@ -96,6 +98,7 @@
 
 <h4>Make use of more methods to map from molecules 🗺️</h4>
 
+
 * Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
   [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
@@ -115,6 +118,7 @@
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
 <h4>Calculate dynamical Lie algebras 👾</h4>
+
 
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
@@ -175,6 +179,7 @@
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
+
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
  `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
@@ -191,6 +196,7 @@
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
 <h4>Work easily and efficiently with operators 🔧</h4>
+
 
 <h3>Improvements 🛠</h3>
 
