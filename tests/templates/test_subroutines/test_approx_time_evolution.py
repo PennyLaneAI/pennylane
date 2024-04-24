@@ -47,6 +47,17 @@ def test_flatten_unflatten():
     assert new_op is not op
 
 
+def test_queuing():
+    """Test that ApproxTimeEvolution de-queues the input hamiltonian."""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        H = qml.X(0) + qml.Y(1)
+        op = qml.ApproxTimeEvolution(H, 0.1, n=20)
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -66,7 +77,7 @@ class TestDecomposition:
             ),
             (
                 2,
-                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliZ("b") @ qml.PauliX("a")]),
+                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliX("a") @ qml.PauliZ("b")]),
                 2,
                 [
                     qml.PauliRot(4.0, "X", wires=["a"]),
@@ -87,7 +98,7 @@ class TestDecomposition:
                     [2, 0.5, 0.5],
                     [
                         qml.PauliX("a"),
-                        qml.PauliZ(-15) @ qml.PauliX("a"),
+                        qml.PauliX("a") @ qml.PauliZ(-15),
                         qml.Identity(0) @ qml.PauliY(-15),
                     ],
                 ),
