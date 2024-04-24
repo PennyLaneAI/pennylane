@@ -16,31 +16,69 @@ Contains functions for querying available datasets and downloading
 them.
 """
 
-import typing
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from pathlib import Path
+from threading import RLock
 from time import sleep
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple, Iterable, Mapping
 
-from requests import get
+from requests import get, head
 
 try:
-    from tqdm import tqdm
+    from rich.progress import (
+        Progress,
+        FileSizeColumn,
+        TextColumn,
+        BarColumn,
+        TaskProgressColumn,
+    )
+
+    _PROGRESS_COLUMNS = (
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        FileSizeColumn(),
+    )
 except ImportError:
-    from contextlib import contextmanager
+    _PROGRESS_COLUMNS = ()
 
-    class DummyPBar:  # pylint:disable=too-few-public-methods
-        """Dummy progress-bar object."""
+    class Progress:
+        """A simple implementation of Progress that just writes to stdout with carriage-return."""
 
-        def update(self, *_):
-            """Update the progress bar."""
+        __task_name = None
+        __current = 0
+        __total = None
+        __fstring = None
 
-    @contextmanager
-    def tqdm(**_):
-        """Dummy tqdm context manager."""
-        yield DummyPBar()
+        def __init__(self, **_):
+            super().__init__()
+
+        def __enter__(self, *_, **__):
+            return self
+
+        def __exit__(self, *_, **__):
+            print(f"{self.__task_name} {self.__total}/{self.__total} KB")
+
+        def add_task(self, task_name: str, total: float):
+            """Implement an add_task method."""
+            if self.__task_name is not None:
+                raise ValueError("non-rich progress bar can only handle one task")
+            self.__task_name = task_name
+            self.__total = f"{total:0.2f}"
+            self.__fstring = "{:>" + str(len(self.__total)) + ".2f}"
+            print(f"{self.__task_name} {self.__fstring.format(0)}/{self.__total} KB", end="\r")
+
+        def update(self, task_id, advance: float):  # pylint:disable=unused-argument
+            """Implement an update method."""
+            if self.__task_name is None:
+                raise ValueError("no task found to update")
+            self.__current += advance
+            print(
+                f"{self.__task_name} {self.__fstring.format(self.__current)}/{self.__total} KB",
+                end="\r",
+            )
 
 
 from pennylane.data.base import Dataset
@@ -52,6 +90,7 @@ from .params import DEFAULT, FULL, format_params
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
 DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
+__RLOCK = RLock()
 
 
 @lru_cache(maxsize=1)
@@ -75,7 +114,7 @@ def _get_data_struct():
 def _download_partial(
     s3_url: str,
     dest: Path,
-    attributes: Optional[typing.Iterable[str]],
+    attributes: Optional[Iterable[str]],
     overwrite: bool,
     block_size: int,
 ) -> None:
@@ -126,12 +165,13 @@ def _download_full(s3_url: str, dest: Path):
         f.write(resp.content)
 
 
-def _download_dataset(
+def _download_dataset(  # pylint:disable=too-many-arguments
     data_path: DataPath,
     dest: Path,
-    attributes: Optional[typing.Iterable[str]],
+    attributes: Optional[Iterable[str]],
     block_size: int,
     force: bool = False,
+    progress: Optional[Tuple[Progress, int, float]] = None,
 ) -> None:
     """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
     only requested attributes. If ``attributes`` is not provided, every attribute
@@ -139,6 +179,9 @@ def _download_dataset(
 
     If any of the attributes of the remote dataset are already downloaded locally,
     they will not be overwritten unless ``force`` is True.
+
+    If a progress tuple is provided, it will update a progress bar. The kwarg is
+    of the format (Progress, TaskID, file_size)
     """
 
     # URL-escape special characters like '+', '$', and '%' in the data path
@@ -152,8 +195,13 @@ def _download_dataset(
     else:
         _download_full(s3_url, dest=dest)
 
+    if progress:
+        pbar, task, size = progress
+        with __RLOCK:
+            pbar.update(task, advance=size)
 
-def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.Iterable[str]):
+
+def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
     """Checks that ``attributes`` contains only valid attributes for the given
     ``data_name``. If any attributes do not exist, raise a ValueError."""
     invalid_attributes = [
@@ -172,7 +220,7 @@ def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.I
 
 def load(  # pylint: disable=too-many-arguments
     data_name: str,
-    attributes: Optional[typing.Iterable[str]] = None,
+    attributes: Optional[Iterable[str]] = None,
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
     num_threads: int = 50,
@@ -278,7 +326,13 @@ def load(  # pylint: disable=too-many-arguments
     for path_parents in set(path.parent for path in dest_paths):
         path_parents.mkdir(parents=True, exist_ok=True)
 
-    with tqdm(total=len(data_paths)) as pbar:
+    file_sizes = [
+        int(head(f"{S3_URL}/{urllib.parse.quote(str(p))}").headers["Content-Length"]) / 1000
+        for p in data_paths
+    ]
+
+    with Progress(*_PROGRESS_COLUMNS, refresh_per_second=1000) as pbar:
+        pbar_task = pbar.add_task(f"{data_name} data:", total=sum(file_sizes))
         with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
             futures = [
                 pool.submit(
@@ -288,13 +342,13 @@ def load(  # pylint: disable=too-many-arguments
                     attributes,
                     force=force,
                     block_size=block_size,
+                    progress=(pbar, pbar_task, file_size),
                 )
-                for data_path, dest_path in zip(data_paths, dest_paths)
+                for data_path, dest_path, file_size in zip(data_paths, dest_paths, file_sizes)
             ]
             for result in as_completed(futures, timeout=60):
                 if result.exception() is not None:
                     raise result.exception()
-                pbar.update(1)
 
     return [Dataset.open(Path(dest_path), "a") for dest_path in dest_paths]
 
@@ -332,7 +386,7 @@ def list_datasets() -> dict:
         to Paths to a list of the parameters."""
         value = next(iter(foldermap.values()))
 
-        if not isinstance(value, typing.Mapping):
+        if not isinstance(value, Mapping):
             return sorted(foldermap.keys())
 
         return {param: remove_paths(foldermap[param]) for param in foldermap.keys()}
