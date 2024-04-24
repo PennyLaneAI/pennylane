@@ -325,7 +325,6 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-
         gen = (
             (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix(), op.wires)
             for op in self
