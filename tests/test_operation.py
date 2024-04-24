@@ -2831,6 +2831,18 @@ def test_op_arithmetic_toggle():
         assert not qml.operation.active_new_opmath()
         assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
+def test_disable_enable_new_opmath():
+    """Test that disabling and re-enabling new opmath works and raises the correct warning"""
+    with pytest.warns(UserWarning, match="Disabling the new Operator arithmetic"):
+        qml.operation.disable_new_opmath()
+    
+    assert not qml.operation.active_new_opmath()
+
+    with pytest.warns(UserWarning, match="re-enabling the new Operator arithmetic system after disabling it is not advised"):
+        qml.operation.enable_new_opmath()
+    
+    assert qml.operation.active_new_opmath()
+
 
 def test_docstring_example_of_operator_class(tol):
     """Tests an example of how to create an operator which is used in the
