@@ -513,7 +513,7 @@ class TestMeasureSamples:
         """Test that measure_with_samples can handle observables on no wires when no other measurements exist."""
 
         state = np.array([0, 1])
-        mp = qml.expval(qml.I())
+        mp = qml.measurements.ExpectationMP(qml.I())
 
         [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
         assert qml.math.allclose(result, 1.0)
@@ -523,7 +523,11 @@ class TestMeasureSamples:
 
         state = np.array([0, 1])
 
-        mps = [qml.expval(2 * qml.I()), qml.expval(qml.Z(0)), qml.probs(wires=0)]
+        mps = [
+            qml.measurements.ExpectationMP(2 * qml.I()),
+            qml.expval(qml.Z(0)),
+            qml.probs(wires=0),
+        ]
 
         results = measure_with_samples(mps, state, qml.measurements.Shots(1))
         assert qml.math.allclose(results[0], 2.0)

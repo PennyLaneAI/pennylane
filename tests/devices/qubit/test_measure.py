@@ -193,10 +193,10 @@ class TestMeasurements:
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
         state = np.random.random([2, 2, 2])
-        out = measure(qml.expval(qml.I()), state)
+        out = measure(qml.measurements.ExpectationMP(qml.I()), state)
         assert qml.math.allclose(out, 1.0)
 
-        out2 = measure(qml.expval(2 * qml.I()), state)
+        out2 = measure(qml.measurements.ExpectationMP(2 * qml.I()), state)
         assert qml.math.allclose(out2, 2)
 
 
