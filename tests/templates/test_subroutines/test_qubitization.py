@@ -73,7 +73,7 @@ def test_positive_coeffs_hamiltonian(hamiltonian, expected_unitaries):
     [
         qml.dot([0.2, -0.5, 0.3], [qml.Y(0) @ qml.X(1), qml.Z(1), qml.X(0) @ qml.Z(2)]),
         qml.dot([0.3, -0.5, 0.3], [qml.Z(0) @ qml.X(1), qml.X(1), qml.X(0) @ qml.Y(2)]),
-        qml.dot([0.4, -0.5, -0.3], [qml.Z(0) @ qml.X(2), qml.Z(0), qml.X(1) @ qml.Z(2)]),
+        qml.dot([0.4, -0.5, -0.3], [qml.Z(0) @ qml.X(2), qml.Y(0), qml.X(1) @ qml.Z(2)]),
     ],
 )
 def test_operator_definition_qpe(hamiltonian):
@@ -90,6 +90,7 @@ def test_operator_definition_qpe(hamiltonian):
         qml.RY(theta[0], wires=2)
         qml.CRY(theta[4], wires=[1, 2])
         qml.RX(theta[1], wires=1)
+        qml.CRX(theta[2], wires=[2, 0])
 
         # apply QPE (used iterative qpe here)
         measurements = qml.iterative_qpe(
@@ -107,6 +108,13 @@ def test_operator_definition_qpe(hamiltonian):
     estimated_eigenvalues = lamb * np.cos(2 * np.pi * peaks / 2**8)
 
     assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
+
+
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    H = qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)])
+    op = qml.Qubitization(H, control=[3, 4])
+    qml.ops.functions.assert_valid(op)
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")

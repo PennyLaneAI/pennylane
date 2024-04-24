@@ -94,10 +94,23 @@ class Qubitization(Operation):
 
         self._hyperparameters = {
             "hamiltonian": hamiltonian,
-            "control": control,
+            "control": qml.wires.Wires(control),
         }
 
         super().__init__(wires=wires, id=id)
+
+    def _flatten(self):
+        data = (self.hyperparameters["hamiltonian"],)
+        metadata = tuple(
+            (key, value) for key, value in self.hyperparameters.items() if key != "hamiltonian"
+        )
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        hamiltonian = data[0]
+        hyperparams_dict = dict(metadata)
+        return cls(hamiltonian, **hyperparams_dict)
 
     @staticmethod
     def compute_decomposition(*_, **kwargs):  # pylint: disable=arguments-differ
