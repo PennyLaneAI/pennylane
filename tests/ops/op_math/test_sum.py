@@ -662,6 +662,12 @@ class TestProperties:
         sum_op = sum_method(*ops_lst)
         assert sum_op._queue_category is None  # pylint: disable=protected-access
 
+    def test_eigvals_Identity_no_wires(self):
+        """Test that the eigenvalues can be computed for a sum containing an identity with no wires."""
+        op1 = qml.X(0) + 2 * qml.I()
+        op2 = qml.X(0) + 2 * qml.I(0)
+        assert qml.math.allclose(sorted(op1.eigvals()), sorted(op2.eigvals()))
+
     def test_eigendecompostion(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))

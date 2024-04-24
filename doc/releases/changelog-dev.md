@@ -461,6 +461,9 @@
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
 
+* Allows `default.qubit` to measure Identity on no wires, and observables containing Identity on
+  no wires.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

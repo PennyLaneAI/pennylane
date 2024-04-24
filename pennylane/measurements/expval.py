@@ -105,6 +105,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
@@ -127,6 +129,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # arithmetic operators
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
         with qml.queuing.QueuingManager.stop_recording():
             prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
