@@ -285,7 +285,7 @@ class Prod(CompositeOp):
     def obs(self):
         r"""Access the operands of a ``Prod`` instance"""
         # This is temporary property to smoothen the transition to the new operator arithmetic system.
-        # In particular, now that the __matmul__ (@ python operator) method between operators generates Prod instead of Tensor instances.
+        # In particular, the __matmul__ (@ python operator) method between operators now generates Prod instead of Tensor instances.
         warnings.warn(
             "Accessing the terms of a tensor product operator via op.obs is deprecated, please use op.operands instead.",
             qml.PennyLaneDeprecationWarning,
