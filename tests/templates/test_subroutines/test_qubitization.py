@@ -95,28 +95,6 @@ def test_legacy_new_opmath():
     assert np.allclose(matrix_H1, matrix_H2)
 
 
-@pytest.mark.xfail(reason="see https://github.com/PennyLaneAI/pennylane/issues/5507")
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_legacy_new_opmath_diff():
-    coeffs, ops = np.array([0.1, -0.3, -0.3]), [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]
-
-    dev = qml.device("default.qubit")
-
-    @qml.qnode(dev)
-    def circuit_dot(coeffs):
-        H = qml.dot(coeffs, ops)
-        qml.Qubitization(H, control=[3, 4])
-        return qml.expval(qml.PauliZ(0))
-
-    @qml.qnode(dev)
-    def circuit_Hamiltonian(coeffs):
-        H = qml.Hamiltonian(coeffs, ops)
-        qml.Qubitization(H, control=[3, 4])
-        return qml.expval(qml.PauliZ(0))
-
-    assert np.allclose(qml.grad(circuit_dot)(coeffs), qml.grad(circuit_Hamiltonian)(coeffs))
-
-
 @pytest.mark.parametrize(
     "hamiltonian, expected_decomposition",
     (
@@ -238,7 +216,9 @@ class TestDifferentiability:
         assert np.allclose(jac, self.exp_grad, atol=0.01)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("shots", [None])
+    @pytest.mark.parametrize(
+        "shots", [None]
+    )  # TODO: finite shots fails because products are not currently differentiable in this case.
     def test_qnode_torch(self, shots):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
@@ -272,3 +252,24 @@ class TestDifferentiability:
         jac = tape.gradient(res, params)
         assert qml.math.shape(jac) == (4,)
         assert qml.math.allclose(res, self.exp_grad, atol=0.001)
+
+    @pytest.mark.xfail(reason="see https://github.com/PennyLaneAI/pennylane/issues/5507")
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+    def test_legacy_new_opmath_diff():
+        coeffs, ops = np.array([0.1, -0.3, -0.3]), [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit_dot(coeffs):
+            H = qml.dot(coeffs, ops)
+            qml.Qubitization(H, control=[3, 4])
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def circuit_Hamiltonian(coeffs):
+            H = qml.Hamiltonian(coeffs, ops)
+            qml.Qubitization(H, control=[3, 4])
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.allclose(qml.grad(circuit_dot)(coeffs), qml.grad(circuit_Hamiltonian)(coeffs))
