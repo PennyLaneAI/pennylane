@@ -94,7 +94,7 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_ke
             binomial_fn = np.random.binomial if rng is None else rng.binomial
 
         postselected_shots = (
-            [binomial_fn(s, float(norm**2)) for s in shots]
+            [int(binomial_fn(s, float(norm**2))) for s in shots]
             if not qml.math.is_abstract(norm)
             else shots
         )
@@ -121,8 +121,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
-            will be for sampling.
+            If None, a ``numpy.random.default_rng`` will be for sampling.
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
