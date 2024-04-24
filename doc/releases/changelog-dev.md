@@ -281,9 +281,6 @@
   In particular, this aims at preventing breaking code that uses `Tensor.obs`. This is immediately deprecated.
   Moving forward, we recommend using `op.operands`.
   [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
-
-* Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
-  [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
   
 * `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
