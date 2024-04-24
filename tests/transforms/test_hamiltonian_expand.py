@@ -415,7 +415,10 @@ class TestHamiltonianExpand:
         def circuit():
             return qml.expval(H)
 
-        assert qml.math.allclose(circuit(), 4.0)
+        with dev.tracker:
+            res = circuit()
+        assert dev.tracker.totals == {}
+        assert qml.math.allclose(res, 4.0)
 
 
 with AnnotatedQueue() as s_tape1:
@@ -664,7 +667,9 @@ class TestSumExpand:
         def circuit():
             return qml.expval(qml.s_prod(1.5, qml.I(0)))
 
-        res = circuit()
+        with _dev.tracker:
+            res = circuit()
+        assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, 1.5)
 
     @pytest.mark.parametrize("grouping", [True, False])
@@ -678,7 +683,9 @@ class TestSumExpand:
         def circuit():
             return qml.expval(qml.s_prod(1.5, qml.I())), qml.expval(qml.s_prod(2.5, qml.I()))
 
-        res = circuit()
+        with _dev.tracker:
+            res = circuit()
+        assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, [1.5, 2.5])
 
     @pytest.mark.parametrize("grouping", [True, False])
