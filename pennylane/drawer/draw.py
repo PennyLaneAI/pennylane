@@ -230,7 +230,14 @@ def draw(
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
-        _wire_order = wire_order or tape.wires
+
+        if wire_order:
+            _wire_order = wire_order
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_text(
             tape,
@@ -273,7 +280,15 @@ def _draw_qnode(
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires or qnode.tape.wires
+        if wire_order:
+            _wire_order = wire_order
+        elif qnode.device.wires:
+            _wire_order = qnode.device.wires
+        else:
+            try:
+                _wire_order = sorted(tapes[0].wires)
+            except TypeError:
+                _wire_order = tapes[0].wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -547,7 +562,13 @@ def draw_mpl(
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
-        _wire_order = wire_order or tape.wires
+        if wire_order:
+            _wire_order = wire_order
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_mpl(
             tape,
@@ -592,7 +613,15 @@ def _draw_mpl_qnode(
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires or tape.wires
+        if wire_order:
+            _wire_order = wire_order
+        elif qnode.device.wires:
+            _wire_order = qnode.device.wires
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_mpl(
             tape,
