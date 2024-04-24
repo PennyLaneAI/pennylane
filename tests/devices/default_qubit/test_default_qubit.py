@@ -1892,7 +1892,11 @@ class TestPostselection:
         if use_jit:
             pytest.skip("Cannot JIT while mocking function.")
 
-        dev = qml.device("default.qubit", seed=42)
+        # Setting the device RNG to None forces the functions to use the global Numpy random
+        # module rather than the functions directly exposed by a local RNG. This makes
+        # mocking easier.
+        dev = qml.device("default.qubit")
+        dev._rng = None
         param = qml.math.asarray(param, like=interface)
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
