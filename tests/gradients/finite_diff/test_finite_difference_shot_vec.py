@@ -27,8 +27,6 @@ from pennylane.operation import Observable, AnyWires
 
 # pylint:disable = use-implicit-booleaness-not-comparison
 
-h_val = 0.1
-
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([1000000] * 3)
 
@@ -58,7 +56,7 @@ class TestFiniteDiff:
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = finite_diff(tape, h=h_val)
+        tapes, fn = finite_diff(tape)
 
         all_res = fn(dev.execute(tapes))
 
@@ -86,7 +84,7 @@ class TestFiniteDiff:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = finite_diff(tape, h=h_val)
+        tapes, fn = finite_diff(tape)
         all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
@@ -119,7 +117,7 @@ class TestFiniteDiff:
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.finite_diff(tape, h=h_val)
+            g_tapes, post_processing = qml.gradients.finite_diff(tape)
         all_res = post_processing(qml.execute(g_tapes, dev, None))
         assert len(all_res) == len(default_shot_vector)
 
@@ -143,7 +141,7 @@ class TestFiniteDiff:
         tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.finite_diff(tape, h=h_val)
+            g_tapes, post_processing = qml.gradients.finite_diff(tape)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -163,7 +161,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.finite_diff(circuit, h=h_val)(weights)
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -179,7 +177,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.finite_diff(circuit, h=h_val)(weights)
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -195,7 +193,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.finite_diff(circuit, h=h_val)(weights)
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -211,7 +209,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.finite_diff(circuit, h=h_val)(weights)
+            qml.gradients.finite_diff(circuit)(weights)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -225,7 +223,7 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        all_result = qml.gradients.finite_diff(circuit, h=h_val)(params)
+        all_result = qml.gradients.finite_diff(circuit)(params)
         assert len(all_result) == len(default_shot_vector)
 
         for result in all_result:
@@ -258,7 +256,7 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        all_result = qml.gradients.finite_diff(circuit, h=h_val)(params)
+        all_result = qml.gradients.finite_diff(circuit)(params)
         assert len(all_result) == len(many_shots_shot_vector)
 
         for result in all_result:
@@ -306,7 +304,7 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
-        tapes, _ = finite_diff(tape, approx_order=1, h=h_val)
+        tapes, _ = finite_diff(tape, approx_order=1)
 
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
@@ -322,7 +320,7 @@ class TestFiniteDiff:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         f0 = dev.execute(tape)
-        tapes, _ = finite_diff(tape, approx_order=1, f0=f0, h=h_val)
+        tapes, _ = finite_diff(tape, approx_order=1, f0=f0)
 
         assert len(tapes) == tape.num_params
 
@@ -343,14 +341,14 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(1))
 
         tape2 = qml.tape.QuantumScript.from_queue(q2, shots=many_shots_shot_vector)
-        tapes, fn = finite_diff(tape1, approx_order=1, h=h_val)
+        tapes, fn = finite_diff(tape1, approx_order=1)
         with qml.Tracker(dev) as tracker:
             j1 = fn(dev.execute(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
         assert tracker.totals["executions"] == 2
 
-        tapes, fn = finite_diff(tape2, approx_order=1, h=h_val)
+        tapes, fn = finite_diff(tape2, approx_order=1)
         j2 = fn(dev.execute(tapes))
 
         exp = -np.sin(1)
@@ -395,7 +393,7 @@ class TestFiniteDiff:
         x = np.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
-        transform = [qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x)) for c in circuits]
+        transform = [qml.math.shape(qml.gradients.finite_diff(c)(x)) for c in circuits]
         expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 3, 4), (3, 1, 3, 4), (3, 2, 3, 4)]
         assert all(t == q for t, q in zip(transform, expected))
 
@@ -541,7 +539,6 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
         )
         all_res = fn(dev.execute(tapes))
 
@@ -583,7 +580,6 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
         )
         all_res = fn(dev.execute(tapes))
 
@@ -629,7 +625,6 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
         )
         all_res = fn(dev.execute(tapes))
 
@@ -678,7 +673,6 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
         )
         all_res = fn(dev.execute(tapes))
 
@@ -718,7 +712,6 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
         )
         all_res = fn(dev.execute(tapes))
 
@@ -761,7 +754,6 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
         )
         all_res = fn(dev.execute(tapes))
 
@@ -787,6 +779,7 @@ class TestFiniteDiffIntegration:
     def test_prob_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        np.random.seed(239)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -804,7 +797,6 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
         )
         all_res = fn(dev.execute(tapes))
 
@@ -879,7 +871,6 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
             )
             jac = np.array(fn(execute_fn(tapes)))
             return jac
@@ -924,7 +915,6 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
             )
             jac = fn(execute_fn(tapes))
             return jac[1][0]
@@ -965,7 +955,6 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
             )
             jac_0, jac_1 = fn(execute_fn(tapes))
 
@@ -1008,7 +997,6 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
             )
 
             jac_01 = fn(execute_fn(tapes))[1][0]
@@ -1045,7 +1033,6 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
             )
             jac = fn(execute_fn(tapes))
             return jac
@@ -1090,7 +1077,6 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
             )
             jac = fn(execute_fn(tapes))
             return jac

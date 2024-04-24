@@ -27,7 +27,6 @@ from pennylane.operation import Observable, AnyWires
 
 np.random.seed(0)
 
-h_val = 0.1
 spsa_shot_vec_tol = 0.31
 
 default_shot_vector = (1000, 2000, 3000)
@@ -71,7 +70,7 @@ class TestSpsaGradient:
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = spsa_grad(tape, h=h_val)
+        tapes, fn = spsa_grad(tape)
 
         all_res = fn(dev.execute(tapes))
 
@@ -100,7 +99,7 @@ class TestSpsaGradient:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = spsa_grad(tape, h=h_val, num_directions=num_directions)
+        tapes, fn = spsa_grad(tape, num_directions=num_directions)
         all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
@@ -136,7 +135,7 @@ class TestSpsaGradient:
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = spsa_grad(tape, h=h_val)
+            g_tapes, post_processing = spsa_grad(tape)
         all_res = post_processing(qml.execute(g_tapes, dev, None))
         assert len(all_res) == len(default_shot_vector)
 
@@ -160,7 +159,7 @@ class TestSpsaGradient:
         tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = spsa_grad(tape, h=h_val)
+            g_tapes, post_processing = spsa_grad(tape)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -186,7 +185,7 @@ class TestSpsaGradient:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            spsa_grad(circuit, h=h_val)(weights)
+            spsa_grad(circuit)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -202,7 +201,7 @@ class TestSpsaGradient:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            spsa_grad(circuit, h=h_val)(weights)
+            spsa_grad(circuit)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -218,7 +217,7 @@ class TestSpsaGradient:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            spsa_grad(circuit, h=h_val)(weights)
+            spsa_grad(circuit)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -234,7 +233,7 @@ class TestSpsaGradient:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            spsa_grad(circuit, h=h_val)(weights)
+            spsa_grad(circuit)(weights)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -249,7 +248,7 @@ class TestSpsaGradient:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        grad_fn = spsa_grad(circuit, h=h_val, sampler_rng=rng)
+        grad_fn = spsa_grad(circuit, sampler_rng=rng)
         all_result = grad_fn(params)
 
         assert len(all_result) == len(default_shot_vector)
@@ -285,7 +284,7 @@ class TestSpsaGradient:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        grad_fn = spsa_grad(circuit, h=h_val, sampler_rng=rng)
+        grad_fn = spsa_grad(circuit, sampler_rng=rng)
         all_result = grad_fn(params)
 
         assert len(all_result) == len(default_shot_vector)
@@ -340,7 +339,6 @@ class TestSpsaGradient:
             tape,
             strategy="forward",
             approx_order=1,
-            h=h_val,
             num_directions=n,
         )
 
@@ -364,7 +362,6 @@ class TestSpsaGradient:
             strategy="forward",
             approx_order=1,
             f0=f0,
-            h=h_val,
             num_directions=n,
         )
 
@@ -394,7 +391,6 @@ class TestSpsaGradient:
             approx_order=1,
             strategy="forward",
             num_directions=n1,
-            h=h_val,
             sampler_rng=rng,
         )
         with qml.Tracker(dev) as tracker:
@@ -407,7 +403,6 @@ class TestSpsaGradient:
             tape2,
             approx_order=1,
             strategy="forward",
-            h=h_val,
             num_directions=n2,
             sampler_rng=rng,
         )
@@ -459,7 +454,7 @@ class TestSpsaGradient:
         x = np.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
-        transform = [qml.math.shape(spsa_grad(c, h=h_val)(x)) for c in circuits]
+        transform = [qml.math.shape(spsa_grad(c)(x)) for c in circuits]
 
         expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 3, 4), (3, 1, 3, 4), (3, 2, 3, 4)]
 
@@ -611,7 +606,6 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
             num_directions=10,
             sampler=coordinate_sampler,
             sampler_rng=rng,
@@ -662,7 +656,6 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             num_directions=10,
             sampler=coordinate_sampler,
-            h=h_val,
             sampler_rng=rng,
         )
         all_res = fn(dev.execute(tapes))
@@ -715,7 +708,6 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             num_directions=4,
             sampler=coordinate_sampler,
-            h=h_val,
             sampler_rng=rng,
         )
         all_res = fn(dev.execute(tapes))
@@ -769,7 +761,6 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             num_directions=4,
             sampler=coordinate_sampler,
-            h=h_val,
             sampler_rng=rng,
         )
         all_res = fn(dev.execute(tapes))
@@ -808,7 +799,6 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             sampler=coordinate_sampler,
-            h=h_val,
             num_directions=20,
             sampler_rng=rng,
         )
@@ -862,7 +852,6 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=h_val,
             num_directions=6,
             sampler=coordinate_sampler,
             sampler_rng=rng,
@@ -919,7 +908,6 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             sampler=coordinate_sampler,
             num_directions=4,
-            h=h_val,
             sampler_rng=rng,
         )
         all_res = fn(dev.execute(tapes))
@@ -1003,7 +991,6 @@ class TestSpsaGradientDifferentiation:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
                 sampler_rng=rng,
             )
             jac = np.array(fn(execute_fn(tapes)))
@@ -1050,7 +1037,6 @@ class TestSpsaGradientDifferentiation:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
                 sampler_rng=rng,
             )
             jac = fn(execute_fn(tapes))
@@ -1093,7 +1079,6 @@ class TestSpsaGradientDifferentiation:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
                 sampler_rng=rng,
             )
             jac_0, jac_1 = fn(execute_fn(tapes))
@@ -1138,7 +1123,6 @@ class TestSpsaGradientDifferentiation:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
                 sampler_rng=rng,
             )
 
@@ -1177,7 +1161,6 @@ class TestSpsaGradientDifferentiation:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
                 sampler_rng=rng,
             )
             jac = fn(execute_fn(tapes))
@@ -1224,7 +1207,6 @@ class TestSpsaGradientDifferentiation:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=h_val,
                 sampler_rng=rng,
             )
             jac = fn(execute_fn(tapes))

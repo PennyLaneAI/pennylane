@@ -37,6 +37,14 @@ from .gradient_transform import (
 from .general_shift_rules import generate_multishifted_tapes
 
 
+def _set_spsa_shift(h, shots):
+    """Set a reasonable default value for the shift size of finite difference
+    methods, based on whether shots are involved in circuit evaluation or not."""
+    if h is None:
+        h = 1e-5 if shots.total_shots is None else 0.1
+    return h
+
+
 def _rademacher_sampler(indices, num_params, *args, rng):
     r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
     That is, each entry follows the
@@ -62,7 +70,7 @@ def _rademacher_sampler(indices, num_params, *args, rng):
 def _expand_transform_spsa(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    h=1e-5,
+    h=None,
     approx_order=2,
     n=1,
     strategy="center",
@@ -93,7 +101,7 @@ def _expand_transform_spsa(
 def spsa_grad(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    h=1e-5,
+    h=None,
     approx_order=2,
     n=1,
     strategy="center",
@@ -309,6 +317,7 @@ def spsa_grad(
 
     gradient_tapes = []
     extract_r0 = False
+    h = _set_spsa_shift(h, tape.shots)
 
     coeffs, shifts = finite_diff_coeffs(n=n, approx_order=approx_order, strategy=strategy)
 

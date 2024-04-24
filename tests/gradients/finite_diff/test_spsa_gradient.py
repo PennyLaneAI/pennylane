@@ -21,10 +21,28 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import spsa_grad
-from pennylane.gradients.spsa_gradient import _rademacher_sampler
+from pennylane.gradients.spsa_gradient import _rademacher_sampler, _set_spsa_shift
 from pennylane.operation import AnyWires, Observable
 
 # pylint:disable = use-implicit-booleaness-not-comparison
+
+
+class TestSetSPSAShift:
+    """Tests for _set_spsa_shift."""
+
+    def test_h_None_shots_None(self):
+        """Test that the default value for no shots is correct."""
+        assert _set_spsa_shift(None, qml.measurements.Shots()) == 1e-5
+
+    def test_h_None_finite_shots(self):
+        """Test that the default value for finite shots is correct."""
+        assert _set_spsa_shift(None, qml.measurements.Shots(100)) == 0.1
+
+    def test_custom_h(self):
+        """Test that a custom value for h is preserved."""
+        custom_h = object()
+        assert _set_spsa_shift(custom_h, qml.measurements.Shots()) is custom_h
+        assert _set_spsa_shift(custom_h, qml.measurements.Shots(100)) is custom_h
 
 
 def coordinate_sampler(indices, num_params, idx, rng=None):
@@ -708,7 +726,6 @@ class TestSpsaGradientIntegration:
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = spsa_grad(
             tape,
-            h=1e-6,
             approx_order=approx_order,
             strategy=strategy,
             num_directions=2,

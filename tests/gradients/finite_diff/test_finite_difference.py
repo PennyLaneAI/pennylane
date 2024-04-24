@@ -22,6 +22,7 @@ from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import finite_diff, finite_diff_coeffs
 from pennylane.operation import AnyWires, Observable
+from pennylane.gradients.finite_difference import _set_finite_diff_shift
 
 
 def test_float32_warning():
@@ -30,6 +31,24 @@ def test_float32_warning():
     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
     with pytest.warns(UserWarning, match="Finite differences with float32 detected."):
         finite_diff(tape)
+
+
+class TestSetFiniteDiffShift:
+    """Tests for _set_finite_diff_shift."""
+
+    def test_h_None_shots_None(self):
+        """Test that the default value for no shots is correct."""
+        assert _set_finite_diff_shift(None, qml.measurements.Shots()) == 1e-7
+
+    def test_h_None_finite_shots(self):
+        """Test that the default value for finite shots is correct."""
+        assert _set_finite_diff_shift(None, qml.measurements.Shots(100)) == 0.1
+
+    def test_custom_h(self):
+        """Test that a custom value for h is preserved."""
+        custom_h = object()
+        assert _set_finite_diff_shift(custom_h, qml.measurements.Shots()) is custom_h
+        assert _set_finite_diff_shift(custom_h, qml.measurements.Shots(100)) is custom_h
 
 
 class TestCoeffs:
@@ -1137,6 +1156,8 @@ class TestJaxArgnums:
         """Test for single expectation value."""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -1150,7 +1171,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         res = qml.gradients.finite_diff(
-            circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=1e-5
+            circuit, argnums=argnums, approx_order=approx_order, strategy=strategy
         )(x, y)
 
         expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
@@ -1167,6 +1188,8 @@ class TestJaxArgnums:
     def test_multi_expectation_values(self, argnums, interface, approx_order, strategy):
         """Test for multiple expectation values."""
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1202,6 +1225,8 @@ class TestJaxArgnums:
         """Test for hessian."""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -1217,7 +1242,7 @@ class TestJaxArgnums:
 
         res = jax.jacobian(
             qml.gradients.finite_diff(
-                circuit, approx_order=approx_order, strategy=strategy, h=1e-5, argnums=argnums
+                circuit, approx_order=approx_order, strategy=strategy, argnums=argnums
             ),
             argnums=argnums,
         )(x, y)

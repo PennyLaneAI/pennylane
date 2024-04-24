@@ -41,6 +41,14 @@ from .gradient_transform import (
 )
 
 
+def _set_finite_diff_shift(h, shots):
+    """Set a reasonable default value for the shift size of finite difference
+    methods, based on whether shots are involved in circuit evaluation or not."""
+    if h is None:
+        h = 1e-7 if shots.total_shots is None else 0.1
+    return h
+
+
 @functools.lru_cache(maxsize=None)
 def finite_diff_coeffs(n, approx_order, strategy):
     r"""Generate the finite difference shift values and corresponding
@@ -394,8 +402,7 @@ def finite_diff(
     gradient_tapes = []
     shapes = []
     c0 = None
-    if h is None:
-        h = 1e-7 if tape.shots is None else 0.1
+    h = _set_finite_diff_shift(h, tape.shots)
 
     coeffs, shifts = finite_diff_coeffs(n=n, approx_order=approx_order, strategy=strategy)
 
