@@ -33,11 +33,10 @@ def center(
     .. math:: \mathfrak{\xi}(\mathfrak{g}) := \{h \in \mathfrak{g} | [h, h_i]=0 \ \forall h_i \in \mathfrak{g} \}
 
     Args:
-        g (List[Union[Operator, PauliSentence]]): List of operators for which to find the center.
-        pauli (bool): Indicates whether it is assumed that :class:`~PauliSentence` instances are input and returned.
-            This can help with performance to avoid unnecessary conversions from :class:`~PauliSentence` to :class:`~Operator`
-            or :class:`~PauliWord` and vice versa. Note that the input in that case also has to be a list of :class:`~PauliSentence` instances.
-            Default is ``False``.
+        g (List[Union[Operator, PauliSentence, PauliWord]]): List of operators for which to find the center.
+        pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
+            This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
+            and vice versa. Default is ``False``.
 
     Returns:
         List[Union[Operator, PauliSentence]]: Center of ``g``
@@ -54,7 +53,7 @@ def center(
     The ``center`` is then the collection of operators that commute with `all` other operators in the DLA.
     In this case, just ``X(0)``.
 
-    >>> center(g)
+    >>> qml.center(g)
     [X(0)]
 
     """
