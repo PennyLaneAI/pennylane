@@ -426,3 +426,43 @@ def test_applied_transforms(device):
     assert len(ax.texts) == 2  # one wire label, one gate label
 
     plt.close()
+
+
+@pytest.mark.parametrize("use_qnode", (True, False))
+def test_wire_sorting_if_no_wire_order(use_qnode):
+    """Test that wires are automatically sorted if the device and user
+    dont provide a wire order."""
+
+    def f():
+        qml.X(4)
+        qml.X(2)
+        return qml.expval(qml.Z(0))
+
+    if use_qnode:
+        f = qml.QNode(f, qml.device("default.qubit"))
+
+    _, ax = qml.draw_mpl(f)()
+
+    assert ax.texts[0].get_text() == "0"
+    assert ax.texts[1].get_text() == "2"
+    assert ax.texts[2].get_text() == "4"
+
+
+@pytest.mark.parametrize("use_qnode", (True, False))
+def test_wire_sorting_fallback_if_no_wire_order(use_qnode):
+    """Test that wires are automatically sorted if the device and user
+    dont provide a wire order."""
+
+    def f():
+        qml.X(4)
+        qml.X("a")
+        return qml.expval(qml.Z(0))
+
+    if use_qnode:
+        f = qml.QNode(f, qml.device("default.qubit"))
+
+    _, ax = qml.draw_mpl(f)()
+
+    assert ax.texts[0].get_text() == "4"
+    assert ax.texts[1].get_text() == "a"
+    assert ax.texts[2].get_text() == "0"
