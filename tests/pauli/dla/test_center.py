@@ -53,13 +53,14 @@ def test_center_pauli(ops, true_res):
     true_res = [op.pauli_rep for op in true_res]
     assert res == true_res
 
+
 @pytest.mark.parametrize("pauli", [False, True])
 def test_center_pauli_word_pauli_True(pauli):
-    """Test that PauliWord instances can be passed for both pauli=True/False""" 
+    """Test that PauliWord instances can be passed for both pauli=True/False"""
     ops = [
         qml.pauli.PauliWord({0: "X"}),
         qml.pauli.PauliWord({0: "X", 1: "X"}),
-        qml.pauli.PauliWord({1: "Y"})
+        qml.pauli.PauliWord({1: "Y"}),
     ]
     if pauli:
         assert qml.center(ops, pauli=pauli) == [qml.pauli.PauliWord({0: "X"})]
