@@ -255,7 +255,6 @@
   >>> op.error(method="commutator")
   SpectralNormError(6.166666666666668e-06)
   ```
-  
 <h3>Improvements 🛠</h3>
 
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
