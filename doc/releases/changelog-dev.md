@@ -194,7 +194,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* The gradient transforms `finite_diff` and `spsa_gradient` now set different default values
+* The gradient transforms `finite_diff` and `spsa_grad` now set different default values
   for the shift size `h` depending on the shots of the differentiated circuit.
   [(#5568)](https://github.com/PennyLaneAI/pennylane/pull/5568)
 
