@@ -1235,7 +1235,7 @@ class TestSumExpval:
             return qml.expval(qml.Z(0) + 3 * qml.I())
 
         res = circuit()
-        assert qml.math.allclose(res, 2.0, atol=tol)
+        assert qml.math.allclose(res, 2.0, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
