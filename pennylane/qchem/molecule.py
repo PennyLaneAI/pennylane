@@ -68,6 +68,7 @@ class Molecule:
         charge=0,
         mult=1,
         basis_name="sto-3g",
+        name="molecule",
         load_data=False,
         l=None,
         alpha=None,
@@ -125,6 +126,8 @@ class Molecule:
                     for i, c in enumerate(coeff)
                 ]
 
+        print("coordinates: ", self.coordinates)
+        print("n_basis: ", self.n_basis)
         r = list(
             itertools.chain(
                 *[[self.coordinates[i]] * self.n_basis[i] for i in range(len(self.n_basis))]
@@ -135,6 +138,10 @@ class Molecule:
         self.alpha = alpha
         self.coeff = coeff
         self.r = r
+        print("l: ", self.l)
+        print("alpha: ", self.alpha)
+        print("coeff: ", self.coeff)
+        print("r: ", self.r)
 
         self.basis_set = [
             BasisFunction(self.l[i], self.alpha[i], self.coeff[i], self.r[i]) for i in range(len(l))

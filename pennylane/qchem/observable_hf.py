@@ -97,7 +97,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     return sentence
 
 
-def qubit_observable(o_ferm, cutoff=1.0e-12):
+def qubit_observable(o_ferm, mapping="jordan_wigner", cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
     Args:
@@ -131,7 +131,16 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     >>> print(qubit_observable(s))
     -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
-    h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
+
+    if mapping == "jordan_wigner":
+        h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
+    elif mapping == "parity_transform":
+        qubits = len(o_ferm.wires)
+        h = qml.parity_transform(o_ferm, qubits, ps=True, tol=cutoff)
+    elif mapping == "bravyi_kitaev":
+        qubits = len(o_ferm.wires)
+        h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
+
     h.simplify(tol=cutoff)
 
     if active_new_opmath():
