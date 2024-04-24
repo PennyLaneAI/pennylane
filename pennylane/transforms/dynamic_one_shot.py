@@ -45,7 +45,9 @@ def null_postprocessing(results):
 
 
 @transform
-def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def dynamic_one_shot(
+    tape: qml.tape.QuantumTape, **kwargs
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:
@@ -93,6 +95,7 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} "
                 "measurements."
             )
+    _ = kwargs.get("device", None)
 
     if not tape.shots:
         raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
