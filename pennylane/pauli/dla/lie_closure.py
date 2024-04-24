@@ -52,7 +52,7 @@ def lie_closure(
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
         commutators (Lie closure).
 
-    .. seealso:: :func:`~pennylane.pauli.structure_constants`, :func:`~pennylane.pauli.center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
 
     **Example**
 
@@ -76,7 +76,7 @@ def lie_closure(
     This can be done in short via ``lie_closure`` as follows.
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.pauli.lie_closure(ops)
+    >>> dla = qml.lie_closure(ops)
     >>> print(dla)
     [X(1) @ X(0),
      Z(0),
@@ -100,7 +100,7 @@ def lie_closure(
         ...     PauliSentence({PauliWord({0: "Z"}): 1.}),
         ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
         ... ]
-        >>> dla = qml.pauli.lie_closure(ops, pauli=True)
+        >>> dla = qml.lie_closure(ops, pauli=True)
         >>> print(dla)
         [1.0 * X(0) @ X(1),
          1.0 * Z(0),

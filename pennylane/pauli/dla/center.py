@@ -42,14 +42,14 @@ def center(
     Returns:
         List[Union[Operator, PauliSentence]]: Center of ``g``
 
-    .. seealso:: :func:`~pennylane.pauli.lie_closure`, :func:`~pennylane.pauli.structure_constants`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: :func:`~lie_closure`, :func:`~structure_constants`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
 
     **Example**
 
     We can compute the center of a DLA ``g``. For that, we compute the DLA via :func:`~lie_closure`.
 
     >>> generators = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
-    >>> g = qml.pauli.lie_closure(generators)
+    >>> g = qml.lie_closure(generators)
 
     The ``center`` is then the collection of operators that commute with `all` other operators in the DLA.
     In this case, just ``X(0)``.
