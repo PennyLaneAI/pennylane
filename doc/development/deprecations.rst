@@ -35,6 +35,9 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
+New operator arithmetic deprecations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 * ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35

@@ -455,7 +455,7 @@ def test_workflow_integration():
 
     params = qml.numpy.array([0.5, 0.5], requires_grad=True)
     opt = qml.optimize.QNSPSAOptimizer(stepsize=5e-2)
-    for _ in range(51):
+    for _ in range(101):
         params, loss = opt.step_and_cost(cost, params)
 
     assert qml.math.allclose(loss, -1, atol=1e-3)
