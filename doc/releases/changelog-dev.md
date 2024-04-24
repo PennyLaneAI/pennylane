@@ -298,6 +298,9 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
+* `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
+  [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
@@ -464,6 +467,10 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
+  now de-queue their input observable.
+  [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 
 * (In)equality of `qml.HilbertSchmidt` instances is now reported correctly by `qml.equal`.
   [(#5538)](https://github.com/PennyLaneAI/pennylane/pull/5538)
