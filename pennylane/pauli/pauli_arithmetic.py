@@ -890,7 +890,7 @@ class PauliSentence(dict):
         return matrix
 
     def _to_dense_mat(self, wire_order):
-        """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
+        """Compute the dense matrix of the Pauli sentence by efficiently adding the Pauli words
         that it is composed of. See pauli_sparse_matrices.md for the technical details."""
         pauli_words = list(self)  # Ensure consistent ordering
 
