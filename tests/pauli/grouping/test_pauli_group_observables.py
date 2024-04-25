@@ -454,6 +454,17 @@ class TestGroupObservables:
         groups = group_observables(observables)
         assert groups == [[qml.X(0) @ qml.Y(1), qml.I(), 2 * qml.I()], [qml.Z(0)]]
 
+    def test_no_observables_with_wires(self):
+        """Test when only observables with no wires are present."""
+
+        observables = [qml.I(), 2 * qml.I()]
+        groups = group_observables(observables)
+        assert groups == [observables]
+
+        groups, coeffs = group_observables(observables, [1, 2])
+        assert groups == [observables]
+        assert coeffs == [[1, 2]]
+
     def test_observables_on_no_wires_coeffs(self):
         """Test that observables on no wires are stuck in the first group and
         coefficients are tracked when provided."""
