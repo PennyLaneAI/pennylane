@@ -330,14 +330,9 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     else:
         gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
-    for t in gradient_tapes:
-        print(qml.drawer.tape_text(t, decimals=4))
-    print(f"{len(gradient_tapes)=}")
 
     def processing_fn(results):
-        print(f"{len(results)=}")
         # postprocess results to compute the Jacobian
-        print(results)
         if RDT:
             jac = rec_deriv_proc_fn(fn(results))
         else:

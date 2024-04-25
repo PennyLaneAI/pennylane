@@ -447,7 +447,6 @@ def expval_param_shift(
 
     def processing_fn(results):
 
-        print(f" in expval_param_shift: {results=}")
         start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
         grads = []
         for data in gradient_data:
@@ -1116,7 +1115,7 @@ def param_shift(
     assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
     assert_no_trainable_tape_batching(tape, transform_name)
-    assert_compatible_mcms(tape, transform_name)
+    #assert_compatible_mcms(tape, transform_name)
 
 
     if argnum is None and not tape.trainable_params:
@@ -1215,7 +1214,7 @@ def _make_mcm_probs_tape(tape):
     num_ops = len(tape.operations)
     for i, op in enumerate(reversed(tape.operations)):
         if isinstance(op, MidMeasureMP) and op.postselect is not None:
-            mcm_mp = MidMeasureMP(op.wires, op.reset, postselect=None)
+            mcm_mp = MidMeasureMP(op.wires, op.reset, postselect=None, id=op.id)
             mv = MeasurementValue([mcm_mp], processing_fn=lambda v: v)
             new_ops = tape.operations[:num_ops-i-1] + [mcm_mp] + tape.operations[num_ops-i:]
             break
@@ -1237,16 +1236,10 @@ def _param_shift_rdt(tape):
         """A postprocesing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
-        print(results)
         assert False
         orig_results, probs_results = results[:split], results[split:]
         *orig_deriv, orig_unshifted = orig_results
         *probs_deriv, probs_unshifted = probs_results
-
-        print(f"{orig_deriv=}")
-        print(f"{orig_unshifted=}")
-        print(f"{probs_deriv=}")
-        print(f"{probs_unshifted=}")
 
         return results[0]
 

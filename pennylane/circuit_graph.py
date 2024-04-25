@@ -22,8 +22,9 @@ from collections import namedtuple
 import numpy as np
 import rustworkx as rx
 
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess, MidMeasureMP
 from pennylane.resource import ResourcesOperation
+from pennylane.ops.op_math import Conditional
 
 
 def _by_idx(x):
@@ -127,6 +128,17 @@ class CircuitGraph:
                 # add op to the grid, to the end of wire w
                 self._grid.setdefault(wire, []).append(op)
 
+            if isinstance(op, MidMeasureMP):
+                self._grid[op.id] = [op]
+            elif isinstance(op, Conditional):
+                for m in op.meas_val.measurements:
+                    self._grid[m.id].append(op)
+            elif isinstance(op, MeasurementProcess):
+                meas_val = getattr(op, "mv", None)
+                if meas_val is not None:
+                    for m in meas_val.measurements:
+                        self._grid[m.id].append(op)
+
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
         self._graph = rx.PyDiGraph(
@@ -142,22 +154,23 @@ class CircuitGraph:
             # is already added to the graph; this
             # condition avoids adding new nodes with
             # the same value but different indexes
-            if all(wire[0] is not op for op in self._graph.nodes()):
-                _ind = self._graph.add_node(wire[0])
-                self._indices.setdefault(id(wire[0]), _ind)
+            first_op_on_wire = wire[0]
+            if first_op_on_wire not in self._graph.nodes():
+                _ind = self._graph.add_node(first_op_on_wire)
+                self._indices.setdefault(id(first_op_on_wire), _ind)
 
-            for i in range(1, len(wire)):
+            for i, op in enumerate(wire[1:], start=1):
                 # For subsequent operators on the wire:
-                if all(wire[i] is not op for op in self._graph.nodes()):
+                if op not in self._graph.nodes():
                     # Add them to the graph if they are not already
                     # in the graph (multi-qubit operators might already have been placed)
-                    _ind = self._graph.add_node(wire[i])
-                    self._indices.setdefault(id(wire[i]), _ind)
+                    _ind = self._graph.add_node(op)
+                    self._indices.setdefault(id(op), _ind)
 
                 # Create an edge between this and the previous operator
                 # There isn't any default value for the edge-data in
                 # rx.PyDiGraph.add_edge(); this is set to an empty string
-                self._graph.add_edge(self._indices[id(wire[i - 1])], self._indices[id(wire[i])], "")
+                self._graph.add_edge(self._indices[id(wire[i - 1])], self._indices[id(op)], "")
 
         # For computing depth; want only a graph with the operations, not
         # including the observables
