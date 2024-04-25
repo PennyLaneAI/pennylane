@@ -401,6 +401,10 @@
 
 * `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+  [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
+
+* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
 
 * Replaced `cache_execute` with an alternate implementation based on `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
