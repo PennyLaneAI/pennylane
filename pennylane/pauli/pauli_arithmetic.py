@@ -225,7 +225,7 @@ class PauliWord(dict):
     def _matmul(self, other):
         """Private matrix multiplication that returns (pauli_word, coeff) tuple for more lightweight processing"""
         base, iterator, swapped = (
-            (self, other, False) if len(self) > len(other) else (other, self, True)
+            (self, other, False) if len(self) >= len(other) else (other, self, True)
         )
         result = copy(dict(base))
         coeff = 1
@@ -529,6 +529,9 @@ class PauliWord(dict):
         return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
 
 
+pw_id = PauliWord({})  # empty pauli word to be re-used
+
+
 class PauliSentence(dict):
     r"""Dictionary representing a linear combination of Pauli words, with the keys
     as :class:`~pennylane.pauli.PauliWord` instances and the values correspond to coefficients.
@@ -595,6 +598,21 @@ class PauliSentence(dict):
         """If the PauliWord is not in the sentence then the coefficient
         associated with it should be 0."""
         return 0.0
+
+    def trace(self):
+        r"""Return the normalized trace of the ``PauliSentence`` instance
+
+        .. math:: \frac{1}{2^n} \text{tr}\left( P \right).
+
+        The normalized trace does not scale with the number of qubits :math:`n`.
+
+        >>> PauliSentence({PauliWord({0:"I", 1:"I"}): 0.5}).trace()
+        0.5
+        >>> PauliSentence({PauliWord({}): 0.5}).trace()
+        0.5
+
+        """
+        return self.get(pw_id, 0.0)
 
     def __add__(self, other):
         """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.

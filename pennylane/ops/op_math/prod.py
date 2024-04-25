@@ -281,6 +281,17 @@ class Prod(CompositeOp):
     def has_decomposition(self):
         return True
 
+    @property
+    def obs(self):
+        r"""Access the operands of a ``Prod`` instance"""
+        # This is temporary property to smoothen the transition to the new operator arithmetic system.
+        # In particular, the __matmul__ (@ python operator) method between operators now generates Prod instead of Tensor instances.
+        warnings.warn(
+            "Accessing the terms of a tensor product operator via op.obs is deprecated, please use op.operands instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        return self.operands
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -538,6 +549,11 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     Returns:
         bool: True if operators should be swapped, False otherwise.
     """
+    # one is broadcasted onto all wires.
+    if not op1.wires:
+        return True
+    if not op2.wires:
+        return False
     wires1 = op1.wires
     wires2 = op2.wires
     if wire_map is not None:
