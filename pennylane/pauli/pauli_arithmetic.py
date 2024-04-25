@@ -15,7 +15,6 @@
 # pylint:disable=protected-access
 from copy import copy
 from functools import reduce, lru_cache
-from typing import Iterable
 
 import numpy as np
 from scipy import sparse
@@ -820,51 +819,15 @@ class PauliSentence(dict):
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
         wire_order = self.wires if wire_order is None else Wires(wire_order)
-        if not wire_order.contains_wires(self.wires):
-            raise ValueError(
-                "Can't get the matrix for the specified wire order because it "
-                f"does not contain all the Pauli sentence's wires {self.wires}"
-            )
-
-        def _pw_wires(w: Iterable) -> Wires:
-            """Return the native Wires instance for a list of wire labels.
-            w represents the wires of the PauliWord being processed. In case
-            the PauliWord is empty ({}), choose any arbitrary wire from the
-            PauliSentence it is composed in.
-            """
-            if w:
-                # PauliWord is not empty, so we can use its wires
-                return Wires(w)
-
-            if wire_order:
-                # PauliWord is empty, treat it as Identity operator on any wire
-                # Pick any arbitrary wire from wire_order
-                return Wires(wire_order[0])
-
-            return wire_order
-
         if len(self) == 0:
             n = len(wire_order) if wire_order is not None else 0
             if format == "dense":
                 return np.zeros((2**n, 2**n))
             return sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
-        if format != "dense":
-            return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
-
-        mats_and_wires_gen = (
-            (
-                coeff * pw.to_mat(wire_order=_pw_wires(pw.wires), format=format),
-                _pw_wires(pw.wires),
-            )
-            for pw, coeff in self.items()
-        )
-
-        reduced_mat, result_wire_order = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
-
-        return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
+        if format == "dense":
+            return self._to_dense_mat(wire_order)
+        return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
 
     def _to_sparse_mat(self, wire_order, buffer_size=None):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
@@ -920,11 +883,7 @@ class PauliSentence(dict):
             indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
             mat = self._sum_same_structure_pws_dense([pauli_words[i] for i in indices], wire_order)
 
-            if full_matrix is None:
-                full_matrix = mat
-            else:
-                full_matrix += mat
-
+            full_matrix = mat if full_matrix is None else qml.math.add(full_matrix, mat)
         return full_matrix
 
     def dot(self, vector, wire_order=None):
@@ -980,12 +939,12 @@ class PauliSentence(dict):
             matrix_size + 1
         )  # Non-zero entries by row (starting from 0)
         base_matrix = base_matrix.toarray()
-
-        data = self[pauli_words[0]] * data0
+        coeff = self[pauli_words[0]]
+        data = coeff * qml.math.convert_like(data0, coeff)
         for pw in pauli_words[1:]:
             data += self[pw] * pw._get_csr_data(wire_order, 1)
 
-        return data * base_matrix
+        return qml.math.einsum("ij,i->ij", base_matrix, data)
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
