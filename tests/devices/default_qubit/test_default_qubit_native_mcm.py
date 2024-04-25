@@ -613,7 +613,7 @@ def test_sample_with_prng_key(shots, postselect, reset):
     from jax.random import PRNGKey
 
     dev = qml.device("default.qubit", shots=shots, seed=PRNGKey(678))
-    param = [np.pi / 3, np.pi / 6]
+    param = [np.pi / 4, np.pi / 3]
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
     @qml.qnode(dev)

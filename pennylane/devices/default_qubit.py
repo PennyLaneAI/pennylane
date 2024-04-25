@@ -587,19 +587,31 @@ class DefaultQubit(Device):
             if execution_config.gradient_method in {"backprop", None}
             else None
         )
+        prng_keys = self.get_prng_keys(num=len(circuits))
+
         if max_workers is None:
             simulate_kwargs = {
                 "rng": self._rng,
-                "prng_key": self.get_prng_keys()[0],
                 "debugger": self._debugger,
                 "interface": interface,
                 "state_cache": self._state_cache,
             }
-            return tuple(_simulate_wrapper(c, simulate_kwargs) for c in circuits)
+            return tuple(
+                _simulate_wrapper(
+                    c,
+                    {
+                        "rng": self._rng,
+                        "debugger": self._debugger,
+                        "interface": interface,
+                        "state_cache": self._state_cache,
+                        "prng_key": _key,
+                    },
+                )
+                for c, _key in zip(circuits, prng_keys)
+            )
 
         vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-        prng_keys = self.get_prng_keys(num=len(vanilla_circuits))
         simulate_kwargs = [
             {"debugger": None, "interface": interface, "rng": _rng, "prng_key": _key}
             for _rng, _key in zip(seeds, prng_keys)
