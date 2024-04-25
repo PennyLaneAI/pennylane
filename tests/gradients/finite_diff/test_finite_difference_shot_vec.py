@@ -349,7 +349,7 @@ class TestFiniteDiff:
             return qml.probs([0, 1])
 
         def cost5(x):
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return [qml.probs([0, 1])]
 
         def cost6(x):
@@ -360,8 +360,7 @@ class TestFiniteDiff:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x)) for c in circuits]
-        expected = [(3, 3), (1, 3, 3), (3, 2, 3), (3, 4, 3), (1, 3, 4, 3), (3, 2, 4, 3)]
-        # expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 3, 4), (3, 1, 3, 4), (3, 2, 3, 4)]
+        expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
         assert all(t == q for t, q in zip(transform, expected))
 
     def test_output_shape_matches_qnode_two_args(self):
