@@ -196,11 +196,22 @@
 
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-  ```pycon
+  ```python
   >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
   >>> structure_const = qml.structure_constants(dla)
   >>> structure_constp.shape
   (6, 6, 6)
+  ```
+
+* We can compute the center of a dynamical Lie algebra.
+  [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
+
+  Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+
+  ```pycon
+  >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
+  >>> qml.center(g)
+  [X(0)]
   ```
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
@@ -220,9 +231,10 @@
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
-<h4>Work easily and efficiently with operators 🔧</h4>
-
 <h3>Improvements 🛠</h3>
+
+* Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
+  [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
 
 <h4>Community contributions 🥳</h4>
 
@@ -307,6 +319,11 @@
   [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411)
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
+* A new `Prod.obs` property is introduced to smoothen the transition of the new operator arithmetic system.
+  In particular, this aims at preventing breaking code that uses `Tensor.obs`. This is immediately deprecated.
+  Moving forward, we recommend using `op.operands`.
+  [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
+  
 * `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
@@ -360,6 +377,10 @@
 
 <h4>Other improvements</h4>
 
+* `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
+  is provided by the user or the device.
+  [(#5576)](https://github.com/PennyLaneAI/pennylane/pull/5576)
+
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
   the operator it wraps.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
@@ -397,6 +418,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
+  of whether there is classical processing in the node.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
+  
 * State measurements preserve `dtype`.
   [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
 
@@ -505,6 +530,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
+  a QNode differed, based on whether the QNode uses classical coprocessing.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
+
 * `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
   now de-queue their input observable.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
@@ -593,6 +622,10 @@
 
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
+* Allows `default.qubit` to measure Identity on no wires, and observables containing Identity on
+  no wires.
+  [(#5570)](https://github.com/PennyLaneAI/pennylane/pull/5570/)
 
 * Fixes a bug where `TorchLayer` does not work with shot vectors.
   [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
