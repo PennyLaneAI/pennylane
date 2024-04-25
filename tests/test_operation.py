@@ -2832,6 +2832,7 @@ def test_op_arithmetic_toggle():
         assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
 
+@pytest.mark.usefixtures("use_new_opmath")
 def test_disable_enable_new_opmath():
     """Test that disabling and re-enabling new opmath works and raises the correct warning"""
     with pytest.warns(UserWarning, match="Disabling the new Operator arithmetic"):
