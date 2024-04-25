@@ -2842,7 +2842,7 @@ def test_disable_enable_new_opmath():
 
     with pytest.warns(
         UserWarning,
-        match="re-enabling the new Operator arithmetic system after disabling it is not advised",
+        match="Re-enabling the new Operator arithmetic system after disabling it is not advised.",
     ):
         qml.operation.enable_new_opmath()
 
