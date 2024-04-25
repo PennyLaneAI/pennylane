@@ -229,8 +229,7 @@ def defer_measurements(
         By default, ``defer_measurements`` makes use of postselection information of
         mid-circuit measurements in the circuit in order to reduce the number of controlled
         operations and control wires. We can explicitly switch this feature off and compare
-        the created circuits with and without this optimization.
-        Consider the circuit
+        the created circuits with and without this optimization. Consider the following circuit:
 
         .. code-block:: python3
 
