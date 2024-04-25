@@ -190,7 +190,7 @@ class Hamiltonian(Observable):
             warn(
                 "Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. "
                 "Instead, use 'qml.Hamiltonian'. "
-                "Please visit https://docs.pennylane.ai/en/latest/news/new_opmath.html for more information and help troubleshooting.",
+                "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
                 qml.PennyLaneDeprecationWarning,
             )
 

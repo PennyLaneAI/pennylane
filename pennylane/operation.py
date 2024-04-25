@@ -2972,8 +2972,8 @@ def enable_new_opmath():
     global __use_new_opmath
     __use_new_opmath = True
     warnings.warn(
-        "Warning, re-enabling the new Operator arithmetic system after disabling it is not advised."
-        "Please visit https://docs.pennylane.ai/en/latest/news/new_opmath.html for help troubleshooting",
+        "Re-enabling the new Operator arithmetic system after disabling it is not advised."
+        "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
         UserWarning,
     )
 
@@ -2995,7 +2995,7 @@ def disable_new_opmath():
     warnings.warn(
         "Disabling the new Operator arithmetic system for legacy support."
         "If you need help troubleshooting your code, please visit"
-        "https://docs.pennylane.ai/en/latest/news/new_opmath.html",
+        "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
         UserWarning,
     )
     global __use_new_opmath
