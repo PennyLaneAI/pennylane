@@ -99,18 +99,24 @@ def assert_no_variance(measurements, transform_name):
         )
 
 
-def assert_no_tape_batching(tape, transform_name):
+def assert_no_trainable_tape_batching(tape, transform_name):
     """Check whether a tape is broadcasted and raise an error if this is the case.
 
     Args:
         tape (`~.QuantumScript`): measurements to analyze
         transform_name (str): Name of the gradient transform that queries the tape
     """
-    if tape.batch_size is not None:
-        raise NotImplementedError(
-            f"Computing the gradient of broadcasted tapes with the {transform_name} "
-            "gradient transform is currently not supported. See #4462 for details."
-        )
+    if tape.batch_size is None:
+        return
+
+    # Iterate over trainable parameters and check the affiliated operations for batching
+    for idx in range(len(tape.trainable_params)):
+        if tape.get_operation(idx)[0].batch_size is not None:
+            raise NotImplementedError(
+                "Computing the gradient of broadcasted tapes with respect to the broadcasted "
+                f"parameters using the {transform_name} gradient transform is currently not "
+                "supported. See #4462 for details."
+            )
 
 
 def choose_trainable_params(tape, argnum=None):

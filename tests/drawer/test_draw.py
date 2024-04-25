@@ -44,10 +44,21 @@ class TestLabelling:
         assert split_str[1][:6] == "    a:"
         assert split_str[2][:6] == "1.234:"
 
-    def test_wire_order(self):
+    @pytest.mark.parametrize("as_qnode", (True, False))
+    def test_wire_order(self, as_qnode):
         """Test wire_order keyword changes order of the wires."""
 
-        split_str = draw(circuit, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
+        def f(x, y, z):
+            """A quantum circuit on three wires."""
+            qml.RX(x, wires=0)
+            qml.RY(y, wires="a")
+            qml.RZ(z, wires=1.234)
+            return qml.expval(qml.PauliZ(0))
+
+        if as_qnode:
+            f = qml.QNode(f, qml.device("default.qubit", wires=(0, "a", 1.234)))
+
+        split_str = draw(f, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
         assert split_str[0][:6] == "1.234:"
         assert split_str[1][:6] == "    a:"
         assert split_str[2][:6] == "    0:"
@@ -284,6 +295,8 @@ class TestLayering:
 class TestMidCircuitMeasurements:
     """Tests for drawing mid-circuit measurements and classical conditions."""
 
+    # pylint: disable=too-many-public-methods
+
     @pytest.mark.parametrize("device_name", ["default.qubit"])
     def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):
         """Test that a circuit containing mid-circuit measurements is transformed by the drawer
@@ -329,6 +342,51 @@ class TestMidCircuitMeasurements:
 
         assert drawing == expected_drawing
 
+    @pytest.mark.parametrize(
+        "op", [qml.GlobalPhase(0.1), qml.Identity(), qml.Snapshot(), qml.Barrier()]
+    )
+    @pytest.mark.parametrize("decimals", [None, 2])
+    def test_draw_all_wire_ops(self, op, decimals):
+        """Test that operators acting on all wires are drawn correctly"""
+
+        def func():
+            qml.X(0)
+            qml.X(1)
+            m = qml.measure(0)
+            qml.cond(m, qml.X)(0)
+            qml.apply(op)
+            return qml.expval(qml.Z(0))
+
+        # Stripping to remove trailing white-space because length of white-space at the
+        # end of the drawing depends on the length of each individual line
+        drawing = qml.draw(func, decimals=decimals)().strip()
+        label = op.label(decimals=decimals).replace("\n", "")
+        expected_drawing = (
+            f"0: ──X──┤↗├──X──{label}─┤  <Z>\n1: ──X───║───║──{label}─┤     \n         ╚═══╝"
+        )
+
+        assert drawing == expected_drawing
+
+    @pytest.mark.parametrize(
+        "mp, label", [(qml.sample(), "Sample"), (qml.probs(), "Probs"), (qml.counts(), "Counts")]
+    )
+    def test_draw_all_wire_measurements(self, mp, label):
+        """Test that operators acting on all wires are drawn correctly"""
+
+        def func():
+            qml.X(0)
+            qml.X(1)
+            m = qml.measure(0)
+            qml.cond(m, qml.X)(0)
+            return qml.apply(mp)
+
+        # Stripping to remove trailing white-space because length of white-space at the
+        # end of the drawing depends on the length of each individual line
+        drawing = qml.draw(func)().strip()
+        expected_drawing = f"0: ──X──┤↗├──X─┤  {label}\n1: ──X───║───║─┤  {label}\n         ╚═══╝"
+
+        assert drawing == expected_drawing
+
     def test_draw_mid_circuit_measurement_multiple_wires(self):
         """Test that mid-circuit measurements are correctly drawn in circuits
         with multiple wires."""
@@ -350,8 +408,8 @@ class TestMidCircuitMeasurements:
         expected_drawing = (
             "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
             "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
-            "3: ─────────────────────╰X──┤↗₀│  │0⟩─│────────│──────────────┤     \n"
-            "2: ──RY(0.46)─────────────────────────╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>"
+            "2: ─────────────────────│───RY(0.46)──╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>\n"
+            "3: ─────────────────────╰X──┤↗₀│  │0⟩─────────────────────────┤     "
         )
 
         assert drawing == expected_drawing
@@ -385,8 +443,8 @@ class TestMidCircuitMeasurements:
         drawing = qml.draw(circ)(np.pi, np.pi / 2)
         expected_drawing = (
             "0: ──RX(3.14)──┤↗├───────────╭X─┤  \n"
-            "2: ─────────────║───RY(1.57)─│──┤  \n"
             "1: ─────────────║────────────╰●─┤  \n"
+            "2: ─────────────║───RY(1.57)──║─┤  \n"
             "                ╚═════════════╝    "
         )
 
@@ -933,3 +991,38 @@ def test_draw_with_qfunc_warns_with_expansion_strategy():
 
     with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
         _ = qml.draw(qfunc, expansion_strategy="gradient")
+
+
+@pytest.mark.parametrize("use_qnode", [True, False])
+def test_sort_wires(use_qnode):
+    """Test that drawing a qnode with no wire order or device wires sorts the wires automatically."""
+
+    def func():
+        qml.X(4)
+        qml.X(2)
+        qml.X(0)
+        return qml.expval(qml.Z(0))
+
+    if use_qnode:
+        func = qml.QNode(func, qml.device("default.qubit"))
+
+    expected = "0: ──X─┤  <Z>\n2: ──X─┤     \n4: ──X─┤     "
+    assert qml.draw(func)() == expected
+
+
+@pytest.mark.parametrize("use_qnode", [True, False])
+def test_sort_wires_fallback(use_qnode):
+    """Test that drawing a qnode with no wire order or device wires falls back to tape wires if
+    sorting fails."""
+
+    def func():
+        qml.X(4)
+        qml.X("a")
+        qml.X(0)
+        return qml.expval(qml.Z(0))
+
+    if use_qnode:
+        func = qml.QNode(func, qml.device("default.qubit"))
+
+    expected = "4: ──X─┤     \na: ──X─┤     \n0: ──X─┤  <Z>"
+    assert qml.draw(func)() == expected

@@ -44,6 +44,16 @@ test_hamiltonians = (
 class TestInitialization:
     """Test that the class is intialized correctly."""
 
+    def test_queuing(self):
+        """Test that QDrift de-queues the input hamiltonian."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            H = qml.X(0) + qml.Y(1)
+            op = qml.QDrift(H, 0.1, n=20)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] is op
+
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (None, 1234, 42))

@@ -361,6 +361,7 @@ class TestFiniteDiff:
 
         transform = [qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x)) for c in circuits]
         expected = [(3, 3), (1, 3, 3), (3, 2, 3), (3, 4, 3), (1, 3, 4, 3), (3, 2, 4, 3)]
+        # expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 3, 4), (3, 1, 3, 4), (3, 2, 3, 4)]
         assert all(t == q for t, q in zip(transform, expected))
 
     def test_output_shape_matches_qnode_two_args(self):

@@ -425,6 +425,7 @@ class TestSpsaGradient:
         transform = [qml.math.shape(spsa_grad(c, h=h_val)(x)) for c in circuits]
 
         expected = [(3, 3), (1, 3, 3), (3, 2, 3), (3, 4, 3), (1, 3, 4, 3), (3, 2, 4, 3)]
+        # expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 3, 4), (3, 1, 3, 4), (3, 2, 3, 4)]
 
         assert all(t == q for t, q in zip(transform, expected))
 

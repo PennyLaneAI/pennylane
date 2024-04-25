@@ -34,9 +34,10 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, False],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
-    # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
     [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=5), "parameter-shift", False, False],
 ]
 interface_and_qubit_device_and_diff_method = [
@@ -1519,6 +1520,7 @@ class TestTapeExpansion:
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
+        @jax.jit
         @qnode(
             dev,
             interface=interface,

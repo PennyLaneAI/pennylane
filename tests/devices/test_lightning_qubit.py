@@ -89,42 +89,32 @@ def test_finite_shots():
     assert np.allclose(circ0(), circ1(), rtol=0.01)
 
 
-@pytest.mark.skip(reason="New lightning.qubit needs to be updated to work with dtypes")
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
 
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    # pylint: disable=too-few-public-methods
+
+    @pytest.mark.parametrize(
+        "c_dtype",
+        [
+            np.complex64,
+            np.complex128,
+        ],
+    )
     @pytest.mark.parametrize(
         "measurement",
         [
+            qml.state(),
+            qml.density_matrix(wires=[1]),
+            qml.density_matrix(wires=[2, 0]),
             qml.expval(qml.PauliY(0)),
             qml.var(qml.PauliY(0)),
             qml.probs(wires=[1]),
             qml.probs(wires=[0, 2]),
         ],
     )
-    def test_real_dtype(self, r_dtype, measurement):
-        """Test that the default qubit plugin provides correct result for a simple circuit"""
-        p = 0.543
-
-        dev = qml.device("lightning.qubit", wires=3)
-        dev.R_DTYPE = r_dtype
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.apply(measurement)
-
-        res = circuit(p)
-        assert res.dtype == r_dtype
-
-    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
-    @pytest.mark.parametrize(
-        "measurement",
-        [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
-    )
-    def test_complex_dtype(self, c_dtype, measurement):
+    def test_dtype(self, c_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
@@ -136,4 +126,12 @@ class TestDtypePreserved:
             return qml.apply(measurement)
 
         res = circuit(p)
-        assert res.dtype == c_dtype
+
+        if isinstance(measurement, (qml.measurements.StateMP, qml.measurements.DensityMatrixMP)):
+            expected_dtype = c_dtype
+        else:
+            expected_dtype = np.float64 if c_dtype == np.complex128 else np.float32
+        if isinstance(res, np.ndarray):
+            assert res.dtype == expected_dtype
+        else:
+            assert isinstance(res, float)
