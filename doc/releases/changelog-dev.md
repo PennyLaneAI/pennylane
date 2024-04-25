@@ -203,6 +203,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
+  [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
