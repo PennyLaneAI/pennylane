@@ -2955,7 +2955,7 @@ def gen_is_multi_term_hamiltonian(obj):
     return isinstance(o, (qml.ops.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
-def enable_new_opmath():
+def enable_new_opmath(warn=True):
     """
     Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
 
@@ -2969,16 +2969,18 @@ def enable_new_opmath():
     >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
     """
+    if warn:
+        warnings.warn(
+            "Re-enabling the new Operator arithmetic system after disabling it is not advised."
+            "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
+            UserWarning,
+        )
     global __use_new_opmath
     __use_new_opmath = True
-    warnings.warn(
-        "Re-enabling the new Operator arithmetic system after disabling it is not advised."
-        "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
-        UserWarning,
-    )
 
 
-def disable_new_opmath():
+
+def disable_new_opmath(warn=True):
     """
     Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
 
@@ -2992,12 +2994,13 @@ def disable_new_opmath():
     >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.operation.Tensor'>
     """
-    warnings.warn(
-        "Disabling the new Operator arithmetic system for legacy support."
-        "If you need help troubleshooting your code, please visit"
-        "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
-        UserWarning,
-    )
+    if warn:
+        warnings.warn(
+            "Disabling the new Operator arithmetic system for legacy support."
+            "If you need help troubleshooting your code, please visit"
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
+            UserWarning,
+        )
     global __use_new_opmath
     __use_new_opmath = False
 
@@ -3051,15 +3054,15 @@ def disable_new_opmath_cm():
     was_active = qml.operation.active_new_opmath()
     try:
         if was_active:
-            disable_new_opmath()
+            disable_new_opmath(warn=False)
         yield
     except Exception as e:
         raise e
     finally:
         if was_active:
-            enable_new_opmath()
+            enable_new_opmath(warn=False)
         else:
-            disable_new_opmath()
+            disable_new_opmath(warn=False)
 
 
 @contextmanager
@@ -3069,12 +3072,12 @@ def enable_new_opmath_cm():
 
     was_active = qml.operation.active_new_opmath()
     if not was_active:
-        enable_new_opmath()
+        enable_new_opmath(warn=False)
     yield
     if was_active:
-        enable_new_opmath()
+        enable_new_opmath(warn=False)
     else:
-        disable_new_opmath()
+        disable_new_opmath(warn=False)
 
 
 # pylint: disable=too-many-branches
