@@ -25,7 +25,7 @@ def _positive_coeffs_hamiltonian(hamiltonian):
     """Transforms a Hamiltonian to ensure that the coefficients are positive.
 
     Args:
-        hamiltonian (Union[.Hamiltonian, .Sum, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
+        hamiltonian (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
 
     Returns:
         list(float), list(.Operation): The coefficients and unitaries of the transformed Hamiltonian.
@@ -56,7 +56,7 @@ class Qubitization(Operation):
     .. seealso:: :class:`~.AmplitudeEmbedding` and :class:`~.Select`.
 
     Args:
-        hamiltonian (Union[.Hamiltonian, .Sum, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
+        hamiltonian (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
         control (Iterable[Any], Wires): The control qubits for the Qubitization operator.
 
     **Example**

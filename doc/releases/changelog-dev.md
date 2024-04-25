@@ -141,7 +141,7 @@
   ```
   
   ```pycon
-  >>> print(print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8)))
+  >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
   eigenvalue: 0.7
   ```
 
