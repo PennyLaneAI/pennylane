@@ -23,7 +23,7 @@ from typing import Optional
 
 import pennylane as qml
 
-from .switches import plxpr_enabled
+from .switches import enabled
 
 has_jax = True
 try:
