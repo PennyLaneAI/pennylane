@@ -238,6 +238,7 @@ def defer_measurements(
                 qml.RX(x, 0)
                 qml.RX(x, 1)
                 qml.RX(x, 2)
+
                 mcm0 = qml.measure(0, postselect=0, reset=False)
                 mcm1 = qml.measure(1, postselect=None, reset=True)
                 mcm2 = qml.measure(2, postselect=1, reset=False)
