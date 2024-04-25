@@ -2979,7 +2979,6 @@ def enable_new_opmath(warn=True):
     __use_new_opmath = True
 
 
-
 def disable_new_opmath(warn=True):
     """
     Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
