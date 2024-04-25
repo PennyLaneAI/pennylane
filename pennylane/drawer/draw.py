@@ -47,7 +47,9 @@ def draw(
 
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
+           If not provided, the wire order defaults to the device wires. If device wires are not
+           available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             ``None`` will omit parameters from operation labels.
@@ -342,7 +344,9 @@ def draw_mpl(
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
 
     Keyword Args:
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
+           If not provided, the wire order defaults to the device wires. If device wires are not
+           available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
