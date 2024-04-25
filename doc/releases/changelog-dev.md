@@ -371,8 +371,6 @@
 * `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
 
-<h4>Community contributions 🥳</h4>
-
 * Replaced `cache_execute` with an alternate implementation based on `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
 
