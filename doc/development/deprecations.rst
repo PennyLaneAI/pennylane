@@ -56,6 +56,11 @@ New operator arithmetic deprecations
 
   - Deprecated in v0.36
 
+* Accessing terms of a tensor product ``op = X(0) @ X(1)`` via ``op.obs`` is deprecated with new operator arithmetic.
+  A user should use ``op.operands`` instead.
+
+  - Deprecated in v0.36
+
 Completed deprecation cycles
 ----------------------------
 

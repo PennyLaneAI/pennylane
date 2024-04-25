@@ -576,7 +576,10 @@ class Sum(CompositeOp):
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return sorted(list(map(str, wires)))[0], len(wires), str(op)
+            if not op.wires:
+                return ("", 0, str(op))
+            sorted_wires = sorted(list(map(str, wires)))[0]
+            return sorted_wires, len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 

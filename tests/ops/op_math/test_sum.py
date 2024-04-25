@@ -680,6 +680,12 @@ class TestProperties:
         sum_op = sum_method(*ops_lst)
         assert sum_op._queue_category is None  # pylint: disable=protected-access
 
+    def test_eigvals_Identity_no_wires(self):
+        """Test that the eigenvalues can be computed for a sum containing an identity with no wires."""
+        op1 = qml.X(0) + 2 * qml.I()
+        op2 = qml.X(0) + 2 * qml.I(0)
+        assert qml.math.allclose(sorted(op1.eigvals()), sorted(op2.eigvals()))
+
     def test_eigendecompostion(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
@@ -1144,6 +1150,16 @@ class TestSortWires:
         sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_no_wires(self):
+        """Test that sorting can occur when an operator acts on no wires."""
+
+        op_list = [qml.GlobalPhase(0.5), qml.X(0), qml.Y(1), qml.I(), qml.CNOT((1, 2)), qml.I()]
+
+        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
+
+        expected = [qml.GlobalPhase(0.5), qml.I(), qml.I(), qml.X(0), qml.Y(1), qml.CNOT((1, 2))]
+        assert sorted_list == expected
 
 
 class TestWrapperFunc:
