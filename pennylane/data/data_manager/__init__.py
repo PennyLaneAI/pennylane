@@ -20,77 +20,21 @@ import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from pathlib import Path
-from threading import RLock
 from time import sleep
 from typing import List, Optional, Union, Tuple, Iterable, Mapping
 
 from requests import get, head
-
-try:
-    from rich.progress import (
-        Progress,
-        FileSizeColumn,
-        TextColumn,
-        BarColumn,
-        TaskProgressColumn,
-    )
-
-    _PROGRESS_COLUMNS = (
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        FileSizeColumn(),
-    )
-except ImportError:
-    _PROGRESS_COLUMNS = ()
-
-    class Progress:
-        """A simple implementation of Progress that just writes to stdout with carriage-return."""
-
-        __task_name = None
-        __current = 0
-        __total = None
-        __fstring = None
-
-        def __init__(self, **_):
-            super().__init__()
-
-        def __enter__(self, *_, **__):
-            return self
-
-        def __exit__(self, *_, **__):
-            print(f"{self.__task_name} {self.__total}/{self.__total} KB")
-
-        def add_task(self, task_name: str, total: float):
-            """Implement an add_task method."""
-            if self.__task_name is not None:
-                raise ValueError("non-rich progress bar can only handle one task")
-            self.__task_name = task_name
-            self.__total = f"{total:0.2f}"
-            self.__fstring = "{:>" + str(len(self.__total)) + ".2f}"
-            print(f"{self.__task_name} {self.__fstring.format(0)}/{self.__total} KB", end="\r")
-
-        def update(self, task_id, advance: float):  # pylint:disable=unused-argument
-            """Implement an update method."""
-            if self.__task_name is None:
-                raise ValueError("no task found to update")
-            self.__current += advance
-            print(
-                f"{self.__task_name} {self.__fstring.format(self.__current)}/{self.__total} KB",
-                end="\r",
-            )
-
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
 
 from .foldermap import DataPath, FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params
+from .progress_bar import Progress, progress
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
 DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
-__RLOCK = RLock()
 
 
 @lru_cache(maxsize=1)
@@ -171,7 +115,7 @@ def _download_dataset(  # pylint:disable=too-many-arguments
     attributes: Optional[Iterable[str]],
     block_size: int,
     force: bool = False,
-    progress: Optional[Tuple[Progress, int, float]] = None,
+    progress_data: Optional[Tuple[Progress, int, float]] = None,
 ) -> None:
     """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
     only requested attributes. If ``attributes`` is not provided, every attribute
@@ -195,10 +139,9 @@ def _download_dataset(  # pylint:disable=too-many-arguments
     else:
         _download_full(s3_url, dest=dest)
 
-    if progress:
-        pbar, task, size = progress
-        with __RLOCK:
-            pbar.update(task, advance=size)
+    if progress_data:
+        pbar, task, size = progress_data
+        pbar.update(task, advance=size)
 
 
 def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
@@ -330,9 +273,10 @@ def load(  # pylint: disable=too-many-arguments
         int(head(f"{S3_URL}/{urllib.parse.quote(str(p))}").headers["Content-Length"]) / 1000
         for p in data_paths
     ]
+    total_size = sum(file_sizes)
 
-    with Progress(*_PROGRESS_COLUMNS, refresh_per_second=1000) as pbar:
-        pbar_task = pbar.add_task(f"{data_name} data:", total=sum(file_sizes))
+    with progress() as pbar:
+        pbar_task = pbar.add_task(f"{data_name} data:", total=total_size)
         with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
             futures = [
                 pool.submit(
@@ -349,6 +293,9 @@ def load(  # pylint: disable=too-many-arguments
             for result in as_completed(futures, timeout=60):
                 if result.exception() is not None:
                     raise result.exception()
+        # sometimes the last updates aren't registered
+        pbar.update(pbar_task, completed=total_size)
+        sleep(0.01)
 
     return [Dataset.open(Path(dest_path), "a") for dest_path in dest_paths]
 
