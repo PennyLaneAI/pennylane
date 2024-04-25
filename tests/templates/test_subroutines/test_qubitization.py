@@ -77,7 +77,7 @@ def test_positive_coeffs_hamiltonian(hamiltonian, expected_unitaries):
     ],
 )
 def test_operator_definition_qpe(hamiltonian):
-    """Tests Check that we can obtain the eigenvalues of H by applying the Qubitization Operator."""
+    """Tests that Qubitization can be used in QPE to obtain the eigenvalues of a Hamiltonian."""
 
     from scipy.signal import find_peaks
 
