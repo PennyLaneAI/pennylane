@@ -17,8 +17,8 @@ them.
 """
 
 import urllib.parse
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import lru_cache, partial
+from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
 from pathlib import Path
 from time import sleep
 from typing import List, Optional, Union, Tuple, Iterable, Mapping
