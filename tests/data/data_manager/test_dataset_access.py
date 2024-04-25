@@ -242,7 +242,7 @@ class TestMiscHelpers:
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
     # pylint:disable=too-many-arguments
-    def mock(data_path, dest, attributes, force, block_size, progress):
+    def mock(data_path, dest, attributes, force, block_size, progress_data):
         dset = Dataset.open(Path(dest), "w")
         dset.close()
 
