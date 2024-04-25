@@ -347,6 +347,10 @@
 
 <h4>Other improvements</h4>
 
+* `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
+  is provided by the user or the device.
+  [(#5576)](https://github.com/PennyLaneAI/pennylane/pull/5576)
+
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
   the operator it wraps.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
