@@ -103,6 +103,18 @@ def test_legacy_coeffs():
         _ = H.coeffs
 
 
+def test_obs_attribute():
+    """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
+    op = qml.prod(X(0), X(1), X(2))
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="Accessing the terms of a tensor product operator via op.obs is deprecated",
+    ):
+        obs = op.obs
+
+    assert obs == (X(0), X(1), X(2))
+
+
 # currently failing due to has_diagonalizing_gates logic
 @pytest.mark.xfail  # TODO: fix with story 49608
 def test_basic_validity():
