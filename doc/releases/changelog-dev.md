@@ -12,7 +12,7 @@
 * Added new `SpectralNormError` class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
 
-* The `qml.TrotterProduct` operator now supports error estimation functionality. 
+* The `qml.TrotterProduct` operator now supports error estimation functionality.
   [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
   ```pycon
@@ -32,7 +32,7 @@
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
-* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level.
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
@@ -63,7 +63,7 @@
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
-  
+
 * The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
 
@@ -87,7 +87,7 @@
       return qml.probs(wires=range(3))
 
   ```
-  
+
   ```pycon
   >>> print(np.round(circuit(), 3))
   [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
@@ -183,7 +183,7 @@
 
   Consider a simple circuit with three mid-circuit measurements, two of which are postselecting,
   and a single gate conditioned on those measurements:
-  
+
   ```python
   @qml.qnode(qml.device("default.qubit"))
   def node(x):
@@ -210,9 +210,9 @@
   4: ───────────────────╰X─│──│──────────├○────────├●────────├○────────┤
   5: ──────────────────────╰X─╰●─────────╰●────────╰○────────╰○────────┤
   ```
-  
+
   If we do not explicitly deactivate the optimization, we obtain a much simpler circuit:
-  
+
   ```pycon
   >>> print(qml.draw(qml.defer_measurements(node))(0.6))
   0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────┤ ╭<Z@Z>
@@ -231,14 +231,14 @@
  `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
 
-* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
+* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module.
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
 
-* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
+* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a
   noisy qutrit circuit with measurement and sampling.
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
- * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
+ * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
@@ -409,7 +409,7 @@
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
   [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
 
-* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
+* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
@@ -520,7 +520,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
+* `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct`
   now de-queue their input observable.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 

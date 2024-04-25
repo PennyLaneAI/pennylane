@@ -332,8 +332,9 @@ class MeasurementValue(Generic[T]):
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
-        for i in range(2 ** len(self.measurements)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2 ** num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
 
     def _postselected_items(self):
@@ -347,7 +348,7 @@ class MeasurementValue(Generic[T]):
             return
         for i in range(2**num_non_ps):
             # Create the branch ignoring postselected measurements
-            non_ps_branch = tuple(int(b) for b in np.binary_repr(i, width=num_non_ps))
+            non_ps_branch = tuple(int(b) for b in f"{i:0{num_non_ps}b}")
             # We want a consumable iterable and the static tuple above
             _non_ps_branch = iter(non_ps_branch)
             # Extend the branch to include postselected measurements
@@ -367,8 +368,9 @@ class MeasurementValue(Generic[T]):
     def branches(self):
         """A dictionary representing all possible outcomes of the MeasurementValue."""
         ret_dict = {}
-        for i in range(2 ** len(self.measurements)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2 ** num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
 
@@ -475,13 +477,14 @@ class MeasurementValue(Generic[T]):
         return MeasurementValue(merged_measurements, merged_fn)
 
     def __getitem__(self, i):
-        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        branch = tuple(int(b) for b in f"{i:0{len(self.measurements)}b}")
         return self.processing_fn(*branch)
 
     def __str__(self):
         lines = []
-        for i in range(2 ** (len(self.measurements))):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2 ** num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             id_branch_mapping = [
                 f"{self.measurements[j].id}={branch[j]}" for j in range(len(branch))
             ]
