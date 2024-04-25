@@ -135,7 +135,8 @@
 
   * `O`: an `Operator` (sometimes called an oracle) that flips the sign of 
     $\vert \phi \rangle$ and does nothing to $\vert \phi^{\perp} \rangle$. This 
-    can be obtained using `qml.FlipSign`, and
+    can be obtained using `qml.FlipSign` when $\vert \phi \rangle$ is a basis 
+    state, and
 
   * `iters`: the number of iterations of amplitude amplification that gets 
     applied.
