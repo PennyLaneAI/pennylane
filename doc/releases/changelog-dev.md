@@ -345,7 +345,7 @@
   In particular, this aims at preventing breaking code that uses `Tensor.obs`. This is immediately deprecated.
   Moving forward, we recommend using `op.operands`.
   [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
-  
+
 * `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
@@ -423,6 +423,10 @@
 
 * `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+  [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
+
+* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
 
 * Replaced `cache_execute` with an alternate implementation based on `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
@@ -439,6 +443,10 @@
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
 <h3>Breaking changes 💔</h3>
+
+* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
+  of whether there is classical processing in the node.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
 
 * State measurements preserve `dtype`.
   [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
@@ -547,6 +555,10 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
+  a QNode differed, based on whether the QNode uses classical coprocessing.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
 
 * `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct`
   now de-queue their input observable.
