@@ -66,7 +66,8 @@
 
   `qml.Reflection` works by providing an operation, $U$, that *prepares* the 
   desired state, $\vert \psi \rangle$, that we want to reflect about. In other 
-  words, $U$ is such that $U \vert 0 \rangle = \vert \psi \rangle$. 
+  words, $U$ is such that $U \vert 0 \rangle = \vert \psi \rangle$. In 
+  PennyLane, $U$ must be an `Operator`.
   
   For example, if we want to reflect about 
   $\vert \psi \rangle = \vert + \rangle$, then $U = H$:
@@ -86,29 +87,36 @@
   tensor([0.-6.123234e-17j, 1.+6.123234e-17j], requires_grad=True)
   ```
 
-  For cases when $U$ comprises many operations, you can create a quantum 
-  function containing each operation, one per line, then decorate the quantum
-  function with `@qml.prod`:
+  For cases where $U$ comprises many operations, you can formulate it as an 
+  `Operator` by 
+  
+  * creating a user-defined 
+    [custom operation](https://docs.pennylane.ai/en/stable/development/adding_operators.html) 
+    with a decomposition, or by
 
-  ```python
-  @qml.prod
-  def U(wires):
-      qml.Hadamard(wires=wires[0])
-      qml.RY(0.1, wires=wires[1])
+  * creating a quantum function containing each operation, one per line, then 
+    decorate the quantum function with `@qml.prod`, which turns the quantum 
+    function into a `Prod` instance:
 
-  @qml.qnode(dev)
-  def circuit():
-      qml.Reflection(U([0, 1]))
-      return qml.state()
+    ```python
+    @qml.prod
+    def U(wires):
+        qml.Hadamard(wires=wires[0])
+        qml.RY(0.1, wires=wires[1])
 
-  circuit()
-  ```
+    @qml.qnode(dev)
+    def circuit():
+        qml.Reflection(U([0, 1]))
+        return qml.state()
 
-  ```pycon
-  >>> circuit()
-  tensor([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
-         0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j], requires_grad=True)
-  ```
+    circuit()
+    ```
+
+    ```pycon
+    >>> circuit()
+    tensor([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
+          0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j], requires_grad=True)
+    ```
   
 * A high-level interface for amplitude amplification and its variants is now 
   available via the new `qml.AmplitudeAmplification` template.
@@ -120,8 +128,21 @@
   Mathematically, 
   $\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle$.
 
-  
-  TODO
+  `qml.AmplitudeAmplification` requires
+
+  * `U`: an `Operator` that prepares $\vert \Psi \rangle$ (i.e., 
+    $U \vert 0 \rangle = \vert \Psi \rangle$),
+
+  * `O`: an `Operator` (sometimes called an oracle) that flips the sign of 
+    $\vert \phi \rangle$ and does nothing to $\vert \phi^{\perp} \rangle$. This 
+    can be obtained using `qml.FlipSign`, and
+
+  * `iters`: the number of iterations of amplitude amplification that gets 
+    applied.
+
+  Here's an example with 
+  $\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle$, and
+  $U = H^{\otimes 3}$:
 
   ```python
   @qml.prod
@@ -136,17 +157,18 @@
 
   @qml.qnode(dev)
   def circuit():
-
-      generator(wires=range(3))
-      qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
+      generator(wires=range(3)) # prepares |Psi> = U|0>
+      qml.AmplitudeAmplification(U, O, iters=10)
 
       return qml.probs(wires=range(3))
   ```
   
   ```pycon
   >>> print(np.round(circuit(), 3))
-  [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
+  [0.01  0.01  0.931 0.01  0.01  0.01  0.01  0.01 ]
   ```
+
+  As expected, we amplify the $\vert 2 \rangle$ state.
 
 <h4>Make use of more methods to map from molecules 🗺️</h4>
 
