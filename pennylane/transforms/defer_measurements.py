@@ -259,7 +259,7 @@ def defer_measurements(
 
         If we do not explicitly deactivate the optimization, we obtain a much simpler circuit:
 
-        >>> print(qml.draw(qml.defer_measurements(node, reduce_postselected=False))(0.6))
+        >>> print(qml.draw(qml.defer_measurements(node))(0.6))
         0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────┤ ╭<Z@Z>
         1: ──RX(0.60)─────────│──╭●─╭X───────────┤ │
         2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|───┤ │
