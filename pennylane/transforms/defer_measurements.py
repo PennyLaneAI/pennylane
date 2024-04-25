@@ -103,7 +103,9 @@ def null_postprocessing(results):
 
 
 @transform
-def defer_measurements(tape: QuantumTape, reduce_postselected: bool=True, **kwargs) -> (Sequence[QuantumTape], Callable):
+def defer_measurements(
+    tape: QuantumTape, reduce_postselected: bool = True, **kwargs
+) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -243,7 +245,7 @@ def defer_measurements(tape: QuantumTape, reduce_postselected: bool=True, **kwar
                 qml.cond(mcm0+mcm1+mcm2==1, qml.RX)(0.5, 3)
                 return qml.expval(qml.Z(0) @ qml.Z(3))
 
-        Without the optimization, we find three gates controlled on the three measured 
+        Without the optimization, we find three gates controlled on the three measured
         qubits. They correspond to the combinations of controls that satisfy the condition
         ``mcm0+mcm1+mcm2==1``.
 
