@@ -2234,7 +2234,7 @@ class TestParameterShiftRule:
 
     def cost1(x):
         """Perform rotation and return a scalar expectation value."""
-        qml.Rot(*x, wires=0)
+        qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
         return qml.expval(qml.PauliZ(0))
 
     def cost2(x):
@@ -2245,7 +2245,7 @@ class TestParameterShiftRule:
     def cost3(x):
         """Perform rotation and return two expectation value in a 1d array."""
         qml.Rot(*x, wires=0)
-        return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+        return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
 
     def cost4(x):
         """Perform rotation and return probabilities."""
@@ -2260,17 +2260,53 @@ class TestParameterShiftRule:
     def cost6(x):
         """Perform rotation and return two sets of probabilities in a 2d object."""
         qml.Rot(*x, wires=0)
-        return [qml.probs([0, 1]), qml.probs([2, 3])]
+        return (qml.probs([0, 1]), qml.probs([2, 3]))
+
+    def cost7(x):
+        """Perform rotation and return a scalar expectation value."""
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def cost8(x):
+        """Perform rotation and return an expectation value in a 1d array."""
+        qml.RX(x, wires=0)
+        return [qml.expval(qml.PauliZ(0))]
+
+    def cost9(x):
+        """Perform rotation and return two expectation value in a 1d array."""
+        qml.RX(x, wires=0)
+        return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
+
+    costs_and_expected_expval_scalar = [
+        (cost7, (), np.ndarray),
+        (cost8, (1,), list),
+        (cost9, (2,), tuple),
+    ]
+
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_scalar)
+    def test_output_shape_matches_qnode_expval_scalar(self, cost, exp_shape, exp_type):
+        """Test that the transform output shape matches that of the QNode for
+        expectation values and a scalar parameter."""
+        dev = qml.device("default.qubit", wires=4)
+
+        x = np.array(0.419)
+        circuit = qml.QNode(cost, dev)
+
+        res_parshift = qml.gradients.param_shift(circuit)(x)
+
+        assert isinstance(res_parshift, exp_type)
+        assert np.array(res_parshift).shape == exp_shape
 
     costs_and_expected_expval = [
-        (cost1, [3]),
-        (cost2, [1, 3]),
-        (cost3, [2, 3]),
+        (cost1, [3], np.ndarray),
+        (cost2, [3], list),
+        (cost3, [2, 3], tuple),
     ]
 
-    @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_expval)
-    def test_output_shape_matches_qnode_expval(self, cost, expected_shape):
-        """Test that the transform output shape matches that of the QNode."""
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval)
+    def test_output_shape_matches_qnode_expval_array(self, cost, exp_shape, exp_type):
+        """Test that the transform output shape matches that of the QNode for
+        expectation values and an array-valued parameter."""
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
@@ -2278,44 +2314,40 @@ class TestParameterShiftRule:
 
         res = qml.gradients.param_shift(circuit)(x)
 
-        assert len(res) == expected_shape[0]
+        assert isinstance(res, exp_type)
+        if len(res) == 1:
+            res = res[0]
+        assert len(res) == exp_shape[0]
 
-        if len(expected_shape) > 1:
+        if len(exp_shape) > 1:
             for r in res:
-                assert isinstance(r, tuple)
-                assert len(r) == expected_shape[1]
+                assert isinstance(r, np.ndarray)
+                assert len(r) == exp_shape[1]
 
     costs_and_expected_probs = [
-        (cost4, [3, 4]),
-        (cost5, [1, 3, 4]),
-        (cost6, [2, 3, 4]),
+        (cost4, [4, 3], np.ndarray),
+        (cost5, [4, 3], list),
+        (cost6, [2, 4, 3], tuple),
     ]
 
-    @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_probs)
-    def test_output_shape_matches_qnode_probs(self, cost, expected_shape):
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
+    def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type):
         """Test that the transform output shape matches that of the QNode."""
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
         circuit = qml.QNode(cost, dev)
 
-        res = qml.gradients.param_shift(circuit)(x)
+        res_parshift = qml.gradients.param_shift(circuit)(x)
 
-        assert len(res) == expected_shape[0]
+        # Check data types
+        assert isinstance(res_parshift, exp_type)
+        if len(exp_shape) > 1:
+            for r in res_parshift:
+                assert isinstance(r, np.ndarray)
 
-        if len(expected_shape) > 2:
-            for r in res:
-                assert isinstance(r, tuple)
-                assert len(r) == expected_shape[1]
-
-                for _r in r:
-                    assert isinstance(_r, qml.numpy.ndarray)
-                    assert len(_r) == expected_shape[2]
-
-        elif len(expected_shape) > 1:
-            for r in res:
-                assert isinstance(r, qml.numpy.ndarray)
-                assert len(r) == expected_shape[1]
+        # Check shape, result can be put into a single array by assumption
+        assert np.allclose(np.squeeze(np.array(res_parshift)).shape, exp_shape)
 
     # TODO: revisit the following test when the Autograd interface supports
     # parameter-shift with the new return type system
@@ -3045,7 +3077,7 @@ class TestParameterShiftRuleBroadcast:
 
         def cost1(x):
             """Perform rotation and return a scalar expectation value."""
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
         def cost2(x):
@@ -3077,7 +3109,7 @@ class TestParameterShiftRuleBroadcast:
         single_measure_circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost4, cost5)]
         multi_measure_circuits = [qml.QNode(cost, dev) for cost in (cost3, cost6)]
 
-        for c, exp_shape in zip(single_measure_circuits, [(3,), (1, 3), (3, 4), (1, 3, 4)]):
+        for c, exp_shape in zip(single_measure_circuits, [(3,), (1, 3), (4, 3), (1, 4, 3)]):
             grad = qml.gradients.param_shift(c, broadcast=True)(x)
             assert qml.math.shape(grad) == exp_shape
 
@@ -4607,7 +4639,7 @@ class TestJaxArgnums:
             qml.QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
-            qml.gradients.hadamard_grad(circuit, argnum=argnums)(x, y)
+            qml.gradients.param_shift(circuit, argnum=argnums)(x, y)
 
     def test_single_expectation_value(self, argnums, interface):
         """Test for single expectation value."""
@@ -4681,7 +4713,6 @@ class TestJaxArgnums:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
         x = jax.numpy.array([0.543, -0.654])
@@ -4692,12 +4723,11 @@ class TestJaxArgnums:
         )
         res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
 
-        if argnums == [0]:
-            assert np.allclose(res[0][0], res_expected[0][0][0])
-            assert np.allclose(res[1][0], res_expected[0][0][1])
+        if len(argnums) == 1:
+            # jax.hessian produces an additional tuple axis, which we have to index away here
+            assert np.allclose(res, res_expected[0])
         else:
-            if len(argnums) != 1:
-                res = res[0]
-
-            for r, r_e in zip(res, res_expected[0]):
-                assert np.allclose(r, r_e)
+            # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]
+            for r, r_e in zip(res, res_expected):
+                for r_, r_e_ in zip(r, r_e):
+                    assert np.allclose(r_, r_e_)
