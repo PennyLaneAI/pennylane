@@ -347,6 +347,10 @@
 
 <h4>Other improvements</h4>
 
+* `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
+  is provided by the user or the device.
+  [(#5576)](https://github.com/PennyLaneAI/pennylane/pull/5576)
+
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
   the operator it wraps.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
@@ -385,6 +389,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
+  of whether there is classical processing in the node.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
+  
 * State measurements preserve `dtype`.
   [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
 
@@ -493,6 +501,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
+  a QNode differed, based on whether the QNode uses classical coprocessing.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
+
 * `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
   now de-queue their input observable.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
@@ -581,6 +593,10 @@
 
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
+* Allows `default.qubit` to measure Identity on no wires, and observables containing Identity on
+  no wires.
+  [(#5570)](https://github.com/PennyLaneAI/pennylane/pull/5570/)
 
 * Fixes a bug where `TorchLayer` does not work with shot vectors.
   [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
