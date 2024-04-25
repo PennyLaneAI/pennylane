@@ -16,7 +16,6 @@ This module contains the qml.measure measurement.
 """
 import uuid
 from typing import Generic, TypeVar, Optional
-import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
