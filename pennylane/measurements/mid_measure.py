@@ -350,10 +350,10 @@ class MeasurementValue(Generic[T]):
             # Create the branch ignoring postselected measurements
             non_ps_branch = tuple(int(b) for b in f"{i:0{num_non_ps}b}")
             # We want a consumable iterable and the static tuple above
-            _non_ps_branch = iter(non_ps_branch)
+            non_ps_branch_iter = iter(non_ps_branch)
             # Extend the branch to include postselected measurements
             full_branch = tuple(
-                ps[j] if j in ps else next(_non_ps_branch) for j in range(len(self.measurements))
+                ps[j] if j in ps else next(non_ps_branch_iter) for j in range(len(self.measurements))
             )
             # Return the reduced non-postselected branch and the procesing function
             # evaluated on the full branch
