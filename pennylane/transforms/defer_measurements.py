@@ -103,7 +103,7 @@ def null_postprocessing(results):
 
 
 @transform
-def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], Callable):
+def defer_measurements(tape: QuantumTape, reduce_postselected: bool=True, **kwargs) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -155,6 +155,8 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
+        reduce_postselected (bool): Whether or not to use postselection information to
+            reduce the number of operations and control wires in the output tape. Active by default.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
@@ -218,6 +220,52 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     >>> pars = np.array([0.643, 0.246], requires_grad=True)
     >>> func(*pars)
     tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
+
+    .. details::
+        :title: Usage Details
+
+        By default, ``defer_measurements`` makes use of postselection information of
+        mid-circuit measurements in the circuit in order to reduce the number of controlled
+        operations and control wires. We can explicitly switch this feature off and compare
+        the created circuits with and without this optimization.
+        Consider the circuit
+
+        .. code-block:: python3
+
+            @qml.qnode(qml.device("default.qubit"))
+            def node(x):
+                qml.RX(x, 0)
+                qml.RX(x, 1)
+                qml.RX(x, 2)
+                mcm0 = qml.measure(0, postselect=0, reset=False)
+                mcm1 = qml.measure(1, postselect=None, reset=True)
+                mcm2 = qml.measure(2, postselect=1, reset=False)
+                qml.cond(mcm0+mcm1+mcm2==1, qml.RX)(0.5, 3)
+                return qml.expval(qml.Z(0) @ qml.Z(3))
+
+        Without the optimization, we find three gates controlled on the three measured 
+        qubits. They correspond to the combinations of controls that satisfy the condition
+        ``mcm0+mcm1+mcm2==1``.
+
+        >>> print(qml.draw(qml.defer_measurements(node, reduce_postselected=False))(0.6))
+        0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────────────────────────────────┤ ╭<Z@Z>
+        1: ──RX(0.60)─────────│──╭●─╭X───────────────────────────────────────┤ │
+        2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|─╭○────────╭○────────╭●────────┤ │
+        3: ───────────────────│──│──│──────────├RX(0.50)─├RX(0.50)─├RX(0.50)─┤ ╰<Z@Z>
+        4: ───────────────────╰X─│──│──────────├○────────├●────────├○────────┤
+        5: ──────────────────────╰X─╰●─────────╰●────────╰○────────╰○────────┤
+
+        If we do not explicitly deactivate the optimization, we obtain a much simpler circuit:
+
+        >>> print(qml.draw(qml.defer_measurements(node, reduce_postselected=False))(0.6))
+        0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────┤ ╭<Z@Z>
+        1: ──RX(0.60)─────────│──╭●─╭X───────────┤ │
+        2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|───┤ │
+        3: ───────────────────│──│──│──╭RX(0.50)─┤ ╰<Z@Z>
+        4: ───────────────────╰X─│──│──│─────────┤
+        5: ──────────────────────╰X─╰●─╰○────────┤
+
+        There is only one controlled gate with only one control wire.
     """
 
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
@@ -226,7 +274,6 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     _check_tape_validity(tape)
 
     device = kwargs.get("device", None)
-    reduce_postselected = kwargs.get("reduce_postselected", True)
 
     new_operations = []
 

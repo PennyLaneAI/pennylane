@@ -178,7 +178,7 @@
 * When using `defer_measurements` with postselecting mid-circuit measurements, operations
   that will never be active due to the postselected state are skipped in the transformed
   quantum circuit. In addition, postselected controls are skipped, as they are evaluated
-  at transform time.
+  at transform time. This optimization feature can be turned off by setting `reduce_postselected=False`
   [(#5558)](https://github.com/PennyLaneAI/pennylane/pull/5558)
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
