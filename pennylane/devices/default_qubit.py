@@ -587,7 +587,7 @@ class DefaultQubit(Device):
             if execution_config.gradient_method in {"backprop", None}
             else None
         )
-        prng_keys = self.get_prng_keys(num=len(circuits))
+        prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
 
         if max_workers is None:
             simulate_kwargs = {
