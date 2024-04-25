@@ -30,7 +30,7 @@ try:
 except ImportError:
     _PROGRESS_COLUMNS = ()
 
-    class Progress:
+    class Progress:  # pragma: no cover
         """A simple implementation of Progress that just writes to stdout with carriage-return."""
 
         __task_name = None
