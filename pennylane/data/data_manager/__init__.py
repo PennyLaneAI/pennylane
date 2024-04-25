@@ -18,7 +18,7 @@ them.
 
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import lru_cache
+from functools import lru_cache, partial
 from pathlib import Path
 from time import sleep
 from typing import List, Optional, Union, Tuple, Iterable, Mapping
@@ -277,22 +277,19 @@ def load(  # pylint: disable=too-many-arguments
 
     with progress() as pbar:
         pbar_task = pbar.add_task(f"{data_name} data:", total=total_size)
+
+        def download_fn(data_path, dest_path, file_size):
+            _download_dataset(
+                data_path,
+                dest_path,
+                attributes=attributes,
+                force=force,
+                block_size=block_size,
+                progress_data=(pbar, pbar_task, file_size),
+            )
+
         with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
-            futures = [
-                pool.submit(
-                    _download_dataset,
-                    data_path,
-                    dest_path,
-                    attributes,
-                    force=force,
-                    block_size=block_size,
-                    progress=(pbar, pbar_task, file_size),
-                )
-                for data_path, dest_path, file_size in zip(data_paths, dest_paths, file_sizes)
-            ]
-            for result in as_completed(futures, timeout=60):
-                if result.exception() is not None:
-                    raise result.exception()
+            _ = list(pool.map(download_fn, data_paths, dest_paths, file_sizes))
         # sometimes the last updates aren't registered
         pbar.update(pbar_task, completed=total_size)
         sleep(0.01)
