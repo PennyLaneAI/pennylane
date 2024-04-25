@@ -125,7 +125,7 @@
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
 
-      # initiate the eigenvector
+      # initialize the eigenvector
       qml.PauliX(2)
 
       # apply QPE

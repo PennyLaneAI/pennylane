@@ -45,7 +45,7 @@ def _positive_coeffs_hamiltonian(hamiltonian):
 class Qubitization(Operation):
     r"""Applies the `Qubitization <https://arxiv.org/abs/2204.11890>`__ operator.
 
-    This operator encodes a Hamiltonian written as a linear combination of unitaries into unitary operator.
+    This operator encodes a Hamiltonian, written as a linear combination of unitaries, into a unitary operator.
     It is implemented with a quantum walk operator that takes a Hamiltonian as input and generates:
 
     .. math::
