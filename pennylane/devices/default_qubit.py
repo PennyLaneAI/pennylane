@@ -590,12 +590,6 @@ class DefaultQubit(Device):
         prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
 
         if max_workers is None:
-            simulate_kwargs = {
-                "rng": self._rng,
-                "debugger": self._debugger,
-                "interface": interface,
-                "state_cache": self._state_cache,
-            }
             return tuple(
                 _simulate_wrapper(
                     c,
@@ -612,10 +606,7 @@ class DefaultQubit(Device):
 
         vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-        simulate_kwargs = [
-            {"debugger": None, "interface": interface, "rng": _rng, "prng_key": _key}
-            for _rng, _key in zip(seeds, prng_keys)
-        ]
+        simulate_kwargs = [{"rng": _rng, "prng_key": _key} for _rng, _key in zip(seeds, prng_keys)]
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             exec_map = executor.map(_simulate_wrapper, vanilla_circuits, simulate_kwargs)

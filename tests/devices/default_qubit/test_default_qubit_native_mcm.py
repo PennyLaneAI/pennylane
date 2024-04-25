@@ -608,7 +608,8 @@ def test_sample_with_broadcasting_and_postselection_error():
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 def test_sample_with_prng_key(shots, postselect, reset):
-    """Test that setting a PRNGKey gives the expected behaviour"""
+    """Test that setting a PRNGKey gives the expected behaviour. With separate calls
+    to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
     # pylint: disable=import-outside-toplevel
     from jax.random import PRNGKey
 
@@ -631,6 +632,8 @@ def test_sample_with_prng_key(shots, postselect, reset):
 
     evals = obs.eigvals()
     for eig in evals:
+        # When comparing with the results from a circuit with deferred measurements
+        # we're not always expected to have the functions used to sample are different
         if isinstance(shots, list):
             for r in results1:
                 assert not np.all(np.isclose(r, eig))
@@ -638,6 +641,7 @@ def test_sample_with_prng_key(shots, postselect, reset):
             assert not np.all(np.isclose(results1, eig))
 
     results3 = func1(*param)
+    # Same result expected with multiple executions
     if isinstance(shots, list):
         for r1, r3 in zip(results1, results3):
             assert np.allclose(r1, r3)

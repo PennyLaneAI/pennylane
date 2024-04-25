@@ -1482,9 +1482,10 @@ class TestPRNGKeySeed:
         shapes = [qml.math.shape(r) for r in res]
         assert len(shapes) == n_tapes
         assert len(set(shapes)) == 1
+        # The following iterator validates that the samples for each tape are the same
         iterator = iter(res)
         first = next(iterator)
-        return all(np.array_equal(first, rest) for rest in iterator)
+        assert all(np.array_equal(first, rest) for rest in iterator)
 
 
 class TestHamiltonianSamples:
