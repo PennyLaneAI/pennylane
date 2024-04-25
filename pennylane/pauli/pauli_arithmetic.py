@@ -488,7 +488,7 @@ class PauliWord(dict):
         full_word = [self[wire] for wire in wire_order]
         matrix_size = 2 ** len(wire_order)
         if len(self) == 0:
-            return _cached_arange(matrix_size + 1)
+            return _cached_arange(matrix_size)
         indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
         current_size = 2
         _, indices[:current_size] = _cached_sparse_data(full_word[-1])
