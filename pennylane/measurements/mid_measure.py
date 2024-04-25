@@ -333,7 +333,7 @@ class MeasurementValue(Generic[T]):
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
         num_meas = len(self.measurements)
-        for i in range(2 ** num_meas):
+        for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
 
@@ -369,7 +369,7 @@ class MeasurementValue(Generic[T]):
         """A dictionary representing all possible outcomes of the MeasurementValue."""
         ret_dict = {}
         num_meas = len(self.measurements)
-        for i in range(2 ** num_meas):
+        for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
@@ -483,7 +483,7 @@ class MeasurementValue(Generic[T]):
     def __str__(self):
         lines = []
         num_meas = len(self.measurements)
-        for i in range(2 ** num_meas):
+        for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             id_branch_mapping = [
                 f"{self.measurements[j].id}={branch[j]}" for j in range(len(branch))
