@@ -166,11 +166,22 @@
 
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-  ```pycon
+  ```python
   >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
   >>> structure_const = qml.structure_constants(dla)
   >>> structure_constp.shape
   (6, 6, 6)
+  ```
+
+* We can compute the center of a dynamical Lie algebra.
+  [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
+
+  Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+
+  ```pycon
+  >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
+  >>> qml.center(g)
+  [X(0)]
   ```
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
@@ -190,9 +201,10 @@
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
-<h4>Work easily and efficiently with operators 🔧</h4>
-
 <h3>Improvements 🛠</h3>
+
+* Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
+  [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
 
 <h4>Community contributions 🥳</h4>
 
@@ -348,6 +360,10 @@
 * Obtaining classical shadows using the `default.clifford` device is now compatible with
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
+
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now handle multi-term observables with a constant offset.
+  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+  [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
 
 * `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
@@ -576,6 +592,9 @@
 
 * Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
   [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
+
+* `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
+  [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
 
 <h3>Contributors ✍️</h3>
 
