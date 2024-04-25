@@ -454,6 +454,8 @@ class PauliWord(dict):
         full_word = [self[wire] for wire in wire_order]
 
         matrix_size = 2 ** len(wire_order)
+        if len(self) == 0:
+            return np.full(matrix_size, coeff, dtype=np.complex128)
         data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
         current_size = 2
         data[:current_size], _ = _cached_sparse_data(full_word[-1])
@@ -485,6 +487,8 @@ class PauliWord(dict):
         """Computes the sparse matrix indices of the Pauli word times a coefficient, given a wire order."""
         full_word = [self[wire] for wire in wire_order]
         matrix_size = 2 ** len(wire_order)
+        if len(self) == 0:
+            return _cached_arange(matrix_size + 1)
         indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
         current_size = 2
         _, indices[:current_size] = _cached_sparse_data(full_word[-1])
@@ -890,7 +894,13 @@ class PauliSentence(dict):
         that it is composed of. See pauli_sparse_matrices.md for the technical details."""
         pauli_words = list(self)  # Ensure consistent ordering
 
-        op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
+        try:
+            op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
+        except qml.wires.WireError as e:
+            raise ValueError(
+                "Can't get the matrix for the specified wire order because it "
+                f"does not contain all the Pauli sentence's wires {self.wires}"
+            ) from e
         _, unique_sparse_structures, unique_invs = np.unique(
             op_sparse_idx, axis=0, return_index=True, return_inverse=True
         )
@@ -958,9 +968,21 @@ class PauliSentence(dict):
         )  # Non-zero entries by row (starting from 0)
         base_matrix = base_matrix.toarray()
         coeff = self[pauli_words[0]]
-        data = coeff * qml.math.convert_like(data0, coeff)
+        ml_interface = qml.math.get_interface(coeff)
+        if ml_interface == "torch":
+            data0 = qml.math.convert_like(data0, coeff)
+        elif ml_interface == "tf":
+            data0 = qml.math.cast_like(data0, coeff)
+        data = coeff * data0
         for pw in pauli_words[1:]:
-            data += self[pw] * pw._get_csr_data(wire_order, 1)
+            coeff = self[pw]
+            csr_data = pw._get_csr_data(wire_order, 1)
+            ml_interface = qml.math.get_interface(coeff)
+            if ml_interface == "torch":
+                csr_data = qml.math.convert_like(csr_data, coeff)
+            elif ml_interface == "tf":
+                csr_data = qml.math.cast_like(csr_data, coeff)
+            data += self[pw] * csr_data
 
         return qml.math.einsum("ij,i->ij", base_matrix, data)
 
