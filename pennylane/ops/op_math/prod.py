@@ -458,7 +458,6 @@ class Prod(CompositeOp):
 
         **Example**
 
-        >>> qml.operation.enable_new_opmath()
         >>> op = X(0) @ (0.5 * X(1) + X(2))
         >>> op.terms()
         ([0.5, 1.0],
