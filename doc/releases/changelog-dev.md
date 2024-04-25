@@ -166,11 +166,22 @@
 
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-  ```pycon
+  ```python
   >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
   >>> structure_const = qml.structure_constants(dla)
   >>> structure_constp.shape
   (6, 6, 6)
+  ```
+
+* We can compute the center of a dynamical Lie algebra.
+  [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
+
+  Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+
+  ```pycon
+  >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
+  >>> qml.center(g)
+  [X(0)]
   ```
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
@@ -189,8 +200,6 @@
  * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
-
-<h4>Work easily and efficiently with operators 🔧</h4>
 
 <h3>Improvements 🛠</h3>
 

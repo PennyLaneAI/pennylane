@@ -177,37 +177,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         return self.grouped_paulis
 
 
-def _calculate_partitioned_coefficients(observables, partitioned_paulis, coefficients):
-    partitioned_coeffs = [
-        qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
-    ]
-
-    observables = copy(observables)
-    # we cannot delete elements from the coefficients tensor, so we
-    # use a proxy list memorising the indices for this logic
-    coeff_indices = list(range(qml.math.shape(coefficients)[0]))
-    for i, partition in enumerate(partitioned_paulis):  # pylint:disable=too-many-nested-blocks
-        indices = []
-        for pauli_word in partition:
-            # find index of this pauli word in remaining original observables,
-            for ind, observable in enumerate(observables):
-                if are_identical_pauli_words(pauli_word, observable):
-                    indices.append(coeff_indices[ind])
-                    observables.pop(ind)
-                    coeff_indices.pop(ind)
-                    break
-
-        # add a tensor of coefficients to the grouped coefficients
-        partitioned_coeffs[i] = qml.math.take(coefficients, indices, axis=0)
-
-    # make sure the output is of the same format as the input
-    # for these two frequent cases
-    if isinstance(coefficients, list):
-        partitioned_coeffs = [list(p) for p in partitioned_coeffs]
-
-    return partitioned_coeffs
-
-
 def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
     """Partitions a list of observables (Pauli operations and tensor products thereof) into
     groupings according to a binary relation (qubit-wise commuting, fully-commuting, or
@@ -291,8 +260,45 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     if coefficients is None:
         return partitioned_paulis
 
-    partitioned_coeffs = _calculate_partitioned_coefficients(
-        observables, partitioned_paulis, coefficients
-    )
+    partitioned_coeffs = _partition_coeffs(partitioned_paulis, observables, coefficients)
 
     return partitioned_paulis, partitioned_coeffs
+
+
+def _partition_coeffs(partitioned_paulis, observables, coefficients):
+    """Partition the coefficients according to the Pauli word groupings."""
+
+    partitioned_coeffs = [
+        qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
+    ]
+
+    observables = copy(observables)
+    # we cannot delete elements from the coefficients tensor, so we
+    # use a proxy list memorising the indices for this logic
+    coeff_indices = list(range(qml.math.shape(coefficients)[0]))
+    for i, partition in enumerate(partitioned_paulis):  # pylint:disable=too-many-nested-blocks
+        indices = []
+        for pauli_word in partition:
+            # find index of this pauli word in remaining original observables,
+            for ind, observable in enumerate(observables):
+                if isinstance(observable, qml.ops.Hamiltonian):
+                    # Converts single-term Hamiltonian to SProd because
+                    # are_identical_pauli_words cannot handle Hamiltonian
+                    coeffs, ops = observable.terms()
+                    # Assuming the Hamiltonian has only one term
+                    observable = qml.s_prod(coeffs[0], ops[0])
+                if are_identical_pauli_words(pauli_word, observable):
+                    indices.append(coeff_indices[ind])
+                    observables.pop(ind)
+                    coeff_indices.pop(ind)
+                    break
+
+        # add a tensor of coefficients to the grouped coefficients
+        partitioned_coeffs[i] = qml.math.take(coefficients, indices, axis=0)
+
+    # make sure the output is of the same format as the input
+    # for these two frequent cases
+    if isinstance(coefficients, list):
+        partitioned_coeffs = [list(p) for p in partitioned_coeffs]
+
+    return partitioned_coeffs
