@@ -226,7 +226,7 @@ class PauliWord(dict):
     def _matmul(self, other):
         """Private matrix multiplication that returns (pauli_word, coeff) tuple for more lightweight processing"""
         base, iterator, swapped = (
-            (self, other, False) if len(self) > len(other) else (other, self, True)
+            (self, other, False) if len(self) >= len(other) else (other, self, True)
         )
         result = copy(dict(base))
         coeff = 1
