@@ -993,6 +993,9 @@ class TestRandomSeed:
     def test_global_seed_and_device_seed(self, measurements):
         """Test that a global seed does not affect the result of devices
         provided with a seed."""
+        # get the initial state of the RNG
+        st0 = np.random.get_state()
+
         qs = qml.tape.QuantumScript([qml.THadamard(0)], measurements, shots=1000)
 
         # expected result
@@ -1008,6 +1011,9 @@ class TestRandomSeed:
 
         if len(measurements) == 1:
             result1, result2 = [result1], [result2]
+
+        # reset the state of RNG back to what it was originally
+        np.random.set_state(st0)
 
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
 
