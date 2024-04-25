@@ -353,7 +353,8 @@ class MeasurementValue(Generic[T]):
             non_ps_branch_iter = iter(non_ps_branch)
             # Extend the branch to include postselected measurements
             full_branch = tuple(
-                ps[j] if j in ps else next(non_ps_branch_iter) for j in range(len(self.measurements))
+                ps[j] if j in ps else next(non_ps_branch_iter)
+                for j in range(len(self.measurements))
             )
             # Return the reduced non-postselected branch and the procesing function
             # evaluated on the full branch
