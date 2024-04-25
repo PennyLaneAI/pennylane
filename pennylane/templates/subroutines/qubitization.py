@@ -15,6 +15,7 @@
 This submodule contains the template for Qubitization.
 """
 
+import copy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation
@@ -72,7 +73,7 @@ class Qubitization(Operation):
             # initiate the eigenvector
             qml.PauliX(2)
 
-            # apply QPE (used iterative qpe here)
+            # apply QPE
             measurements = qml.iterative_qpe(
                          qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
                          )
@@ -111,6 +112,22 @@ class Qubitization(Operation):
         hamiltonian = data[0]
         hyperparams_dict = dict(metadata)
         return cls(hamiltonian, **hyperparams_dict)
+
+    def __copy__(self):
+
+        clone = Qubitization.__new__(Qubitization)
+
+        # Ensure the operators in the hyper-parameters are copied instead of aliased.
+        clone._hyperparameters = {
+            "hamiltonian": copy.copy(self._hyperparameters["hamiltonian"]),
+            "control": copy.copy(self._hyperparameters["control"]),
+        }
+
+        for attr, value in vars(self).items():
+            if attr != "_hyperparameters":
+                setattr(clone, attr, value)
+
+        return clone
 
     @staticmethod
     def compute_decomposition(*_, **kwargs):  # pylint: disable=arguments-differ

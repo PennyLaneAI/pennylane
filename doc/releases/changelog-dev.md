@@ -128,7 +128,7 @@
       # initiate the eigenvector
       qml.PauliX(2)
 
-      # apply QPE (used iterative qpe here)
+      # apply QPE
       measurements = qml.iterative_qpe(
                     qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
                     )

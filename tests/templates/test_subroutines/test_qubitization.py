@@ -15,6 +15,7 @@
 Tests for the Qubitization template.
 """
 
+import copy
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
@@ -251,7 +252,7 @@ class TestDifferentiability:
     @pytest.mark.torch
     @pytest.mark.parametrize(
         "shots", [None]
-    )  # TODO: finite shots fails because products are not currently differentiable in this case.
+    )  # TODO: finite shots fails because Prod is not currently differentiable.
     def test_qnode_torch(self, shots):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
@@ -306,3 +307,29 @@ class TestDifferentiability:
             return qml.expval(qml.PauliZ(0))
 
         assert np.allclose(qml.grad(circuit_dot)(coeffs), qml.grad(circuit_Hamiltonian)(coeffs))
+
+
+def test_copy():
+    """Test that a Qubitization operator can be copied."""
+
+    H = qml.dot([1.0, 2.0], [qml.PauliX(0), qml.PauliZ(1)])
+
+    orig_op = qml.Qubitization(H, control=[2, 3])
+    copy_op = copy.copy(orig_op)
+    assert qml.equal(orig_op, copy_op)
+
+    # Ensure the (nested) operations are copied instead of aliased.
+    assert orig_op is not copy_op
+    assert orig_op.hyperparameters["hamiltonian"] is not copy_op.hyperparameters["hamiltonian"]
+    assert orig_op.hyperparameters["control"] is not copy_op.hyperparameters["control"]
+
+
+def test_map_wires():
+    """Test that a Qubitization operator can be mapped to a different wire mapping."""
+
+    H = qml.dot([1.0, 2.0], [qml.PauliX(0), qml.PauliZ(1)])
+
+    op = qml.Qubitization(H, control=[2, 3])
+    op2 = op.map_wires({0: 5, 1: 6, 2: 7, 3: 8})
+
+    assert op2.wires == qml.wires.Wires([5, 6, 7, 8])
