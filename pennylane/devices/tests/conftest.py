@@ -91,7 +91,7 @@ def validate_diff_method(device, diff_method, device_kwargs):
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
-    if isinstance(dev, qml.Device):
+    if isinstance(dev, qml.devices.LegacyDevice):
         passthru_devices = dev.capabilities().get("passthru_devices")
         if diff_method == "backprop" and passthru_devices is None:
             pytest.skip(reason="device does not support backprop")
@@ -122,7 +122,7 @@ def fixture_device(device_kwargs):
                 f"plugin and all of its dependencies must be installed."
             )
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             capabilities = dev.capabilities()
             if capabilities.get("model", None) != "qubit":
                 # exit the tests if device based on cv model (currently not supported)

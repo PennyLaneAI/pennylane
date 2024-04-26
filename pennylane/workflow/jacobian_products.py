@@ -331,7 +331,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
 
 class DeviceDerivatives(JacobianProductCalculator):
-    """Calculate jacobian products via a device provided jacobian.  This class relies on either ``qml.Device.gradients`` or
+    """Calculate jacobian products via a device provided jacobian.  This class relies on either ``qml.devices.LegacyDevice.gradients`` or
     ``qml.devices.Device.compute_derivatives``.
 
     Args:
@@ -396,7 +396,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: Union["qml.devices.Device", "qml.Device"],
+        device: Union["qml.devices.Device", "qml.devices.LegacyDevice"],
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
         gradient_kwargs: dict = None,
     ):
@@ -414,7 +414,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._uses_new_device = not isinstance(device, qml.Device)
+        self._uses_new_device = not isinstance(device, qml.devices.LegacyDevice)
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)

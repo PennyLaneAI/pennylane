@@ -152,12 +152,12 @@ def mock_device(monkeypatch):
     """A mock instance of the abstract Device class"""
 
     with monkeypatch.context() as m:
-        dev = qml.Device
+        dev = qml.devices.LegacyDevice
         m.setattr(dev, "__abstractmethods__", frozenset())
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.Device(wires=2)  # pylint:disable=abstract-class-instantiated
+        yield qml.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
 
 
 # pylint: disable=protected-access
