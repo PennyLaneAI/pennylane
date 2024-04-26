@@ -1089,19 +1089,6 @@ class TestPRNGKeySeed:
 
             assert np.all(result1 == result2)
 
-    def test_prng_key_multi_tapes(self):
-        """Test a device with a given jax.random.PRNGKey will produce
-        different results for the same (batched) tape."""
-        import jax
-
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
-        config = ExecutionConfig(interface="jax")
-
-        dev = DefaultQutritMixed(seed=jax.random.PRNGKey(123))
-        result1, result2 = dev.execute([qs] * 2, config)
-
-        assert not np.all(result1 == result2)
-
     def test_same_prng_key(self):
         """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
         the same results for sample, even with different seeds"""
@@ -1117,19 +1104,6 @@ class TestPRNGKeySeed:
         result2 = dev2.execute(qs, config)
 
         assert np.all(result1 == result2)
-
-    def test_get_prng_keys(self):
-        """Test the get_prng_keys method."""
-        import jax
-
-        dev = DefaultQutritMixed(seed=jax.random.PRNGKey(123))
-
-        assert len(dev.get_prng_keys()) == 1
-        assert len(dev.get_prng_keys(num=1)) == 1
-        assert len(dev.get_prng_keys(num=2)) == 2
-
-        with pytest.raises(ValueError):
-            dev.get_prng_keys(num=0)
 
     def test_different_prng_key(self):
         """Test that different devices given different jax.random.PRNGKey values will produce

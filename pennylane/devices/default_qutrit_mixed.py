@@ -164,6 +164,10 @@ class DefaultQutritMixed(Device):
         """The name of the device."""
         return "default.qutrit.mixed"
 
+    def reset_prng_key(self):
+        """Reset the RNG key to its initial value."""
+        self._prng_key = self._prng_seed
+
     def __init__(
         self,
         wires=None,
@@ -173,9 +177,11 @@ class DefaultQutritMixed(Device):
         super().__init__(wires=wires, shots=shots)
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         if qml.math.get_interface(seed) == "jax":
+            self._prng_seed = seed
             self._prng_key = seed
             self._rng = np.random.default_rng(None)
         else:
+            self._prng_seed = None
             self._prng_key = None
             self._rng = np.random.default_rng(seed)
         self._debugger = None
