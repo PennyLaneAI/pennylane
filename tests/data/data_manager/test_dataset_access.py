@@ -28,11 +28,12 @@ from pennylane.data import Dataset
 from pennylane.data.data_manager import S3_URL, DataPath, _validate_attributes
 
 has_rich = False
-# try:
-#     import rich
-#     has_rich = True
-# except ImportError:
-#     pass
+try:
+    import rich  # pylint:disable=unused-import
+
+    has_rich = True
+except ImportError:
+    pass
 
 # pylint:disable=protected-access,redefined-outer-name
 

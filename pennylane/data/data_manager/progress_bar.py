@@ -13,7 +13,7 @@
 # limitations under the License.
 """A library for showing loading progress, using ``rich`` or basic stdout."""
 try:
-    from brich.progress import (
+    from rich.progress import (
         Progress,
         FileSizeColumn,
         TextColumn,
