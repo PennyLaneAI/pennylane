@@ -68,6 +68,7 @@ def test_debugger_attribute():
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
 
+    # pylint: disable=too-few-public-methods
     class MyOp(qml.operation.Operator):
         pass
 
