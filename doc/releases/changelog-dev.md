@@ -114,7 +114,37 @@
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
-<h4>Calculate dynamical Lie algebras 👾</h4>
+
+* Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
+  When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
+  [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
+
+  ```python
+  H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+
+      # initialize the eigenvector
+      qml.PauliX(2)
+
+      # apply QPE
+      measurements = qml.iterative_qpe(
+                    qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
+                    )
+      return qml.probs(op = measurements)
+  
+  output = circuit()
+  
+  # post-processing 
+  lamb = sum([abs(c) for c in H.terms()[0]])
+  ```
+  
+  ```pycon
+  >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
+  eigenvalue: 0.7
+  ```
+
 
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
@@ -347,6 +377,10 @@
 
 <h4>Other improvements</h4>
 
+* `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
+  is provided by the user or the device.
+  [(#5576)](https://github.com/PennyLaneAI/pennylane/pull/5576)
+
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
   the operator it wraps.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
@@ -367,6 +401,10 @@
 
 * `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+  [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
+
+* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
 
 * Replaced `cache_execute` with an alternate implementation based on `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
@@ -384,6 +422,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
+  of whether there is classical processing in the node.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
+  
 * State measurements preserve `dtype`.
   [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
 
@@ -492,6 +534,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
+  a QNode differed, based on whether the QNode uses classical coprocessing.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
+
 * `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
   now de-queue their input observable.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
@@ -580,6 +626,10 @@
 
 * Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
+
+* Allows `default.qubit` to measure Identity on no wires, and observables containing Identity on
+  no wires.
+  [(#5570)](https://github.com/PennyLaneAI/pennylane/pull/5570/)
 
 * Fixes a bug where `TorchLayer` does not work with shot vectors.
   [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)

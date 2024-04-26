@@ -1024,6 +1024,13 @@ class TestProperties:
 
         assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
 
+    def test_eigvals_no_wires_identity(self):
+        """Test that eigvals can be computed if a component is an identity on no wires."""
+        op = qml.X(0) @ qml.Y(1) @ qml.I()
+        op2 = qml.X(0) @ qml.Y(1)
+
+        assert qml.math.allclose(op.eigvals(), op2.eigvals())
+
     # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
