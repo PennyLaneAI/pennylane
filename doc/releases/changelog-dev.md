@@ -7,10 +7,6 @@
 * Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
   [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
 
-* Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
-  quantum-classical programs.
-  [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
-
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
 * Added `error` method to `QuantumPhaseEstimation` template.
