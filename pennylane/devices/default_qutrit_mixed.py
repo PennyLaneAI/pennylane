@@ -164,10 +164,6 @@ class DefaultQutritMixed(Device):
         """The name of the device."""
         return "default.qutrit.mixed"
 
-    def reset_prng_key(self):
-        """Reset the RNG key to its initial value."""
-        self._prng_key = self._prng_seed
-
     def __init__(
         self,
         wires=None,
