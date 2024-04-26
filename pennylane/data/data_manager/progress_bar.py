@@ -13,7 +13,7 @@
 # limitations under the License.
 """A library for showing loading progress, using ``rich`` or basic stdout."""
 try:
-    from rich.progress import (
+    from brich.progress import (
         Progress,
         FileSizeColumn,
         TextColumn,
@@ -30,7 +30,7 @@ try:
 except ImportError:
     _PROGRESS_COLUMNS = ()
 
-    class Progress:  # pragma: no cover
+    class Progress:
         """A simple implementation of Progress that just writes to stdout with carriage-return."""
 
         __task_name = None
@@ -66,7 +66,7 @@ except ImportError:
                 self.__current = completed
             print(
                 f"{self.__task_name} {self.__fstring.format(self.__current)}/{self.__total} KB",
-                end="\r",
+                end="\r" if advance else "\n",
             )
 
 

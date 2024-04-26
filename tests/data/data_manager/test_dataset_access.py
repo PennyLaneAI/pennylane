@@ -27,6 +27,13 @@ import pennylane.data.data_manager
 from pennylane.data import Dataset
 from pennylane.data.data_manager import S3_URL, DataPath, _validate_attributes
 
+has_rich = False
+# try:
+#     import rich
+#     has_rich = True
+# except ImportError:
+#     pass
+
 # pylint:disable=protected-access,redefined-outer-name
 
 
@@ -237,6 +244,49 @@ class TestMiscHelpers:
         assert qml.data.list_attributes("qchem") == _data_struct["qchem"]["attributes"]
         with pytest.raises(ValueError, match="Currently the hosted datasets are of types"):
             qml.data.list_attributes("invalid_data_name")
+
+
+@pytest.mark.skipif(has_rich, reason="tests the non-rich implementation")
+@patch("pennylane.data.data_manager._download_partial")
+class TestProgressBar:
+    """Test the naive progress bar implementation."""
+
+    def test_download_basic(self, download_partial, mocker):
+        """Test that update is called."""
+        with pennylane.data.data_manager.progress() as pbar:
+            spy = mocker.spy(pbar, "update")
+            task = pbar.add_task("qchem data:", total=100)
+            pennylane.data.data_manager._download_dataset(
+                "foo/bar",
+                "dest/foo/bar",
+                attributes=["baz"],
+                block_size=100,
+                progress_data=(pbar, task, 10),
+            )
+            spy.assert_called_once_with(task, advance=10)
+
+    def test_naive_only_supports_one_task(self, download_partial):
+        """Test that the progress bar can only have one task."""
+        with pennylane.data.data_manager.progress() as pbar:
+            pbar.add_task("qchem data:", total=100)
+            with pytest.raises(ValueError, match="non-rich progress bar can only handle one task"):
+                pbar.add_task("qspin data:", total=100)
+
+    def test_progress_bar_update(self, download_partial, capsys):
+        """Test the various parts of the update function."""
+        with pennylane.data.data_manager.progress() as pbar:
+            with pytest.raises(ValueError, match="no task found to update"):
+                pbar.update(0)
+
+            task = pbar.add_task("qchem data:", total=100)
+
+            pbar.update(task, advance=20)
+            out, _err = capsys.readouterr()
+            assert out == "qchem data:   0.00/100.00 KB\rqchem data:  20.00/100.00 KB\r"
+
+            pbar.update(task, completed=100)
+            out, _err = capsys.readouterr()
+            assert out == "qchem data: 100.00/100.00 KB\n"
 
 
 @pytest.fixture

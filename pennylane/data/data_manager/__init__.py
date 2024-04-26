@@ -139,7 +139,7 @@ def _download_dataset(  # pylint:disable=too-many-arguments
     else:
         _download_full(s3_url, dest=dest)
 
-    if progress_data:  # pragma: no cover
+    if progress_data:
         pbar, task, size = progress_data
         pbar.update(task, advance=size)
 
