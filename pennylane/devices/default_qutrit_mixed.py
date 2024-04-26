@@ -207,7 +207,7 @@ class DefaultQutritMixed(Device):
             circuit (QuantumTape): An optional circuit to check derivatives support for.
 
         Returns:
-            Bool: Whether or not a derivative can be calculated provided the given information.
+            bool: Whether or not a derivative can be calculated provided the given information.
 
         """
         if execution_config is None or execution_config.gradient_method in {"backprop", "best"}:
@@ -252,9 +252,9 @@ class DefaultQutritMixed(Device):
 
         Returns:
             TransformProgram, ExecutionConfig: A transform program that when called returns
-                ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
-                function to be called after execution, and a configuration with unset
-                specifications filled in.
+            ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
+            function to be called after execution, and a configuration with unset
+            specifications filled in.
 
         This device:
 

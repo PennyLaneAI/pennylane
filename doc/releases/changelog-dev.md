@@ -426,7 +426,6 @@
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
-
 <h3>Breaking changes 💔</h3>
 
 * Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
