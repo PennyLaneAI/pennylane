@@ -26,7 +26,7 @@ import logging
 import numpy as np
 from pennylane import math
 from pennylane.devices.execution_config import ExecutionConfig
-from pennylane.devices.modifiers import simulator_tracking, single_tape_support
+from pennylane.devices.modifiers import single_tape_support
 from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 
 from pennylane.tape import QuantumTape
@@ -42,10 +42,14 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     DensityMatrixMP,
 )
+from pennylane.resource import ResourcesOperation
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .preprocess import decompose
+
+
+from .qubit.sampling import get_num_shots_and_executions
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -144,8 +148,15 @@ def _setup_execution_config(execution_config: ExecutionConfig) -> ExecutionConfi
     return replace(execution_config, **updated_values)
 
 
-# pylint: disable=too-many-arguments
-@simulator_tracking
+def resources_stopping_condition(op) -> bool:
+    """A function that determines what gateset we should decompose to when calculating the resources for a circuit."""
+    if isinstance(op, ResourcesOperation):
+        return True
+    if not op.has_decomposition:
+        return True  # allow ops without decomps through without error
+    return len(op.wires) < 5  # dividing line between more primitive gates and larger templates
+
+
 @single_tape_support
 class NullQubit(Device):
     """Null qubit device for PennyLane. This device performs no operations involved in numerical calculations.
@@ -255,29 +266,24 @@ class NullQubit(Device):
         self,
         wires=None,
         shots=None,
-        target_device=None,
-        operations=None,
+        target="algorithm",
         assume_no_broadcasting=False,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
         self._assume_no_broadcasting = assume_no_broadcasting
-        if target_device and not isinstance(target_device, Device):
+        if target != "algorithm" and not isinstance(target, Device):
             raise NotImplementedError(
                 "null.qubit only supports target devices that obey the new device interface"
             )
-        if target_device and operations:
-            raise NotImplementedError(
-                "null.qubit accepts either target_device or operations, but not both."
-            )
 
-        self._target_device = target_device
-        self._operations = operations
+        self._target = target
 
     def _get_batch_size(self, circuit):
         return None if self._assume_no_broadcasting else circuit.batch_size
 
     def _simulate(self, circuit, interface):
+
         shots = circuit.shots
         obj_with_wires = self if self.wires else circuit
 
@@ -329,19 +335,9 @@ class NullQubit(Device):
     def preprocess(
         self, execution_config=DefaultExecutionConfig
     ) -> Tuple[TransformProgram, ExecutionConfig]:
-        if self._target_device:
-            return self._target_device.preprocess(execution_config)
-
-        program = TransformProgram()
-
-        if self._operations is not None:
-
-            def stopping_condition(op) -> bool:
-                return op.name in self._operations or type(op) in self._operations
-
-            program.add_transform(decompose, stopping_condition=stopping_condition)
-
-        return program, _setup_execution_config(execution_config)
+        if self._target == "algorithm":
+            return TransformProgram(), _setup_execution_config(execution_config)
+        return self._target.preprocess(execution_config)
 
     def execute(
         self,
@@ -357,13 +353,33 @@ class NullQubit(Device):
                 ),
             )
 
+        if self.tracker.active:
+
+            self.tracker.update(batches=1)
+            self.tracker.record()
+            for c in circuits:
+                resources_c = decompose(c, stopping_condition=resources_stopping_condition)[0][0]
+
+                qpu_executions, shots = get_num_shots_and_executions(c)
+                update_kwargs = {
+                    "simulations": 1,
+                    "executions": qpu_executions,
+                    "resources": resources_c.specs["resources"],
+                    "errors": c.specs["errors"],
+                }
+                if c.shots:
+                    self.tracker.update(**update_kwargs, shots=shots)
+                else:
+                    self.tracker.update(**update_kwargs)
+                self.tracker.record()
+
         return tuple(
             self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
 
     def supports_derivatives(self, execution_config=None, circuit=None):
-        if self._target_device:
-            return self._target_device.supports_derivatives(execution_config, circuit=circuit)
+        if isinstance(self._target, Device):
+            return self._target.supports_derivatives(execution_config, circuit=circuit)
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
@@ -371,8 +387,8 @@ class NullQubit(Device):
         )
 
     def supports_vjp(self, execution_config=None, circuit=None):
-        if self._target_device:
-            return self._target_device.supports_vjp(execution_config, circuit=circuit)
+        if isinstance(self._target, Device):
+            return self._target.supports_vjp(execution_config, circuit=circuit)
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
@@ -380,8 +396,8 @@ class NullQubit(Device):
         )
 
     def supports_jvp(self, execution_config=None, circuit=None):
-        if self._target_device:
-            return self._target_device.supports_jvp(execution_config, circuit=circuit)
+        if isinstance(self._target, Device):
+            return self._target.supports_jvp(execution_config, circuit=circuit)
         return execution_config is None or execution_config.gradient_method in (
             "device",
             "backprop",
