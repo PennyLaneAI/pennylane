@@ -971,8 +971,6 @@ class PauliSentence(dict):
         ml_interface = qml.math.get_interface(coeff)
         if ml_interface == "torch":
             data0 = qml.math.convert_like(data0, coeff)
-        elif ml_interface == "tf":
-            data0 = qml.math.cast_like(data0, coeff)
         data = coeff * data0
         for pw in pauli_words[1:]:
             coeff = self[pw]
@@ -980,8 +978,6 @@ class PauliSentence(dict):
             ml_interface = qml.math.get_interface(coeff)
             if ml_interface == "torch":
                 csr_data = qml.math.convert_like(csr_data, coeff)
-            elif ml_interface == "tf":
-                csr_data = qml.math.cast_like(csr_data, coeff)
             data += self[pw] * csr_data
 
         return qml.math.einsum("ij,i->ij", base_matrix, data)
