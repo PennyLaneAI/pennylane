@@ -141,6 +141,11 @@ class CommutingEvolution(Operation):
 
         super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
 
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["hamiltonian"])
+        context.append(self)
+        return self
+
     @staticmethod
     def compute_decomposition(
         time, *_, wires, hamiltonian, **__

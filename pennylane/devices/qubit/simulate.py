@@ -15,20 +15,17 @@
 # pylint: disable=protected-access
 from typing import Optional
 
-from numpy.random import default_rng
 import numpy as np
+from numpy.random import default_rng
 
 import pennylane as qml
-from pennylane.measurements import (
-    MidMeasureMP,
-)
+from pennylane.measurements import MidMeasureMP
 from pennylane.typing import Result
 
-from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
+from .initialize_state import create_initial_state
 from .measure import measure
-from .sampling import measure_with_samples
-
+from .sampling import jax_random_split, measure_with_samples
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
@@ -153,7 +150,10 @@ def get_final_state(circuit, debugger=None, interface=None, mid_measurements=Non
     return state, is_state_batched
 
 
-def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
+# pylint: disable=too-many-arguments
+def measure_final_state(
+    circuit, state, is_state_batched, rng=None, prng_key=None, mid_measurements: dict = None
+) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -170,6 +170,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
+        mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
         Tuple[TensorLike]: The measurement results
@@ -177,8 +178,11 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
 
     circuit = circuit.map_to_standard_wires()
 
+    # analytic case
+
     if not circuit.shots:
-        # analytic case
+        if mid_measurements is not None:
+            raise TypeError("Native mid-circuit measurements are only supported with finite shots.")
 
         if len(circuit.measurements) == 1:
             return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
@@ -197,6 +201,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
         is_state_batched=is_state_batched,
         rng=rng,
         prng_key=prng_key,
+        mid_measurements=mid_measurements,
     )
 
     if len(circuit.measurements) == 1:
@@ -248,11 +253,14 @@ def simulate(
     """
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
-        return simulate_one_shot_native_mcm(circuit, rng, prng_key, debugger, interface)
+        return simulate_one_shot_native_mcm(
+            circuit, rng, prng_key=prng_key, debugger=debugger, interface=interface
+        )
+    _, key = jax_random_split(prng_key)
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     if state_cache is not None:
         state_cache[circuit.hash] = state
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=key)
 
 
 def simulate_one_shot_native_mcm(
@@ -279,13 +287,16 @@ def simulate_one_shot_native_mcm(
         tuple(TensorLike): The results of the simulation
         dict: The mid-circuit measurement results of the simulation
     """
-    mcm_dict = {}
+    _, key = jax_random_split(prng_key)
+    mid_measurements = {}
     state, is_state_batched = get_final_state(
-        circuit, debugger=debugger, interface=interface, mid_measurements=mcm_dict
+        circuit, debugger=debugger, interface=interface, mid_measurements=mid_measurements
     )
-    if not np.allclose(np.linalg.norm(state), 1.0):
-        return None, mcm_dict
-    return (
-        measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key),
-        mcm_dict,
+    return measure_final_state(
+        circuit,
+        state,
+        is_state_batched,
+        rng=rng,
+        prng_key=key,
+        mid_measurements=mid_measurements,
     )

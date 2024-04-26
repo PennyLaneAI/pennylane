@@ -379,6 +379,10 @@ def reorder_grads(grads, tape_specs):
     return _move_first_axis_to_third_pos(grads, num_params, shots.num_copies, num_measurements)
 
 
+tdot = partial(qml.math.tensordot, axes=[[0], [0]])
+stack = qml.math.stack
+
+
 # pylint: disable=too-many-return-statements,too-many-branches
 def _contract_qjac_with_cjac(qjac, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
@@ -397,52 +401,58 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
         cjac = cjac[0]
 
     cjac_is_tuple = isinstance(cjac, tuple)
-    if not cjac_is_tuple:
-        is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-        if not qml.math.is_abstract(cjac) and (
-            is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0]))
-        ):
-            # Classical Jacobian is the identity. No classical processing is present in the QNode
-            return qjac
 
     multi_meas = num_measurements > 1
 
+    # This block only figures out whether there is a single tape parameter or not
     if cjac_is_tuple:
-        multi_params = True
+        single_tape_param = False
     else:
+        # Peel out a single measurement's and single shot setting's qjac
         _qjac = qjac
         if multi_meas:
             _qjac = _qjac[0]
         if has_partitioned_shots:
             _qjac = _qjac[0]
-        multi_params = isinstance(_qjac, tuple)
+        single_tape_param = not isinstance(_qjac, tuple)
 
-    tdot = partial(qml.math.tensordot, axes=[[0], [0]])
-
-    if not multi_params:
+    if single_tape_param:
         # Without dimension (e.g. expval) or with dimension (e.g. probs)
         def _reshape(x):
             return qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
         if not (multi_meas or has_partitioned_shots):
-            # Single parameter, single measurements
+            # Single parameter, single measurements, no shot vector
             return tdot(_reshape(qjac), cjac)
 
         if not (multi_meas and has_partitioned_shots):
+            # Single parameter, multiple measurements or shot vector, but not both
             return tuple(tdot(_reshape(q), cjac) for q in qjac)
 
-        # Single parameter, multiple measurements
+        # Single parameter, multiple measurements, and shot vector
         return tuple(tuple(tdot(_reshape(_q), cjac) for _q in q) for q in qjac)
 
     if not multi_meas:
         # Multiple parameters, single measurement
-        qjac = qml.math.stack(qjac)
+        qjac = stack(qjac)
         if not cjac_is_tuple:
-            return tdot(qjac, qml.math.stack(cjac))
+            cjac = stack(cjac)
+            if has_partitioned_shots:
+                return tuple(tdot(stack(q), cjac) for q in qjac)
+            return tdot(qjac, cjac)
+        if has_partitioned_shots:
+            return tuple(tuple(tdot(q, c) for c in cjac if c is not None) for q in qjac)
         return tuple(tdot(qjac, c) for c in cjac if c is not None)
 
     # Multiple parameters, multiple measurements
     if not cjac_is_tuple:
-        return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
-    return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
+        cjac = stack(cjac)
+        if has_partitioned_shots:
+            return tuple(tuple(tdot(stack(_q), cjac) for _q in q) for q in qjac)
+        return tuple(tdot(stack(q), cjac) for q in qjac)
+    if has_partitioned_shots:
+        return tuple(
+            tuple(tuple(tdot(stack(_q), c) for c in cjac if c is not None) for _q in q)
+            for q in qjac
+        )
+    return tuple(tuple(tdot(stack(q), c) for c in cjac if c is not None) for q in qjac)
