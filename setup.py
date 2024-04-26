@@ -21,7 +21,7 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy",
+    "numpy<2.0",
     "scipy",
     "networkx",
     "rustworkx",
