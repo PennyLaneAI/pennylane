@@ -347,6 +347,10 @@
 
 <h4>Other improvements</h4>
 
+* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
+  is now faster.
+  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
+
 * `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
   is provided by the user or the device.
   [(#5576)](https://github.com/PennyLaneAI/pennylane/pull/5576)
