@@ -472,15 +472,20 @@ def _make_probs_tape(tape):
     )
 
 
-def _requires_mcm_treatment(tape):
-    return _get_mcms(tape) != []
-
-
-def _get_mcms(tape):
-    return [
+def _requires_mcm_treatment(tape, argnum):
+    argnum = argnum or tape.trainable_params
+    mcms = [
         op for op in tape.operations if isinstance(op, MidMeasureMP) and op.postselect is not None
     ]
-
+    for idx, _ in enumerate(tape.trainable_params):
+        if idx not in argnum:
+            continue
+        op, op_idx, _ = tape.get_operation(idx)
+        if any(tape.graph.has_path(op, mcm) for mcm in mcms):
+            # At least one MCM impacts at least one trainable operation
+            return True
+    # No MCM impacts any trainable operations
+    return False
 
 def expval_param_shift_with_mcms(
     tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
@@ -528,12 +533,10 @@ def expval_param_shift_with_mcms(
 
     probs_tape, postselects = _make_probs_tape(tape)
     postselect_int = np.dot(postselects, 1 << np.arange(len(postselects))[::-1])
-    mcms = _get_mcms(tape)
 
     gradient_tapes = []
     probs_gradient_tapes = []
 
-    using_p_tapes = False
     for idx, _ in enumerate(tape.trainable_params):
         if idx not in argnum:
             # parameter has zero gradient
@@ -574,7 +577,6 @@ def expval_param_shift_with_mcms(
             pg_tapes = generate_shifted_tapes(probs_tape, idx, op_shifts, multipliers, broadcast)
             probs_gradient_tapes.extend(pg_tapes)
             num_pg_tapes = len(pg_tapes)
-            using_p_tapes = True
         else:
             num_pg_tapes = 0
 
@@ -586,16 +588,12 @@ def expval_param_shift_with_mcms(
             (len(g_tapes), coeffs, None, unshifted_coeff, batch_size, num_pg_tapes)
         )
 
-    if using_p_tapes:
-        if at_least_one_unshifted:
-            all_tapes = [*gradient_tapes, probs_tape, *probs_gradient_tapes]
-        else:
-            all_tapes = [tape, *gradient_tapes, probs_tape, *probs_gradient_tapes]
-            at_least_one_unshifted = True
-        num_pg_tapes = len(probs_gradient_tapes)
+    if at_least_one_unshifted:
+        all_tapes = [*gradient_tapes, probs_tape, *probs_gradient_tapes]
     else:
-        all_tapes = gradient_tapes
-        num_pg_tapes = 0
+        all_tapes = [tape, *gradient_tapes, probs_tape, *probs_gradient_tapes]
+        at_least_one_unshifted = True
+    num_pg_tapes = len(probs_gradient_tapes)
     num_g_tapes = len(gradient_tapes)
 
     num_measurements = len(tape.measurements)
@@ -604,17 +602,9 @@ def expval_param_shift_with_mcms(
     tape_specs = (single_measure, num_params, num_measurements, tape.shots)
 
     def processing_fn(results):
-        if using_p_tapes:
-            p_results = [pr[postselect_int] for pr in results[num_g_tapes + 1 :]]
-            p0, *p_results = p_results
-            r0, *results = results[: num_g_tapes + 1]
-
-        else:
-            if at_least_one_unshifted and f0 is None:
-                r0 = results[0]
-                results = results[1:]
-            else:
-                r0 = f0
+        p_results = [pr[postselect_int] for pr in results[num_g_tapes + 1 :]]
+        p0, *p_results = p_results
+        r0, *results = results[: num_g_tapes + 1]
 
         g_start = 0
         p_start = 0
@@ -1339,7 +1329,8 @@ def param_shift(
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
-    elif (not deactivate_mcms) and _requires_mcm_treatment(tape):  # Todo: refine this criterion
+    elif (not deactivate_mcms) and _requires_mcm_treatment(tape, argnum):
+    #elif _requires_mcm_treatment(tape):
         g_tapes, fn = expval_param_shift_with_mcms(
             tape, argnum, shifts, gradient_recipes, f0, broadcast
         )
