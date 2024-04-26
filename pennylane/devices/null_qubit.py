@@ -29,7 +29,8 @@ from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import single_tape_support
 from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 
-from pennylane.tape import QuantumTape
+import pennylane as qml
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.measurements import (
@@ -154,6 +155,8 @@ def resources_stopping_condition(op) -> bool:
         return True
     if not op.has_decomposition:
         return True  # allow ops without decomps through without error
+    if op.arithmetic_depth > 1:
+        return False
     return len(op.wires) < 5  # dividing line between more primitive gates and larger templates
 
 
@@ -168,8 +171,13 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        operations (Optional[Iterable[str, type]]): a target gateset for the device.
-        target_device (Optional[pennylane.devices.Device]): a device to mimic the preprocessing of. Must obey the new device interface.
+
+    Keyword Args:
+
+        target="algorithm" (Union[str, pennylane.devices.Device]): A indication of the mode that null
+            qubit is operating in. The default ``"algorithm"`` mode skips normal preprocessing, and handles decompositiions
+            when calculating the resources.  When provided a ``qml.devices.Device`` instance, ``null.qubit`` will
+            mimic the preprocessing of the target device.
         assume_no_broadcasting=False (bool): If ``True``, we always assume no parameter batching exists. Useful
             for profiling and benchmarking.
 
@@ -179,60 +187,63 @@ class NullQubit(Device):
 
     .. code-block:: python
 
-        def track_entangling_layers(device):
-            n_layers = 50
-            n_wires = 100
-            shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+        class CustomOP(qml.resource.ErrorOperation):
+            def error(self):
+                return qml.resource.SpectralNormError(0.005)
+
+        def track_qpe(device, use_error_op=True):
+
+            if use_error_op:
+                op = CustomOP(wires=[0,1])
+            else:
+                op = qml.RX(1.0, wires=0) @ qml.CNOT((0,1))
+
+            n_estimation_wires = 10
+            estimation_wires = range(2, n_estimation_wires + 1)
 
             @qml.qnode(device)
-            def circuit(params):
-                qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+            def circuit():
+                [qml.Hadamard(wires=w) for w in op.wires]
 
-            params = np.random.random(shape)
+                qml.QuantumPhaseEstimation(
+                    op,
+                    estimation_wires=estimation_wires,
+                )
+
+                return qml.probs(estimation_wires)
 
             with qml.Tracker(device) as tracker:
-                circuit(params)
+                circuit()
             return tracker
 
     >>> dev = qml.device('null.qubit')
-    >>> track_entangling_layers(dev).latest['resources']
-    wires: 100
-    gates: 1
-    depth: 1
+    >>> tracker = track_qpe(dev)
+    >>> tracker.latest['resources']
+    wires: 11
+    gates: 571
+    depth: 530
     shots: Shots(total=None)
     gate_types:
-    {'StronglyEntanglingLayers': 1}
+    {'Hadamard': 20, 'C(CustomOP)': 511, 'SWAP': 4, 'ControlledPhaseShift': 36}
     gate_sizes:
-    {100: 1}
+    {1: 20, 3: 511, 2: 40}
+    >>> tracker.latest['errors']
+    {'SpectralNormError': SpectralNormError(2.5549999999999997)}
 
     Null qubit can also mimic the preprocessing of an existing device:
 
     >>> target_dev = qml.device('default.qubit')
-    >>> dev = qml.device('null.qubit', target_device=target_dev)
-    >>> track_entangling_layers(dev).latest['resources']
-    wires: 100
-    gates: 10000
-    depth: 502
+    >>> dev = qml.device('null.qubit', target=target_dev)
+    >>> track_qpe(dev, use_error_op=False).latest['resources']
+    wires: 11
+    gates: 21
+    depth: 11
     shots: Shots(total=None)
     gate_types:
-    {'Rot': 5000, 'CNOT': 5000}
+    {'Hadamard': 11, 'C(Prod**256)': 1, 'C(Prod**128)': 1, 'C(Prod**64)': 1, 'C(Prod**32)': 1, 'C(Prod**16)': 1, 'C(Prod**8)': 1, 'C(Prod**4)': 1, 'C(Prod**2)': 1, 'C(Prod**1)': 1, 'Adjoint(QFT)': 1}
     gate_sizes:
-    {1: 5000, 2: 5000}
+    {1: 11, 3: 9, 9: 1}
 
-    And decompose to a target gateset, specified by names and/or types:
-
-    >>> ops = {'RX', 'RY', 'RZ', qml.CNOT}
-    >>> dev = qml.device('null.qubit', operations=ops)
-    >>> track_entangling_layers(dev).latest['resources']
-    wires: 100
-    gates: 20000
-    depth: 602
-    shots: Shots(total=None)
-    gate_types:
-    {'RZ': 10000, 'RY': 5000, 'CNOT': 5000}
-    gate_sizes:
-    {1: 15000, 2: 5000}
 
     .. details::
         :title: Tracking
@@ -358,7 +369,13 @@ class NullQubit(Device):
             self.tracker.update(batches=1)
             self.tracker.record()
             for c in circuits:
-                resources_c = decompose(c, stopping_condition=resources_stopping_condition)[0][0]
+                if self._target == "algorithm":
+                    resources_c = decompose(c, stopping_condition=resources_stopping_condition)[0][
+                        0
+                    ]
+                    resources_c = qml.simplify(resources_c)[0][0]
+                else:
+                    resources_c = c
 
                 qpu_executions, shots = get_num_shots_and_executions(c)
                 update_kwargs = {
@@ -409,6 +426,10 @@ class NullQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        if self.tracker.active:
+            derivatives = 1 if isinstance(circuits, QuantumScript) else len(circuits)
+            self.tracker.update(derivative_batches=1, derivatives=derivatives)
+            self.tracker.record()
         return tuple(
             self._derivatives(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
@@ -418,6 +439,16 @@ class NullQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        if self.tracker.active:
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            for c in batch:
+                self.tracker.update(resources=c.specs["resources"], errors=c.specs["errors"])
+            self.tracker.update(
+                execute_and_derivative_batches=1,
+                executions=len(batch),
+                derivatives=len(batch),
+            )
+            self.tracker.record()
         results = tuple(
             self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
@@ -433,6 +464,10 @@ class NullQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        if self.tracker.active:
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            self.tracker.update(jvp_batches=1, jvps=len(batch))
+            self.tracker.record()
         return tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
 
     def execute_and_compute_jvp(
@@ -441,6 +476,12 @@ class NullQubit(Device):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        if self.tracker.active:
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            for c in batch:
+                self.tracker.update(resources=c.specs["resources"], errors=c.specs["errors"])
+            self.tracker.update(execute_and_jvp_batches=1, executions=len(batch), jvps=len(batch))
+            self.tracker.record()
         results = tuple(
             self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
@@ -454,6 +495,10 @@ class NullQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        if self.tracker.active:
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            self.tracker.update(vjp_batches=1, vjps=len(batch))
+            self.tracker.record()
         return tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
 
     def execute_and_compute_vjp(
@@ -462,6 +507,13 @@ class NullQubit(Device):
         cotangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        if self.tracker.active:
+            batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+            for c in batch:
+                self.tracker.update(resources=c.specs["resources"], errors=c.specs["errors"])
+            self.tracker.update(execute_and_vjp_batches=1, executions=len(batch), vjps=len(batch))
+            self.tracker.record()
+
         results = tuple(
             self._simulate(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits
         )
