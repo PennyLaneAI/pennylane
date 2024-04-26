@@ -87,7 +87,7 @@ def _jax_dtype(m_type):
     return jnp.dtype(m_type)
 
 
-def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices.LegacyDevice"):
+def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
 
@@ -106,7 +106,7 @@ def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devi
     return tuple(jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(shape, tape_dtype))
 
 
-def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices.LegacyDevice"):
+def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
     """The shape of a jacobian for a single tape given a device.
 
     Args:
@@ -148,7 +148,7 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
         new_tapes = _set_fn(tapes.vals, p)
         return _to_jax(execute_fn(new_tapes))
 
-    if isinstance(device, qml.devices.LegacyDevice):
+    if isinstance(device, qml.Device):
         device_supports_vectorization = device.capabilities().get("supports_broadcasting")
     else:
         # first order way of determining native parameter broadcasting support

@@ -36,7 +36,7 @@ class TestComparison:
         if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qml.Device) and "Hermitian" not in dev.observables:
             pytest.skip("Device does not support the Hermitian observable.")
 
         if dev.name == "default.qubit":
@@ -105,7 +105,7 @@ class TestComparison:
         if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
+        if isinstance(dev, qml.Device) and "Projector" not in dev.observables:
             pytest.skip("Device does not support the Projector observable.")
 
         if dev.name == "default.qubit":

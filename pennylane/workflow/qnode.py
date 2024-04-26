@@ -649,7 +649,7 @@ class QNode:
         if diff_method == "best":
             return QNode.get_best_method(device, interface, tape=tape)
 
-        if isinstance(device, qml.devices.LegacyDevice):
+        if isinstance(device, qml.Device):
             # handled by device.supports_derivatives with new device interface
             if diff_method == "backprop":
                 return QNode._validate_backprop_method(device, interface, tape=tape)
@@ -773,7 +773,7 @@ class QNode:
     def _validate_backprop_method(device, interface, tape=None):
         if isinstance(device, qml.devices.Device):
             raise ValueError(
-                "QNode._validate_backprop_method only applies to the qml.devices.LegacyDevice interface."
+                "QNode._validate_backprop_method only applies to the qml.Device interface."
             )
         if tape.shots if tape else _get_device_shots(device):
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
@@ -844,7 +844,7 @@ class QNode:
 
         if isinstance(device, qml.devices.Device):
             raise ValueError(
-                "QNode._validate_adjoint_method only applies to the qml.devices.LegacyDevice interface."
+                "QNode._validate_adjoint_method only applies to the qml.Device interface."
             )
         required_attrs = ["_apply_operation", "_apply_unitary", "adjoint_jacobian"]
         supported_device = all(hasattr(device, attr) for attr in required_attrs)
@@ -867,7 +867,7 @@ class QNode:
     def _validate_device_method(device):
         if isinstance(device, qml.devices.Device):
             raise ValueError(
-                "QNode._validate_device_method only applies to the qml.devices.LegacyDevice interface."
+                "QNode._validate_device_method only applies to the qml.Device interface."
             )
         # determine if the device provides its own jacobian method
         if device.capabilities().get("provides_jacobian", False):
