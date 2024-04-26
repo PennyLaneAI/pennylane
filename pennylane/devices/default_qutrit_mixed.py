@@ -63,7 +63,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     if obs.name in {"LinearCombination", "Hamiltonian"}:
         return all(observable_stopping_condition(observable) for observable in obs.terms()[1])
     if obs.name == "Tensor":
-        return all(observable_stopping_condition(observable) for observable in obs.terms()[1])
+        return all(observable_stopping_condition(observable) for observable in obs.obs)
 
     return obs.name in observables
 
