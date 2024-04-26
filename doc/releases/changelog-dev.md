@@ -383,6 +383,10 @@
 
 <h4>Other improvements</h4>
 
+* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
+  is now faster.
+  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
+
 * `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
   [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
 
