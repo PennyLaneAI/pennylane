@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
+  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
+
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
 * Added `error` method to `QuantumPhaseEstimation` template.
@@ -114,7 +117,37 @@
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
-<h4>Calculate dynamical Lie algebras 👾</h4>
+
+* Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
+  When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
+  [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
+
+  ```python
+  H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+
+      # initialize the eigenvector
+      qml.PauliX(2)
+
+      # apply QPE
+      measurements = qml.iterative_qpe(
+                    qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
+                    )
+      return qml.probs(op = measurements)
+  
+  output = circuit()
+  
+  # post-processing 
+  lamb = sum([abs(c) for c in H.terms()[0]])
+  ```
+  
+  ```pycon
+  >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
+  eigenvalue: 0.7
+  ```
+
 
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
@@ -200,6 +233,9 @@
  * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
+
+ * Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
 
 <h3>Improvements 🛠</h3>
 
@@ -346,6 +382,13 @@
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
 
 <h4>Other improvements</h4>
+
+* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
+  is now faster.
+  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
+
+* `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
+  [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
 
 * `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
   is provided by the user or the device.
@@ -503,6 +546,9 @@
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
 <h3>Bug fixes 🐛</h3>
+
+* `null.qubit` now automatically supports any operation without a decomposition.
+  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 * Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
   a QNode differed, based on whether the QNode uses classical coprocessing.
