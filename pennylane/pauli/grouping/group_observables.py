@@ -227,8 +227,20 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
                 "The coefficients list must be the same length as the observables list."
             )
 
+    no_wires_obs = []
+    wires_obs = []
+    for ob in observables:
+        if len(ob.wires) == 0:
+            no_wires_obs.append(ob)
+        else:
+            wires_obs.append(ob)
+    if not wires_obs:
+        if coefficients is None:
+            return [no_wires_obs]
+        return [no_wires_obs], [coefficients]
+
     pauli_grouping = PauliGroupingStrategy(
-        observables, grouping_type=grouping_type, graph_colourer=method
+        wires_obs, grouping_type=grouping_type, graph_colourer=method
     )
 
     temp_opmath = not qml.operation.active_new_opmath() and any(
@@ -242,6 +254,8 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     finally:
         if temp_opmath:
             qml.operation.disable_new_opmath()
+
+    partitioned_paulis[0].extend(no_wires_obs)
 
     if coefficients is None:
         return partitioned_paulis
