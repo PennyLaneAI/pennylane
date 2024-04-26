@@ -58,12 +58,14 @@ observables = {
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by DefaultQutritMixed."""
-    if obs.name in {"SProd", "Prod", "Sum"}:
+    if isinstance(obs, qml.operation.Tensor):
+        return all(observable_stopping_condition(observable) for observable in obs.obs)
+    if obs.name in {"Prod", "Sum"}:
         return all(observable_stopping_condition(observable) for observable in obs.operands)
     if obs.name in {"LinearCombination", "Hamiltonian"}:
         return all(observable_stopping_condition(observable) for observable in obs.terms()[1])
-    if obs.name == "Tensor":
-        return all(observable_stopping_condition(observable) for observable in obs.obs)
+    if obs.name == "SProd":
+        return observable_stopping_condition(obs.base)
 
     return obs.name in observables
 
