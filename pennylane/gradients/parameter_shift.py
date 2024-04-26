@@ -16,13 +16,14 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
+import copy
 from typing import Sequence, Callable
 from functools import partial
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import VarianceMP
+from pennylane.measurements import VarianceMP, MidMeasureMP, MeasurementValue
 from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
@@ -190,7 +191,7 @@ def _evaluate_gradient(tape, res, data, r0):
     coefficient for the unshifted term, must be given and not None.
     """
 
-    _, coeffs, fn, unshifted_coeff, _ = data
+    _, coeffs, fn, unshifted_coeff, *_ = data
 
     # individual post-processing of e.g. Hamiltonian grad tapes
     if fn is not None:
@@ -446,7 +447,232 @@ def expval_param_shift(
     processing_fn.first_result_unshifted = at_least_one_unshifted
     processing_fn.gradient_data = gradient_data
 
-    return gradient_tapes, processing_fn
+    return gradient_tapes, processing_fn, gradient_data
+
+
+def _make_probs_tape(tape):
+    num_ops = len(tape.operations)
+    new_ops = copy.deepcopy(tape.operations)
+    old_postselects = []
+    mvs = []
+    for i, op in enumerate(new_ops):
+        if isinstance(op, MidMeasureMP) and op.postselect is not None:
+            old_postselects.append(op.postselect)
+            op.postselect = None
+            mv = MeasurementValue([op], processing_fn=lambda v: v)
+            mvs.append(mv)
+    if not old_postselects:
+        return None, None
+
+    return (
+        qml.tape.QuantumScript(
+            new_ops, [qml.probs(op=mvs)], shots=tape.shots, trainable_params=tape.trainable_params
+        ),
+        old_postselects,
+    )
+
+
+def _requires_mcm_treatment(tape):
+    return _get_mcms(tape) != []
+
+
+def _get_mcms(tape):
+    return [
+        op for op in tape.operations if isinstance(op, MidMeasureMP) and op.postselect is not None
+    ]
+
+
+def expval_param_shift_with_mcms(
+    tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
+):
+    r"""Generate the parameter-shift tapes and postprocessing methods required
+        to compute the gradient of a gate parameter with respect to an
+        expectation value.
+
+        The returned post-processing function will output tuples instead of
+    stacking resaults.
+
+        Args:
+            tape (.QuantumTape): quantum tape to differentiate
+            argnum (int or list[int] or None): Trainable parameter indices to differentiate
+                with respect to. If not provided, the derivatives with respect to all
+                trainable indices are returned. Note that the indices are with respect to
+            the list of trainable parameters.
+            shifts (list[tuple[int or float]]): List containing tuples of shift values.
+                If provided, one tuple of shifts should be given per trainable parameter
+                and the tuple should match the number of frequencies for that parameter.
+                If unspecified, equidistant shifts are assumed.
+            gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
+                for the parameter-shift method. One gradient recipe must be provided
+                per trainable parameter.
+            f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
+                and the gradient recipe contains an unshifted term, this value is used,
+                saving a quantum evaluation.
+            broadcast (bool): Whether or not to use parameter broadcasting to create the
+                a single broadcasted tape per operation instead of one tape per shift angle.
+
+        Returns:
+            tuple[list[QuantumTape], function]: A tuple containing a
+            list of generated tapes, together with a post-processing
+            function to be applied to the results of the evaluated tapes
+            in order to obtain the Jacobian matrix.
+    """
+
+    argnum = argnum or tape.trainable_params
+
+    # Each entry for gradient_data will be a tuple with entries
+    # (num_tapes, coeffs, fn, unshifted_coeff, batch_size, num_pg_tapes)
+    gradient_data = []
+    # Keep track of whether there is at least one unshifted term in all the parameter-shift rules
+    at_least_one_unshifted = False
+
+    probs_tape, postselects = _make_probs_tape(tape)
+    postselect_int = np.dot(postselects, 1 << np.arange(len(postselects))[::-1])
+    mcms = _get_mcms(tape)
+
+    gradient_tapes = []
+    probs_gradient_tapes = []
+
+    using_p_tapes = False
+    for idx, _ in enumerate(tape.trainable_params):
+        if idx not in argnum:
+            # parameter has zero gradient
+            gradient_data.append((0, [], None, None, 0, 0))
+            continue
+
+        op, op_idx, _ = tape.get_operation(idx)
+
+        if op.name in ["Hamiltonian", "LinearCombination"]:
+            # operation is a Hamiltonian
+            if tape[op_idx].return_type is not qml.measurements.Expectation:
+                raise ValueError(
+                    "Can only differentiate Hamiltonian "
+                    f"coefficients for expectations, not {tape[op_idx].return_type.value}"
+                )
+
+            g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
+            gradient_tapes.extend(g_tapes)
+            # hamiltonian_grad always returns a list with a single tape!
+            gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size, 0))
+            continue
+
+        recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
+        p_recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, probs_tape)
+        if len(recipe) != len(p_recipe):
+            raise ValueError(
+                "Scenarios in which the shift rule differs for probs and f are not covered yet"
+            )
+        recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
+            recipe, at_least_one_unshifted, f0, gradient_tapes, tape
+        )
+        coeffs, multipliers, op_shifts = recipe.T
+
+        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+        gradient_tapes.extend(g_tapes)
+
+        if any(tape.graph.has_path(op, mcm) for mcm in mcms):
+            pg_tapes = generate_shifted_tapes(probs_tape, idx, op_shifts, multipliers, broadcast)
+            probs_gradient_tapes.extend(pg_tapes)
+            num_pg_tapes = len(pg_tapes)
+            using_p_tapes = True
+        else:
+            num_pg_tapes = 0
+
+        # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
+        # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
+        # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
+        batch_size = g_tapes[0].batch_size if broadcast and g_tapes else None
+        gradient_data.append(
+            (len(g_tapes), coeffs, None, unshifted_coeff, batch_size, num_pg_tapes)
+        )
+
+    if using_p_tapes:
+        if at_least_one_unshifted:
+            all_tapes = [*gradient_tapes, probs_tape, *probs_gradient_tapes]
+        else:
+            all_tapes = [tape, *gradient_tapes, probs_tape, *probs_gradient_tapes]
+            at_least_one_unshifted = True
+        num_pg_tapes = len(probs_gradient_tapes)
+    else:
+        all_tapes = gradient_tapes
+        num_pg_tapes = 0
+    num_g_tapes = len(gradient_tapes)
+
+    num_measurements = len(tape.measurements)
+    single_measure = num_measurements == 1
+    num_params = len(tape.trainable_params)
+    tape_specs = (single_measure, num_params, num_measurements, tape.shots)
+
+    def processing_fn(results):
+        if using_p_tapes:
+            p_results = [pr[postselect_int] for pr in results[num_g_tapes + 1 :]]
+            p0, *p_results = p_results
+            r0, *results = results[: num_g_tapes + 1]
+
+        else:
+            if at_least_one_unshifted and f0 is None:
+                r0 = results[0]
+                results = results[1:]
+            else:
+                r0 = f0
+
+        g_start = 0
+        p_start = 0
+        grads = []
+        for data in gradient_data:
+            num_tapes, *_, unshifted_coeff, batch_size, num_pg_tapes = data
+            if num_tapes == 0:
+                if unshifted_coeff is None:
+                    # parameter has zero gradient. We don't know the output shape yet, so just
+                    # memorize that this gradient will be set to zero, via grad = None
+                    grads.append(None)
+                    continue
+                # The gradient for this parameter is computed from r0 alone.
+                g = _evaluate_gradient(tape, [], data, r0)
+                continue
+            if num_pg_tapes == 0:
+                res = (
+                    results[g_start : g_start + num_tapes]
+                    if batch_size is None
+                    else results[g_start]
+                )
+                g_start = g_start + num_tapes
+                g = _evaluate_gradient(tape, res, data, r0)
+            else:
+                assert num_pg_tapes == num_tapes  # This should never trigger!
+                res = (
+                    results[g_start : g_start + num_tapes]
+                    if batch_size is None
+                    else results[g_start]
+                )
+                p_res = (
+                    p_results[p_start : p_start + num_pg_tapes]
+                    if batch_size is None
+                    else p_results[p_start]
+                )
+                g_start = g_start + num_tapes
+                p_start = p_start + num_pg_tapes
+                first_term_res = [f * p / p0 for f, p in zip(res, p_res)]
+                first_term = _evaluate_gradient(tape, first_term_res, data, r0)
+                data = list(data)
+                data[1] = data[1] * (r0 / p0)
+                second_term = _evaluate_gradient(probs_tape, p_res, data, p0)
+                g = first_term - second_term
+
+            grads.append(g)
+
+        # g will have been defined at least once (because otherwise all gradients would have
+        # been zero), providing a representative for a zero gradient to emulate its type/shape.
+        zero_rep = _make_zero_rep(g, single_measure, tape.shots.has_partitioned_shots)
+
+        # Fill in zero-valued gradients
+        grads = [zero_rep if g is None else g for g in grads]
+
+        return reorder_grads(grads, tape_specs)
+
+    processing_fn.first_result_unshifted = at_least_one_unshifted
+
+    return all_tapes, processing_fn
 
 
 def _get_var_with_second_order(pdA2, f0, pdA):
@@ -711,7 +937,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     )
 
     # evaluate the analytic derivative of <A>
-    pdA_tapes, pdA_fn = expval_param_shift(
+    pdA_tapes, pdA_fn, _ = expval_param_shift(
         expval_tape, argnum, shifts, gradient_recipes, f0, broadcast
     )
     gradient_tapes = [] if pdA_fn.first_result_unshifted else [expval_tape]
@@ -745,7 +971,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         # Non-involutory observables are present; the partial derivative of <A^2>
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
-        pdA2_tapes, pdA2_fn = expval_param_shift(
+        pdA2_tapes, pdA2_fn, _ = expval_param_shift(
             tape_with_obs_squared_expval, argnum, shifts, gradient_recipes, f0, broadcast
         )
         gradient_tapes.extend(pdA2_tapes)
@@ -764,6 +990,7 @@ def _expand_transform_param_shift(
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
+    deactivate_mcms=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before parameter shift."""
     expanded_tape = expand_invalid_trainable(tape)
@@ -791,6 +1018,7 @@ def param_shift(
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
+    deactivate_mcms=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
@@ -1111,8 +1339,12 @@ def param_shift(
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+    elif (not deactivate_mcms) and _requires_mcm_treatment(tape):  # Todo: refine this criterion
+        g_tapes, fn = expval_param_shift_with_mcms(
+            tape, argnum, shifts, gradient_recipes, f0, broadcast
+        )
     else:
-        g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+        g_tapes, fn, _ = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
 
     gradient_tapes.extend(g_tapes)
 
