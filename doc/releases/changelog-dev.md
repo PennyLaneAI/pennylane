@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
+  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
+
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
 * Added `error` method to `QuantumPhaseEstimation` template.
@@ -114,7 +117,37 @@
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
-<h4>Calculate dynamical Lie algebras 👾</h4>
+
+* Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
+  When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
+  [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
+
+  ```python
+  H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+
+      # initialize the eigenvector
+      qml.PauliX(2)
+
+      # apply QPE
+      measurements = qml.iterative_qpe(
+                    qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
+                    )
+      return qml.probs(op = measurements)
+  
+  output = circuit()
+  
+  # post-processing 
+  lamb = sum([abs(c) for c in H.terms()[0]])
+  ```
+  
+  ```pycon
+  >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
+  eigenvalue: 0.7
+  ```
+
 
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
@@ -375,6 +408,10 @@
 
 * `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+  [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
+
+* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
 
 * Replaced `cache_execute` with an alternate implementation based on `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
