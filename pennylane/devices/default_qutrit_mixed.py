@@ -50,6 +50,16 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 channels = set()
+observables = {
+    "THermitian",
+    "GellMann",
+    "Identity",
+    "Prod",
+    "Hamiltonian",
+    "LinearCombination",
+    "Sum",
+    "SProd",
+}
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
