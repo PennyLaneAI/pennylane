@@ -42,7 +42,7 @@ from pennylane.measurements import (
 )
 
 from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
-from pennylane.ops import Hamiltonian, Sum, LinearCombination, Prod
+from pennylane.ops import Hamiltonian, Sum, LinearCombination, Prod, SProd
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
 from pennylane.queuing import QueuingManager
@@ -757,12 +757,9 @@ class Device(abc.ABC):
         hamiltonian_in_obs = any(
             isinstance(obs, (Hamiltonian, LinearCombination)) for obs in circuit.observables
         )
-        expval_sum_in_obs = any(
-            (
-                isinstance(m.obs, Sum)
-                or (isinstance(m.obs, Prod) and isinstance(m.obs.simplify(), Sum))
-            )
-            and isinstance(m, ExpectationMP)
+
+        expval_sum_or_prod_in_obs = any(
+            isinstance(m.obs, (Sum, Prod, SProd)) and isinstance(m, ExpectationMP)
             for m in circuit.measurements
         )
 
@@ -777,11 +774,10 @@ class Device(abc.ABC):
             # split tape into multiple tapes of diagonalizable known observables.
             try:
                 circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-            except ValueError as e:
-                raise ValueError(
-                    "Can only return the expectation of a single Hamiltonian observable"
-                ) from e
-        elif expval_sum_in_obs and not is_shadow and not supports_sum:
+            except ValueError:
+                circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
+
+        elif expval_sum_or_prod_in_obs and not is_shadow and not supports_sum:
             circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 
         elif (

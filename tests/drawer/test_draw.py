@@ -44,10 +44,21 @@ class TestLabelling:
         assert split_str[1][:6] == "    a:"
         assert split_str[2][:6] == "1.234:"
 
-    def test_wire_order(self):
+    @pytest.mark.parametrize("as_qnode", (True, False))
+    def test_wire_order(self, as_qnode):
         """Test wire_order keyword changes order of the wires."""
 
-        split_str = draw(circuit, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
+        def f(x, y, z):
+            """A quantum circuit on three wires."""
+            qml.RX(x, wires=0)
+            qml.RY(y, wires="a")
+            qml.RZ(z, wires=1.234)
+            return qml.expval(qml.PauliZ(0))
+
+        if as_qnode:
+            f = qml.QNode(f, qml.device("default.qubit", wires=(0, "a", 1.234)))
+
+        split_str = draw(f, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
         assert split_str[0][:6] == "1.234:"
         assert split_str[1][:6] == "    a:"
         assert split_str[2][:6] == "    0:"
@@ -397,8 +408,8 @@ class TestMidCircuitMeasurements:
         expected_drawing = (
             "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
             "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
-            "3: ─────────────────────╰X──┤↗₀│  │0⟩─│────────│──────────────┤     \n"
-            "2: ──RY(0.46)─────────────────────────╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>"
+            "2: ─────────────────────│───RY(0.46)──╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>\n"
+            "3: ─────────────────────╰X──┤↗₀│  │0⟩─────────────────────────┤     "
         )
 
         assert drawing == expected_drawing
@@ -432,8 +443,8 @@ class TestMidCircuitMeasurements:
         drawing = qml.draw(circ)(np.pi, np.pi / 2)
         expected_drawing = (
             "0: ──RX(3.14)──┤↗├───────────╭X─┤  \n"
-            "2: ─────────────║───RY(1.57)─│──┤  \n"
             "1: ─────────────║────────────╰●─┤  \n"
+            "2: ─────────────║───RY(1.57)──║─┤  \n"
             "                ╚═════════════╝    "
         )
 
@@ -980,3 +991,38 @@ def test_draw_with_qfunc_warns_with_expansion_strategy():
 
     with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
         _ = qml.draw(qfunc, expansion_strategy="gradient")
+
+
+@pytest.mark.parametrize("use_qnode", [True, False])
+def test_sort_wires(use_qnode):
+    """Test that drawing a qnode with no wire order or device wires sorts the wires automatically."""
+
+    def func():
+        qml.X(4)
+        qml.X(2)
+        qml.X(0)
+        return qml.expval(qml.Z(0))
+
+    if use_qnode:
+        func = qml.QNode(func, qml.device("default.qubit"))
+
+    expected = "0: ──X─┤  <Z>\n2: ──X─┤     \n4: ──X─┤     "
+    assert qml.draw(func)() == expected
+
+
+@pytest.mark.parametrize("use_qnode", [True, False])
+def test_sort_wires_fallback(use_qnode):
+    """Test that drawing a qnode with no wire order or device wires falls back to tape wires if
+    sorting fails."""
+
+    def func():
+        qml.X(4)
+        qml.X("a")
+        qml.X(0)
+        return qml.expval(qml.Z(0))
+
+    if use_qnode:
+        func = qml.QNode(func, qml.device("default.qubit"))
+
+    expected = "4: ──X─┤     \na: ──X─┤     \n0: ──X─┤  <Z>"
+    assert qml.draw(func)() == expected
