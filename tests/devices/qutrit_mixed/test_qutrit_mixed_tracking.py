@@ -176,48 +176,52 @@ shot_testing_combos = [
 ]
 
 
-@pytest.mark.parametrize("mps, expected_exec, expected_shots", shot_testing_combos)
-def test_single_expval(mps, expected_exec, expected_shots):
-    """Test tracker tracks default qutrit mixed execute number of shots for single measurements"""
-    dev = qml.device("default.qutrit.mixed")
-    tape = qml.tape.QuantumScript([], mps, shots=10)
+class TestExecuteTracker:
+    """Test that tracker tracks default qutrit mixed execute number of shots"""
 
-    with dev.tracker:
-        dev.execute(tape)
+    # pylint: disable=too-few-public-methods
 
-    assert dev.tracker.totals["executions"] == expected_exec
-    assert dev.tracker.totals["simulations"] == 1
-    assert dev.tracker.totals["shots"] == expected_shots
+    @pytest.mark.parametrize("mps, expected_exec, expected_shots", shot_testing_combos)
+    def test_single_expval(self, mps, expected_exec, expected_shots):
+        """Test tracker tracks default qutrit mixed execute number of shots for single measurements"""
+        dev = qml.device("default.qutrit.mixed")
+        tape = qml.tape.QuantumScript([], mps, shots=10)
 
-    tape = qml.tape.QuantumScript([qml.TRX((1.2, 2.3, 3.4), wires=0)], mps, shots=10)
+        with dev.tracker:
+            dev.execute(tape)
 
-    with dev.tracker:
-        dev.execute(tape)
+        assert dev.tracker.totals["executions"] == expected_exec
+        assert dev.tracker.totals["simulations"] == 1
+        assert dev.tracker.totals["shots"] == expected_shots
 
-    assert dev.tracker.totals["executions"] == 3 * expected_exec
-    assert dev.tracker.totals["simulations"] == 1
-    assert dev.tracker.totals["shots"] == 3 * expected_shots
+        tape = qml.tape.QuantumScript([qml.TRX((1.2, 2.3, 3.4), wires=0)], mps, shots=10)
 
+        with dev.tracker:
+            dev.execute(tape)
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_multiple_expval_with_prods():
-    """
-    Test tracker tracks default qutrit mixed execute number of shots for new and old opmath tensors.
-    """
-    mps, expected_exec, expected_shots = (
-        [qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(0, 1) @ qml.GellMann(1, 5))],
-        2,
-        20,
-    )
-    dev = qml.device("default.qutrit.mixed")
-    tape = qml.tape.QuantumScript([], mps, shots=10)
+        assert dev.tracker.totals["executions"] == 3 * expected_exec
+        assert dev.tracker.totals["simulations"] == 1
+        assert dev.tracker.totals["shots"] == 3 * expected_shots
 
-    with dev.tracker:
-        dev.execute(tape)
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+    def test_multiple_expval_with_prods(self):
+        """
+        Test tracker tracks default qutrit mixed execute number of shots for new and old opmath tensors.
+        """
+        mps, expected_exec, expected_shots = (
+            [qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(0, 1) @ qml.GellMann(1, 5))],
+            2,
+            20,
+        )
+        dev = qml.device("default.qutrit.mixed")
+        tape = qml.tape.QuantumScript([], mps, shots=10)
 
-    assert dev.tracker.totals["executions"] == expected_exec
-    assert dev.tracker.totals["simulations"] == 1
-    assert dev.tracker.totals["shots"] == expected_shots
+        with dev.tracker:
+            dev.execute(tape)
+
+        assert dev.tracker.totals["executions"] == expected_exec
+        assert dev.tracker.totals["simulations"] == 1
+        assert dev.tracker.totals["shots"] == expected_shots
 
 
 @pytest.mark.logging

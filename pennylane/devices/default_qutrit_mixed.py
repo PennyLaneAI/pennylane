@@ -86,7 +86,7 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 @simulator_tracking
 @single_tape_support
 class DefaultQutritMixed(Device):
-    """A PennyLane device written in Python and capable of backpropagation derivatives.
+    """A PennyLane Python-based device for mixed-state qutrit simulation.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -249,7 +249,7 @@ class DefaultQutritMixed(Device):
 
         Returns:
             TransformProgram, ExecutionConfig: A transform program that when called returns
-                QuantumTapes that the device can natively execute as well as a postprocessing
+                ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
                 function to be called after execution, and a configuration with unset
                 specifications filled in.
 
