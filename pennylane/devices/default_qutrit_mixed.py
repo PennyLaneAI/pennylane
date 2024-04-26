@@ -53,18 +53,19 @@ channels = set()
 observables = {
     "THermitian",
     "GellMann",
-    "Identity",
-    "Prod",
-    "Hamiltonian",
-    "LinearCombination",
-    "Sum",
-    "SProd",
 }
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by DefaultQutritMixed."""
-    return obs.name in DefaultQutrit.observables
+    if obs.name in {"SProd", "Prod", "Sum"}:
+        return all(observable_stopping_condition(observable) for observable in obs.operands)
+    if obs.name in {"LinearCombination", "Hamiltonian"}:
+        return all(observable_stopping_condition(observable) for observable in obs.terms()[1])
+    if obs.name == "Tensor":
+        return all(observable_stopping_condition(observable) for observable in obs.terms()[1])
+
+    return obs.name in observables
 
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
