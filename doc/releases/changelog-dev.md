@@ -543,6 +543,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `null.qubit` now automatically supports any operation without a decomposition.
+  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+
 * Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
   a QNode differed, based on whether the QNode uses classical coprocessing.
   [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
