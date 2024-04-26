@@ -114,7 +114,37 @@
 * The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
-<h4>Calculate dynamical Lie algebras 👾</h4>
+
+* Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
+  When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
+  [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
+
+  ```python
+  H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+
+      # initialize the eigenvector
+      qml.PauliX(2)
+
+      # apply QPE
+      measurements = qml.iterative_qpe(
+                    qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
+                    )
+      return qml.probs(op = measurements)
+  
+  output = circuit()
+  
+  # post-processing 
+  lamb = sum([abs(c) for c in H.terms()[0]])
+  ```
+  
+  ```pycon
+  >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
+  eigenvalue: 0.7
+  ```
+
 
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
