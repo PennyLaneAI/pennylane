@@ -123,23 +123,6 @@ class TestHadamardGrad:
         with pytest.raises(NotImplementedError):
             qml.gradients.hadamard_grad(tape)
 
-    def test_conditional_ops_not_supported_raises(self):
-        """Test error raised if attempting to differentiate a tape with conditional ops."""
-        measure_op = qml.measurements.MidMeasureMP(0)
-        cond_op = qml.ops.op_math.Conditional(measure_op, qml.RZ(0.1, 1))
-        tape = qml.tape.QuantumScript([qml.RX(0.4, 0), measure_op, cond_op], [qml.expval(qml.Z(0))])
-        _match = r"Conditional operations are currently .* Hadamard test"
-        with pytest.raises(ValueError, match=_match):
-            qml.gradients.hadamard_grad(tape)
-
-    def test_postselected_mcm_not_supported_raises(self):
-        """Test error raised if attempting to differentiate a tape with postselected MCMs."""
-        measure_op = qml.measurements.MidMeasureMP(0, postselect=1)
-        tape = qml.tape.QuantumScript([qml.RX(0.4, 0), measure_op], [qml.expval(qml.Z(0))])
-        _match = r"Postselected mid-circuit measurements are currently .* Hadamard test"
-        with pytest.raises(ValueError, match=_match):
-            qml.gradients.hadamard_grad(tape)
-
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.U1])
     def test_pauli_rotation_gradient(self, G, theta, tol):

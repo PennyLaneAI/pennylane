@@ -359,19 +359,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     except (AttributeError, TypeError, NotImplementedError):
         pass
 
-    RDT = hasattr(gradient_fn, "recursive_derivative_transform")
-    if RDT:
-        tapes, rec_deriv_proc_fn = gradient_fn.recursive_derivative_transform(tape)
-        gradient_tapes, fn = map_batch_transform(gradient_fn, tapes)
-    else:
-        gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
-        if RDT:
-            jac = rec_deriv_proc_fn(fn(results))
-        else:
-            jac = fn(results)
+        jac = fn(results)
 
         multi = len(tape.measurements) > 1
         comp_vjp_fn = compute_vjp_multi if multi else compute_vjp_single

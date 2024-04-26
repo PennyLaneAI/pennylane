@@ -19,7 +19,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP
-from pennylane.transforms import map_batch_transform
 
 
 def compute_jvp_single(tangent, jac):
@@ -322,21 +321,11 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
         pass
 
     gradient_kwargs = gradient_kwargs or {}
-
-    RDT = hasattr(gradient_fn, "recursive_derivative_transform")
-    if RDT:
-        tapes, rec_deriv_proc_fn = gradient_fn.recursive_derivative_transform(tape)
-        gradient_tapes, fn = map_batch_transform(gradient_fn, tapes)
-    else:
-        gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
-
+    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
     def processing_fn(results):
         # postprocess results to compute the Jacobian
-        if RDT:
-            jac = rec_deriv_proc_fn(fn(results))
-        else:
-            jac = fn(results)
+        jac = fn(results)
         _jvp_fn = compute_jvp_multi if multi_m else compute_jvp_single
 
         # Jacobian without shot vectors

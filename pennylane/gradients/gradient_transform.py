@@ -118,27 +118,6 @@ def assert_no_trainable_tape_batching(tape, transform_name):
                 "supported. See #4462 for details."
             )
 
-def assert_compatible_mcms(tape, transform_name):
-    """Make sure that mid-circuit measurement-related features in a tape and 
-    the tape measurements are supported in combination.
-
-    In particular: 
-
-      - ``Conditional`` operations are not supported.
-      - Postselected MCMs only are supported with probability and expectation values.
-    """
-
-    error_msg = "{} are currently not supported with {} differentiation."
-
-    supported_mps = (qml.measurements.ExpectationMP, qml.measurements.ProbabilityMP)
-
-    for op_idx, op in enumerate(tape.operations):
-        if isinstance(op, qml.ops.op_math.Conditional):
-            raise NotImplementedError(error_msg.format("Conditional operations", transform_name))
-        if isinstance(op, qml.measurements.MidMeasureMP) and op.postselect is not None:
-            if any(not isinstance(mp, supported_mps) for mp in tape.measurements):
-                raise NotImplementedError(error_msg.format("Postselected mid-circuit measurements", transform_name))
-
 
 def choose_trainable_params(tape, argnum=None):
     """Returns a list of trainable parameter indices in the tape.

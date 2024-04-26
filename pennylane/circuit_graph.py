@@ -50,7 +50,7 @@ def _is_observable(x):
     Returns:
         bool: True iff x is an observable
     """
-    return isinstance(x, MeasurementProcess)
+    return isinstance(x, MeasurementProcess) and not isinstance(x, MidMeasureMP)
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
@@ -118,26 +118,37 @@ class CircuitGraph:
         Required to translate between wires and indices of the wires on the device."""
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
+
         for k, op in enumerate(queue):
-            # meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
             op.queue_idx = k  # store the queue index in the Operator
 
             if isinstance(op, MidMeasureMP):
+                # A mid-circuit measurement creates a unique classical wire, labelled with the op id
                 self._grid[op.id] = [op]
+                # Optional modification: Do not put the MidMeasure op on the classical wire
+                # if it postselects, because it "does not affect" the wire causally.
+                # Mod 1: Add a "classical node" with postselection value
+                # self._grid[op.id] = [op if op.postselect is None else op.postselect]
+                # Mod 2: Don't add anything for this MCM
+                # if op.postselect is None:
+                #    self._grid[op.id] = [op]
             elif isinstance(op, Conditional):
+                # A conditional operation needs to be added to the classical wires that control it
                 for m in op.meas_val.measurements:
                     self._grid[m.id].append(op)
             elif isinstance(op, MeasurementProcess):
+                # A Measurement process of mid-circuit measured quantities needs to be
+                # added to the classical wires of the MCMs.
                 meas_val = getattr(op, "mv", None)
                 if meas_val is not None:
-                    if isinstance(meas_val, list):
-                        for _meas_val in meas_val:
-                            for m in _meas_val.measurements:
-                                self._grid[m.id].append(op)
-
-                    else:
-                        for m in meas_val.measurements:
+                    if not isinstance(meas_val, list):
+                        meas_val = [meas_val]
+                    for _mv in meas_val:
+                        for m in _mv.measurements:
                             self._grid[m.id].append(op)
+
+                    # It should _not_ be added to the quantum wire, so we continue with the loop
+                    # over the queue and skip the block below.
                     continue
 
             for w in wires if len(op.wires) == 0 else op.wires:
@@ -148,9 +159,8 @@ class CircuitGraph:
 
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
-        self._graph = rx.PyDiGraph(
-            multigraph=False
-        )  #: rx.PyDiGraph: DAG representation of the quantum circuit
+        # rx.PyDiGraph: DAG representation of the quantum circuit
+        self._graph = rx.PyDiGraph(multigraph=False)
 
         # Iterate over each (populated) wire in the grid
         for key, wire in self._grid.items():
@@ -174,12 +184,14 @@ class CircuitGraph:
                     _ind = self._graph.add_node(op)
                     self._indices.setdefault(id(op), _ind)
 
+                # If the key is a string, it's a classical wire and all causal relationships are
+                # with the initial node on that wire, rather than the previous node
                 if isinstance(key, str):
                     start_node = self._indices[id(first_op_on_wire)]
                 else:
                     start_node = self._indices[id(wire[i - 1])]
 
-                # Create an edge between this and the previous operator
+                # Create an edge between this and the previous (or initial, for MCM) operator
                 # There isn't any default value for the edge-data in
                 # rx.PyDiGraph.add_edge(); this is set to an empty string
                 self._graph.add_edge(start_node, self._indices[id(op)], "")
