@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
+  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
+
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
 * Added `error` method to `QuantumPhaseEstimation` template.
@@ -231,6 +234,9 @@
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
+ * Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+
 <h3>Improvements 🛠</h3>
 
 * Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
@@ -376,6 +382,9 @@
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
 
 <h4>Other improvements</h4>
+
+* `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
+  [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
 
 * `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
   is provided by the user or the device.
