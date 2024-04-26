@@ -2959,6 +2959,9 @@ def enable_new_opmath(warn=True):
     """
     Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
 
+    Args:
+        warn (bool): Whether or not to emit a warning for re-enabling new opmath. Default is ``True``.
+
     **Example**
 
     >>> qml.operation.active_new_opmath()
@@ -2982,6 +2985,9 @@ def enable_new_opmath(warn=True):
 def disable_new_opmath(warn=True):
     """
     Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
+
+    Args:
+        warn (bool): Whether or not to emit a warning for disabling new opmath. Default is ``True``.
 
     **Example**
 
