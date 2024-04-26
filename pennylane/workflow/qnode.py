@@ -467,7 +467,7 @@ class QNode:
                 f"one of {SUPPORTED_INTERFACES}."
             )
 
-        if not isinstance(device, (Device, qml.devices.Device)):
+        if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
