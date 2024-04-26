@@ -159,11 +159,3 @@ from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
 from .default_qutrit_mixed import DefaultQutritMixed
 from .._device import Device as LegacyDevice
-
-
-def __getattr__(name):
-
-    if name == "LegacyDevice":
-        return LegacyDevice
-
-    raise AttributeError(f"module 'devices' has no attribute '{name}'")
