@@ -1169,3 +1169,89 @@ class TestHamiltonianSamples:
         assert isinstance(res, tuple)
         assert np.allclose(res[0], expected, atol=0.01)
         assert np.allclose(res[1], expected, atol=0.01)
+
+
+class TestIntegration:
+    """Various integration tests"""
+
+    @pytest.mark.parametrize("wires,expected", [(None, [1, 0]), (3, [0, 0, 1])])
+    def test_sample_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by sample."""
+        dev = qml.device("default.qutrit.mixed", wires=wires, shots=5)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.TShift(2)
+            qml.Identity(0)
+            return qml.sample()
+
+        assert np.array_equal(circuit(), [expected] * 5)
+
+    @pytest.mark.parametrize(
+        "wires,expected",
+        [
+            (None, [0] * 3 + [1] + [0] * 5),
+            (3, [0, 1] + [0] * 25),
+        ],
+    )
+    def test_probs_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by probs."""
+        dev = qml.device("default.qutrit.mixed", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.TShift(2)
+            qml.Identity(0)
+            return qml.probs()
+
+        assert np.array_equal(circuit(), expected)
+
+    @pytest.mark.parametrize(
+        "wires,expected",
+        [
+            (None, {"10": 10}),
+            (3, {"001": 10}),
+        ],
+    )
+    def test_counts_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by probs."""
+        dev = qml.device("default.qutrit.mixed", wires=wires, shots=10)
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            qml.TShift(2)
+            qml.Identity(0)
+            return qml.counts()
+
+        assert circuit() == expected
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("measurement_func", [qml.expval, qml.var])
+    def test_differentiate_jitted_qnode(self, measurement_func):
+        """Test that a jitted qnode can be correctly differentiated"""
+        import jax
+
+        if measurement_func is qml.var and not qml.operation.active_new_opmath():
+            pytest.skip(reason="Variance for this test circuit not supported with legacy opmath")
+
+        dev = qml.device("default.qutrit.mixed")
+
+        def qfunc(x, y):
+            qml.TRX(x, 0)
+            return measurement_func(qml.Hamiltonian(y, [qml.GellMann(0, 3)]))
+
+        qnode = qml.QNode(qfunc, dev, interface="jax")
+        qnode_jit = jax.jit(qml.QNode(qfunc, dev, interface="jax"))
+
+        x = jax.numpy.array(0.5)
+        y = jax.numpy.array([0.5])
+
+        res = qnode(x, y)
+        res_jit = qnode_jit(x, y)
+
+        assert qml.math.allclose(res, res_jit)
+
+        grad = jax.grad(qnode)(x, y)
+        grad_jit = jax.grad(qnode_jit)(x, y)
+
+        assert qml.math.allclose(grad, grad_jit)
