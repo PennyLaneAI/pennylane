@@ -234,6 +234,9 @@
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
+ * Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+
 <h3>Improvements 🛠</h3>
 
 * Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
