@@ -122,12 +122,6 @@ class CircuitGraph:
             # meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
             op.queue_idx = k  # store the queue index in the Operator
 
-            for w in wires if len(op.wires) == 0 else op.wires:
-                # get the index of the wire on the device
-                wire = wires.index(w)
-                # add op to the grid, to the end of wire w
-                self._grid.setdefault(wire, []).append(op)
-
             if isinstance(op, MidMeasureMP):
                 self._grid[op.id] = [op]
             elif isinstance(op, Conditional):
@@ -136,8 +130,21 @@ class CircuitGraph:
             elif isinstance(op, MeasurementProcess):
                 meas_val = getattr(op, "mv", None)
                 if meas_val is not None:
-                    for m in meas_val.measurements:
-                        self._grid[m.id].append(op)
+                    if isinstance(meas_val, list):
+                        for _meas_val in meas_val:
+                            for m in _meas_val.measurements:
+                                self._grid[m.id].append(op)
+
+                    else:
+                        for m in meas_val.measurements:
+                            self._grid[m.id].append(op)
+                    continue
+
+            for w in wires if len(op.wires) == 0 else op.wires:
+                # get the index of the wire on the device
+                wire = wires.index(w)
+                # add op to the grid, to the end of wire w
+                self._grid.setdefault(wire, []).append(op)
 
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
@@ -146,7 +153,7 @@ class CircuitGraph:
         )  #: rx.PyDiGraph: DAG representation of the quantum circuit
 
         # Iterate over each (populated) wire in the grid
-        for wire in self._grid.values():
+        for key, wire in self._grid.items():
             # Add the first operator on the wire to the graph
             # This operator does not depend on any others
 
@@ -155,22 +162,27 @@ class CircuitGraph:
             # condition avoids adding new nodes with
             # the same value but different indexes
             first_op_on_wire = wire[0]
-            if first_op_on_wire not in self._graph.nodes():
+            if all(first_op_on_wire is not op for op in self._graph.nodes()):
                 _ind = self._graph.add_node(first_op_on_wire)
                 self._indices.setdefault(id(first_op_on_wire), _ind)
 
             for i, op in enumerate(wire[1:], start=1):
                 # For subsequent operators on the wire:
-                if op not in self._graph.nodes():
+                if all(op is not _op for _op in self._graph.nodes()):
                     # Add them to the graph if they are not already
                     # in the graph (multi-qubit operators might already have been placed)
                     _ind = self._graph.add_node(op)
                     self._indices.setdefault(id(op), _ind)
 
+                if isinstance(key, str):
+                    start_node = self._indices[id(first_op_on_wire)]
+                else:
+                    start_node = self._indices[id(wire[i - 1])]
+
                 # Create an edge between this and the previous operator
                 # There isn't any default value for the edge-data in
                 # rx.PyDiGraph.add_edge(); this is set to an empty string
-                self._graph.add_edge(self._indices[id(wire[i - 1])], self._indices[id(op)], "")
+                self._graph.add_edge(start_node, self._indices[id(op)], "")
 
         # For computing depth; want only a graph with the operations, not
         # including the observables

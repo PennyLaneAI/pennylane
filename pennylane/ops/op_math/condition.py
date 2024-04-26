@@ -14,8 +14,11 @@
 """
 Contains the condition transform.
 """
+import warnings 
 from functools import wraps
 from typing import Type
+
+import numpy as np
 
 from pennylane import QueuingManager
 from pennylane.operation import AnyWires, Operation, Operator
@@ -69,6 +72,37 @@ class Conditional(Operation):
         meas_val = self.meas_val.map_wires(wire_map)
         then_op = self.then_op.map_wires(wire_map)
         return Conditional(meas_val, then_op=then_op)
+
+    @property
+    def parameter_frequencies(self):
+        import pennylane as qml
+        if all(m.postselect is not None for m in self.meas_val.measurements):
+            return self.then_op.parameter_frequencies
+        if self.then_op.num_params == 1:
+            try:
+                then_op_gen = qml.generator(self.then_op, format="observable")
+            except operation.GeneratorUndefinedError as e:
+                raise operation.ParameterFrequenciesUndefinedError(
+                    f"Operation {self.then_op.name} does not have parameter frequencies defined."
+                ) from e
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
+                )
+                then_op_gen_eigvals = qml.eigvals(then_op_gen, k=2**self.then_op.num_wires)
+
+            # The projectors in the full generator add a eigenvalue of `0` to
+            # the eigenvalues of the then_op generator.
+            gen_eigvals = np.append(then_op_gen_eigvals, 0)
+
+            processed_gen_eigvals = tuple(np.round(gen_eigvals, 8))
+            return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
+        raise operation.ParameterFrequenciesUndefinedError(
+            f"Operation {self.name} does not have parameter frequencies defined, "
+            "and parameter frequencies can not be computed via generator for more than one "
+            "parameter."
+        )
 
 
 def cond(condition, true_fn, false_fn=None, elifs=()):

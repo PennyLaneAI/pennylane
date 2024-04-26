@@ -110,6 +110,10 @@ class TransformDispatcher:
                     processed_results = [fn(results[slice]) for fn, slice in processing_and_sclices]
                     return expand_processing(processed_results)
 
+                data = getattr(processing_and_sclices[0][0], "gradient_data", None)
+                if data is not None:
+                    processing_fn.gradient_data = data
+
             else:
                 transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
 

@@ -481,6 +481,7 @@ def expval_param_shift(
         return reorder_grads(grads, tape_specs)
 
     processing_fn.first_result_unshifted = at_least_one_unshifted
+    processing_fn.gradient_data = gradient_data
 
     return gradient_tapes, processing_fn
 
