@@ -134,16 +134,14 @@
     $U \vert 0 \rangle = \vert \Psi \rangle$),
 
   * `O`: an `Operator` (sometimes called an oracle) that flips the sign of 
-    $\vert \phi \rangle$ and does nothing to $\vert \phi^{\perp} \rangle$. This 
-    can be obtained using `qml.FlipSign` when $\vert \phi \rangle$ is a basis 
-    state, and
+    $\vert \phi \rangle$ and does nothing to $\vert \phi^{\perp} \rangle$.
 
   * `iters`: the number of iterations of amplitude amplification that gets 
     applied.
 
   Here's an example with 
-  $\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle$, and
-  $U = H^{\otimes 3}$:
+  $\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle$,
+  $U = H^{\otimes 3}$, and `O` being modelled as a `qml.FlipSign` operation:
 
   ```python
   @qml.prod
