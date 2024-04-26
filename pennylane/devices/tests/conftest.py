@@ -239,7 +239,7 @@ def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
     # value from yaml file is a string, convert to boolean
     if eval(disable_opmath):
-        qml.operation.disable_new_opmath()
+        qml.operation.disable_new_opmath(warn=False)
 
 
 def pytest_generate_tests(metafunc):

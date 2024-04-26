@@ -430,7 +430,6 @@ class Sum(CompositeOp):
 
         **Example**
 
-        >>> qml.operation.enable_new_opmath()
         >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
         >>> op.terms()
         ([0.5, 0.7, 1.5],
