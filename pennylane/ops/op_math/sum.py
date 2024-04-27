@@ -325,6 +325,8 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
+        if self.pauli_rep:
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
         gen = (
             (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix(), op.wires)
             for op in self

@@ -234,6 +234,9 @@
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
+ * Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+
 <h3>Improvements 🛠</h3>
 
 * Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
@@ -379,6 +382,10 @@
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
 
 <h4>Other improvements</h4>
+
+* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
+  is now faster.
+  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
 
 * `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
   [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
@@ -543,6 +550,9 @@
   [(#5548)](https://github.com/PennyLaneAI/pennylane/pull/5548)
 
 <h3>Bug fixes 🐛</h3>
+
+* `null.qubit` now automatically supports any operation without a decomposition.
+  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 * Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
   a QNode differed, based on whether the QNode uses classical coprocessing.
