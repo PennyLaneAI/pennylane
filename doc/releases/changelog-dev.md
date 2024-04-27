@@ -115,7 +115,7 @@
   ```
 
 * The `qml.qchem.hf_state` function has been upgraded to be compatible with
-  `qml.fermi.parity_transform` and the new Bravyi-Kitaev mapping 
+  `qml.parity_transform` and the new Bravyi-Kitaev mapping 
   (`qml.fermi.bravyi_kitaev`).
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
