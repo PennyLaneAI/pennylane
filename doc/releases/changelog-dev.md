@@ -101,9 +101,9 @@
   Hamiltonians to qubit Hamiltonians.
   [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
-  In addition to `qml.fermi.jordan_wigner` and `qml.fermi.parity_transform`, the
-  Bravyi-Kitaev mapping is available via `qml.fermi.bravyi_kitaev` to map
-  fermionic Hamiltonians to qubit Hamiltonians. Simply provide a fermionic 
+  This function presents an alternative mapping to `qml.jordan_wigner` or
+  `qml.parity_transform` which can help us measure expectation values more
+  efficiently on hardware. Simply provide a fermionic 
   Hamiltonian (created from `from_string`, `FermiA`, `FermiC`, `FermiSentence`, 
   or `FermiWord`) and the number of qubits / spin orbitals in the system, `n`:
 
