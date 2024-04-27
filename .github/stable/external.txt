@@ -12,7 +12,7 @@ autograd==1.6.2
 autoray==0.6.9
 Babel==2.14.0
 beautifulsoup4==4.12.3
-black==24.4.1
+black==24.4.2
 bleach==6.1.0
 cachetools==5.3.3
 certifi==2024.2.2
@@ -74,11 +74,11 @@ jupyter_client==8.6.1
 jupyter_core==5.7.2
 jupyter_server==2.14.0
 jupyter_server_terminals==0.5.3
-jupyterlab==4.1.6
+jupyterlab==4.1.8
 jupyterlab-widgets==1.1.7
 jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.1
-keras==3.3.2
+keras==3.3.3
 kiwisolver==1.4.5
 lark==1.1.9
 libclang==18.1.1
@@ -129,7 +129,7 @@ pycparser==2.22
 Pygments==2.17.2
 pyparsing==3.1.2
 pyperclip==1.8.2
-pytest==8.1.1
+pytest==8.1.2
 pytest-benchmark==4.0.0
 pytest-cov==5.0.0
 pytest-forked==1.6.0
