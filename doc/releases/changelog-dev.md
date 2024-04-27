@@ -123,7 +123,7 @@
   >>> state_bk = qml.qchem.hf_state(2, 6, basis="bravyi_kitaev")
   >>> print(state_bk)
   [1 0 0 0 0 0]
-  >>> state_parity = hf_state(2, 6, basis="parity")
+  >>> state_parity = qml.qchem.hf_state(2, 6, basis="parity")
   >>> print(state_parity)
   [1 0 0 0 0 0]
   ```
