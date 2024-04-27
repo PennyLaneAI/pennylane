@@ -97,7 +97,7 @@
 
 <h4>More methods to map molecules to qubits 🗺️</h4>
 
-* A new function called `qml.fermi.bravyi_kitaev` has been added to map fermionic 
+* A new function called `qml.bravyi_kitaev` has been added to map fermionic 
   Hamiltonians to qubit Hamiltonians.
   [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
