@@ -17,6 +17,7 @@ of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
 import copy
+import warnings
 from typing import Sequence, Callable
 from functools import partial
 
@@ -533,6 +534,9 @@ def expval_param_shift_with_mcms(
 
     probs_tape, postselects = _make_probs_tape(tape)
     postselect_int = np.dot(postselects, 1 << np.arange(len(postselects))[::-1])
+    mcms = [
+        op for op in tape.operations if isinstance(op, MidMeasureMP) and op.postselect is not None
+    ]
 
     gradient_tapes = []
     probs_gradient_tapes = []
@@ -561,9 +565,15 @@ def expval_param_shift_with_mcms(
 
         recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
         p_recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, probs_tape)
-        if len(recipe) != len(p_recipe):
+        if len(recipe) < len(p_recipe) and len(recipe) != 0:
             raise ValueError(
-                "Scenarios in which the shift rule differs for probs and f are not covered yet"
+                "Scenarios in which the shift rule requires more terms in the aux tape"
+                "than in the original tape are not covered yet."
+            )
+        if len(recipe) > len(p_recipe) and len(p_recipe) != 0:
+            warnings.warn(
+                "Scenarios in which the shift rule requires more terms in the original tape"
+                "than in the aux tape assume equivalence of the two shift rules."
             )
         recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
             recipe, at_least_one_unshifted, f0, gradient_tapes, tape
@@ -628,6 +638,17 @@ def expval_param_shift_with_mcms(
                 )
                 g_start = g_start + num_tapes
                 g = _evaluate_gradient(tape, res, data, r0)
+            elif num_tapes == 0:
+                p_res = (
+                    p_results[p_start : p_start + num_pg_tapes]
+                    if batch_size is None
+                    else p_results[p_start]
+                )
+                p_start = p_start + num_pg_tapes
+                data = list(data)
+                data[1] = data[1] * (r0 / p0)
+                g = -_evaluate_gradient(probs_tape, p_res, data, p0)
+
             else:
                 assert num_pg_tapes == num_tapes  # This should never trigger!
                 res = (
@@ -635,18 +656,17 @@ def expval_param_shift_with_mcms(
                     if batch_size is None
                     else results[g_start]
                 )
-                p_res = (
-                    p_results[p_start : p_start + num_pg_tapes]
-                    if batch_size is None
-                    else p_results[p_start]
-                )
+                if batch_size is None:
+                    p_res = p_results[p_start : p_start + num_pg_tapes]
+                    p_res_mod = [r0 / p0 * p for p in p_res]
+                else:
+                    p_res = p_results[p_start]
+                    p_res_mod = p_res * r0 / p0
                 g_start = g_start + num_tapes
                 p_start = p_start + num_pg_tapes
                 first_term_res = [f * p / p0 for f, p in zip(res, p_res)]
                 first_term = _evaluate_gradient(tape, first_term_res, data, r0)
-                data = list(data)
-                data[1] = data[1] * (r0 / p0)
-                second_term = _evaluate_gradient(probs_tape, p_res, data, p0)
+                second_term = _evaluate_gradient(probs_tape, p_res_mod, data, p0)
                 g = first_term - second_term
 
             grads.append(g)
@@ -1329,13 +1349,13 @@ def param_shift(
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
-    elif (not deactivate_mcms) and _requires_mcm_treatment(tape, argnum):
-    #elif _requires_mcm_treatment(tape):
-        g_tapes, fn = expval_param_shift_with_mcms(
-            tape, argnum, shifts, gradient_recipes, f0, broadcast
-        )
     else:
-        g_tapes, fn, _ = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+        if not deactivate_mcms and _requires_mcm_treatment(tape, argnum):
+            g_tapes, fn = expval_param_shift_with_mcms(
+                tape, argnum, shifts, gradient_recipes, f0, broadcast
+            )
+        else:
+            g_tapes, fn, _ = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
 
     gradient_tapes.extend(g_tapes)
 

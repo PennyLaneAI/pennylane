@@ -77,8 +77,8 @@ class Conditional(Operation):
     def parameter_frequencies(self):
         import pennylane as qml
 
-        if all(m.postselect is not None for m in self.meas_val.measurements):
-            return self.then_op.parameter_frequencies
+        #if all(m.postselect is not None for m in self.meas_val.measurements):
+            #return self.then_op.parameter_frequencies
         if self.then_op.num_params == 1:
             try:
                 then_op_gen = qml.generator(self.then_op, format="observable")
