@@ -488,6 +488,7 @@ def _requires_mcm_treatment(tape, argnum):
     # No MCM impacts any trainable operations
     return False
 
+
 def expval_param_shift_with_mcms(
     tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
 ):
@@ -1355,7 +1356,9 @@ def param_shift(
                 tape, argnum, shifts, gradient_recipes, f0, broadcast
             )
         else:
-            g_tapes, fn, _ = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+            g_tapes, fn, _ = expval_param_shift(
+                tape, argnum, shifts, gradient_recipes, f0, broadcast
+            )
 
     gradient_tapes.extend(g_tapes)
 
