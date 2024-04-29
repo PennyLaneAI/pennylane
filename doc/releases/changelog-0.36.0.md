@@ -4,9 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
-  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
-
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
 
@@ -99,28 +96,6 @@
 
   ```
 
-<h4>Make use of more methods to map from molecules 🗺️</h4>
-
-
-* Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
-  [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
-
-  ```python
-  import pennylane as qml
-  fermi_ham = qml.fermi.from_string('0+ 1-')
-
-  qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
-  ```
-
-  ```pycon
-  >>> print(qubit_ham)
-  -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
-  ```
-
-* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
-  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
-
-
 * Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
   When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
   [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
@@ -151,6 +126,28 @@
   eigenvalue: 0.7
   ```
 
+<h4>Make use of more methods to map from molecules 🗺️</h4>
+
+
+* Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
+  [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
+
+  ```python
+  import pennylane as qml
+  fermi_ham = qml.fermi.from_string('0+ 1-')
+
+  qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
+  ```
+
+  ```pycon
+  >>> print(qubit_ham)
+  -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
+  ```
+
+* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
+  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
+
+<h4>Calculate dynamical Lie algebras 👾</h4>
 
 
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
@@ -203,7 +200,7 @@
 
   For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-  ```python
+  ```pycon
   >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
   >>> structure_const = qml.structure_constants(dla)
   >>> structure_constp.shape
@@ -242,11 +239,7 @@
  * Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
 
-
 <h3>Improvements 🛠</h3>
-
-* Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
-  [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
 
 <h4>Community contributions 🥳</h4>
 
@@ -360,6 +353,10 @@
 * `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 
+* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
+  is now faster.
+  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
@@ -371,6 +368,9 @@
 * Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
   quantum-classical programs.
   [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
+
+* `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
+  [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
 
 <h4>Performance and broadcasting</h4>
 
@@ -389,12 +389,8 @@
 
 <h4>Other improvements</h4>
 
-* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
-  is now faster.
-  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
-
-* `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
-  [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
+* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
+  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
 
 * `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
   is provided by the user or the device.
@@ -438,6 +434,9 @@
 * A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
+
+* Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
+  [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
 
 <h3>Breaking changes 💔</h3>
 
