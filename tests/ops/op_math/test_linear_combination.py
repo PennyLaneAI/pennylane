@@ -1633,7 +1633,7 @@ class TestLinearCombinationEvaluation:
         """Tests that the base observables are correctly dequeued with simplify=True"""
 
         with qml.queuing.AnnotatedQueue() as q:
-            obs = qml.Hamiltonian([1, 1], [qml.X(0), qml.Z(0)], simplify=True)
+            obs = qml.Hamiltonian([1, 1, 1], [qml.X(0), qml.X(0), qml.Z(0)], simplify=True)
 
         assert len(q) == 1
         assert q.queue[0] == obs
