@@ -17,6 +17,7 @@ Tests for the CommutingEvolution template.
 # pylint: disable=too-few-public-methods
 import pytest
 from scipy.linalg import expm
+
 import pennylane as qml
 from pennylane import numpy as np
 

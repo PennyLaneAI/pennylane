@@ -22,12 +22,12 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.drawer import tape_text
 from pennylane.drawer.tape_text import (
-    _add_grouping_symbols,
     _add_cond_grouping_symbols,
-    _add_mid_measure_grouping_symbols,
-    _add_cwire_measurement_grouping_symbols,
     _add_cwire_measurement,
+    _add_cwire_measurement_grouping_symbols,
+    _add_grouping_symbols,
     _add_measurement,
+    _add_mid_measure_grouping_symbols,
     _add_op,
     _Config,
 )

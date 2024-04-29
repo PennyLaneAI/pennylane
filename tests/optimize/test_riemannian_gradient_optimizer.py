@@ -14,10 +14,9 @@
 """
 Unit tests for the ``RiemannianGradientOptimizer``.
 """
-import pytest
-
-from scipy.sparse.linalg import expm
 import numpy as np
+import pytest
+from scipy.sparse.linalg import expm
 
 import pennylane as qml
 from pennylane.optimize import RiemannianGradientOptimizer

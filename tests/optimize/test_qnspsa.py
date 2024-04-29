@@ -16,9 +16,10 @@ Unit tests for the ``QNSPSAOptimizer``
 """
 # pylint: disable=protected-access
 from copy import deepcopy
-import pytest
 
+import pytest
 from scipy.linalg import sqrtm
+
 import pennylane as qml
 from pennylane import numpy as np
 

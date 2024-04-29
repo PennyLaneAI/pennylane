@@ -70,8 +70,10 @@ coverage:
 .PHONY:format
 format:
 ifdef check
+	isort --py 311 --profile black -l 100 -p ./pennylane ./pennylane ./tests --check
 	black -l 100 ./pennylane ./tests --check
 else
+	isort --py 311 --profile black -l 100 -p ./pennylane ./pennylane ./tests
 	black -l 100 ./pennylane ./tests
 endif
 

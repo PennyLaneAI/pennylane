@@ -84,7 +84,7 @@ docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`__.
 from autograd import numpy as _np
 from autograd.numpy import *
 
-from .wrapper import wrap_arrays, extract_tensors, tensor_wrapper
+from .wrapper import extract_tensors, tensor_wrapper, wrap_arrays
 
 wrap_arrays(_np.__dict__, globals())
 
@@ -94,10 +94,9 @@ del fft
 del linalg
 del random
 
-from . import fft
-from . import linalg
-from . import random
-
-from .tensor import tensor, NonDifferentiableError, asarray as _asarray
+from . import fft, linalg, random
+from .tensor import NonDifferentiableError
+from .tensor import asarray as _asarray
+from .tensor import tensor
 
 asarray = tensor_wrapper(_asarray)

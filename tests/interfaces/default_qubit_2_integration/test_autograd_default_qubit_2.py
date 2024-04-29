@@ -14,15 +14,13 @@
 """Autograd specific tests for execute and default qubit 2."""
 import autograd
 import pytest
-
 from param_shift_dev import ParamShiftDerivativesDevice
 
-from pennylane import numpy as np
-
 import pennylane as qml
+from pennylane import execute
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane import execute
 from pennylane.measurements import Shots
 
 pytestmark = pytest.mark.autograd

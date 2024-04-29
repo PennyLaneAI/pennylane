@@ -18,8 +18,8 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 from copy import copy
 
 import numpy as np
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.ops import Prod, SProd
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
@@ -30,7 +30,6 @@ from pennylane.pauli.utils import (
 from pennylane.wires import Wires
 
 from .graph_colouring import largest_first, recursive_largest_first
-
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
 GRAPH_COLOURING_METHODS = {"lf": largest_first, "rlf": recursive_largest_first}

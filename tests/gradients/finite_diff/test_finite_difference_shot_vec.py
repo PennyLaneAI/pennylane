@@ -17,13 +17,12 @@ Tests for the gradients.finite_difference module using shot vectors.
 import numpy
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
-from pennylane.gradients import finite_diff
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
+from pennylane.gradients import finite_diff
 from pennylane.measurements import Shots
-from pennylane.operation import Observable, AnyWires
+from pennylane.operation import AnyWires, Observable
 
 # pylint:disable = use-implicit-booleaness-not-comparison
 

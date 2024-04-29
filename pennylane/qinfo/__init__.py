@@ -14,13 +14,13 @@
 """Differentiable quantum information module"""
 
 from .transforms import (
-    reduced_dm,
-    vn_entropy,
-    purity,
-    mutual_info,
     classical_fisher,
-    quantum_fisher,
     fidelity,
+    mutual_info,
+    purity,
+    quantum_fisher,
+    reduced_dm,
     relative_entropy,
     trace_distance,
+    vn_entropy,
 )

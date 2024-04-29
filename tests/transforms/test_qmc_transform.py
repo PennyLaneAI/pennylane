@@ -16,16 +16,16 @@ import itertools
 
 import numpy as np
 import pytest
-from scipy.stats import unitary_group, norm
+from scipy.stats import norm, unitary_group
 
 import pennylane as qml
+from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.transforms.qmc import (
-    _apply_controlled_z,
     _apply_controlled_v,
+    _apply_controlled_z,
     apply_controlled_Q,
     quantum_monte_carlo,
 )
-from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.wires import Wires
 
 

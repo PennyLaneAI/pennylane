@@ -17,9 +17,9 @@ Tests for the ``default.mixed`` device for the JAX interface
 # pylint: disable=protected-access
 from functools import partial
 
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed

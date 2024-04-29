@@ -15,6 +15,7 @@
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
 
 from itertools import product
+
 import numpy as np
 import pytest
 

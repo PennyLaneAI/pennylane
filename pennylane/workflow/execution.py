@@ -22,25 +22,25 @@ differentiation support.
 # pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args
 
 import inspect
+import logging
 import warnings
 from functools import partial
-from typing import Callable, MutableMapping, Sequence, Optional, Union, Tuple
-import logging
+from typing import Callable, MutableMapping, Optional, Sequence, Tuple, Union
 
-from cachetools import LRUCache, Cache
+from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
 from pennylane.typing import ResultBatch
 
-from .set_shots import set_shots
 from .jacobian_products import (
-    TransformJacobianProducts,
     DeviceDerivatives,
     DeviceJacobianProducts,
     LightningVJPs,
+    TransformJacobianProducts,
 )
+from .set_shots import set_shots
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

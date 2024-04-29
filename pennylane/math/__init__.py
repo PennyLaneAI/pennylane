@@ -33,8 +33,9 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
+from .fidelity import fidelity, fidelity_statevector
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
+from .matrix_manipulation import expand_matrix, get_batch_size, reduce_matrices
 from .multi_dispatch import (
     add,
     array,
@@ -55,12 +56,12 @@ from .multi_dispatch import (
     matmul,
     multi_dispatch,
     norm,
-    svd,
     ones_like,
     scatter,
     scatter_element_add,
     set_index,
     stack,
+    svd,
     tensordot,
     unwrap,
     where,
@@ -69,6 +70,8 @@ from .quantum import (
     cov_matrix,
     dm_from_state_vector,
     marginal_prob,
+    max_entropy,
+    min_entropy,
     mutual_info,
     partial_trace,
     purity,
@@ -76,12 +79,9 @@ from .quantum import (
     reduce_statevector,
     relative_entropy,
     sqrt_matrix,
-    vn_entropy,
-    max_entropy,
-    min_entropy,
     trace_distance,
+    vn_entropy,
 )
-from .fidelity import fidelity, fidelity_statevector
 from .utils import (
     allclose,
     allequal,

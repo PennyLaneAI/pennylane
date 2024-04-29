@@ -14,8 +14,8 @@
 """Integration tests for using the JAX-JIT interface with a QNode"""
 # pylint: disable=too-many-arguments,too-few-public-methods
 from functools import partial
-import pytest
 
+import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml

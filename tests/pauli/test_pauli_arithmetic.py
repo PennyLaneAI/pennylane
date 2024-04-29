@@ -16,13 +16,14 @@
 
 import pickle
 from copy import copy, deepcopy
-import pytest
 
+import pytest
 from scipy import sparse
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Tensor
-from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
+from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])

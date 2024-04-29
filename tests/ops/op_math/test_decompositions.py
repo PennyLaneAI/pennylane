@@ -17,20 +17,19 @@ Tests for the QubitUnitary decomposition transforms.
 # pylint: disable=unused-variable,unused-argument
 
 from functools import reduce
+
 import pytest
-from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
+from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
+
 import pennylane as qml
 from pennylane import numpy as np
-
-from pennylane.wires import Wires
-
-from pennylane.ops.op_math.decompositions import one_qubit_decomposition
-from pennylane.ops.op_math.decompositions import two_qubit_decomposition
+from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
+    _compute_num_cnots,
     _convert_to_su4,
     _su2su2_to_tensor_products,
-    _compute_num_cnots,
 )
+from pennylane.wires import Wires
 
 
 def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):

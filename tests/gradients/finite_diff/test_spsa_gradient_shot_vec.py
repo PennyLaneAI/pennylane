@@ -17,13 +17,12 @@ Tests for the gradients.spsa_gradient module using shot vectors.
 import numpy
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
-from pennylane.gradients import spsa_grad
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
+from pennylane.gradients import spsa_grad
 from pennylane.measurements import Shots
-from pennylane.operation import Observable, AnyWires
+from pennylane.operation import AnyWires, Observable
 
 np.random.seed(0)
 

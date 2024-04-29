@@ -16,29 +16,29 @@ Subroutines are the most basic template, consisting of a collection of quantum o
 any of the characteristics of other templates (i.e. to prepare a specific state, to be repeated or to encode features).
 """
 
-from .arbitrary_unitary import ArbitraryUnitary
-from .commuting_evolution import CommutingEvolution
-from .fermionic_double_excitation import FermionicDoubleExcitation
-from .interferometer import Interferometer
-from .fermionic_single_excitation import FermionicSingleExcitation
-from .uccsd import UCCSD
-from .approx_time_evolution import ApproxTimeEvolution
-from .permute import Permute
-from .qpe import QuantumPhaseEstimation
-from .qmc import QuantumMonteCarlo
 from .all_singles_doubles import AllSinglesDoubles
-from .grover import GroverOperator
-from .qft import QFT
-from .kupccgsd import kUpCCGSD
-from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
-from .flip_sign import FlipSign
-from .basis_rotation import BasisRotation
-from .qsvt import QSVT, qsvt
-from .select import Select
-from .qdrift import QDrift
-from .controlled_sequence import ControlledSequence
-from .trotter import TrotterProduct
-from .aqft import AQFT
-from .fable import FABLE
-from .reflection import Reflection
 from .amplitude_amplification import AmplitudeAmplification
+from .approx_time_evolution import ApproxTimeEvolution
+from .aqft import AQFT
+from .arbitrary_unitary import ArbitraryUnitary
+from .basis_rotation import BasisRotation
+from .commuting_evolution import CommutingEvolution
+from .controlled_sequence import ControlledSequence
+from .fable import FABLE
+from .fermionic_double_excitation import FermionicDoubleExcitation
+from .fermionic_single_excitation import FermionicSingleExcitation
+from .flip_sign import FlipSign
+from .grover import GroverOperator
+from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
+from .interferometer import Interferometer
+from .kupccgsd import kUpCCGSD
+from .permute import Permute
+from .qdrift import QDrift
+from .qft import QFT
+from .qmc import QuantumMonteCarlo
+from .qpe import QuantumPhaseEstimation
+from .qsvt import QSVT, qsvt
+from .reflection import Reflection
+from .select import Select
+from .trotter import TrotterProduct
+from .uccsd import UCCSD

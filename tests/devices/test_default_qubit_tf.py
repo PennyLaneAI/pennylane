@@ -17,40 +17,39 @@ Unit tests and integration tests for the ``default.qubit.tf`` device.
 # pylint: disable=too-many-arguments,protected-access,too-many-public-methods
 import numpy as np
 import pytest
-
 from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    S,
-    T,
-    CNOT,
-    CZ,
     CCZ,
-    SWAP,
-    Toffoli,
+    CNOT,
     CSWAP,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    Rot3,
+    CZ,
+    SWAP,
+    ControlledPhaseShift,
+    CRot3,
     CRotx,
     CRoty,
     CRotz,
-    CRot3,
+    FermionicSWAP,
+    H,
+    I,
     MultiRZ1,
     MultiRZ2,
-    ControlledPhaseShift,
     OrbitalRotation,
-    FermionicSWAP,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    T,
+    Toffoli,
+    X,
+    Y,
+    Z,
 )
 
 import pennylane as qml
-from pennylane import numpy as pnp
 from pennylane import DeviceError
+from pennylane import numpy as pnp
 
 tf = pytest.importorskip("tensorflow", minversion="2.0")
 from pennylane.devices.default_qubit_tf import (  # pylint: disable=wrong-import-position
