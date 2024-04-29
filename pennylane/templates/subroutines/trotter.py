@@ -218,6 +218,11 @@ class TrotterProduct(ErrorOperation):
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["base"])
+        context.append(self)
+        return self
+
     def error(
         self, method: str = "commutator", fast: bool = True
     ):  # pylint: disable=arguments-differ

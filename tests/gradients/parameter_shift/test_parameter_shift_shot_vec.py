@@ -1842,9 +1842,9 @@ class TestParameterShiftRule:
         return [qml.probs([0, 1]), qml.probs([2, 3])]
 
     costs_and_expected_expval = [
-        (cost1, [3]),
-        (cost2, [3]),
-        (cost3, [2, 3]),
+        (cost1, (3,)),
+        (cost2, (3,)),
+        (cost3, (2, 3)),
     ]
 
     @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_expval)
@@ -1864,18 +1864,13 @@ class TestParameterShiftRule:
         assert isinstance(all_res, tuple)
 
         for res in all_res:
-            assert isinstance(res, tuple)
-            assert len(res) == expected_shape[0]
-
-            if len(expected_shape) > 1:
-                for r in res:
-                    assert isinstance(r, tuple)
-                    assert len(r) == expected_shape[1]
+            assert isinstance(res, np.ndarray)
+            assert res.shape == expected_shape
 
     costs_and_expected_probs = [
-        (cost4, [3, 4]),
-        (cost5, [3, 4]),
-        (cost6, [2, 3, 4]),
+        (cost4, (4, 3)),
+        (cost5, (4, 3)),
+        (cost6, (2, 4, 3)),
     ]
 
     @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_probs)
@@ -1895,22 +1890,8 @@ class TestParameterShiftRule:
         assert isinstance(all_res, tuple)
 
         for res in all_res:
-            assert isinstance(res, tuple)
-            assert len(res) == expected_shape[0]
-
-            if len(expected_shape) > 2:
-                for r in res:
-                    assert isinstance(r, tuple)
-                    assert len(r) == expected_shape[1]
-
-                    for _r in r:
-                        assert isinstance(_r, qml.numpy.ndarray)
-                        assert len(_r) == expected_shape[2]
-
-            elif len(expected_shape) > 1:
-                for r in res:
-                    assert isinstance(r, qml.numpy.ndarray)
-                    assert len(r) == expected_shape[1]
+            assert isinstance(res, np.ndarray)
+            assert res.shape == expected_shape
 
     # TODO: revisit the following test when the Autograd interface supports
     # parameter-shift with the new return type system

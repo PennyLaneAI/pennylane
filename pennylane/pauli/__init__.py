@@ -50,4 +50,4 @@ from .grouping import (
     graph_colouring,
 )
 
-from .dla import PauliVSpace, lie_closure
+from .dla import PauliVSpace, lie_closure, structure_constants, center
