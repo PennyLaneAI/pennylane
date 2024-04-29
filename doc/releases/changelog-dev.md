@@ -33,7 +33,8 @@
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
-* The Fast Approximate BLock-Encodings (FABLE) algorithm 
+* The Fast Approximate BLock-Encodings (FABLE) algorithm for embedding
+  a matrix into a quantum circuit
   (https://arxiv.org/abs/2205.00081) is now accessible via the `qml.FABLE` 
   template.
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
@@ -41,8 +42,8 @@
   The usage of `qml.FABLE` is similar to `qml.BlockEncode` but provides a more
   efficient circuit construction at the cost of a user-defined approximation 
   level, `tol`. The number of wires that `qml.FABLE` operates on is `2*n + 1`, 
-  where `n` defines the dimension of the $2^n \times 2^n$ matrix that we want to 
-  block-encode.
+  where `n` defines the dimension of the :math:`2^n \times 2^n` matrix that we
+  want to block-encode.
 
   ```python
   A = np.random.random((2, 2)) # n = 1, 2*n + 1 = 3
@@ -50,7 +51,7 @@
 
   @qml.qnode(dev)
   def circuit():
-      qml.FABLE(A, tol = 0.1, wires=range(3))
+      qml.FABLE(A, tol=0.1, wires=range(3))
       return qml.state()
   ``` 
 
