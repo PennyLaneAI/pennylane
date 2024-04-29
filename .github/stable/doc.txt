@@ -73,7 +73,7 @@ Pygments==2.17.2
 pygments-github-lexers==0.0.5
 pyparsing==3.1.2
 pyscf==2.5.0
-pytest==8.1.2
+pytest==8.2.0
 python-dateutil==2.9.0.post0
 pytz==2024.1
 PyYAML==6.0.1
