@@ -237,6 +237,25 @@
 
 <h4>Work easily and efficiently with operators</h4>
 
+* This release completes the main phase of PennyLane's switchover to an updated approach for
+  handling arithmetic operations between operators. The new approach is now enabled by default and
+  is intended to realize a few objectives:
+
+  1. To make it as easy to work with PennyLane operators as it would be with pen and paper.
+  2. To improve the efficiency of operator arithmetic.
+
+  In many cases, this update should not break code. If issues do arise, check out the
+  [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html)
+  and don't hesitate to reach out to us on the
+  [PennyLane discussion forum](https://discuss.pennylane.ai/). As a last resort the old behaviour
+  can be enabled by calling `qml.operation.disable_new_opmath()`, but this is not recommended
+  because support will not continue in future PennyLane versions.
+  [(#5269)](https://github.com/PennyLaneAI/pennylane/pull/5269)
+
+* A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
+  but for usage with new operator arithmetic.
+  [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
+
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
@@ -285,6 +304,8 @@
   Note that the grouping indices refer to the lists returned by `Sum.terms()`, not `Sum.operands`.
 
 * Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
+  This function is intended for developers and will be removed in a future release without a
+  deprecation cycle.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
@@ -292,10 +313,6 @@
 
 * Operators can now be left multiplied `x * op` by numpy arrays.
   [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
-
-* A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
-  but for usage with new operator arithmetic.
-  [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
 
 * The generators in the source code return operators consistent with the global setting for
   `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances
