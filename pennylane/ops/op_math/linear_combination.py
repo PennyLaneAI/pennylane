@@ -14,10 +14,11 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
-import warnings
 import itertools
 import numbers
+
+# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
+import warnings
 from copy import copy
 from typing import List
 

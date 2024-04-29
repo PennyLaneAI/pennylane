@@ -19,8 +19,8 @@ import pennylane as qml
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_qutrit_mixed import (
     DefaultQutritMixed,
-    stopping_condition,
     observable_stopping_condition,
+    stopping_condition,
 )
 
 
