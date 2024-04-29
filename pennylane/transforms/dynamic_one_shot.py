@@ -240,7 +240,11 @@ def parse_native_mid_circuit_measurements(
     mcm_samples = qml.math.array(
         [[res] if single_measurement else res[-n_mcms::] for res in results], like=interface
     )
-    is_valid = qml.math.all(mcm_samples != -1, axis=1)
+    has_postselect = qml.math.array([op.postselect is not None for op in all_mcms]).reshape((1, -1))
+    postselect = qml.math.array(
+        [0 if op.postselect is None else op.postselect for op in all_mcms]
+    ).reshape((1, -1))
+    is_valid = qml.math.all(mcm_samples * has_postselect == postselect, axis=1)
     has_valid = qml.math.any(is_valid)
     mid_meas = [op for op in circuit.operations if isinstance(op, MidMeasureMP)]
     mcm_samples = [mcm_samples[:, i : i + 1] for i in range(n_mcms)]
@@ -325,15 +329,17 @@ def gather_mcm(measurement, samples, is_valid):
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))
             values = [qml.math.array([v], like=interface) for v in values]
-            counts = [qml.math.sum(qml.math.all(mcm_samples == v, axis=1)) for v in values]
+            counts = [
+                qml.math.sum(qml.math.all(mcm_samples == v, axis=1) * is_valid) for v in values
+            ]
             counts = qml.math.array(counts, like=interface)
             return counts / qml.math.sum(counts)
         if isinstance(measurement, CountsMP):
             mcm_samples = [{"".join(str(v) for v in tuple(s)): 1} for s in mcm_samples]
         return gather_non_mcm(measurement, mcm_samples, is_valid)
     if isinstance(measurement, ProbabilityMP):
-        mcm_samples = qml.math.array([mv.concretize(samples)], like=interface).ravel()
-        counts = [qml.math.sum(mcm_samples * (samples[mv.measurements[0]] == v)) for v in [0, 1]]
+        mcm_samples = qml.math.array(mv.concretize(samples), like=interface).ravel()
+        counts = [qml.math.sum((mcm_samples == v) * is_valid) for v in list(mv.branches.values())]
         counts = qml.math.array(counts, like=interface)
         return counts / qml.math.sum(counts)
     mcm_samples = qml.math.array([mv.concretize(samples)], like=interface).ravel()

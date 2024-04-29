@@ -137,12 +137,6 @@ def test_apply_mid_measure():
         _ = apply_mid_measure(
             MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True, mid_measurements={}
         )
-    m0 = MidMeasureMP(0, postselect=1)
-    mid_measurements = {}
-    _ = apply_mid_measure(m0, np.zeros(2), mid_measurements=mid_measurements)
-    assert mid_measurements[m0] == -1
-    _ = apply_mid_measure(m0, np.array([1, 0]), mid_measurements=mid_measurements)
-    assert mid_measurements[m0] == -1
 
 
 def test_all_invalid_shots_circuit():
@@ -200,7 +194,7 @@ def test_unsupported_measurement():
         func(*params)
 
 
-@pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
+@pytest.mark.parametrize("shots", [None, 3000, [3000, 3001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -250,7 +244,7 @@ def obs_tape(x, y, z, reset=False, postselect=None):
     return m0, m1
 
 
-@pytest.mark.parametrize("shots", [None, 7000, [6000, 6001]])
+@pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -259,7 +253,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     conditional gate. A single measurement of a common observable is performed at the end."""
 
     dev = get_device(shots=shots)
-    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliZ(0) @ qml.PauliY(1)
 
     @qml.qnode(dev)
@@ -286,7 +280,7 @@ def test_single_mcm_multiple_measure_obs(postselect, reset):
     conditional gate. Multiple measurements of common observables are performed at the end."""
 
     dev = get_device(shots=7500)
-    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
 
     @qml.qnode(dev)
     def func(x, y, z):
@@ -341,9 +335,9 @@ def test_single_mcm_multiple_measurements(postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
     and a conditional gate. Multiple measurements of the mid-circuit measurement value are
     performed."""
-    shots = 10000
+    shots = 5000
     dev = get_device(shots=shots)
-    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliY(1)
 
     @qml.qnode(dev)
@@ -449,7 +443,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
     validate_measurements(measure_f, shots, results1, results2)
 
 
-@pytest.mark.parametrize("shots", [None, 6000, [6000, 6001]])
+@pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -458,7 +452,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     conditional gate. A single measurement of a common observable is performed at the end."""
 
     dev = get_device(shots=shots)
-    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliZ(0) @ qml.PauliY(1)
 
     @qml.qnode(dev)
@@ -480,7 +474,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     validate_measurements(measure_f, shots, results1, results2)
 
 
-@pytest.mark.parametrize("shots", [7000, [5000, 5001]])
+@pytest.mark.parametrize("shots", [7500, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample])
@@ -603,6 +597,7 @@ def test_sample_with_broadcasting_and_postselection_error():
         _ = circuit()
 
 
+# pylint: disable=not-an-iterable
 @pytest.mark.jax
 @pytest.mark.parametrize("shots", [100, [100, 101]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
