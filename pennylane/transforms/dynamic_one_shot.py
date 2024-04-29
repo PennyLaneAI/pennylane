@@ -365,7 +365,7 @@ def gather_mcm(measurement, samples):
     else:
         mcm_samples = [mv.concretize(dct) for dct in samples]
         use_as_is = mv.branches == {(0,): 0, (1,): 1}
-    mcm_samples = np.array(mcm_samples).reshape((-1, 1))
+    mcm_samples = np.array(mcm_samples).reshape((len(samples), 1))
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
     else:
