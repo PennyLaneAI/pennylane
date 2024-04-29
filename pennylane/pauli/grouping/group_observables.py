@@ -247,13 +247,13 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
         isinstance(o, (Prod, SProd)) for o in observables
     )
     if temp_opmath:
-        qml.operation.enable_new_opmath()
+        qml.operation.enable_new_opmath(warn=False)
 
     try:
         partitioned_paulis = pauli_grouping.colour_pauli_graph()
     finally:
         if temp_opmath:
-            qml.operation.disable_new_opmath()
+            qml.operation.disable_new_opmath(warn=False)
 
     partitioned_paulis[0].extend(no_wires_obs)
 
