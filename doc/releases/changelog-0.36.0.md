@@ -6,7 +6,6 @@
 
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
-
 * Added `error` method to `QuantumPhaseEstimation` template.
   [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
 
@@ -30,9 +29,7 @@
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
   [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
 
-
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
-
 
 * The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
@@ -128,7 +125,6 @@
 
 <h4>Make use of more methods to map from molecules 🗺️</h4>
 
-
 * Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
   [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
@@ -148,7 +144,6 @@
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
 <h4>Calculate dynamical Lie algebras 👾</h4>
-
 
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
@@ -220,7 +215,6 @@
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
-
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
  `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
@@ -232,28 +226,16 @@
   noisy qutrit circuit with measurement and sampling.
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
- * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
+* Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
- * Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
+* Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
 
 <h3>Improvements 🛠</h3>
 
-<h4>Community contributions 🥳</h4>
-
-* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
-  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
-  [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
-
-* Add type hints for unimplemented methods of the abstract class `Operator`.
-  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
-
-* Implement `Shots.bins()` method.
-  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
-
-<h4>Updated operators</h4>
+<h4>Work easily and efficiently with operators</h4>
 
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
@@ -357,17 +339,29 @@
   is now faster.
   [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
 
+<h4>Community contributions 🥳</h4>
+
+* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
+  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
+  [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
+
+* Add type hints for unimplemented methods of the abstract class `Operator`.
+  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
+
+* Implement `Shots.bins()` method.
+  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
-* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
-  [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
+* Added a `qml.capture` module that will contain PennyLane's own capturing mechanism for hybrid
+  quantum-classical programs.
+  [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
 
 * The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
-* Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
-  quantum-classical programs.
-  [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
+* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
+  [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
 * `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
   [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
