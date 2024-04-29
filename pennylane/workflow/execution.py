@@ -45,7 +45,7 @@ from .jacobian_products import (
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-device_type = Union[qml.devices.LegacyDevice, "qml.devices.Device"]
+device_type = Union[qml.Device, "qml.devices.Device"]
 
 jpc_interfaces = {
     "autograd",
