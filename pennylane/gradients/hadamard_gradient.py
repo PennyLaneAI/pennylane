@@ -112,8 +112,9 @@ def hadamard_grad(
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
+    TODO THERE IS A BUG
     >>> import jax
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
@@ -133,7 +134,7 @@ def hadamard_grad(
         as the ``diff_method`` argument of the QNode decorator, and differentiating with your
         preferred machine learning framework.
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> dev = qml.device("default.qubit")
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
@@ -142,9 +143,7 @@ def hadamard_grad(
         ...     return qml.expval(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.hadamard_grad(circuit)(params)
-        (tensor([-0.3875172], requires_grad=True),
-         tensor([-0.18884787], requires_grad=True),
-         tensor([-0.38355704], requires_grad=True))
+        tensor([-0.3875172 , -0.18884787, -0.38355704], requires_grad=True)
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -156,9 +155,9 @@ def hadamard_grad(
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
         >>> gradient_tapes
-        [<QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[0, 1], params=3>]
+        [<QuantumScript: wires=[0, 1], params=3>,
+         <QuantumScript: wires=[0, 1], params=3>,
+         <QuantumScript: wires=[0, 1], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
@@ -177,14 +176,17 @@ def hadamard_grad(
 
         The output tapes can then be evaluated and post-processed to retrieve the gradient:
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        TODO THERE IS A BUG OR BAD DOC EX
+        >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        (array(-0.3875172), array(-0.18884787), array(-0.38355704))
+        (tensor(-0.56464247, requires_grad=True),
+         tensor(-0.56464247, requires_grad=True),
+         tensor(-0.56464247, requires_grad=True))
 
         This transform can be registered directly as the quantum gradient transform
         to use during autodifferentiation:
 
-        >>> dev = qml.device("default.qubit", wires=3)
+        >>> dev = qml.device("default.qubit")
         >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
@@ -193,7 +195,7 @@ def hadamard_grad(
         ...     return qml.expval(qml.Z(0))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        [-0.3875172  -0.18884787 -0.38355704]
+        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
         If you use custom wires on your device, you need to pass an auxiliary wire.
 
@@ -207,24 +209,24 @@ def hadamard_grad(
         ...    return qml.expval(qml.Z("a"))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        [-0.3875172  -0.18884787 -0.38355704]
+        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
     .. note::
 
         ``hadamard_grad`` will decompose the operations that are not in the list of supported operations.
 
-        - ``pennylane.RX``
-        - ``pennylane.RY``
-        - ``pennylane.RZ``
-        - ``pennylane.Rot``
-        - ``pennylane.PhaseShift``
-        - ``pennylane.U1``
-        - ``pennylane.CRX``
-        - ``pennylane.CRY``
-        - ``pennylane.CRZ``
-        - ``pennylane.IsingXX``
-        - ``pennylane.IsingYY``
-        - ``pennylane.IsingZZ``
+        - :class:`~.pennylane.RX`
+        - :class:`~.pennylane.RY`
+        - :class:`~.pennylane.RZ`
+        - :class:`~.pennylane.Rot`
+        - :class:`~.pennylane.PhaseShift`
+        - :class:`~.pennylane.U1`
+        - :class:`~.pennylane.CRX`
+        - :class:`~.pennylane.CRY`
+        - :class:`~.pennylane.CRZ`
+        - :class:`~.pennylane.IsingXX`
+        - :class:`~.pennylane.IsingYY`
+        - :class:`~.pennylane.IsingZZ`
 
         The expansion will fail if a suitable decomposition in terms of supported operation is not found.
         The number of trainable parameters may increase due to the decomposition.
