@@ -108,10 +108,10 @@
   or `FermiWord`) and the number of qubits / spin orbitals in the system, `n`:
 
   ```pycon
-  >>> fermi_ham = qml.fermi.from_string('0+ 1-')
-  >>> qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
+  >>> fermi_ham = qml.fermi.from_string('0+ 1+ 1- 0-')
+  >>> qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6, tol=0.0)
   >>> print(qubit_ham)
-  -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
+  0.25 * I(0) + -0.25 * Z(0) + -0.25 * (Z(0) @ Z(1)) + 0.25 * Z(1)
   ```
 
 * The `qml.qchem.hf_state` function has been upgraded to be compatible with
