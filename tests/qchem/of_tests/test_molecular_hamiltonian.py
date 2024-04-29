@@ -120,6 +120,7 @@ def test_building_hamiltonian_molecule_class(
     required to run the quantum simulation. The latter is tested for different values of the
     molecule's charge and for active spaces with different size"""
 
+    args = (test_symbols, test_coordinates)
     kwargs = {
         "method": package,
         "active_electrons": nact_els,
@@ -349,7 +350,7 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(
 ):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
 
-    molecule = qchem.Molecule(symbols, coordinates)
+    molecule = qchem.Molecule(symbols, geometry)
     hamiltonian, _ = qchem.molecular_hamiltonian(
         molecule,
         method=method,
@@ -549,7 +550,7 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
 def test_real_hamiltonian_molecule_class(symbols, geometry, method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
 
-    molecule = qchem.Molecule(symbols, coordinates)
+    molecule = qchem.Molecule(symbols, geometry)
     hamiltonian, _ = qchem.molecular_hamiltonian(
         molecule,
         method=method,
