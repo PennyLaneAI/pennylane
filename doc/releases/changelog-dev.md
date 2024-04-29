@@ -377,6 +377,10 @@
 
 <h4>Other improvements</h4>
 
+* `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
+  `qml.devices.Device`, which follows the new device API.
+  [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
+
 * `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
   is provided by the user or the device.
   [(#5576)](https://github.com/PennyLaneAI/pennylane/pull/5576)
