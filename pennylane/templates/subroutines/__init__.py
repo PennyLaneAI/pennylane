@@ -42,3 +42,4 @@ from .aqft import AQFT
 from .fable import FABLE
 from .reflection import Reflection
 from .amplitude_amplification import AmplitudeAmplification
+from .qubitization import Qubitization
