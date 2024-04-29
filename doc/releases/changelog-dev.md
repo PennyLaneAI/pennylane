@@ -356,6 +356,9 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `dynamic_one_shot` transform can be compiled with `jax.jit`.
+  [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
+
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 

@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
+from pennylane.transforms.dynamic_one_shot import fillin_value
 
 pytestmark = pytest.mark.slow
 
@@ -642,3 +643,46 @@ def test_sample_with_prng_key(shots, postselect, reset):
             assert np.allclose(r1, r3)
     else:
         assert np.allclose(results1, results3)
+
+
+# pylint: disable=not-an-iterable
+@pytest.mark.jax
+@pytest.mark.parametrize("postselect", [None, 1])
+@pytest.mark.parametrize("reset", [False, True])
+def test_jax_jit(postselect, reset):
+    """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
+    conditional gate. A single measurement of a common observable is performed at the end."""
+    jax = pytest.importorskip("jax")
+    shots = 100
+
+    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(678))
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
+    obs = qml.PauliY(0)
+
+    @qml.qnode(dev)
+    def func(x, y, z):
+        m0, m1 = obs_tape(x, y, z, reset=reset, postselect=postselect)
+        return (
+            qml.expval(obs),
+            qml.probs(obs),
+            qml.sample(obs),
+            qml.var(obs),
+            qml.expval(op=m0 + 2 * m1),
+            qml.probs(op=m0),
+            qml.sample(op=m0 + 2 * m1),
+            qml.var(op=m0 + 2 * m1),
+            qml.probs(op=[m0, m1]),
+        )
+
+    func1 = func
+    results1 = func1(*params)
+
+    func2 = jax.jit(func)
+    results2 = func2(*params)
+
+    measures = [qml.expval, qml.probs, qml.sample, qml.var] * 2 + [qml.probs]
+    for measure_f, r1, r2 in zip(measures, results1, results2):
+        r1, r2 = np.array(r1).ravel(), np.array(r2).ravel()
+        if measure_f == qml.sample:
+            r2 = r2[r2 != fillin_value]
+        np.allclose(r1, r2)

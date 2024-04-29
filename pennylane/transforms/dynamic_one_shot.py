@@ -36,6 +36,8 @@ from pennylane.measurements import (
 
 from .core import transform
 
+fillin_value = np.iinfo(np.int32).min
+
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
@@ -300,7 +302,7 @@ def gather_non_mcm(circuit_measurement, measurement, is_valid):
         if is_interface_jax and measurement.ndim == 2:
             is_valid = is_valid.reshape((-1, 1))
         return (
-            qml.math.where(is_valid, measurement, -123456)
+            qml.math.where(is_valid, measurement, fillin_value)
             if is_interface_jax
             else measurement[is_valid]
         )
