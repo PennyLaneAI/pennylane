@@ -120,15 +120,9 @@ def scf(mol, n_steps=50, tol=1e-8):
         charges = mol.nuclear_charges
         r = mol.coordinates
         n_electron = mol.n_electrons
-        print("args: ", args)
-        print("basis_functions: ", basis_functions[0].params)
-        print("charges: ", charges)
-        print("r ", r)
-        print("n_electron: ", n_electron)
-        print("r.requires_grad", r.requires_grad)
+
         if r.requires_grad:
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
-            print(args_r)
             args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
             rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
             s = overlap_matrix(basis_functions)(*args_[1:])

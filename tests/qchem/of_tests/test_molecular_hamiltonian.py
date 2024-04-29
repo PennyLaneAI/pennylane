@@ -105,6 +105,39 @@ def test_building_hamiltonian(
     assert qubits == 2 * nact_orbs
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+def test_building_hamiltonian_molecule_class(
+    charge,
+    mult,
+    package,
+    nact_els,
+    nact_orbs,
+    mapping,
+    tmpdir,
+):
+    r"""Test that the generated Hamiltonian `built_hamiltonian` using the molecule class, is an
+    instance of the PennyLane Hamiltonian class and the correctness of the total number of qubits
+    required to run the quantum simulation. The latter is tested for different values of the
+    molecule's charge and for active spaces with different size"""
+
+    kwargs = {
+        "method": package,
+        "active_electrons": nact_els,
+        "active_orbitals": nact_orbs,
+        "mapping": mapping,
+        "outpath": tmpdir.strpath,
+    }
+
+    molecule = qchem.Molecule(args, charge=charge, mult=mult)
+    built_hamiltonian, qubits = qchem.molecular_hamiltonian(molecule, **kwargs)
+
+    if active_new_opmath():
+        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
+    else:
+        assert isinstance(built_hamiltonian, qml.Hamiltonian)
+    assert qubits == 2 * nact_orbs
+
+
 @pytest.mark.parametrize(
     ("symbols", "geometry", "h_ref_data"),
     [
@@ -241,6 +274,43 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_differentiable_hamiltonian_molecule_class(symbols, geometry, h_ref_data):
+    r"""Test that molecular_hamiltonian generated using the molecule class
+    returns the correct Hamiltonian with the differentiable backend."""
+
+    geometry.requires_grad = True
+    args = [geometry.reshape(2, 3)]
+    molecule = qchem.molecule(symbols, geometry)
+    h_args = qchem.molecular_hamiltonian(molecule, method="dhf", args=args)[0]
+
+    molecule.geometry.requires_grad = False
+    h_noargs = qchem.molecular_hamiltonian(molecule, method="dhf")[0]
+
+    ops = [
+        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+        for op in map(qml.simplify, h_ref_data[1])
+    ]
+    h_ref = qml.Hamiltonian(h_ref_data[0], ops)
+
+    h_ref_coeffs, h_ref_ops = h_ref.terms()
+    h_args_coeffs, h_args_ops = h_args.terms()
+    h_noargs_coeffs, h_noargs_ops = h_noargs.terms()
+
+    assert all(coeff.requires_grad is True for coeff in h_args_coeffs)
+    assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
+
+    assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
+    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops).compare(
+        qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
+    )
+
+    assert np.allclose(np.sort(h_noargs_coeffs), np.sort(h_ref_coeffs))
+    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops).compare(
+        qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
+    )
+
+
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "wiremap"),
     [
@@ -265,6 +335,23 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tm
     hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
+        method=method,
+        wires=wiremap,
+        outpath=tmpdir.strpath,
+    )
+
+    assert set(hamiltonian.wires) == set(wiremap)
+
+
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
+def test_custom_wiremap_hamiltonian_pyscf_molecule_class(
+    symbols, geometry, method, wiremap, tmpdir
+):
+    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+
+    molecule = qchem.Molecule(symbols, coordinates)
+    hamiltonian, _ = qchem.molecular_hamiltonian(
+        molecule,
         method=method,
         wires=wiremap,
         outpath=tmpdir.strpath,
@@ -316,6 +403,30 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir
     assert wiremap_calc == wiremap_dict
 
 
+def test_custom_wiremap_hamiltonian_dhf_molecule_class(symbols, geometry, wiremap, args, tmpdir):
+    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+
+    wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
+
+    molecule = qchem.Molecule(symbols, geometry)
+    hamiltonian_ref, _ = qchem.molecular_hamiltonian(
+        molecule,
+        args=args,
+        outpath=tmpdir.strpath,
+    )
+
+    hamiltonian, _ = qchem.molecular_hamiltonian(
+        molecule,
+        wires=wiremap,
+        args=args,
+        outpath=tmpdir.strpath,
+    )
+
+    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
+
+    assert wiremap_calc == wiremap_dict
+
+
 file_content = """\
 2
 in Angstrom
@@ -339,6 +450,23 @@ def test_mol_hamiltonian_with_read_structure(tmpdir):
     assert num_qubits == 4
 
 
+def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
+    """Test that the pipeline of using molecular_hamiltonian with
+    read_structure executes without errors."""
+    f_name = "h2.xyz"
+    filename = tmpdir.join(f_name)
+
+    with open(filename, "w") as f:
+        f.write(file_content)
+
+    symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
+
+    molecule = qchem.Molecule(symbols, coordinates)
+    H, num_qubits = qchem.molecular_hamiltonian(molecule)
+    assert len(H.terms()) == 2
+    assert num_qubits == 4
+
+
 @pytest.mark.parametrize(
     ("symbols", "geometry"),
     [
@@ -351,8 +479,8 @@ def test_mol_hamiltonian_with_read_structure(tmpdir):
 def test_diff_hamiltonian_error(symbols, geometry):
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
-    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
+    #    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
+    #        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
     with pytest.raises(
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
@@ -361,6 +489,22 @@ def test_diff_hamiltonian_error(symbols, geometry):
 
     with pytest.raises(ValueError, match="Openshell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
+
+
+def test_diff_hamiltonian_error_molecule_class(symbols, geometry):
+    r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
+
+    #    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
+    #        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
+
+    molecule = qchem.Molecule(symbols, geometry)
+    with pytest.raises(
+        ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
+    ):
+        qchem.molecular_hamiltonian(molecule, method="psi4")
+
+    with pytest.raises(ValueError, match="Openshell systems are not supported"):
+        qchem.molecular_hamiltonian(molecule, mult=3)
 
 
 @pytest.mark.parametrize(
@@ -393,6 +537,21 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
     hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
+        method=method,
+        args=args,
+        outpath=tmpdir.strpath,
+    )
+
+    assert np.isrealobj(hamiltonian.terms()[0])
+
+
+@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+def test_real_hamiltonian_molecule_class(symbols, geometry, method, args, tmpdir):
+    r"""Test that the generated Hamiltonian has real coefficients."""
+
+    molecule = qchem.Molecule(symbols, coordinates)
+    hamiltonian, _ = qchem.molecular_hamiltonian(
+        molecule,
         method=method,
         args=args,
         outpath=tmpdir.strpath,

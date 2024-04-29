@@ -99,7 +99,7 @@ class Molecule:
         self.charge = charge
         self.mult = mult
         self.basis_name = basis_name.lower()
-
+        self.name = name
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]

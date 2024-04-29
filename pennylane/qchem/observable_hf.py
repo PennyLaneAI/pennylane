@@ -97,7 +97,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     return sentence
 
 
-def qubit_observable(o_ferm, mapping="jordan_wigner", cutoff=1.0e-12):
+def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
     Args:
@@ -108,6 +108,15 @@ def qubit_observable(o_ferm, mapping="jordan_wigner", cutoff=1.0e-12):
         Operator: Simplified PennyLane Hamiltonian
 
     **Example**
+
+    >>> qml.operation.enable_new_opmath()
+    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> print(qubit_observable(s))
+    -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
+
+    If the new op-math is deactivated, a :class:`~Hamiltonian` instance is returned.
 
     >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
@@ -121,18 +130,9 @@ def qubit_observable(o_ferm, mapping="jordan_wigner", cutoff=1.0e-12):
     + ((0.3+0j)) [X0 X1]
     + ((0.775+0j)) [Y1 Y2]
     + ((0.775+0j)) [X1 X2]
-
-    If the new op-math is active, an arithmetic operator is returned.
-
-    >>> qml.operation.enable_new_opmath()
-    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
-    >>> print(qubit_observable(s))
-    -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
-
     if mapping == "jordan_wigner":
+        print("cutoff: ", cutoff)
         h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     elif mapping == "parity_transform":
         qubits = len(o_ferm.wires)

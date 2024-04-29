@@ -812,7 +812,7 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 
 
 def molecular_hamiltonian(
-    molecule,
+    *molecule,
     method="dhf",
     active_electrons=None,
     active_orbitals=None,
@@ -822,6 +822,7 @@ def molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e012,
+    **mol_prop,
 ):  # pylint:disable=too-many-arguments, too-many-statements
     r"""Generate the qubit Hamiltonian of a molecule.
 
@@ -847,7 +848,9 @@ def molecular_hamiltonian(
     |
 
     Args:
-        molecule (Molecule object): Object containing information about the molecule
+        *molecule
+        (Molecule object): Object containing information about the molecule for new UI.
+        (symbols, coordinates): Symbols and coordinates for the molecule for old UI.
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
             to specify the built-in differentiable Hartree-Fock solver, ``method="pyscf"`` to use
@@ -869,13 +872,36 @@ def molecular_hamiltonian(
         convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
+        mol_prop (dictionary): Dictionary containing molecular properties for old UI
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
         and the number of qubits
 
     **Example**
+    **Deprecated Function**
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+    >>> H, qubits = molecular_hamiltonian(symbols, coordinates)
+    >>> print(qubits)
+    4
+    >>> print(H)
+    (-0.04207897647782188) [I0]
+    + (0.17771287465139934) [Z0]
+    + (0.1777128746513993) [Z1]
+    + (-0.24274280513140484) [Z2]
+    + (-0.24274280513140484) [Z3]
+    + (0.17059738328801055) [Z0 Z1]
+    + (0.04475014401535161) [Y0 X1 X2 Y3]
+    + (-0.04475014401535161) [Y0 Y1 X2 X3]
+    + (-0.04475014401535161) [X0 X1 Y2 Y3]
+    + (0.04475014401535161) [X0 Y1 Y2 X3]
+    + (0.12293305056183801) [Z0 Z2]
+    + (0.1676831945771896) [Z0 Z3]
+    + (0.1676831945771896) [Z1 Z2]
+    + (0.12293305056183801) [Z1 Z3]
+    + (0.176276408043196) [Z2 Z3]
 
+    **New Function**
     >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     >>> molecule = qml.qchem.Molecule(symbols, coordinates)
     >>> H, qubits = molecular_hamiltonian(molecule)
@@ -899,223 +925,46 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
-    if method not in ["dhf", "pyscf", "openfermion"]:
-        raise ValueError("Only 'dhf', 'pyscf' and 'openfermion' backends are supported.")
-
-    wires_map = None
-
-    if wires:
-        wires_new = qml.qchem.convert._process_wires(wires)
-        wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
-
-    if method == "dhf":
-
-        if molecule.mult != 1:
-            raise ValueError(
-                "Openshell systems are not supported for the differentiable workflow. Use "
-                "`method = 'pyscf'` or change the charge or spin multiplicity of the molecule."
-            )
-
-        if args is None and isinstance(molecule.coordinates, qml.numpy.tensor):
-            molecule.coordinates.requires_grad = False
-
-        molecule = qml.qchem.Molecule(
-            molecule.symbols,
-            molecule.coordinates,
-            charge=molecule.charge,
-            mult=molecule.mult,
-            basis_name=molecule.basis_name,
-            load_data=load_data,
-            alpha=molecule.alpha,
-            coeff=molecule.coeff,
-        )
-
-        core, active = qml.qchem.active_space(
-            molecule.n_electrons,
-            molecule.n_orbitals,
-            molecule.mult,
-            active_electrons,
-            active_orbitals,
-        )
-
-        requires_grad = args is not None
-        h = (
-            qml.qchem.diff_hamiltonian(molecule, mapping, core=core, active=active)(*args)
-            if requires_grad
-            else qml.qchem.diff_hamiltonian(molecule, mapping, core=core, active=active)()
-        )
-
-        if active_new_opmath():
-            h_as_ps = qml.pauli.pauli_sentence(h)
-            coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=requires_grad)
-
-            h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
-            h = (
-                qml.s_prod(0, qml.Identity(h.wires[0]))
-                if len(h_as_ps) == 0
-                else h_as_ps.operation()
+    if len(molecule) == 1 and len(mol_prop) == 0:
+        if isinstance(molecule[0], qml.qchem.Molecule):
+            symbols = molecule[0].symbols
+            coordinates = molecule[0].coordinates
+            name = molecule[0].name
+            charge = molecule[0].charge
+            mult = molecule[0].mult
+            basis = molecule[0].basis_name
+            alpha = molecule[0].alpha
+            coeff = molecule[0].coeff
+        else:
+            ValueError("Only Molecule object is supported with this interface.")
+    else:
+        if any(isinstance(arg, qml.qchem.Molecule) for arg in molecule):
+            ValueError(
+                "Molecule object is not supported with this interface. Please provide symbols and coordinates as arrays."
             )
         else:
-            coeffs = qml.numpy.real(h.coeffs, requires_grad=requires_grad)
-            h = qml.Hamiltonian(coeffs, h.ops)
+            if len(molecule) == 2:
+                symbols = molecule[0]
+                coordinates = molecule[1]
+            else:
+                symbols = mol_prop["symbols"]
+                coordinates = mol_prop["coordinates"]
 
-        if wires:
-            h = qml.map_wires(h, wires_map)
-        return h, 2 * len(active)
-
-    if method == "pyscf" and mapping.strip().lower() == "jordan_wigner":
-        core_constant, one_mo, two_mo = _pyscf_integrals(
-            molecule.symbols,
-            molecule.coordinates,
-            molecule.charge,
-            molecule.mult,
-            molecule.basis,
-            active_electrons,
-            active_orbitals,
-        )
-
-        hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
-
-        if active_new_opmath():
-            h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
-
-        else:
-            h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
-            h_pl = simplify(h_pl)
-
-        return h_pl, len(h_pl.wires)
-
-    openfermion, _ = _import_of()
-
-    hf_file = meanfield(
-        molecule.symbols,
-        molecule.coordinates,
-        moleule.name,
-        molecule.charge,
-        molecule.mult,
-        molecule.basis_name,
-        "pyscf",
-        outpath,
-    )
-
-    molecule = openfermion.MolecularData(filename=hf_file)
-
-    core, active = qml.qchem.active_space(
-        molecule.n_electrons, molecule.n_orbitals, molecule.mult, active_electrons, active_orbitals
-    )
-
-    h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
-
-    h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
-
-    return h_pl, len(h_pl.wires)
-
-
-def molecular_hamiltonian(
-    symbols,
-    coordinates,
-    name="molecule",
-    charge=0,
-    mult=1,
-    basis="sto-3g",
-    method="dhf",
-    active_electrons=None,
-    active_orbitals=None,
-    mapping="jordan_wigner",
-    outpath=".",
-    wires=None,
-    alpha=None,
-    coeff=None,
-    args=None,
-    load_data=False,
-    convert_tol=1e012,
-):  # pylint:disable=too-many-arguments, too-many-statements
-    r"""Generate the qubit Hamiltonian of a molecule.
-
-    This function drives the construction of the second-quantized electronic Hamiltonian
-    of a molecule and its transformation to the basis of Pauli matrices.
-
-    The net charge of the molecule can be given to simulate cationic/anionic systems. Also, the
-    spin multiplicity can be input to determine the number of unpaired electrons occupying the HF
-    orbitals as illustrated in the left panel of the figure below.
-
-    The basis of Gaussian-type *atomic* orbitals used to represent the *molecular* orbitals can be
-    specified to go beyond the minimum basis approximation.
-
-    An active space can be defined for a given number of *active electrons* occupying a reduced set
-    of *active orbitals* as sketched in the right panel of the figure below.
-
-    |
-
-    .. figure:: ../../_static/qchem/fig_mult_active_space.png
-        :align: center
-        :width: 90%
-
-    |
-
-    Args:
-        symbols (list[str]): symbols of the atomic species in the molecule
-        coordinates (array[float]): atomic positions in Cartesian coordinates.
-            The atomic coordinates must be in atomic units and can be given as either a 1D array of
-            size ``3*N``, or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
-        name (str): name of the molecule
-        charge (int): Net charge of the molecule. If not specified a neutral system is assumed.
-        mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
-            for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
-            Possible values of ``mult`` are :math:`1, 2, 3, \ldots`. If not specified,
-            a closed-shell HF state is assumed.
-        basis (str): atomic basis set used to represent the molecular orbitals
-        method (str): Quantum chemistry method used to solve the
-            mean field electronic structure problem. Available options are ``method="dhf"``
-            to specify the built-in differentiable Hartree-Fock solver, ``method="pyscf"`` to use
-            the PySCF package (requires ``pyscf`` to be installed), or ``method="openfermion"`` to
-            use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
-        active_electrons (int): Number of active electrons. If not specified, all electrons
-            are considered to be active.
-        active_orbitals (int): Number of active orbitals. If not specified, all orbitals
-            are considered to be active.
-        mapping (str): transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian
-        outpath (str): path to the directory containing output files
-        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
-            For types ``Wires``/``list``/``tuple``, each item in the iterable represents a wire label
-            corresponding to the qubit number equal to its index.
-            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
-            partial mapping. If None, will use identity map.
-        alpha (array[float]): exponents of the primitive Gaussian functions
-        coeff (array[float]): coefficients of the contracted Gaussian functions
-        args (array[array[float]]): initial values of the differentiable parameters
-        load_data (bool): flag to load data from the basis-set-exchange library
-        convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
-            for the imaginary part of the Hamiltonian coefficients created by openfermion.
-            Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
-
-    Returns:
-        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
-        and the number of qubits
-
-    **Example**
-
-    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-    >>> H, qubits = molecular_hamiltonian(symbols, coordinates)
-    >>> print(qubits)
-    4
-    >>> print(H)
-    (-0.04207897647782188) [I0]
-    + (0.17771287465139934) [Z0]
-    + (0.1777128746513993) [Z1]
-    + (-0.24274280513140484) [Z2]
-    + (-0.24274280513140484) [Z3]
-    + (0.17059738328801055) [Z0 Z1]
-    + (0.04475014401535161) [Y0 X1 X2 Y3]
-    + (-0.04475014401535161) [Y0 Y1 X2 X3]
-    + (-0.04475014401535161) [X0 X1 Y2 Y3]
-    + (0.04475014401535161) [X0 Y1 Y2 X3]
-    + (0.12293305056183801) [Z0 Z2]
-    + (0.1676831945771896) [Z0 Z3]
-    + (0.1676831945771896) [Z1 Z2]
-    + (0.12293305056183801) [Z1 Z3]
-    + (0.176276408043196) [Z2 Z3]
-    """
+            default_mol_prop = {
+                "name": molecule,
+                "charge": 0,
+                "mult": 1,
+                "basis": "sto-3g",
+                "alpha": None,
+                "coeff": None,
+            }
+            default_mol_prop.update(mol_prop)
+            name = default_mol_prop["name"]
+            charge = default_mol_prop["charge"]
+            mult = default_mol_prop["mult"]
+            basis = default_mol_prop["basis"]
+            alpha = default_mol_prop["alpha"]
+            coeff = default_mol_prop["coeff"]
 
     if method not in ["dhf", "pyscf", "openfermion"]:
         raise ValueError("Only 'dhf', 'pyscf' and 'openfermion' backends are supported.")
@@ -1140,7 +989,6 @@ def molecular_hamiltonian(
                 "Openshell systems are not supported for the differentiable workflow. Use "
                 "`method = 'pyscf'` or change the charge or spin multiplicity of the molecule."
             )
-
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
@@ -1153,17 +1001,15 @@ def molecular_hamiltonian(
             alpha=alpha,
             coeff=coeff,
         )
-        print("mol basis: ", mol.basis_set[0].params)
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
 
-        print("")
         requires_grad = args is not None
         h = (
-            qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+            qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
             if requires_grad
-            else qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
+            else qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
         )
 
         if active_new_opmath():

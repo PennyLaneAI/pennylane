@@ -365,6 +365,8 @@
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
+* The `molecular_hamiltonian` function now works with Molecule as the central object.
+  [(#5571)](https://github.com/PennyLaneAI/pennylane/pull/5571)
 <h3>Breaking changes 💔</h3>
 
 * State measurements preserve `dtype`.
