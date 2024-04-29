@@ -141,15 +141,19 @@ class CircuitGraph:
                 # added to the classical wires of the MCMs.
                 meas_val = getattr(op, "mv", None)
                 if meas_val is not None:
+                    any_m_id_in_grid = False
                     if not isinstance(meas_val, list):
                         meas_val = [meas_val]
                     for _mv in meas_val:
                         for m in _mv.measurements:
-                            self._grid[m.id].append(op)
+                            if m.id in self._grid:
+                                self._grid[m.id].append(op)
+                                no_m_id_in_grid = True
 
                     # It should _not_ be added to the quantum wire, so we continue with the loop
                     # over the queue and skip the block below.
-                    continue
+                    if any_m_id_in_grid:
+                        continue
 
             for w in wires if len(op.wires) == 0 else op.wires:
                 # get the index of the wire on the device
@@ -157,6 +161,7 @@ class CircuitGraph:
                 # add op to the grid, to the end of wire w
                 self._grid.setdefault(wire, []).append(op)
 
+        print(self._grid)
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
         # rx.PyDiGraph: DAG representation of the quantum circuit
