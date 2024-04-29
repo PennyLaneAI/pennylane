@@ -379,6 +379,6 @@ def gather_mcm(measurement, samples):
         meas_tmp = measurement.__class__(wires=wires)
     new_measurement = meas_tmp.process_samples(mcm_samples, wire_order=wires)
     if isinstance(measurement, CountsMP) and not use_as_is:
-        keys = np.array(list(new_measurement.values())).astype(mcm_samples.dtype)
+        keys = np.array(list(new_measurement.keys())).astype(mcm_samples.dtype)
         new_measurement = dict(sorted((x, y) for x, y in zip(keys, new_measurement.values())))
     return new_measurement
