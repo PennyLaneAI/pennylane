@@ -1037,7 +1037,7 @@ def param_shift(
         broadcasted tapes:
 
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
         >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
@@ -1048,9 +1048,10 @@ def param_shift(
 
         The postprocessing function will know that broadcasting is used and handle the results accordingly:
 
-        TODO: THERE IS A BUG
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        (array(-0.3875172), array(-0.18884787), array(-0.38355704))
+        (tensor(-0.3875172, requires_grad=True),
+         tensor(-0.18884787, requires_grad=True),
+         tensor(-0.38355704, requires_grad=True))
 
         An advantage of using ``broadcast=True`` is a speedup:
 

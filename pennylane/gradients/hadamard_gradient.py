@@ -112,7 +112,6 @@ def hadamard_grad(
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
-    TODO THERE IS A BUG
     >>> import jax
     >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
@@ -120,11 +119,12 @@ def hadamard_grad(
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+    ...     return qml.expval(qml.Z(0)), qml.probs(wires=0)
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
-    Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
+    (Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64),
+     Array([[-0.1937586 , -0.09442394, -0.19177852],
+            [ 0.1937586 ,  0.09442394,  0.19177852]], dtype=float64))
 
     .. details::
         :title: Usage Details
@@ -150,7 +150,7 @@ def hadamard_grad(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
         >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
@@ -176,12 +176,11 @@ def hadamard_grad(
 
         The output tapes can then be evaluated and post-processed to retrieve the gradient:
 
-        TODO THERE IS A BUG OR BAD DOC EX
         >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        (tensor(-0.56464247, requires_grad=True),
-         tensor(-0.56464247, requires_grad=True),
-         tensor(-0.56464247, requires_grad=True))
+        (tensor(-0.3875172, requires_grad=True),
+         tensor(-0.18884787, requires_grad=True),
+         tensor(-0.38355704, requires_grad=True))
 
         This transform can be registered directly as the quantum gradient transform
         to use during autodifferentiation:
