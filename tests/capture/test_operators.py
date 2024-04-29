@@ -76,12 +76,16 @@ def test_hybrid_capture_wires():
         qml.X(a + b)
 
     jaxpr = jax.make_jaxpr(f)(1, 2)
-    assert len(jaxpr.eqns) == 2
+    assert len(jaxpr.eqns) == 3
 
     assert jaxpr.eqns[0].primitive.name == "add"
 
-    assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
-    assert jaxpr.eqns[1].primitive == qml.X._primitive
+    assert jaxpr.eqns[1].primitive.name == "Wires"
+    assert jaxpr.eqns[1].invars == jaxpr.eqns[0].outvars
+    assert jaxpr.eqns[1].outvars[0].aval.shape == (1,)
+
+    assert jaxpr.eqns[2].primitive == qml.X._primitive
+    assert jaxpr.eqns[2].invars == jaxpr.eqns[1].outvars
 
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
@@ -97,7 +101,7 @@ def test_hybrid_capture_parametrization():
         qml.Rot(2 * a, jax.numpy.sqrt(a), a**2, wires=2 * a)
 
     jaxpr = jax.make_jaxpr(f)(0.5)
-    assert len(jaxpr.eqns) == 5
+    assert len(jaxpr.eqns) == 6
 
     in1 = jaxpr.eqns[0].invars[1]
     assert jaxpr.eqns[1].invars[0] == in1
@@ -108,7 +112,10 @@ def test_hybrid_capture_parametrization():
     assert jaxpr.eqns[1].primitive.name == "sqrt"
     assert jaxpr.eqns[2].primitive.name == "integer_pow"
     assert jaxpr.eqns[3].primitive.name == "mul"
-    assert jaxpr.eqns[4].primitive == qml.Rot._primitive
+
+    assert jaxpr.eqns[4].primitive == qml.wires.Wires._primitive
+    assert jaxpr.eqns[4].invars == jaxpr.eqns[3].outvars
+    assert jaxpr.eqns[5].primitive == qml.Rot._primitive
 
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)

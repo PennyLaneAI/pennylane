@@ -719,12 +719,11 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
 
-        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            args += (qml.capture.wires(wires),)
-        elif args and isinstance(args[-1], iterable_wires_types):
-            args = args[:-1] + (qml.capture.wires(args[-1]),)
+            args += (Wires(wires),)
+        elif args:
+            args = args[:-1] + (Wires(args[-1]),)
         return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self):

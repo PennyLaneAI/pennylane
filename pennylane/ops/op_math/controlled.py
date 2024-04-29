@@ -402,7 +402,7 @@ class Controlled(SymbolicOp):
     def _primitive_bind_call(
         cls, base, control_wires, control_values=None, work_wires=None, id=None
     ):
-        control_wires = qml.capture.wires(control_wires)
+        control_wires = Wires(control_wires)
         return cls._primitive.bind(
             base, control_wires, control_values=control_values, work_wires=work_wires
         )

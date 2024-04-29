@@ -19,6 +19,8 @@ import itertools
 from collections.abc import Iterable, Sequence
 import numpy as np
 from pennylane.pytrees import register_pytree
+from pennylane.capture import PLXPRMeta, create_wires_primitive
+import pennylane as qml
 
 
 class WireError(Exception):
@@ -45,7 +47,7 @@ def _process(wires):
         # Interpret string as a non-iterable object.
         # This is the only exception to the logic
         # of considering the elements of iterables as wire labels.
-        wires = [wires]
+        wires = (wires,)
 
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
@@ -76,7 +78,7 @@ def _process(wires):
     return tuple_of_wires
 
 
-class Wires(Sequence):
+class Wires(Sequence, metaclass=PLXPRMeta):
     r"""
     A bookkeeping class for wires, which are ordered collections of unique objects.
 
@@ -98,6 +100,21 @@ class Wires(Sequence):
     Args:
          wires (Any): the wire label(s)
     """
+
+    _primitive = "unset"  # set on first usage to avoid circular dependency
+
+    @classmethod
+    def _primitive_bind_call(cls, wires, _override=False):
+        if cls._primitive == "unset":  # set on first call to avoid circular dependency
+            cls._primitive = create_wires_primitive(cls)
+        if cls._primitive is None:
+            return type.__call__(
+                cls,
+            )
+
+        if hasattr(wires, "aval") and type(wires.aval).__name__ == "AbstractWires":
+            return wires
+        return cls._primitive.bind(*_process(wires))
 
     def _flatten(self):
         """Serialize Wires into a flattened representation according to the PyTree convension."""
