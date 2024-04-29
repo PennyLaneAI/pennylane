@@ -101,13 +101,13 @@
 
     ```python
     @qml.prod
-    def U(wires):
-        qml.Hadamard(wires=wires[0])
-        qml.RY(0.1, wires=wires[1])
+    def U():
+        qml.Hadamard(wires=0)
+        qml.RY(0.1, wires=1)
 
     @qml.qnode(dev)
     def circuit():
-        qml.Reflection(U([0, 1]))
+        qml.Reflection(U())
         return qml.state()
 
     circuit()
