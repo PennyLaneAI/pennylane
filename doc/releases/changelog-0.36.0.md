@@ -381,6 +381,22 @@
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
 
+<h4>Device capabilities</h4>
+
+* Obtaining classical shadows using the `default.clifford` device is now compatible with
+  [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
+  [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
+
+* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
+  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+  [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
+
+* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
+
+* Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
+  [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
+
 <h4>Other improvements</h4>
 
 * Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
@@ -390,6 +406,10 @@
   is provided by the user or the device.
   [(#5576)](https://github.com/PennyLaneAI/pennylane/pull/5576)
 
+* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
+  (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
+  [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
+
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
   the operator it wraps.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
@@ -397,23 +417,9 @@
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
-* Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
-  [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
-
-* Obtaining classical shadows using the `default.clifford` device is now compatible with
-  [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
-  [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
-
 * `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now handle multi-term observables with a constant offset.
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
   [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
-
-* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
-  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
-  [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
-
-* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
-  [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
 
 * Replaced `cache_execute` with an alternate implementation based on `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
@@ -425,34 +431,10 @@
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
   [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
 
-* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
-  (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
-  [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
-
 * Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
   [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
 
 <h3>Breaking changes 💔</h3>
-
-* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
-  of whether there is classical processing in the node.
-  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
-  
-* State measurements preserve `dtype`.
-  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
-
-* Use `SampleMP`s in the `dynamic_one_shot` transform to get back the values of the mid-circuit measurements.
-  [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
-
-* Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
-  operators easier to work with.
-  [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
-
-* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
-  [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
-  
-* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
-  [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
 
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
   * tapes with more than one wire.
@@ -462,6 +444,22 @@
   * PauliWords and PauliSentences with more than one wire.
   [(#5328)](https://github.com/PennyLaneAI/pennylane/pull/5328)
   [(#5359)](https://github.com/PennyLaneAI/pennylane/pull/5359)
+
+* `single_tape_transform`, `batch_transform`, `qfunc_transform`, `op_transform`, `gradient_transform`
+  and `hessian_transform` are removed. Instead, switch to using the new `qml.transform` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+  [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
+
+* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
+  of whether there is classical processing in the node.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
+
+* Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
+  [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
+
+* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
+  [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
 
 * `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now removed. Instead, you  should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
   [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
@@ -475,6 +473,19 @@
   (-1j, PauliY(wires=[0]))
   ```
 
+* State measurements preserve `dtype`.
+  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
+
+* Use `SampleMP`s in the `dynamic_one_shot` transform to get back the values of the mid-circuit measurements.
+  [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
+
+* Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
+  operators easier to work with.
+  [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
+
+* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
+  [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
+
 * `MeasurementProcess.name` and `MeasurementProcess.data` have been removed. Use `MeasurementProcess.obs.name` and `MeasurementProcess.obs.data` instead.
   [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
 
@@ -483,15 +494,6 @@
 
 * The contents of `qml.interfaces` is moved inside `qml.workflow`. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
-
-* `single_tape_transform`, `batch_transform`, `qfunc_transform`, `op_transform`, `gradient_transform`
-  and `hessian_transform` are removed. Instead, switch to using the new `qml.transform` function. Please refer to
-  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
-  to see how this can be done.
-  [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
-
-* Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
-  [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
 
 * When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
   `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
