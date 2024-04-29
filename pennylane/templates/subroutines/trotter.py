@@ -189,6 +189,8 @@ class TrotterProduct(ErrorOperation):
                 raise ValueError(
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = qml.dot(coeffs, ops)
 
         if isinstance(hamiltonian, SProd):
