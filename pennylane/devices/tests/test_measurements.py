@@ -1232,7 +1232,7 @@ class TestSumExpval:
         @qml.qnode(dev)
         def circuit():
             qml.X(0)
-            return qml.expval(qml.Z(0) + 3 * qml.I())
+            return qml.expval(qml.sum(qml.Z(0) + 3 * qml.I()))
 
         res = circuit()
         assert qml.math.allclose(res, 2.0, atol=tol(dev.shots))
