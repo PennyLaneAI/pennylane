@@ -46,7 +46,7 @@
   want to block-encode.
 
   ```python
-  A = np.random.random((2, 2)) # n = 1, 2*n + 1 = 3
+  A = np.array([[0.1, 0.2], [0.3, 0.4]])
   dev = qml.device('default.qubit')
 
   @qml.qnode(dev)
@@ -57,8 +57,8 @@
 
   ```pycon
   >>> circuit()
-  tensor([0.29906437+0.j, 0.20579772+0.j, 0.29906437+0.j, 0.20579772+0.j,
-          0.40070002+0.j, 0.45568333+0.j, 0.40070002+0.j, 0.45568333+0.j], requires_grad=True)
+  tensor([0.04929927+0.j, 0.15067163+0.j, 0.04929927+0.j, 0.15067163+0.j,
+          0.49756365+0.j, 0.47675786+0.j, 0.49756365+0.j, 0.47675786+0.j], requires_grad=True)
   ```
 
 * Reflecting about a given quantum state is now available via `qml.Reflection`.
