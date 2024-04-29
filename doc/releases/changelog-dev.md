@@ -65,13 +65,13 @@
   This operation is very useful in, say, the amplitude amplification algorithm.
   [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
-  `qml.Reflection` works by providing an operation, $U$, that *prepares* the 
-  desired state, $\vert \psi \rangle$, that we want to reflect about. In other 
-  words, $U$ is such that $U \vert 0 \rangle = \vert \psi \rangle$. In 
-  PennyLane, $U$ must be an `Operator`.
+  `qml.Reflection` works by providing an operation, :math:`U`, that *prepares* the 
+  desired state, :math:`\vert \psi \rangle`, that we want to reflect about. In other 
+  words, :math:`U` is such that :math:`U \vert 0 \rangle = \vert \psi \rangle`. In 
+  PennyLane, :math:`U` must be an `Operator`.
   
   For example, if we want to reflect about 
-  $\vert \psi \rangle = \vert + \rangle$, then $U = H$:
+  :math:`\vert \psi \rangle = \vert + \rangle`, then :math:`U = H`:
 
   ```python
   U = qml.Hadamard(wires=wires)
@@ -88,7 +88,7 @@
   tensor([0.-6.123234e-17j, 1.+6.123234e-17j], requires_grad=True)
   ```
 
-  For cases where $U$ comprises many operations, you can formulate it as an 
+  For cases where :math:`U` comprises many operations, you can formulate it as an 
   `Operator` by 
   
   * creating a user-defined 
@@ -124,25 +124,25 @@
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
 
   Based on [arXiv:quant-ph/0005055](https://arxiv.org/abs/quant-ph/0005055), 
-  given a state $\vert \Psi \rangle = \alpha \vert \phi \rangle + \beta \vert \phi^{\perp} \rangle$, 
-  `qml.AmplitudeAmplification` amplifies the amplitude of $\vert \phi \rangle$. 
+  given a state :math:`\vert \Psi \rangle = \alpha \vert \phi \rangle + \beta \vert \phi^{\perp} \rangle`, 
+  `qml.AmplitudeAmplification` amplifies the amplitude of :math:`\vert \phi \rangle`. 
   Mathematically, 
-  $\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle$.
+  :math:`\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle`.
 
   `qml.AmplitudeAmplification` requires
 
-  * `U`: an `Operator` that prepares $\vert \Psi \rangle$ (i.e., 
-    $U \vert 0 \rangle = \vert \Psi \rangle$),
+  * `U`: an `Operator` that prepares :math:`\vert \Psi \rangle` (i.e., 
+    :math:`U \vert 0 \rangle = \vert \Psi \rangle`),
 
   * `O`: an `Operator` (sometimes called an oracle) that flips the sign of 
-    $\vert \phi \rangle$ and does nothing to $\vert \phi^{\perp} \rangle$.
+    :math:`\vert \phi \rangle` and does nothing to :math:`\vert \phi^{\perp} \rangle`.
 
   * `iters`: the number of iterations of amplitude amplification that gets 
     applied.
 
   Here's an example with 
-  $\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle$,
-  $U = H^{\otimes 3}$, and `O` being modelled as a `qml.FlipSign` operation:
+  :math:`\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle`,
+  :math:`U = H^{\otimes 3}`, and `O` being modelled as a `qml.FlipSign` operation:
 
   ```python
   @qml.prod
@@ -168,7 +168,7 @@
   [0.01  0.01  0.931 0.01  0.01  0.01  0.01  0.01 ]
   ```
 
-  As expected, we amplify the $\vert 2 \rangle$ state.
+  As expected, we amplify the :math:`\vert 2 \rangle` state.
 
 <h4>Make use of more methods to map from molecules 🗺️</h4>
 
