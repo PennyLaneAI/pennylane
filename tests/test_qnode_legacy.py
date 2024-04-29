@@ -1881,6 +1881,9 @@ class TestTapeExpansion:
     def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""
 
+        if not qml.operation.active_new_opmath():
+            pytest.skip("expval of the legacy Hamiltonian does not support finite shots.")
+
         dev = qml.device("default.qubit.legacy", wires=3, shots=50000)
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
