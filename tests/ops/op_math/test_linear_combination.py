@@ -1628,6 +1628,15 @@ class TestLinearCombinationEvaluation:
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
 
+    def test_queuing_behaviour(self):
+        """Tests that the base observables are correctly dequeued with simplify=True"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            obs = qml.Hamiltonian([1, 1], [qml.X(0), qml.Z(0)])
+
+        assert len(q) == 1
+        assert q.queue[0] == obs
+
 
 class TestLinearCombinationDifferentiation:
     """Test that the LinearCombination coefficients are differentiable"""
