@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
+  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
+
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
 * Added `error` method to `QuantumPhaseEstimation` template.
@@ -231,6 +234,9 @@
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
+ * Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+
 <h3>Improvements 🛠</h3>
 
 * Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
@@ -380,6 +386,13 @@
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
+
+* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
+  is now faster.
+  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
+
+* `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
+  [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
 
 * `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
   is provided by the user or the device.
@@ -536,7 +549,14 @@
 * The computational basis convention used for `qml.measure` — 0 and 1 rather than ±1 — has been clarified in its docstring.
   [(#5474)](https://github.com/PennyLaneAI/pennylane/pull/5474)
 
+* A new *Release news* section has been added to the table of contents, containing release notes,
+  deprecations, and other pages focusing on recent changes.
+  [(#5548)](https://github.com/PennyLaneAI/pennylane/pull/5548)
+
 <h3>Bug fixes 🐛</h3>
+
+* `null.qubit` now automatically supports any operation without a decomposition.
+  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 * Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
   a QNode differed, based on whether the QNode uses classical coprocessing.
