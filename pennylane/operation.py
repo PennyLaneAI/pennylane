@@ -1680,7 +1680,8 @@ class Operation(Operator):
         if self.grad_recipe != [None] * self.num_params:
             return "A"
         try:
-            self.parameter_frequencies  # pylint:disable=pointless-statement
+            if getattr(self, "parameter_frequencies", None) is None:
+                return "F"
             return "A"
         except ParameterFrequenciesUndefinedError:
             return "F"
