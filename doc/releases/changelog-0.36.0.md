@@ -551,6 +551,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Projectors can now be jitted.
+
 * `null.qubit` now automatically supports any operation without a decomposition.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 

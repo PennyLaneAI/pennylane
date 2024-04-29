@@ -439,10 +439,14 @@ class BasisStateProjector(Projector, Operation):
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-        state = list(qml.math.toarray(state).astype(int))
 
-        if not set(state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
+        if not qml.math.is_abstract(state):
+            casted_state = list(qml.math.toarray(state).astype(int))
+            if not set(casted_state).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
+        else:
+            if qml.math.dtype(state).name[0:3] not in {"int", "boo"}:
+                raise ValueError("Basis state must consist of integers or booleans.")
 
         super().__init__(state, wires=wires, id=id)
 
@@ -497,6 +501,13 @@ class BasisStateProjector(Projector, Operation):
          [0. 0. 0. 0.]
          [0. 0. 0. 0.]]
         """
+        if qml.math.get_interface(basis_state) == "jax":
+            n = len(basis_state)
+            mask = qml.math.flip(2 ** qml.math.arange(n))
+            idx = qml.math.sum(mask * basis_state)
+            mat = qml.math.zeros((2**n, 2**n), like=basis_state)
+            return mat.at[idx, idx].set(1.0)
+
         m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
         idx = int("".join(str(i) for i in basis_state), 2)
         m[idx, idx] = 1
@@ -528,10 +539,13 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
-        w = np.zeros(2 ** len(basis_state))
-        idx = int("".join(str(i) for i in basis_state), 2)
-        w[idx] = 1
-        return w
+        mask = qml.math.flip(2 ** qml.math.arange(len(basis_state)))
+        idx = qml.math.sum(mask * basis_state)
+        eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
+        if qml.math.get_interface(basis_state) == "jax":
+            return eigvals.at[idx].set(1.0)
+        eigvals[idx] = 1
+        return eigvals
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -570,7 +584,6 @@ class StateVectorProjector(Projector):
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-        state = list(qml.math.toarray(state))
 
         super().__init__(state, wires=wires, id=id)
 
@@ -681,6 +694,8 @@ class StateVectorProjector(Projector):
         array([1, 0, 0, 0])
         """
         w = qml.math.zeros_like(state_vector)
+        if qml.math.get_interface(state_vector) == "jax":
+            return w.at[0].set(1.0)
         w[0] = 1
         return w
 
