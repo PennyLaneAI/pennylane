@@ -722,14 +722,9 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
         iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
-            kwargs["n_wires"] = len(wires)
-            args += wires
+            args += (qml.capture.wires(wires),)
         elif args and isinstance(args[-1], iterable_wires_types):
-            kwargs["n_wires"] = len(args[-1])
-            args = args[:-1] + tuple(args[-1])
-        else:
-            kwargs["n_wires"] = 1
+            args = args[:-1] + (qml.capture.wires(args[-1]),)
         return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self):

@@ -402,9 +402,9 @@ class Controlled(SymbolicOp):
     def _primitive_bind_call(
         cls, base, control_wires, control_values=None, work_wires=None, id=None
     ):
-        control_wires = Wires(control_wires)
+        control_wires = qml.capture.wires(control_wires)
         return cls._primitive.bind(
-            base, *control_wires, control_values=control_values, work_wires=work_wires
+            base, control_wires, control_values=control_values, work_wires=work_wires
         )
 
     # pylint: disable=too-many-function-args
@@ -877,30 +877,4 @@ class ControlledOp(Controlled, operation.Operation):
             f"Operation {self.name} does not have parameter frequencies defined, "
             "and parameter frequencies can not be computed via generator for more than one "
             "parameter."
-        )
-
-
-# Program capture with controlled ops needs to unpack and pack the control wires to support dynamic wires
-if Controlled._primitive is not None:  # pylint: disable=protected-access
-
-    @Controlled._primitive.def_impl  # pylint: disable=protected-access
-    def _(base, *control_wires, control_values=None, work_wires=None, id=None):
-        return type.__call__(
-            Controlled,
-            base,
-            control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            id=id,
-        )
-
-    @ControlledOp._primitive.def_impl  # pylint: disable=protected-access
-    def _(base, *control_wires, control_values=None, work_wires=None, id=None):
-        return type.__call__(
-            ControlledOp,
-            base,
-            control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            id=id,
         )

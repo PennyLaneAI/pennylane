@@ -105,15 +105,7 @@ def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primiti
 
     @primitive.def_impl
     def _(*args, **kwargs):
-        if "n_wires" not in kwargs:
-            return type.__call__(operator_type, *args, **kwargs)
-        n_wires = kwargs.pop("n_wires")
-
-        # need to convert array values into integers
-        # for plxpr, all wires must be integers
-        wires = tuple(int(w) for w in args[-n_wires:])
-        args = args[:-n_wires]
-        return type.__call__(operator_type, *args, wires=wires, **kwargs)
+        return type.__call__(operator_type, *args, **kwargs)
 
     abstract_type = _get_abstract_operator()
 
@@ -142,7 +134,7 @@ class PLXPRMeta(abc.ABCMeta):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
 
-        if plxpr_enabled():
+        if enabled():
             # when tracing is enabled, we want to
             # use bind to construct the class if we want class construction to add it to the jaxpr
             return cls._primitive_bind_call(*args, **kwargs)
