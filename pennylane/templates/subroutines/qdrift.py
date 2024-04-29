@@ -190,6 +190,11 @@ class QDrift(Operation):
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["base"])
+        context.append(self)
+        return self
+
     @classmethod
     def _unflatten(cls, data, metadata):
         """Recreate an operation from its serialized format.

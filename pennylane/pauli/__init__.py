@@ -13,33 +13,41 @@
 # limitations under the License.
 """A module containing utility functions and reduced representation classes for working with Pauli operators. """
 
-from .conversion import pauli_decompose, pauli_sentence
-from .dla import PauliVSpace, lie_closure, structure_constants
-from .grouping import (
-    PauliGroupingStrategy,
-    graph_colouring,
-    group_observables,
-    optimize_measurements,
-)
-from .pauli_arithmetic import PauliSentence, PauliWord
-from .pauli_interface import pauli_word_prefactor
+from .pauli_arithmetic import PauliWord, PauliSentence
+
 from .utils import (
-    are_identical_pauli_words,
-    are_pauli_words_qwc,
-    binary_to_pauli,
-    diagonalize_pauli_word,
-    diagonalize_qwc_groupings,
-    diagonalize_qwc_pauli_words,
     is_pauli_word,
-    is_qwc,
-    observables_to_binary_matrix,
-    partition_pauli_group,
-    pauli_group,
+    are_identical_pauli_words,
     pauli_to_binary,
-    pauli_word_to_matrix,
+    binary_to_pauli,
     pauli_word_to_string,
-    qwc_complement_adj_matrix,
-    qwc_rotation,
-    simplify,
     string_to_pauli_word,
+    pauli_word_to_matrix,
+    is_qwc,
+    are_pauli_words_qwc,
+    observables_to_binary_matrix,
+    qwc_complement_adj_matrix,
+    pauli_group,
+    partition_pauli_group,
+    qwc_rotation,
+    diagonalize_pauli_word,
+    diagonalize_qwc_pauli_words,
+    diagonalize_qwc_groupings,
+    simplify,
 )
+
+from .pauli_interface import pauli_word_prefactor
+
+from .conversion import (
+    pauli_decompose,
+    pauli_sentence,
+)
+
+from .grouping import (
+    group_observables,
+    PauliGroupingStrategy,
+    optimize_measurements,
+    graph_colouring,
+)
+
+from .dla import PauliVSpace, lie_closure, structure_constants, center

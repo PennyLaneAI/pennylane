@@ -1743,6 +1743,14 @@ class TestProdComparisons:
         op2 = qml.prod(*[0.5 * X(i) for i in range(5)])
         assert qml.equal(op1, op2)
 
+    def test_prod_global_phase(self):
+        """Test that a prod with a global phase can be used with qml.equal."""
+
+        p1 = qml.GlobalPhase(np.pi) @ qml.X(0)
+        p2 = qml.X(0) @ qml.GlobalPhase(np.pi)
+
+        assert qml.equal(p1, p2)
+
 
 @pytest.mark.usefixtures("use_new_opmath")
 class TestSumComparisons:
@@ -1853,6 +1861,12 @@ class TestSumComparisons:
             + 0.5 * X(9)
         )
         op2 = qml.sum(*[0.5 * X(i) for i in range(10)])
+        assert qml.equal(op1, op2)
+
+    def test_sum_global_phase(self):
+        """Test that a sum containing a no-wires op can still be compared."""
+        op1 = qml.sum(qml.X(0), qml.GlobalPhase(np.pi))
+        op2 = qml.sum(qml.GlobalPhase(np.pi), qml.X(0))
         assert qml.equal(op1, op2)
 
 

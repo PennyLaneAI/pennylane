@@ -771,7 +771,7 @@ class TestStochPulseGradErrors:
         x = [0.4, 0.2]
         params = [jnp.array(0.14)]
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
-        op = qml.evolve(ham_single_q_const)(params, 0.1)
+        op = qml.evolve(ham_single_q_const)(params, 0.7)
         tape = qml.tape.QuantumScript(
             [qml.RX(x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
         )

@@ -139,6 +139,11 @@ class ApproxTimeEvolution(Operation):
         # trainable parameters are passed to the base init method
         super().__init__(*hamiltonian.data, time, wires=wires, id=id)
 
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["hamiltonian"])
+        context.append(self)
+        return self
+
     @staticmethod
     def compute_decomposition(
         *coeffs_and_time, wires, hamiltonian, n

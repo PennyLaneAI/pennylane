@@ -215,7 +215,7 @@ def callable_freq_to_angular(fn):
 class TransmonSettings:
     """Dataclass that contains the information of a Transmon setup.
 
-    .. see-also:: :func:`transmon_interaction`
+    .. seealso:: :func:`transmon_interaction`
 
     Args:
             connections (List): List `[[idx_q0, idx_q1], ..]` of connected qubits (wires)

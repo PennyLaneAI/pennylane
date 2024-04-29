@@ -64,6 +64,8 @@ def structure_constants(
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+
     **Example**
 
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
@@ -71,13 +73,13 @@ def structure_constants(
     >>> n = 2
     >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
     >>> gens += [Z(i) for i in range(n)]
-    >>> dla = qml.pauli.lie_closure(gens)
+    >>> dla = qml.lie_closure(gens)
     >>> print(dla)
     [X(1) @ X(0), Z(0), Z(1), -1.0 * (X(1) @ Y(0)), -1.0 * (Y(1) @ X(0)), -1.0 * (Y(1) @ Y(0))]
 
     The dimension of the DLA is :math:`d = 6`. Hence, the structure constants have shape ``(6, 6, 6)``.
 
-    >>> adjoint_rep = qml.pauli.structure_constants(dla)
+    >>> adjoint_rep = qml.structure_constants(dla)
     >>> adjoint_rep.shape
     (6, 6, 6)
 

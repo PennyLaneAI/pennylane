@@ -157,7 +157,6 @@ class TestDifferentiability:
 
         params = qml.numpy.array(self.params, requires_grad=True)
         res = qml.grad(qnode)(params)
-        print(res)
         assert qml.math.shape(res) == (2,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
