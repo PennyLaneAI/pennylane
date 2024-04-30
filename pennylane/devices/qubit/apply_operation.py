@@ -320,9 +320,8 @@ def apply_mid_measure(
     mid_measurements[op] = sample
 
     # Using apply_operation makes it easier to work with JAX
-    matrix = qml.math.array([[(sample + 1) % 2, 0.0], [0.0, (sample) % 2]], like=interface)
     state = apply_operation(
-        qml.QubitUnitary(matrix, wire),
+        qml.Projector([sample], wire),
         state,
         is_state_batched=is_state_batched,
         debugger=debugger,
