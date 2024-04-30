@@ -394,7 +394,7 @@ class TestPLDB:
         is called outside of a qnode execution."""
 
         with pytest.raises(TypeError, match="Can't call breakpoint outside of a qnode execution"):
-            with qml.queuing.AnnotatedQueue() as q:
+            with qml.queuing.AnnotatedQueue() as _:
                 qml.X(0)
                 qml.breakpoint()
                 qml.Hadamard(0)
@@ -487,7 +487,7 @@ class TestPLDB:
 
         dev = qml.device("default.qubit")
         PLDB.add_device(dev)
-        assert PLDB.is_active_dev() == True
+        assert PLDB.is_active_dev() is True
 
         PLDB.reset_active_dev()
-        assert PLDB.is_active_dev() == False
+        assert PLDB.is_active_dev() is False
