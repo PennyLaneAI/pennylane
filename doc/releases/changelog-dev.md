@@ -68,15 +68,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.qinfo.quantum_fisher` now works with non-`default.qubit` devices.
-  [(#5423)](https://github.com/PennyLaneAI/pennylane/pull/5423)
-
-* We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
-  [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
-
-* Fixed `TestQubitIntegration.test_counts` in `tests/interfaces/test_jax_qnode.py` to always produce counts for all outcomes.
-  [(#5336)](https://github.com/PennyLaneAI/pennylane/pull/5336)
-
 * `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` will now work with non-commuting measurements.
 
 <h3>Contributors ✍️</h3>
