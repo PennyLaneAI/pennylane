@@ -366,12 +366,14 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     This corresponds to the gradient rule
 
-    TODO THERE IS A BUG CHECK RENDERING
     .. math::
 
+        \begin{align*}
         \frac{\partial^2 f}{\partial x\partial y} &= \frac{1}{4}
-        \left[f(x+\pi/2, y+\pi/2) - f(x+\pi/2, y-\pi/2)\\
-        &- f(x-\pi/2, y+\pi/2) + f(x-\pi/2, y-\pi/2) \right].
+        [f(x+\pi/2, y+\pi/2) - f(x+\pi/2, y-\pi/2)\\
+        &\phantom{\frac{1}{4}[}-f(x-\pi/2, y+\pi/2) + f(x-\pi/2, y-\pi/2) ].
+        \end{align*}
+
     """
     rules = []
     shifts = shifts or [None] * len(frequencies)
