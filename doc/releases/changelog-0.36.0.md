@@ -252,6 +252,8 @@
         [0.        +0.j, 0.        +0.j, 0.        +0.j]], requires_grad=True)
   ```
 
+  Keep your eyes peeled for qutrit noise model support in the coming releases!
+
 <h3>Improvements 🛠</h3>
 
 <h4>Work easily and efficiently with operators</h4>
