@@ -309,8 +309,8 @@ def apply_mid_measure(
 
         _, key = jax.random.split(prng_key)
         sample = jax.random.choice(
-            key, np.array([0, 1]), shape=(1,), p=jax.numpy.array([prob0, 1.0 - prob0])
-        )[0]
+            key, np.array([0, 1]), p=jax.numpy.array([prob0, 1.0 - prob0])
+        )
     else:
         if rng is None:
             sampling_fun = np.random.choice
