@@ -18,7 +18,8 @@ for more details. The old system is still accessible via :func:`~.disable_new_op
 old system will be removed in an upcoming release and should be treated as deprecated. The following
 functionality will explicitly raise a deprecation warning when used:
 
-* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
+* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
+  :meth:`~.Operator.terms` instead.
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
 
@@ -34,10 +35,10 @@ functionality will explicitly raise a deprecation warning when used:
   Alternatively, to continue accessing the legacy functionality, you can use
   ``qml.operation.disable_new_opmath()``.
 
-  - Deprecated in v0.36
+  - Use of ``qml.ops.Hamiltonian`` is deprecated in v0.36
 
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
-  A user should use ``op.operands`` instead.
+  A user should use :class:`op.operands <~.CompositeOp>` instead.
 
   - Deprecated in v0.36
 
