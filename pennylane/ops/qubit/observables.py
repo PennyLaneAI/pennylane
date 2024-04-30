@@ -541,11 +541,15 @@ class BasisStateProjector(Projector, Operation):
         """
         mask = 2 ** np.arange(len(basis_state) - 1, -1, -1)
         mask = qml.math.asarray(mask, like=basis_state)
+        mask = qml.math.cast_like(mask, basis_state)
         idx = qml.math.sum(mask * basis_state)
         eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
-        if qml.math.get_interface(basis_state) == "jax":
+        framework = qml.math.get_interface(basis_state)
+        if framework == "jax":
             return eigvals.at[idx].set(1.0)
-        eigvals[idx] = 1
+        if framework == "tensorflow":
+            return eigvals[idx].assign(1.0)
+        eigvals[int(idx)] = 1
         return eigvals
 
     @staticmethod
