@@ -181,4 +181,10 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
     return state
 
 
+@apply_operation.register
+def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None, **_):
+    """Applies a :class:`~.Identity` operation by just returning the input state."""
+    return state
+
+
 # TODO add special case speedups
