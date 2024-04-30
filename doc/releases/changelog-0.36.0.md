@@ -249,11 +249,11 @@
   and don't hesitate to reach out to us on the
   [PennyLane discussion forum](https://discuss.pennylane.ai/). As a last resort the old behaviour
   can be enabled by calling `qml.operation.disable_new_opmath()`, but this is not recommended
-  because support will not continue in future PennyLane versions.
+  because support will not continue in future PennyLane versions (v0.36 and higher).
   [(#5269)](https://github.com/PennyLaneAI/pennylane/pull/5269)
 
-* A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
-  but for usage with new operator arithmetic.
+* A new class called `qml.ops.LinearCombination` has been introduced. In essence, this class is an updated equivalent of the now-deprecated `qml.ops.Hamiltonian`
+  but for usage with the new operator arithmetic.
   [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
 
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
@@ -303,7 +303,7 @@
 
   Note that the grouping indices refer to the lists returned by `Sum.terms()`, not `Sum.operands`.
 
-* Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
+* A new function called `qml.operation.convert_to_legacy_H` that converts `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances has been added.
   This function is intended for developers and will be removed in a future release without a
   deprecation cycle.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)

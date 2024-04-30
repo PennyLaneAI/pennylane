@@ -12,7 +12,7 @@ Pending deprecations
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This release completes the main phase of PennyLane's switchover to an updated approach for handling
+The v0.36 release completes the main phase of PennyLane's switchover to an updated approach for handling
 arithmetic operations between operators, check out the :ref:`Updated operators <new_opmath>` page
 for more details. The old system is still accessible via :func:`~.disable_new_opmath`. However, the
 old system will be removed in an upcoming release and should be treated as deprecated. The following
@@ -36,7 +36,7 @@ functionality will explicitly raise a deprecation warning when used:
 
   - Deprecated in v0.36
 
-* Accessing terms of a tensor product ``op = X(0) @ X(1)`` via ``op.obs`` is deprecated with new operator arithmetic.
+* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use ``op.operands`` instead.
 
   - Deprecated in v0.36
