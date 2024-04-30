@@ -33,7 +33,7 @@
 
 * The Fast Approximate BLock-Encodings (FABLE) algorithm for embedding
   a matrix into a quantum circuit
-  (https://arxiv.org/abs/2205.00081) is now accessible via the `qml.FABLE` 
+  [arXiv:2205.00081](https://arxiv.org/abs/2205.00081) is now accessible via the `qml.FABLE` 
   template.
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
@@ -107,15 +107,6 @@
     def circuit():
         qml.Reflection(U())
         return qml.state()
-
-    circuit()
-    ```
-
-    ```pycon
-    >>> circuit()
-    tensor([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
-          0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j], requires_grad=True)
-    ```
   
 * A high-level interface for amplitude amplification and its variants is now 
   available via the new `qml.AmplitudeAmplification` template.
