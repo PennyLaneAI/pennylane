@@ -17,13 +17,13 @@ Tests for the QubitUnitary decomposition transforms.
 from itertools import product
 
 import pytest
-
-from gate_data import I, Z, S, T, H, X
+from gate_data import H, I, S, T, X, Z
 from test_optimization.utils import check_matrix_equivalence
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.transforms import unitary_to_rot
+from pennylane.wires import Wires
 
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
 single_qubit_decompositions = [

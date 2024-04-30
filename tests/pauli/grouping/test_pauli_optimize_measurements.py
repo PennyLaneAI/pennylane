@@ -14,8 +14,9 @@
 """
 Unit tests for ``optimize_measurements`` function in ``/pauli/grouping/optimize_measurements.py``.
 """
-import pytest
 import numpy as np
+import pytest
+
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.pauli import are_identical_pauli_words
 from pennylane.pauli.grouping.optimize_measurements import optimize_measurements

@@ -16,11 +16,12 @@
 This module contains the qml.purity measurement.
 """
 
-from typing import Sequence, Optional
+from typing import Optional, Sequence
+
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement, Purity
+from .measurements import Purity, StateMeasurement
 
 
 def purity(wires) -> "PurityMP":

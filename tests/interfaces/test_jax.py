@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the JAX-Python interface"""
-# pylint: disable=protected-access,too-few-public-methods
-import pytest
 import numpy as np
 
+# pylint: disable=protected-access,too-few-public-methods
+import pytest
+
 import pennylane as qml
+from pennylane import execute
 from pennylane.gradients import param_shift
 from pennylane.typing import TensorLike
-from pennylane import execute
 
 pytestmark = pytest.mark.jax
 

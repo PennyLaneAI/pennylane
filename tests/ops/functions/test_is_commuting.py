@@ -16,13 +16,10 @@ Unittests for is_commuting
 """
 # pylint: disable=too-many-public-methods
 import pytest
-import pennylane.numpy as np
-import pennylane as qml
 
-from pennylane.ops.functions.is_commuting import (
-    _get_target_name,
-    _check_mat_commutation,
-)
+import pennylane as qml
+import pennylane.numpy as np
+from pennylane.ops.functions.is_commuting import _check_mat_commutation, _get_target_name
 
 control_base_map_data = [
     (qml.CNOT((0, 1)), "PauliX"),

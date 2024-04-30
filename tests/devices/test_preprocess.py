@@ -16,22 +16,21 @@
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Operation
-from pennylane.tape import QuantumScript
 from pennylane import DeviceError
-
-# pylint: disable=too-few-public-methods
-
 from pennylane.devices.preprocess import (
-    no_sampling,
-    validate_device_wires,
-    validate_multiprocessing_workers,
-    validate_adjoint_trainable_params,
     _operator_decomposition_gen,
     decompose,
-    validate_observables,
+    no_sampling,
+    validate_adjoint_trainable_params,
+    validate_device_wires,
     validate_measurements,
+    validate_multiprocessing_workers,
+    validate_observables,
 )
+from pennylane.operation import Operation
+from pennylane.tape import QuantumScript
+
+# pylint: disable=too-few-public-methods
 
 
 class NoMatOp(Operation):

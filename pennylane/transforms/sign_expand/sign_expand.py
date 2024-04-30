@@ -15,7 +15,7 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 # pylint: disable=protected-access
 import json
 from os import path
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import numpy as np
 

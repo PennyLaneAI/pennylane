@@ -16,6 +16,7 @@ Contains the QuantumMonteCarlo template and utility functions.
 """
 # pylint: disable=too-many-arguments
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import QubitUnitary

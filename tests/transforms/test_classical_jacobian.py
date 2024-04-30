@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the qml.gradients.classical_jacobian function."""
+import numpy as np
+
 # pylint: disable=too-many-arguments
 import pytest
-import numpy as np
 
 import pennylane as qml
 from pennylane import numpy as pnp
