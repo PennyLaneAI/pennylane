@@ -220,35 +220,37 @@
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
+  [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
+  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
-  
+  Mixed-qutrit circuits have access to the same operations, measurements, and 
+  functionality as circuits programmed on `DefaultQutrit`.
 
   ```python
   dev = qml.device("default.qutrit.mixed", wires=1)
 
-  @qml.qnode(dev)
   def circuit():
-      qml.TRX(0.1, wires=0)
+      qml.TRY(0.1, wires=0)
+
+  @qml.qnode(dev)
+  def shots_circuit():
+      circuit()
+      return qml.sample(), qml.expval(qml.GellMann(wires=0, index=1))
+
+  @qml.qnode(dev)
+  def density_matrix_circuit():
+      circuit()
       return qml.state()
   ```
 
+  ```pycon
+  >>> shots_circuit(shots=5)
+  (array([0, 0, 0, 0, 0]), 0.19999999999999996)
+  >>> density_matrix_circuit()
+  tensor([[0.99750208+0.j, 0.04991671+0.j, 0.        +0.j],
+        [0.04991671+0.j, 0.00249792+0.j, 0.        +0.j],
+        [0.        +0.j, 0.        +0.j, 0.        +0.j]], requires_grad=True)
   ```
-  >>> circuit()
-  tensor([[0.99750208+0.j        , 0.        +0.04991671j,
-         0.        +0.j        ],
-        [0.        -0.04991671j, 0.00249792+0.j        ,
-         0.        +0.j        ],
-        [0.        +0.j        , 0.        +0.j        ,
-         0.        +0.j        ]], requires_grad=True)
-  ```
-
-* Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
- `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
-  [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
-
-* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
-  noisy qutrit circuit with measurement and sampling.
-  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
 <h3>Improvements 🛠</h3>
 
