@@ -71,10 +71,10 @@
 
   `qml.AmplitudeAmplification` requires
 
-  * `U`: an `Operator` that prepares :math:`\vert \Psi \rangle` (i.e., 
+  * :math`U`: an `Operator` that prepares :math:`\vert \Psi \rangle` (i.e., 
     :math:`U \vert 0 \rangle = \vert \Psi \rangle`),
 
-  * `O`: an `Operator` (sometimes called an oracle) that flips the sign of 
+  * :math`O`: an `Operator` (sometimes called an oracle) that flips the sign of 
     :math:`\vert \phi \rangle` and does nothing to :math:`\vert \phi^{\perp} \rangle`.
 
   * `iters`: the number of iterations of amplitude amplification that gets 
