@@ -52,6 +52,7 @@ merged.
   * ``--skip __init__.py --filter-files`` tells ``isort`` to ignore ``__init__.py`` files.
 
   If you would like to call ``isort`` explicitly, from the PennyLane's root folder, you can run:
+
   .. code-block:: bash
 
       isort --py 311 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
