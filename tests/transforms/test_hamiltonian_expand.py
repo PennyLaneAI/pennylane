@@ -14,6 +14,8 @@
 """
 Unit tests for the ``hamiltonian_expand`` transform.
 """
+import functools
+
 import numpy as np
 import pytest
 
@@ -51,7 +53,7 @@ with AnnotatedQueue() as q_tape2:
     qml.expval(H2)
 tape2 = QuantumScript.from_queue(q_tape2)
 
-H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
+H3 = qml.Hamiltonian([1.5, 0.3], [qml.Z(0) @ qml.Z(1), qml.X(1)])
 
 with AnnotatedQueue() as q3:
     qml.PauliX(0)
@@ -59,14 +61,18 @@ with AnnotatedQueue() as q3:
 
 
 tape3 = QuantumScript.from_queue(q3)
-H4 = (
-    qml.PauliX(0) @ qml.PauliZ(2)
-    + 3 * qml.PauliZ(2)
-    - 2 * qml.PauliX(0)
-    + qml.PauliZ(2)
-    + qml.PauliZ(2)
-)
-H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
+
+H4 = qml.Hamiltonian(
+    [1, 3, -2, 1, 1, 1],
+    [
+        qml.PauliX(0) @ qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliX(0),
+        qml.PauliZ(2),
+        qml.PauliZ(2),
+        qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
+    ],
+).simplify()
 
 with AnnotatedQueue() as q4:
     qml.Hadamard(0)
@@ -258,6 +264,8 @@ class TestHamiltonianExpand:
 
         import tensorflow as tf
 
+        inner_dev = qml.device("default.qubit")
+
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
@@ -285,39 +293,140 @@ class TestHamiltonianExpand:
 
             tape = QuantumScript.from_queue(q)
             tapes, fn = hamiltonian_expand(tape)
-            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            res = fn(qml.execute(tapes, inner_dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
-    def test_processing_function_conditional_clause(self):
-        """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
-        in the processing function returned by hamiltonian_expand, accessed when
-        using a shot vector and grouping if the terms don't commute with each other."""
+    @pytest.mark.parametrize(
+        "H, expected",
+        [
+            # Contains only groups with single coefficients
+            (qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)]), -1),
+            # Contains groups with multiple coefficients
+            (qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]), -3),
+        ],
+    )
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_processing_function_shot_vectors(self, H, expected, grouping):
+        """Tests that the processing function works with shot vectors
+        and grouping with different number of coefficients in each group"""
 
-        dev_with_shot_vector = qml.device("default.qubit", shots=(10, 10, 10))
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(20000, 4)])
+        if grouping:
+            H.compute_grouping()
 
-        H = qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)])
-        H.compute_grouping()
-
-        @qml.transforms.hamiltonian_expand
+        @functools.partial(qml.transforms.hamiltonian_expand, group=grouping)
         @qml.qnode(dev_with_shot_vector)
+        def circuit(inputs):
+            qml.RX(inputs, wires=0)
+            return qml.expval(H)
+
+        res = circuit(np.pi)
+        assert qml.math.shape(res) == (4,)
+        assert qml.math.allclose(res, np.ones((4,)) * expected, atol=0.1)
+
+    @pytest.mark.parametrize(
+        "H, expected",
+        [
+            # Contains only groups with single coefficients
+            (qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)]), [1, 0, -1]),
+            # Contains groups with multiple coefficients
+            (
+                qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]),
+                [3, 0, -3],
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_processing_function_shot_vectors_broadcasting(self, H, expected, grouping):
+        """Tests that the processing function works with shot vectors, parameter broadcasting,
+        and grouping with different number of coefficients in each group"""
+
+        np.random.seed(824)
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
+
+        if grouping:
+            H.compute_grouping()
+
+        @functools.partial(qml.transforms.hamiltonian_expand, group=grouping)
+        @qml.qnode(dev_with_shot_vector)
+        def circuit(inputs):
+            qml.RX(inputs, wires=0)
+            return qml.expval(H)
+
+        res = circuit([0, np.pi / 2, np.pi])
+        assert qml.math.shape(res) == (4, 3)
+        assert qml.math.allclose(res, qml.math.stack([expected] * 4), atol=0.1)
+
+    def test_constant_offset_grouping(self):
+        """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and grouping."""
+
+        H = 2.0 * qml.I() + 3 * qml.X(0) + 4 * qml.X(0) @ qml.Y(1) + qml.Z(0)
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
+        batch, fn = qml.transforms.hamiltonian_expand(tape, group=True)
+
+        assert len(batch) == 2
+
+        tape_0 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
+        tape_1 = qml.tape.QuantumScript(
+            [qml.RY(-np.pi / 2, 0), qml.RX(np.pi / 2, 1)],
+            [qml.expval(qml.Z(0)), qml.expval(qml.Z(0) @ qml.Z(1))],
+            shots=50,
+        )
+
+        assert qml.equal(batch[0], tape_0)
+        assert qml.equal(batch[1], tape_1)
+
+        dummy_res = (1.0, (1.0, 1.0))
+        processed_res = fn(dummy_res)
+        assert qml.math.allclose(processed_res, 10.0)
+
+    def test_constant_offset_no_grouping(self):
+        """Test that hamiltonian_expand can handle a multi-term observable with a constant offset and no grouping.."""
+
+        H = 2.0 * qml.I() + 3 * qml.X(0) + 4 * qml.X(0) @ qml.Y(1) + qml.Z(0)
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
+        batch, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+
+        assert len(batch) == 3
+
+        tape_0 = qml.tape.QuantumScript([], [qml.expval(qml.X(0))], shots=50)
+        tape_1 = qml.tape.QuantumScript([], [qml.expval(qml.X(0) @ qml.Y(1))], shots=50)
+        tape_2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
+
+        assert qml.equal(batch[0], tape_0)
+        assert qml.equal(batch[1], tape_1)
+        assert qml.equal(batch[2], tape_2)
+
+        dummy_res = (1.0, 1.0, 1.0)
+        processed_res = fn(dummy_res)
+        assert qml.math.allclose(processed_res, 10.0)
+
+    def test_only_constant_offset(self):
+        """Tests that hamiltonian_expand can handle a single Identity observable"""
+
+        H = qml.Hamiltonian([1.5, 2.5], [qml.I(), qml.I()])
+
+        @functools.partial(qml.transforms.hamiltonian_expand, group=False)
+        @qml.qnode(dev)
         def circuit():
             return qml.expval(H)
 
-        res = circuit()
-
-        assert res.shape == (3,)
+        with dev.tracker:
+            res = circuit()
+        assert dev.tracker.totals == {}
+        assert qml.math.allclose(res, 4.0)
 
 
 with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
-    S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
-    qml.expval(S1)
+    S1 = qml.s_prod(1.5, qml.sum(qml.prod(qml.PauliZ(0), qml.PauliZ(1)), qml.Identity()))
     qml.expval(S1)
     qml.state()
+    qml.expval(S1)
 
 with AnnotatedQueue() as s_tape2:
     qml.Hadamard(0)
@@ -328,6 +437,7 @@ with AnnotatedQueue() as s_tape2:
         qml.prod(qml.PauliX(0), qml.PauliZ(2)),
         qml.s_prod(3, qml.PauliZ(2)),
         qml.s_prod(-2, qml.PauliX(0)),
+        qml.Identity(),
         qml.PauliX(2),
         qml.prod(qml.PauliZ(0), qml.PauliX(1)),
     )
@@ -336,7 +446,9 @@ with AnnotatedQueue() as s_tape2:
     qml.expval(S2)
 
 S3 = qml.sum(
-    qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))), qml.s_prod(0.3, qml.PauliX(1))
+    qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))),
+    qml.s_prod(0.3, qml.PauliX(1)),
+    qml.Identity(),
 )
 
 with AnnotatedQueue() as s_tape3:
@@ -349,9 +461,10 @@ with AnnotatedQueue() as s_tape3:
 
 
 S4 = qml.sum(
-    qml.prod(qml.PauliX(0), qml.PauliZ(2)),
+    qml.prod(qml.PauliX(0), qml.PauliZ(2), qml.Identity()),
     qml.s_prod(3, qml.PauliZ(2)),
     qml.s_prod(-2, qml.PauliX(0)),
+    qml.s_prod(1.5, qml.Identity()),
     qml.PauliZ(2),
     qml.PauliZ(2),
     qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2)),
@@ -362,7 +475,6 @@ with AnnotatedQueue() as s_tape4:
     qml.Hadamard(1)
     qml.PauliZ(1)
     qml.PauliX(2)
-
     qml.expval(S4)
     qml.expval(qml.PauliX(2))
     qml.expval(S4)
@@ -376,8 +488,7 @@ s_qscript4 = QuantumScript.from_queue(s_tape4)
 SUM_QSCRIPTS = [s_qscript1, s_qscript2, s_qscript3, s_qscript4]
 SUM_OUTPUTS = [
     [
-        -1.5,
-        -1.5,
+        0,
         np.array(
             [
                 0.0 + 0.0j,
@@ -398,10 +509,11 @@ SUM_OUTPUTS = [
                 0.0 + 0.0j,
             ]
         ),
+        0,
     ],
-    [-6, np.array([0.5, 0.5]), -6],
-    [-1.5, np.array([1.0, 0.0, 0.0, 0.0]), 0.0, -1.5, np.array([0.5, 0.5])],
-    [-8, 0, -8, 0],
+    [-5, np.array([0.5, 0.5]), -5],
+    [-0.5, np.array([1.0, 0.0, 0.0, 0.0]), 0.0, -0.5, np.array([0.5, 0.5])],
+    [-6.5, 0, -6.5, 0],
 ]
 
 
@@ -434,7 +546,7 @@ class TestSumExpand:
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
-    def test_sums_legacy(self, qscript, output):
+    def test_sums_legacy_opmath(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
         dev_old = qml.device("default.qubit.legacy", wires=4)
         tapes, fn = sum_expand(qscript)
@@ -518,8 +630,134 @@ class TestSumExpand:
         res = [1.23]
         assert fn(res) == 1.23
 
-    def test_multiple_sum_tape(self):
-        """Test that the ``sum_expand`` function can expand tapes with multiple sum observables"""
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_prod_tape(self, grouping):
+        """Tests that ``sum_expand`` works with a single Prod measurement"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit():
+            return qml.expval(qml.prod(qml.PauliZ(0), qml.I()))
+
+        assert circuit() == 1.0
+
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_sprod_tape(self, grouping):
+        """Tests that ``sum_expand`` works with a single SProd measurement"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit():
+            return qml.expval(qml.s_prod(1.5, qml.Z(0)))
+
+        assert circuit() == 1.5
+
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_no_obs_tape(self, grouping):
+        """Tests tapes with only constant offsets (only measurements on Identity)"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit():
+            return qml.expval(qml.s_prod(1.5, qml.I(0)))
+
+        with _dev.tracker:
+            res = circuit()
+        assert _dev.tracker.totals == {}
+        assert qml.math.allclose(res, 1.5)
+
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_no_obs_tape_multi_measurement(self, grouping):
+        """Tests tapes with only constant offsets (only measurements on Identity)"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit():
+            return qml.expval(qml.s_prod(1.5, qml.I())), qml.expval(qml.s_prod(2.5, qml.I()))
+
+        with _dev.tracker:
+            res = circuit()
+        assert _dev.tracker.totals == {}
+        assert qml.math.allclose(res, [1.5, 2.5])
+
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_sum_expand_broadcasting(self, grouping):
+        """Tests that the sum_expand transform works with broadcasting"""
+
+        _dev = qml.device("default.qubit", wires=3)
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(x, wires=1)
+            qml.RX(x, wires=2)
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.prod(qml.PauliZ(1), qml.sum(qml.PauliY(2), qml.PauliX(2)))),
+                qml.expval(qml.sum(qml.PauliZ(0), qml.s_prod(1.5, qml.PauliX(1)))),
+            )
+
+        res = circuit([0, np.pi / 3, np.pi / 2, np.pi])
+
+        def _expected(theta):
+            return [
+                np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2,
+                -(np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2) * np.sin(theta),
+                np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2 + 1.5 * np.sin(theta),
+            ]
+
+        expected = np.array([_expected(t) for t in [0, np.pi / 3, np.pi / 2, np.pi]]).T
+        assert qml.math.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "theta", [0, np.pi / 3, np.pi / 2, np.pi, [0, np.pi / 3, np.pi / 2, np.pi]]
+    )
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_sum_expand_shot_vector(self, grouping, theta):
+        """Tests that the sum_expand transform works with shot vectors"""
+
+        _dev = qml.device("default.qubit", wires=3, shots=[(20000, 5)])
+
+        @functools.partial(qml.transforms.sum_expand, group=grouping)
+        @qml.qnode(_dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(x, wires=1)
+            qml.RX(x, wires=2)
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.prod(qml.PauliZ(1), qml.sum(qml.PauliY(2), qml.PauliX(2)))),
+                qml.expval(qml.sum(qml.PauliZ(0), qml.s_prod(1.5, qml.PauliX(1)))),
+            )
+
+        if isinstance(theta, list):
+            theta = np.array(theta)
+
+        expected = [
+            np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2,
+            -(np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2) * np.sin(theta),
+            np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2 + 1.5 * np.sin(theta),
+        ]
+
+        res = circuit(theta)
+
+        if isinstance(theta, np.ndarray):
+            expected = np.stack(expected).T
+            assert qml.math.shape(res) == (5, 4, 3)
+        else:
+            assert qml.math.shape(res) == (5, 3)
+
+        for r in res:
+            assert qml.math.allclose(r, expected, atol=0.05)
 
     @pytest.mark.autograd
     def test_sum_dif_autograd(self, tol):

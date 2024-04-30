@@ -14,7 +14,7 @@
 """
 Tests for the gradients.pulse_odegen module.
 """
-# pylint:disable=import-outside-toplevel
+# pylint:disable=import-outside-toplevel, use-implicit-booleaness-not-comparison
 
 import copy
 import pytest
@@ -111,7 +111,7 @@ class TestOneParameterGenerators:
         jax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
-        H = qml.math.dot([qml.pulse.constant for _ in range(num_terms)], terms)
+        H = qml.dot([qml.pulse.constant for _ in range(num_terms)], terms)
         params = [jnp.array(0.4), jnp.array(0.9), jnp.array(-0.5)][:num_terms]
         T = t[1] - t[0]
 
@@ -161,7 +161,7 @@ class TestOneParameterGenerators:
             return jax.scipy.linalg.expm(-1j * T * exp)
 
         num_terms = len(terms)
-        H = qml.math.dot([qml.pulse.constant for _ in range(num_terms)], terms)
+        H = qml.dot([qml.pulse.constant for _ in range(num_terms)], terms)
         params = [jnp.array(0.4), jnp.array(0.9), jnp.array(-0.5), jnp.array(0.28)][:num_terms]
         T = t[1] - t[0]
 
@@ -236,7 +236,7 @@ class TestOneParameterGenerators:
         jax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
-        H = qml.math.dot([jnp.polyval for _ in range(num_terms)], terms)
+        H = qml.dot([jnp.polyval for _ in range(num_terms)], terms)
         params = [jnp.array([0.4, 0.1, 0.2]), jnp.array([0.9, -0.2, 0.5]), jnp.array([-0.5, 0.2])]
         params = params[:num_terms]
         # Jacobian functions of the effective rotation parameter (all polyval)
@@ -286,7 +286,7 @@ class TestOneParameterGenerators:
         jax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
-        H = qml.math.dot([jnp.polyval for _ in range(num_terms)], terms)
+        H = qml.dot([jnp.polyval for _ in range(num_terms)], terms)
         mats = [expand_matrix(term.matrix(), term.wires, H.wires) for term in terms]
         t = jnp.array(t)
 
@@ -824,12 +824,39 @@ class TestPulseOdegenEdgeCases:
         with pytest.raises(ValueError, match=_match):
             pulse_odegen(tape)
 
-    def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape."""
+    def test_trainable_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the pulse generator"
+        _match = r"Computing the gradient of broadcasted tapes .* using the pulse generator"
         with pytest.raises(NotImplementedError, match=_match):
             pulse_odegen(tape)
+
+    def test_nontrainable_batched_tape(self):
+        """Test that no error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is not differentiated, and that the results correspond to the stacked
+        results of the single-tape derivatives."""
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit")
+        x = [0.4, 0.2]
+        params = [jnp.array(0.14)]
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        op = qml.evolve(ham_single_q_const)(params, 0.1)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
+        )
+        batched_tapes, batched_fn = pulse_odegen(tape, argnum=0)
+        batched_grad = batched_fn(dev.execute(batched_tapes))
+        separate_tapes = [
+            qml.tape.QuantumScript(
+                [qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
+            )
+            for _x in x
+        ]
+        separate_tapes_and_fns = [pulse_odegen(t, argnum=0) for t in separate_tapes]
+        separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
+        assert np.allclose(batched_grad, separate_grad)
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable

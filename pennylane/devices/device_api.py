@@ -324,6 +324,8 @@ class Device(abc.ABC):
         .. details::
             :title: Return Shape
 
+            See :ref:`Return Type Specification <ReturnTypeSpec>` for more detailed information.
+
             The result for each :class:`~.QuantumTape` must match the shape specified by :class:`~.QuantumTape.shape`.
 
             The level of priority for dimensions from outer dimension to inner dimension is:

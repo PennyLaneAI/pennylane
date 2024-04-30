@@ -113,6 +113,97 @@ class TestQNodeIntegration:
         expected[0, 0] = 1.0
         assert np.array_equal(rho_out, expected)
 
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop", "finite-diff"])
+    def test_channel_jit_compatible(self, diff_method):
+        """Test that `default.mixed` is compatible with jax-jit"""
+
+        a, b, c = jnp.array([0.1, 0.2, 0.1])
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(a, b, c):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.DepolarizingChannel(c, wires=[0])
+            qml.DepolarizingChannel(c, wires=[1])
+            return qml.expval(qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliY(1)]))
+
+        grad_fn = jax.jit(jax.grad(circuit, argnums=[0, 1, 2]))
+        res1 = grad_fn(a, b, c)
+
+        # the tape has reported both arguments as trainable
+        assert circuit.qtape.trainable_params == [0, 1, 2, 3]
+        assert all(isinstance(r_, jax.Array) for r_ in res1)
+
+        # make the second QNode argument a constant
+        grad_fn = jax.grad(circuit, argnums=[0, 1])
+        res2 = grad_fn(a, b, c)
+
+        assert circuit.qtape.trainable_params == [0, 1]
+        assert qml.math.allclose(res1[:2], res2)
+
+    @pytest.mark.parametrize("gradient_func", [qml.gradients.param_shift, None])
+    def test_jit_with_shots(self, gradient_func):
+        """Test that jitted execution works when shots are given."""
+
+        dev = qml.device("default.mixed", wires=1, shots=10)
+
+        @jax.jit
+        def wrapper(x):
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(x, wires=0)
+                qml.expval(qml.PauliZ(0))
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return qml.execute([tape], dev, gradient_fn=gradient_func)
+
+        assert jnp.allclose(wrapper(jnp.array(0.0))[0], 1.0)
+
+    @pytest.mark.parametrize("shots", [10, 100, 1000])
+    def test_jit_sampling_with_broadcasting(self, shots):
+        """Tests that the sampling method works with broadcasting with jax-jit"""
+
+        dev = qml.device("default.mixed", wires=1, shots=shots)
+
+        number_of_states = 4
+        state_probability = jnp.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.2, 0.1, 0.2]])
+
+        @partial(jax.jit, static_argnums=0)
+        def func(number_of_states, state_probability):
+            return dev.sample_basis_states(number_of_states, state_probability)
+
+        res = func(number_of_states, state_probability)
+        assert qml.math.shape(res) == (2, shots)
+        assert set(qml.math.unwrap(res.flatten())).issubset({0, 1, 2, 3})
+
+    @pytest.mark.parametrize("shots", [10, 100, 1000])
+    def test_jit_with_qnode(self, shots):
+        """Test that qnode can be jitted when shots are given"""
+
+        dev = qml.device("default.mixed", wires=2, shots=shots)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(state_ini, a, b, c):
+            qml.QubitDensityMatrix(state_ini, wires=[0, 1])
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.DepolarizingChannel(c, wires=[0])
+            qml.DepolarizingChannel(c, wires=[1])
+            return qml.probs(wires=[0, 1])
+
+        state_ini = jnp.array([1, 0, 0, 0])
+        a, b, c = jnp.array([0.1, 0.2, 0.1])
+
+        rho_ini = jnp.tensordot(state_ini, state_ini, axes=0)
+        res = circuit(rho_ini, a, b, c)
+        jacobian = jax.jacobian(circuit, argnums=[1, 2, 3])(rho_ini, a, b, c)
+
+        assert qml.math.get_interface(res) == "jax"
+        assert all(isinstance(r_, jax.Array) for r_ in jacobian)
+
 
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
@@ -774,3 +865,94 @@ class TestHighLevelIntegration:
             expected.append(circuit(x_indiv))
 
         assert np.allclose(expected, res)
+
+    @pytest.mark.parametrize("gradient_func", [qml.gradients.param_shift, "device", None])
+    def test_tapes(self, gradient_func):
+        """Test that jitted execution works with tapes."""
+
+        def cost(x, y, interface, gradient_func):
+            """Executes tapes"""
+            device = qml.device("default.mixed", wires=2)
+
+            with qml.queuing.AnnotatedQueue() as q1:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+
+            with qml.queuing.AnnotatedQueue() as q2:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.probs(wires=[0])
+                qml.probs(wires=[1])
+
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+            return [
+                device.execute(tape, interface=interface, gradient_func=gradient_func)
+                for tape in [tape1, tape2]
+            ]
+
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        x_ = np.array(0.543)
+        y_ = np.array(-0.654)
+
+        res = cost(x, y, interface="jax-jit", gradient_func=gradient_func)
+        exp = cost(x_, y_, interface="numpy", gradient_func=gradient_func)
+
+        for r, e in zip(res, exp):
+            assert jnp.allclose(qml.math.array(r), qml.math.array(e), atol=1e-7)
+
+
+class TestMeasurements:
+    """Tests for measurements with default.mixed"""
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.counts(qml.PauliZ(0)),
+            qml.counts(wires=[0]),
+            qml.sample(qml.PauliX(0)),
+            qml.sample(wires=[1]),
+        ],
+    )
+    def test_measurements_jax(self, measurement):
+        """Test sampling-based measurements work with `default.mixed` for trainable interfaces"""
+        num_shots = 1024
+        dev = qml.device("default.mixed", wires=2, shots=num_shots)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        res = circuit(jnp.array(0.5))
+
+        assert len(res) == 2 if isinstance(measurement, qml.measurements.CountsMP) else num_shots
+
+    @pytest.mark.parametrize(
+        "meas_op",
+        [qml.PauliX(0), qml.PauliZ(0)],
+    )
+    def test_measurement_diff(self, meas_op):
+        """Test sequence of single-shot expectation values work for derivatives"""
+        num_shots = 64
+        dev = qml.device("default.mixed", shots=[(1, num_shots)], wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.expval(meas_op)
+
+        def cost(angle):
+            return qml.math.hstack(circuit(angle))
+
+        angle = jnp.array(0.1234)
+        assert isinstance(jax.jacobian(cost)(angle), jax.Array)
+        assert len(cost(angle)) == num_shots

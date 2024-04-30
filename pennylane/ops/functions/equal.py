@@ -28,7 +28,16 @@ from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
+from pennylane.ops import (
+    Hamiltonian,
+    LinearCombination,
+    Controlled,
+    Pow,
+    Adjoint,
+    Exp,
+    SProd,
+    CompositeOp,
+)
 from pennylane.templates.subroutines import ControlledSequence
 from pennylane.tape import QuantumTape
 
@@ -368,7 +377,7 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     if not isinstance(op2, Observable):
         return False
 
-    if isinstance(op2, Hamiltonian):
+    if isinstance(op2, (Hamiltonian, LinearCombination)):
         return op2.compare(op1)
 
     if isinstance(op2, Tensor):
@@ -530,4 +539,47 @@ def _equal_basis_rotation(
             op2.hyperparameters["unitary_matrix"]
         ):
             return False
+    return True
+
+
+@_equal.register
+def _equal_hilbert_schmidt(
+    op1: qml.HilbertSchmidt,
+    op2: qml.HilbertSchmidt,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    if not all(
+        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
+    ):
+        return False
+
+    if check_trainability:
+        for params_1, params_2 in zip(op1.data, op2.data):
+            if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
+                return False
+
+    if check_interface:
+        for params_1, params_2 in zip(op1.data, op2.data):
+            if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
+                return False
+
+    equal_kwargs = {
+        "check_interface": check_interface,
+        "check_trainability": check_trainability,
+        "atol": atol,
+        "rtol": rtol,
+    }
+    # Check hyperparameters using qml.equal rather than == where necessary
+    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
+        return False
+    if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
+        return False
+    if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
+        return False
+    if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
+        return False
+
     return True

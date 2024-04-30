@@ -347,8 +347,12 @@ class TestQNSPSAOptimizer:
             new_params_tensor_expected,
         )
 
-    def test_step_and_cost_with_non_trainable_input(self, finite_diff_step, seed):
-        """Test step_and_cost() function with the qnode with non-trainable input."""
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    def test_step_and_cost_with_non_trainable_input(self, device_name, finite_diff_step, seed):
+        """
+        Test step_and_cost() function with the qnode with non-trainable input,
+        both using the `default.qubit` and `default.qubit.legacy` device.
+        """
         regularization = 1e-3
         stepsize = 1e-2
         opt = qml.QNSPSAOptimizer(
@@ -362,7 +366,7 @@ class TestQNSPSAOptimizer:
         )
         # a deep copy of the same opt, to be applied to qnode_reduced
         target_opt = deepcopy(opt)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(device_name, wires=2)
         non_trainable_param = np.random.rand(1)
         non_trainable_param.requires_grad = False
 
@@ -435,3 +439,26 @@ def test_template_no_adjoint():
     opt = qml.QNSPSAOptimizer(stepsize=5e-2)
     assert opt.step_and_cost(cost, params)  # just checking it runs without error
     assert not qml.RandomLayers.has_adjoint
+
+
+def test_workflow_integration():
+    """Test that the optimizer can optimize a workflow."""
+
+    num_qubits = 2
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def cost(params):
+        qml.RX(params[0], wires=0)
+        qml.CRY(params[1], wires=[0, 1])
+        return qml.expval(qml.Z(0) @ qml.Z(1))
+
+    params = qml.numpy.array([0.5, 0.5], requires_grad=True)
+    opt = qml.optimize.QNSPSAOptimizer(stepsize=5e-2)
+    for _ in range(101):
+        params, loss = opt.step_and_cost(cost, params)
+
+    assert qml.math.allclose(loss, -1, atol=1e-3)
+    # compare sine of params and target params as could converge to params + 2* np.pi
+    target_params = np.array([np.pi, 0])
+    assert qml.math.allclose(np.sin(params), np.sin(target_params), atol=1e-2)

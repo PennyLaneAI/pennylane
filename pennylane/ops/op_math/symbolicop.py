@@ -35,7 +35,7 @@ class SymbolicOp(Operator):
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
     :class:`~.ops.op_math.Adjoint`.
 
-    New symbolic operators can inherit from this class to receive some common default behavior, such
+    New symbolic operators can inherit from this class to receive some common default behaviour, such
     as deferring properties to the base class, copying the base class during a shallow copy, and
     updating the metadata of the base operator during queueing.
 
@@ -196,7 +196,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     @property
     def has_matrix(self):
-        return self.base.has_matrix or isinstance(self.base, qml.Hamiltonian)
+        return self.base.has_matrix or isinstance(self.base, qml.ops.Hamiltonian)
 
     @property
     def hash(self):
@@ -243,7 +243,7 @@ class ScalarSymbolicOp(SymbolicOp):
             tensor_like: matrix representation
         """
         # compute base matrix
-        if isinstance(self.base, qml.Hamiltonian):
+        if isinstance(self.base, qml.ops.Hamiltonian):
             base_matrix = qml.matrix(self.base)
         else:
             base_matrix = self.base.matrix()

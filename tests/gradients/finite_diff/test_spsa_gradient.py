@@ -170,12 +170,34 @@ class TestSpsaGradient:
         with pytest.raises(ValueError, match=expected_message):
             qml.grad(circuit)(np.array(1.0))
 
-    def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape."""
+    def test_trainable_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the SPSA gradient transform"
+        _match = r"Computing the gradient of broadcasted tapes .* using the SPSA gradient transform"
         with pytest.raises(NotImplementedError, match=_match):
             spsa_grad(tape)
+
+    def test_nontrainable_batched_tape(self):
+        """Test that no error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is not differentiated, and that the results correspond to the stacked
+        results of the single-tape derivatives."""
+        dev = qml.device("default.qubit")
+        x = [0.4, 0.2]
+        tape = qml.tape.QuantumScript(
+            [qml.RY(0.6, 0), qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
+        batched_tapes, batched_fn = spsa_grad(tape)
+        batched_grad = batched_fn(dev.execute(batched_tapes))
+        separate_tapes = [
+            qml.tape.QuantumScript(
+                [qml.RY(0.6, 0), qml.RX(_x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            )
+            for _x in x
+        ]
+        separate_tapes_and_fns = [spsa_grad(t) for t in separate_tapes]
+        separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
+        assert np.allclose(batched_grad, separate_grad)
 
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
@@ -365,21 +387,9 @@ class TestSpsaGradient:
 
         result = spsa_grad(circuit)(params)
 
-        assert isinstance(result, tuple)
-
-        assert len(result) == 3
-
-        assert isinstance(result[0], numpy.ndarray)
-        assert result[0].shape == (4,)
-        assert np.allclose(result[0], 0)
-
-        assert isinstance(result[1], numpy.ndarray)
-        assert result[1].shape == (4,)
-        assert np.allclose(result[1], 0)
-
-        assert isinstance(result[2], numpy.ndarray)
-        assert result[2].shape == (4,)
-        assert np.allclose(result[2], 0)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (4, 3)
+        assert np.allclose(result, 0)
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -397,38 +407,12 @@ class TestSpsaGradient:
         result = spsa_grad(circuit)(params)
 
         assert isinstance(result, tuple)
-
         assert len(result) == 2
 
-        # First elem
-        assert len(result[0]) == 3
-
-        assert isinstance(result[0][0], numpy.ndarray)
-        assert result[0][0].shape == ()
-        assert np.allclose(result[0][0], 0)
-
-        assert isinstance(result[0][1], numpy.ndarray)
-        assert result[0][1].shape == ()
-        assert np.allclose(result[0][1], 0)
-
-        assert isinstance(result[0][2], numpy.ndarray)
-        assert result[0][2].shape == ()
-        assert np.allclose(result[0][2], 0)
-
-        # Second elem
-        assert len(result[0]) == 3
-
-        assert isinstance(result[1][0], numpy.ndarray)
-        assert result[1][0].shape == (4,)
-        assert np.allclose(result[1][0], 0)
-
-        assert isinstance(result[1][1], numpy.ndarray)
-        assert result[1][1].shape == (4,)
-        assert np.allclose(result[1][1], 0)
-
-        assert isinstance(result[1][2], numpy.ndarray)
-        assert result[1][2].shape == (4,)
-        assert np.allclose(result[1][2], 0)
+        for r, exp_shape in zip(result, [(3,), (4, 3)]):
+            assert isinstance(r, np.ndarray)
+            assert r.shape == exp_shape
+            assert np.allclose(r, 0)
 
     def test_y0(self):
         """Test that if first order finite differences is underlying the SPSA, then
@@ -507,7 +491,7 @@ class TestSpsaGradient:
         dev = qml.device("default.qubit", wires=4)
 
         def cost1(x):
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
         def cost2(x):
@@ -537,14 +521,11 @@ class TestSpsaGradient:
 
         expected = [
             (3,),
-            (
-                1,
-                3,
-            ),
+            (1, 3),
             (2, 3),
-            (3, 4),
-            (1, 3, 4),
-            (2, 3, 4),
+            (4, 3),
+            (1, 4, 3),
+            (2, 4, 3),
         ]
 
         assert all(t == q for t, q in zip(transform, expected))

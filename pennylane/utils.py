@@ -43,8 +43,7 @@ def _flatten(x):
     elif isinstance(x, qml.wires.Wires):
         # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
         # Since Wires are always flat, just yield.
-        for item in x:
-            yield item
+        yield from x
     elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
         for item in x:
             yield from _flatten(item)
@@ -168,6 +167,9 @@ def expand_vector(vector, original_wires, expanded_wires):
     Returns:
         array: :math:`2^m` vector where m = len(expanded_wires).
     """
+    if len(original_wires) == 0:
+        val = qml.math.squeeze(vector)
+        return val * qml.math.ones(2 ** len(expanded_wires))
     if isinstance(expanded_wires, numbers.Integral):
         expanded_wires = list(range(expanded_wires))
 
@@ -175,26 +177,26 @@ def expand_vector(vector, original_wires, expanded_wires):
     M = len(expanded_wires)
     D = M - N
 
+    len_vector = qml.math.shape(vector)[0]
+    qudit_order = int(2 ** (np.log2(len_vector) / N))
+
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if qml.math.shape(vector) != (2**N,):
-        raise ValueError("Vector parameter must be of length 2**len(original_wires)")
+    if qml.math.shape(vector) != (qudit_order**N,):
+        raise ValueError(f"Vector parameter must be of length {qudit_order}**len(original_wires)")
 
-    dims = [2] * N
+    dims = [qudit_order] * N
     tensor = qml.math.reshape(vector, dims)
 
     if D > 0:
-        extra_dims = [2] * D
-        ones = qml.math.ones(2**D).reshape(extra_dims)
+        extra_dims = [qudit_order] * D
+        ones = qml.math.ones(qudit_order**D).reshape(extra_dims)
         expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
 
-    wire_indices = []
-    for wire in original_wires:
-        wire_indices.append(expanded_wires.index(wire))
-
+    wire_indices = [expanded_wires.index(wire) for wire in original_wires]
     wire_indices = np.array(wire_indices)
 
     # Order tensor factors according to wires
@@ -203,4 +205,4 @@ def expand_vector(vector, original_wires, expanded_wires):
         expanded_tensor, tuple(original_indices), tuple(wire_indices)
     )
 
-    return qml.math.reshape(expanded_tensor, 2**M)
+    return qml.math.reshape(expanded_tensor, qudit_order**M)

@@ -16,12 +16,12 @@
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
+
 import numpy as np
 
 import pennylane as qml
-
 from pennylane import math
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.ops import Conditional
 
 SQRT2INV = 1 / math.sqrt(2)
@@ -164,6 +164,8 @@ def apply_operation(
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
+        **execution_kwargs (Optional[dict]): Optional keyword arguments needed for applying
+            some operations
 
     Returns:
         ndarray: output state
@@ -217,7 +219,11 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 @apply_operation.register
 def apply_conditional(
-    op: Conditional, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+    op: Conditional,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **execution_kwargs,
 ):
     """Applies a conditional operation.
 
@@ -231,6 +237,8 @@ def apply_conditional(
     Returns:
         ndarray: output state
     """
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+
     if op.meas_val.concretize(mid_measurements):
         return apply_operation(
             op.then_op,
@@ -244,7 +252,7 @@ def apply_conditional(
 
 @apply_operation.register
 def apply_mid_measure(
-    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
     """Applies a native mid-circuit measurement.
 
@@ -254,20 +262,31 @@ def apply_mid_measure(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be for sampling.
 
     Returns:
         ndarray: output state
     """
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+    rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
+
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     if not np.allclose(np.linalg.norm(state), 1.0):
-        mid_measurements[op] = 0
+        mid_measurements[op] = -1
         return np.zeros_like(state)
     wire = op.wires
-    probs = qml.devices.qubit.measure(qml.probs(wire), state)
-    sample = np.random.binomial(1, probs[1])
+    sample = qml.devices.qubit.sampling.measure_with_samples(
+        [qml.sample(wires=wire)], state, Shots(1), rng=rng, prng_key=prng_key
+    )
+    sample = int(sample[0])
     mid_measurements[op] = sample
     if op.postselect is not None and sample != op.postselect:
+        mid_measurements[op] = -1
         return np.zeros_like(state)
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)

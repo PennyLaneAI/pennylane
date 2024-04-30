@@ -70,12 +70,12 @@ can potentially be quite expensive. Autograd would naively
 request indepedent vjps for each entry in the output, even though the internal circuits will be
 exactly the same.
 
-When normal caching provided by :func:`~.cache_execute` is present, the expensive part (re-executing
-identical circuits) is avoided, but when normal caching is turned off, the above can lead to an explosion
+When caching is enabled, the expensive part (re-executing identical circuits) is
+avoided, but when normal caching is turned off, the above can lead to an explosion
 in the number of required circuit executions.
 
 To avoid this explosion in the number of executed circuits when caching is turned off, we will instead internally
-cache the full jacobian so that is is reused between different calls to the same ``grad_fn``. This behavior is toggled
+cache the full jacobian so that is is reused between different calls to the same ``grad_fn``. This behaviour is toggled
 by the ``cache_full_jacobian`` keyword argument to :class:`~.TransformJacobianProducts`.
 
 Other interfaces are capable of calculating the full jacobian in one call, so this patch is only present for autograd.

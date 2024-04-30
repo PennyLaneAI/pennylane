@@ -221,9 +221,9 @@ class TransformJacobianProducts(JacobianProductCalculator):
     Keyword Args:
         cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
             instead of treating each call as independent. This keyword argument is used to patch problematic
-            autograd behavior when caching is turned off. In this case, caching will be based on the identity
+            autograd behaviour when caching is turned off. In this case, caching will be based on the identity
             of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
-            by :func:`~.cache_execute`.
+            by the cache.
 
     >>> inner_execute = qml.device('default.qubit').execute
     >>> gradient_transform = qml.gradients.param_shift
@@ -414,7 +414,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._uses_new_device = not isinstance(device, qml.Device)
+        self._uses_new_device = not isinstance(device, qml.devices.LegacyDevice)
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)
@@ -678,7 +678,14 @@ class DeviceJacobianProducts(JacobianProductCalculator):
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         dy = qml.math.unwrap(dy)
-        return self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+        vjps = self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+        res = []
+        for t, r in zip(tapes, vjps):
+            if len(t.trainable_params) == 1 and qml.math.shape(r) == ():
+                res.append((r,))
+            else:
+                res.append(r)
+        return res
 
     def compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -697,7 +704,7 @@ class LightningVJPs(DeviceDerivatives):
     """Calculates VJPs natively using lightning.qubit.
 
     Args:
-        device (LightningBase): a device in the lightning ecosystem (``lightning.qubit``, ``lightning.gpu``, ``lightning.kokkos``.)
+        device (LightningBase): Lightning ecosystem devices ``lightning.gpu`` or ``lightning.kokkos``.
         gradient_kwargs (Optional[dict]):  Any gradient options.
 
     >>> dev = qml.device('lightning.qubit', wires=5)
@@ -713,7 +720,12 @@ class LightningVJPs(DeviceDerivatives):
     """
 
     def __repr__(self):
-        return f"<LightningVJPs: {self._device.short_name}, {self._gradient_kwargs}>"
+        long_to_short_name = {
+            "LightningQubit": "lightning.qubit",
+            "LightningKokkos": "lightning.kokkos",
+            "LightningGPU": "lightning.gpu",
+        }
+        return f"<LightningVJPs: {long_to_short_name[type(self._device).__name__]}, {self._gradient_kwargs}>"
 
     def __init__(self, device, gradient_kwargs=None):
         super().__init__(device, gradient_kwargs=gradient_kwargs)
@@ -721,7 +733,7 @@ class LightningVJPs(DeviceDerivatives):
             key: value for key, value in self._gradient_kwargs.items() if key != "method"
         }
 
-    def compute_vjp(self, tapes, dy):
+    def compute_vjp(self, tapes, dy):  # pragma: no cover
         if not all(
             isinstance(m, qml.measurements.ExpectationMP) for t in tapes for m in t.measurements
         ):

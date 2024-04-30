@@ -71,7 +71,7 @@ def append_time_evolution(
         with QueuingManager.stop_recording():
             new_operations.append(
                 qml.QubitUnitary(
-                    expm(-1j * t * riemannian_gradient.sparse_matrix().toarray()),
+                    expm(-1j * t * riemannian_gradient.sparse_matrix(tape.wires).toarray()),
                     wires=range(len(riemannian_gradient.wires)),
                 )
             )
@@ -197,7 +197,7 @@ class RiemannianGradientOptimizer:
     but will quickly get out of control as the number of qubits increases.
 
     To resolve this issue, we can restrict the Riemannian gradient to a subspace of the Lie algebra and calculate an
-    approximate Riemannian gradient flow. The choice of restriction will affect the optimization behavior
+    approximate Riemannian gradient flow. The choice of restriction will affect the optimization behaviour
     and quality of the final solution.
 
     For more information on Riemannian gradient flows on Lie groups see
@@ -267,7 +267,7 @@ class RiemannianGradientOptimizer:
         self.circuit = circuit
         self.circuit.construct([], {})
         self.hamiltonian = circuit.func().obs
-        if not isinstance(self.hamiltonian, qml.Hamiltonian):
+        if not isinstance(self.hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             raise TypeError(
                 f"circuit must return the expectation value of a Hamiltonian,"
                 f"received {type(circuit.func().obs)}"
@@ -280,7 +280,9 @@ class RiemannianGradientOptimizer:
                 f"optimizing a {self.nqubits} qubit circuit may be slow.",
                 UserWarning,
             )
-        if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
+        if restriction is not None and not isinstance(
+            restriction, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
+        ):
             raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,

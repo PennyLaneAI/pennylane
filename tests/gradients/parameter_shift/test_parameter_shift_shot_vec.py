@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
+# pylint:disable=use-implicit-booleaness-not-comparison
 from functools import partial
 import pytest
 from flaky import flaky
@@ -1841,9 +1842,9 @@ class TestParameterShiftRule:
         return [qml.probs([0, 1]), qml.probs([2, 3])]
 
     costs_and_expected_expval = [
-        (cost1, [3]),
-        (cost2, [3]),
-        (cost3, [2, 3]),
+        (cost1, (3,)),
+        (cost2, (3,)),
+        (cost3, (2, 3)),
     ]
 
     @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_expval)
@@ -1863,18 +1864,13 @@ class TestParameterShiftRule:
         assert isinstance(all_res, tuple)
 
         for res in all_res:
-            assert isinstance(res, tuple)
-            assert len(res) == expected_shape[0]
-
-            if len(expected_shape) > 1:
-                for r in res:
-                    assert isinstance(r, tuple)
-                    assert len(r) == expected_shape[1]
+            assert isinstance(res, np.ndarray)
+            assert res.shape == expected_shape
 
     costs_and_expected_probs = [
-        (cost4, [3, 4]),
-        (cost5, [3, 4]),
-        (cost6, [2, 3, 4]),
+        (cost4, (4, 3)),
+        (cost5, (4, 3)),
+        (cost6, (2, 4, 3)),
     ]
 
     @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_probs)
@@ -1894,22 +1890,8 @@ class TestParameterShiftRule:
         assert isinstance(all_res, tuple)
 
         for res in all_res:
-            assert isinstance(res, tuple)
-            assert len(res) == expected_shape[0]
-
-            if len(expected_shape) > 2:
-                for r in res:
-                    assert isinstance(r, tuple)
-                    assert len(r) == expected_shape[1]
-
-                    for _r in r:
-                        assert isinstance(_r, qml.numpy.ndarray)
-                        assert len(_r) == expected_shape[2]
-
-            elif len(expected_shape) > 1:
-                for r in res:
-                    assert isinstance(r, qml.numpy.ndarray)
-                    assert len(r) == expected_shape[1]
+            assert isinstance(res, np.ndarray)
+            assert res.shape == expected_shape
 
     # TODO: revisit the following test when the Autograd interface supports
     # parameter-shift with the new return type system
@@ -2010,6 +1992,7 @@ class TestParameterShiftRule:
 
 
 # TODO: allow broadcast=True
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("broadcast", [False])
 class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be
@@ -2028,7 +2011,7 @@ class TestHamiltonianExpvalGradients:
             qml.CNOT(wires=[0, 1])
             obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             coeffs = np.array([0.1, 0.2, 0.3])
-            H = np.dot(obs, coeffs)
+            H = qml.dot(coeffs, obs)
             qml.var(H)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)

@@ -29,7 +29,6 @@ import rustworkx as rx
 
 import numpy as np
 import pennylane as qml
-from pennylane.ops import Hamiltonian
 
 
 def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Dict[Tuple, int]:
@@ -140,7 +139,7 @@ def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Dict[int
     )
 
 
-def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
+def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.operation.Operator:
     r"""Calculates the cycle-mixer Hamiltonian.
 
     Following methods outlined `here <https://arxiv.org/abs/1709.03489>`__, the
@@ -227,7 +226,7 @@ def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
             f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
-    hamiltonian = Hamiltonian([], [])
+    hamiltonian = qml.Hamiltonian([], [])
     graph_edges = sorted(graph.edge_list()) if isinstance(graph, rx.PyDiGraph) else graph.edges
 
     for edge in graph_edges:
@@ -236,7 +235,9 @@ def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
     return hamiltonian
 
 
-def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple) -> Hamiltonian:
+def _partial_cycle_mixer(
+    graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple
+) -> qml.operation.Operator:
     r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
 
     For an edge :math:`(i, j)`, this function returns:
@@ -292,10 +293,10 @@ def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple) ->
 
             coeffs.extend([0.25, 0.25, 0.25, -0.25])
 
-    return Hamiltonian(coeffs, ops)
+    return qml.Hamiltonian(coeffs, ops)
 
 
-def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Hamiltonian:
+def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.operation.Operator:
     r"""Calculates the loss Hamiltonian for the maximum-weighted cycle problem.
 
     We consider the problem of selecting a cycle from a graph that has the greatest product of edge
@@ -341,13 +342,15 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Hamilt
     >>> for k, v in edge_weight_data.items():
             g[k[0]][k[1]]["weight"] = v
     >>> h = loss_hamiltonian(g)
-    >>> print(h)
-      (-0.6931471805599453) [Z0]
-    + (0.0) [Z1]
-    + (0.4054651081081644) [Z2]
-    + (0.6931471805599453) [Z3]
-    + (0.9162907318741551) [Z4]
-    + (1.0986122886681098) [Z5]
+    >>> h
+    (
+        -0.6931471805599453 * Z(0)
+      + 0.0 * Z(1)
+      + 0.4054651081081644 * Z(2)
+      + 0.6931471805599453 * Z(3)
+      + 0.9162907318741551 * Z(4)
+      + 1.0986122886681098 * Z(5)
+    )
 
     >>> import rustworkx as rx
     >>> g = rx.generators.directed_mesh_graph(3)
@@ -356,12 +359,14 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Hamilt
             g.update_edge(k[0], k[1], {"weight": v})
     >>> h = loss_hamiltonian(g)
     >>> print(h)
-      (-0.6931471805599453) [Z0]
-    + (0.0) [Z1]
-    + (0.4054651081081644) [Z2]
-    + (0.6931471805599453) [Z3]
-    + (0.9162907318741551) [Z4]
-    + (1.0986122886681098) [Z5]
+    (
+        -0.6931471805599453 * Z(0)
+      + 0.0 * Z(1)
+      + 0.4054651081081644 * Z(2)
+      + 0.6931471805599453 * Z(3)
+      + 0.9162907318741551 * Z(4)
+      + 1.0986122886681098 * Z(5)
+    )
 
     Args:
         graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
@@ -406,7 +411,7 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Hamilt
         coeffs.append(np.log(weight))
         ops.append(qml.Z(edges_to_qubits[get_nvalues(edge)]))
 
-    H = Hamiltonian(coeffs, ops)
+    H = qml.Hamiltonian(coeffs, ops)
     # store the valuable information that all observables are in one commuting group
     H.grouping_indices = [list(range(len(H.ops)))]
 
@@ -448,7 +453,7 @@ def _square_hamiltonian_terms(
     return squared_coeffs, squared_ops
 
 
-def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
+def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.operation.Operator:
     r"""Calculates the `out flow constraint <https://1qbit.com/whitepaper/arbitrage/>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -491,7 +496,7 @@ def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
     if isinstance(graph, (nx.DiGraph, rx.PyDiGraph)) and not hasattr(graph, "out_edges"):
         raise ValueError("Input graph must be directed")
 
-    hamiltonian = Hamiltonian([], [])
+    hamiltonian = qml.Hamiltonian([], [])
     graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyDiGraph) else graph.nodes
 
     for node in graph_nodes:
@@ -500,7 +505,7 @@ def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
     return hamiltonian
 
 
-def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
+def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.operation.Operator:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -544,7 +549,7 @@ def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
             f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
-    hamiltonian = Hamiltonian([], [])
+    hamiltonian = qml.Hamiltonian([], [])
     graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyDiGraph) else graph.nodes
 
     for node in graph_nodes:
@@ -555,7 +560,7 @@ def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
 
 def _inner_out_flow_constraint_hamiltonian(
     graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
-) -> Hamiltonian:
+) -> qml.operation.Operator:
     r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
     For a given :math:`i`, this function returns:
 
@@ -614,7 +619,7 @@ def _inner_out_flow_constraint_hamiltonian(
     coeffs.append(d * (d - 2))
     ops.append(qml.Identity(0))
 
-    H = Hamiltonian(coeffs, ops)
+    H = qml.Hamiltonian(coeffs, ops)
     H.simplify()
     # store the valuable information that all observables are in one commuting group
     H.grouping_indices = [list(range(len(H.ops)))]
@@ -624,7 +629,7 @@ def _inner_out_flow_constraint_hamiltonian(
 
 def _inner_net_flow_constraint_hamiltonian(
     graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
-) -> Hamiltonian:
+) -> qml.operation.Operator:
     r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
 
 
@@ -685,8 +690,8 @@ def _inner_net_flow_constraint_hamiltonian(
         ops.append(qml.Z(wires))
 
     coeffs, ops = _square_hamiltonian_terms(coeffs, ops)
-    H = Hamiltonian(coeffs, ops)
-    H.simplify()
+    H = qml.Hamiltonian(coeffs, ops)
+    H = H.simplify()
     # store the valuable information that all observables are in one commuting group
     H.grouping_indices = [list(range(len(H.ops)))]
     return H

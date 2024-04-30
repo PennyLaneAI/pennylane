@@ -160,6 +160,14 @@ def kron(*args, like=None, **kwargs):
     """The kronecker/tensor product of args."""
     if like == "scipy":
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
+
+    if like == "torch":
+        mats = [
+            ar.numpy.asarray(arg, like="torch") if isinstance(arg, onp.ndarray) else arg
+            for arg in args
+        ]
+        return ar.numpy.kron(*mats)
+
     return ar.numpy.kron(*args, like=like, **kwargs)
 
 
@@ -333,6 +341,7 @@ def dot(tensor1, tensor2, like=None):
     x, y = np.coerce([tensor1, tensor2], like=like)
 
     if like == "torch":
+
         if x.ndim == 0 and y.ndim == 0:
             return x * y
 
@@ -996,7 +1005,7 @@ def detach(tensor, like=None):
 
 def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
-    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behaviour
     of Jax in order to mark trainable parameters.
 
     Args:

@@ -42,7 +42,7 @@ from pennylane.measurements import (
 )
 
 from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
-from pennylane.ops import Hamiltonian, Sum
+from pennylane.ops import Hamiltonian, Sum, LinearCombination, Prod, SProd
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
 from pennylane.queuing import QueuingManager
@@ -678,9 +678,8 @@ class Device(abc.ABC):
         )
         obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
-            isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
+            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit._obs_sharing_wires
         )
-
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
         if obs_on_same_wire:
@@ -750,14 +749,18 @@ class Device(abc.ABC):
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables
-            if isinstance(obs, Hamiltonian)
+            if isinstance(obs, (Hamiltonian, LinearCombination))
         )
         # device property present in braket plugin
         use_grouping = getattr(self, "use_grouping", True)
 
-        hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
-        expval_sum_in_obs = any(
-            isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
+        hamiltonian_in_obs = any(
+            isinstance(obs, (Hamiltonian, LinearCombination)) for obs in circuit.observables
+        )
+
+        expval_sum_or_prod_in_obs = any(
+            isinstance(m.obs, (Sum, Prod, SProd)) and isinstance(m, ExpectationMP)
+            for m in circuit.measurements
         )
 
         is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
@@ -771,11 +774,10 @@ class Device(abc.ABC):
             # split tape into multiple tapes of diagonalizable known observables.
             try:
                 circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-            except ValueError as e:
-                raise ValueError(
-                    "Can only return the expectation of a single Hamiltonian observable"
-                ) from e
-        elif expval_sum_in_obs and not is_shadow and not supports_sum:
+            except ValueError:
+                circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
+
+        elif expval_sum_or_prod_in_obs and not is_shadow and not supports_sum:
             circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 
         elif (
@@ -1005,6 +1007,21 @@ class Device(abc.ABC):
                         raise DeviceError(
                             f"Observable {i.name} not supported on device {self.short_name}"
                         )
+
+            elif isinstance(o, qml.ops.Prod):
+
+                supports_prod = self.supports_observable(o.name)
+                if not supports_prod:
+                    raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
+
+                simplified_op = o.simplify()
+                if isinstance(simplified_op, qml.ops.Prod):
+                    for i in o.simplify().operands:
+                        if not self.supports_observable(i.name):
+                            raise DeviceError(
+                                f"Observable {i.name} not supported on device {self.short_name}"
+                            )
+
             else:
                 observable_name = o.name
 
