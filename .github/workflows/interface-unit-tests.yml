@@ -237,16 +237,16 @@ jobs:
     strategy:
       max-parallel: >-
         ${{
-            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
-            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
-          }}
+          fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
+          || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
+        }}
       matrix:
         group: [1, 2, 3, 4, 5]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
-            }}
+          }}
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'jax-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
