@@ -46,6 +46,21 @@ def null_postprocessing(results):
     return results[0]
 
 
+class ImageTape(qml.tape.QuantumTape):
+
+    def __init__(self, *args, **kwargs):
+        self.repeats = kwargs.get("repeats", 1)
+        kwargs.pop("repeats")
+        super().__init__(*args, **kwargs)
+
+    def __iter__(self):
+        for _ in range(self.repeats):
+            yield self
+
+    def __len__(self):
+        return self.repeats
+
+
 @transform
 def dynamic_one_shot(
     tape: qml.tape.QuantumTape, **kwargs
@@ -121,7 +136,8 @@ def dynamic_one_shot(
     aux_tapes = [init_auxiliary_tape(t) for t in tapes]
     # Shape of output_tapes is (batch_size * total_shots,) with broadcasting,
     # and (total_shots,) otherwise
-    output_tapes = [at for at in aux_tapes for _ in range(tape.shots.total_shots)]
+    output_tapes = aux_tapes
+    # output_tapes = [at for at in aux_tapes for _ in range(tape.shots.total_shots)]
 
     def processing_fn(results, has_partitioned_shots=None, batched_results=None):
         if batched_results is None and batch_size is not None:
@@ -140,7 +156,7 @@ def dynamic_one_shot(
         if has_partitioned_shots is None and tape.shots.has_partitioned_shots:
             # If using shot vectors, recursively process the results for each shot bin. The length
             # of the first axis of final_results will be the length of the shot vector.
-            results = list(results)
+            results = list(results[0])
             final_results = []
             for s in tape.shots:
                 final_results.append(
@@ -148,6 +164,8 @@ def dynamic_one_shot(
                 )
                 del results[0:s]
             return tuple(final_results)
+        elif not tape.shots.has_partitioned_shots:
+            results = results[0]
         return parse_native_mid_circuit_measurements(tape, aux_tapes, results)
 
     return output_tapes, processing_fn
@@ -200,8 +218,18 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
         if isinstance(op, MidMeasureMP):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
 
+    # return ImageTape(
+    #     circuit.operations,
+    #     new_measurements,
+    #     shots=1,
+    #     trainable_params=circuit.trainable_params,
+    #     repeats=circuit.shots.total_shots,
+    # )
     return qml.tape.QuantumScript(
-        circuit.operations, new_measurements, shots=1, trainable_params=circuit.trainable_params
+        circuit.operations,
+        new_measurements,
+        shots=[1] * circuit.shots.total_shots,
+        trainable_params=circuit.trainable_params,
     )
 
 
