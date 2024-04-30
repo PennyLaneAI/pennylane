@@ -35,7 +35,7 @@ from .measure import flatten_state
 def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
     if prng_key is None:
-        return tuple([None] * num)
+        return (None,) * num
     # pylint: disable=import-outside-toplevel
     from jax.random import split
 
