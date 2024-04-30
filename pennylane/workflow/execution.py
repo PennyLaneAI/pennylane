@@ -266,7 +266,7 @@ def _make_inner_execute(
     For higher order derivatives, the "inner execute" will be another ml framework execute.
     """
 
-    if isinstance(device, qml.devices.LegacyDevice):
+    if isinstance(device, qml.Device):
         device_execution = set_shots(device, override_shots)(device.batch_execute)
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
@@ -534,7 +534,7 @@ def execute(
 
     if (
         device_vjp
-        and isinstance(device, qml.devices.LegacyDevice)
+        and isinstance(device, qml.Device)
         and "lightning" not in getattr(device, "short_name", "").lower()
     ):
         raise qml.QuantumFunctionError(
