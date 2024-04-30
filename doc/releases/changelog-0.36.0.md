@@ -59,55 +59,6 @@
           0.49756365+0.j, 0.47675786+0.j, 0.49756365+0.j, 0.47675786+0.j], requires_grad=True)
   ```
 
-* Reflecting about a given quantum state is now available via `qml.Reflection`.
-  This operation is very useful in, say, the amplitude amplification algorithm.
-  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
-
-  `qml.Reflection` works by providing an operation, :math:`U`, that *prepares* the 
-  desired state, :math:`\vert \psi \rangle`, that we want to reflect about. In other 
-  words, :math:`U` is such that :math:`U \vert 0 \rangle = \vert \psi \rangle`. In 
-  PennyLane, :math:`U` must be an `Operator`.
-  
-  For example, if we want to reflect about 
-  :math:`\vert \psi \rangle = \vert + \rangle`, then :math:`U = H`:
-
-  ```python
-  U = qml.Hadamard(wires=wires)
-
-  dev = qml.device('default.qubit')
-  @qml.qnode(dev)
-  def circuit():
-        qml.Reflection(U)
-        return qml.state()
-  ```
-
-  ```pycon
-  >>> circuit()
-  tensor([0.-6.123234e-17j, 1.+6.123234e-17j], requires_grad=True)
-  ```
-
-  For cases where :math:`U` comprises many operations, you can formulate it as an 
-  `Operator` by 
-  
-  * creating a user-defined 
-    [custom operation](https://docs.pennylane.ai/en/stable/development/adding_operators.html) 
-    with a decomposition, or by
-
-  * creating a quantum function containing each operation, one per line, then 
-    decorate the quantum function with `@qml.prod`, which turns the quantum 
-    function into a `Prod` instance:
-
-    ```python
-    @qml.prod
-    def U():
-        qml.Hadamard(wires=0)
-        qml.RY(0.1, wires=1)
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.Reflection(U())
-        return qml.state()
-  
 * A high-level interface for amplitude amplification and its variants is now 
   available via the new `qml.AmplitudeAmplification` template.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
@@ -159,6 +110,56 @@
 
   As expected, we amplify the :math:`\vert 2 \rangle` state.
 
+* Reflecting about a given quantum state is now available via `qml.Reflection`.
+  This operation is very useful in, say, the amplitude amplification algorithm.
+  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+
+  `qml.Reflection` works by providing an operation, :math:`U`, that *prepares* the 
+  desired state, :math:`\vert \psi \rangle`, that we want to reflect about. In other 
+  words, :math:`U` is such that :math:`U \vert 0 \rangle = \vert \psi \rangle`. In 
+  PennyLane, :math:`U` must be an `Operator`.
+  
+  For example, if we want to reflect about 
+  :math:`\vert \psi \rangle = \vert + \rangle`, then :math:`U = H`:
+
+  ```python
+  U = qml.Hadamard(wires=wires)
+
+  dev = qml.device('default.qubit')
+  @qml.qnode(dev)
+  def circuit():
+        qml.Reflection(U)
+        return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  tensor([0.-6.123234e-17j, 1.+6.123234e-17j], requires_grad=True)
+  ```
+
+  For cases where :math:`U` comprises many operations, you can formulate it as an 
+  `Operator` by 
+  
+  * creating a user-defined 
+    [custom operation](https://docs.pennylane.ai/en/stable/development/adding_operators.html) 
+    with a decomposition, or by
+
+  * creating a quantum function containing each operation, one per line, then 
+    decorate the quantum function with `@qml.prod`, which turns the quantum 
+    function into a `Prod` instance:
+
+    ```python
+    @qml.prod
+    def U():
+        qml.Hadamard(wires=0)
+        qml.RY(0.1, wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Reflection(U())
+        return qml.state()
+    ```
+
 * Performing qubitization is now easily accessible with the new 
   `qml.Qubitization` operator.
   [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
@@ -178,16 +179,6 @@
           qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
       )
       return qml.probs(op = measurements)
-  
-  output = circuit()
-  
-  # post-processing 
-  lamb = sum([abs(c) for c in H.terms()[0]])
-  ```
-  
-  ```pycon
-  >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
-  eigenvalue: 0.7
   ```
 
 <h4>Make use of more methods to map from molecules 🗺️</h4>
