@@ -14,6 +14,9 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
+import pdb
+import sys
+
 import pennylane as qml
 from pennylane import DeviceError
 
@@ -105,3 +108,52 @@ def snapshots(qnode):
         return dbg.snapshots
 
     return get_snapshots
+
+
+class PLDB(pdb.Pdb):
+    """Custom debugging class integrated with Pdb."""
+
+    __active_dev = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.prompt = "[pldb]: "
+
+    @classmethod
+    def valid_context(cls):
+        """Determine if the debugger is called in a valid context.
+
+        Raises:
+            TypeError: Can't call breakpoint outside of a qnode execution
+            TypeError: Device not supported with breakpoint
+        """
+
+        if not qml.queuing.QueuingManager.recording() or not cls.is_active_dev():
+            raise TypeError("Can't call breakpoint outside of a qnode execution")
+
+        if cls.get_active_device().name not in ("default.qubit", "lightning.qubit"):
+            raise TypeError("Device not supported with breakpoint")
+
+    @classmethod
+    def add_device(cls, dev):
+        cls.__active_dev.append(dev)
+
+    @classmethod
+    def get_active_device(cls):
+        return cls.__active_dev[0]
+
+    @classmethod
+    def is_active_dev(cls):
+        return bool(cls.__active_dev)
+
+    @classmethod
+    def reset_active_dev(cls):
+        print("was reset?")
+        cls.__active_dev = []
+
+
+def breakpoint():
+    """Launch the custom PennyLane debugger."""
+    PLDB.valid_context()
+    debugger = PLDB()
+    debugger.set_trace(sys._getframe().f_back)

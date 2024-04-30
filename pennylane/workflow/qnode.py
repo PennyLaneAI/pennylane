@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.debugging import PLDB
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
 
@@ -915,10 +916,19 @@ class QNode:
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
+        # Before constructing the tape, we pass the device to the
+        # debugger to ensure they are compatible if there are any
+        # breakpoints in the circuit
+        if PLDB.is_active_dev():
+            PLDB.reset_active_dev()
+
+        PLDB.add_device(self.device)
+
         with qml.queuing.AnnotatedQueue() as q:
             self._qfunc_output = self.func(*args, **kwargs)
 
         self._tape = QuantumScript.from_queue(q, shots)
+        PLDB.reset_active_dev()  # reset active device on the debugger after queuing
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
