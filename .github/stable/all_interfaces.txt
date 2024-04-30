@@ -75,7 +75,7 @@ pytest-forked==1.6.0
 pytest-mock==3.14.0
 pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
-pytorch-triton-rocm==2.2.0
+pytorch-triton-rocm==2.3.0
 PyYAML==6.0.1
 qdldl==0.1.7.post2
 requests==2.31.0
@@ -94,7 +94,7 @@ termcolor==2.4.0
 tf_keras==2.16.0
 toml==0.10.2
 tomli==2.0.1
-torch==2.2.0+rocm5.7
+torch==2.3.0+rocm6.0
 typing_extensions==4.11.0
 urllib3==2.2.1
 virtualenv==20.26.1
