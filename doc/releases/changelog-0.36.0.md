@@ -223,8 +223,10 @@
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
-  Mixed-qutrit circuits have access to the same operations, measurements, and 
-  functionality as circuits programmed on `DefaultQutrit`.
+  Thanks to external contributors from the University of British Columbia, mixed 
+  qutrit circuits are now available to program, having access to the same 
+  operations, measurements, and functionality as circuits programmed on 
+  `DefaultQutrit`.
 
   ```python
   dev = qml.device("default.qutrit.mixed", wires=1)
