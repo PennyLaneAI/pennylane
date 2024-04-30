@@ -551,6 +551,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
+  [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
+
 * `null.qubit` now automatically supports any operation without a decomposition.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
