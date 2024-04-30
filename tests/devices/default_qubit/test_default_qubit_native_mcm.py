@@ -134,6 +134,7 @@ def validate_measurements(func, shots, results1, results2, batch_size=None):
 
 
 def test_apply_mid_measure():
+    """Test that apply_mid_measure raises if applied to a batched state."""
     with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
         _ = apply_mid_measure(
             MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True, mid_measurements={}
@@ -141,7 +142,7 @@ def test_apply_mid_measure():
 
 
 def test_all_invalid_shots_circuit():
-
+    """Test that circuits in which all shots mismatch with post-selection conditions return the same answer as ``defer_measurements``."""
     dev = get_device()
 
     @qml.qnode(dev)
@@ -178,6 +179,7 @@ def test_all_invalid_shots_circuit():
 
 
 def test_unsupported_measurement():
+    """Test that circuits with unsupported measurements raise the correct error."""
     dev = get_device(shots=1000)
     params = np.pi / 4 * np.ones(2)
 

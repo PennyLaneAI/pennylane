@@ -14,7 +14,7 @@
 """Functions to apply an operation to a state vector."""
 # pylint: disable=unused-argument, too-many-arguments
 
-from functools import singledispatch
+from functools import partial, singledispatch
 from string import ascii_letters as alphabet
 
 import numpy as np
@@ -302,21 +302,14 @@ def apply_mid_measure(
     slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = 0
     prob0 = qml.math.norm(state[tuple(slices)]) ** 2
-    interface = qml.math.get_deep_interface(state)
     if prng_key is not None:
         # pylint: disable=import-outside-toplevel
-        import jax
+        from jax.random import binomial
 
-        _, key = jax.random.split(prng_key)
-        sample = jax.random.choice(
-            key, np.array([0, 1]), p=jax.numpy.array([prob0, 1.0 - prob0])
-        )
+        binomial_fn = partial(binomial, prng_key)
     else:
-        if rng is None:
-            sampling_fun = np.random.choice
-        else:
-            sampling_fun = rng.choice
-        sample = sampling_fun([0, 1], 1, p=[prob0, 1.0 - prob0])[0]
+        binomial_fn = np.random.binomial if rng is None else rng.binomial
+    sample = int(binomial_fn(1, 1 - prob0))
     mid_measurements[op] = sample
 
     # Using apply_operation makes it easier to work with JAX
