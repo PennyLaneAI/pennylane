@@ -231,7 +231,7 @@ jobs:
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
-  jax-tests-0-4-26:
+  jax-tests:
     needs:
       - setup-ci-load
     strategy:
@@ -257,43 +257,6 @@ jobs:
       pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: true
       jax_version: 0.4.26
-      install_tensorflow: false
-      install_pytorch: false
-      install_pennylane_lightning_master: true
-      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: jax and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
-      additional_pip_packages: pytest-split
-      requirements_file: ${{ strategy.job-index == 0 && 'jax.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
-
-
-  jax-tests-0-4-23:
-    needs:
-      - setup-ci-load
-    strategy:
-      max-parallel: >-
-        ${{
-           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
-           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
-         }}
-      matrix:
-        group: [1, 2, 3, 4, 5]
-        python-version: >-
-          ${{
-            fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
-            || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }}
-    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'jax-tests') }}
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
-      branch: ${{ inputs.branch }}
-      coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
-      python_version: ${{ matrix.python-version }}
-      pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_jax: true
-      jax_version: 0.4.23
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
@@ -598,8 +561,7 @@ jobs:
       - torch-tests
       - autograd-tests
       - tf-tests
-      - jax-tests-0-4-26
-      - jax-tests-0-4-23
+      - jax-tests
       - core-tests
       - all-interfaces-tests
       - external-libraries-tests
