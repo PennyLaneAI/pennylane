@@ -129,13 +129,15 @@ class TrotterProduct(ErrorOperation):
 
         The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
         mathematically identical :class:`~.Hamiltonian` objects may undergo different time
-        evolutions due to the order in which those observables are stored.
+        evolutions due to the order in which those observables are stored. The order of observables
+        can be queried using the :meth:`~.Sum.terms` method.
 
     .. warning::
 
-        Starting with PennyLane version 0.36.0, with new opmath enabled by default, the
-        TrotterProduct does not automatically simplify the input Hamiltonian, which may have an
-        impact on the quantum runtime. To simplify a Hamiltonian, use ``qml.simplify(H)``.
+        ``TrotterProduct`` does not automatically simplify the input Hamiltonian, allowing
+        for a more fine-grained control over the decomposition but also risking an increased
+        runtime and number of gates required. Simplification can be performed manually by
+        applying :func:`~.simplify` to your Hamiltonian before using it in ``TrotterProduct``.
 
     .. details::
         :title: Usage Details
