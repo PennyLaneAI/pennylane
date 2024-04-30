@@ -510,9 +510,6 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
             qml.RX(x, wires=0)
             return qml.sample(obs)
 
-        print(qml.sample(obs).numeric_type)
-        print(type(obs.eigvals()[0]))
-
         results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
 
         assert results.shape == (100,)
