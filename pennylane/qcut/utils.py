@@ -178,7 +178,7 @@ def find_and_place_cuts(
     ...     print(qml.qcut.graph_to_tape(t).draw())
 
     TODO MEASURENODE
-    
+
     .. code-block::
 
          0: ──RX(0.1)──────╭●───────────────╭●──┤ ⟨X⟩
