@@ -6,28 +6,64 @@
 
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
-* Added `error` method to `QuantumPhaseEstimation` template.
-  [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
+* This version of PennyLane lays the foundation for error estimation. [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)[(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)[(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
 
-* Added new `SpectralNormError` class to the new error tracking functionality.
-  [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
+  * For example, track the spectral norm error of custom operations by using the new `SpectralNormError` class and the error tracking functionality in `qml.specs` and `qml.Tracker`.
 
-* The `qml.TrotterProduct` operator now supports error estimation functionality. 
-  [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
+  ```python
+  import pennylane as qml
+  from pennylane.resource.error import ErrorOperation, SpectralNormError
 
+  class XWithError(ErrorOperation):
+      def __init__(self, error_val, wires):
+          self.error_val = error_val
+          super().__init__(wires=wires)
+      def error(self):
+          return SpectralNormError(self.error_val)
+      
+      @staticmethod
+      def compute_matrix(*params, **hyperparams):
+          return np.array([[0,1],[1,0]])
+      
+  dev = qml.device('default.qubit', wires=2)
+  @qml.qnode(dev)
+  def circuit():
+      XWithError(0.1,[0])
+      XWithError(0.2,[1])
+      return qml.state()
+  ```
+  Using `qml.specs` on this circuit returns the additive spectral norm error:
   ```pycon
-  >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
-  >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-  >>> op.error(method="one-norm")
-  SpectralNormError(8.039062500000003e-06)
-  >>>
-  >>> op.error(method="commutator")
-  SpectralNormError(6.166666666666668e-06)
+  >>> qml.specs(circuit)()['errors']
+  {'SpectralNormError': SpectralNormError(0.30000000000000004)}
+  ```
+  Alternatively, use `qml.Tracker` to obtain these results:
+  ```pycon
+  >>> with qml.Tracker(dev) as tracker:
+  ...     circuit()
+  >>> tracker['history']['errors']
+  [{'SpectralNormError': SpectralNormError(0.30000000000000004)}]
   ```
 
-* `qml.specs` and `qml.Tracker` now return information about algorithmic errors for the qnode as well.
-  [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
-  [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
+  * Also track the spectral norm error of supported operations: `QuantumPhaseEstimation` and `TrotterProduct` [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)[(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
+
+  ```python
+  import pennylane as qml
+  dev = qml.device('default.qubit', wires=4)
+
+  amiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+
+  @qml.qnode(dev)
+  def circuit():
+    qml.TrotterProduct(hamiltonian, time=0.5, order=2)
+    qml.QuantumPhaseEstimation(XWithError(0.1,wires=0),estimation_wires=[1,2,3])
+    return qml.state()
+  ```
+
+  ```pycon
+  >>> qml.specs(circuit)()['history']
+  {'SpectralNormError': SpectralNormError(1.4708333333333332)}
+  ```
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
