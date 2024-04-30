@@ -38,7 +38,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=2, shots=None)
+        dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit(x1, x2):
             qml.templates.AngleEmbedding(x1, wires=dev.wires)
@@ -102,7 +102,7 @@ def kernel_matrix(X1, X2, kernel):
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=2, shots=None)
+        dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit(x1, x2):
             qml.templates.AngleEmbedding(x1, wires=dev.wires)
