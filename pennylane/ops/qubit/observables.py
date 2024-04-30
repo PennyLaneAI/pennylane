@@ -539,7 +539,7 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
-        mask = 2 ** np.arange(len(basis_state) - 1, 0, -1)
+        mask = 2 ** np.arange(len(basis_state) - 1, -1, -1)
         mask = qml.math.asarray(mask, like=basis_state)
         idx = qml.math.sum(mask * basis_state)
         eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
