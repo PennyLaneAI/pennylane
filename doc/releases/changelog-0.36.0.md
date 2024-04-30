@@ -551,6 +551,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where `qml.draw` and `qml.draw_mpl` incorrectly raised errors for circuits collecting statistics on mid-circuit measurements
+  while using `qml.defer_measurements`.
+  [(#)]()
+
 * Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
 
