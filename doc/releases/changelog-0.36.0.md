@@ -215,11 +215,32 @@
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
-* A new device called `"default.qutrit.mixed"` has been added for simulating 
-  mixed qutrit states.
+* Mixed qutrit states can now be simulated with the `DefaultQutritMixed` 
+  device (shortname: `"default.qutrit.mixed"`).
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
+
+  
+
+  ```python
+  dev = qml.device("default.qutrit.mixed", wires=1)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.TRX(0.1, wires=0)
+      return qml.state()
+  ```
+
+  ```
+  >>> circuit()
+  tensor([[0.99750208+0.j        , 0.        +0.04991671j,
+         0.        +0.j        ],
+        [0.        -0.04991671j, 0.00249792+0.j        ,
+         0.        +0.j        ],
+        [0.        +0.j        , 0.        +0.j        ,
+         0.        +0.j        ]], requires_grad=True)
+  ```
 
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
  `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
