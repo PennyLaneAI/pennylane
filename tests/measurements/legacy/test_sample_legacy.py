@@ -223,7 +223,7 @@ class TestSample:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)
         assert len(result) == 3
-        assert result[0].dtype == np.dtype("int")
+        assert result[0].dtype == np.dtype("float")
 
         custom_measurement_process(dev, spy)
 
@@ -246,7 +246,7 @@ class TestSample:
         assert len(result) == 3
         assert isinstance(result[0], np.ndarray)
         assert isinstance(result[1], np.ndarray)
-        assert result[2].dtype == np.dtype("int")
+        assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
 
         custom_measurement_process(dev, spy)
