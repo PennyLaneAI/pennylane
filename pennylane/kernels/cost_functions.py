@@ -67,7 +67,7 @@ def polarity(
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=2, shots=None)
+        dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit(x1, x2):
             qml.templates.AngleEmbedding(x1, wires=dev.wires)
@@ -143,7 +143,7 @@ def target_alignment(
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=2, shots=None)
+        dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit(x1, x2):
             qml.templates.AngleEmbedding(x1, wires=dev.wires)

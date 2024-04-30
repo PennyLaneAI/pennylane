@@ -148,7 +148,7 @@ class DefaultQutritMixed(Device):
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
-            return post_processing_fn(results)
+            return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
     DeviceArray(0.36235774, dtype=float32)

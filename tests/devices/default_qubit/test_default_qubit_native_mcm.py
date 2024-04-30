@@ -603,6 +603,7 @@ def test_sample_with_broadcasting_and_postselection_error():
         _ = circuit()
 
 
+# pylint: disable=not-an-iterable
 @pytest.mark.jax
 @pytest.mark.parametrize("shots", [100, [100, 101]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
@@ -647,3 +648,38 @@ def test_sample_with_prng_key(shots, postselect, reset):
             assert np.allclose(r1, r3)
     else:
         assert np.allclose(results1, results3)
+
+
+@pytest.mark.parametrize(
+    "mcm_f",
+    [
+        lambda x, y: x + y,
+        lambda x, y: x - 7 * y,
+        lambda x, y: x & y,
+        lambda x, y: x == y,
+        lambda x, y: 4.0 * x + 2.0 * y,
+    ],
+)
+def test_counts_return_type(mcm_f):
+    """Tests that DefaultQubit returns the same keys for ``qml.counts`` measurements with ``dynamic_one_shot`` and ``defer_measurements``."""
+    shots = 20
+
+    dev = get_device(shots=shots)
+    param = np.pi / 3
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        return qml.counts(op=mcm_f(m0, m1))
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(param)
+    results2 = func2(param)
+    for r1, r2 in zip(results1.keys(), results2.keys()):
+        assert r1 == r2
