@@ -17,15 +17,15 @@ A transform to obtain the commutation DAG of a quantum circuit.
 import heapq
 from collections import OrderedDict
 from functools import partial
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import networkx as nx
 from networkx.drawing.nx_pydot import to_pydot
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
-from pennylane.wires import Wires
 from pennylane.transforms import transform
+from pennylane.wires import Wires
 
 
 @partial(transform, is_informative=True)

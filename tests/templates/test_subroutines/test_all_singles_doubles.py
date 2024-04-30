@@ -14,11 +14,13 @@
 """
 Tests for the AllSinglesDoubles template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
-import numpy as np
-from pennylane import numpy as pnp
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():

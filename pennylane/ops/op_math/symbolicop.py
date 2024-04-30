@@ -20,7 +20,7 @@ from copy import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator, _UNSET_BATCH_SIZE
+from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.queuing import QueuingManager
 
 

@@ -55,7 +55,7 @@ Jacobian Product Calculation
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 
 """
-from .set_shots import set_shots
-from .execution import execute, SUPPORTED_INTERFACES, INTERFACE_MAP
-from .qnode import QNode, qnode
 from .construct_batch import construct_batch, get_transform_program
+from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES, execute
+from .qnode import QNode, qnode
+from .set_shots import set_shots

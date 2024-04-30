@@ -14,18 +14,17 @@
 """The Pauli arithmetic abstract reduced representation classes"""
 # pylint:disable=protected-access
 from copy import copy
-from functools import reduce, lru_cache
+from functools import lru_cache, reduce
 
 import numpy as np
 from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
-from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 from pennylane.operation import Tensor
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
-
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 I = "I"
 X = "X"

@@ -21,8 +21,8 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import Hamiltonian, LinearCombination, SProd, Prod, Sum
 from pennylane.operation import convert_to_H
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 
 
 # pylint: disable=too-many-branches

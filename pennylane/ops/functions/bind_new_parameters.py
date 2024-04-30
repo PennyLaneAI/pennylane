@@ -16,17 +16,17 @@ This module contains the qml.bind_new_parameters function.
 """
 # pylint: disable=missing-docstring
 
-from typing import Sequence, Union
 import copy
 from functools import singledispatch
+from typing import Sequence, Union
 
 import pennylane as qml
-from pennylane.typing import TensorLike
 from pennylane.operation import Operator, Tensor
+from pennylane.typing import TensorLike
 
 from ..identity import Identity
+from ..op_math import Adjoint, CompositeOp, Pow, ScalarSymbolicOp, SProd, SymbolicOp
 from ..qubit import Projector
-from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint, Pow, SProd
 
 
 @singledispatch

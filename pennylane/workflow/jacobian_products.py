@@ -17,10 +17,10 @@ Defines classes that take the vjps, jvps, and jacobians of circuits.
 import abc
 import inspect
 import logging
-from typing import Tuple, Callable, Optional, Union
+from typing import Callable, Optional, Tuple, Union
 
-from cachetools import LRUCache
 import numpy as np
+from cachetools import LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumScript

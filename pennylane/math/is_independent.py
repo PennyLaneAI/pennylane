@@ -23,8 +23,8 @@ a function is independent of its arguments for the interfaces
 import warnings
 
 import numpy as np
-from autograd.tracer import isbox, new_box, trace_stack
 from autograd.core import VJPNode
+from autograd.tracer import isbox, new_box, trace_stack
 
 from pennylane import numpy as pnp
 

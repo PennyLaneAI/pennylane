@@ -16,20 +16,19 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 # pylint: disable=comparison-with-callable
 import abc
-from dataclasses import replace
-
 from collections.abc import Iterable
+from dataclasses import replace
 from numbers import Number
-from typing import Callable, Union, Sequence, Tuple, Optional
+from typing import Callable, Optional, Sequence, Tuple, Union
 
+from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape
+from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
-from pennylane import Tracker
-from pennylane.transforms.core import TransformProgram
 
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]

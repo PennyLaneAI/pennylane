@@ -1146,8 +1146,8 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_correct_output_jax(self, ansatz, params, interface):
-        from jax import numpy as jnp
         from jax import config
+        from jax import numpy as jnp
 
         config.update("jax_enable_x64", True)
 

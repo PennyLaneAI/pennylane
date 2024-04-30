@@ -257,6 +257,5 @@ if no function is provided:
 
 """
 
-from .compiler import available_compilers, available, active_compiler, active
-
-from .qjit_api import qjit, while_loop, for_loop
+from .compiler import active, active_compiler, available, available_compilers
+from .qjit_api import for_loop, qjit, while_loop

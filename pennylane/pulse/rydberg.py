@@ -14,12 +14,13 @@
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
 from dataclasses import dataclass
-import numpy as np
-import pennylane as qml
 
+import numpy as np
+
+import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
-from pennylane.wires import Wires
 from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
+from pennylane.wires import Wires
 
 
 def rydberg_interaction(

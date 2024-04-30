@@ -15,17 +15,18 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
-from typing import Sequence, Callable
 from functools import partial
+
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
+from typing import Callable, Sequence
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import VarianceMP
 from pennylane import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.measurements import VarianceMP
+from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
@@ -36,12 +37,12 @@ from .general_shift_rules import (
 )
 from .gradient_transform import (
     _all_zero_grad,
+    _no_trainable_grad,
+    assert_multimeasure_not_broadcasted,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
-    assert_multimeasure_not_broadcasted,
     choose_trainable_params,
     find_and_validate_gradient_methods,
-    _no_trainable_grad,
     reorder_grads,
 )
 
