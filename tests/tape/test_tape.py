@@ -2166,17 +2166,15 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, complex)
         assert circuit.qtape.numeric_type is complex
 
-    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
-    def test_sample_int_eigvals(self, ret):
+    def test_sample_int(self):
         """Test that the tape can correctly determine the output domain for a
-        sampling measurement with a Hermitian observable with integer
-        eigenvalues."""
+        sampling measurement with no observable."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         @qml.qnode(dev)
         def circuit():
             qml.RY(0.4, wires=[0])
-            return qml.apply(ret)
+            return qml.sample()
 
         result = circuit()
 
@@ -2215,7 +2213,7 @@ class TestNumericType:
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real
-        eigenvalues and another one with integer eigenvalues."""
+        eigenvalues and another sample with integer values."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         arr = np.array(
@@ -2230,7 +2228,7 @@ class TestNumericType:
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
-            return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))
+            return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample()
 
         result = circuit(0, 3)
         assert isinstance(result, tuple)

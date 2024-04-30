@@ -103,7 +103,7 @@ class TestSample:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)
         assert len(result) == 3
-        assert result[0].dtype == np.dtype("int")
+        assert result[0].dtype == np.dtype("float")
 
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_sample_output_type_in_combination(self):
@@ -123,7 +123,7 @@ class TestSample:
         assert len(result) == 3
         assert isinstance(result[0], np.ndarray)
         assert isinstance(result[1], np.ndarray)
-        assert result[2].dtype == np.dtype("int")
+        assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
 
     def test_observable_return_type_is_sample(self):
@@ -315,7 +315,7 @@ class TestSample:
             (qml.PauliY(0)),
             (qml.PauliZ(0)),
             (qml.Hadamard(0)),
-            # (qml.Identity(0)),
+            (qml.Identity(0)),
             (qml.Hermitian(np.diag([1, 2]), 0)),
             (qml.Hermitian(np.diag([1.0, 2.0]), 0)),
             # Tensor product observables
@@ -457,22 +457,6 @@ class TestSample:
         assert qml.math.shape(res) == (10,)
         assert all(r in {-1, 0, 1} for r in np.round(res, 13))
 
-    @pytest.mark.jax
-    def test_sample_fails_with_jax_jacobian(self):
-        """Test that qml.sample raises an error with parameter-shift and jax."""
-        import jax
-
-        dev = qml.device("default.qubit", shots=10)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(angle):
-            qml.RX(angle, wires=0)
-            return qml.sample(qml.PauliX(0))
-
-        angle = jax.numpy.array(0.1)
-        with pytest.raises(TypeError, match=r"got int64\[10\] and float64\[10\] respectively"):
-            _ = jax.jacobian(circuit)(angle)
-
 
 @pytest.mark.jax
 @pytest.mark.parametrize("samples", (1, 10))
@@ -498,6 +482,40 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
     assert (
         circuit._qfunc_output.shape(dev, Shots(samples)) == (samples, 2) if samples != 1 else (2,)
     )
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            # Single observables
+            (qml.PauliX(0)),
+            (qml.PauliY(0)),
+            (qml.PauliZ(0)),
+            (qml.Hadamard(0)),
+            (qml.Identity(0)),
+        ],
+    )
+    def test_jitting_with_sampling_on_different_observables(obs):
+        """Test case covering bug in Issue #5369. Sampling should be jit-able
+        when sampling occurs and obs is not None. The bug was occurring due mismatched
+        types on qml.sample(obs).numeric_type and obs.eigvals."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=5, shots=100)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.sample(obs)
+
+        print(qml.sample(obs).numeric_type)
+        print(type(obs.eigvals()[0]))
+
+        results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
+
+        assert results.shape == (100,)
 
 
 class TestSampleProcessCounts:
