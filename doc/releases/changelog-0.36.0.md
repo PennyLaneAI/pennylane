@@ -51,7 +51,7 @@
   import pennylane as qml
   dev = qml.device('default.qubit', wires=4)
 
-  amiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+  hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
 
   @qml.qnode(dev)
   def circuit():
