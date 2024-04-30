@@ -551,6 +551,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` will now allow circuits
+  with non-commuting measurements.
+  [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
+
 * Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
 

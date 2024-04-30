@@ -117,6 +117,7 @@ def merge_rotations(
         2: ─╰X─────────H────────╰●───────────────────┤
 
     """
+
     # Expand away adjoint ops
     def stop_at(obj):
         return not isinstance(obj, Adjoint)
