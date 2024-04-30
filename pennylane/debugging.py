@@ -116,6 +116,7 @@ class PLDB(pdb.Pdb):
     __active_dev = []
 
     def __init__(self, *args, **kwargs):
+        """Initialize the debugger, and set custom prompt string."""
         super().__init__(*args, **kwargs)
         self.prompt = "[pldb]: "
 
@@ -136,24 +137,46 @@ class PLDB(pdb.Pdb):
 
     @classmethod
     def add_device(cls, dev):
+        """Add a device to the global active device list.
+
+        Args:
+            dev (Union[Device, "qml.devices.Device"]): The active device
+        """
         cls.__active_dev.append(dev)
 
     @classmethod
     def get_active_device(cls):
+        """Return the active device.
+
+        Raises:
+            ValueError: No active device to get
+
+        Returns:
+            Union[Device, "qml.devices.Device"]: The active device
+        """
+        if not cls.is_active_dev():
+            raise ValueError("No active device to get")
+
         return cls.__active_dev[0]
 
     @classmethod
     def is_active_dev(cls):
+        """Determine if there is currently an active device.
+
+        Returns:
+            bool: True if there is an active device
+        """
         return bool(cls.__active_dev)
 
     @classmethod
     def reset_active_dev(cls):
-        print("was reset?")
+        """Reset the global active device list (to empty)."""
         cls.__active_dev = []
 
 
 def breakpoint():
     """Launch the custom PennyLane debugger."""
-    PLDB.valid_context()
+    PLDB.valid_context()  # Ensure its being executed in a valid context
+
     debugger = PLDB()
-    debugger.set_trace(sys._getframe().f_back)
+    debugger.set_trace(sys._getframe().f_back)  # pylint: disable=protected-access

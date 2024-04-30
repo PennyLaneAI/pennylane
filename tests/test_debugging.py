@@ -18,6 +18,8 @@ import pytest
 import numpy as np
 import pennylane as qml
 
+from pennylane.debugging import PLDB
+
 
 class TestSnapshot:
     """Test the Snapshot instruction for simulators."""
@@ -375,3 +377,117 @@ class TestSnapshot:
             return qml.expval(qml.PauliZ(0))
 
         qml.snapshots(circuit)()
+
+
+# pylint: disable=protected-access
+class TestPLDB:
+    """Test the interactive debugging integration"""
+
+    def test_pldb_init(self):
+        """Test that PLDB initializes correctly"""
+        debugger = PLDB()
+        assert debugger.prompt == "[pldb]: "
+        assert getattr(debugger, "_PLDB__active_dev") == []
+
+    def test_valid_context_outside_qnode(self):
+        """Test that valid_context raises an error when breakpoint
+        is called outside of a qnode execution."""
+
+        with pytest.raises(TypeError, match="Can't call breakpoint outside of a qnode execution"):
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.X(0)
+                qml.breakpoint()
+                qml.Hadamard(0)
+
+        def my_qfunc():
+            qml.X(0)
+            qml.breakpoint()
+            qml.Hadamard(0)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(TypeError, match="Can't call breakpoint outside of a qnode execution"):
+            _ = my_qfunc()
+
+    def test_valid_context_not_compatible_device(self):
+        """Test that valid_context raises an error when breakpoint
+        is called outside of a qnode execution."""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.X(0)
+            qml.breakpoint()
+            qml.Hadamard(0)
+            return qml.expva(qml.Z(0))
+
+        with pytest.raises(TypeError, match="Device not supported with breakpoint"):
+            _ = my_circ()
+
+        PLDB.reset_active_dev()
+
+    def test_add_device(self):
+        """Test that we can add a device to the global active device list."""
+        assert getattr(PLDB, "_PLDB__active_dev") == []
+
+        dev1, dev2, dev3 = (
+            qml.device("default.qubit", wires=3),
+            qml.device("default.qubit"),
+            qml.device("lightning.qubit", wires=1),
+        )
+
+        PLDB.add_device(dev1)
+        assert getattr(PLDB, "_PLDB__active_dev") == [dev1]
+
+        PLDB.add_device(dev2)
+        PLDB.add_device(dev3)
+        debugger_active_devs = getattr(PLDB, "_PLDB__active_dev")
+
+        for active_dev, d in zip(debugger_active_devs, [dev1, dev2, dev3]):
+            assert active_dev is d
+
+        PLDB.reset_active_dev()  # clean up the debugger active devices
+
+    dev_names = (
+        "default.qubit",
+        "lightning.qubit",
+    )
+
+    @pytest.mark.parametrize("device_name", dev_names)
+    def test_get_active_device(self, device_name):
+        """Test that we can accses the active device."""
+        dev = qml.device(device_name, wires=2)
+        PLDB.add_device(dev)
+
+        debugger_dev = PLDB.get_active_device()
+        assert debugger_dev is dev
+
+        PLDB.reset_active_dev()
+
+    def test_get_active_device_error_when_no_active_device(self):
+        """Test that an error is raised if we try to get
+        the active device when there are no active devices."""
+        assert getattr(PLDB, "_PLDB__active_dev") == []
+
+        with pytest.raises(ValueError, match="No active device to get"):
+            _ = PLDB.get_active_device()
+
+    @pytest.mark.parametrize("device_name", dev_names)
+    def test_reset_active_device(self, device_name):
+        """Test that we can rest the global active device list."""
+        dev = qml.device(device_name, wires=2)
+        PLDB.add_device(dev)
+        assert getattr(PLDB, "_PLDB__active_dev") == [dev]
+
+        PLDB.reset_active_dev()
+        assert getattr(PLDB, "_PLDB__active_dev") == []
+
+    def test_is_active_device(self):
+        """Test that we can determine if there is an active device."""
+        assert getattr(PLDB, "_PLDB__active_dev") == []
+
+        dev = qml.device("default.qubit")
+        PLDB.add_device(dev)
+        assert PLDB.is_active_dev() == True
+
+        PLDB.reset_active_dev()
+        assert PLDB.is_active_dev() == False
