@@ -176,7 +176,7 @@ def create_measurement_obs_primitive(
 
     @primitive.def_impl
     def _(obs, **kwargs):
-        return measurement_type(obs=obs, **kwargs)
+        return type.__call__(measurement_type, obs=obs, **kwargs)
 
     abstract_type = _get_abstract_measurement()
 
