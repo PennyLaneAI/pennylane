@@ -1537,7 +1537,6 @@ class QubitDevice(Device):
         # translate to wire labels used by device. observable is list when measuring sequence
         # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
-        name = None if no_observable_provided else observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples
@@ -1547,11 +1546,7 @@ class QubitDevice(Device):
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
             sub_samples = self._samples[..., slice(*shot_range), :]
 
-        if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
-            # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * sub_samples[..., device_wires[0]]
-
-        elif no_observable_provided:
+        if no_observable_provided:
             # if no observable was provided then return the raw samples
             if len(observable.wires) != 0:
                 # if wires are provided, then we only return samples from those wires
