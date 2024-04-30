@@ -293,12 +293,12 @@ def cut_circuit(
         The circuit fragments can now be visualized:
 
         >>> print(fragment_tapes[0].draw())
-         0: ──RX(0.531)──╭●──RY(-0.4)─────┤ ⟨Z⟩
-         1: ──RY(0.9)────╰Z──MeasureNode──┤
+        0: ──RX─╭●──RY──────────────────────────────────────────────────┤  <Z>
+        1: ──RY─╰Z──MeasureNode("7663fdaa-79af-4617-912a-5106e5dcb778")─┤
 
         >>> print(fragment_tapes[1].draw())
-         2: ──RX(0.3)──────╭Z──╭┤ ⟨Z ⊗ Z⟩
-         1: ──PrepareNode──╰●──╰┤ ⟨Z ⊗ Z⟩
+        2: ──RX──────────────────────────────────────────────────╭Z─┤ ╭<Z@Z>
+        1: ──PrepareNode("01929e32-eb6e-45ba-ba64-0da46c83b882")─╰●─┤ ╰<Z@Z>
 
         Additionally, we must remap the tape wires to match those available on our device.
 
@@ -329,26 +329,26 @@ def cut_circuit(
 
         .. code-block::
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ I⟩ ╭┤ ⟨Z ⊗ Z⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ I⟩ ╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX─╭●──RY─┤ ╭<Z@I> ╭<Z@Z>
+            1: ──RY─╰Z─────┤ ╰<Z@I> ╰<Z@Z>
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ X⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ X⟩
+            0: ──RX─╭●──RY─┤ ╭<Z@X>
+            1: ──RY─╰Z─────┤ ╰<Z@X>
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ Y⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ Y⟩
+            0: ──RX─╭●──RY─┤ ╭<Z@Y>
+            1: ──RY─╰Z─────┤ ╰<Z@Y>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──I────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX─╭Z─┤ ╭<Z@Z>
+            1: ──I──╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──X────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX─╭Z─┤ ╭<Z@Z>
+            1: ──X──╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──H────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX─╭Z─┤ ╭<Z@Z>
+            1: ──H──╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)─────╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──H────────S──╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX────╭Z─┤ ╭<Z@Z>
+            1: ──H───S─╰●─┤ ╰<Z@Z>
 
         The last step is to execute the tapes and postprocess the results using
         :func:`~.qcut_processing_fn`, which processes the results to the original full circuit
