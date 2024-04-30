@@ -470,6 +470,9 @@ class TestGroupObservables:
         """Test that observables on no wires are stuck in the first group and
         coefficients are tracked when provided."""
 
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported with legacy opmath.")
+
         observables = [
             qml.X(0),
             qml.Z(0),
