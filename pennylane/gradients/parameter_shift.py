@@ -1055,9 +1055,8 @@ def param_shift(
 
         An advantage of using ``broadcast=True`` is a speedup:
 
-        TODO: THERE IS A BUG
         >>> import timeit
-        >>> @qml.qnode(dev)
+        >>> @qml.qnode(qml.device("default.qubit"))
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
