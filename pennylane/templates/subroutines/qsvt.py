@@ -420,7 +420,9 @@ class QSVT(Operation):
         UA = kwargs["UA"]
         projectors = kwargs["projectors"]
 
-        with QueuingManager.stop_recording():  # incase this method is called in a queue context, this prevents
+        with (
+            QueuingManager.stop_recording()
+        ):  # incase this method is called in a queue context, this prevents
             UA_copy = copy.copy(UA)  # us from queuing operators unnecessarily
 
             for idx, op in enumerate(projectors[:-1]):

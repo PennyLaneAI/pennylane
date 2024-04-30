@@ -318,7 +318,7 @@ def _bipartite_qinfo_transform(
     wires0: Sequence[int],
     wires1: Sequence[int],
     base: float = None,
-    **kwargs
+    **kwargs,
 ):
 
     # device_wires is provided by the custom QNode transform

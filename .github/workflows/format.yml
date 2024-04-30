@@ -24,8 +24,8 @@ jobs:
 
       - name: Run Black
         run: |
-          black -l 100 pennylane/ --check
-          black -l 100 tests/ --check
+          black -t py39 -t py310 -t py311 -l 100 pennylane/ --check
+          black -t py39 -t py310 -t py311 -l 100 tests/ --check
 
       - name: Run isort
         run: |
