@@ -175,8 +175,7 @@ class CompositeOp(Operator):
                         list(self.wires),
                     )
                 )
-
-        return self._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
+        return self._math_op(eigvals, axis=0)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):

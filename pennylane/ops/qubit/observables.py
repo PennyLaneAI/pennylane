@@ -435,6 +435,8 @@ class BasisStateProjector(Projector, Operation):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a basis state."""
 
+    grad_method = None
+
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
@@ -501,17 +503,15 @@ class BasisStateProjector(Projector, Operation):
          [0. 0. 0. 0.]
          [0. 0. 0. 0.]]
         """
+        n = len(basis_state)
+        mask = qml.math.flip(2 ** qml.math.arange(n))
+        idx = qml.math.sum(mask * basis_state)
+        mat = qml.math.zeros((2**n, 2**n), like=basis_state)
         if qml.math.get_interface(basis_state) == "jax":
-            n = len(basis_state)
-            mask = qml.math.flip(2 ** qml.math.arange(n))
-            idx = qml.math.sum(mask * basis_state)
-            mat = qml.math.zeros((2**n, 2**n), like=basis_state)
             return mat.at[idx, idx].set(1.0)
 
-        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
-        idx = int("".join(str(i) for i in basis_state), 2)
-        m[idx, idx] = 1
-        return m
+        mat[idx, idx] = 1
+        return mat
 
     @staticmethod
     def compute_eigvals(basis_state):  # pylint: disable=arguments-differ
@@ -539,7 +539,8 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
-        mask = qml.math.flip(2 ** qml.math.arange(len(basis_state)))
+        mask = 2 ** np.arange(len(basis_state) - 1, 0, -1)
+        mask = qml.math.asarray(mask, like=basis_state)
         idx = qml.math.sum(mask * basis_state)
         eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
         if qml.math.get_interface(basis_state) == "jax":
@@ -579,6 +580,8 @@ class BasisStateProjector(Projector, Operation):
 class StateVectorProjector(Projector):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a state."""
+
+    grad_method = None
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.

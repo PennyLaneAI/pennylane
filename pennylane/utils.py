@@ -205,4 +205,4 @@ def expand_vector(vector, original_wires, expanded_wires):
         expanded_tensor, tuple(original_indices), tuple(wire_indices)
     )
 
-    return qml.math.reshape(expanded_tensor, qudit_order**M)
+    return qml.math.reshape(expanded_tensor, (qudit_order**M,))
