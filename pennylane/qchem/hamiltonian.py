@@ -181,7 +181,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     return _fermionic_hamiltonian
 
 
-def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, mapping="jordan_wigner"):
+def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit Hamiltonian.
 
     Args:
@@ -222,6 +222,6 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, mapping="jorda
 
         h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
-        return qubit_observable(h_ferm, mapping=mapping)
+        return qubit_observable(h_ferm)
 
     return _molecular_hamiltonian

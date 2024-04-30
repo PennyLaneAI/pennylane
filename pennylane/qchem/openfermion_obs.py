@@ -936,10 +936,10 @@ def molecular_hamiltonian(
             alpha = molecule[0].alpha
             coeff = molecule[0].coeff
         else:
-            ValueError("Only Molecule object is supported with this interface.")
+            raise ValueError("Only Molecule object is supported with this interface.")
     else:
         if any(isinstance(arg, qml.qchem.Molecule) for arg in molecule):
-            ValueError(
+            raise ValueError(
                 "Molecule object is not supported with this interface. Please provide symbols and coordinates as arrays."
             )
         else:
@@ -984,6 +984,11 @@ def molecular_hamiltonian(
 
     if method == "dhf":
 
+        if mapping != "jordan_wigner":
+            raise ValueError(
+                "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
+            )
+        
         if mult != 1:
             raise ValueError(
                 "Openshell systems are not supported for the differentiable workflow. Use "
@@ -1007,9 +1012,9 @@ def molecular_hamiltonian(
 
         requires_grad = args is not None
         h = (
-            qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
+            qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
             if requires_grad
-            else qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
+            else qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
         )
 
         if active_new_opmath():

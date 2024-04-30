@@ -480,8 +480,8 @@ def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
 def test_diff_hamiltonian_error(symbols, geometry):
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
-    #    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-    #        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
+    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
+        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
     with pytest.raises(
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
