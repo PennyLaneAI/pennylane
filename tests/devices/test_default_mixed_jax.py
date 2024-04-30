@@ -221,7 +221,6 @@ class TestDtypePreserved:
     def test_real_dtype(self, enable_x64, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
-        print(jax.__version__)
         jax.config.update("jax_enable_x64", enable_x64)
         p = jnp.array(0.543)
 

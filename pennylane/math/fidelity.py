@@ -149,6 +149,15 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
+    batch_size0 = qml.math.shape(state0)[0] if qml.math.ndim(state0) > 2 else None
+    batch_size1 = qml.math.shape(state1)[0] if qml.math.ndim(state1) > 2 else None
+
+    if qml.math.get_interface(state0) == "jax" or qml.math.get_interface(state1) == "jax":
+        state0_shape = ((batch_size1,) if batch_size1 else ()) + qml.math.shape(state0)
+        state1_shape = ((batch_size0,) if batch_size0 else ()) + qml.math.shape(state1)
+        state0 = qml.math.broadcast_to(state0, state0_shape)
+        state1 = qml.math.broadcast_to(state1, state1_shape)
+
     # Two mixed states
     _register_vjp(state0, state1)
     fid = qml.math.compute_fidelity(state0, state1)
