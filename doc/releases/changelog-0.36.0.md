@@ -215,23 +215,19 @@
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
+* A new device called `"default.qutrit.mixed"` has been added for simulating 
+  mixed qutrit states.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
+  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
+
 * Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
  `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
 
-* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
-  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
-
 * Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
   noisy qutrit circuit with measurement and sampling.
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
-
-* Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
-  for `preprocess`.
-  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
-
-* Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
-  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
 
 <h3>Improvements 🛠</h3>
 
