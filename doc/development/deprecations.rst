@@ -106,7 +106,7 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.36
 
-* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
   
   - Deprecated in v0.35
