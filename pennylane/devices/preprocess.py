@@ -334,7 +334,11 @@ def decompose(
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    prep_op = [tape[0]] if isinstance(tape[0], StatePrepBase) and skip_initial_state_prep else []
+    prep_op = (
+        [tape[0]]
+        if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep
+        else []
+    )
 
     if all(stopping_condition(op) for op in tape.operations[bool(prep_op) :]):
         return (tape,), null_postprocessing

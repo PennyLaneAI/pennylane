@@ -176,12 +176,13 @@ def _processing_fn(results, shots, single_shot_batch_fn):
 
 
 def _finite_diff_stopping_condition(op) -> bool:
-    return (
-        (op.grad_method is not None)
-        if isinstance(op, qml.operation.Operator)
-        and any(qml.math.requires_grad(p) for p in op.data)
-        else True
-    )
+    if not op.has_decomposition:
+        # let things without decompositions through without error
+        # error will happen when calculating parameter shift tapes
+        return True
+    if isinstance(op, qml.operation.Operator) and any(qml.math.requires_grad(p) for p in op.data):
+        return op.grad_method is not None
+    return True
 
 
 def _expand_transform_finite_diff(
@@ -195,9 +196,17 @@ def _expand_transform_finite_diff(
     validate_params=True,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before finite difference."""
-    return qml.devices.preprocess.decompose(
-        tape, stopping_condition=_finite_diff_stopping_condition, name="param_shift"
+    [new_tape], postprocessing = qml.devices.preprocess.decompose(
+        tape,
+        stopping_condition=_finite_diff_stopping_condition,
+        skip_initial_state_prep=False,
+        name="param_shift",
     )
+    if new_tape is tape:
+        return [tape], postprocessing
+    params = new_tape.get_parameters(trainable_only=False)
+    new_tape.trainable_params = qml.math.get_trainable_indices(params)
+    return [new_tape], postprocessing
 
 
 @partial(
