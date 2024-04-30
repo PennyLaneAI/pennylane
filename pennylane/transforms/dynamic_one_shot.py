@@ -359,15 +359,13 @@ def gather_mcm(measurement, samples):
         mcm_samples = np.concatenate(mcm_samples, axis=1)
         meas_tmp = measurement.__class__(wires=wires)
         return meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    mcm_samples = np.zeros((len(samples), 1), dtype=np.int64)
     if isinstance(measurement, ProbabilityMP):
-        for i, dct in enumerate(samples):
-            mcm_samples[i, 0] = dct[mv.measurements[0]]
+        mcm_samples = [dct[mv.measurements[0]] for dct in samples]
         use_as_is = True
     else:
-        for i, dct in enumerate(samples):
-            mcm_samples[i, 0] = mv.concretize(dct)
+        mcm_samples = [mv.concretize(dct) for dct in samples]
         use_as_is = mv.branches == {(0,): 0, (1,): 1}
+    mcm_samples = np.array(mcm_samples).reshape((len(samples), 1))
     if use_as_is:
         wires, meas_tmp = mv.wires, measurement
     else:
@@ -381,5 +379,6 @@ def gather_mcm(measurement, samples):
         meas_tmp = measurement.__class__(wires=wires)
     new_measurement = meas_tmp.process_samples(mcm_samples, wire_order=wires)
     if isinstance(measurement, CountsMP) and not use_as_is:
-        new_measurement = dict(sorted((int(x), y) for x, y in new_measurement.items()))
+        keys = np.array(list(new_measurement.keys())).astype(mcm_samples.dtype)
+        new_measurement = dict(sorted((x, y) for x, y in zip(keys, new_measurement.values())))
     return new_measurement
