@@ -49,6 +49,7 @@ class Reflection(Operation):
 
         U = qml.Hadamard(wires=0)
         dev = qml.device(‘default.qubit’)
+
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(wires=0)
