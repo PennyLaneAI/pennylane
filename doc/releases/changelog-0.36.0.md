@@ -615,7 +615,7 @@
   [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
 
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
-  [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
+  [(#5455)](https://github.com/PennyLaneAI/pennylane/pull/5455)
 
 * The `QNSPSAOptimizer` now properly handles differentiable parameters, resulting in being able to use it for more than one optimization step.
   [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
@@ -672,7 +672,7 @@
   [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
 
 * Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
-  [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
+  [(#5525)](https://github.com/PennyLaneAI/pennylane/pull/5525)
 
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
