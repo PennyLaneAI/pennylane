@@ -467,7 +467,7 @@
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
-* `"default.qubit"` can now a provided random seed for sampling mid-circuit 
+* `"default.qubit"` can now take a provided random seed for sampling mid-circuit 
   measurements with finite shots. This (1) ensures that random behaviour is more 
   consistent with `dynamic_one_shot` and `defer_measurements` and (2) makes our 
   continuous-integration (CI) have less failures due to stochasticity.
