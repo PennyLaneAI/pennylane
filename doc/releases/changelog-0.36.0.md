@@ -70,12 +70,12 @@
   Mathematically, 
   :math:`\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle`.
 
-  Here's an example with 
+  Here's an example with a target state
   :math:`\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle`,
-  :math:`U = H^{\otimes 3}`, and an operator `O` being modelled as a `qml.FlipSign` 
-  operation (it is a required argument that flips the sign of 
-  :math:`\vert \phi \rangle` and does nothing to 
-  :math:`\vert \phi^{\perp} \rangle`):
+  an input state :math:`\vert \Psi \rangle = H^{\otimes 3} \vert 000 \rangle`, as well as an
+  oracle that flips the sign of :math:`\vert \phi \rangle` and does nothing to
+  :math:`\vert \phi^{\perp} \rangle`, which can be achieved in this case through
+  `qml.FlipSign`.
 
   ```python
   @qml.prod
@@ -104,7 +104,8 @@
   As expected, we amplify the :math:`\vert 2 \rangle` state.
 
 * Reflecting about a given quantum state is now available via `qml.Reflection`.
-  This operation is very useful in, say, the amplitude amplification algorithm.
+  This operation is very useful in the amplitude amplification algorithm and offers a generalization
+  of `qml.FlipSign` which operates on basis states.
   [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
   `qml.Reflection` works by providing an operation, :math:`U`, that *prepares* the 
@@ -129,29 +130,6 @@
   >>> circuit()
   tensor([0.-6.123234e-17j, 1.+6.123234e-17j], requires_grad=True)
   ```
-
-  For cases where :math:`U` comprises many operations, you can formulate it as an 
-  `Operator` by 
-  
-  * creating a user-defined 
-    [custom operation](https://docs.pennylane.ai/en/stable/development/adding_operators.html) 
-    with a decomposition, or by
-
-  * creating a quantum function containing each operation, one per line, then 
-    decorate the quantum function with `@qml.prod`, which turns the quantum 
-    function into a `Prod` instance:
-
-    ```python
-    @qml.prod
-    def U():
-        qml.Hadamard(wires=0)
-        qml.RY(0.1, wires=1)
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.Reflection(U())
-        return qml.state()
-    ```
 
 * Performing qubitization is now easily accessible with the new 
   `qml.Qubitization` operator.
