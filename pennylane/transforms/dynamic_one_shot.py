@@ -73,7 +73,7 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             qml.RX(x, wires=0)
             m0 = qml.measure(0)
             qml.cond(m0, qml.RY)(y, wires=1)
-            return measure_f(op=m0)
+            return qml.expval(op=m0)
 
     The ``qml.dynamic_one_shot`` decorator prompts the QNode to perform a hundred one-shot
     calculations, where in each calculation the ``qml.measure`` operations dynamically
