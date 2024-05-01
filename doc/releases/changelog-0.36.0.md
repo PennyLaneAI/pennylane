@@ -262,7 +262,7 @@
     to understand how structure constants are a useful way to represent a DLA.
 
   * Computing the center of a dynamical Lie algebra.
-    [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
+    [(#**5477**)](https://github.com/PennyLaneAI/pennylane/pull/5477)
 
     Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
 
@@ -346,8 +346,6 @@
   [(#5179)](https://github.com/PennyLaneAI/pennylane/pull/5179)
 
   ```python
-  import pennylane as qml
-
   a = qml.X(0)
   b = qml.prod(qml.X(0), qml.X(1))
   c = qml.Z(0)
@@ -362,12 +360,10 @@
   ((2,), (0, 1))
   ```
 
-  Additionally, grouping type and method can be set or changed after construction using
+  Additionally, `grouping_type` and `method` can be set or changed after construction using
   `Sum.compute_grouping()`:
 
   ```python
-  import pennylane as qml
-
   a = qml.X(0)
   b = qml.prod(qml.X(0), qml.X(1))
   c = qml.Z(0)
@@ -395,61 +391,66 @@
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
-* Operators can now be left multiplied `x * op` by numpy arrays.
+* Operators can now be left-multiplied by NumPy arrays (i.e., `arr * op`).
   [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
 
-* The generators in the source code return operators consistent with the global setting for
-  `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances
-  will be returned even after disabling the new operator arithmetic in cases where they offer
-  additional functionality not available using legacy operators.
+* `op.generator()`, where `op` is an `Operator` instance, now returns operators 
+  consistent with the global setting for `qml.operator.active_new_opmath()` wherever possible. 
+  `Sum`, `SProd` and `Prod` instances will be returned even after disabling the 
+  new operator arithmetic in cases where they offer additional functionality not 
+  available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
   [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
   [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411)
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
-* A new `Prod.obs` property is introduced to smoothen the transition of the new operator arithmetic system.
-  In particular, this aims at preventing breaking code that uses `Tensor.obs`. This is immediately deprecated.
-  Moving forward, we recommend using `op.operands`.
+* `Prod` instances temporarily had a new `obs` property, which helped smoothen the 
+  transition of the new operator arithmetic system. In particular, this was aimed at preventing 
+  breaking code that uses `Tensor.obs`. This has been immediately deprecated. Moving 
+  forward, we recommend using `op.operands`.
   [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
   
-* `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
+* `qml.ApproxTimeEvolution` is now compatible with any operator that has a defined `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
-* `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
+* `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of Pauli operators.
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
-* `Prod.eigvals()` is now compatible with Qudit operators.
+* `Prod` instances created with qutrit operators now have a defined `eigvals()` method.
   [(#5400)](https://github.com/PennyLaneAI/pennylane/pull/5400)
 
-* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
+* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset (i.e., terms like `qml.I()`).
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
 
-* `taper_operation` method is compatible with new operator arithmetic.
+* `qml.qchem.taper_operation` is now compatible with the new operator arithmetic.
   [(#5326)](https://github.com/PennyLaneAI/pennylane/pull/5326)
 
-* Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
+* The warning for an observable that might not be hermitian in QNode executions has been removed. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
 
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
-* `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
+* `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization. This addition is relevant to developers only. 
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 
-* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
+* Calculating the dense, differentiable matrix for `PauliSentence` and operators with Pauli sentences
   is now faster.
   [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
 
 <h4>Community contributions 🥳</h4>
 
-* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
+* `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP` now have a 
+  `process_counts` method (similar to `process_samples`). This allows for 
+  calculating measurements given a `counts` dictionary.
   [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
   [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
 
-* Add type hints for unimplemented methods of the abstract class `Operator`.
+* Type-hinting has been added in the `Operator` class for better interpretability.
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
 
-* Implement `Shots.bins()` method.
+* An alternate strategy for sampling with multiple different `shots` values has 
+  been implemented via the `shots.bins()` method.
   [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
