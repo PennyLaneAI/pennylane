@@ -569,29 +569,3 @@ def in_backprop(tensor, interface=None):
         return False
 
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
-
-
-def where(condition, a, b):
-    """Wrapper around np.where, allowing tensors ``a`` and ``b``
-    to differ in type"""
-    try:
-        # Some frameworks may provide their own where implementation.
-        # Try and use it if available.
-        res = np.where(condition, a, b)
-    except (TypeError, AttributeError, ImportError, RuntimeError):
-        # Otherwise, convert the input to NumPy arrays.
-        #
-        # TODO: replace this with a bespoke, framework agnostic
-        # low-level implementation to avoid the NumPy conversion:
-        #
-        #    np.abs(a - b) <= atol + rtol * np.abs(b)
-        #
-        cond = ar.to_numpy(condition)
-        t1 = ar.to_numpy(a)
-        t2 = ar.to_numpy(b)
-        res = np.where(cond, t1, t2)
-
-    return res
-
-
-where.__doc__ = _np.where.__doc__

@@ -668,6 +668,7 @@ def test_jax_jit(diff_method, postselect, reset):
         return (
             # qml.probs(wires=[1]), # JAX cannot compile code calling qml.math.unique
             qml.sample(wires=[1]),
+            qml.sample(wires=[0, 1]),
             qml.expval(obs),
             # qml.probs(obs), # JAX cannot compile code calling qml.math.unique
             qml.sample(obs),
@@ -694,6 +695,7 @@ def test_jax_jit(diff_method, postselect, reset):
 
     measures = [
         # qml.probs,
+        qml.sample,
         qml.sample,
         qml.expval,
         # qml.probs,
