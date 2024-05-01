@@ -14,20 +14,20 @@
 """Unit tests for measuring states in devices/qutrit_mixed."""
 
 from functools import reduce
+
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import math
-
-from pennylane.devices.qutrit_mixed import measure, create_initial_state, apply_operation
+from pennylane import numpy as np
+from pennylane.devices.qutrit_mixed import apply_operation, create_initial_state, measure
 from pennylane.devices.qutrit_mixed.measure import (
-    get_measurement_function,
     calculate_expval,
     calculate_expval_sum_of_terms,
-    calculate_reduced_density_matrix,
     calculate_probability,
+    calculate_reduced_density_matrix,
     calculate_variance,
+    get_measurement_function,
 )
 
 ml_frameworks_list = [

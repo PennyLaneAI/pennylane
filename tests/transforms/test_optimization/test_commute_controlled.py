@@ -15,12 +15,12 @@
 Unit tests for the optimization transform ``commute_controlled``.
 """
 import pytest
-from utils import compare_operation_lists, check_matrix_equivalence
+from utils import check_matrix_equivalence, compare_operation_lists
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.transforms.optimization import commute_controlled
+from pennylane.wires import Wires
 
 
 class TestCommuteControlled:

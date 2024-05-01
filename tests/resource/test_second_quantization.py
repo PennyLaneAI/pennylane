@@ -20,7 +20,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-
 one_h2 = np.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
 
 two_h2 = np.array(  # in chemist notation

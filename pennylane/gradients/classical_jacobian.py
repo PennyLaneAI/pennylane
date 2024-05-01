@@ -16,6 +16,7 @@ Contains the classical Jacobian transform.
 """
 # pylint: disable=import-outside-toplevel
 import numpy as np
+
 import pennylane as qml
 
 

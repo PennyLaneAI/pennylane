@@ -16,14 +16,14 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _get_operation_recipe,
-    _put_zeros_in_pdA2_involutory,
     _make_zero_rep,
+    _put_zeros_in_pdA2_involutory,
 )
-from pennylane.devices import DefaultQubitLegacy
-from pennylane.operation import Observable, AnyWires
+from pennylane.operation import AnyWires, Observable
 
 
 # pylint: disable=too-few-public-methods

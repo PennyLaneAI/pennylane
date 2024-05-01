@@ -14,6 +14,7 @@
 """Unit tests for matrix expand functions."""
 # pylint: disable=too-few-public-methods,too-many-public-methods
 from functools import reduce
+
 import numpy as np
 import pytest
 from gate_data import CNOT, II, SWAP, I, Toffoli

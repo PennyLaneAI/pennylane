@@ -16,6 +16,7 @@ This module contains the functions needed for creating fermionic and qubit obser
 """
 # pylint: disable= too-many-branches, too-many-return-statements
 import numpy as np
+
 import pennylane as qml
 from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath

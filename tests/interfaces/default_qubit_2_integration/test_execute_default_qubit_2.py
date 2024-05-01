@@ -16,9 +16,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.workflow.execution import _preprocess_expand_fn
-
 from pennylane.devices import DefaultQubit
+from pennylane.workflow.execution import _preprocess_expand_fn
 
 
 class TestPreprocessExpandFn:

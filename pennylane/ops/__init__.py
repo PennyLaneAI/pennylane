@@ -19,29 +19,24 @@ This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
 
-from .cv import *
-from .qubit import *
 from .channel import *
-from .op_math import *
-from .qutrit import *
-
-from .cv import __all__ as _cv__all__
-from .cv import __ops__ as _cv__ops__
-from .cv import __obs__ as _cv__obs__
-
-from .qutrit import __all__ as _qutrit__all__
-from .qutrit import __ops__ as _qutrit__ops__
-from .qutrit import __obs__ as _qutrit__obs__
-
 from .channel import __all__ as _channel__ops__
-
-from .qubit import __all__ as _qubit__all__
-from .qubit import __ops__ as _qubit__ops__
-from .qubit import __obs__ as _qubit__obs__
-
+from .cv import *
+from .cv import __all__ as _cv__all__
+from .cv import __obs__ as _cv__obs__
+from .cv import __ops__ as _cv__ops__
 
 # we would like these to just live in .qubit, but can't because of circular imports
+from .op_math import *
 from .op_math import controlled_qubit_ops as _controlled_qubit__ops__
+from .qubit import *
+from .qubit import __all__ as _qubit__all__
+from .qubit import __obs__ as _qubit__obs__
+from .qubit import __ops__ as _qubit__ops__
+from .qutrit import *
+from .qutrit import __all__ as _qutrit__all__
+from .qutrit import __obs__ as _qutrit__obs__
+from .qutrit import __ops__ as _qutrit__ops__
 
 _qubit__ops__ = _qubit__ops__ | _controlled_qubit__ops__
 _qubit__all__ = _qubit__all__ + list(_controlled_qubit__ops__)

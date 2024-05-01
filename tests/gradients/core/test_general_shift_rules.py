@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.general_shift_rules module."""
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
-
 from pennylane.gradients.general_shift_rules import (
+    _get_shift_rule,
+    _iterate_shift_rule_with_multipliers,
     eigvals_to_frequencies,
     frequencies_to_period,
-    generate_shift_rule,
-    _get_shift_rule,
     generate_multi_shift_rule,
-    generate_shifted_tapes,
     generate_multishifted_tapes,
-    _iterate_shift_rule_with_multipliers,
+    generate_shift_rule,
+    generate_shifted_tapes,
 )
 
 

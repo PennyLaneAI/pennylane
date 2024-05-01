@@ -14,11 +14,10 @@
 
 """Transform that eliminates the swap operators by reordering the wires."""
 # pylint: disable=too-many-branches
-from typing import Sequence, Callable
-
-from pennylane.transforms import transform
+from typing import Callable, Sequence
 
 from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
 def null_postprocessing(results):

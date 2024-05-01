@@ -19,12 +19,14 @@ It implements the :class:`~pennylane._device.Device` methods as well as some bui
 simulation of qutrit-based quantum computing.
 """
 import functools
+
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
-from pennylane import QutritDevice, QutritBasisState, DeviceError
-from pennylane.wires import WireError
+from pennylane import DeviceError, QutritBasisState, QutritDevice
 from pennylane.devices.default_qubit_legacy import _get_slice
+from pennylane.wires import WireError
+
 from .._version import __version__
 
 # tolerance for numerical errors

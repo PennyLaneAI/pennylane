@@ -17,14 +17,13 @@ Unit tests for Operators inheriting from ControlledOp.
 
 import numpy as np
 import pytest
+from gate_data import CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
 from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
-from gate_data import CY, CZ, CRotx, CRoty, CRotz, CRot3, ControlledPhaseShift
-
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
+from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.CY, CY),

@@ -17,12 +17,20 @@ Pytest configuration file for ops.functions submodule.
 Generates parametrizations of operators to test in test_assert_valid.py.
 """
 from inspect import getmembers, isclass
-import pytest
+
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane.operation import Operator, Operation, Observable, Tensor, Channel
-from pennylane.operation import DiagGatesUndefinedError, MatrixUndefinedError
+from pennylane.operation import (
+    Channel,
+    DiagGatesUndefinedError,
+    MatrixUndefinedError,
+    Observable,
+    Operation,
+    Operator,
+    Tensor,
+)
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 

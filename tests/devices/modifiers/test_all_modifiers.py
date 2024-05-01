@@ -18,7 +18,6 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 import pytest
 
 import pennylane as qml
-
 from pennylane.devices import Device
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 

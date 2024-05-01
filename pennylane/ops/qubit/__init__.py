@@ -29,18 +29,18 @@ The operations are divided into the following files:
 * ``special_unitary.py``: The ``SpecialUnitary`` operation.
 """
 
+from ..identity import GlobalPhase, Identity
+from ..meta import Barrier, Snapshot, WireCut
 from .arithmetic_ops import *
+from .hamiltonian import Hamiltonian
 from .matrix_ops import *
 from .non_parametric_ops import *
 from .observables import *
-from .parametric_ops_single_qubit import *
 from .parametric_ops_multi_qubit import *
+from .parametric_ops_single_qubit import *
 from .qchem_ops import *
-from .state_preparation import *
 from .special_unitary import SpecialUnitary
-from .hamiltonian import Hamiltonian
-from ..identity import Identity, GlobalPhase
-from ..meta import Snapshot, Barrier, WireCut
+from .state_preparation import *
 
 __ops__ = {
     "Identity",

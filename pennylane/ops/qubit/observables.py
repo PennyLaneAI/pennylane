@@ -16,9 +16,9 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
+from collections.abc import Sequence
 from copy import copy
 
-from collections.abc import Sequence
 import numpy as np
 from scipy.sparse import csr_matrix
 

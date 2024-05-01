@@ -14,10 +14,10 @@
 """
 This module contains the qml.state measurement.
 """
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 import pennylane as qml
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError, Wires
 
 from .measurements import State, StateMeasurement
 

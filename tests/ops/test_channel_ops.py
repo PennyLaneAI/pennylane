@@ -16,8 +16,10 @@ Unit tests for the available built-in quantum channels.
 """
 # pylint: disable=too-few-public-methods
 from itertools import product
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops import channel
