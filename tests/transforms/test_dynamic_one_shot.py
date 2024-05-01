@@ -28,9 +28,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     SampleMP,
 )
-from pennylane.transforms.dynamic_one_shot import (
-    parse_native_mid_circuit_measurements,
-)
+from pennylane.transforms.dynamic_one_shot import parse_native_mid_circuit_measurements
 
 
 @pytest.mark.parametrize(
