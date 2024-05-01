@@ -419,8 +419,11 @@
 * `Prod` instances created with qutrit operators now have a defined `eigvals()` method.
   [(#5400)](https://github.com/PennyLaneAI/pennylane/pull/5400)
 
-* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset (i.e., terms like `qml.I()`).
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now 
+  handle multi-term observables with a constant offset (i.e., terms like 
+  `qml.I()`).
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+  [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
 
 * `qml.qchem.taper_operation` is now compatible with the new operator arithmetic.
   [(#5326)](https://github.com/PennyLaneAI/pennylane/pull/5326)
@@ -507,7 +510,10 @@
 
 <h4>Other improvements</h4>
 
-* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
+* Entanglement entropy can now be calculated with 
+  `qml.math.vn_entanglement_entropy`, which computes the von Neumann 
+  entanglement entropy from a density matrix. A corresponding a QNode transform,
+  `qml.qinfo.vn_entanglement_entropy`, has also been added.
   [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
 
 * `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
@@ -525,51 +531,49 @@
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
-* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now handle multi-term observables with a constant offset.
-  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
-  [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
-
-* Replaced `cache_execute` with an alternate implementation based on `@transform`.
+* `cache_execute` has been replaced with an alternate implementation based on 
+  `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
 
-* The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
+* QNodes now defer `diff_method` validation to the device under the new device 
+  API.
   [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
 
-* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+* The device test suite has been extended to cover gradient methods, templates 
+  and arithmetic observables.
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
   [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
 
-* Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
+* A typo and string formatting mistake have been fixed in the error message for 
+  `ClassicalShadow._convert_to_pauli_words` when the input is not a valid 
+  `pauli_rep`.
   [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
 
 <h3>Breaking changes 💔</h3>
 
-* `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
-  * tapes with more than one wire.
-  * quantum functions.
-  * Operator class where `num_wires` does not equal to 1
+* `qml.matrix()` called on the following will now raise an error if `wire_order` 
+  is not specified:
+  * tapes with more than one wire
+  * quantum functions
+  * `Operator` classes where `num_wires` does not equal to 1
   * QNodes if the device does not have wires specified.
-  * PauliWords and PauliSentences with more than one wire.
+  * `PauliWord`s and `PauliSentence`s with more than one wire.
   [(#5328)](https://github.com/PennyLaneAI/pennylane/pull/5328)
   [(#5359)](https://github.com/PennyLaneAI/pennylane/pull/5359)
 
 * `single_tape_transform`, `batch_transform`, `qfunc_transform`, `op_transform`, `gradient_transform`
-  and `hessian_transform` are removed. Instead, switch to using the new `qml.transform` function. Please refer to
+  and `hessian_transform` have been removed. Instead, switch to using the new `qml.transform` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
   to see how this can be done.
   [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
 
-* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
-  of whether there is classical processing in the node.
-  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
-
 * Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
   [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
 
-* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
+* `DefaultQubit` now uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
   [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
 
-* `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now removed. Instead, you  should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
+* `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` have been removed. Instead, use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
   [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
 
   ```pycon
@@ -581,26 +585,26 @@
   (-1j, PauliY(wires=[0]))
   ```
 
-* State measurements preserve `dtype`.
+* Circuits returning `qml.state()` now preserve the `dtype` when specified.
   [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
 
-* Use `SampleMP`s in the `dynamic_one_shot` transform to get back the values of the mid-circuit measurements.
+* The `dynamic_one_shot` transform now uses sampling (`SampleMP`) to get back the values of the mid-circuit measurements.
   [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
 
-* Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
+* `Operator` dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chances of getting a `RecursionError` and makes nested
   operators easier to work with.
   [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
 
-* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
+* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the `pauli` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
 
 * `MeasurementProcess.name` and `MeasurementProcess.data` have been removed. Use `MeasurementProcess.obs.name` and `MeasurementProcess.obs.data` instead.
   [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
 
-* `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
+* `Operator.validate_subspace(subspace)` has been removed. Instead, use `qml.ops.qutrit.validate_subspace(subspace)`.
   [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
 
-* The contents of `qml.interfaces` is moved inside `qml.workflow`. The old import path no longer exists.
+* The contents of `qml.interfaces` has been moved inside `qml.workflow`. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
 * When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
@@ -610,18 +614,18 @@
 * Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
   [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
 
-* `LinearCombination._obs_data` is removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
+* `LinearCombination._obs_data` has been removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
   [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
 
 <h3>Deprecations 👋</h3>
 
-* `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
+* `qml.load` has been deprecated. Instead, please use the functions outlined in the [Importing workflows quickstart guide](https://docs.pennylane.ai/en/latest/introduction/importing_workflows.html).
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
-* Specifying `control_values` with a bit string to `qml.MultiControlledX` is deprecated. Instead, use a list of booleans or 1s and 0s.
+* Specifying `control_values` with a bit string in `qml.MultiControlledX` has been deprecated. Instead, use a list of booleans or 1s and 0s.
   [(#5352)](https://github.com/PennyLaneAI/pennylane/pull/5352)
 
-* `qml.from_qasm_file` is deprecated. Instead, please open the file and then load its content using `qml.from_qasm`.
+* `qml.from_qasm_file` has been deprecated. Instead, please open the file and then load its content using `qml.from_qasm`.
   [(#5331)](https://github.com/PennyLaneAI/pennylane/pull/5331)
 
   ```pycon
@@ -636,13 +640,14 @@
 
 <h3>Documentation 📝</h3>
 
-* Adds a page explaining the shapes and nesting of result objects.
+* [A new page](https://docs.pennylane.ai/en/latest/code/qml_workflow.html#return-type-specification) 
+  explaining the shapes and nesting of return types has been added.
   [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
 
-* Removed some redundant documentation for the `evolve` function.
+* Redundant documentation for the `evolve` function has been removed.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
-* Updated the final example in the `compile` docstring to use transforms correctly.
+* The final example in the `compile` docstring has been updated to use transforms correctly.
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
 
 * A link to the demos for using `qml.SpecialUnitary` and `qml.QNGOptimizer` has been added to their respective docstrings.
@@ -664,14 +669,14 @@
   and will be added again in the next release.
   [(#5612)](https://github.com/PennyLaneAI/pennylane/pull/5612)
 
-* Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
+* `qml.counts` now returns the same keys with `dynamic_one_shot` and `defer_measurements`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
 
 * `null.qubit` now automatically supports any operation without a decomposition.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 * Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
-  a QNode differed, based on whether the QNode uses classical coprocessing.
+  a QNode differed based on whether the QNode uses classical coprocessing.
   [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
 
 * `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
