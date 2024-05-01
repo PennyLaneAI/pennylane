@@ -70,20 +70,12 @@
   Mathematically, 
   :math:`\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle`.
 
-  `qml.AmplitudeAmplification` requires
-
-  * `U`: an operator that prepares :math:`\vert \Psi \rangle` (i.e., 
-    :math:`U \vert 0 \rangle = \vert \Psi \rangle`),
-
-  * `O`: an operator (sometimes called an oracle) that flips the sign of 
-    :math:`\vert \phi \rangle` and does nothing to :math:`\vert \phi^{\perp} \rangle`.
-
-  * `iters`: the number of iterations of amplitude amplification that gets 
-    applied.
-
   Here's an example with 
   :math:`\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle`,
-  :math:`U = H^{\otimes 3}`, and `O` being modelled as a `qml.FlipSign` operation:
+  :math:`U = H^{\otimes 3}`, and `O` being modelled as a `qml.FlipSign` 
+  operation (it is a required argument that flips the sign of 
+  :math:`\vert \phi \rangle` and does nothing to 
+  :math:`\vert \phi^{\perp} \rangle`):
 
   ```python
   @qml.prod
