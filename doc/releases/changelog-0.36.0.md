@@ -45,18 +45,19 @@
 
   ```python
   A = np.array([[0.1, 0.2], [0.3, 0.4]])
-  dev = qml.device('default.qubit')
+  dev = qml.device('default.qubit', wires=3)
 
   @qml.qnode(dev)
   def circuit():
-      qml.FABLE(A, tol=0.1, wires=range(3))
+      qml.FABLE(A, tol = 0.001, wires=range(3))  
       return qml.state()
   ``` 
 
   ```pycon
-  >>> circuit()
-  tensor([0.04929927+0.j, 0.15067163+0.j, 0.04929927+0.j, 0.15067163+0.j,
-          0.49756365+0.j, 0.47675786+0.j, 0.49756365+0.j, 0.47675786+0.j], requires_grad=True)
+  >>> mat = qml.matrix(circuit)()
+  >>> 2 * mat[0:2, 0:2]
+  array([[0.1+0.j, 0.2+0.j],
+         [0.3+0.j, 0.4+0.j]])
   ```
 
 * A high-level interface for amplitude amplification and its variants is now 
