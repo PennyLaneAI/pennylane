@@ -354,6 +354,11 @@
 * `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 
+* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` are changed from `int` to `float`, making them 
+  consistent with the other observables. The `dtype` of the returned values when sampling these observables 
+  (e.g. `qml.sample(X(0))`) is also changed to `float`. 
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
@@ -503,6 +508,9 @@
 
 * `LinearCombination._obs_data` is removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
   [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
+
+* Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
 <h3>Deprecations 👋</h3>
 
@@ -668,6 +676,11 @@
 
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
+
+* Fixed a bug that raised an error regarding expected vs acutal `dtype` when using `JAX-JIT` on a circuit that 
+  returned samples of observables containing the `qml.Identity` operator.
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
 
 <h3>Contributors ✍️</h3>
 
