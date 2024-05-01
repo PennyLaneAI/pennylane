@@ -136,6 +136,12 @@ def dot(
     if len(coeffs) == 0 and len(ops) == 0:
         raise ValueError("Cannot compute the dot product of an empty sequence.")
 
+    for t in (Operator, PauliWord, PauliSentence):
+        if isinstance(ops, t):
+            raise ValueError(
+                f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
+            )
+
     if any(callable(c) for c in coeffs):
         return ParametrizedHamiltonian(coeffs, ops)
 
