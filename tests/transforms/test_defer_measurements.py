@@ -1598,7 +1598,7 @@ class TestDrawing:
             m_0 = qml.measure(0, reset=True)
             qml.cond(m_0, qml.RY)(0.312, wires=1)
 
-            return mp(op=m_0)
+            return mp(op=m_0), qml.expval(qml.Z(1))
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -1606,9 +1606,10 @@ class TestDrawing:
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         spaces = " " * len(label)
+        expval = "<Z>".ljust(len(label))
         expected = (
             f"0: ─╭●─╭X───────────┤  {spaces}\n"
-            f"1: ─│──│──╭RY(0.31)─┤  {spaces}\n"
+            f"1: ─│──│──╭RY(0.31)─┤  {expval}\n"
             f"2: ─╰X─╰●─╰●────────┤  {label}"
         )
         assert qml.draw(transformed_qnode)() == expected
@@ -1622,7 +1623,7 @@ class TestDrawing:
             m_0 = qml.measure(0, reset=True)
             qml.cond(m_0, qml.RY)(0.312, wires=1)
 
-            return mp(op=m_0)
+            return mp(op=m_0), qml.expval(qml.Z(1))
 
         dev = qml.device("default.qubit", wires=4)
 
