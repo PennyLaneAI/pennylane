@@ -45,7 +45,7 @@ class Reflection(Operation):
 
     This example shows how to apply the reflection :math:`-I + 2|+\rangle \langle +|` to the state :math:`|1\rangle`.
 
-    .. code-block::
+    .. code-block:: python
 
         U = qml.Hadamard(wires=0)
         dev = qml.device(‘default.qubit’)
