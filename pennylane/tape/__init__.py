@@ -16,6 +16,6 @@ This subpackage contains the quantum tape, which tracks, queues, and
 validates quantum operations and measurements.
 """
 
-from .tape import QuantumTape, TapeError, expand_tape_state_prep
 from .operation_recorder import OperationRecorder
 from .qscript import QuantumScript, make_qscript
+from .tape import QuantumTape, TapeError, expand_tape_state_prep

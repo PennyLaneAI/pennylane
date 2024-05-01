@@ -15,9 +15,10 @@
 This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
+import autograd
+
 # pylint: disable=no-member, too-many-branches
 import numpy as np
-import autograd
 
 import pennylane as qml
 
@@ -73,7 +74,7 @@ def compute_vjp_single(dy, jac, num=None):
         >>> jac = np.array(0.1)
         >>> dy = np.array(2)
         >>> compute_vjp_single(dy, jac)
-        np.array([0.2])
+        array([0.2])
 
     2. For a single parameter and a single measurement with shape (e.g. probs):
 
@@ -82,7 +83,7 @@ def compute_vjp_single(dy, jac, num=None):
         >>> jac = np.array([0.1, 0.2])
         >>> dy = np.array([1.0, 1.0])
         >>> compute_vjp_single(dy, jac)
-        np.array([0.3])
+        array([0.3])
 
 
     3. For multiple parameters (in this case 2 parameters) and a single measurement without shape (e.g. expval, var):
@@ -92,7 +93,7 @@ def compute_vjp_single(dy, jac, num=None):
         >>> jac = tuple([np.array(0.1), np.array(0.2)])
         >>> dy = np.array(2)
         >>> compute_vjp_single(dy, jac)
-        np.array([0.2, 0.4])
+        array([0.2, 0.4])
 
     4. For multiple parameters (in this case 2 parameters) and a single measurement with shape (e.g. probs):
 
@@ -101,7 +102,7 @@ def compute_vjp_single(dy, jac, num=None):
         >>> jac = tuple([np.array([0.1, 0.2]), np.array([0.3, 0.4])])
         >>> dy = np.array([1.0, 2.0])
         >>> compute_vjp_single(dy, jac)
-        np.array([0.5, 1.1])
+        array([0.5, 1.1])
 
     """
     if jac is None:
@@ -182,17 +183,17 @@ def compute_vjp_multi(dy, jac, num=None):
         >>> jac = tuple([np.array(0.1), np.array([0.3, 0.4])])
         >>> dy = tuple([np.array(1.0), np.array([1.0, 2.0])])
         >>> compute_vjp_multi(dy, jac)
-        np.array([1.2])
+        array([1.2])
 
     2. For multiple parameters (in this case 2 parameters) and multiple measurement (one without shape and one with
     shape, e.g. expval and probs):
 
     .. code-block:: pycon
 
-        >>> jac = tuple([tuple([np.array(0.1), np.array(0.2)]), tuple([np.array([0.3, 0.4]), np.array([0.5, 0.6])])])
+        >>> jac = ((np.array(0.1), np.array(0.2)), (np.array([0.3, 0.4]), np.array([0.5, 0.6])))
         >>> dy = tuple([np.array(1.0), np.array([1.0, 2.0])])
         >>> compute_vjp_multi(dy, jac)
-        np.array([1.2, 1.9])
+        array([1.2, 1.9])
 
     """
     if jac is None:
@@ -318,11 +319,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
     Executing the VJP tapes, and applying the processing function:
 
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> vjp = fn(qml.execute(vjp_tapes, dev, gradient_fn=qml.gradients.param_shift, interface="torch"))
     >>> vjp
-    tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.3878e-16, -4.8217e-01,
-             2.1329e-17], dtype=torch.float64, grad_fn=<ViewBackward>)
+    tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.5214e-16, -4.8217e-01,
+             2.1329e-17], dtype=torch.float64, grad_fn=<SumBackward1>)
 
     The output VJP is also differentiable with respect to the tape parameters:
 
@@ -436,6 +437,8 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
     .. code-block:: python
 
+        import torch
+
         x = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True, dtype=torch.float64)
 
         ops = [
@@ -461,7 +464,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
     given a list of gradient-output vectors ``dys`` per tape:
 
     >>> dys = [torch.tensor([1., 1., 1.], dtype=torch.float64),
-    ...  torch.tensor([1.], dtype=torch.float64)]
+    ...        torch.tensor([1.], dtype=torch.float64)]
     >>> vjp_tapes, fn = qml.gradients.batch_vjp(tapes, dys, qml.gradients.param_shift)
 
     Note that each ``dy`` has shape matching the output dimension of the tape
@@ -470,13 +473,13 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
     Executing the VJP tapes, and applying the processing function:
 
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> vjps = fn(qml.execute(vjp_tapes, dev, gradient_fn=qml.gradients.param_shift, interface="torch"))
     >>> vjps
-    [tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.3878e-16, -4.8217e-01,
-              2.1329e-17], dtype=torch.float64, grad_fn=<ViewBackward>),
+    [tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.5214e-16, -4.8217e-01,
+          2.1329e-17], dtype=torch.float64, grad_fn=<SumBackward1>),
      tensor([ 1.7393e-01, -1.6412e-01, -5.3983e-03, -2.9366e-01, -4.0083e-01,
-              2.1134e-17], dtype=torch.float64, grad_fn=<ViewBackward>)]
+              2.1134e-17], dtype=torch.float64, grad_fn=<SqueezeBackward3>)]
 
     We have two VJPs; one per tape. Each one corresponds to the number of parameters
     on the tapes (6).

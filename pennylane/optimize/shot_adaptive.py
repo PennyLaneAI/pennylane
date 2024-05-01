@@ -14,6 +14,7 @@
 """Shot adaptive optimizer"""
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-branches
 from copy import copy
+
 import numpy as np
 from scipy.stats import multinomial
 

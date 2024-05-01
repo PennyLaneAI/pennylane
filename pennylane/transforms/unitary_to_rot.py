@@ -14,14 +14,13 @@
 """
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
-from typing import Sequence, Callable
-
-from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
-from pennylane.transforms import transform
+from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
 @transform

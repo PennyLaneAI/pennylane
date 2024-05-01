@@ -15,13 +15,14 @@
 Unit tests for the available qubit state preparation operations.
 """
 import itertools as it
-import pytest
-import numpy as np
-from scipy.stats import unitary_group
-import pennylane as qml
 
-from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
+import numpy as np
+import pytest
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane.operation import AnyWires
+from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])

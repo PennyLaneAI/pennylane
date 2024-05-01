@@ -18,13 +18,13 @@ page in the developement guide.
 """
 # pylint: disable=protected-access, expression-not-assigned
 
-import pytest
 import numpy as np
-import pennylane as qml
+import pytest
 
+import pennylane as qml
 from pennylane.drawer import tape_mpl
-from pennylane.tape import QuantumScript
 from pennylane.ops.op_math import Controlled
+from pennylane.tape import QuantumScript
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")

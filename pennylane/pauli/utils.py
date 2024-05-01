@@ -30,8 +30,8 @@ import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import (
     Hamiltonian,
-    LinearCombination,
     Identity,
+    LinearCombination,
     PauliX,
     PauliY,
     PauliZ,

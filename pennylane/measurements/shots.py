@@ -12,8 +12,7 @@
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
 # pylint:disable=inconsistent-return-statements
-from typing import NamedTuple
-from typing import Sequence, Tuple
+from typing import NamedTuple, Sequence, Tuple
 
 
 class ShotCopies(NamedTuple):

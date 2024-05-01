@@ -18,8 +18,8 @@
 import numpy as onp
 import pytest
 
-from pennylane import numpy as np
 from pennylane import math as fn
+from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 

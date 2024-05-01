@@ -25,9 +25,7 @@ from pennylane.measurements import (
     StateMeasurement,
     StateMP,
 )
-
 from pennylane.wires import Wires
-
 
 # pylint: disable=too-few-public-methods, unused-argument
 

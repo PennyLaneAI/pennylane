@@ -15,8 +15,9 @@
 Tests for the Reflection Operator template
 """
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 
 

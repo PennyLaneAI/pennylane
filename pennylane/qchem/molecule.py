@@ -16,9 +16,10 @@ This module contains functions and classes to create a
 :class:`~pennylane.qchem.molecule.Molecule` object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
+import collections
+
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import itertools
-import collections
 
 from pennylane import numpy as pnp
 
