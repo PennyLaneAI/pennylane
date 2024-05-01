@@ -193,8 +193,8 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
 
         >>> K_psd = qml.kernels.closest_psd_matrix(K)
         >>> K_psd
-        tensor([[0.95, 0.95],
-                [0.95, 0.95]], requires_grad=True)
+        array([[0.95, 0.95],
+               [0.95, 0.95]])
         >>> np.linalg.eigvalsh(K_psd)
         array([0., 1.9])
         >>> np.allclose(K_psd, qml.kernels.threshold_matrix(K))
