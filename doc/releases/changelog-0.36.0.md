@@ -552,7 +552,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
-  [(#5___)](https://github.com/PennyLaneAI/pennylane/pull/5___)
+  [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
  
 * Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
