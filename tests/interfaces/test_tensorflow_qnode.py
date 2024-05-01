@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
-# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=too-many-arguments,too-few-public-methods, use-dict-literal, use-implicit-booleaness-not-comparison
 import pytest
 import numpy as np
 
@@ -1532,7 +1532,7 @@ class TestSample:
         assert isinstance(result[0], tf.Tensor)
         assert isinstance(result[1], tf.Tensor)
         assert isinstance(result[2], tf.Tensor)
-        assert result[0].dtype is tf.int64
+        assert result[0].dtype is tf.float64
         assert result[1].dtype is tf.float64
         assert result[2].dtype is tf.float64
 
@@ -1570,7 +1570,7 @@ class TestSample:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tf.Tensor)
         assert np.array_equal(result.shape, (3, n_sample))
-        assert result.dtype == tf.int64
+        assert result.dtype == tf.float64
 
     def test_counts(self):
         """Test counts works as expected for TF"""

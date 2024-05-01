@@ -483,36 +483,37 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
         circuit._qfunc_output.shape(dev, Shots(samples)) == (samples, 2) if samples != 1 else (2,)
     )
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            # Single observables
-            (qml.PauliX(0)),
-            (qml.PauliY(0)),
-            (qml.PauliZ(0)),
-            (qml.Hadamard(0)),
-            (qml.Identity(0)),
-        ],
-    )
-    def test_jitting_with_sampling_on_different_observables(obs):
-        """Test case covering bug in Issue #5369. Sampling should be jit-able
-        when sampling occurs and obs is not None. The bug was occurring due mismatched
-        types on qml.sample(obs).numeric_type and obs.eigvals."""
-        import jax
 
-        jax.config.update("jax_enable_x64", True)
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    "obs",
+    [
+        # Single observables
+        (qml.PauliX(0)),
+        (qml.PauliY(0)),
+        (qml.PauliZ(0)),
+        (qml.Hadamard(0)),
+        (qml.Identity(0)),
+    ],
+)
+def test_jitting_with_sampling_on_different_observables(obs):
+    """Test case covering bug in Issue #5369. Sampling should be jit-able
+    when sampling occurs and obs is not None. The bug was occurring due mismatched
+    types on qml.sample(obs).numeric_type and obs.eigvals."""
+    import jax
 
-        dev = qml.device("default.qubit", wires=5, shots=100)
+    jax.config.update("jax_enable_x64", True)
 
-        @qml.qnode(dev, interface="jax")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.sample(obs)
+    dev = qml.device("default.qubit", wires=5, shots=100)
 
-        results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
+    @qml.qnode(dev, interface="jax")
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.sample(obs)
 
-        assert results.shape == (100,)
+    results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
+
+    assert results.shape == (100,)
 
 
 class TestSampleProcessCounts:
