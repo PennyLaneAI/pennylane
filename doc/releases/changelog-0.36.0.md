@@ -159,73 +159,82 @@
 
 <h4>Calculate dynamical Lie algebras 👾</h4>
 
-* A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
-  [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
-  [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+* The dynamical Lie algebra (DLA) of a set of operators captures the range of unitary evolutions
+  that the operators can generate. In v0.36 of PennyLane, we have added support for calculating
+  important DLA concepts including:
 
-  The Lie closure, pronounced "Lee closure", is a way to compute the so-called dynamical Lie algebra (DLA) of a set of operators.
-  For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
-  All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
+  * A new `qml.lie_closure` function to compute the Lie closure of a list of operators, providing
+    one way to obtain the DLA.
+    [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
+    [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
 
-  Take for example the following ops
+    For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
+    All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
 
-  ```python
-  ops = [X(0) @ X(1), Z(0), Z(1)]
-  ```
+    Take for example the following operators:
 
-  A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
+    ```python
+    ops = [X(0) @ X(1), Z(0), Z(1)]
+    ```
 
-  ```python
-  >>> qml.commutator(X(0) @ X(1), Z(0))
-  -2j * (X(1) @ Y(0))
-  >>> qml.commutator(X(0) @ X(1), Z(1))
-  -2j * (Y(1) @ X(0))
-  ```
+    A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
 
-  A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
+    ```python
+    >>> qml.commutator(X(0) @ X(1), Z(0))
+    -2j * (X(1) @ Y(0))
+    >>> qml.commutator(X(0) @ X(1), Z(1))
+    -2j * (Y(1) @ X(0))
+    ```
 
-  ```python
-  >>> qml.commutator(X(0) @ Y(1), Z(0))
-  -2j * (Y(1) @ Y(0))
-  ```
+    A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
 
-  After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
-  This can now be done in short via `qml.lie_closure` as follows.
+    ```python
+    >>> qml.commutator(X(0) @ Y(1), Z(0))
+    -2j * (Y(1) @ Y(0))
+    ```
 
-  ```python
-  >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-  >>> dla = qml.lie_closure(ops)
-  >>> print(dla)
-  [1.0 * X(1) @ X(0),
-   1.0 * Z(0),
-   1.0 * Z(1),
-   -1.0 * X(1) @ Y(0),
-   -1.0 * Y(1) @ X(0),
-   -1.0 * Y(1) @ Y(0)]
-  ```
+    After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
+    This can now be done in short via `qml.lie_closure` as follows.
 
-* We can compute the structure constants (the adjoint representation) of a dynamical Lie algebra.
-  [(5406)](https://github.com/PennyLaneAI/pennylane/pull/5406)
+    ```python
+    >>> ops = [X(0) @ X(1), Z(0), Z(1)]
+    >>> dla = qml.lie_closure(ops)
+    >>> print(dla)
+    [1.0 * X(1) @ X(0),
+     1.0 * Z(0),
+     1.0 * Z(1),
+     -1.0 * X(1) @ Y(0),
+     -1.0 * Y(1) @ X(0),
+     -1.0 * Y(1) @ Y(0)]
+    ```
 
-  For example, we can compute the adjoint representation of the transverse field Ising model DLA.
+  * Computing the structure constants (the adjoint representation) of a dynamical Lie algebra.
+    [(5406)](https://github.com/PennyLaneAI/pennylane/pull/5406)
 
-  ```pycon
-  >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
-  >>> structure_const = qml.structure_constants(dla)
-  >>> structure_constp.shape
-  (6, 6, 6)
-  ```
+    For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-* We can compute the center of a dynamical Lie algebra.
-  [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
+    ```pycon
+    >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
+    >>> structure_const = qml.structure_constants(dla)
+    >>> structure_constp.shape
+    (6, 6, 6)
+    ```
+    Visit the [documentation of qml.structure_constants](https://docs.pennylane.ai/en/stable/code/api/pennylane.structure_constants.html)
+    to understand how structure constants are a useful way to represent a DLA.
 
-  Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+  * Computing the center of a dynamical Lie algebra.
+    [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
 
-  ```pycon
-  >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
-  >>> qml.center(g)
-  [X(0)]
-  ```
+    Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+
+    ```pycon
+    >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
+    >>> qml.center(g)
+    [X(0)]
+    ```
+
+  To help explain these concepts, check out the
+  [dynamical Lie algebras demo](https://pennylane.ai/qml/demos/tutorial_liealgebra).
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
