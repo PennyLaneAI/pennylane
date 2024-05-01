@@ -32,7 +32,7 @@
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
 * The Fast Approximate BLock-Encodings (FABLE) algorithm for embedding
-  a matrix into a quantum circuit
+  a matrix into a quantum circuit as outlined in
   [arXiv:2205.00081](https://arxiv.org/abs/2205.00081) is now accessible via the `qml.FABLE` 
   template.
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
