@@ -699,29 +699,29 @@
 * Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
   [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
 
-* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+* `two_qubit_decomposition` no longer diverges at a special case of a unitary matrix.
   [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
 
-* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
+* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new device API.
   [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
 
 * Operators applied to all wires are now drawn correctly in a circuit with mid-circuit measurements.
   [(#5501)](https://github.com/PennyLaneAI/pennylane/pull/5501)
 
-* Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
+* Fixed a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
   [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
 
-* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+* Probabilities now sum to 1 when using the `torch` interface with `default_dtype` set to `torch.float32`. 
   [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
 
-* Tensorflow can now handle devices with float32 results but float64 input parameters.
+* Tensorflow can now handle devices with `float32` results but `float64` input parameters.
   [(#5446)](https://github.com/PennyLaneAI/pennylane/pull/5446)
 
-* Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
+* Fixed a bug where the `argnum` keyword argument of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
   creating an inconsistency with other differentiation methods and preventing some use cases.
   [(#5458)](https://github.com/PennyLaneAI/pennylane/pull/5458)
 
-* Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
+* Bounded value failures due to numerical noise with calls to `np.random.binomial` is now avoided.
   [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
 
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
@@ -730,13 +730,15 @@
 * The `QNSPSAOptimizer` now properly handles differentiable parameters, resulting in being able to use it for more than one optimization step.
   [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
 
-* The `QNode` interface now resets if an error occurs during execution.
+* The QNode interface now resets if an error occurs during execution.
   [(#5449)](https://github.com/PennyLaneAI/pennylane/pull/5449)
 
-* Fix failing tests due to changes with Lightning's adjoint diff pipeline.
+* Failing tests due to changes with Lightning's adjoint diff pipeline have been fixed.
   [(#5450)](https://github.com/PennyLaneAI/pennylane/pull/5450)
 
-* Fix Torch tensor locality with autoray-registered coerce method.
+Context: When Torch has a GPU backed data-buffer, failures can occur when attempting to make autoray-dispatched calls to Torch method with paired CPU data. In this case, for probabilities on the GPU, and eigenvalues on the host (read from the observables), failures appeared with qml.dot, and can be reproduced from:
+
+* Failures occurring when making autoray-dispatched calls to Torch with paired CPU data have been fixed.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 
 * `jax.jit` now works with `qml.sample` with a multi-wire observable.
@@ -745,7 +747,7 @@
 * `qml.qinfo.quantum_fisher` now works with non-`default.qubit` devices.
   [(#5423)](https://github.com/PennyLaneAI/pennylane/pull/5423)
 
-* We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
+* We no longer perform unwanted `dtype` promotion in the `pauli_rep` of `SProd` instances when using Tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
 
 * Fixed `TestQubitIntegration.test_counts` in `tests/interfaces/test_jax_qnode.py` to always produce counts for all
@@ -758,30 +760,30 @@
 * `CompositeOp.map_wires` now correctly maps the `overlapping_ops` property.
   [(#5430)](https://github.com/PennyLaneAI/pennylane/pull/5430)
 
-* Update `DefaultQubit.supports_derivatives` to correctly handle circuits containing `MidMeasureMP` with adjoint
+* `DefaultQubit.supports_derivatives` has been updated to correctly handle circuits containing mid-circuit measurements and adjoint
   differentiation.
   [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
 
-* `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
+* `SampleMP`, `ExpectationMP`, `CountsMP`, and `VarianceMP` constructed with `eigvals` can now properly process samples.
   [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
 
-* Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
+* Fixed a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
 
-* Allows `default.qubit` to measure Identity on no wires, and observables containing Identity on
+* `default.qubit` now allows measuring `Identity` on no wires and observables containing `Identity` on
   no wires.
   [(#5570)](https://github.com/PennyLaneAI/pennylane/pull/5570/)
 
-* Fixes a bug where `TorchLayer` does not work with shot vectors.
+* Fixed a bug where `TorchLayer` does not work with shot vectors.
   [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
 
-* Fixes a bug where the output shape of a qnode returning a list containing a single measurement is incorrect when combined with shot vectors.
+* Fixed a bug where the output shape of a QNode returning a list containing a single measurement is incorrect when combined with shot vectors.
   [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
 
-* Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
+* Fixed a bug in `qml.math.kron` that makes Torch incompatible with NumPy.
   [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
 
-* Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
+* Fixed a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
   [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
 
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
