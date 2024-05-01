@@ -250,25 +250,25 @@ class TestParamShift:
             assert result[1][2].shape == (4,)
             assert np.allclose(result[1][2], 0)
 
-    # TODO: uncomment when QNode decorator uses new qml.execute pipeline
-    # @pytest.mark.parametrize("broadcast", [True, False])
-    # def test_all_zero_diff_methods(self, broadcast):
-    #     """Test that the transform works correctly when the diff method for every parameter is
-    #     identified to be 0, and that no tapes were generated."""
-    #     dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+    @pytest.mark.parametrize("broadcast", [True, False])
+    def test_all_zero_diff_methods(self, broadcast):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
 
-    #     @qml.qnode(dev)
-    #     def circuit(params):
-    #         qml.Rot(*params, wires=0)
-    #         return qml.probs([2, 3])
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rot(*params, wires=0)
+            return qml.probs([2, 3])
 
-    #     params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        circuit.construct((params,), {})
 
-    #     result = qml.gradients.param_shift(circuit)(params)
-    #     assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
+        result = qml.gradients.param_shift(circuit)(params)
+        assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
 
-    #     tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
-    #     assert tapes == []
+        tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
+        assert tapes == []
 
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
     def test_recycled_unshifted_tape(self, ops_with_custom_recipe):
@@ -1842,16 +1842,14 @@ class TestParameterShiftRule:
         return [qml.probs([0, 1]), qml.probs([2, 3])]
 
     costs_and_expected_expval = [
-        (cost1, (3,)),
-        (cost2, (3,)),
-        (cost3, (2, 3)),
+        (cost1, (3,), np.ndarray),
+        (cost2, (1, 3,), list),
+        (cost3, (2, 3), list),
     ]
 
-    @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_expval)
-    def test_output_shape_matches_qnode_expval(self, cost, expected_shape):
+    @pytest.mark.parametrize("cost, expected_shape, exp_type", costs_and_expected_expval)
+    def test_output_shape_matches_qnode_expval(self, cost, expected_shape, exp_type):
         """Test that the transform output shape matches that of the QNode."""
-        if cost.__name__ != "cost1":
-            pytest.xfail(reason="new return shape specification")
 
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=4, shots=shot_vec)
@@ -1864,21 +1862,18 @@ class TestParameterShiftRule:
         assert isinstance(all_res, tuple)
 
         for res in all_res:
-            assert isinstance(res, np.ndarray)
-            assert res.shape == expected_shape
+            assert isinstance(res, exp_type)
+            assert qml.math.shape(res) == expected_shape
 
     costs_and_expected_probs = [
-        (cost4, (4, 3)),
-        (cost5, (4, 3)),
-        (cost6, (2, 4, 3)),
+        (cost4, (4, 3), np.ndarray),
+        (cost5, (1, 4, 3), list),
+        (cost6, (2, 4, 3), list),
     ]
 
-    @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_probs)
-    def test_output_shape_matches_qnode_probs(self, cost, expected_shape):
+    @pytest.mark.parametrize("cost, expected_shape, exp_type", costs_and_expected_probs)
+    def test_output_shape_matches_qnode_probs(self, cost, expected_shape, exp_type):
         """Test that the transform output shape matches that of the QNode."""
-        if cost.__name__ != "cost4":
-            pytest.xfail(reason="wrong return shape specification")
-
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=4, shots=shot_vec)
 
@@ -1890,8 +1885,8 @@ class TestParameterShiftRule:
         assert isinstance(all_res, tuple)
 
         for res in all_res:
-            assert isinstance(res, np.ndarray)
-            assert res.shape == expected_shape
+            assert isinstance(res, exp_type)
+            assert qml.math.shape(res) == expected_shape
 
     # TODO: revisit the following test when the Autograd interface supports
     # parameter-shift with the new return type system

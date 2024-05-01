@@ -56,16 +56,6 @@ SUPPORTED_GRADIENT_KWARGS = [
 ]
 
 
-def assert_multimeasure_not_broadcasted(measurements, broadcast):
-    """Assert that there are not simultaneously multiple measurements and
-    broadcasting activated.Otherwise raises an error."""
-    if broadcast and len(measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {measurements}."
-        )
-
-
 def assert_no_state_returns(measurements, transform_name):
     """Check whether a set of measurements contains a measurement process that returns the quantum
     state and raise an error if this is the case.
@@ -290,10 +280,10 @@ def _no_trainable_grad(tape):
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
-def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
+def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):
     """Transpose the first two axes of an iterable of iterables, returning
     a tuple of tuples."""
-    if first_axis_size == 1:
+    if first_axis_size == 1 and squeeze:
         return tuple(grads[0][i] for i in range(second_axis_size))
     return tuple(
         tuple(grads[j][i] for j in range(first_axis_size)) for i in range(second_axis_size)

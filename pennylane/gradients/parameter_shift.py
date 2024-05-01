@@ -25,7 +25,6 @@ import pennylane as qml
 from pennylane.measurements import VarianceMP
 from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac, _swap_first_two_axes
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
@@ -36,9 +35,10 @@ from .general_shift_rules import (
 )
 from .gradient_transform import (
     _all_zero_grad,
+    _contract_qjac_with_cjac,
+    _swap_first_two_axes,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
-    assert_multimeasure_not_broadcasted,
     choose_trainable_params,
     find_and_validate_gradient_methods,
     _no_trainable_grad,
@@ -201,7 +201,7 @@ def _evaluate_gradient(tape, res, data, r0, batch_size):
     len_shot_vec = tape.shots.num_copies
 
     if r0 is None and not scalar_shots:
-        r0 = [None] * len_shot_vec
+        r0 = [None] * int(len_shot_vec)
 
     if num_measurements == 1:
         if scalar_shots:
@@ -209,8 +209,12 @@ def _evaluate_gradient(tape, res, data, r0, batch_size):
             return _single_meas_grad(res, coeffs, unshifted_coeff, r0)
         # Res has axes (parameters, shots) or with broadcasting (shots, parameters)
         if batch_size is None:
-            # Move shots to first position
-            res = _swap_first_two_axes(res, len(res), len_shot_vec)
+            # Move shots to first position, _swap_first_two_axes includes squeezing,
+            # which we don't want here
+            if len(res) == 1:
+                res = tuple((res[0][i],) for i in range(len_shot_vec))
+            else:
+                res = _swap_first_two_axes(res, len(res), len_shot_vec, squeeze=False)
         # _single_meas_grad expects axis (parameters,), iterate over shot vector
         return tuple(_single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0))
 
@@ -218,7 +222,7 @@ def _evaluate_gradient(tape, res, data, r0, batch_size):
         # Res has axes (parameters, measurements) or with broadcasting (measurements, parameters)
         if batch_size is not None:
             # Move parameters to first position
-            res = _swap_first_two_axes(res, num_measurements, len(res[0]))
+            res = _swap_first_two_axes(res, num_measurements, len(res[0]), squeeze=False)
         # _multi_meas_grad expects axes (parameters, measurements)
         return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
 
@@ -226,10 +230,10 @@ def _evaluate_gradient(tape, res, data, r0, batch_size):
     # or with broadcasting (shots, measurements, parameters)
     if batch_size is None:
         # Swap first (parameters) and second (shots) axis
-        res = _swap_first_two_axes(res, len(res), len_shot_vec)
+        res = _swap_first_two_axes(res, len(res), len_shot_vec, squeeze=False)
     else:
         # Swap second (measurements) and third (parameters) axis
-        res = tuple(_swap_first_two_axes(r, num_measurements, len(r[0])) for r in res)
+        res = tuple(_swap_first_two_axes(r, num_measurements, len(r[0]), squeeze=False) for r in res)
     # Axes are now (shots, parameters, measurements)
     # _multi_meas_grad expects (parameters, measurements), so we iterate over shot vector
     return tuple(
@@ -1082,7 +1086,6 @@ def param_shift(
 
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)
-    # assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
     assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
