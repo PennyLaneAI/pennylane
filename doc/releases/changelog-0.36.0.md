@@ -71,6 +71,9 @@
     {'SpectralNormError': SpectralNormError(0.07616666666666666)}
     ```
 
+  Error estimation can also be combined with resource estimation, allowing you
+  to investigate the tradeoff between resources and errors.
+
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
 * The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
