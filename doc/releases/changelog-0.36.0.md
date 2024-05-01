@@ -555,6 +555,10 @@
   while using `qml.defer_measurements`.
   [(#5610)](https://github.com/PennyLaneAI/pennylane/pull/5610)
 
+* Using shot vectors with `param_shift(... broadcast=True)` caused a bug. This combination is no longer supported
+  and will be added again in the next release.
+  [(#5612)](https://github.com/PennyLaneAI/pennylane/pull/5612)
+
 * Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
 
