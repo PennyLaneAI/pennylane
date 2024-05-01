@@ -455,11 +455,13 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
-* Added a `qml.capture` module that will contain PennyLane's own capturing mechanism for hybrid
-  quantum-classical programs.
+* A new module called `qml.capture` that will contain PennyLane's own capturing mechanism for hybrid
+  quantum-classical programs has been added.
   [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
 
-* The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
+* The `dynamic_one_shot` transform has been introduced, enabling dynamic circuit 
+  execution on circuits with finite `shots` and devices that natively support 
+  mid-circuit measurements.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
