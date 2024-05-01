@@ -215,21 +215,19 @@
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
-* Mixed qutrit states can now be simulated with the `DefaultQutritMixed` 
-  device (shortname: `"default.qutrit.mixed"`).
+* Mixed qutrit states can now be simulated with the `"default.qutrit.mixed" device.
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
-  Thanks to external contributors from the University of British Columbia, mixed 
-  qutrit circuits are now available to program, having access to the same 
-  operations, measurements, and functionality as circuits programmed on 
-  `DefaultQutrit`.
+  Thanks to contributors from the University of British Columbia, a mixed-state
+  qutrit device is now available for simulation, providing a noise-capable
+  equivalent to `DefaultQutrit`.
 
   ```python
-  dev = qml.device("default.qutrit.mixed", wires=1)
+  dev = qml.device("default.qutrit.mixed")
 
   def circuit():
       qml.TRY(0.1, wires=0)
@@ -250,11 +248,12 @@
   (array([0, 0, 0, 0, 0]), 0.19999999999999996)
   >>> density_matrix_circuit()
   tensor([[0.99750208+0.j, 0.04991671+0.j, 0.        +0.j],
-        [0.04991671+0.j, 0.00249792+0.j, 0.        +0.j],
-        [0.        +0.j, 0.        +0.j, 0.        +0.j]], requires_grad=True)
+         [0.04991671+0.j, 0.00249792+0.j, 0.        +0.j],
+         [0.        +0.j, 0.        +0.j, 0.        +0.j]], requires_grad=True)
   ```
 
-  Keep your eyes peeled for qutrit noise model support in the coming releases!
+  However, there's one crucial ingredient that we still need to add: support for qutrit noise
+  operations. Keep your eyes peeled for this to arrive in the coming releases!
 
 <h3>Improvements 🛠</h3>
 
