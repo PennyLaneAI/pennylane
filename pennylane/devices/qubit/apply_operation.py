@@ -328,7 +328,7 @@ def apply_mid_measure(
 
     element = op.reset and sample == 1
     matrix = qml.math.array(
-        [[(element) % 2, (element + 1) % 2], [(element + 1) % 2, (element) % 2]], like=interface
+        [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]], like=interface
     ).astype(float)
     state = apply_operation(
         qml.QubitUnitary(matrix, wire), state, is_state_batched=is_state_batched, debugger=debugger
