@@ -30,7 +30,7 @@
         def error(self):
             return SpectralNormError(self.error_val)
 
-    dev = qml.device("default.qubit")
+    dev = qml.device("null.qubit")
 
     @qml.qnode(dev)
     def circuit():
@@ -56,7 +56,7 @@
     ```python
     import pennylane as qml
     
-    dev = qml.device('default.qubit')
+    dev = qml.device('null.qubit')
     hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
 
     @qml.qnode(dev)
@@ -70,9 +70,6 @@
     >>> qml.specs(circuit)()["errors"]
     {'SpectralNormError': SpectralNormError(0.07616666666666666)}
     ```
-
-  Error estimation can also be combined with resource estimation, allowing you
-  to investigate the tradeoff between resources and errors.
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
