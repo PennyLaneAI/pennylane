@@ -215,7 +215,7 @@
 
 <h4>Simulate mixed-state qutrit systems 3️⃣</h4>
 
-* Mixed qutrit states can now be simulated with the `"default.qutrit.mixed" device.
+* Mixed qutrit states can now be simulated with the `"default.qutrit.mixed"` device.
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
@@ -224,7 +224,7 @@
 
   Thanks to contributors from the University of British Columbia, a mixed-state
   qutrit device is now available for simulation, providing a noise-capable
-  equivalent to `DefaultQutrit`.
+  equivalent to `"default.qutrit"`.
 
   ```python
   dev = qml.device("default.qutrit.mixed")
