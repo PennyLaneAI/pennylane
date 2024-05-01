@@ -171,7 +171,7 @@
     For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
     All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
 
-    Take for example the following ops
+    Take for example the following operators:
 
     ```python
     ops = [X(0) @ X(1), Z(0), Z(1)]
@@ -219,6 +219,8 @@
     >>> structure_constp.shape
     (6, 6, 6)
     ```
+    Visit the [documentation of qml.structure_constants](https://docs.pennylane.ai/en/stable/code/api/pennylane.structure_constants.html)
+    to understand how structure constants are a useful way to represent a DLA.
 
   * Computing the center of a dynamical Lie algebra.
     [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
