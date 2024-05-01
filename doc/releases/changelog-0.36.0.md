@@ -498,9 +498,6 @@
   `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
   [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
-* Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
-  [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
-
 * `LinearCombination._obs_data` is removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
   [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
 
