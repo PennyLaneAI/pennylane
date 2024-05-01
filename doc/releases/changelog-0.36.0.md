@@ -279,7 +279,7 @@
 
 <h4>Simulate mixed-state qutrit systems</h4>
 
-* Mixed qutrit states can now be simulated with the `"default.qutrit.mixed"` device.
+* Mixed qutrit states can now be simulated with the `default.qutrit.mixed` device.
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
@@ -288,7 +288,7 @@
 
   Thanks to contributors from the University of British Columbia, a mixed-state
   qutrit device is now available for simulation, providing a noise-capable
-  equivalent to `"default.qutrit"`.
+  equivalent to `default.qutrit`.
 
   ```python
   dev = qml.device("default.qutrit.mixed")
@@ -467,7 +467,7 @@
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
-* `"default.qubit"` can now take a provided random seed for sampling mid-circuit 
+* `default.qubit` can now take a provided random seed for sampling mid-circuit 
   measurements with finite shots. This (1) ensures that random behaviour is more 
   consistent with `dynamic_one_shot` and `defer_measurements` and (2) makes our 
   continuous-integration (CI) have less failures due to stochasticity.
@@ -475,11 +475,11 @@
 
 <h4>Performance and broadcasting</h4>
 
-* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+* Gradient transforms may now be applied to batched/broadcasted QNodes as long as the
   broadcasting is in non-trainable parameters.
   [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
 
-* Improve the performance of computing the matrix of `qml.QFT`
+* The performance of computing the matrix of `qml.QFT` has been improved.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
 * `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
@@ -494,14 +494,15 @@
   [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
   [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
 
-* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
+* `default.mixed` has improved support for sampling-based measurements with non-NumPy interfaces.
   [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
   [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
 
 * `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
 
-* Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
+* `null.qubit` has been upgraded to the new device API and has support for all 
+  measurements and various modes of differentiation.
   [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
 
 <h4>Other improvements</h4>
