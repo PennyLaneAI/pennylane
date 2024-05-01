@@ -47,6 +47,7 @@ class MeasureNode(Operation):
         op_label = base_label or self.__class__.__name__
         return op_label
 
+
 class PrepareNode(Operation):
     """Placeholder node for state preparations"""
 
