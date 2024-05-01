@@ -18,9 +18,10 @@ import warnings
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
-from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
+from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
+
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 

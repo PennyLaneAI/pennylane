@@ -17,9 +17,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import execute
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.typing import TensorLike
-from pennylane import execute
 
 pytestmark = pytest.mark.torch
 torch = pytest.importorskip("torch")

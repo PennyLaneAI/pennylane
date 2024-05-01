@@ -20,13 +20,13 @@
 # all_templates = [i for (_, i) in getmembers(qml.templates) if isclass(i) and issubclass(i, qml.operation.Operator)]
 
 from functools import partial
-import pytest
+
 import numpy as np
+import pytest
 from scipy.stats import norm
 
 import pennylane as qml
 from pennylane import math
-
 
 pytestmark = pytest.mark.skip_unsupported
 

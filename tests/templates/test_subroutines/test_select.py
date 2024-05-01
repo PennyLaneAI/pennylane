@@ -16,10 +16,12 @@ Tests for the Select template.
 """
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import copy
-import pytest
+
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_checks():

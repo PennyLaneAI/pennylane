@@ -14,10 +14,11 @@
 """
 Unit tests for :mod:`pennylane.wires`.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError, Wires
 
 
 # pylint: disable=too-many-public-methods

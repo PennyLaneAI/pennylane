@@ -25,10 +25,11 @@ from functools import singledispatch
 import pennylane as qml
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
-from .mpldrawer import MPLDrawer
+
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
+from .mpldrawer import MPLDrawer
 from .style import _set_style
+from .utils import convert_wire_order, cwire_connections, default_bit_map, unwrap_controls
 
 has_mpl = True
 try:

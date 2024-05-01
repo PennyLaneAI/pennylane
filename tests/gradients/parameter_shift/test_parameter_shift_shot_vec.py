@@ -14,16 +14,16 @@
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
 # pylint:disable=use-implicit-booleaness-not-comparison
 from functools import partial
+
 import pytest
 from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.gradients import param_shift
 from pennylane.devices import DefaultQubitLegacy
+from pennylane.gradients import param_shift
 from pennylane.measurements import Shots
-from pennylane.operation import Observable, AnyWires
-
+from pennylane.operation import AnyWires, Observable
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5

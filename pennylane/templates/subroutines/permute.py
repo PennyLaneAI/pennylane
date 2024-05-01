@@ -15,7 +15,7 @@ r"""
 Contains the Permute template.
 """
 
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import SWAP
 
 

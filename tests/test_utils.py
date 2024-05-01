@@ -17,13 +17,12 @@ Unit tests for the :mod:`pennylane.utils` module.
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 import functools
 import itertools
-import pytest
 
 import numpy as np
+import pytest
 
 import pennylane as qml
 import pennylane.utils as pu
-
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 test_shapes = [

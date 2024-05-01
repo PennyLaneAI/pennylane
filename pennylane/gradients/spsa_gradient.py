@@ -15,9 +15,10 @@
 This module contains functions for computing the SPSA gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
-from typing import Sequence, Callable
 from functools import partial
+
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+from typing import Callable, Sequence
 
 import numpy as np
 
@@ -27,14 +28,14 @@ from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 from .finite_difference import _processing_fn, finite_diff_coeffs
+from .general_shift_rules import generate_multishifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
+    _no_trainable_grad,
     assert_no_trainable_tape_batching,
     choose_trainable_params,
     find_and_validate_gradient_methods,
-    _no_trainable_grad,
 )
-from .general_shift_rules import generate_multishifted_tapes
 
 
 def _rademacher_sampler(indices, num_params, *args, rng):

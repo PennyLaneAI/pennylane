@@ -14,9 +14,9 @@
 """Tests that a device has the right attributes, arguments and methods."""
 # pylint: disable=no-self-use
 import pytest
-import pennylane.numpy as pnp
-import pennylane as qml
 
+import pennylane as qml
+import pennylane.numpy as pnp
 
 try:
     import tensorflow as tf
