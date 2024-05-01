@@ -3405,7 +3405,7 @@ class TestHamiltonianExpvalGradients:
             with pytest.raises(
                 NotImplementedError, match="Hamiltonians .* together with parameter broadcasting"
             ):
-                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
+                _ = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
             return
         with tf.GradientTape() as _:
             jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)

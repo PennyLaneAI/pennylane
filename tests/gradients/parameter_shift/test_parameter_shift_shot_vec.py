@@ -511,6 +511,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast):
         """Tests that the automatic gradients of Pauli rotations are correct."""
+        # pylint: disable=too-many-arguments
 
         np.random.seed(824)
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
@@ -1608,8 +1609,7 @@ class TestParameterShiftRule:
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        tapes_per_param = 1 if broadcast else 2
-        assert len(tapes) == 1 + 4 * 2 * tapes_per_param
+        assert len(tapes) == 1 + 4 * 2 * (1 if broadcast else 2)
 
         all_res = fn(dev.execute(tapes))
         assert len(all_res) == len(many_shots_shot_vector)
