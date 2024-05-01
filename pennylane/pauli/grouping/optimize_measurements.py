@@ -17,6 +17,7 @@ corresponding necessary circuit post-rotations for a given list of Pauli words.
 """
 
 from pennylane.pauli.utils import diagonalize_qwc_groupings
+
 from .group_observables import group_observables
 
 

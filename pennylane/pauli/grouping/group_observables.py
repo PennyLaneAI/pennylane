@@ -18,8 +18,8 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 from copy import copy
 
 import numpy as np
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.ops import Prod, SProd
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
@@ -30,7 +30,6 @@ from pennylane.pauli.utils import (
 from pennylane.wires import Wires
 
 from .graph_colouring import largest_first, recursive_largest_first
-
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
 GRAPH_COLOURING_METHODS = {"lf": largest_first, "rlf": recursive_largest_first}
@@ -227,24 +226,46 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
                 "The coefficients list must be the same length as the observables list."
             )
 
+    no_wires_obs = []
+    wires_obs = []
+    for ob in observables:
+        if len(ob.wires) == 0:
+            no_wires_obs.append(ob)
+        else:
+            wires_obs.append(ob)
+    if not wires_obs:
+        if coefficients is None:
+            return [no_wires_obs]
+        return [no_wires_obs], [coefficients]
+
     pauli_grouping = PauliGroupingStrategy(
-        observables, grouping_type=grouping_type, graph_colourer=method
+        wires_obs, grouping_type=grouping_type, graph_colourer=method
     )
 
     temp_opmath = not qml.operation.active_new_opmath() and any(
         isinstance(o, (Prod, SProd)) for o in observables
     )
     if temp_opmath:
-        qml.operation.enable_new_opmath()
+        qml.operation.enable_new_opmath(warn=False)
 
     try:
         partitioned_paulis = pauli_grouping.colour_pauli_graph()
     finally:
         if temp_opmath:
-            qml.operation.disable_new_opmath()
+            qml.operation.disable_new_opmath(warn=False)
+
+    partitioned_paulis[0].extend(no_wires_obs)
 
     if coefficients is None:
         return partitioned_paulis
+
+    partitioned_coeffs = _partition_coeffs(partitioned_paulis, observables, coefficients)
+
+    return partitioned_paulis, partitioned_coeffs
+
+
+def _partition_coeffs(partitioned_paulis, observables, coefficients):
+    """Partition the coefficients according to the Pauli word groupings."""
 
     partitioned_coeffs = [
         qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
@@ -259,6 +280,12 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for ind, observable in enumerate(observables):
+                if isinstance(observable, qml.ops.Hamiltonian):
+                    # Converts single-term Hamiltonian to SProd because
+                    # are_identical_pauli_words cannot handle Hamiltonian
+                    coeffs, ops = observable.terms()
+                    # Assuming the Hamiltonian has only one term
+                    observable = qml.s_prod(coeffs[0], ops[0])
                 if are_identical_pauli_words(pauli_word, observable):
                     indices.append(coeff_indices[ind])
                     observables.pop(ind)
@@ -273,4 +300,4 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     if isinstance(coefficients, list):
         partitioned_coeffs = [list(p) for p in partitioned_coeffs]
 
-    return partitioned_paulis, partitioned_coeffs
+    return partitioned_coeffs

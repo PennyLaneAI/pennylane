@@ -16,7 +16,7 @@ Contains the BasisStatePreparation template.
 """
 
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class QutritBasisStatePreparation(Operation):

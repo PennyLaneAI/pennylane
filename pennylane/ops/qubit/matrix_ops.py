@@ -21,13 +21,12 @@ from itertools import product
 
 import numpy as np
 from scipy.linalg import fractional_matrix_power
-from pennylane.math import norm, cast, eye, zeros, transpose, conj, sqrt, sqrt_matrix
-from pennylane import numpy as pnp
 
 import pennylane as qml
+from pennylane import numpy as pnp
+from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
 from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
 from pennylane.wires import Wires
-
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 

@@ -18,16 +18,16 @@
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
-from typing import List, Union, Sequence
 import warnings
+from typing import List, Sequence, Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.typing import TensorLike
 from pennylane.ops import functions
+from pennylane.typing import TensorLike
 
-from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian
+from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 has_jax = True
 try:

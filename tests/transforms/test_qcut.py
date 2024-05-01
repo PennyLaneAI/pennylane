@@ -21,16 +21,17 @@ import copy
 import itertools
 import string
 import sys
+from functools import partial
 from itertools import product
 from os import environ
 from pathlib import Path
-from functools import partial
 
 import numpy as onp
 import pytest
 from flaky import flaky
-from networkx import MultiDiGraph, number_of_selfloops
+from networkx import MultiDiGraph
 from networkx import __version__ as networkx_version
+from networkx import number_of_selfloops
 from scipy.stats import unitary_group
 
 import pennylane as qml

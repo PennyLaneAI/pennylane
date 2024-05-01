@@ -247,9 +247,9 @@ import copy
 import functools
 import itertools
 import warnings
+from contextlib import contextmanager
 from enum import IntEnum
 from typing import List, Tuple
-from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -261,8 +261,8 @@ from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .utils import pauli_eigs
 from .pytrees import register_pytree
+from .utils import pauli_eigs
 
 # =============================================================================
 # Errors
@@ -2955,9 +2955,12 @@ def gen_is_multi_term_hamiltonian(obj):
     return isinstance(o, (qml.ops.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
-def enable_new_opmath():
+def enable_new_opmath(warn=True):
     """
     Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
+
+    Args:
+        warn (bool): Whether or not to emit a warning for re-enabling new opmath. Default is ``True``.
 
     **Example**
 
@@ -2969,13 +2972,22 @@ def enable_new_opmath():
     >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
     """
+    if warn:
+        warnings.warn(
+            "Re-enabling the new Operator arithmetic system after disabling it is not advised."
+            "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
+            UserWarning,
+        )
     global __use_new_opmath
     __use_new_opmath = True
 
 
-def disable_new_opmath():
+def disable_new_opmath(warn=True):
     """
     Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
+
+    Args:
+        warn (bool): Whether or not to emit a warning for disabling new opmath. Default is ``True``.
 
     **Example**
 
@@ -2987,6 +2999,13 @@ def disable_new_opmath():
     >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.operation.Tensor'>
     """
+    if warn:
+        warnings.warn(
+            "Disabling the new Operator arithmetic system for legacy support."
+            "If you need help troubleshooting your code, please visit"
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
+            UserWarning,
+        )
     global __use_new_opmath
     __use_new_opmath = False
 
@@ -3040,15 +3059,15 @@ def disable_new_opmath_cm():
     was_active = qml.operation.active_new_opmath()
     try:
         if was_active:
-            disable_new_opmath()
+            disable_new_opmath(warn=False)
         yield
     except Exception as e:
         raise e
     finally:
         if was_active:
-            enable_new_opmath()
+            enable_new_opmath(warn=False)
         else:
-            disable_new_opmath()
+            disable_new_opmath(warn=False)
 
 
 @contextmanager
@@ -3058,12 +3077,12 @@ def enable_new_opmath_cm():
 
     was_active = qml.operation.active_new_opmath()
     if not was_active:
-        enable_new_opmath()
+        enable_new_opmath(warn=False)
     yield
     if was_active:
-        enable_new_opmath()
+        enable_new_opmath(warn=False)
     else:
-        disable_new_opmath()
+        disable_new_opmath(warn=False)
 
 
 # pylint: disable=too-many-branches

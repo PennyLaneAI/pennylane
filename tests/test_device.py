@@ -14,12 +14,13 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
-from importlib import metadata, reload
 from collections import OrderedDict
+from importlib import metadata, reload
 from sys import version_info
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import Device, DeviceError
 from pennylane.wires import Wires

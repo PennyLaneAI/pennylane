@@ -15,11 +15,11 @@ r"""
 Contains the ControlledSequence template.
 """
 from copy import copy
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import Wires
 from pennylane.ops.op_math.symbolicop import SymbolicOp
+from pennylane.wires import Wires
 
 
 class ControlledSequence(SymbolicOp, Operation):

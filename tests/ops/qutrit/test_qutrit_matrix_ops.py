@@ -14,16 +14,16 @@
 """
 Unit tests for the qutrit matrix-based operations.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
-import numpy as np
+from gate_data import TSWAP
 from scipy.stats import unitary_group
 
-from gate_data import TSWAP
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
-
+from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),

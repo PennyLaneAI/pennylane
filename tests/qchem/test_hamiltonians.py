@@ -21,8 +21,8 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import active_new_opmath
 from pennylane.fermi import from_string
+from pennylane.operation import active_new_opmath
 
 
 @pytest.mark.parametrize(

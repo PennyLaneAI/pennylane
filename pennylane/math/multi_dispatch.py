@@ -901,7 +901,7 @@ def svd(tensor, like=None, **kwargs):
         if ``compute_uv`` is ``False``
     """
     if like == "tensorflow":
-        from tensorflow.linalg import svd, adjoint
+        from tensorflow.linalg import adjoint, svd
 
         # Tensorflow results need some post-processing to keep it similar to other frameworks.
 

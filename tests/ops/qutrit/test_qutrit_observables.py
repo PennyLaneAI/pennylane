@@ -14,8 +14,9 @@
 """Unit tests for qutrit observables."""
 import functools
 from unittest.mock import PropertyMock, patch
-import pytest
+
 import numpy as np
+import pytest
 from gate_data import GELL_MANN
 
 import pennylane as qml

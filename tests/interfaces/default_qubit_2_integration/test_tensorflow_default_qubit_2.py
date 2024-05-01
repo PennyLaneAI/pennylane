@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tensorflow specific tests for execute and default qubit 2."""
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
+from pennylane import execute
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane import execute
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
@@ -707,24 +707,24 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
-@pytest.mark.parametrize("use_new_op_math", (True, False))
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
     @pytest.fixture
-    def cost_fn(self, execute_kwargs, shots, device, use_new_op_math):
+    def cost_fn(self, execute_kwargs, shots, device):
         """Cost function for gradient tests"""
 
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             H1 = qml.Hamiltonian(coeffs1, obs1)
-            if use_new_op_math:
+            if qml.operation.active_new_opmath():
                 H1 = qml.pauli.pauli_sentence(H1).operation()
 
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
-            if use_new_op_math:
+            if qml.operation.active_new_opmath():
                 H2 = qml.pauli.pauli_sentence(H2).operation()
 
             with qml.queuing.AnnotatedQueue() as q:
@@ -767,12 +767,10 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(
-        self, execute_kwargs, cost_fn, shots, use_new_op_math
-    ):
+    def test_multiple_hamiltonians_not_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
 
-        if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
+        if execute_kwargs["gradient_fn"] == "adjoint" and not qml.operation.active_new_opmath():
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
 
         device_vjp = execute_kwargs.get("device_vjp", False)
@@ -791,11 +789,11 @@ class TestHamiltonianWorkflows:
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
         assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, shots, use_new_op_math):
+    def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, shots):
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
-        if use_new_op_math:
+        if qml.operation.active_new_opmath():
             pytest.skip("parameter shift derivatives do not yet support sums.")
 
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)

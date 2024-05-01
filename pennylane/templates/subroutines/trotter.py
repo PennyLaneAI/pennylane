@@ -189,9 +189,13 @@ class TrotterProduct(ErrorOperation):
                 raise ValueError(
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = qml.dot(coeffs, ops)
 
         if isinstance(hamiltonian, SProd):
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = hamiltonian.simplify()
             if len(hamiltonian.terms()[0]) < 2:
                 raise ValueError(
@@ -217,6 +221,11 @@ class TrotterProduct(ErrorOperation):
             "check_hermitian": check_hermitian,
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
+
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["base"])
+        context.append(self)
+        return self
 
     def error(
         self, method: str = "commutator", fast: bool = True

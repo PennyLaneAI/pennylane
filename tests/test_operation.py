@@ -26,13 +26,13 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import (
+    _UNSET_BATCH_SIZE,
     Operation,
     Operator,
     StatePrepBase,
     Tensor,
     convert_to_legacy_H,
     operation_derivative,
-    _UNSET_BATCH_SIZE,
 )
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
@@ -2830,6 +2830,23 @@ def test_op_arithmetic_toggle():
     with qml.operation.disable_new_opmath_cm():
         assert not qml.operation.active_new_opmath()
         assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
+
+
+@pytest.mark.usefixtures("use_new_opmath")
+def test_disable_enable_new_opmath():
+    """Test that disabling and re-enabling new opmath works and raises the correct warning"""
+    with pytest.warns(UserWarning, match="Disabling the new Operator arithmetic"):
+        qml.operation.disable_new_opmath()
+
+    assert not qml.operation.active_new_opmath()
+
+    with pytest.warns(
+        UserWarning,
+        match="Re-enabling the new Operator arithmetic system after disabling it is not advised.",
+    ):
+        qml.operation.enable_new_opmath()
+
+    assert qml.operation.active_new_opmath()
 
 
 def test_docstring_example_of_operator_class(tol):

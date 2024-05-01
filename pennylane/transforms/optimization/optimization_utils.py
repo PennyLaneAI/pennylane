@@ -18,10 +18,10 @@ from functools import partial
 import numpy as np
 
 from pennylane.math import abs as math_abs
-from pennylane.math import sum as math_sum
 from pennylane.math import allclose, arccos, arctan2, cos, get_interface, is_abstract, sin, stack
-from pennylane.wires import Wires
+from pennylane.math import sum as math_sum
 from pennylane.ops.identity import GlobalPhase
+from pennylane.wires import Wires
 
 
 def find_next_gate(wires, op_list):

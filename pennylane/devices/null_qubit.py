@@ -17,34 +17,36 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 """
 # pylint:disable=unused-argument
 
+import inspect
+import logging
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Union, Callable, Tuple, Sequence
-import inspect
-import logging
+from typing import Callable, Sequence, Tuple, Union
+
 import numpy as np
+
 from pennylane import math
 from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
-
+from pennylane.measurements import (
+    ClassicalShadowMP,
+    CountsMP,
+    DensityMatrixMP,
+    MeasurementProcess,
+    MeasurementValue,
+    ProbabilityMP,
+    Shots,
+    StateMP,
+)
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
-from pennylane.measurements import (
-    MeasurementProcess,
-    CountsMP,
-    StateMP,
-    ProbabilityMP,
-    Shots,
-    MeasurementValue,
-    ClassicalShadowMP,
-    DensityMatrixMP,
-)
 
-from . import Device, DefaultQubit
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from . import DefaultQubit, Device
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -277,10 +279,28 @@ class NullQubit(Device):
         """No-op property to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return None
 
+    # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config=DefaultExecutionConfig
     ) -> Tuple[TransformProgram, ExecutionConfig]:
         program, _ = DefaultQubit.preprocess(self, execution_config)
+        for t in program:
+            if t.transform == decompose.transform:
+                original_stopping_condition = t.kwargs["stopping_condition"]
+
+                def new_stopping_condition(op):
+                    return (not op.has_decomposition) or original_stopping_condition(op)
+
+                t.kwargs["stopping_condition"] = new_stopping_condition
+
+                original_shots_stopping_condition = t.kwargs.get("stopping_condition_shots", None)
+                if original_shots_stopping_condition:
+
+                    def new_shots_stopping_condition(op):
+                        return (not op.has_decomposition) or original_shots_stopping_condition(op)
+
+                    t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition
+
         updated_values = {}
         if execution_config.gradient_method in ["best", "adjoint"]:
             updated_values["gradient_method"] = "device"

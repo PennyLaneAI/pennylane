@@ -329,35 +329,35 @@ during autodifferentiation.
 For more details, please see the :func:`qml.transform <pennylane.transform>`
 documentation.
 """
-from . import parameter_shift
-from . import parameter_shift_cv
-from . import parameter_shift_hessian
-from . import finite_difference
-from . import spsa_gradient
-from . import hadamard_gradient
-from . import pulse_gradient
-from . import pulse_gradient_odegen
-
-from .gradient_transform import SUPPORTED_GRADIENT_KWARGS
+from . import (
+    finite_difference,
+    hadamard_gradient,
+    parameter_shift,
+    parameter_shift_cv,
+    parameter_shift_hessian,
+    pulse_gradient,
+    pulse_gradient_odegen,
+    spsa_gradient,
+)
+from .adjoint_metric_tensor import adjoint_metric_tensor
+from .classical_jacobian import classical_jacobian
 from .finite_difference import finite_diff, finite_diff_coeffs
+from .general_shift_rules import (
+    eigvals_to_frequencies,
+    generate_multi_shift_rule,
+    generate_multishifted_tapes,
+    generate_shift_rule,
+    generate_shifted_tapes,
+)
+from .gradient_transform import SUPPORTED_GRADIENT_KWARGS
+from .hadamard_gradient import hadamard_grad
+from .hamiltonian_grad import hamiltonian_grad
+from .jvp import batch_jvp, compute_jvp_multi, compute_jvp_single, jvp
+from .metric_tensor import metric_tensor
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
-from .vjp import batch_vjp, vjp, compute_vjp_multi, compute_vjp_single
-from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
-from .spsa_gradient import spsa_grad
-from .hadamard_gradient import hadamard_grad
 from .pulse_gradient import stoch_pulse_grad
 from .pulse_gradient_odegen import pulse_odegen
-from .adjoint_metric_tensor import adjoint_metric_tensor
-from .metric_tensor import metric_tensor
-from .classical_jacobian import classical_jacobian
-
-from .hamiltonian_grad import hamiltonian_grad
-from .general_shift_rules import (
-    eigvals_to_frequencies,
-    generate_shift_rule,
-    generate_multi_shift_rule,
-    generate_shifted_tapes,
-    generate_multishifted_tapes,
-)
+from .spsa_gradient import spsa_grad
+from .vjp import batch_vjp, compute_vjp_multi, compute_vjp_single, vjp

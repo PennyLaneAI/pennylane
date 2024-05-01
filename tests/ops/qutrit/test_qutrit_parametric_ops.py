@@ -18,14 +18,15 @@ Unit tests for the available built-in parametric qutrit operations.
 
 import copy
 from functools import reduce
-import pytest
-import numpy as np
-from gate_data import TSHIFT, TCLOCK
-from pennylane import numpy as npp
-import pennylane as qml
-from pennylane.wires import Wires
-from pennylane.ops.qutrit import validate_subspace
 
+import numpy as np
+import pytest
+from gate_data import TCLOCK, TSHIFT
+
+import pennylane as qml
+from pennylane import numpy as npp
+from pennylane.ops.qutrit import validate_subspace
+from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
     qml.TRX(0.123, wires=0, subspace=(0, 1)),

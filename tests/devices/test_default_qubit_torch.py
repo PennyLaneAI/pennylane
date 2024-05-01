@@ -20,10 +20,11 @@ import math
 import numpy as np
 import pytest
 from gate_data import (
+    CCZ,
+    CH,
     CNOT,
     CSWAP,
     CZ,
-    CH,
     SWAP,
     ControlledPhaseShift,
     CRot3,
@@ -33,6 +34,7 @@ from gate_data import (
     DoubleExcitation,
     DoubleExcitationMinus,
     DoubleExcitationPlus,
+    FermionicSWAP,
     H,
     IsingXX,
     IsingYY,
@@ -40,7 +42,6 @@ from gate_data import (
     MultiRZ1,
     MultiRZ2,
     OrbitalRotation,
-    FermionicSWAP,
     Rot3,
     Rotx,
     Roty,
@@ -52,7 +53,6 @@ from gate_data import (
     SingleExcitationPlus,
     T,
     Toffoli,
-    CCZ,
     X,
     Y,
     Z,

@@ -399,6 +399,24 @@ class TestInitialization:
             qml.matrix(op2, wire_order=hamiltonian.wires),
         )
 
+    @pytest.mark.parametrize(
+        "make_H",
+        [
+            lambda: qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)]),
+            lambda: qml.sum(qml.PauliX(0), qml.PauliY(1)),
+            lambda: qml.s_prod(1.2, qml.PauliX(0) + qml.PauliY(1)),
+        ],
+    )
+    def test_queuing(self, make_H):
+        """Test that the target operator is removed from the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            H = make_H()
+            op = qml.TrotterProduct(H, time=2)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] is op
+
 
 class TestPrivateFunctions:
     """Test the private helper functions."""
