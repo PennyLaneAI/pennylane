@@ -213,7 +213,9 @@
   [X(0)]
   ```
 
-<h4>Simulate mixed-state qutrit systems 3️⃣</h4>
+<h3>Improvements 🛠</h3>
+
+<h4>Simulate mixed-state qutrit systems</h4>
 
 * Mixed qutrit states can now be simulated with the `"default.qutrit.mixed"` device.
   [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
@@ -254,8 +256,6 @@
 
   However, there's one crucial ingredient that we still need to add: support for qutrit noise
   operations. Keep your eyes peeled for this to arrive in the coming releases!
-
-<h3>Improvements 🛠</h3>
 
 <h4>Work easily and efficiently with operators</h4>
 
