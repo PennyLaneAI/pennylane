@@ -888,7 +888,7 @@ def svd(tensor, like=None, **kwargs):
 
     .. math::
 
-        A = U . Diag(S) . V_h
+        A = U \cdot Diag(S) \cdot V_h
 
     Args:
         tensor (tensor_like): input tensor
