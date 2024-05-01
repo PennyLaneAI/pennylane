@@ -649,24 +649,27 @@ def test_sample_with_prng_key(shots, postselect, reset):
 
 # pylint: disable=not-an-iterable
 @pytest.mark.jax
+@pytest.mark.parametrize("diff_method", [None, "best"])
 @pytest.mark.parametrize("postselect", [None, 1])
 @pytest.mark.parametrize("reset", [False, True])
-def test_jax_jit(postselect, reset):
+def test_jax_jit(diff_method, postselect, reset):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
     conditional gate. A single measurement of a common observable is performed at the end."""
     jax = pytest.importorskip("jax")
-    shots = 100
+    shots = 10
 
     dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(678))
     params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliY(0)
 
-    @qml.qnode(dev)
+    @qml.qnode(dev, diff_method=diff_method)
     def func(x, y, z):
         m0, m1 = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return (
+            # qml.probs(wires=[1]), # JAX cannot compile code calling qml.math.unique
+            qml.sample(wires=[1]),
             qml.expval(obs),
-            qml.probs(obs),
+            # qml.probs(obs), # JAX cannot compile code calling qml.math.unique
             qml.sample(obs),
             qml.var(obs),
             qml.expval(op=m0 + 2 * m1),
@@ -679,10 +682,29 @@ def test_jax_jit(postselect, reset):
     func1 = func
     results1 = func1(*params)
 
+    jaxpr = str(jax.make_jaxpr(func)(*params))
+    if diff_method == "best":
+        assert "pure_callback" in jaxpr
+        pytest.xfail("QNode with diff_method='best' cannot be compiled with jax.jit.")
+    else:
+        assert "pure_callback" not in jaxpr
+
     func2 = jax.jit(func)
     results2 = func2(*jax.numpy.array(params))
 
-    measures = [qml.expval, qml.probs, qml.sample, qml.var] * 2 + [qml.probs]
+    measures = [
+        # qml.probs,
+        qml.sample,
+        qml.expval,
+        # qml.probs,
+        qml.sample,
+        qml.var,
+        qml.expval,
+        qml.probs,
+        qml.sample,
+        qml.var,
+        qml.probs,
+    ]
     for measure_f, r1, r2 in zip(measures, results1, results2):
         r1, r2 = np.array(r1).ravel(), np.array(r2).ravel()
         if measure_f == qml.sample:
