@@ -611,7 +611,7 @@
   [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
 
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
-  [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
+  [(#5455)](https://github.com/PennyLaneAI/pennylane/pull/5455)
 
 * The `QNSPSAOptimizer` now properly handles differentiable parameters, resulting in being able to use it for more than one optimization step.
   [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
