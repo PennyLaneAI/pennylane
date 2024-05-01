@@ -256,7 +256,7 @@ jobs:
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: true
-      jax_version: 0.4.26
+      jax_version: 0.4.23
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
