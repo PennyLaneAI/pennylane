@@ -18,18 +18,18 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubitLegacy
+from pennylane.math.matrix_manipulation import _permute_dense_matrix
+from pennylane.math.quantum import reduce_dm, reduce_statevector
 from pennylane.measurements import (
-    State,
-    StateMP,
     DensityMatrixMP,
     Shots,
+    State,
+    StateMP,
     density_matrix,
     expval,
     state,
 )
-from pennylane.math.quantum import reduce_statevector, reduce_dm
-from pennylane.math.matrix_manipulation import _permute_dense_matrix
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError, Wires
 
 
 class TestStateMP:

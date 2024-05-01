@@ -17,12 +17,12 @@ different optimization problems.
 """
 # pylint: disable=unnecessary-lambda-assignment
 from typing import Iterable, Union
+
 import networkx as nx
 import rustworkx as rx
 
 import pennylane as qml
 from pennylane import qaoa
-
 
 ########################
 # Hamiltonian components

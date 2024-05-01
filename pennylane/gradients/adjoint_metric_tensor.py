@@ -14,11 +14,12 @@
 """
 Contains the adjoint_metric_tensor.
 """
-from typing import Sequence, Callable
-from itertools import chain
 from functools import partial
+from itertools import chain
+from typing import Callable, Sequence
 
 import numpy as np
+
 import pennylane as qml
 
 # pylint: disable=too-many-statements,unused-argument

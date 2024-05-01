@@ -17,7 +17,6 @@ Tests the `single_tape_support` device modifier.
 """
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
 import pennylane as qml
-
 from pennylane.devices.modifiers import single_tape_support
 
 

@@ -20,12 +20,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.optimize import (
+    AdagradOptimizer,
+    AdamOptimizer,
     GradientDescentOptimizer,
     MomentumOptimizer,
     NesterovMomentumOptimizer,
-    AdagradOptimizer,
     RMSPropOptimizer,
-    AdamOptimizer,
 )
 
 

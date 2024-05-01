@@ -15,6 +15,7 @@
 This module contains the functions needed for computing the spin observables.
 """
 import numpy as np
+
 from pennylane.fermi import FermiSentence, FermiWord
 
 from .observable_hf import qubit_observable

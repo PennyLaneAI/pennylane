@@ -21,14 +21,10 @@ import pytest
 import pennylane as qml
 
 try:
+    from pennylane.pulse.hardware_hamiltonian import _reorder_parameters, amplitude_and_phase, drive
     from pennylane.pulse.parametrized_hamiltonian_pytree import (
         LazyDotPytree,
         ParametrizedHamiltonianPytree,
-    )
-    from pennylane.pulse.hardware_hamiltonian import (
-        _reorder_parameters,
-        amplitude_and_phase,
-        drive,
     )
 except ImportError:
     pass

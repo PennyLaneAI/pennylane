@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file tests the convert_to_numpy_parameters function."""
-import pytest
-
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.convert_to_numpy_parameters import (
-    _convert_op_to_numpy_data,
     _convert_measurement_to_numpy_data,
+    _convert_op_to_numpy_data,
 )
-
 
 ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),

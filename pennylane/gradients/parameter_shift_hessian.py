@@ -17,11 +17,12 @@ of a qubit-based quantum tape.
 """
 import itertools as it
 import warnings
-from string import ascii_letters as ABC
 from functools import partial
-from typing import Sequence, Callable
+from string import ascii_letters as ABC
+from typing import Callable, Sequence
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
 from pennylane.transforms import transform

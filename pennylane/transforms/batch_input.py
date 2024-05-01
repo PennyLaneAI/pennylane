@@ -16,10 +16,11 @@ Batch transformation for multiple (non-trainable) input examples following issue
 from typing import Callable, Sequence, Union
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
+from pennylane.transforms.core import transform
 
 
 @transform

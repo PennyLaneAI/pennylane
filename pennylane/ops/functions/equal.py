@@ -22,24 +22,24 @@ from typing import Union
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
-from pennylane.measurements.mid_measure import MidMeasureMP, MeasurementValue
+from pennylane.measurements.counts import CountsMP
+from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.measurements.counts import CountsMP
-from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import (
+    Adjoint,
+    CompositeOp,
+    Controlled,
+    Exp,
     Hamiltonian,
     LinearCombination,
-    Controlled,
     Pow,
-    Adjoint,
-    Exp,
     SProd,
-    CompositeOp,
 )
-from pennylane.templates.subroutines import ControlledSequence
+from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumTape
+from pennylane.templates.subroutines import ControlledSequence
 
 
 def equal(

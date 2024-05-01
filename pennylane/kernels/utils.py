@@ -15,6 +15,7 @@
 This file contains functionalities that simplify working with kernels.
 """
 from itertools import product
+
 import pennylane as qml
 
 

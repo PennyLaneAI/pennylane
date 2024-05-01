@@ -14,9 +14,10 @@
 """
 Unit tests for the quantum phase estimation subroutine.
 """
-import pytest
 import numpy as np
+import pytest
 from scipy.stats import unitary_group
+
 import pennylane as qml
 
 

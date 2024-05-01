@@ -17,14 +17,14 @@ import math
 
 import pytest
 import scipy as sp
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.ops.op_math.decompositions.solovay_kitaev import (
-    _SU2_transform,
-    _quaternion_transform,
-    _contains_SU2,
     _approximate_set,
+    _contains_SU2,
     _group_commutator_decompose,
+    _quaternion_transform,
+    _SU2_transform,
     sk_decomposition,
 )
 

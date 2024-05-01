@@ -16,15 +16,16 @@ Unit tests for the ParametrizedEvolution class
 """
 # pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access
 from functools import reduce
-import numpy as np
 
+import numpy as np
 import pytest
+
 import pennylane as qml
+from pennylane.devices import DefaultQubit, DefaultQubitLegacy
 from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 from pennylane.tape import QuantumTape
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy
 
 
 class MyOp(qml.RX):

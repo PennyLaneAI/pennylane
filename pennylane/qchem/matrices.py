@@ -18,6 +18,7 @@ This module contains the functions needed for computing matrices.
 import itertools as it
 
 import numpy as np
+
 import pennylane as qml
 
 from .integrals import (
