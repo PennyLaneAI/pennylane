@@ -299,10 +299,11 @@ def test_node_ids(monkeypatch):
         assert mn.id == "some_string"
         assert pn.id == "some_string"
 
+
 @pytest.mark.parametrize("cls", [qcut.MeasureNode, qcut.PrepareNode])
 class TestMeasurePrepareNodes:
     """Tests for the MeasureNode and PrepareNode classes."""
-    
+
     def test_initialization(self, cls):
         """Test that nodes can be initialized with wires."""
         n = cls(wires=0)

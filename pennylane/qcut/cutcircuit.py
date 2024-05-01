@@ -292,12 +292,12 @@ def cut_circuit(
 
         The circuit fragments can now be visualized:
 
-        >>> print(fragment_tapes[0].draw())
-        0: ──RX─╭●──RY──────────┤  <Z>
-        1: ──RY─╰Z──MeasureNode─┤
+        >>> print(fragment_tapes[0].draw(decimals=2))
+        0: ──RX(0.53)─╭●──RY(-0.40)───┤  <Z>
+        1: ──RY(0.90)─╰Z──MeasureNode─┤
 
-        >>> print(fragment_tapes[1].draw())
-        2: ──RX──────────╭Z─┤ ╭<Z@Z>
+        >>> print(fragment_tapes[1].draw(decimals=1))
+        2: ──RX(0.3)─────╭Z─┤ ╭<Z@Z>
         1: ──PrepareNode─╰●─┤ ╰<Z@Z>
 
         Additionally, we must remap the tape wires to match those available on our device.
@@ -326,29 +326,29 @@ def cut_circuit(
 
         >>> for t in tapes:
         ...     print(qml.drawer.tape_text(t))
+        ...     print()
 
         .. code-block::
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@I> ╭<Z@Z>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@I> ╰<Z@Z>
 
-            0: ──RX─╭●──RY─┤ ╭<Z@I> ╭<Z@Z>
-            1: ──RY─╰Z─────┤ ╰<Z@I> ╰<Z@Z>
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@X>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@X>
 
-            0: ──RX─╭●──RY─┤ ╭<Z@X>
-            1: ──RY─╰Z─────┤ ╰<Z@X>
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@Y>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@Y>
 
-            0: ──RX─╭●──RY─┤ ╭<Z@Y>
-            1: ──RY─╰Z─────┤ ╰<Z@Y>
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──I────────╰●─┤ ╰<Z@Z>
 
-            0: ──RX─╭Z─┤ ╭<Z@Z>
-            1: ──I──╰●─┤ ╰<Z@Z>
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──X────────╰●─┤ ╰<Z@Z>
 
-            0: ──RX─╭Z─┤ ╭<Z@Z>
-            1: ──X──╰●─┤ ╰<Z@Z>
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──H────────╰●─┤ ╰<Z@Z>
 
-            0: ──RX─╭Z─┤ ╭<Z@Z>
-            1: ──H──╰●─┤ ╰<Z@Z>
-
-            0: ──RX────╭Z─┤ ╭<Z@Z>
-            1: ──H───S─╰●─┤ ╰<Z@Z>
+            0: ──RX(0.30)────╭Z─┤ ╭<Z@Z>
+            1: ──H─────────S─╰●─┤ ╰<Z@Z>
 
         The last step is to execute the tapes and postprocess the results using
         :func:`~.qcut_processing_fn`, which processes the results to the original full circuit

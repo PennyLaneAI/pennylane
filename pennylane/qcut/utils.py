@@ -146,11 +146,11 @@ def find_and_place_cuts(
         measurements = [qml.expval(qml.X(0) @ qml.Y("a") @ qml.Z("b"))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape))
-    0: ──RX─╭●────────╭●─────┤ ╭<X@Y@Z>
-    1: ──RY─╰X──//─╭●─╰X─────┤ │
-    a: ──RX─╭●─────╰X─╭●──RX─┤ ├<X@Y@Z>
-    b: ──RY─╰X────────╰X──RY─┤ ╰<X@Y@Z>
+    >>> print(qml.drawer.tape_text(tape, decimals=1))
+    0: ──RX(0.1)─╭●────────╭●──────────┤ ╭<X@Y@Z>
+    1: ──RY(0.2)─╰X──//─╭●─╰X──────────┤ │
+    a: ──RX(0.3)─╭●─────╰X─╭●──RX(0.5)─┤ ├<X@Y@Z>
+    b: ──RY(0.4)─╰X────────╰X──RY(0.6)─┤ ╰<X@Y@Z>
 
     Since the existing :class:`~.WireCut` doesn't sufficiently fragment the circuit, we can find the
     remaining cuts using the default KaHyPar partitioner:
@@ -164,11 +164,11 @@ def find_and_place_cuts(
 
     Visualizing the newly-placed cut:
 
-    >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
-    0: ──RX─╭●────────────╭●──┤ ╭<X@Y@Z>
-    1: ──RY─╰X──//─╭●──//─╰X──┤ │
-    a: ──RX─╭●─────╰X─╭●───RX─┤ ├<X@Y@Z>
-    b: ──RY─╰X────────╰X───RY─┤ ╰<X@Y@Z>
+    >>> print(qml.qcut.graph_to_tape(cut_graph).draw(decimals=1))
+    0: ──RX(0.1)─╭●────────────╭●───────┤ ╭<X@Y@Z>
+    1: ──RY(0.2)─╰X──//─╭●──//─╰X───────┤ │
+    a: ──RX(0.3)─╭●─────╰X─╭●───RX(0.5)─┤ ├<X@Y@Z>
+    b: ──RY(0.4)─╰X────────╰X───RY(0.6)─┤ ╰<X@Y@Z>
 
     We can then proceed with the usual process of replacing :class:`~.WireCut` nodes with
     pairs of :class:`~.MeasureNode` and :class:`~.PrepareNode`, and then break the graph
@@ -226,10 +226,10 @@ def find_and_place_cuts(
             cut_strategy=cut_strategy,
         )
     >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
-    0: ──RX──//─╭●──//────────╭●─────────┤ ╭<X@Y@Z>
-    1: ──RY─────╰X──//─╭●──//─╰X─────────┤ │
-    a: ──RX──//─╭●──//─╰X──//─╭●──//──RX─┤ ├<X@Y@Z>
-    b: ──RY─────╰X──//────────╰X──//──RY─┤ ╰<X@Y@Z>
+    0: ──RX──//─╭●──//────────╭●──//────────┤ ╭<X@Y@Z>
+    1: ──RY──//─╰X──//─╭●──//─╰X────────────┤ │
+    a: ──RX──//─╭●──//─╰X──//─╭●──//──RX─//─┤ ├<X@Y@Z>
+    b: ──RY──//─╰X──//────────╰X──//──RY────┤ ╰<X@Y@Z>
 
     As one can tell, quite a few cuts have to be made in order to execute the circuit on solely
     2-qubit devices. To verify, let's print the fragments:
@@ -490,9 +490,9 @@ def place_wire_cuts(
         measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape))
-    0: ──RX─╭●─┤  <Z>
-    a: ──RY─╰X─┤
+    >>> print(qml.drawer.tape_text(tape, decimals=3))
+    0: ──RX(0.432)─╭●─┤  <Z>
+    a: ──RY(0.543)─╰X─┤
 
     If we know we want to place a :class:`~.WireCut` node between the nodes corresponding to the
     ``RY(0.543, wires=["a"])`` and ``CNOT(wires=[0, 'a'])`` operations after the tape is constructed,
@@ -512,9 +512,9 @@ def place_wire_cuts(
 
     And visualize the cut by converting back to a tape:
 
-    >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
-    0: ──RX─────╭●─┤  <Z>
-    a: ──RY──//─╰X─┤
+    >>> print(qml.qcut.graph_to_tape(cut_graph).draw(decimals=3))
+    0: ──RX(0.432)─────╭●─┤  <Z>
+    a: ──RY(0.543)──//─╰X─┤
     """
     cut_graph = graph.copy()
 
