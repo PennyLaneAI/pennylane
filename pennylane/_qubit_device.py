@@ -1555,26 +1555,36 @@ class QubitDevice(Device):
                 samples = sub_samples
 
         else:
-            # Replace the basis state in the computational basis with the correct eigenvalue.
-            # Extract only the columns of the basis samples required based on ``wires``.
-            samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
-            powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
-            indices = samples @ powers_of_two
-            indices = np.array(indices)  # Add np.array here for Jax support.
+            # get eigvals
             if isinstance(observable, MeasurementValue):
                 eigvals = self._asarray(
                     [observable[i] for i in range(2 ** len(observable.measurements))],
                     dtype=self.R_DTYPE,
                 )
-                samples = eigvals[indices]
             else:
                 try:
-                    samples = observable.eigvals()[indices]
+                    eigvals = observable.eigvals()
                 except qml.operation.EigvalsUndefinedError as e:
                     # if observable has no info on eigenvalues, we cannot return this measurement
                     raise qml.operation.EigvalsUndefinedError(
                         f"Cannot compute samples of {observable.name}."
                     ) from e
+
+            if np.array_equal(eigvals, [1.0, -1.0]):
+                # special handling for observables with eigvals +1/-1
+                # (this is JIT-compatible, the next block is not)
+                # type should be float
+                samples = 1.0 - 2 * sub_samples[..., device_wires[0]]
+            else:
+                # Replace the basis state in the computational basis with the correct eigenvalue.
+                # Extract only the columns of the basis samples required based on ``wires``.
+                samples = sub_samples[
+                    ..., np.array(device_wires)
+                ]  # Add np.array here for Jax support.
+                powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+                indices = samples @ powers_of_two
+                indices = np.array(indices)  # Add np.array here for Jax support.
+                samples = eigvals[indices]
 
         num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if bin_size is None:
