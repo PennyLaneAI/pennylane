@@ -275,27 +275,49 @@
   To help explain these concepts, check out the
   [dynamical Lie algebras demo](https://pennylane.ai/qml/demos/tutorial_liealgebra).
 
-<h4>Simulate mixed-state qutrit systems 3️⃣</h4>
+<h3>Improvements 🛠</h3>
 
-* Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
- `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
-  [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
+<h4>Simulate mixed-state qutrit systems</h4>
 
-* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
+* Mixed qutrit states can now be simulated with the `"default.qutrit.mixed"` device.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
-
-* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
-  noisy qutrit circuit with measurement and sampling.
+  [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
-* Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
-  for `preprocess`.
-  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
+  Thanks to contributors from the University of British Columbia, a mixed-state
+  qutrit device is now available for simulation, providing a noise-capable
+  equivalent to `"default.qutrit"`.
 
-* Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
-  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+  ```python
+  dev = qml.device("default.qutrit.mixed")
 
-<h3>Improvements 🛠</h3>
+  def circuit():
+      qml.TRY(0.1, wires=0)
+
+  @qml.qnode(dev)
+  def shots_circuit():
+      circuit()
+      return qml.sample(), qml.expval(qml.GellMann(wires=0, index=1))
+
+  @qml.qnode(dev)
+  def density_matrix_circuit():
+      circuit()
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> shots_circuit(shots=5)
+  (array([0, 0, 0, 0, 0]), 0.19999999999999996)
+  >>> density_matrix_circuit()
+  tensor([[0.99750208+0.j, 0.04991671+0.j, 0.        +0.j],
+         [0.04991671+0.j, 0.00249792+0.j, 0.        +0.j],
+         [0.        +0.j, 0.        +0.j, 0.        +0.j]], requires_grad=True)
+  ```
+
+  However, there's one crucial ingredient that we still need to add: support for qutrit noise
+  operations. Keep your eyes peeled for this to arrive in the coming releases!
 
 <h4>Work easily and efficiently with operators</h4>
 
