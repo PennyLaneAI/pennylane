@@ -3043,10 +3043,14 @@ def convert_to_opmath(op):
         Operator: An operator using the new arithmetic operations, if relevant
     """
     if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(op)
         c, ops = op.terms()
         ops = tuple(convert_to_opmath(o) for o in ops)
         return qml.dot(c, ops)
     if isinstance(op, Tensor):
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(op)
         return qml.prod(*op.obs)
     return op
 

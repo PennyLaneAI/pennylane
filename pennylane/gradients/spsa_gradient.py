@@ -187,12 +187,8 @@ def spsa_grad(
     ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.gradients.spsa_grad(circuit)(params)
-    ((tensor(-0.19280803, requires_grad=True),
-      tensor(-0.19280803, requires_grad=True),
-      tensor(0.19280803, requires_grad=True)),
-     (tensor(0.34786926, requires_grad=True),
-      tensor(0.34786926, requires_grad=True),
-      tensor(-0.34786926, requires_grad=True)))
+    (tensor([ 0.18488771, -0.18488771, -0.18488771], requires_grad=True),
+     tensor([-0.33357922,  0.33357922,  0.33357922], requires_grad=True))
 
     Note that the SPSA gradient is a statistical estimator that uses a given number of
     function evaluations that does not depend on the number of parameters. While this
@@ -208,22 +204,14 @@ def spsa_grad(
         a more precise gradient estimation from ``num_directions=20`` directions yields
 
         >>> qml.gradients.spsa_grad(circuit, num_directions=20)(params)
-        ((tensor(-0.27362235, requires_grad=True),
-          tensor(-0.07219669, requires_grad=True),
-          tensor(-0.36369011, requires_grad=True)),
-         (tensor(0.49367656, requires_grad=True),
-          tensor(0.13025915, requires_grad=True),
-          tensor(0.65617915, requires_grad=True)))
+        (tensor([-0.53976776, -0.34385475, -0.46106048], requires_grad=True),
+         tensor([0.97386303, 0.62039169, 0.83185731], requires_grad=True))
 
         We may compare this to the more precise values obtained from finite differences:
 
         >>> qml.gradients.finite_diff(circuit)(params)
-        ((tensor(-0.38751724, requires_grad=True),
-          tensor(-0.18884792, requires_grad=True),
-          tensor(-0.38355708, requires_grad=True)),
-         (tensor(0.69916868, requires_grad=True),
-          tensor(0.34072432, requires_grad=True),
-          tensor(0.69202365, requires_grad=True)))
+        (tensor([-0.38751724, -0.18884792, -0.38355708], requires_grad=True),
+         tensor([0.69916868, 0.34072432, 0.69202365], requires_grad=True))
 
         As we can see, the SPSA output is a rather coarse approximation to the true
         gradient, and this although the parameter-shift rule for three parameters uses
@@ -242,7 +230,7 @@ def spsa_grad(
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
         >>> gradient_tapes
-        [<QuantumTape: wires=[0], params=3>, <QuantumTape: wires=[0], params=3>]
+        [<QuantumScript: wires=[0], params=3>, <QuantumScript: wires=[0], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed. Here we see that for ``num_directions=1``,
@@ -263,15 +251,19 @@ def spsa_grad(
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        ((array(-0.58222637), array(0.58222637), array(-0.58222637)),
-         (array(1.05046797), array(-1.05046797), array(1.05046797)))
+        ((tensor(0.18488771, requires_grad=True),
+          tensor(-0.18488771, requires_grad=True),
+          tensor(-0.18488771, requires_grad=True)),
+         (tensor(-0.33357922, requires_grad=True),
+          tensor(0.33357922, requires_grad=True),
+          tensor(0.33357922, requires_grad=True)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", wires=2, shots=shots)
+        >>> dev = qml.device("default.qubit", shots=shots)
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
@@ -280,11 +272,9 @@ def spsa_grad(
         ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.spsa_grad(circuit, h=1e-2)(params)
-        (((array(0.), array(0.), array(0.)), (array(0.), array(0.), array(0.))),
-         ((array(-1.4), array(-1.4), array(-1.4)),
-          (array(2.548), array(2.548), array(2.548))),
-         ((array(-1.06), array(-1.06), array(-1.06)),
-          (array(1.90588), array(1.90588), array(1.90588))))
+        ((array([ 10.,  10., -10.]), array([-18., -18.,  18.])),
+         (array([-5., -5.,  5.]), array([ 8.9,  8.9, -8.9])),
+         (array([ 1.5,  1.5, -1.5]), array([-2.667, -2.667,  2.667])))
 
         The outermost tuple contains results corresponding to each element of the shot vector,
         as is also visible by the increasing precision.

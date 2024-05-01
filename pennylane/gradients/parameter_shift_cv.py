@@ -665,7 +665,7 @@ def param_shift_cv(
         function, which together define the gradient are directly returned:
 
         >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
-        >>> ops = [qml.Squeezing(r0, phi0, wires=0), qml.Squeezing(r1, phi2, wires=0)]
+        >>> ops = [qml.Squeezing(r0, phi0, wires=0), qml.Squeezing(r1, phi1, wires=0)]
         >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.NumberOperator(0))])
         >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
         >>> gradient_tapes
@@ -682,7 +682,10 @@ def param_shift_cv(
 
         >>> dev = qml.device("default.gaussian", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
+        (-0.32487113372219933,
+         -0.4054074025310772,
+         -0.8704985300843778,
+         0.4054074025310775)
     """
     if len(tape.measurements) > 1:
         raise ValueError(
