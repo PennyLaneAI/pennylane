@@ -469,6 +469,7 @@ def pulse_odegen(
 
     .. code-block:: python
 
+        from jax import numpy as jnp
         jax.config.update("jax_enable_x64", True)
         H = (
             qml.pulse.constant * qml.Y(0)
@@ -483,7 +484,7 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit.jax")
 
         @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
@@ -503,7 +504,8 @@ def pulse_odegen(
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
     >>> circuit.construct((params,), {}) # Build the tape of the circuit.
-    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnums=[0, 1, 2])
+    >>> circuit.tape.trainable_params = [0, 1, 2]
+    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnum=[0, 1, 2])
     >>> len(tapes)
     12
 

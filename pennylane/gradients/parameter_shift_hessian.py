@@ -497,7 +497,7 @@ def param_shift_hessian(
     This works best if no classical processing is applied within the
     QNode to operation parameters.
 
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev)
     ... def circuit(x):
     ...     qml.RX(x[0], wires=0)
@@ -577,7 +577,8 @@ def param_shift_hessian(
 
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape, argnum=(1,))
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
-        ((array(0.), array(0.)), (array(0.), array(0.05998862)))
+        ((tensor(0., requires_grad=True), tensor(0., requires_grad=True)),
+         (tensor(0., requires_grad=True), array(0.05998862)))
 
     """
     # Perform input validation before generating tapes.

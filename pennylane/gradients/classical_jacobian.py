@@ -62,8 +62,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     >>> print(cjac)
     [[1.  0.  0. ]
      [0.2 0.  0. ]
-     [0.  0.  0. ]
-     [0.  1.2 0. ]
+     [0.  2.  0. ]
      [0.  0.  1. ]]
 
     The returned Jacobian has rows corresponding to gate arguments, and columns
