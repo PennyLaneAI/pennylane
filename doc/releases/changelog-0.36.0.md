@@ -70,6 +70,7 @@
   Mathematically, 
   :math:`\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle`.
 
+
   Here's an example with a target state
   :math:`\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle`,
   an input state :math:`\vert \Psi \rangle = H^{\otimes 3} \vert 000 \rangle`, as well as an
@@ -85,7 +86,16 @@
 
   U = generator(wires=range(3))
   O = qml.FlipSign(2, wires=range(3))
+  ```
 
+  Here, `U` is a quantum operation that is created by decorating a quantum 
+  function with `@qml.prod`. This could alternatively be done by creating a 
+  user-defined 
+  [custom operation](https://docs.pennylane.ai/en/stable/development/adding_operators.html) 
+  with a decomposition. Amplitude amplification can then be set up within a 
+  circuit: 
+  
+  ```python
   dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
