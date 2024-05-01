@@ -553,7 +553,7 @@
 
 * Improves the error message for setting shots on the new device interface, or trying to access a property
   that no longer exists.
-   [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
+  [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
 
 * Using shot vectors with `param_shift(... broadcast=True)` caused a bug. This combination is no longer supported
   and will be added again in the next release.
