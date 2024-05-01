@@ -234,7 +234,9 @@ def _evaluate_gradient(tape, res, data, r0, batch_size):
         res = _swap_first_two_axes(res, len(res), len_shot_vec, squeeze=False)
     else:
         # Swap second (measurements) and third (parameters) axis
-        res = tuple(_swap_first_two_axes(r, num_measurements, len(r[0]), squeeze=False) for r in res)
+        res = tuple(
+            _swap_first_two_axes(r, num_measurements, len(r[0]), squeeze=False) for r in res
+        )
     # Axes are now (shots, parameters, measurements)
     # _multi_meas_grad expects (parameters, measurements), so we iterate over shot vector
     return tuple(

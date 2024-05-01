@@ -1027,7 +1027,7 @@ class TestParameterShiftRule:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        tapes_per_param = (1 if broadcast else 2)
+        tapes_per_param = 1 if broadcast else 2
         assert len(tapes) == tapes_per_param * 2
 
         all_res = fn(dev.execute(tapes))
@@ -1061,7 +1061,7 @@ class TestParameterShiftRule:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        tapes_per_param = (1 if broadcast else 2)
+        tapes_per_param = 1 if broadcast else 2
         assert len(tapes) == tapes_per_param * 2
 
         all_res = fn(dev.execute(tapes))
@@ -1224,7 +1224,7 @@ class TestParameterShiftRule:
             assert isinstance(_gA, np.ndarray)
             assert _gA.shape == ()
 
-        tapes_per_param = (1 if broadcast else 2)
+        tapes_per_param = 1 if broadcast else 2
         assert len(tapes) == 1 + tapes_per_param * 1
 
         tapes, fn = qml.gradients.finite_diff(tape, h=h_val)
@@ -1412,7 +1412,7 @@ class TestParameterShiftRule:
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        tapes_per_param = (1 if broadcast else 2)
+        tapes_per_param = 1 if broadcast else 2
         assert len(tapes) == 1 + 2 * tapes_per_param
 
         gradA = fn(dev.execute(tapes))
@@ -1883,7 +1883,14 @@ class TestParameterShiftRule:
 
     costs_and_expected_expval = [
         (cost1, (3,), np.ndarray),
-        (cost2, (1, 3,), list),
+        (
+            cost2,
+            (
+                1,
+                3,
+            ),
+            list,
+        ),
         (cost3, (2, 3), list),
     ]
 

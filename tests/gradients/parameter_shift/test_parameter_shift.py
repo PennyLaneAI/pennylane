@@ -2816,18 +2816,24 @@ class TestParameterShiftRuleBroadcast:
 
         expected_expval = (-np.sin(x), 0)
         expected_probs = (
-            np.array([
-                -(np.cos(y / 2) ** 2 * np.sin(x)),
-                -(np.sin(x) * np.sin(y / 2) ** 2),
-                (np.sin(x) * np.sin(y / 2) ** 2),
-                (np.cos(y / 2) ** 2 * np.sin(x)),
-            ]) / 2,
-            np.array([
-                -(np.cos(x / 2) ** 2 * np.sin(y)),
-                (np.cos(x / 2) ** 2 * np.sin(y)),
-                (np.sin(x / 2) ** 2 * np.sin(y)),
-                -(np.sin(x / 2) ** 2 * np.sin(y)),
-            ]) / 2,
+            np.array(
+                [
+                    -(np.cos(y / 2) ** 2 * np.sin(x)),
+                    -(np.sin(x) * np.sin(y / 2) ** 2),
+                    (np.sin(x) * np.sin(y / 2) ** 2),
+                    (np.cos(y / 2) ** 2 * np.sin(x)),
+                ]
+            )
+            / 2,
+            np.array(
+                [
+                    -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    (np.cos(x / 2) ** 2 * np.sin(y)),
+                    (np.sin(x / 2) ** 2 * np.sin(y)),
+                    -(np.sin(x / 2) ** 2 * np.sin(y)),
+                ]
+            )
+            / 2,
         )
 
         assert np.allclose(res[0], expected_expval, atol=tol, rtol=0)
@@ -2964,7 +2970,7 @@ class TestParameterShiftRuleBroadcast:
             [
                 [2 * ca * sa, -cb * sa, 0],
                 [0, -ca * sb, 0.5 * (2 * cb * c2c * sb + s2b)],
-                [0, 0, cb ** 2 * s2c],
+                [0, 0, cb**2 * s2c],
             ]
         ).T
         assert gradA == pytest.approx(expected, abs=tol)
@@ -3043,10 +3049,9 @@ class TestParameterShiftRuleBroadcast:
             return [qml.probs([0, 1]), qml.probs([2, 3])]
 
         x = np.random.rand(3)
-        single_measure_circuits = (
-            [qml.QNode(cost, dev) for cost in (cost1, cost2, cost4, cost5)]
-            +[qml.QNode(cost, dev) for cost in (cost3, cost6)]
-        )
+        single_measure_circuits = [
+            qml.QNode(cost, dev) for cost in (cost1, cost2, cost4, cost5)
+        ] + [qml.QNode(cost, dev) for cost in (cost3, cost6)]
         expected_shapes = [(3,), (1, 3), (4, 3), (1, 4, 3), (2, 3), (2, 4, 3)]
 
         for c, exp_shape in zip(single_measure_circuits, expected_shapes):
