@@ -139,7 +139,7 @@ pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 python-json-logger==2.0.7
 PyYAML==6.0.1
-pyzmq==26.0.2
+pyzmq==26.0.3
 pyzx==0.8.0
 qdldl==0.1.7.post2
 referencing==0.35.0
@@ -161,7 +161,7 @@ stim==1.13.0
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
 tensorflow==2.16.1
-tensorflow-io-gcs-filesystem==0.36.0
+tensorflow-io-gcs-filesystem==0.37.0
 termcolor==2.4.0
 terminado==0.18.1
 tf_keras==2.16.0

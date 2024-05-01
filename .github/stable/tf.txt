@@ -84,7 +84,7 @@ six==1.16.0
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
 tensorflow==2.16.1
-tensorflow-io-gcs-filesystem==0.36.0
+tensorflow-io-gcs-filesystem==0.37.0
 termcolor==2.4.0
 tf_keras==2.16.0
 toml==0.10.2
