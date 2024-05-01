@@ -132,7 +132,6 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     + ((0.775+0j)) [Y1 Y2]
     + ((0.775+0j)) [X1 X2]
     """
-
     h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     h.simplify(tol=cutoff)
 
