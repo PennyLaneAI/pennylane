@@ -287,13 +287,9 @@ def cut_circuit_mc(
 
         The circuit fragments can now be visualized:
 
-        # TODO MEASURENODE
-
         >>> print(fragment_tapes[0].draw())
         0: ──H─╭●─────────────────┤  Sample[|1⟩⟨1|]
         1: ────╰X──X──MeasureNode─┤
-
-        # TODO MEASURENODE
 
         >>> print(fragment_tapes[1].draw())
         1: ──PrepareNode─╭●─┤  Sample[|1⟩⟨1|]

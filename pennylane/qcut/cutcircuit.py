@@ -293,12 +293,12 @@ def cut_circuit(
         The circuit fragments can now be visualized:
 
         >>> print(fragment_tapes[0].draw())
-        0: ──RX─╭●──RY──────────────────────────────────────────────────┤  <Z>
-        1: ──RY─╰Z──MeasureNode("7663fdaa-79af-4617-912a-5106e5dcb778")─┤
+        0: ──RX─╭●──RY──────────┤  <Z>
+        1: ──RY─╰Z──MeasureNode─┤
 
         >>> print(fragment_tapes[1].draw())
-        2: ──RX──────────────────────────────────────────────────╭Z─┤ ╭<Z@Z>
-        1: ──PrepareNode("01929e32-eb6e-45ba-ba64-0da46c83b882")─╰●─┤ ╰<Z@Z>
+        2: ──RX──────────╭Z─┤ ╭<Z@Z>
+        1: ──PrepareNode─╰●─┤ ╰<Z@Z>
 
         Additionally, we must remap the tape wires to match those available on our device.
 

@@ -142,8 +142,6 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
     subsequently act on wire ``2`` instead of wire ``1``:
 
-    # TODO MEASURENODE
-
     >>> graph = qml.qcut.tape_to_graph(tape)
     >>> tape = qml.qcut.graph_to_tape(graph)
     >>> print(tape.draw())

@@ -38,11 +38,14 @@ class MeasureNode(Operation):
     num_wires = 1
     grad_method = None
 
-    def __init__(self, *params, wires=None, id=None):
+    def __init__(self, wires=None, id=None):
         id = id or str(uuid.uuid4())
 
-        super().__init__(*params, wires=wires, id=id)
+        super().__init__(wires=wires, id=id)
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        op_label = base_label or self.__class__.__name__
+        return op_label
 
 class PrepareNode(Operation):
     """Placeholder node for state preparations"""
@@ -50,10 +53,14 @@ class PrepareNode(Operation):
     num_wires = 1
     grad_method = None
 
-    def __init__(self, *params, wires=None, id=None):
+    def __init__(self, wires=None, id=None):
         id = id or str(uuid.uuid4())
 
-        super().__init__(*params, wires=wires, id=id)
+        super().__init__(wires=wires, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        op_label = base_label or self.__class__.__name__
+        return op_label
 
 
 def _prep_zero_state(wire):
@@ -177,8 +184,6 @@ def find_and_place_cuts(
     >>> for t in frags:
     ...     print(qml.qcut.graph_to_tape(t).draw())
 
-    TODO MEASURENODE
-
     .. code-block::
 
          0: ──RX(0.1)──────╭●───────────────╭●──┤ ⟨X⟩
@@ -232,8 +237,6 @@ def find_and_place_cuts(
     >>> frags, comm_graph = qml.qcut.fragment_graph(cut_graph)
     >>> for t in frags:
     ...     print(qml.qcut.graph_to_tape(t).draw())
-
-    # TODO MEASURENODE
 
     .. code-block::
 
