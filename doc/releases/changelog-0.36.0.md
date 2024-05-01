@@ -72,7 +72,7 @@
 
   Here's an example with 
   :math:`\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle`,
-  :math:`U = H^{\otimes 3}`, and `O` being modelled as a `qml.FlipSign` 
+  :math:`U = H^{\otimes 3}`, and an operator `O` being modelled as a `qml.FlipSign` 
   operation (it is a required argument that flips the sign of 
   :math:`\vert \phi \rangle` and does nothing to 
   :math:`\vert \phi^{\perp} \rangle`):
