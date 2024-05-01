@@ -680,7 +680,7 @@ def test_jax_jit(postselect, reset):
     results1 = func1(*params)
 
     func2 = jax.jit(func)
-    results2 = func2(*jax.numpy.array(params))
+    results2 = func2(*params)
 
     measures = [qml.expval, qml.probs, qml.sample, qml.var] * 2 + [qml.probs]
     for measure_f, r1, r2 in zip(measures, results1, results2):

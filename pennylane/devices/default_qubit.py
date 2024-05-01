@@ -31,7 +31,6 @@ from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumTape
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.transforms.dynamic_one_shot import ImageTape
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
