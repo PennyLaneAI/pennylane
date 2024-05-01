@@ -31,40 +31,52 @@
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
-* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+* The Fast Approximate BLock-Encodings (FABLE) algorithm for embedding
+  a matrix into a quantum circuit as outlined in
+  [arXiv:2205.00081](https://arxiv.org/abs/2205.00081) is now accessible via the `qml.FABLE` 
+  template.
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
-* Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
-  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+  The usage of `qml.FABLE` is similar to `qml.BlockEncode` but provides a more
+  efficient circuit construction at the cost of a user-defined approximation 
+  level, `tol`. The number of wires that `qml.FABLE` operates on is `2*n + 1`, 
+  where `n` defines the dimension of the :math:`2^n \times 2^n` matrix that we
+  want to block-encode.
 
   ```python
-  @qml.prod
-  def generator(wires):
-        qml.Hadamard(wires=wires)
+  A = np.array([[0.1, 0.2], [0.3, 0.4]])
+  dev = qml.device('default.qubit', wires=3)
 
-  U = generator(wires=0)
-
-  dev = qml.device('default.qubit')
   @qml.qnode(dev)
   def circuit():
-
-        # Initialize to the state |1>
-        qml.PauliX(wires=0)
-
-        # Apply the reflection
-        qml.Reflection(U)
-
-        return qml.state()
-
-  ```
+      qml.FABLE(A, tol = 0.001, wires=range(3))  
+      return qml.state()
+  ``` 
 
   ```pycon
-  >>> circuit()
-  tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
+  >>> mat = qml.matrix(circuit)()
+  >>> 2 * mat[0:2, 0:2]
+  array([[0.1+0.j, 0.2+0.j],
+         [0.3+0.j, 0.4+0.j]])
   ```
-  
-* The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
+
+* A high-level interface for amplitude amplification and its variants is now 
+  available via the new `qml.AmplitudeAmplification` template.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
+
+  Based on [arXiv:quant-ph/0005055](https://arxiv.org/abs/quant-ph/0005055), 
+  given a state :math:`\vert \Psi \rangle = \alpha \vert \phi \rangle + \beta \vert \phi^{\perp} \rangle`, 
+  `qml.AmplitudeAmplification` amplifies the amplitude of :math:`\vert \phi \rangle`. 
+  Mathematically, 
+  :math:`\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle`.
+
+
+  Here's an example with a target state
+  :math:`\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle`,
+  an input state :math:`\vert \Psi \rangle = H^{\otimes 3} \vert 000 \rangle`, as well as an
+  oracle that flips the sign of :math:`\vert \phi \rangle` and does nothing to
+  :math:`\vert \phi^{\perp} \rangle`, which can be achieved in this case through
+  `qml.FlipSign`.
 
   ```python
   @qml.prod
@@ -74,53 +86,80 @@
 
   U = generator(wires=range(3))
   O = qml.FlipSign(2, wires=range(3))
+  ```
 
+  Here, `U` is a quantum operation that is created by decorating a quantum 
+  function with `@qml.prod`. This could alternatively be done by creating a 
+  user-defined 
+  [custom operation](https://docs.pennylane.ai/en/stable/development/adding_operators.html) 
+  with a decomposition. Amplitude amplification can then be set up within a 
+  circuit: 
+  
+  ```python
   dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
   def circuit():
-
-      generator(wires=range(3))
-      qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
+      generator(wires=range(3)) # prepares |Psi> = U|0>
+      qml.AmplitudeAmplification(U, O, iters=10)
 
       return qml.probs(wires=range(3))
-
   ```
   
   ```pycon
   >>> print(np.round(circuit(), 3))
-  [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
-
+  [0.01  0.01  0.931 0.01  0.01  0.01  0.01  0.01 ]
   ```
 
-* Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
-  When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
+  As expected, we amplify the :math:`\vert 2 \rangle` state.
+
+* Reflecting about a given quantum state is now available via `qml.Reflection`.
+  This operation is very useful in the amplitude amplification algorithm and offers a generalization
+  of `qml.FlipSign` which operates on basis states.
+  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+
+  `qml.Reflection` works by providing an operation, :math:`U`, that *prepares* the 
+  desired state, :math:`\vert \psi \rangle`, that we want to reflect about. In other 
+  words, :math:`U` is such that :math:`U \vert 0 \rangle = \vert \psi \rangle`. In 
+  PennyLane, :math:`U` must be an `Operator`.
+  
+  For example, if we want to reflect about 
+  :math:`\vert \psi \rangle = \vert + \rangle`, then :math:`U = H`:
+
+  ```python
+  U = qml.Hadamard(wires=wires)
+
+  dev = qml.device('default.qubit')
+  @qml.qnode(dev)
+  def circuit():
+        qml.Reflection(U)
+        return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  tensor([0.-6.123234e-17j, 1.+6.123234e-17j], requires_grad=True)
+  ```
+
+* Performing qubitization is now easily accessible with the new 
+  `qml.Qubitization` operator.
   [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
+
+  `qml.Qubitization` encodes a Hamiltonian into a suitable unitary operator. 
+  When applied in conjunction with quantum phase estimation (QPE), it allows 
+  for computing the eigenvalue of an eigenvector of the given Hamiltonian. 
 
   ```python
   H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
-
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
-
       # initialize the eigenvector
       qml.PauliX(2)
-
       # apply QPE
       measurements = qml.iterative_qpe(
-                    qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
-                    )
+          qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
+      )
       return qml.probs(op = measurements)
-  
-  output = circuit()
-  
-  # post-processing 
-  lamb = sum([abs(c) for c in H.terms()[0]])
-  ```
-  
-  ```pycon
-  >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
-  eigenvalue: 0.7
   ```
 
 <h4>Make use of more methods to map from molecules 🗺️</h4>
