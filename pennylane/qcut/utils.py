@@ -37,6 +37,7 @@ class MeasureNode(Operation):
 
     num_wires = 1
     grad_method = None
+    num_params = 0
 
     def __init__(self, wires=None, id=None):
         id = id or str(uuid.uuid4())
@@ -53,6 +54,7 @@ class PrepareNode(Operation):
 
     num_wires = 1
     grad_method = None
+    num_params = 0
 
     def __init__(self, wires=None, id=None):
         id = id or str(uuid.uuid4())
