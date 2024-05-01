@@ -329,6 +329,7 @@ def cut_circuit(
         ...     print()
 
         .. code-block::
+
             0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@I> ╭<Z@Z>
             1: ──RY(0.90)─╰Z────────────┤ ╰<Z@I> ╰<Z@Z>
 
