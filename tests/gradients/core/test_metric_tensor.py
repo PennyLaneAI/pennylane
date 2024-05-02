@@ -1125,9 +1125,11 @@ class TestFullMetricTensor:
     @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_correct_output_autograd(self, ansatz, params, interface):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
+    def test_correct_output_autograd(self, dev_name, ansatz, params, interface):
+
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qml.device("default.qubit.autograd", wires=self.num_wires + 1)
+        dev = qml.device(dev_name, wires=self.num_wires + 1)
 
         @qml.qnode(dev, interface=interface)
         def circuit(*params):
@@ -1140,19 +1142,21 @@ class TestFullMetricTensor:
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
         else:
+            print(mt - expected)
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_correct_output_jax(self, ansatz, params, interface):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
+    def test_correct_output_jax(self, dev_name, ansatz, params, interface):
         from jax import numpy as jnp
         from jax import config
 
         config.update("jax_enable_x64", True)
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qml.device("default.qubit.jax", wires=self.num_wires + 1)
+        dev = qml.device(dev_name, wires=self.num_wires + 1)
 
         params = tuple(jnp.array(p) for p in params)
 

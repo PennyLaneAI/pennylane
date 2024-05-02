@@ -551,6 +551,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Patches the QNode so that parameter-shift will be considered best with lightning if
+  `qml.metric_tensor` is in the transform program.
+
 * Using shot vectors with `param_shift(... broadcast=True)` caused a bug. This combination is no longer supported
   and will be added again in the next release.
   [(#5612)](https://github.com/PennyLaneAI/pennylane/pull/5612)
