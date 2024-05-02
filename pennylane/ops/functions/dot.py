@@ -39,7 +39,8 @@ def dot(
 
     Args:
         coeffs (Sequence[float, Callable]): sequence containing the coefficients of the linear combination
-        ops (Sequence[Operator]): sequence containing the operators of the linear combination
+        ops (Sequence[Operator, PauliWord, PauliSentence]): sequence containing the operators of the linear combination.
+           Can also be ``PauliWord`` or ``PauliSentence`` instances.
         pauli (bool, optional): If ``True``, a :class:`~.PauliSentence`
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
             is returned. Defaults to ``False``. Note that when ``ops`` consists solely of ``PauliWord``
