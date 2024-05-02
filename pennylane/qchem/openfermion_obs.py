@@ -16,9 +16,9 @@
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
 # pylint: disable=consider-using-generator, protected-access
 import os
+from functools import singledispatch
 
 import numpy as np
-from functools import singledispatch
 
 import pennylane as qml
 from pennylane.operation import active_new_opmath
@@ -814,19 +814,24 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 
 
 def molecular_hamiltonian(*args, **kwargs):
-    r"""Generate the qubit Hamiltonian of a molecule."""
+    r"""molecular_hamiltonian(molecule, method="dhf", active_electrons=None, active_orbitals=None,
+    mapping="jordan_wigner", outpath=".", wires=None, args=None, load_data=False, convert_tol=1e012)
+    Generate the qubit Hamiltonian of a molecule."""
+
     if len(args) != 0:
         return _molecular_hamiltonian_dispatch(*args, **kwargs)
-    else:
-        if "symbols" in kwargs:
-            symbols = kwargs["symbols"]
-            kwargs.pop("symbols")
-            return _molecular_hamiltonian_dispatch(symbols, **kwargs)
 
-        if "molecule" in kwargs:
-            symbols = kwargs["molecule"]
-            kwargs.pop("molecule")
-            return _molecular_hamiltonian_dispatch(symbols, **kwargs)
+    if "symbols" in kwargs:
+        symbols = kwargs["symbols"]
+        kwargs.pop("symbols")
+        return _molecular_hamiltonian_dispatch(symbols, **kwargs)
+
+    if "molecule" in kwargs:
+        symbols = kwargs["molecule"]
+        kwargs.pop("molecule")
+        return _molecular_hamiltonian_dispatch(symbols, **kwargs)
+
+    raise NotImplementedError("Unsupported type")
 
 
 @singledispatch
