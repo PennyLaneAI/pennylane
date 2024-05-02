@@ -1180,10 +1180,11 @@ class TestFullMetricTensor:
     @pytest.mark.jax
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_jax_argnum_error(self, ansatz, params, interface):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
+    def test_jax_argnum_error(self, dev_name, ansatz, params, interface):
         from jax import numpy as jnp
 
-        dev = qml.device("default.qubit.jax", wires=self.num_wires + 1)
+        dev = qml.device(dev_name, wires=self.num_wires + 1)
 
         params = tuple(jnp.array(p) for p in params)
 
@@ -1202,11 +1203,12 @@ class TestFullMetricTensor:
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_correct_output_torch(self, ansatz, params, interface):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
+    def test_correct_output_torch(self, dev_name, ansatz, params, interface):
         import torch
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qml.device("default.qubit.torch", wires=self.num_wires + 1)
+        dev = qml.device(dev_name, wires=self.num_wires + 1)
 
         params = tuple(torch.tensor(p, dtype=torch.float64, requires_grad=True) for p in params)
 
@@ -1226,11 +1228,12 @@ class TestFullMetricTensor:
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "tf"])
-    def test_correct_output_tf(self, ansatz, params, interface):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
+    def test_correct_output_tf(self, dev_name, ansatz, params, interface):
         import tensorflow as tf
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qml.device("default.qubit.tf", wires=self.num_wires + 1)
+        dev = qml.device(dev_name, wires=self.num_wires + 1)
 
         params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
 
