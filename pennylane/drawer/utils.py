@@ -16,6 +16,7 @@ This module contains some useful utility functions for circuit drawing.
 """
 from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
 from pennylane.ops import Conditional, Controlled
+from pennylane.tape import QuantumScript
 
 
 def default_wire_map(tape):
@@ -201,3 +202,22 @@ def cwire_connections(layers, bit_map):
                         connected_layers[cwire].append(layer_idx)
 
     return connected_layers, connected_wires
+
+
+def transform_deferred_measurements_tape(tape):
+    """Helper function to replace MeasurementValues with wires for tapes using
+    deferred measurements."""
+    if not any(isinstance(op, MidMeasureMP) for op in tape.operations) and any(
+        m.mv is not None for m in tape.measurements
+    ):
+        new_measurements = []
+        for m in tape.measurements:
+            if m.mv is not None:
+                new_m = type(m)(wires=m.wires)
+                new_measurements.append(new_m)
+            else:
+                new_measurements.append(m)
+        new_tape = QuantumScript(tape.operations, new_measurements)
+        return new_tape
+
+    return tape
