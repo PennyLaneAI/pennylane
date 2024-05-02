@@ -450,7 +450,8 @@
   [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
 
 * An alternate strategy for sampling with multiple different `shots` values has 
-  been implemented via the `shots.bins()` method.
+  been implemented via the `shots.bins()` method, which samples all shots at once and 
+  then processes each separately.
   [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
@@ -464,7 +465,8 @@
   mid-circuit measurements.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
-* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
+* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided 
+  that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
 * `default.qubit` can now be provided a random seed for sampling mid-circuit 
