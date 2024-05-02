@@ -51,7 +51,7 @@
   def circuit():
       qml.FABLE(A, tol = 0.001, wires=range(3))  
       return qml.state()
-  ``` 
+  ```
 
   ```pycon
   >>> mat = qml.matrix(circuit)()
@@ -66,10 +66,7 @@
 
   Based on [arXiv:quant-ph/0005055](https://arxiv.org/abs/quant-ph/0005055), 
   given a state :math:`\vert \Psi \rangle = \alpha \vert \phi \rangle + \beta \vert \phi^{\perp} \rangle`, 
-  `qml.AmplitudeAmplification` amplifies the amplitude of :math:`\vert \phi \rangle`. 
-  Mathematically, 
-  :math:`\texttt{AmplitudeAmplification} \vert \Psi \rangle \approx \vert \phi \rangle`.
-
+  `qml.AmplitudeAmplification` amplifies the amplitude of :math:`\vert \phi \rangle`.
 
   Here's an example with a target state
   :math:`\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle`,
