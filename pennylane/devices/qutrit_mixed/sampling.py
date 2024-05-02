@@ -15,22 +15,25 @@
 Code relevant for sampling a qutrit mixed state.
 """
 import functools
+
 import numpy as np
+
 import pennylane as qml
 from pennylane import math
-from pennylane.ops import Sum
 from pennylane.measurements import (
-    Shots,
-    SampleMeasurement,
-    SampleMP,
     CountsMP,
     ExpectationMP,
+    SampleMeasurement,
+    SampleMP,
+    Shots,
     VarianceMP,
 )
+from pennylane.ops import Sum
 from pennylane.typing import TensorLike
-from .utils import QUDIT_DIM, get_num_wires
-from .measure import measure
+
 from .apply_operation import apply_operation
+from .measure import measure
+from .utils import QUDIT_DIM, get_num_wires
 
 
 def _apply_diagonalizing_gates(

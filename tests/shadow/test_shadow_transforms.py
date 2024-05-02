@@ -15,6 +15,7 @@
 # pylint: disable=too-few-public-methods
 
 from functools import partial
+
 import pytest
 
 import pennylane as qml

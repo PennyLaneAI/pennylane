@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains visualization functions for Fourier series and coefficients."""
 from itertools import product
+
 import numpy as np
 
 # pylint:disable=too-many-arguments,blacklisted-name

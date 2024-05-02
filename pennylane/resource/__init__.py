@@ -119,9 +119,9 @@ gate_types:
 gate_sizes:
 {1: 5, 2: 2}
 """
-from .resource import Resources, ResourcesOperation
-from .first_quantization import FirstQuantization
-from .second_quantization import DoubleFactorization
-from .measurement import estimate_error, estimate_shots
-from .specs import specs
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
+from .first_quantization import FirstQuantization
+from .measurement import estimate_error, estimate_shots
+from .resource import Resources, ResourcesOperation
+from .second_quantization import DoubleFactorization
+from .specs import specs

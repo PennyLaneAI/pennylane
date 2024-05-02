@@ -13,16 +13,14 @@
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
 from copy import copy
-
-from typing import Any, Dict, Optional, Sequence, Callable
-
-from pennylane import apply, adjoint
-from pennylane.math import mean, shape, round
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumTape, QuantumScript
-from pennylane.transforms import transform
+from typing import Any, Callable, Dict, Optional, Sequence
 
 import pennylane as qml
+from pennylane import adjoint, apply
+from pennylane.math import mean, round, shape
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms import transform
 
 
 @transform

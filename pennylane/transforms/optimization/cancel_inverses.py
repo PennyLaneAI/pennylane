@@ -13,18 +13,18 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 # pylint: disable=too-many-branches
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 from pennylane.ops.op_math import Adjoint
-from pennylane.wires import Wires
-from pennylane.tape import QuantumTape
-from pennylane.transforms import transform
-
 from pennylane.ops.qubit.attributes import (
     self_inverses,
     symmetric_over_all_wires,
     symmetric_over_control_wires,
 )
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
+from pennylane.wires import Wires
+
 from .optimization_utils import find_next_gate
 
 

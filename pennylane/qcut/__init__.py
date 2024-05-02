@@ -89,54 +89,54 @@ placing :class:`~.pennylane.WireCut` operators. This can be enabled by using the
 function documentation for more details.
 """
 
-from .utils import (
-    replace_wire_cut_node,
-    replace_wire_cut_nodes,
-    fragment_graph,
-    find_and_place_cuts,
-    place_wire_cuts,
-    _remove_existing_cuts,
-    _get_optim_cut,
-    _is_valid_cut,
-    MeasureNode,
-    PrepareNode,
-    _prep_one_state,
-    _prep_zero_state,
-    _prep_plus_state,
-    _prep_minus_state,
-    _prep_iplus_state,
-    _prep_iminus_state,
-)
-from .tapes import (
-    graph_to_tape,
-    tape_to_graph,
-    expand_fragment_tape,
-    _qcut_expand_fn,
-    _get_measurements,
-    _find_new_wire,
-    _add_operator_node,
-)
-from .cutcircuit import cut_circuit, _cut_circuit_expand
+from .cutcircuit import _cut_circuit_expand, cut_circuit
 from .cutcircuit_mc import (
-    cut_circuit_mc,
-    _cut_circuit_mc_expand,
-    expand_fragment_tapes_mc,
     MC_MEASUREMENTS,
     MC_STATES,
+    _cut_circuit_mc_expand,
     _identity,
     _pauliX,
     _pauliY,
     _pauliZ,
+    cut_circuit_mc,
+    expand_fragment_tapes_mc,
 )
-from .processing import (
-    qcut_processing_fn,
-    qcut_processing_fn_sample,
-    qcut_processing_fn_mc,
-    contract_tensors,
-    _process_tensor,
-    _to_tensors,
-    _reshape_results,
-    _get_symbol,
-)
-from .kahypar import kahypar_cut, _graph_to_hmetis
 from .cutstrategy import CutStrategy
+from .kahypar import _graph_to_hmetis, kahypar_cut
+from .processing import (
+    _get_symbol,
+    _process_tensor,
+    _reshape_results,
+    _to_tensors,
+    contract_tensors,
+    qcut_processing_fn,
+    qcut_processing_fn_mc,
+    qcut_processing_fn_sample,
+)
+from .tapes import (
+    _add_operator_node,
+    _find_new_wire,
+    _get_measurements,
+    _qcut_expand_fn,
+    expand_fragment_tape,
+    graph_to_tape,
+    tape_to_graph,
+)
+from .utils import (
+    MeasureNode,
+    PrepareNode,
+    _get_optim_cut,
+    _is_valid_cut,
+    _prep_iminus_state,
+    _prep_iplus_state,
+    _prep_minus_state,
+    _prep_one_state,
+    _prep_plus_state,
+    _prep_zero_state,
+    _remove_existing_cuts,
+    find_and_place_cuts,
+    fragment_graph,
+    place_wire_cuts,
+    replace_wire_cut_node,
+    replace_wire_cut_nodes,
+)

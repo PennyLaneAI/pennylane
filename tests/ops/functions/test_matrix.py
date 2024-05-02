@@ -15,17 +15,19 @@
 Unit tests for the get_unitary_matrix transform
 """
 # pylint: disable=too-few-public-methods,too-many-function-args
-from functools import reduce, partial
+from functools import partial, reduce
 from warnings import catch_warnings
 
 import pytest
-
-from gate_data import I, X, Y, Z, H, S, CNOT, Rotx as RX, Roty as RY
+from gate_data import CNOT, H, I
+from gate_data import Rotx as RX
+from gate_data import Roty as RY
+from gate_data import S, X, Y, Z
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.transforms import TransformError
-from pennylane.pauli import PauliWord, PauliSentence
 
 one_qubit_no_parameter = [
     qml.PauliX,

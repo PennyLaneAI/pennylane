@@ -14,8 +14,9 @@
 """
 Unit tests for the ParticleConservingU1 template.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 

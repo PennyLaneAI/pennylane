@@ -19,7 +19,7 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Dict, Union, Any
+from typing import Any, Callable, Dict, Union
 
 from pennylane import QNode
 

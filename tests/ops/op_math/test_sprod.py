@@ -24,9 +24,8 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math import SProd, s_prod, Prod, Sum
+from pennylane.ops.op_math import Prod, SProd, Sum, s_prod
 from pennylane.wires import Wires
-
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 

@@ -19,11 +19,13 @@ import math
 
 import pytest
 from flaky import flaky
-from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
+from gate_data import GELL_MANN, OMEGA, TADD, TCLOCK, TSHIFT, TSWAP
 from scipy.stats import unitary_group
+
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
-from pennylane.wires import Wires, WireError
+from pennylane import DeviceError
+from pennylane import numpy as np
+from pennylane.wires import WireError, Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
