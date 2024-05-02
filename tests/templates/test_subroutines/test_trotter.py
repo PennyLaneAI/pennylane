@@ -655,7 +655,7 @@ class TestError:
 
 
 class TestResources:
-    """Test the resources methof of the TrotterProduct class"""
+    """Test the resources method of the TrotterProduct class"""
 
     def test_resources_no_queuing(self):
         """Test that no operations are queued when computing resources."""

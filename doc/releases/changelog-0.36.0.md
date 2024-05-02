@@ -681,7 +681,7 @@
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
 
-* Fixed `qml.TrotterProduct` to be compatible with resource tracking by inheirting from `ResourcesOperation`.
+* Fixed `qml.TrotterProduct` to be compatible with resource tracking by inheriting from `ResourcesOperation`. Updated the names for the `method` kwarg of the `error` method from "one-norm" and "commutator" to "one-norm-bound" and "commutator-bound".
   [(#5629)](https://github.com/PennyLaneAI/pennylane/pull/5629)
 
 * `CompositeOp.has_diagonalizing_gates` now does a more complete check of the base operators to ensure consistency 
