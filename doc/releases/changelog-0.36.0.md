@@ -259,7 +259,7 @@
     to understand how structure constants are a useful way to represent a DLA.
 
   * Computing the center of a dynamical Lie algebra.
-    [(#**5477**)](https://github.com/PennyLaneAI/pennylane/pull/5477)
+    [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
 
     Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
 
