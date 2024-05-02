@@ -179,9 +179,9 @@ class Device(abc.ABC):
 
     def __getattr__(self, key):
         raise AttributeError(
-            f"{type(self).__name__} has no attribute '{key}'. "
-            " You may be looking for a property or method present in the legacy device interface. "
-            f" Please consult the {type(self).__name__} documentation for an updated list of public "
+            f"{type(self).__name__} has no attribute '{key}'."
+            " You may be looking for a property or method present in the legacy device interface."
+            f" Please consult the {type(self).__name__} documentation for an updated list of public"
             " properties and methods."
         )
 
