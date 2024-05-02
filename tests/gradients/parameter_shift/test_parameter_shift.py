@@ -679,7 +679,7 @@ class TestParamShift:
 
         # two tapes per parameter, independent of recipe
         # plus one global (unshifted) call if at least one uses the custom recipe
-        assert len(tapes) == 2 * tape.num_params + (len(ops_with_custom_recipe) > 0)
+        assert len(tapes) == 2 * tape.num_params + int(len(ops_with_custom_recipe) > 0)
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)
