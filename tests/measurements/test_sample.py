@@ -528,7 +528,8 @@ def test_jitting_with_sampling_on_different_observables(obs):
 
     results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
 
-    assert results.shape == (100,)
+    assert results.dtype == jax.numpy.float64
+    assert set(results) == {-1.0, 1.0}
 
 
 class TestSampleProcessCounts:
