@@ -19,11 +19,41 @@ from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
+    _evaluate_gradient,
     _get_operation_recipe,
     _make_zero_rep,
     _put_zeros_in_pdA2_involutory,
 )
 from pennylane.operation import AnyWires, Observable
+from pennylane.measurements.shots import Shots
+
+class TestEvaluateGradient:
+    """Test _evaluate_gradient."""
+
+    @pytest.mark.parametrize("coeffs, unshifted_coeff", [(np.arange(1, 5), None), (np.arange(1, 4), 4), (np.ones(0), 10)])
+    @pytest.mark.parametrize("batch_size", [None, 4])
+    def test_single_shots_single_meas(self, coeffs, unshifted_coeff, batch_size):
+        """Test that a single shots, single measurement gradient is evaluated correctly."""
+
+        shots = Shots(100)
+        tape_specs = (None, None, 1, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        if len(coeffs) == 0:
+            res = (-10,) if batch_size is None else np.array([-10])
+        else:
+            res = tuple(-np.arange(1, 5)) if batch_size is None else -np.arange(1, 5)
+
+        if unshifted_coeff is not None:
+            r0 = res[-1]
+            res = res[:-1]
+        else:
+            r0 = None
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, np.ndarray)
+        assert grad.shape == ()
+        assert np.isclose(grad, np.sum(-np.arange(1, 5)**2))
+
 
 
 # pylint: disable=too-few-public-methods
@@ -559,8 +589,9 @@ class TestParamShift:
         assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
         assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
 
+    @pytest.mark.parametrize("broadcast", [False, True])
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
-    def test_recycled_unshifted_tape(self, ops_with_custom_recipe):
+    def test_recycled_unshifted_tape(self, ops_with_custom_recipe, broadcast):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -577,20 +608,22 @@ class TestParamShift:
             [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None
             for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
         # two tapes per parameter that doesn't use a custom recipe,
         # one tape per parameter that uses custom recipe,
         # plus one global call if at least one uses the custom recipe
         num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
-        assert len(tapes) == 2 * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
+        tapes_per_param = 1 if broadcast else 2
+        assert len(tapes) == tapes_per_param * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
 
+    @pytest.mark.parametrize("broadcast", [False, True])
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
     @pytest.mark.parametrize("multi_measure", [False, True])
-    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure):
+    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure, broadcast):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -608,12 +641,13 @@ class TestParamShift:
         gradient_recipes = tuple(
             [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
         # two tapes per parameter that doesn't use a custom recipe,
         # plus one global (unshifted) call if at least one uses the custom recipe
         num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
-        assert len(tapes) == 2 * num_ops_standard_recipe + int(
+        tapes_per_param = 1 if broadcast else 2
+        assert len(tapes) == tapes_per_param * num_ops_standard_recipe + int(
             tape.num_params != num_ops_standard_recipe
         )
         # Test that executing the tapes and the postprocessing function works
@@ -629,8 +663,9 @@ class TestParamShift:
             ]
         assert qml.math.allclose(grad, expected, atol=1e-5)
 
+    @pytest.mark.parametrize("broadcast", [False, True])
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
-    def test_custom_recipe_mixing_unshifted_shifted(self, ops_with_custom_recipe):
+    def test_custom_recipe_mixing_unshifted_shifted(self, ops_with_custom_recipe, broadcast):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -652,11 +687,12 @@ class TestParamShift:
             )
             for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
         # two tapes per parameter, independent of recipe
         # plus one global (unshifted) call if at least one uses the custom recipe
-        assert len(tapes) == 2 * tape.num_params + int(len(ops_with_custom_recipe) > 0)
+        tapes_per_param = 1 if broadcast else 2
+        assert len(tapes) == tapes_per_param * tape.num_params + int(len(ops_with_custom_recipe) > 0)
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)

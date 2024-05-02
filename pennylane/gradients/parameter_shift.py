@@ -152,7 +152,7 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
 
     If an unshifted term exists, its contribution is added to the gradient.
     """
-    if isinstance(result, list) and result == []:
+    if isinstance(result, (list, tuple)) and (result == [] or result == ()):
         if unshifted_coeff is None:
             raise ValueError(
                 "This gradient component neither has a shifted nor an unshifted component. "
@@ -173,19 +173,12 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
 def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     """Compute the gradient for multiple measurements by taking the linear combination of
     the coefficients and each measurement result."""
-    g = []
     if r0 is None:
         r0 = [None] * num_measurements
-    for meas_idx in range(num_measurements):
-        # Gather the measurement results
-        meas_result = [param_result[meas_idx] for param_result in res]
-        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0[meas_idx])
-        g.append(g_component)
-
-    return tuple(g)
+    return tuple(_single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0))
 
 
-def _evaluate_gradient(tape, res, data, r0, batch_size):
+def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
     """Use shifted tape evaluations and parameter-shift rule coefficients to evaluate
     a gradient result. If res is an empty list, ``r0`` and ``data[3]``, which is the
     coefficient for the unshifted term, must be given and not None.
@@ -197,9 +190,8 @@ def _evaluate_gradient(tape, res, data, r0, batch_size):
     if fn is not None:
         res = fn(res)
 
-    num_measurements = len(tape.measurements)
-    scalar_shots = not tape.shots.has_partitioned_shots
-    len_shot_vec = tape.shots.num_copies
+    *_, num_measurements, shots = tape_specs
+    scalar_shots, len_shot_vec = not shots.has_partitioned_shots, shots.num_copies 
 
     if r0 is None and not scalar_shots:
         r0 = [None] * int(len_shot_vec)
@@ -210,35 +202,25 @@ def _evaluate_gradient(tape, res, data, r0, batch_size):
             return _single_meas_grad(res, coeffs, unshifted_coeff, r0)
         # Res has axes (parameters, shots) or with broadcasting (shots, parameters)
         if batch_size is None:
-            # Move shots to first position, _swap_first_two_axes includes squeezing,
-            # which we don't want here
-            if len(res) == 1:
-                res = tuple((res[0][i],) for i in range(len_shot_vec))
-            else:
-                res = _swap_first_two_axes(res, len(res), len_shot_vec, squeeze=False)
+            # Move shots to first position
+            res = _swap_first_two_axes(res, len(res), len_shot_vec, squeeze=False)
         # _single_meas_grad expects axis (parameters,), iterate over shot vector
         return tuple(_single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0))
 
     if scalar_shots:
         # Res has axes (parameters, measurements) or with broadcasting (measurements, parameters)
-        if batch_size is not None:
-            # Move parameters to first position
-            res = _swap_first_two_axes(res, num_measurements, len(res[0]), squeeze=False)
-        # _multi_meas_grad expects axes (parameters, measurements)
+        if batch_size is None:
+            # Move measurements to first position
+            res = _swap_first_two_axes(res, len(res), num_measurements, squeeze=False)
+        # _multi_meas_grad expects axes (measurements, parameters)
         return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
 
     # Res has axes (parameters, shots, measurements)
     # or with broadcasting (shots, measurements, parameters)
     if batch_size is None:
-        # Swap first (parameters) and second (shots) axis
-        res = _swap_first_two_axes(res, len(res), len_shot_vec, squeeze=False)
-    else:
-        # Swap second (measurements) and third (parameters) axis
-        res = tuple(
-            _swap_first_two_axes(r, num_measurements, len(r[0]), squeeze=False) for r in res
-        )
-    # Axes are now (shots, parameters, measurements)
-    # _multi_meas_grad expects (parameters, measurements), so we iterate over shot vector
+        # Move first axis (parameters) to last position
+        res = _move_first_axis_to_third_pos(res, len(res), len_shot_vec, num_measurements, squeeze=False)
+    # _multi_meas_grad expects (measurements, parameters), so we iterate over shot vector
     return tuple(
         _multi_meas_grad(r, coeffs, r0_, unshifted_coeff, num_measurements)
         for r, r0_ in zip(res, r0)
@@ -434,14 +416,14 @@ def expval_param_shift(
                     grads.append(None)
                     continue
                 # The gradient for this parameter is computed from r0 alone.
-                g = _evaluate_gradient(tape, [], data, r0, batch_size)
+                g = _evaluate_gradient(tape_specs, [], data, r0, batch_size)
                 grads.append(g)
                 continue
 
             res = results[start : start + num_tapes] if batch_size is None else results[start]
             start = start + num_tapes
 
-            g = _evaluate_gradient(tape, res, data, r0, batch_size)
+            g = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
             grads.append(g)
 
         # g will have been defined at least once (because otherwise all gradients would have
