@@ -500,7 +500,7 @@ def test_jacobian_with_and_without_jit_has_same_output_with_high_shots(state_pre
     """Test that the jacobian of the circuit is the same with and without jit"""
     import jax
 
-    dev = qml.device("default.qubit", wires=4, shots=10000)
+    dev = qml.device("default.qubit", wires=4, shots=10000, seed=7890234)
 
     @qml.qnode(dev)
     def circuit(coeffs):
