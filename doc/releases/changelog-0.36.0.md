@@ -553,6 +553,11 @@
 
 * Patches the QNode so that parameter-shift will be considered best with lightning if
   `qml.metric_tensor` is in the transform program.
+  [(#5624)](https://github.com/PennyLaneAI/pennylane/pull/5624)
+
+* Improves the error message for setting shots on the new device interface, or trying to access a property
+  that no longer exists.
+  [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
 
 * Fixed a bug where `qml.draw` and `qml.draw_mpl` incorrectly raised errors for circuits collecting statistics on mid-circuit measurements
   while using `qml.defer_measurements`.
@@ -679,6 +684,10 @@
 
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
+
+* `CompositeOp.has_diagonalizing_gates` now does a more complete check of the base operators to ensure consistency 
+  between `op.has_diagonalzing_gates` and `op.diagonalizing_gates()`
+  [(#5603)](https://github.com/PennyLaneAI/pennylane/pull/5603)
 
 <h3>Contributors ✍️</h3>
 
