@@ -338,12 +338,9 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
             qml.math.concatenate(tuple(qml.math.reshape(s, (1, -1)) for s in measurement))
         )
     # VarianceMP
-    # Casting is needed for torch and tf to compute variance. Ravel to convert 0-D arrays into
-    # 1-D arrays. Contatenate to maintain the interface. Without these changes, the input to var
-    # is a list and the returned value's interface is always numpy
-    # return qml.math.var(
-    #     qml.math.concatenate(tuple(qml.math.ravel(qml.math.cast(s, "float")) for s in measurement))
-    # )
+    # Casting is needed for torch and tf to compute variance. Conversion is needed to convert
+    # list of 0-D arrays to 1-D array. Without these changes, the input to var is a list and
+    # the returned value's interface is always numpy
     return qml.math.var(qml.math.cast(qml.math.convert_like(measurement, measurement[0]), "float"))
 
 
