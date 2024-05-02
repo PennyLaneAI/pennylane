@@ -88,7 +88,7 @@ def test_len_tapes(n_shots):
     """Test that the transform produces the correct number of tapes."""
     tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.expval(qml.PauliZ(0))], shots=n_shots)
     tapes, _ = qml.dynamic_one_shot(tape)
-    assert len(tapes) == n_shots
+    assert len(tapes) == 1
 
 
 @pytest.mark.parametrize("n_batch", range(1, 4))
@@ -102,7 +102,7 @@ def test_len_tape_batched(n_batch, n_shots):
         shots=n_shots,
     )
     tapes, _ = qml.dynamic_one_shot(tape)
-    assert len(tapes) == n_shots * n_batch
+    assert len(tapes) == n_batch
 
 
 @pytest.mark.parametrize(
@@ -123,7 +123,7 @@ def test_len_measurements_obs(measure, aux_measure, n_meas):
         [qml.Hadamard(0)] + [MidMeasureMP(0)] * n_mcms, [measure(op=qml.PauliZ(0))], shots=n_shots
     )
     tapes, _ = qml.dynamic_one_shot(tape)
-    assert len(tapes) == n_shots
+    assert len(tapes) == 1
     aux_tape = tapes[0]
     assert len(aux_tape.measurements) == n_meas + n_mcms
     assert isinstance(aux_tape.measurements[0], aux_measure)
@@ -150,7 +150,7 @@ def test_len_measurements_mcms(measure, aux_measure, n_meas):
         shots=n_shots,
     )
     tapes, _ = qml.dynamic_one_shot(tape)
-    assert len(tapes) == n_shots
+    assert len(tapes) == 1
     aux_tape = tapes[0]
     assert len(aux_tape.measurements) == n_meas + n_mcms
     assert isinstance(aux_tape.measurements[0], aux_measure)

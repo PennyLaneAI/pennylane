@@ -288,6 +288,7 @@ def simulate(
         )
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if qml.math.get_deep_interface(circuit.data) == "jax":
+            # pylint: disable=import-outside-toplevel
             import jax
 
             def vv(k):
@@ -295,8 +296,8 @@ def simulate(
                     aux_circ, debugger=debugger, rng=rng, prng_key=k, interface=interface
                 )
 
-            results = jax.vmap(vv, in_axes=(0))(keys)
-            results = [x for x in zip(*results)]
+            results = jax.vmap(vv, in_axes=(0,))(keys)
+            results = list(zip(*results))
         else:
             for i, _ in enumerate(circuit.shots):
                 results.append(
