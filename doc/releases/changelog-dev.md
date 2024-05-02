@@ -61,6 +61,7 @@
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
+  [(#5623)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
 <h3>Breaking changes 💔</h3>
 
