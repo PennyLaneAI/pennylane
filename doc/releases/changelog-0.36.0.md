@@ -467,7 +467,7 @@
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
-* `default.qubit` can now take a provided random seed for sampling mid-circuit 
+* `default.qubit` can now be provided a random seed for sampling mid-circuit 
   measurements with finite shots. This (1) ensures that random behaviour is more 
   consistent with `dynamic_one_shot` and `defer_measurements` and (2) makes our 
   continuous-integration (CI) have less failures due to stochasticity.
@@ -693,7 +693,7 @@
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
-* Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
+* Diagonalizing gates are now applied when measuring `qml.probs` on non-computational basis states on a Lightning device.
   [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
 
 * `two_qubit_decomposition` no longer diverges at a special case of a unitary matrix.
