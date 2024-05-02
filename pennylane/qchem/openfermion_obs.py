@@ -816,7 +816,6 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 def molecular_hamiltonian(*args, **kwargs):
     """molecular_hamiltonian(molecule, method="dhf", active_electrons=None, active_orbitals=None,\
     mapping="jordan_wigner", outpath=".", wires=None, args=None, load_data=False, convert_tol=1e012)
-    
     Generate the qubit Hamiltonian of a molecule.
 
     This function drives the construction of the second-quantized electronic Hamiltonian
