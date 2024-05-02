@@ -1578,9 +1578,8 @@ class QubitDevice(Device):
             else:
                 # Replace the basis state in the computational basis with the correct eigenvalue.
                 # Extract only the columns of the basis samples required based on ``wires``.
-                samples = sub_samples[
-                    ..., np.array(device_wires)
-                ]  # Add np.array here for Jax support.
+                # Add np.array here for Jax support.
+                samples = sub_samples[..., np.array(device_wires)]
                 powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
                 indices = samples @ powers_of_two
                 indices = np.array(indices)  # Add np.array here for Jax support.

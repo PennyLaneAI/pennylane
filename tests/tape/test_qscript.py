@@ -1427,12 +1427,7 @@ class TestNumericType:
         eigenvalues and another sample with integer values."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
-        arr = np.array(
-            [
-                1.32,
-                2.312,
-            ]
-        )
+        arr = np.array([1.32, 2.312])
         herm = np.outer(arr, arr)
 
         a, b = 0, 3
