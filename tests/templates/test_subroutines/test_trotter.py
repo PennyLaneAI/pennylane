@@ -214,7 +214,7 @@ test_decompositions = (
 )
 
 test_resources_data = {
-    (0, 1): Resources(
+    (0, 1): Resources(  # (hamiltonian_index, order): Resources computed by hand
         num_wires=2,
         num_gates=3,
         gate_types=defaultdict(int, {"Exp": 3}),
