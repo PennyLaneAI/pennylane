@@ -15,7 +15,7 @@
 * Added new `SpectralNormError` class to the new error tracking functionality.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
 
-* The `qml.TrotterProduct` operator now supports error estimation functionality.
+* The `qml.TrotterProduct` operator now supports error estimation functionality. 
   [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
   ```pycon
@@ -35,7 +35,7 @@
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
-* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level.
+* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
 * Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
@@ -66,7 +66,7 @@
   >>> circuit()
   tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
   ```
-
+  
 * The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
 
@@ -90,7 +90,7 @@
       return qml.probs(wires=range(3))
 
   ```
-
+  
   ```pycon
   >>> print(np.round(circuit(), 3))
   [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
@@ -118,7 +118,7 @@
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
 
-* Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator.
+* Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
   When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
   [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
 
@@ -136,13 +136,13 @@
                     qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
                     )
       return qml.probs(op = measurements)
-
+  
   output = circuit()
-
-  # post-processing
+  
+  # post-processing 
   lamb = sum([abs(c) for c in H.terms()[0]])
   ```
-
+  
   ```pycon
   >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
   eigenvalue: 0.7
@@ -223,14 +223,14 @@
  `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
   [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
 
-* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module.
+* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
   [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
 
-* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a
+* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
   noisy qutrit circuit with measurement and sampling.
   [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
- * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation
+ * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
   for `preprocess`.
   [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
 
@@ -329,7 +329,7 @@
   In particular, this aims at preventing breaking code that uses `Tensor.obs`. This is immediately deprecated.
   Moving forward, we recommend using `op.operands`.
   [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
-
+  
 * `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
@@ -429,7 +429,7 @@
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
   [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
 
-* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3
+* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
   (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
   [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
@@ -438,7 +438,7 @@
 * Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
   of whether there is classical processing in the node.
   [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
-
+  
 * State measurements preserve `dtype`.
   [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
 
@@ -451,8 +451,8 @@
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
   [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
-
-* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call.
+  
+* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
   [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
 
 * `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
@@ -570,7 +570,7 @@
   a QNode differed, based on whether the QNode uses classical coprocessing.
   [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
 
-* `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct`
+* `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
   now de-queue their input observable.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 
@@ -602,7 +602,7 @@
 * Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
   [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
 
-* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`.
+* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
   [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
 
 * Tensorflow can now handle devices with float32 results but float64 input parameters.
