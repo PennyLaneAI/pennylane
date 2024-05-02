@@ -210,7 +210,7 @@ or to check whether two gates causally influence each other.
 Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``rustworkx`` graph object.
 
 >>> type(g.graph)
-<class 'rustworkx.PyDiGraph'>
+rustworkx.PyDiGraph
 
 There is no edge between the ``Hadamard`` and the first ``CNOT``, but between consecutive ``CNOT`` gates:
 
