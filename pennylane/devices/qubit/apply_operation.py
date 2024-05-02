@@ -316,7 +316,7 @@ def apply_mid_measure(
     mid_measurements[op] = sample
 
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
-    # to select the sample branch enables jax.jit and prevents it form using Python callbacks
+    # to select the sample branch enables jax.jit and prevents it from using Python callbacks
     matrix = qml.math.array([[(sample + 1) % 2, 0.0], [0.0, (sample) % 2]], like=interface)
     state = apply_operation(
         qml.QubitUnitary(matrix, wire),
