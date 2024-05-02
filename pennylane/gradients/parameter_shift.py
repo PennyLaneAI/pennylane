@@ -38,7 +38,6 @@ from .general_shift_rules import (
 from .gradient_transform import (
     _all_zero_grad,
     _no_trainable_grad,
-    assert_multimeasure_not_broadcasted,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_multimeasure_not_broadcasted,

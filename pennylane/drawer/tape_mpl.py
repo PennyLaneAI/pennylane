@@ -36,7 +36,6 @@ from .utils import (
 )
 from .mpldrawer import MPLDrawer
 from .style import _set_style
-from .utils import convert_wire_order, cwire_connections, default_bit_map, unwrap_controls
 
 has_mpl = True
 try:
