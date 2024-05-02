@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
-from typing import List, Union
 from itertools import combinations
+from typing import List, Union
 
 import numpy as np
 
-from pennylane.typing import TensorLike
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
+
 from ..pauli_arithmetic import PauliSentence, PauliWord
 
 

@@ -19,10 +19,9 @@ import numpy as onp
 import pytest
 from autoray import numpy as anp
 
+from pennylane import grad as qml_grad
 from pennylane import math as fn
 from pennylane import numpy as np
-
-from pennylane import grad as qml_grad
 
 pytestmark = pytest.mark.all_interfaces
 

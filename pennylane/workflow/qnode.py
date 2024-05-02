@@ -18,15 +18,15 @@ This module contains the QNode class and qnode decorator.
 import copy
 import functools
 import inspect
+import logging
 import warnings
 from collections.abc import Sequence
-from typing import Union, Optional
-import logging
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
 

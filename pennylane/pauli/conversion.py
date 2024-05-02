@@ -17,14 +17,14 @@ Utility functions to convert between ``~.PauliSentence`` and other PennyLane ope
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
-from typing import Union, Tuple
+from typing import Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import (
     Hamiltonian,
-    LinearCombination,
     Identity,
+    LinearCombination,
     PauliX,
     PauliY,
     PauliZ,

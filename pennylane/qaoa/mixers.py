@@ -14,9 +14,10 @@
 r"""
 Methods for constructing QAOA mixer Hamiltonians.
 """
+import functools
+
 # pylint: disable=unnecessary-lambda-assignment
 import itertools
-import functools
 from typing import Iterable, Union
 
 import networkx as nx

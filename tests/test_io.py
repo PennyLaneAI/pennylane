@@ -14,7 +14,8 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, mock_open, patch
+
 import pytest
 
 import pennylane as qml

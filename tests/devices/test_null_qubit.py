@@ -14,18 +14,17 @@
 """Tests for null.qubit."""
 
 from collections import defaultdict as dd
-import pytest
 
 import numpy as np
+import pytest
 
 import pennylane as qml
-
-from pennylane.devices import NullQubit, ExecutionConfig
+from pennylane.devices import ExecutionConfig, NullQubit
 from pennylane.measurements import (
-    SampleMeasurement,
-    StateMeasurement,
     ClassicalShadowMP,
+    SampleMeasurement,
     ShadowExpvalMP,
+    StateMeasurement,
 )
 
 np.random.seed(0)

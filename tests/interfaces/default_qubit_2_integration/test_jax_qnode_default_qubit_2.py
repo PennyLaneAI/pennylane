@@ -15,6 +15,7 @@
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
 
 from itertools import product
+
 import numpy as np
 import pytest
 
@@ -604,7 +605,7 @@ class TestVectorValuedQNode:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **kwargs
+            **kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1014,7 +1015,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1069,7 +1070,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1132,7 +1133,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1198,7 +1199,7 @@ class TestQubitIntegrationHigherOrder:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1302,7 +1303,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -1396,7 +1397,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
@@ -1469,7 +1470,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)

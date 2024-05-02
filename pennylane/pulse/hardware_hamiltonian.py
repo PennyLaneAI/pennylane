@@ -16,12 +16,12 @@ Hardware Hamiltonians"""
 
 from dataclasses import dataclass
 from typing import Callable, List, Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.operation import Operator
-
+from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 

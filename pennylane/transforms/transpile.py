@@ -3,19 +3,18 @@ Contains the transpiler transform.
 """
 
 from functools import partial
-from typing import List, Union, Sequence, Callable
+from typing import Callable, List, Sequence, Union
 
 import networkx as nx
 
 import pennylane as qml
-from pennylane.transforms import transform
-from pennylane.ops import Hamiltonian
-from pennylane.ops import LinearCombination
 from pennylane.operation import Tensor
+from pennylane.ops import Hamiltonian, LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
 def state_transposition(results, mps, new_wire_order, original_wire_order):

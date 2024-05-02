@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Quantum natural gradient optimizer"""
+import pennylane as qml
+
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
 from pennylane import numpy as pnp
-
-import pennylane as qml
 from pennylane.utils import _flatten, unflatten
+
 from .gradient_descent import GradientDescentOptimizer
 
 

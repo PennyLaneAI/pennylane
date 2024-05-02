@@ -13,6 +13,7 @@
 # limitations under the License.
 """Adam optimizer"""
 from numpy import sqrt
+
 from .gradient_descent import GradientDescentOptimizer
 
 
