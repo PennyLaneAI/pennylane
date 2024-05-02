@@ -64,13 +64,13 @@ class TestPauliVSpace:
         assert vspace._rank == 2
         assert vspace._num_pw == 2
         assert len(vspace._pw_to_idx) == 2
-        assert vspace.tol == np.finfo(vspace._M.dtype).eps*100
+        assert vspace.tol == np.finfo(vspace._M.dtype).eps * 100
 
     @pytest.mark.parametrize("dtype", [float, complex])
     def test_dtype(self, dtype):
         vspace = PauliVSpace(ops1, dtype=dtype)
         assert vspace._M.dtype == dtype
-    
+
     def test_set_tol(self):
         vspace = PauliVSpace(ops1, tol=1e-13)
         assert vspace.tol == 1e-13
@@ -492,14 +492,16 @@ class TestLieClosure:
 
         res = qml.pauli.lie_closure(generators)
         assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
-    
+
     def test_universal_gate_set(self):
         """Test universal gate set"""
         n = 3
 
         generators = [Z(i) for i in range(n)]
         generators += [Y(i) for i in range(n)]
-        generators += [(I(i)-Z(i))@(I(i+1)-X(i+1)) for i in range(n-1)] #generator of CNOT gate
+        generators += [
+            (I(i) - Z(i)) @ (I(i + 1) - X(i + 1)) for i in range(n - 1)
+        ]  # generator of CNOT gate
 
         vspace = qml.lie_closure(generators)
 
