@@ -16,7 +16,7 @@ Contains the BasicEntanglerLayers template.
 """
 # pylint: disable=consider-using-enumerate,too-many-arguments
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class BasicEntanglerLayers(Operation):

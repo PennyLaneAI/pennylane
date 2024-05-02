@@ -21,7 +21,6 @@ from pennylane.operation import Observable
 from pennylane.ops.qubit import Hermitian
 from pennylane.ops.qutrit import QutritUnitary
 
-
 # Array containing all 8 Gell-Mann matrices. This order is chosen for the Gell-Mann
 # matrices as they loosely follow the X-Y-Z structure of the Pauli matrices. The
 # matrices analogous to Pauli X, Y, and Z are at indices (0, 3, 5), (1, 4, 6), and

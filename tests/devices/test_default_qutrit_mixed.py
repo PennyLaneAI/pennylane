@@ -14,9 +14,9 @@
 """Tests for default qutrit mixed."""
 
 from functools import reduce
-import pytest
-import numpy as np
 
+import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane import math

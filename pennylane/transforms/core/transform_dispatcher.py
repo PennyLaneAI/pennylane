@@ -14,12 +14,11 @@
 """
 This module contains the transform dispatcher and the transform container.
 """
+import copy
 import functools
 import os
-import copy
-import warnings
 import types
-
+import warnings
 from typing import Sequence
 
 import pennylane as qml

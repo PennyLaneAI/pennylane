@@ -14,16 +14,18 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
+import math
+
 # pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
-import math
+
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP, MeasurementValue
-from pennylane.ops import Controlled
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
+from pennylane.measurements import MeasurementValue, MidMeasureMP
+from pennylane.ops import Controlled
 
 
 def test_broadcasted_postselection(mocker):

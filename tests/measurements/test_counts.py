@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the qml.counts measurement process."""
 import copy
+
 import numpy as np
 import pytest
 

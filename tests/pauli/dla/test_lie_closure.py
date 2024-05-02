@@ -14,14 +14,13 @@
 """Tests for pennylane/dla/lie_closure.py functionality"""
 # pylint: disable=too-few-public-methods, protected-access
 from copy import copy
-import pytest
+
 import numpy as np
+import pytest
 
 import pennylane as qml
-
 from pennylane import X, Y, Z
-
-from pennylane.pauli import PauliWord, PauliSentence, PauliVSpace, lie_closure
+from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord, lie_closure
 
 ops1 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),

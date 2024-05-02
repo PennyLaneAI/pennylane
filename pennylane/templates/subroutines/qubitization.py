@@ -16,6 +16,7 @@ This submodule contains the template for Qubitization.
 """
 
 import copy
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation

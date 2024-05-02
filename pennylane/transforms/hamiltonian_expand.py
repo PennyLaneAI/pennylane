@@ -16,11 +16,11 @@ Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
 from functools import partial
-from typing import List, Sequence, Callable, Tuple
+from typing import Callable, List, Sequence, Tuple
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots
-from pennylane.ops import SProd, Sum, Prod
+from pennylane.ops import Prod, SProd, Sum
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
 from pennylane.typing import ResultBatch

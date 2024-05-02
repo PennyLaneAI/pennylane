@@ -13,6 +13,7 @@
 # limitations under the License.
 """Root mean square propagation optimizer"""
 from numpy import sqrt
+
 from .adagrad import AdagradOptimizer
 
 

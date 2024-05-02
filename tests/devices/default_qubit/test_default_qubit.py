@@ -15,13 +15,12 @@
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
 from unittest import mock
-from flaky import flaky
-import pytest
 
 import numpy as np
+import pytest
+from flaky import flaky
 
 import pennylane as qml
-
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
 np.random.seed(0)

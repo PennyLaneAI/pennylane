@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
-from pennylane.transforms import transform
-from pennylane.tape import QuantumTape
 from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
 from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
 @transform

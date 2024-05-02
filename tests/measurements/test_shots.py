@@ -16,9 +16,10 @@ Unit tests for :mod:`pennylane.shots`.
 """
 
 import copy
+
 import pytest
 
-from pennylane.measurements import Shots, ShotCopies
+from pennylane.measurements import ShotCopies, Shots
 
 ERROR_MSG = "Shots must be a single positive integer, a tuple"
 

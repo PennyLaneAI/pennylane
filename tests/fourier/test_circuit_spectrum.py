@@ -14,8 +14,9 @@
 """
 Tests for the Fourier spectrum transform.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.fourier.circuit_spectrum import circuit_spectrum

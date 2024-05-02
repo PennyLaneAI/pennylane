@@ -13,9 +13,11 @@
 # limitations under the License.
 """Quantum natural SPSA optimizer"""
 import warnings
+
 from scipy.linalg import sqrtm
-from pennylane import numpy as pnp
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 class QNSPSAOptimizer:
