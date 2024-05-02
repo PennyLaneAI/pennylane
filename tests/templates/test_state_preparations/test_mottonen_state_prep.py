@@ -492,3 +492,51 @@ def test_adjoint_brings_back_to_zero(adj_base_op):
     expected = np.zeros(8)
     expected[0] = 1.0
     assert qml.math.allclose(actual, expected)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("state_prep_op", [qml.StatePrep, qml.MottonenStatePreparation])
+def test_jacobian_with_and_without_jit_has_same_output_with_high_shots(state_prep_op):
+    """Test that the jacobian of the circuit is the same with and without jit"""
+    import jax
+
+    dev = qml.device("default.qubit", wires=4, shots=10000)
+
+    @qml.qnode(dev)
+    def circuit(coeffs):
+        state_prep_op(coeffs, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    params = jax.numpy.array([0.5, 0.5, 0.5, 0.5])
+    jac_fn = jax.jacobian(circuit)
+    jac_jit_fn = jax.jit(jac_fn)
+
+    jac = jac_fn(params)
+
+    jac_jit = jac_jit_fn(params)
+
+    assert qml.math.allclose(jac, jac_jit, atol=0.02)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("state_prep_op", [qml.StatePrep, qml.MottonenStatePreparation])
+def test_jacobian_with_and_without_jit_has_same_output_with_analytic_mode(state_prep_op):
+    """Test that the jacobian of the circuit is the same with and without jit."""
+    import jax
+
+    dev = qml.device("default.qubit", wires=4, shots=None)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(coeffs):
+        state_prep_op(coeffs, wires=[0, 1])
+        return qml.state()
+
+    params = jax.numpy.array([0.5, 0.5, 0.5, 0.5])
+    jac_fn = jax.jacobian(circuit)
+    jac_jit_fn = jax.jit(jac_fn)
+
+    jac = jac_fn(params)
+
+    jac_jit = jac_jit_fn(params)
+
+    assert qml.math.allclose(jac, jac_jit, atol=0.02)
