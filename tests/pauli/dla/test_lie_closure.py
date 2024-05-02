@@ -277,7 +277,7 @@ class TestPauliVSpace:
         ),
     )
 
-    @pytest.mark.parametrize("tol", [1e-15, 1e-8])
+    @pytest.mark.parametrize("tol", [None, 1e-15, 1e-8])
     @pytest.mark.parametrize("ops, op, is_independent_true", IS_INDEPENDENT_TEST)
     def test_is_independent(self, ops, op, is_independent_true, tol):
         """Test the `is_independent` method returns correct results and leaves class attributes intact"""
