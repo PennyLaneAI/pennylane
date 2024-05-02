@@ -241,14 +241,13 @@ class TestProbs:
 
         @qml.qnode(dev, diff_method=None)
         def circuit(x):
-            qml.PhaseShift(x, wires=1),
-            qml.RX(x, wires=1),
-            qml.PhaseShift(x, wires=1),
+            qml.PhaseShift(x, wires=1)
+            qml.RX(x, wires=1)
+            qml.PhaseShift(x, wires=1)
             qml.CNOT(wires=[0, 1])
             if isinstance(obs, Sequence):
                 return qml.probs(wires=obs)
-            else:
-                return qml.probs(op=obs)
+            return qml.probs(op=obs)
 
         # expected probability, using [00, 01, 10, 11]
         # ordering, is [0.5, 0.5, 0, 0]

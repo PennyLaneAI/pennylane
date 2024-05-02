@@ -260,20 +260,20 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         counts in order to estimate their occurrence probability."""
         num_bins, bin_size = indices.shape[-2:]
         interface = qml.math.get_deep_interface(indices)
-        if batch_size is None:
-            probs = qml.math.array(
+
+        def _count_samples_core(indices, dim, interface):
+            return qml.math.array(
                 [[qml.math.sum(idx == p) for p in range(dim)] for idx in indices], like=interface
             )
-            return qml.math.swapaxes(probs, 0, 1) / bin_size
+
+        if batch_size is None:
+            return qml.math.swapaxes(_count_samples_core(indices, dim, interface), 0, 1) / bin_size
 
         # count the basis state occurrences, and construct the probability vector
         # for each bin and broadcasting index
         indices = indices.reshape((batch_size, num_bins, bin_size))
-        probs = qml.math.array(
-            [
-                [[qml.math.sum(idx == p) for p in range(dim)] for idx in _indices]
-                for _indices in indices
-            ],
+        probabilities = qml.math.array(
+            [_count_samples_core(_indices, dim, interface) for _indices in indices],
             like=interface,
         )
-        return qml.math.swapaxes(probs, 1, 2) / bin_size
+        return qml.math.swapaxes(probabilities, 1, 2) / bin_size

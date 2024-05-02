@@ -73,6 +73,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Finite shot circuits with a `qml.probs` measurement with a `wires` or `op` argument can now be compiled with `jax.jit`.
+  [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
+  
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
