@@ -41,6 +41,7 @@ from .gradient_transform import (
     assert_multimeasure_not_broadcasted,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
+    assert_shot_vector_not_broadcasted,
     choose_trainable_params,
     find_and_validate_gradient_methods,
     reorder_grads,
@@ -1080,6 +1081,7 @@ def param_shift(
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
+    assert_shot_vector_not_broadcasted(tape.shots, broadcast)
     assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:

@@ -118,9 +118,15 @@ class TestParamShift:
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
 
+        if broadcast:
+            match_ = "Broadcasting with shot vectors is not supported yet"
+            with pytest.raises(NotImplementedError, match=match_):
+                g_tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
+            return
+
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.param_shift(tape, broadcast=broadcast)
-        all_res = post_processing(qml.execute(g_tapes, dev, None))
+            g_tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
+        all_res = fn(qml.execute(g_tapes, dev, None))
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(shot_vec)
 
