@@ -23,7 +23,7 @@
     import pennylane as qml
     from pennylane.resource.error import ErrorOperation, SpectralNormError
 
-    class XWithError(ErrorOperation):
+    class MyErrorOperation(ErrorOperation):
         def __init__(self, error_val, wires):
             self.error_val = error_val
             super().__init__(wires=wires)
@@ -34,8 +34,8 @@
 
     @qml.qnode(dev)
     def circuit():
-        XWithError(0.1,[0])
-        XWithError(0.2,[1])
+        MyErrorOperation(0.1,[0])
+        MyErrorOperation(0.2,[1])
         return qml.state()
     ```
 
@@ -47,9 +47,11 @@
     ```
 
   * PennyLane already includes a number of built-in building blocks like
-    `QuantumPhaseEstimation` and `TrotterProduct`, both of which now
-    propagate errors that depend upon their input arguments such as
-    the number of steps performed in the Trotter product:
+    `QuantumPhaseEstimation` and `TrotterProduct`. `TrotterProduct` now
+    propagates errors based on its input arguments:
+    the number of steps performed in the Trotter product affects the error estimation.
+    `QuantumPhaseEstimation` now propagates errors based on the error of its input
+    unitary.
     [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
     [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
@@ -62,9 +64,11 @@
     @qml.qnode(dev)
     def circuit():
         qml.TrotterProduct(hamiltonian, time=0.1, order=2)
-        qml.QuantumPhaseEstimation(XWithError(0.01, wires=0), estimation_wires=[1, 2, 3])
+        qml.QuantumPhaseEstimation(MyErrorOperation(0.01, wires=0), estimation_wires=[1, 2, 3])
         return qml.state()
     ```
+
+    As above, we can obtain the total spectral norm error of the circuit using `qml.specs`:
 
     ```pycon
     >>> qml.specs(circuit)()["errors"]
