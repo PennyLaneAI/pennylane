@@ -14,11 +14,13 @@
 """
 Tests for the UCCSD template.
 """
+import numpy as np
+
 # pylint: disable=protected-access,too-many-arguments
 import pytest
-import numpy as np
-from pennylane import numpy as pnp
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 class TestDecomposition:

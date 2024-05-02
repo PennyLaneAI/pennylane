@@ -20,15 +20,15 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.resource.error.trotter_error import (
+    _commutator_error,
+    _compute_repetitions,
+    _flatten_trotter,
+    _generate_combinations,
+    _one_norm_error,
+    _recursive_flatten,
+    _recursive_nested_commutator,
     _simplify,
     _spectral_norm,
-    _one_norm_error,
-    _flatten_trotter,
-    _commutator_error,
-    _recursive_flatten,
-    _compute_repetitions,
-    _generate_combinations,
-    _recursive_nested_commutator,
 )
 
 p_4 = (4 - 4 ** (1 / 3)) ** -1

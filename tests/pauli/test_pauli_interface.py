@@ -14,12 +14,10 @@
 """
 Unit tests for the :mod:`pauli` interface functions in ``pauli/pauli_interface.py``.
 """
+import numpy as np
 import pytest
 
-import numpy as np
-
 import pennylane as qml
-
 from pennylane.pauli import pauli_word_prefactor
 
 ops_factors = (

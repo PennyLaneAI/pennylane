@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
-# pylint: disable=too-many-arguments,too-few-public-methods, use-dict-literal, use-implicit-booleaness-not-comparison
-import pytest
 import numpy as np
+
+# pylint: disable=too-many-arguments,too-few-public-methods, use-dict-literal, use-implicit-booleaness-not-comparison
+
+import pytest
 
 import pennylane as qml
 from pennylane import qnode

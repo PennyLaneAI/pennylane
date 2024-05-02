@@ -16,8 +16,9 @@ Tests for the TwoLocalSwapNetwork template.
 """
 
 import pytest
-from pennylane import numpy as np
+
 import pennylane as qml
+from pennylane import numpy as np
 
 
 # pylint: disable=protected-access

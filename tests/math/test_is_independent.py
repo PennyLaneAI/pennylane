@@ -14,13 +14,13 @@
 """
 Unit tests for the :func:`pennylane.math.is_independent` function.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods
 import pytest
 
-import numpy as np
-from pennylane import numpy as pnp
-
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.math import is_independent
 from pennylane.math.is_independent import _get_random_args
 

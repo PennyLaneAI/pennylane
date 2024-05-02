@@ -15,15 +15,15 @@
 This module contains the ``TransformProgram`` class.
 """
 from functools import partial
-from typing import Callable, List, Tuple, Optional, Sequence, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.typing import Result, ResultBatch
 from pennylane.tape import QuantumTape
+from pennylane.typing import Result, ResultBatch
 
-from .transform_dispatcher import TransformContainer, TransformError, TransformDispatcher
+from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 
 PostProcessingFn = Callable[[ResultBatch], Result]
 BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]

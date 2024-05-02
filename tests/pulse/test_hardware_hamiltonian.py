@@ -21,13 +21,13 @@ import pytest
 import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, drive, rydberg_interaction
 from pennylane.pulse.hardware_hamiltonian import (
-    HardwarePulse,
     AmplitudeAndPhase,
-    amplitude_and_phase,
+    HardwarePulse,
     _reorder_parameters,
+    amplitude_and_phase,
 )
-from pennylane.pulse.transmon import TransmonSettings
 from pennylane.pulse.rydberg import RydbergSettings
+from pennylane.pulse.transmon import TransmonSettings
 from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]

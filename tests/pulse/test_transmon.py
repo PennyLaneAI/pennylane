@@ -20,16 +20,16 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import HardwareHamiltonian, transmon_interaction, transmon_drive
+from pennylane.pulse import HardwareHamiltonian, transmon_drive, transmon_interaction
+from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.pulse.transmon import (
+    AmplitudeAndPhaseAndFreq,
     TransmonSettings,
+    _reorder_AmpPhaseFreq,
     a,
     ad,
-    AmplitudeAndPhaseAndFreq,
-    _reorder_AmpPhaseFreq,
     callable_freq_to_angular,
 )
-from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.wires import Wires
 
 

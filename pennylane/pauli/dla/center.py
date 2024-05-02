@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
-from typing import List, Union
 from itertools import combinations
+from typing import List, Union
 
 import numpy as np
 
-from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.operation import Operator
+from pennylane.pauli import PauliSentence, PauliWord
 
 
 def center(

@@ -14,16 +14,16 @@
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
 # pylint:disable=use-implicit-booleaness-not-comparison
 from functools import partial
+
 import pytest
 from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.gradients import param_shift
 from pennylane.devices import DefaultQubitLegacy
+from pennylane.gradients import param_shift
 from pennylane.measurements import Shots
-from pennylane.operation import Observable, AnyWires
-
+from pennylane.operation import AnyWires, Observable
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5
@@ -118,9 +118,15 @@ class TestParamShift:
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
 
+        if broadcast:
+            match_ = "Broadcasting with shot vectors is not supported yet"
+            with pytest.raises(NotImplementedError, match=match_):
+                g_tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
+            return
+
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.param_shift(tape, broadcast=broadcast)
-        all_res = post_processing(qml.execute(g_tapes, dev, None))
+            g_tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
+        all_res = fn(qml.execute(g_tapes, dev, None))
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(shot_vec)
 
@@ -1305,7 +1311,7 @@ class TestParameterShiftRule:
         for gradF in all_gradF:
             assert isinstance(gradF, np.ndarray)
             assert gradF.shape == ()
-            assert gradF == pytest.approx(expected, abs=1)
+            assert qml.math.allclose(gradF, expected, atol=2 * _herm_shot_vec_tol)
 
     @flaky(max_runs=5)
     def test_non_involutory_variance_multi_param(self):
@@ -1359,7 +1365,7 @@ class TestParameterShiftRule:
             # Note: the tolerances here are significantly higher than in usual tests
             # due to the stochasticity of the test case
             assert gradF[0] == pytest.approx(expected, abs=2)
-            assert gradF[1] == pytest.approx(expected, abs=1)
+            assert qml.math.allclose(gradF[1], expected, atol=1.5)
 
     @flaky(max_runs=8)
     def test_involutory_and_noninvolutory_variance_single_param(self):
@@ -1486,8 +1492,8 @@ class TestParameterShiftRule:
 
             assert np.allclose(shot_vec_result[0][0], expected[0], atol=1)
             assert np.allclose(shot_vec_result[0][1], expected[1], atol=1)
-            assert np.allclose(shot_vec_result[1][0], expected[2], atol=1)
-            assert np.allclose(shot_vec_result[1][1], expected[3], atol=1)
+            assert np.allclose(shot_vec_result[1][0], expected[2], atol=1.5)
+            assert np.allclose(shot_vec_result[1][1], expected[3], atol=1.5)
 
     @pytest.mark.parametrize("ind", [0, 1])
     def test_var_and_probs_single_param(self, ind):

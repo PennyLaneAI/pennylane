@@ -17,7 +17,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-
 univariate = [(np.sin), (lambda x: np.exp(x / 10.0)), (lambda x: x**2)]
 
 multivariate = [
