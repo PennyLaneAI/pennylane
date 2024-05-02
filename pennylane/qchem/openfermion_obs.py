@@ -841,17 +841,7 @@ def molecular_hamiltonian(*args, **kwargs):
     |
 
     Args:
-        symbols (list[str]): symbols of the atomic species in the molecule
-        coordinates (array[float]): atomic positions in Cartesian coordinates.
-            The atomic coordinates must be in atomic units and can be given as either a 1D array of
-            size ``3*N``, or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
-        name (str): name of the molecule
-        charge (int): Net charge of the molecule. If not specified a neutral system is assumed.
-        mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
-            for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
-            Possible values of ``mult`` are :math:`1, 2, 3, \ldots`. If not specified,
-            a closed-shell HF state is assumed.
-        basis (str): atomic basis set used to represent the molecular orbitals
+        molecule (~qchem.molecule.Molecule): the molecule object
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
             to specify the built-in differentiable Hartree-Fock solver, ``method="pyscf"`` to use
@@ -868,8 +858,6 @@ def molecular_hamiltonian(*args, **kwargs):
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping. If None, will use identity map.
-        alpha (array[float]): exponents of the primitive Gaussian functions
-        coeff (array[float]): coefficients of the contracted Gaussian functions
         args (array[array[float]]): initial values of the differentiable parameters
         load_data (bool): flag to load data from the basis-set-exchange library
         convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
@@ -883,7 +871,8 @@ def molecular_hamiltonian(*args, **kwargs):
     **Example**
 
     >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-    >>> H, qubits = molecular_hamiltonian(symbols, coordinates)
+    >>> molecule = qml.qchem.Molecule(symbols, coordinates)
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(molecule)
     >>> print(qubits)
     4
     >>> print(H)
