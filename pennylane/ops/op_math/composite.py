@@ -233,6 +233,11 @@ class CompositeOp(Operator):
     @property
     def has_diagonalizing_gates(self):
         if self.has_overlapping_wires:
+            for ops in self.overlapping_ops:
+                # if any of the single ops doesn't have diagonalizing gates, the overall operator doesn't either
+                if len(ops) == 1 and not ops[0].has_diagonalizing_gates:
+                    return False
+            # the lists of ops with multiple operators can be handled if there is a matrix
             return self.has_matrix
 
         return all(op.has_diagonalizing_gates for op in self)

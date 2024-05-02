@@ -685,6 +685,10 @@
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
 
+* `CompositeOp.has_diagonalizing_gates` now does a more complete check of the base operators to ensure consistency 
+  between `op.has_diagonalzing_gates` and `op.diagonalizing_gates()`
+  [(#5603)](https://github.com/PennyLaneAI/pennylane/pull/5603)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
