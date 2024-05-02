@@ -63,9 +63,9 @@ def lie_closure(
     A first round of commutators between all elements yields:
 
     >>> qml.commutator(X(0) @ X(1), Z(0))
-    -2j * (X(1) @ Y(0))
+    -2j * (Y(0) @ X(1))
     >>> qml.commutator(X(0) @ X(1), Z(1))
-    -2j * (Y(1) @ X(0))
+    -2j * (X(0) @ Y(1))
 
     A next round of commutators between all elements further yields the new operator ``Y(0) @ Y(1)``.
 
@@ -81,9 +81,9 @@ def lie_closure(
     [X(1) @ X(0),
      Z(0),
      Z(1),
-     -1.0 * (X(1) @ Y(0)),
-     -1.0 * (Y(1) @ X(0)),
-     -1.0 * (Y(1) @ Y(0))]
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
 
     Note that we normalize by removing the factors of :math:`2i`, though minus signs are left intact.
 
@@ -305,10 +305,14 @@ class PauliVSpace:
 
         for ps in other:
             # TODO: Potential speed-up by computing the maximal linear independent set for all current basis vectors + other, essentially algorithm1 in https://arxiv.org/abs/1012.5256
-            self._M, self._pw_to_idx, self._rank, self._num_pw, is_independent = (
-                self._check_independence(
-                    self._M, ps, self._pw_to_idx, self._rank, self._num_pw, tol
-                )
+            (
+                self._M,
+                self._pw_to_idx,
+                self._rank,
+                self._num_pw,
+                is_independent,
+            ) = self._check_independence(
+                self._M, ps, self._pw_to_idx, self._rank, self._num_pw, tol
             )
             if is_independent:
                 self._basis.append(ps)
