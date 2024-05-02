@@ -12,10 +12,10 @@
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
   [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
 
-  Focusing on the [spectral norm](https://en.wikipedia.org/wiki/Matrix_norm#Spectral_norm_(p_=_2))
+  Focusing on the [spectral norm](https://en.wikipedia.org/wiki/Matrix_norm)
   error, it is possible to specify errors in the following operations:
 
-  * For algorithmic-level usecases it is useful to specify a custom operation representing a
+  * For algorithmic-level usecases it is useful to create a custom operation representing a
     major building block of the algorithm. This building block can have an error attached but
     does not require a decomposition or matrix representation:
 
