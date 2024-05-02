@@ -21,7 +21,6 @@ import warnings
 
 import numpy as np
 from scipy.linalg import solve as linalg_solve
-
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters

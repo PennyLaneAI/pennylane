@@ -19,8 +19,8 @@ from pennylane import numpy as np
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _get_operation_recipe,
-    _make_zero_rep,
     _put_zeros_in_pdA2_involutory,
+    _make_zero_rep,
 )
 from pennylane.devices import DefaultQubitLegacy
 from pennylane.operation import Observable, AnyWires
@@ -555,13 +555,17 @@ class TestParamShift:
         if broadcast:
             assert len(tapes) == 2
             assert [t.batch_size for t in tapes] == [2, 3]
+
             shifted_batch = [0.2 * 1.0 + 0.3, 0.5 * 1.0 + 0.6]
-            assert np.allclose(tapes[0].get_parameters(trainable_only=False)[0], shifted_batch)
-            assert tapes[0].get_parameters(trainable_only=False)[1:] == [2.0, 3.0, 4.0]
+            tape_par = tapes[0].get_parameters(trainable_only=False)
+            assert np.allclose(tape_par[0], shifted_batch)
+            assert tape_par[1:] == [2.0, 3.0, 4.0]
+
             shifted_batch = [1 * 3.0 + 1, 2 * 3.0 + 2, 3 * 3.0 + 3]
-            assert tapes[1].get_parameters(trainable_only=False)[:2] == [1.0, 2.0]
-            assert np.allclose(tapes[1].get_parameters(trainable_only=False)[2], shifted_batch)
-            assert tapes[1].get_parameters(trainable_only=False)[3:] == [4.0]
+            tape_par = tapes[1].get_parameters(trainable_only=False)
+            assert tape_par[:2] == [1.0, 2.0]
+            assert np.allclose(tape_par[2], shifted_batch)
+            assert tape_par[3:] == [4.0]
         else:
             assert len(tapes) == 5
             assert [t.batch_size for t in tapes] == [None] * 5
@@ -671,12 +675,11 @@ class TestParamShift:
             )
             for i in range(2)
         )
-        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
 
         # two tapes per parameter, independent of recipe
         # plus one global (unshifted) call if at least one uses the custom recipe
-        tapes_per_param = 2
-        assert len(tapes) == tapes_per_param * tape.num_params + (len(ops_with_custom_recipe) > 0)
+        assert len(tapes) == 2 * tape.num_params + (len(ops_with_custom_recipe) > 0)
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)
