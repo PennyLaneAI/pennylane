@@ -551,6 +551,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Improves the error message for setting shots on the new device interface, or trying to access a property
+  that no longer exists.
+  [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
+
 * Fixed a bug where `qml.draw` and `qml.draw_mpl` incorrectly raised errors for circuits collecting statistics on mid-circuit measurements
   while using `qml.defer_measurements`.
   [(#5610)](https://github.com/PennyLaneAI/pennylane/pull/5610)
