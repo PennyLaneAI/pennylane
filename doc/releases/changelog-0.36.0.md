@@ -685,7 +685,7 @@
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
 
-* Fixed a bug that raised an error regarding expected vs acutal `dtype` when using `JAX-JIT` on a circuit that 
+* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
   returned samples of observables containing the `qml.Identity` operator.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
