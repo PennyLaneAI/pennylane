@@ -256,7 +256,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
     if all_shot_meas is None:
         new_shot_meas = list(one_shot_meas)
         for i, (m, s) in enumerate(zip(circuit.measurements, new_shot_meas)):
-            if isinstance(m, SampleMP) and isinstance(s, np.ndarray):
+            if isinstance(m, SampleMP) and qml.math.shape(s) == ():
                 new_shot_meas[i] = [s]
         return new_shot_meas
     new_shot_meas = all_shot_meas
@@ -334,9 +334,17 @@ def gather_non_mcm(circuit_measurement, measurement, samples):
     if isinstance(circuit_measurement, (ExpectationMP, ProbabilityMP)):
         return measurement / len(samples)
     if isinstance(circuit_measurement, SampleMP):
-        return np.squeeze(np.concatenate(tuple(s.reshape(1, -1) for s in measurement)))
+        return qml.math.squeeze(
+            qml.math.concatenate(tuple(qml.math.reshape(s, (1, -1)) for s in measurement))
+        )
     # VarianceMP
-    return qml.math.var(np.concatenate(tuple(s.ravel() for s in measurement)))
+    # Casting is needed for torch and tf to compute variance. Ravel to convert 0-D arrays into
+    # 1-D arrays. Contatenate to maintain the interface. Without these changes, the input to var
+    # is a list and the returned value's interface is always numpy
+    # return qml.math.var(
+    #     qml.math.concatenate(tuple(qml.math.ravel(qml.math.cast(s, "float")) for s in measurement))
+    # )
+    return qml.math.var(qml.math.cast(qml.math.convert_like(measurement, measurement[0]), "float"))
 
 
 def gather_mcm(measurement, samples):

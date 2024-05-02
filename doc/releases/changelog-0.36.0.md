@@ -551,6 +551,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed an issue with the `dynamic_one_shot` transform where `qml.sample` and `qml.var` were not working correctly with
+  all machine learning interfaces.
+  [(#)]()
+
 * Improves the error message for setting shots on the new device interface, or trying to access a property
   that no longer exists.
   [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
