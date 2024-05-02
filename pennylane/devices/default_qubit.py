@@ -591,7 +591,7 @@ class DefaultQubit(Device):
         prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
 
         if max_workers is None:
-            results = tuple(
+            return tuple(
                 _simulate_wrapper(
                     c,
                     {
@@ -604,7 +604,6 @@ class DefaultQubit(Device):
                 )
                 for c, _key in zip(circuits, prng_keys)
             )
-            return results
 
         vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
