@@ -21,6 +21,7 @@ import warnings
 
 import numpy as np
 from scipy.linalg import solve as linalg_solve
+
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
@@ -450,6 +451,9 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             with all shifts distributed over the broadcasting dimension. In this case,
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
+
+    if len(shifts) == 0:
+        return tuple()
 
     if multipliers is None:
         multipliers = np.ones_like(shifts)

@@ -16,14 +16,14 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _get_operation_recipe,
-    _put_zeros_in_pdA2_involutory,
     _make_zero_rep,
+    _put_zeros_in_pdA2_involutory,
 )
-from pennylane.devices import DefaultQubitLegacy
-from pennylane.operation import Observable, AnyWires
+from pennylane.operation import AnyWires, Observable
 
 
 # pylint: disable=too-few-public-methods
@@ -588,12 +588,15 @@ class TestParamShift:
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
 
+    @pytest.mark.parametrize("broadcast", [False, True])
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
     @pytest.mark.parametrize("multi_measure", [False, True])
-    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure):
+    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure, broadcast):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
+        if multi_measure and broadcast:
+            pytest.skip("Multiple measurements are not supported with `broadcast=True` yet.")
         dev = qml.device("default.qubit", wires=2)
         x = [0.543, -0.654]
 
@@ -608,12 +611,13 @@ class TestParamShift:
         gradient_recipes = tuple(
             [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
         # two tapes per parameter that doesn't use a custom recipe,
         # plus one global (unshifted) call if at least one uses the custom recipe
         num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
-        assert len(tapes) == 2 * num_ops_standard_recipe + int(
+        tapes_per_param = 1 if broadcast else 2
+        assert len(tapes) == tapes_per_param * num_ops_standard_recipe + int(
             tape.num_params != num_ops_standard_recipe
         )
         # Test that executing the tapes and the postprocessing function works
