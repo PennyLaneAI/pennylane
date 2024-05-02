@@ -837,7 +837,7 @@ class ControlledOp(Controlled, operation.Operation):
 
     @property
     def grad_method(self):
-        return self.base.grad_method
+        return "A" if isinstance(self.base, qml.GlobalPhase) else self.base.grad_method
 
     @property
     def parameter_frequencies(self):
