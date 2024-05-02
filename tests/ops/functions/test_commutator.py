@@ -18,9 +18,9 @@ Unit tests for the comm function
 import pytest
 
 import pennylane as qml
-from pennylane.ops import SProd, Sum
 from pennylane.operation import Operator
-from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.ops import SProd, Sum
+from pennylane.pauli import PauliSentence, PauliWord
 
 X, Y, Z, Id = qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity
 

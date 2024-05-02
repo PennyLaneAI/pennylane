@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-# pylint: disable=import-outside-toplevel, protected-access, no-member
-import warnings
 import copy
 
+# pylint: disable=import-outside-toplevel, protected-access, no-member
+import warnings
 from functools import partial
 from typing import Callable, Tuple
 
@@ -23,13 +23,12 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-
 import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 from pennylane.resource import Resources
+from pennylane.tape import QuantumScript
 
 
 def dummyfunc():
@@ -1877,26 +1876,30 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
-    def test_invalid_hamiltonian_expansion_finite_shots(self):
-        """Test that an error is raised if multiple expectations are requested
-        when using finite shots"""
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
+        """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("expval of the legacy Hamiltonian does not support finite shots.")
+
         dev = qml.device("default.qubit.legacy", wires=3, shots=50000)
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
         H = qml.Hamiltonian(c, obs)
-        H.compute_grouping()
 
-        assert len(H.grouping_indices) == 2
+        if grouping:
+            H.compute_grouping()
+            assert len(H.grouping_indices) == 2
 
         @qnode(dev)
         def circuit():
             return qml.expval(H), qml.expval(H)
 
-        with pytest.raises(
-            ValueError, match="Can only return the expectation of a single Hamiltonian"
-        ):
-            circuit()
+        res = circuit()
+        assert qml.math.allclose(res, [0.54, 0.54], atol=0.05)
+        assert res[0] == res[1]
 
     def test_device_expansion_strategy(self, mocker):
         """Test that the device expansion strategy performs the device

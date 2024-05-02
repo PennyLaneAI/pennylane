@@ -14,16 +14,16 @@
 """A function to compute the Lie closure of a set of operators"""
 # pylint: disable=too-many-arguments
 import itertools
-from functools import reduce
-
-from typing import Union, Iterable
 from copy import copy
+from functools import reduce
+from typing import Iterable, Union
+
 import numpy as np
 
 import pennylane as qml
-
 from pennylane.operation import Operator
-from ..pauli_arithmetic import PauliWord, PauliSentence
+
+from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
 def lie_closure(
@@ -52,6 +52,8 @@ def lie_closure(
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
         commutators (Lie closure).
 
+    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+
     **Example**
 
     Let us walk through a simple example of computing the Lie closure of the generators of the transverse field Ising model on two qubits.
@@ -74,7 +76,7 @@ def lie_closure(
     This can be done in short via ``lie_closure`` as follows.
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.pauli.lie_closure(ops)
+    >>> dla = qml.lie_closure(ops)
     >>> print(dla)
     [X(1) @ X(0),
      Z(0),
@@ -98,7 +100,7 @@ def lie_closure(
         ...     PauliSentence({PauliWord({0: "Z"}): 1.}),
         ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
         ... ]
-        >>> dla = qml.pauli.lie_closure(ops, pauli=True)
+        >>> dla = qml.lie_closure(ops, pauli=True)
         >>> print(dla)
         [1.0 * X(0) @ X(1),
          1.0 * Z(0),

@@ -14,9 +14,10 @@
 """This module contains a PyTorch implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
-import warnings
 import inspect
 import logging
+import warnings
+
 import semantic_version
 
 try:
@@ -30,7 +31,9 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
+
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
 from . import DefaultQubitLegacy
 
 logger = logging.getLogger(__name__)

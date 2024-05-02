@@ -20,7 +20,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-
 np.random.seed(42)
 
 

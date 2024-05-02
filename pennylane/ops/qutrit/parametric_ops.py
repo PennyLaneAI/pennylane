@@ -17,7 +17,9 @@ This submodule contains the discrete-variable quantum operations that are the
 core parameterized gates for qutrits.
 """
 import functools
+
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 

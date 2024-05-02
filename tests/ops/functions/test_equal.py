@@ -17,17 +17,16 @@ Tests are divided by number of parameters and wires different operators take.
 """
 # pylint: disable=too-many-arguments, too-many-public-methods
 import itertools
-
 from copy import deepcopy
+
 import numpy as np
 import pytest
-
 
 import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
-from pennylane.ops.op_math import SymbolicOp, Controlled
+from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -1456,8 +1455,8 @@ class TestSymbolicOpComparison:
     @pytest.mark.jax
     def test_kwargs_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base1 = qml.RX(torch.tensor(1.2), wires=0)
         base2 = qml.RX(jax.numpy.array(1.2), wires=0)
@@ -1710,8 +1709,8 @@ class TestProdComparisons:
     @pytest.mark.all_interfaces
     def test_prod_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
@@ -1743,6 +1742,14 @@ class TestProdComparisons:
         op1 = (0.5 * X(0)) @ (0.5 * X(1)) @ (0.5 * X(2)) @ (0.5 * X(3)) @ (0.5 * X(4))
         op2 = qml.prod(*[0.5 * X(i) for i in range(5)])
         assert qml.equal(op1, op2)
+
+    def test_prod_global_phase(self):
+        """Test that a prod with a global phase can be used with qml.equal."""
+
+        p1 = qml.GlobalPhase(np.pi) @ qml.X(0)
+        p2 = qml.X(0) @ qml.GlobalPhase(np.pi)
+
+        assert qml.equal(p1, p2)
 
 
 @pytest.mark.usefixtures("use_new_opmath")
@@ -1796,8 +1803,8 @@ class TestSumComparisons:
     @pytest.mark.all_interfaces
     def test_sum_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
@@ -1854,6 +1861,12 @@ class TestSumComparisons:
             + 0.5 * X(9)
         )
         op2 = qml.sum(*[0.5 * X(i) for i in range(10)])
+        assert qml.equal(op1, op2)
+
+    def test_sum_global_phase(self):
+        """Test that a sum containing a no-wires op can still be compared."""
+        op1 = qml.sum(qml.X(0), qml.GlobalPhase(np.pi))
+        op2 = qml.sum(qml.GlobalPhase(np.pi), qml.X(0))
         assert qml.equal(op1, op2)
 
 

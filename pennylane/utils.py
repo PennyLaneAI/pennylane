@@ -15,12 +15,12 @@
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
-# pylint: disable=protected-access,too-many-branches
-from collections.abc import Iterable
 import functools
 import inspect
 import numbers
 
+# pylint: disable=protected-access,too-many-branches
+from collections.abc import Iterable
 
 import numpy as np
 
@@ -43,8 +43,7 @@ def _flatten(x):
     elif isinstance(x, qml.wires.Wires):
         # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
         # Since Wires are always flat, just yield.
-        for item in x:
-            yield item
+        yield from x
     elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
         for item in x:
             yield from _flatten(item)
@@ -168,6 +167,9 @@ def expand_vector(vector, original_wires, expanded_wires):
     Returns:
         array: :math:`2^m` vector where m = len(expanded_wires).
     """
+    if len(original_wires) == 0:
+        val = qml.math.squeeze(vector)
+        return val * qml.math.ones(2 ** len(expanded_wires))
     if isinstance(expanded_wires, numbers.Integral):
         expanded_wires = list(range(expanded_wires))
 

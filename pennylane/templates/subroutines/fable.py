@@ -15,10 +15,12 @@
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique.
 """
 import warnings
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.operation import AnyWires, Operation
+from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.wires import Wires
 
 
@@ -32,7 +34,9 @@ class FABLE(Operation):
 
     Args:
         input_matrix (tensor_like): a :math:`(2^n \times 2^n)` matrix to be encoded,
-            where :math:`n` is the number of wires used
+            where :math:`n` is an integer
+        wires (Iterable[int, str], Wires): the wires the operation acts on. The number of wires can
+            be computed as :math:`(2 \times n + 1)`.
         tol (float): rotation gates that have an angle value smaller than this tolerance are removed
         id (str or None): string representing the operation (optional)
 

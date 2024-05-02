@@ -13,11 +13,10 @@
 # limitations under the License.
 """Tests for the purity measurement process"""
 
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
-
 from pennylane.measurements import PurityMP, Shots
 
 # pylint: disable=too-many-arguments

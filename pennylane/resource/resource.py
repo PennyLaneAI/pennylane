@@ -18,8 +18,8 @@ from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from pennylane.operation import Operation
 from pennylane.measurements import Shots
+from pennylane.operation import Operation
 
 
 @dataclass(frozen=True)

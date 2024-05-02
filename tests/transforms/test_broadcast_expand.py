@@ -14,12 +14,13 @@
 """
 Unit tests for the ``broadcast_expand`` transform.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane import numpy as pnp
-
 
 dev = qml.device("default.qubit", wires=2, seed=123)
 """Defines the device used for all tests"""

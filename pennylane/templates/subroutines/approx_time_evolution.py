@@ -16,7 +16,7 @@ Contains the ApproxTimeEvolution template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import PauliRot
 
 
@@ -138,6 +138,11 @@ class ApproxTimeEvolution(Operation):
 
         # trainable parameters are passed to the base init method
         super().__init__(*hamiltonian.data, time, wires=wires, id=id)
+
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["hamiltonian"])
+        context.append(self)
+        return self
 
     @staticmethod
     def compute_decomposition(

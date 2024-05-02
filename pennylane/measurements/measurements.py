@@ -18,13 +18,12 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
-
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Optional, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import pennylane as qml
-from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
+from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -261,6 +260,7 @@ class MeasurementProcess(ABC):
         base = 2 if cutoff is None else cutoff
         return base**num_wires
 
+    @qml.QueuingManager.stop_recording()
     def diagonalizing_gates(self):
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
@@ -268,11 +268,7 @@ class MeasurementProcess(ABC):
         Returns:
             List[.Operation]: the operations that diagonalize the observables
         """
-        try:
-            # pylint: disable=no-member
-            return self.expand().operations
-        except qml.operation.DecompositionUndefinedError:
-            return []
+        return self.obs.diagonalizing_gates() if self.obs else []
 
     def __eq__(self, other):
         return qml.equal(self, other)

@@ -15,10 +15,11 @@
 Unit tests for the ``AdaptiveOptimizer``.
 """
 import copy
+
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 
 symbols = ["H", "H", "H"]
 geometry = np.array(

@@ -18,9 +18,9 @@ Tests for the ``default.mixed`` device for the Autograd interface
 import pytest
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane import numpy as np
 from pennylane.devices.default_mixed import DefaultMixed
-from pennylane import DeviceError
 
 pytestmark = pytest.mark.autograd
 

@@ -17,8 +17,8 @@ computing the sum of operations.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
 
-import warnings
 import itertools
+import warnings
 from collections.abc import Iterable
 from copy import copy
 from typing import List
@@ -216,17 +216,24 @@ class Sum(CompositeOp):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        # pylint: disable=protected-access
-        new_op = cls(*data)
-        new_op._grouping_indices = metadata[0]
-        return new_op
+        return cls(*data, _grouping_indices=metadata[0])
 
     def __init__(
-        self, *operands: Operator, grouping_type=None, method="rlf", id=None, _pauli_rep=None
+        self,
+        *operands: Operator,
+        grouping_type=None,
+        method="rlf",
+        id=None,
+        _grouping_indices=None,
+        _pauli_rep=None,
     ):
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
-        self._grouping_indices = None
+        self._grouping_indices = _grouping_indices
+        if _grouping_indices is not None and grouping_type is not None:
+            raise ValueError(
+                "_grouping_indices and grouping_type cannot be specified at the same time."
+            )
         if grouping_type is not None:
             self.compute_grouping(grouping_type=grouping_type, method=method)
 
@@ -318,6 +325,8 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
+        if self.pauli_rep:
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
         gen = (
             (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix(), op.wires)
             for op in self
@@ -423,7 +432,6 @@ class Sum(CompositeOp):
 
         **Example**
 
-        >>> qml.operation.enable_new_opmath()
         >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
         >>> op.terms()
         ([0.5, 0.7, 1.5],
@@ -567,7 +575,10 @@ class Sum(CompositeOp):
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return sorted(list(map(str, wires)))[0], len(wires), str(op)
+            if not op.wires:
+                return ("", 0, str(op))
+            sorted_wires = sorted(list(map(str, wires)))[0]
+            return sorted_wires, len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 

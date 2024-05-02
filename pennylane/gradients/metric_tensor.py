@@ -15,10 +15,11 @@
 Contains the metric_tensor batch_transform which wraps multiple
 methods of computing the metric tensor.
 """
-from typing import Sequence, Callable
 import functools
-from functools import partial
 import warnings
+from functools import partial
+from typing import Callable, Sequence
+
 import numpy as np
 
 import pennylane as qml

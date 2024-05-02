@@ -14,7 +14,8 @@
 """
 This module contains the qml.counts measurement.
 """
-from typing import Sequence, Tuple, Optional
+from typing import Optional, Sequence, Tuple
+
 import numpy as np
 
 import pennylane as qml
@@ -299,6 +300,7 @@ class CountsMP(SampleMeasurement):
 
         if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
+            batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
 
             # remove nans
             mask = qml.math.isnan(samples)
@@ -307,21 +309,24 @@ class CountsMP(SampleMeasurement):
                 mask = np.logical_not(np.any(mask, axis=tuple(range(1, samples.ndim))))
                 samples = samples[mask, ...]
 
-            # convert to string
-            def convert(x):
-                return f"{x:0{num_wires}b}"
+            def convert(sample):
+                # convert array of ints to string
+                return "".join(str(s) for s in sample)
 
-            exp2 = 2 ** np.arange(num_wires - 1, -1, -1)
-            samples = np.einsum("...i,i", samples, exp2)
-            new_shape = samples.shape
-            samples = qml.math.cast_like(samples, qml.math.int64(0))
-            samples = list(map(convert, samples.ravel()))
-            samples = np.array(samples).reshape(new_shape)
+            new_shape = samples.shape[:-1]
+            # Flatten broadcasting axis
+            flattened_samples = np.reshape(samples, (-1, shape[-1])).astype(np.int8)
+            samples = list(map(convert, flattened_samples))
+            samples = np.reshape(np.array(samples), new_shape)
 
-            batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if self.all_outcomes:
+
+                def convert_from_int(x):
+                    # convert int to binary string
+                    return f"{x:0{num_wires}b}"
+
                 num_wires = len(self.wires) if len(self.wires) > 0 else shape[-1]
-                outcomes = list(map(convert, range(2**num_wires)))
+                outcomes = list(map(convert_from_int, range(2**num_wires)))
 
         elif self.all_outcomes:
             # This also covers statistics for mid-circuit measurements manipulated using

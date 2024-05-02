@@ -35,6 +35,9 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
+New operator arithmetic deprecations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 * ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
@@ -50,6 +53,11 @@ Pending deprecations
 
   Alternatively, to continue accessing the legacy functionality, you can use 
   ``qml.operation.disable_new_opmath()``.
+
+  - Deprecated in v0.36
+
+* Accessing terms of a tensor product ``op = X(0) @ X(1)`` via ``op.obs`` is deprecated with new operator arithmetic.
+  A user should use ``op.operands`` instead.
 
   - Deprecated in v0.36
 
@@ -98,7 +106,7 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.36
 
-* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
   
   - Deprecated in v0.35

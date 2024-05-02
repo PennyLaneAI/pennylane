@@ -15,22 +15,24 @@
 Code relevant for performing measurements on a qutrit mixed state.
 """
 
-from typing import Callable
 from string import ascii_letters as alphabet
+from typing import Callable
+
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
-    StateMeasurement,
-    MeasurementProcess,
     ExpectationMP,
-    StateMP,
+    MeasurementProcess,
     ProbabilityMP,
+    StateMeasurement,
+    StateMP,
     VarianceMP,
 )
+from pennylane.ops import Hamiltonian, Sum
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
-from .utils import reshape_state_as_matrix, get_num_wires, QUDIT_DIM
 from .apply_operation import apply_operation
+from .utils import QUDIT_DIM, get_num_wires, reshape_state_as_matrix
 
 
 def calculate_expval(
@@ -105,6 +107,8 @@ def calculate_probability(
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     num_state_wires = get_num_wires(state, is_state_batched)
+    wire_order = Wires(range(num_state_wires))
+    wires = measurementprocess.wires
 
     # probs are diagonal elements
     # stacking list since diagonal function axis selection parameter names
@@ -118,23 +122,39 @@ def calculate_probability(
     # if a probability is very small it may round to negative, undesirable.
     # math.clip with None bounds breaks with tensorflow, using this instead:
     probs = math.where(probs < 0, 0, probs)
+    if wires == Wires([]):
+        # no need to marginalize
+        return probs
 
-    if mp_wires := measurementprocess.wires:
-        expanded_shape = [QUDIT_DIM] * num_state_wires
-        new_shape = [QUDIT_DIM ** len(mp_wires)]
-        if is_state_batched:
-            batch_size = probs.shape[0]
-            expanded_shape.insert(0, batch_size)
-            new_shape.insert(0, batch_size)
-        wires_to_trace = tuple(
-            x + is_state_batched for x in range(num_state_wires) if x not in mp_wires
-        )
+    # determine which subsystems are to be summed over
+    inactive_wires = Wires.unique_wires([wire_order, wires])
 
-        expanded_probs = math.reshape(probs, expanded_shape)
-        summed_probs = math.sum(expanded_probs, axis=wires_to_trace)
-        return math.reshape(summed_probs, new_shape)
+    # translate to wire labels used by device
+    wire_map = dict(zip(wire_order, range(len(wire_order))))
+    mapped_wires = [wire_map[w] for w in wires]
+    inactive_wires = [wire_map[w] for w in inactive_wires]
 
-    return probs
+    # reshape the probability so that each axis corresponds to a wire
+    num_device_wires = len(wire_order)
+    shape = [QUDIT_DIM] * num_device_wires
+    desired_axes = math.argsort(math.argsort(mapped_wires))
+    flat_shape = (-1,)
+    expected_size = QUDIT_DIM**num_device_wires
+    batch_size = math.get_batch_size(probs, (expected_size,), expected_size)
+    if batch_size is not None:
+        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
+        shape.insert(0, batch_size)
+        inactive_wires = [idx + 1 for idx in inactive_wires]
+        desired_axes = math.insert(desired_axes + 1, 0, 0)
+        flat_shape = (batch_size, -1)
+
+    prob = math.reshape(probs, shape)
+    # sum over all inactive wires
+    prob = math.sum(prob, axis=tuple(inactive_wires))
+    # rearrange wires if necessary
+    prob = math.transpose(prob, desired_axes)
+    # flatten and return probabilities
+    return math.reshape(prob, flat_shape)
 
 
 def calculate_variance(

@@ -17,21 +17,15 @@ that they are supported for execution by a device."""
 # pylint: disable=protected-access, too-many-arguments
 
 import os
-from typing import Generator, Callable, Union, Sequence, Optional
-from copy import copy
 import warnings
+from copy import copy
+from typing import Callable, Generator, Optional, Sequence, Union
 
 import pennylane as qml
-from pennylane import Snapshot
-from pennylane.operation import Tensor, StatePrepBase
-from pennylane.measurements import (
-    MeasurementProcess,
-    StateMeasurement,
-    SampleMeasurement,
-)
-from pennylane.typing import ResultBatch, Result
-from pennylane import DeviceError
-from pennylane import transform
+from pennylane import DeviceError, Snapshot, transform
+from pennylane.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
+from pennylane.operation import StatePrepBase, Tensor
+from pennylane.typing import Result, ResultBatch
 from pennylane.wires import WireError
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
