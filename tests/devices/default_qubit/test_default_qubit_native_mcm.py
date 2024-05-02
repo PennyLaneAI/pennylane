@@ -647,7 +647,7 @@ def test_sample_with_prng_key(shots, postselect, reset):
         assert np.allclose(results1, results3)
 
 
-# pylint: disable=not-an-iterable
+# pylint: disable=import-outside-toplevel, not-an-iterable
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", [None, "best"])
 @pytest.mark.parametrize("postselect", [None, 1])
@@ -655,7 +655,8 @@ def test_sample_with_prng_key(shots, postselect, reset):
 def test_jax_jit(diff_method, postselect, reset):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
     conditional gate. A single measurement of a common observable is performed at the end."""
-    jax = pytest.importorskip("jax")
+    import jax
+
     shots = 10
 
     dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(678))
