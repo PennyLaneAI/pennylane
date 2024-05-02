@@ -125,7 +125,7 @@ def lie_closure(
             for op in generators
         ]
 
-    vspace = PauliVSpace(generators)
+    vspace = PauliVSpace(generators, tol=tol)
 
     epoch = 0
     old_length = 0  # dummy value
