@@ -681,6 +681,9 @@
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
 
+* Fixed `qml.TrotterProduct` to be compatible with resource tracking by inheirting from `ResourcesOperation`.
+  [(#5629)](https://github.com/PennyLaneAI/pennylane/pull/5629)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
