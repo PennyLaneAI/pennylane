@@ -152,6 +152,7 @@
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
   [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+  [(#5627)](https://github.com/PennyLaneAI/pennylane/pull/5627)
 
   The Lie closure, pronounced "Lee closure", is a way to compute the so-called dynamical Lie algebra (DLA) of a set of operators.
   For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
@@ -554,6 +555,10 @@
 * Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
   [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
  
+* Improves the error message for setting shots on the new device interface, or trying to access a property
+  that no longer exists.
+  [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
+
 * Fixed a bug where `qml.draw` and `qml.draw_mpl` incorrectly raised errors for circuits collecting statistics on mid-circuit measurements
   while using `qml.defer_measurements`.
   [(#5610)](https://github.com/PennyLaneAI/pennylane/pull/5610)
@@ -679,6 +684,10 @@
 
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
+
+* `CompositeOp.has_diagonalizing_gates` now does a more complete check of the base operators to ensure consistency 
+  between `op.has_diagonalzing_gates` and `op.diagonalizing_gates()`
+  [(#5603)](https://github.com/PennyLaneAI/pennylane/pull/5603)
 
 <h3>Contributors ✍️</h3>
 
