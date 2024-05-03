@@ -140,7 +140,7 @@ class Hamiltonian(Observable):
 
         >>> qml.operation.disable_new_opmath()
 
-        Alternatively, `qml.ops.Hamiltonian`` provides a permanent access point for Hamiltonian
+        Alternatively, ``qml.ops.Hamiltonian`` provides a permanent access point for Hamiltonian
         behaviour before ``v0.36``.
 
         >>> coeffs = [0.2, -0.543]
