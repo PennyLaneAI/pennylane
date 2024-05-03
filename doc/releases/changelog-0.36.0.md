@@ -452,9 +452,9 @@
   [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411)
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
-* `Prod` instances temporarily had a new `obs` property, which helped smoothen the 
-  transition of the new operator arithmetic system. In particular, this was aimed at preventing 
-  breaking code that uses `Tensor.obs`. This has been immediately deprecated. Moving 
+* `Prod` instances temporarily have a new `obs` property, which helps smoothen the 
+  transition of the new operator arithmetic system. In particular, this is aimed at preventing 
+  breaking code that uses `Tensor.obs`. The property has been immediately deprecated. Moving 
   forward, we recommend using `op.operands`.
   [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
   
