@@ -48,7 +48,7 @@ def lie_closure(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
-        tol (float): Numerical tolerance for linear independence check; :math:`v - M (M^T M)^{-1} M^T v > \text{tol}`.
+        tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
@@ -197,7 +197,8 @@ class PauliVSpace:
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): Operators that span the vector space.
         dtype (type): ``dtype`` of the underlying DOK sparse matrix ``M``. Default is ``float``.
-        tol (float): Numerical tolerance for the linear independence check; :math:`v - M (M^T M)^{-1} M^T v > \text{tol}`.
+        tol (float): Numerical tolerance for the linear independence check. If the norm of the projection of the candidate vector
+            onto :math:`M^\perp` is greater than ``tol``, then it is deemed to be linearly independent.
 
     **Example**
 
