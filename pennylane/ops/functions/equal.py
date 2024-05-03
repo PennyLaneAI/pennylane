@@ -201,7 +201,7 @@ def assert_equal(
 
     Raises:
 
-        AssertionError: An `AssertionError` is raised if the two operators are not equal.
+        AssertionError: An ``AssertionError`` is raised if the two operators are not equal.
 
     .. warning::
 
