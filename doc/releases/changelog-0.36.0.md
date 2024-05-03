@@ -800,7 +800,6 @@
 * Failing tests due to changes with Lightning's adjoint diff pipeline have been fixed.
   [(#5450)](https://github.com/PennyLaneAI/pennylane/pull/5450)
 
-
 * Failures occurring when making autoray-dispatched calls to Torch with paired CPU data have been fixed.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 
