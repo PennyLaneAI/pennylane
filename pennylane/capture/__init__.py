@@ -41,4 +41,4 @@ By default, the mechanism is disabled:
     False
 
 """
-from .switches import enable, disable, enabled
+from .switches import disable, enable, enabled

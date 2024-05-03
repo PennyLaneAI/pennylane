@@ -15,14 +15,13 @@
 
 from random import shuffle
 
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane.devices.qubit import simulate
-from pennylane.devices.qubit.simulate import _FlexShots
-from pennylane.devices.qubit import sample_state, measure_with_samples
+from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
 from pennylane.devices.qubit.sampling import _sample_state_jax
+from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.measurements import Shots
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
@@ -520,6 +519,9 @@ class TestMeasureSamples:
 
     def test_identity_on_no_wires_with_other_observables(self):
         """Test that measuring an identity on no wires can be used in conjunction with other measurements."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported with legacy opmath.")
 
         state = np.array([0, 1])
 

@@ -18,8 +18,8 @@ Tests for workflow.set_shots
 import pytest
 
 import pennylane as qml
-from pennylane.workflow import set_shots
 from pennylane.measurements import Shots
+from pennylane.workflow import set_shots
 
 
 def test_shots_new_device_interface():

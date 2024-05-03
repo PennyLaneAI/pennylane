@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the expval module"""
 import copy
+
 import numpy as np
 import pytest
 

@@ -17,11 +17,11 @@ from functools import partial
 from typing import Callable, Sequence
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy, DefaultMixed
-from pennylane.measurements import StateMP, DensityMatrixMP
-from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane import transform
+from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
+from pennylane.gradients import adjoint_metric_tensor, metric_tensor
+from pennylane.measurements import DensityMatrixMP, StateMP
+from pennylane.tape import QuantumTape
 
 
 @partial(transform, final_transform=True)
@@ -318,7 +318,7 @@ def _bipartite_qinfo_transform(
     wires0: Sequence[int],
     wires1: Sequence[int],
     base: float = None,
-    **kwargs
+    **kwargs,
 ):
 
     # device_wires is provided by the custom QNode transform

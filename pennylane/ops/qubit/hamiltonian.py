@@ -15,17 +15,18 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
+import functools
+
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
-import functools
 from typing import List
 from warnings import warn
+
 import numpy as np
 import scipy
-
 
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
@@ -220,7 +221,15 @@ class Hamiltonian(Observable):
         self._grouping_indices = None
 
         if simplify:
-            self.simplify()
+            # simplify upon initialization changes ops such that they wouldnt be
+            # removed in self.queue() anymore, removing them here manually.
+            if qml.QueuingManager.recording():
+                for o in observables:
+                    qml.QueuingManager.remove(o)
+
+            with qml.QueuingManager.stop_recording():
+                self.simplify()
+
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(

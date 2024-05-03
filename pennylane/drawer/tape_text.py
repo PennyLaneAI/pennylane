@@ -19,19 +19,26 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 from dataclasses import dataclass
 from typing import Optional
+
 import pennylane as qml
 from pennylane.measurements import (
+    Counts,
     Expectation,
+    MidMeasureMP,
     Probability,
     Sample,
-    Variance,
     State,
-    Counts,
-    MidMeasureMP,
+    Variance,
 )
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
+from .utils import (
+    convert_wire_order,
+    cwire_connections,
+    default_bit_map,
+    transform_deferred_measurements_tape,
+    unwrap_controls,
+)
 
 
 @dataclass
@@ -425,6 +432,7 @@ def tape_text(
         New tape offset:  4
 
     """
+    tape = transform_deferred_measurements_tape(tape)
     cache = cache or {}
     cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])

@@ -127,8 +127,17 @@ class TrotterProduct(ErrorOperation):
 
     .. warning::
 
-        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
-        due to the order in which those observables are stored.
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
+        mathematically identical :class:`~.Hamiltonian` objects may undergo different time
+        evolutions due to the order in which those observables are stored. The order of observables
+        can be queried using the :meth:`~.Sum.terms` method.
+
+    .. warning::
+
+        ``TrotterProduct`` does not automatically simplify the input Hamiltonian, allowing
+        for a more fine-grained control over the decomposition but also risking an increased
+        runtime and number of gates required. Simplification can be performed manually by
+        applying :func:`~.simplify` to your Hamiltonian before using it in ``TrotterProduct``.
 
     .. details::
         :title: Usage Details
@@ -189,9 +198,13 @@ class TrotterProduct(ErrorOperation):
                 raise ValueError(
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = qml.dot(coeffs, ops)
 
         if isinstance(hamiltonian, SProd):
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = hamiltonian.simplify()
             if len(hamiltonian.terms()[0]) < 2:
                 raise ValueError(

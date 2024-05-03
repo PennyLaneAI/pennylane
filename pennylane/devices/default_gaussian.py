@@ -21,16 +21,18 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
 """
+import cmath
+
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
 import math
-import cmath
-import numpy as np
 
+import numpy as np
 from scipy.special import factorial as fac
 
 import pennylane as qml
-from pennylane.ops import Identity
 from pennylane import Device
+from pennylane.ops import Identity
+
 from .._version import __version__
 
 # tolerance for numerical errors

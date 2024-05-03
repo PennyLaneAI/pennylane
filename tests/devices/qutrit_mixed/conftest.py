@@ -13,8 +13,8 @@
 # limitations under the License.
 """Pytest configuration file for PennyLane qutrit mixed state test suite."""
 import numpy as np
-from scipy.stats import unitary_group
 import pytest
+from scipy.stats import unitary_group
 
 
 def get_random_mixed_state(num_qutrits):

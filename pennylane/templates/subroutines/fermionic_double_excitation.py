@@ -16,9 +16,10 @@ Contains the FermionicDoubleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
-from pennylane.ops import RZ, RX, CNOT, Hadamard
+from pennylane.operation import AnyWires, Operation
+from pennylane.ops import CNOT, RX, RZ, Hadamard
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):

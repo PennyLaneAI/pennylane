@@ -23,11 +23,10 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import math, X, Y, Z
-from pennylane.wires import Wires
+from pennylane import X, Y, Z, math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
-
+from pennylane.wires import Wires
 
 no_mat_ops = (
     qml.Barrier,
@@ -681,7 +680,11 @@ class TestProperties:
         assert sum_op._queue_category is None  # pylint: disable=protected-access
 
     def test_eigvals_Identity_no_wires(self):
-        """Test that the eigenvalues can be computed for a sum containing an identity with no wires."""
+        """Test that eigenvalues can be computed for a sum containing identity with no wires."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported for legacy opmath")
+
         op1 = qml.X(0) + 2 * qml.I()
         op2 = qml.X(0) + 2 * qml.I(0)
         assert qml.math.allclose(sorted(op1.eigvals()), sorted(op2.eigvals()))

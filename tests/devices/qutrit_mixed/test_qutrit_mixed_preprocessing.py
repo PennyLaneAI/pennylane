@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for qutrit mixed device preprocessing."""
-import pytest
-
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_qutrit_mixed import (
     DefaultQutritMixed,
-    stopping_condition,
     observable_stopping_condition,
+    stopping_condition,
 )
 
 

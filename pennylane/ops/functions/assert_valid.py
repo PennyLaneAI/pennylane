@@ -16,9 +16,9 @@ This module contains the qml.ops.functions.check_validity function for determini
 Operator class is correctly defined.
 """
 
-from string import ascii_lowercase
 import copy
 import pickle
+from string import ascii_lowercase
 
 import numpy as np
 

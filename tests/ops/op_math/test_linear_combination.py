@@ -23,12 +23,12 @@ import pytest
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as pnp, X, Y, Z
-from pennylane.wires import Wires
-from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.ops import LinearCombination
-
+from pennylane import X, Y, Z
+from pennylane import numpy as pnp
 from pennylane.operation import enable_new_opmath_cm
+from pennylane.ops import LinearCombination
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.wires import Wires
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -1627,6 +1627,16 @@ class TestLinearCombinationEvaluation:
         pars = circuit.qtape.get_parameters(trainable_only=False)
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
+
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+    def test_queuing_behaviour(self):
+        """Tests that the base observables are correctly dequeued with simplify=True"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            obs = qml.Hamiltonian([1, 1, 1], [qml.X(0), qml.X(0), qml.Z(0)], simplify=True)
+
+        assert len(q) == 1
+        assert q.queue[0] == obs
 
 
 class TestLinearCombinationDifferentiation:
