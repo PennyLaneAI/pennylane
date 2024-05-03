@@ -40,13 +40,13 @@ Summary of the update
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
   standard Python operations like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.
 
-* You can now easily access Pauli operators via :const:`~.pennylane.I`, :const:`~.pennylane.X`, :const:`~.pennylane.Y`, and :const:`~.pennylane.Z`.
+* You can now easily access Pauli operators via :obj:`~.pennylane.I`, :obj:`~.pennylane.X`, :obj:`~.pennylane.Y`, and :obj:`~.pennylane.Z`.
 
   >>> from pennylane import I, X, Y, Z
   >>> X(0)
   X(0)
 
-  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to :const:`~.pennylane.I`, :const:`~.pennylane.X`, :const:`~.pennylane.Y`, and :const:`~.pennylane.Z`, but
+  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to :obj:`~.pennylane.I`, :obj:`~.pennylane.X`, :obj:`~.pennylane.Y`, and :obj:`~.pennylane.Z`, but
   use of the short-form names is now recommended.
 
 * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
