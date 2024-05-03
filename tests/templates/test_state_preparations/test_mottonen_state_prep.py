@@ -497,10 +497,10 @@ def test_adjoint_brings_back_to_zero(adj_base_op):
 @pytest.mark.jax
 @pytest.mark.parametrize("state_prep_op", [qml.StatePrep, qml.MottonenStatePreparation])
 def test_jacobian_with_and_without_jit_has_same_output_with_high_shots(state_prep_op):
-    """Test that the jacobian of the circuit is the same with and without jit"""
+    """Test that the jacobian of the circuit is the same with and without jit for high number of shots"""
     import jax
 
-    dev = qml.device("default.qubit", wires=4, shots=10000, seed=7890234)
+    dev = qml.device("default.qubit", shots=10000, seed=7890234)
 
     @qml.qnode(dev)
     def circuit(coeffs):
@@ -521,10 +521,10 @@ def test_jacobian_with_and_without_jit_has_same_output_with_high_shots(state_pre
 @pytest.mark.jax
 @pytest.mark.parametrize("state_prep_op", [qml.StatePrep, qml.MottonenStatePreparation])
 def test_jacobian_with_and_without_jit_has_same_output_with_analytic_mode(state_prep_op):
-    """Test that the jacobian of the circuit is the same with and without jit."""
+    """Test that the jacobian of the circuit is the same with and without jit for analytic mode."""
     import jax
 
-    dev = qml.device("default.qubit", wires=4, shots=None)
+    dev = qml.device("default.qubit", shots=None)
 
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(coeffs):
@@ -539,4 +539,4 @@ def test_jacobian_with_and_without_jit_has_same_output_with_analytic_mode(state_
 
     jac_jit = jac_jit_fn(params)
 
-    assert qml.math.allclose(jac, jac_jit, atol=0.02)
+    assert qml.math.allclose(jac, jac_jit)
