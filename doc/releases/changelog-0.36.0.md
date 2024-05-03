@@ -14,7 +14,7 @@
   [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
   [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
-  Two new user-facing classes are now available to allow for calculating and propagating 
+  Two new user-facing classes enable calculating and propagating 
   gate errors in PennyLane:
 
   * `qml.resource.error.SpectralNormError`: the spectral norm error is defined as the 
@@ -24,7 +24,7 @@
   * `qml.resource.error.ErrorOperation`: a base class that inherits from `qml.operation.Operation` 
     and represents quantum operations which carry some form of algorithmic error.
 
-  `SpectralNormError` can be used for back-of-the-napkin type calculations like obtaining the
+  `SpectralNormError` can be used for back-of-the-envelope type calculations like obtaining the
   spectral norm error between two unitaries via `get_error`:
 
   ```python
@@ -40,11 +40,11 @@
   0.004999994791668309
   ```
   
-  `SpectralNormError` is also the focus of specifying errors in the following ways:
+  `SpectralNormError` is also a key tool to specify errors in larger quantum circuits:
 
-  * For operations representing a major building block of an algorithm, we can create a class
+  * For operations representing a major building block of an algorithm, we can create a custom operation
     that inherits from `ErrorOperation`. This child class must override the `error` method and 
-    return a `SpectralNormError` instance:
+    should return a `SpectralNormError` instance:
 
     ```python
     class MyErrorOperation(ErrorOperation):
@@ -56,10 +56,10 @@
             return SpectralNormError(self.error_val)
     ```
 
-    In this toy example, `MyErrorOperation` is doing nothing but introducing an arbitrary `SpectralNormError`
-    whenever `MyErrorOperation` is applied in a QNode. It does not require a decomposition or matrix representation
+    In this toy example, `MyErrorOperation` introduces an arbitrary `SpectralNormError`
+    when called in a QNode. It does not require a decomposition or matrix representation
     when used with `null.qubit` (suggested for use with resource and error estimation since circuit executions are
-    not required to calculates resources or errors).
+    not required to calculate resources or errors).
   
     ```python
     dev = qml.device("null.qubit")
@@ -71,7 +71,6 @@
         return qml.state()
     ```
 
-    `default.qubit` can be used instead, but `MyErrorOperation` must define a decomposition or a matrix.
     The total spectral norm error of the circuit can be calculated using `qml.specs`:
 
     ```pycon
