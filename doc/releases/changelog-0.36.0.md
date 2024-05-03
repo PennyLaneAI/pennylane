@@ -90,6 +90,8 @@
   want to block-encode.
 
   ```python
+  import numpy as np
+
   A = np.array([[0.1, 0.2], [0.3, 0.4]])
   dev = qml.device('default.qubit', wires=3)
 
