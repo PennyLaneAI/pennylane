@@ -70,7 +70,7 @@ class Hamiltonian(Observable):
     .. warning::
 
         As of ``v0.36``, ``qml.Hamiltonian`` dispatches to :class:`~.pennylane.ops.op_math.LinearCombination`.
-        To obtain this class, use ``qml.ops.Hamiltonian``. For further details,
+        For further details,
         see :doc:`Updated Operators </news/new_opmath/>`
 
     Args:
