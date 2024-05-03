@@ -745,6 +745,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Patches the QNode so that parameter-shift will be considered best with lightning if
+  `qml.metric_tensor` is in the transform program.
+  [(#5624)](https://github.com/PennyLaneAI/pennylane/pull/5624)
+
 * Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
   [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
  
