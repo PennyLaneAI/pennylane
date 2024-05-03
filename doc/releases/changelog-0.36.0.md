@@ -118,6 +118,8 @@
   want to block-encode.
 
   ```python
+  import numpy as np
+
   A = np.array([[0.1, 0.2], [0.3, 0.4]])
   dev = qml.device('default.qubit', wires=3)
 
@@ -285,6 +287,7 @@
     Take for example the following operators:
 
     ```python
+    from pennylane import X, Y, Z
     ops = [X(0) @ X(1), Z(0), Z(1)]
     ```
 
@@ -292,16 +295,16 @@
 
     ```python
     >>> qml.commutator(X(0) @ X(1), Z(0))
-    -2j * (X(1) @ Y(0))
+    -2j * (Y(0) @ X(1))
     >>> qml.commutator(X(0) @ X(1), Z(1))
-    -2j * (Y(1) @ X(0))
+    -2j * (X(0) @ Y(1))
     ```
 
     A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
 
     ```python
     >>> qml.commutator(X(0) @ Y(1), Z(0))
-    -2j * (Y(1) @ Y(0))
+    -2j * (Y(0) @ Y(1))
     ```
 
     After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
@@ -310,13 +313,13 @@
     ```python
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.lie_closure(ops)
-    >>> print(dla)
-    [1.0 * X(1) @ X(0),
-     1.0 * Z(0),
-     1.0 * Z(1),
-     -1.0 * X(1) @ Y(0),
-     -1.0 * Y(1) @ X(0),
-     -1.0 * Y(1) @ Y(0)]
+    >>> dla
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
     ```
 
   * Computing the structure constants (the adjoint representation) of a dynamical Lie algebra.
@@ -327,7 +330,7 @@
     ```pycon
     >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
     >>> structure_const = qml.structure_constants(dla)
-    >>> structure_constp.shape
+    >>> structure_const.shape
     (6, 6, 6)
     ```
     Visit the [documentation of qml.structure_constants](https://docs.pennylane.ai/en/stable/code/api/pennylane.structure_constants.html)
@@ -336,7 +339,7 @@
   * Computing the center of a dynamical Lie algebra.
     [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
 
-    Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+    Given a DLA `g`, we can now compute its centre. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
 
     ```pycon
     >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
@@ -476,9 +479,9 @@
   [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411)
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
-* `Prod` instances temporarily had a new `obs` property, which helped smoothen the 
-  transition of the new operator arithmetic system. In particular, this was aimed at preventing 
-  breaking code that uses `Tensor.obs`. This has been immediately deprecated. Moving 
+* `Prod` instances temporarily have a new `obs` property, which helps smoothen the 
+  transition of the new operator arithmetic system. In particular, this is aimed at preventing 
+  breaking code that uses `Tensor.obs`. The property has been immediately deprecated. Moving 
   forward, we recommend using `op.operands`.
   [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
   
@@ -541,7 +544,7 @@
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided 
-  that they support `MidMeasureMP` operations natively.
+  that they support mid-circuit measurement operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
 * `default.qubit` can now be provided a random seed for sampling mid-circuit 
@@ -586,7 +589,7 @@
 
 * Entanglement entropy can now be calculated with 
   `qml.math.vn_entanglement_entropy`, which computes the von Neumann 
-  entanglement entropy from a density matrix. A corresponding a QNode transform,
+  entanglement entropy from a density matrix. A corresponding QNode transform,
   `qml.qinfo.vn_entanglement_entropy`, has also been added.
   [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
 
@@ -622,6 +625,10 @@
   `ClassicalShadow._convert_to_pauli_words` when the input is not a valid 
   `pauli_rep`.
   [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
+
+* Circuits running on `lightning.qubit` and that return `qml.state()` now preserve 
+  the `dtype` when specified.
+  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
 
 <h3>Breaking changes 💔</h3>
 
@@ -659,9 +666,6 @@
   (-1j, PauliY(wires=[0]))
   ```
 
-* Circuits returning `qml.state()` now preserve the `dtype` when specified.
-  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
-
 * The `dynamic_one_shot` transform now uses sampling (`SampleMP`) to get back the values of the mid-circuit measurements.
   [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
 
@@ -681,10 +685,6 @@
 * The contents of `qml.interfaces` has been moved inside `qml.workflow`. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
-* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
-  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
-  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
-
 * Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
   [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
 
@@ -692,6 +692,13 @@
   [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
 
 <h3>Deprecations 👋</h3>
+
+* Accessing `qml.ops.Hamiltonian` is deprecated because it points to the old version of the class
+  that may not be compatible with the new approach to operator arithmetic. Instead, using
+  `qml.Hamiltonian` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
+  `qml.Hamiltonian` with existing code without needing to make any changes.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 * `qml.load` has been deprecated. Instead, please use the functions outlined in the [Importing workflows quickstart guide](https://docs.pennylane.ai/en/latest/introduction/importing_workflows.html).
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
@@ -706,11 +713,6 @@
   >>> with open("test.qasm", "r") as f:
   ...     circuit = qml.from_qasm(f.read())
   ```
-
-* Accessing `qml.ops.Hamiltonian` with new operator arithmetic is deprecated. Using `qml.Hamiltonian` with new operator arithmetic enabled now
-  returns a `LinearCombination` instance. Some functionality may not work as expected. To continue using the `Hamiltonian` class, you can use
-  `qml.operation.disable_new_opmath()` to disable the new operator arithmetic.
-  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 <h3>Documentation 📝</h3>
 
@@ -736,6 +738,10 @@
 * A new *Release news* section has been added to the table of contents, containing release notes,
   deprecations, and other pages focusing on recent changes.
   [(#5548)](https://github.com/PennyLaneAI/pennylane/pull/5548)
+
+* A summary of all changes has been added in the "Updated Operators" page in the new "Release news" section in the docs.
+  [(#5483)](https://github.com/PennyLaneAI/pennylane/pull/5483)
+  [(#5636)](https://github.com/PennyLaneAI/pennylane/pull/5636)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -822,8 +828,6 @@
 * Failing tests due to changes with Lightning's adjoint diff pipeline have been fixed.
   [(#5450)](https://github.com/PennyLaneAI/pennylane/pull/5450)
 
-Context: When Torch has a GPU backed data-buffer, failures can occur when attempting to make autoray-dispatched calls to Torch method with paired CPU data. In this case, for probabilities on the GPU, and eigenvalues on the host (read from the observables), failures appeared with qml.dot, and can be reproduced from:
-
 * Failures occurring when making autoray-dispatched calls to Torch with paired CPU data have been fixed.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 
@@ -879,6 +883,9 @@ Context: When Torch has a GPU backed data-buffer, failures can occur when attemp
   between `op.has_diagonalzing_gates` and `op.diagonalizing_gates()`
   [(#5603)](https://github.com/PennyLaneAI/pennylane/pull/5603)
 
+* Updated the `method` kwarg of `qml.TrotterProduct().error()` to be more clear that we are computing upper-bounds.
+  [(#5637)](https://github.com/PennyLaneAI/pennylane/pull/5637)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -888,12 +895,14 @@ Guillermo Alonso,
 Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
+Thomas Bromley,
 Astral Cai,
 Diksha Dhawan,
 Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
 Lillian M. A. Frederiksen,
+Diego Guala,
 Austin Huang,
 Soran Jahangiri,
 Korbinian Kottmann,
