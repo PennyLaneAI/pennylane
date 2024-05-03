@@ -17,7 +17,7 @@
   Two new user-facing classes enable calculating and propagating 
   gate errors in PennyLane:
 
-  * `qml.resource.error.SpectralNormError`: the spectral norm error is defined as the 
+  * `qml.resource.SpectralNormError`: the spectral norm error is defined as the 
     distance, in [spectral norm](https://en.wikipedia.org/wiki/Matrix_norm), between 
     the true unitary we intend to apply and the approximate unitary that is actually applied.
 
@@ -101,7 +101,7 @@
     {'SpectralNormError': SpectralNormError(0.07616666666666666)}
     ```
 
-  Check out our amazing demo on using these new features in a real-world example!
+  Check out our [error propagation demo](https://pennylane.ai/qml/demos/tutorial_error_prop/) to see how to use these new features in a real-world example!
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
