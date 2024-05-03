@@ -330,12 +330,15 @@ def test_assert_equal_unspecified():
 
     # pylint: disable=too-few-public-methods
     class RandomType:
+        """dummy type"""
 
         def __init__(self):
             pass
 
+    # pylint: disable=unused-argument
     @_equal.register
-    def _(op1: RandomType, op2, **kwargs):
+    def _(op1: RandomType, op2, **_):
+        """always returns false"""
         return False
 
     with pytest.raises(AssertionError, match=r"for an unspecified reason"):
