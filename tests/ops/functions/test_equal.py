@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
-from pennylane.ops.functions.equal import assert_equal
+from pennylane.ops.functions.equal import _equal, assert_equal
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
@@ -324,6 +324,22 @@ def test_assert_equal_types():
     op2 = qml.T(0)
     with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
         assert_equal(op1, op2)
+
+
+def test_assert_equal_unspecified():
+
+    # pylint: disable=too-few-public-methods
+    class RandomType:
+
+        def __init__(self):
+            pass
+
+    @_equal.register
+    def _(op1: RandomType, op2, **kwargs):
+        return False
+
+    with pytest.raises(AssertionError, match=r"for an unspecified reason"):
+        assert_equal(RandomType(), RandomType())
 
 
 class TestEqual:
