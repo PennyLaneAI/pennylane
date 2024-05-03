@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the Snapshot operation."""
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
-import numpy as np
-from pennylane import Snapshot
+
 import pennylane as qml
+from pennylane import Snapshot
 
 
 class TestBarrier:

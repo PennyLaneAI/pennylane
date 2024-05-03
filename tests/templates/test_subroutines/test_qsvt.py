@@ -18,6 +18,7 @@ Tests for the QSVT template and qsvt wrapper function.
 from copy import copy
 
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
 

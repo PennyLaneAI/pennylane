@@ -15,8 +15,8 @@
 """Contains utility functions for the Fourier module."""
 
 from itertools import combinations
-import numpy as np
 
+import numpy as np
 
 import pennylane as qml
 

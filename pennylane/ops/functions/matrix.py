@@ -14,16 +14,17 @@
 """
 This module contains the qml.matrix function.
 """
-# pylint: disable=protected-access,too-many-branches
-from typing import Sequence, Callable, Union
 from functools import partial
 
+# pylint: disable=protected-access,too-many-branches
+from typing import Callable, Sequence, Union
+
 import pennylane as qml
-from pennylane.transforms import TransformError
 from pennylane import transform
-from pennylane.typing import TensorLike
 from pennylane.operation import Operator
-from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.transforms import TransformError
+from pennylane.typing import TensorLike
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:

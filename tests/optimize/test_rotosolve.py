@@ -16,14 +16,14 @@ Unit tests for the ``RotosolveOptimizer``.
 """
 # pylint: disable=too-many-arguments,too-few-public-methods
 import functools
+
 import pytest
 from scipy.optimize import shgo
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.utils import _flatten, unflatten
-
 from pennylane.optimize import RotosolveOptimizer
+from pennylane.utils import _flatten, unflatten
 
 
 def expand_num_freq(num_freq, param):

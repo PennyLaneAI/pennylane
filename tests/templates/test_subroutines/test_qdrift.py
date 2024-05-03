@@ -24,7 +24,6 @@ from pennylane import numpy as qnp
 from pennylane.math import allclose, isclose
 from pennylane.templates.subroutines.qdrift import _sample_decomposition
 
-
 test_hamiltonians = (
     (
         [1, 1, 1],

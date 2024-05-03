@@ -15,6 +15,7 @@
 # pylint: disable=too-many-branches,cell-var-from-loop
 
 from inspect import signature
+
 import numpy as np
 from scipy.optimize import brute, shgo
 

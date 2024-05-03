@@ -14,16 +14,16 @@
 """A function to compute the Lie closure of a set of operators"""
 # pylint: disable=too-many-arguments
 import itertools
-from functools import reduce
-
-from typing import Union, Iterable
 from copy import copy
+from functools import reduce
+from typing import Iterable, Union
+
 import numpy as np
 
 import pennylane as qml
-
 from pennylane.operation import Operator
-from ..pauli_arithmetic import PauliWord, PauliSentence
+
+from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
 def lie_closure(

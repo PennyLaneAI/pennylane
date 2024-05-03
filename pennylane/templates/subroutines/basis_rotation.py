@@ -16,6 +16,7 @@ This module contains the template for performing basis transformation defined by
 """
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.qchem.givens_decomposition import givens_decomposition

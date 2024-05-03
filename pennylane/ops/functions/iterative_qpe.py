@@ -16,6 +16,7 @@ This module contains the qml.iterative_qpe function.
 """
 
 import numpy as np
+
 import pennylane as qml
 
 

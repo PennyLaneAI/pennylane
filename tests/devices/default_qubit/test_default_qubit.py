@@ -15,13 +15,12 @@
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
 from unittest import mock
-from flaky import flaky
-import pytest
 
 import numpy as np
+import pytest
+from flaky import flaky
 
 import pennylane as qml
-
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
 np.random.seed(0)
@@ -1455,6 +1454,38 @@ class TestPRNGKeySeed:
 
         assert np.all(result1 == result2)
 
+    @pytest.mark.parametrize("max_workers", max_workers_list)
+    def test_finite_shots_postselection_defer_measurements(self, max_workers):
+        """Test that the number of shots returned with postselection with a PRNGKey is different
+        when executing a batch of tapes and the same when using `dev.execute` with the same tape
+        multiple times."""
+        import jax
+
+        dev = qml.device("default.qubit", max_workers=max_workers, seed=jax.random.PRNGKey(678))
+
+        mv = qml.measure(0, postselect=1)
+        qs = qml.tape.QuantumScript(
+            [qml.Hadamard(0), mv.measurements[0]], [qml.sample(wires=0)], shots=100
+        )
+        n_tapes = 5
+        tapes = qml.defer_measurements(qs)[0] * 5
+        config = ExecutionConfig(interface="jax")
+
+        # Executing all tapes as a batch should give different results
+        res = dev.execute(tapes, config)
+        shapes = [qml.math.shape(r) for r in res]
+        assert len(set(shapes)) == len(shapes) == n_tapes
+
+        # Executing with different calls to dev.execute should give the same results
+        res = [dev.execute(tape, config) for tape in tapes]
+        shapes = [qml.math.shape(r) for r in res]
+        assert len(shapes) == n_tapes
+        assert len(set(shapes)) == 1
+        # The following iterator validates that the samples for each tape are the same
+        iterator = iter(res)
+        first = next(iterator)
+        assert all(np.array_equal(first, rest) for rest in iterator)
+
 
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
@@ -1861,7 +1892,11 @@ class TestPostselection:
         if use_jit:
             pytest.skip("Cannot JIT while mocking function.")
 
-        dev = qml.device("default.qubit", seed=42)
+        # Setting the device RNG to None forces the functions to use the global Numpy random
+        # module rather than the functions directly exposed by a local RNG. This makes
+        # mocking easier.
+        dev = qml.device("default.qubit")
+        dev._rng = None
         param = qml.math.asarray(param, like=interface)
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):

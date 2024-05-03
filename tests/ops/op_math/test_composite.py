@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math import CompositeOp, Prod, Sum, SProd
+from pennylane.ops.op_math import CompositeOp, Prod, SProd, Sum
 from pennylane.wires import Wires
 
 ops = (

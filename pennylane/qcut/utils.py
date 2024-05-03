@@ -17,19 +17,20 @@ Support functions for cut_circuit and cut_circuit_mc.
 
 
 import uuid
-from typing import Any, Callable, Sequence, Tuple
 import warnings
+from typing import Any, Callable, Sequence, Tuple
+
 import numpy as np
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
+from pennylane.operation import Operation
 from pennylane.ops.meta import WireCut
 from pennylane.queuing import WrappedObj
-from pennylane.operation import Operation
 
-from .kahypar import kahypar_cut
 from .cutstrategy import CutStrategy
+from .kahypar import kahypar_cut
 
 
 class MeasureNode(Operation):

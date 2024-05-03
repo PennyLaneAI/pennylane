@@ -18,7 +18,7 @@ Contains the IQPEmbedding template.
 from itertools import combinations
 
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class IQPEmbedding(Operation):

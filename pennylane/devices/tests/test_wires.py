@@ -14,9 +14,9 @@
 """Tests that a device has the right attributes, arguments and methods."""
 # pylint: disable=no-self-use,too-many-arguments,too-few-public-methods
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 
 # ===== Factories for circuits using arbitrary wire labels and numbers
 

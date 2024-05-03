@@ -39,6 +39,12 @@ class DummyDevice(DefaultGaussian):
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
 
+@pytest.fixture(autouse=True)
+def set_numpy_seed():
+    np.random.seed(9872653)
+    yield
+
+
 @pytest.fixture(scope="session")
 def tol():
     """Numerical tolerance for equality tests."""
@@ -190,7 +196,7 @@ def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
     # value from yaml file is a string, convert to boolean
     if eval(disable_opmath):
-        qml.operation.disable_new_opmath()
+        qml.operation.disable_new_opmath(warn=True)
 
 
 @pytest.fixture(scope="function")

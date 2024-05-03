@@ -14,9 +14,10 @@
 """
 Tests for the ``default.mixed`` device for the Torch interface.
 """
+import numpy as np
+
 # pylint: disable=protected-access, import-outside-toplevel
 import pytest
-import numpy as np
 
 import pennylane as qml
 from pennylane import numpy as pnp

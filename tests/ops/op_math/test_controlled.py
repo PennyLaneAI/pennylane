@@ -19,29 +19,25 @@ from functools import partial
 import numpy as np
 import pytest
 from gate_data import (
+    CCZ,
+    CH,
     CNOT,
     CSWAP,
     CY,
     CZ,
-    CCZ,
-    CH,
+    ControlledPhaseShift,
     CRot3,
     CRotx,
     CRoty,
     CRotz,
     Toffoli,
-    ControlledPhaseShift,
 )
 from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError, Operation, Operator
-from pennylane.ops.op_math.controlled import (
-    Controlled,
-    ControlledOp,
-    ctrl,
-)
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
 from pennylane.tape.tape import expand_tape
 from pennylane.wires import Wires

@@ -15,11 +15,12 @@
 Integration tests to ensure that tensor observables return the correct result.
 """
 import functools
-import pytest
 
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane import expval, var, sample
+from pennylane import expval, sample, var
 
 np.random.seed(0)
 
