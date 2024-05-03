@@ -188,7 +188,7 @@
 
 * Reflecting about a given quantum state is now available via `qml.Reflection`.
   This operation is very useful in the amplitude amplification algorithm and offers a generalization
-  of `qml.FlipSign` which operates on basis states.
+  of `qml.FlipSign`, which operates on basis states.
   [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
   `qml.Reflection` works by providing an operation, :math:`U`, that *prepares* the 
@@ -488,7 +488,7 @@
 * `qml.ApproxTimeEvolution` is now compatible with any operator that has a defined `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
-* `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of Pauli operators.
+* `Hamiltonian.pauli_rep` is now defined if the Hamiltonian is a linear combination of Pauli operators.
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
 * `Prod` instances created with qutrit operators now have a defined `eigvals()` method.
