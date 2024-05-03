@@ -89,7 +89,7 @@ class Hamiltonian(Observable):
 
     .. note::
         As of ``v0.36``, ``qml.Hamiltonian`` dispatches to :class:`~.pennylane.ops.op_math.LinearCombination`
-        by default, so the following examples assumes this behaviour.
+        by default, so the following examples assume this behaviour.
 
     ``qml.Hamiltonian`` takes in a list of coefficients and a list of operators.
 
