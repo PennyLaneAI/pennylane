@@ -355,6 +355,10 @@
 * `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
 
+* A "Updated Operators" page has been added to the new "Release news" section in the docs.
+  [(#5483)](https://github.com/PennyLaneAI/pennylane/pull/5483)
+  [(#5636)](https://github.com/PennyLaneAI/pennylane/pull/5636)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
