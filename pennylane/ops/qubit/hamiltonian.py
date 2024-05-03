@@ -91,6 +91,7 @@ class Hamiltonian(Observable):
     A Hamiltonian can be created by simply passing the list of coefficients
     as well as the list of observables:
 
+    >>> qml.operation.disable_new_opmath()
     >>> coeffs = [0.2, -0.543]
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
