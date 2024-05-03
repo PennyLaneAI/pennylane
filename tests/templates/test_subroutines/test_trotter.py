@@ -513,8 +513,8 @@ class TestError:
         expected_error = ((10**5 + 1) / 120) * (0.1**5)
 
         for computed_error in (
-            op.error(method="one-norm"),
-            op.error(method="one-norm", fast=False),
+            op.error(method="one-norm-bound"),
+            op.error(method="one-norm-bound", fast=False),
         ):
             assert isinstance(computed_error, SpectralNormError)
             assert qnp.isclose(computed_error.error, expected_error)
@@ -525,15 +525,15 @@ class TestError:
         expected_error = (32 / 3) * (0.05**3) * (1 / 100)
 
         for computed_error in (
-            op.error(method="commutator"),
-            op.error(method="commutator", fast=False),
+            op.error(method="commutator-bound"),
+            op.error(method="commutator-bound", fast=False),
         ):
             assert isinstance(computed_error, SpectralNormError)
             assert qnp.isclose(computed_error.error, expected_error)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
-        "method, expected_error", (("one-norm", 0.001265625), ("commutator", 0.001))
+        "method, expected_error", (("one-norm-bound", 0.001265625), ("commutator-bound", 0.001))
     )
     @pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
     def test_error_interfaces(self, method, interface, expected_error):
