@@ -200,7 +200,7 @@ class GateFabric(Operation):
             raise ValueError(
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
-        
+
         init_state = tuple(0 for _ in wires) if init_state is None else init_state
 
         self._hyperparameters = {
