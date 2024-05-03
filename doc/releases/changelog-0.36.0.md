@@ -552,6 +552,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
+  [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
+ 
 * Improves the error message for setting shots on the new device interface, or trying to access a property
   that no longer exists.
   [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
