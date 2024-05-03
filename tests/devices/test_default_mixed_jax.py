@@ -28,7 +28,6 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
-config = pytest.importorskip("jax.config")
 
 
 decorators = [lambda x: x, jax.jit]
@@ -222,7 +221,7 @@ class TestDtypePreserved:
     def test_real_dtype(self, enable_x64, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
-        config.config.update("jax_enable_x64", enable_x64)
+        jax.config.update("jax_enable_x64", enable_x64)
         p = jnp.array(0.543)
 
         dev = qml.device("default.mixed", wires=3, r_dtype=r_dtype)
@@ -243,7 +242,7 @@ class TestDtypePreserved:
     def test_complex_dtype(self, enable_x64, c_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
-        config.config.update("jax_enable_x64", enable_x64)
+        jax.config.update("jax_enable_x64", enable_x64)
         p = jnp.array(0.543)
 
         dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
@@ -498,7 +497,7 @@ class TestPassthruIntegration:
     def test_state_differentiability(self, decorator, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
         # pylint: disable=too-many-arguments
-        config.config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.mixed", wires=1)
 
@@ -684,7 +683,7 @@ class TestPassthruIntegration:
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the JAX interface, using a variety of differentiation methods."""
         if diff_method == "finite-diff":
-            config.config.update("jax_enable_x64", True)
+            jax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.mixed", wires=1)
         state = jnp.array(1j * np.array([1, -1]) / np.sqrt(2))
@@ -747,7 +746,7 @@ class TestPassthruIntegration:
         with prob and expval outputs"""
 
         if diff_method == "finite-diff":
-            config.config.update("jax_enable_x64", True)
+            jax.config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
         x = jnp.array(0.543)
