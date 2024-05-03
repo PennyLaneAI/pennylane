@@ -517,7 +517,7 @@
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
 * The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided 
-  that they support `MidMeasureMP` operations natively.
+  that they support mid-circuit measurement operations natively.
   [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
 
 * `default.qubit` can now be provided a random seed for sampling mid-circuit 
@@ -599,6 +599,10 @@
   `pauli_rep`.
   [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
 
+* Circuits running on `lightning.qubit` and that return `qml.state()` now preserve 
+  the `dtype` when specified.
+  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.matrix()` called on the following will now raise an error if `wire_order` 
@@ -639,9 +643,6 @@
   (-1j, PauliY(wires=[0]))
   ```
 
-* Circuits returning `qml.state()` now preserve the `dtype` when specified.
-  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
-
 * The `dynamic_one_shot` transform now uses sampling (`SampleMP`) to get back the values of the mid-circuit measurements.
   [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
 
@@ -669,11 +670,11 @@
 
 <h3>Deprecations 👋</h3>
 
-* Accessing ``qml.ops.Hamiltonian`` is deprecated because it points to the old version of the class
+* Accessing `qml.ops.Hamiltonian` is deprecated because it points to the old version of the class
   that may not be compatible with the new approach to operator arithmetic. Instead, using
-  ``qml.Hamiltonian`` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  `qml.Hamiltonian` is recommended because it dispatches to the :class:`~.LinearCombination` class
   when the new approach to operator arithmetic is enabled. This will allow you to continue to use
-  ``qml.Hamiltonian`` with existing code without needing to make any changes.
+  `qml.Hamiltonian` with existing code without needing to make any changes.
   [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 * `qml.load` has been deprecated. Instead, please use the functions outlined in the [Importing workflows quickstart guide](https://docs.pennylane.ai/en/latest/introduction/importing_workflows.html).
