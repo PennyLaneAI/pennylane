@@ -66,6 +66,13 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused
     return mt
 
 
+def metric_tensor_stopping_condition(obj):
+    """Decompose any power operators with data."""
+    if isinstance(obj, qml.ops.Pow) and obj.base.data:
+        return obj.has_decomposition
+    return True
+
+
 def _expand_metric_tensor(
     tape: qml.tape.QuantumTape,
     argnum=None,
@@ -78,8 +85,12 @@ def _expand_metric_tensor(
     # pylint: disable=unused-argument,too-many-arguments
 
     if not allow_nonunitary and approx is None:
-        return [qml.transforms.expand_nonunitary_gen(tape)], lambda x: x[0]
-    return [qml.transforms.expand_multipar(tape)], lambda x: x[0]
+        new_tape = qml.transforms.expand_nonunitary_gen(tape)
+    else:
+        new_tape = qml.transforms.expand_multipar(tape)
+    return qml.devices.preprocess.decompose(
+        new_tape, stopping_condition=metric_tensor_stopping_condition
+    )
 
 
 @partial(
