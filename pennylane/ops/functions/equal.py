@@ -212,9 +212,9 @@ def assert_equal(
         :func:`~.equal`
 
     >>> mat1 = qml.IsingXX.compute_matrix(0.1)
-    >>> op1 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat1)
+    >>> op1 = qml.BasisRotation(unitary_matrix = mat1, wires=(0,1))
     >>> mat2 = qml.IsingXX.compute_matrix(0.2)
-    >>> op2 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat2)
+    >>> op2 = qml.BasisRotation(unitary_matrix = mat2, wires=(0,1))
     >>> assert_equal(op1, op2)
     AssertionError: The hyperparameter unitary_matrix is not equal for op1 and op2.
     Got [[0.99875026+0.j         0.        +0.j         0.        +0.j
@@ -234,7 +234,7 @@ def assert_equal(
     [0.        -0.09983342j 0.        +0.j         0.        +0.j
     0.99500417+0.j        ]].
     >>> mat3 = qml.numpy.array(0.3)
-    >>> op3 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat3)
+    >>> op3 = qml.BasisRotation(unitary_matrix = mat3, wires=(0,1))
     >>> assert_equal(op1, op3)
     AssertionError: The hyperparameter unitary_matrix has different interfaces for op1 and op2. Got numpy and autograd.
 
