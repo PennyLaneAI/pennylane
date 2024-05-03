@@ -87,6 +87,10 @@ def dynamic_one_shot(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
+    print(tape.measurements)
+    print(tape.measurements[0])
+    print(tape.measurements[0].obs, tape.measurements[0].wires, tape.measurements[0].mv)
+
     for m in tape.measurements:
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise TypeError(
@@ -268,7 +272,7 @@ def accumulate_native_mcm(circuit: qml.tape.QuantumScript, all_shot_meas, one_sh
         elif isinstance(m, (ExpectationMP, ProbabilityMP)):
             new_shot_meas[i] = all_shot_meas[i] + one_shot_meas[i]
         elif isinstance(m, SampleMP):
-            new_shot_meas[i].append(one_shot_meas[i])
+            new_shot_meas[i] = qml.math.vstack([new_shot_meas[i], one_shot_meas[i]])
         else:
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."

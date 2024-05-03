@@ -1369,6 +1369,25 @@ def test_shape(shape, interface, create_array):
     assert fn.shape(t) == shape
 
 
+@pytest.mark.parametrize(
+    "interface,create_array",
+    [
+        ("sequence", lambda shape: np.empty(shape).tolist()),
+        ("autograd", np.empty),
+        ("torch", torch.empty),
+        ("jax", jnp.ones),
+        ("tf", tf.ones),
+    ],
+)
+@pytest.mark.parametrize("shape", shape_test_data)
+def test_ravel(shape, interface, create_array):
+    """Test that ravel works as expected"""
+    # pylint: disable=unused-argument
+    t = create_array(shape)
+    ravelled_t = fn.ravel(t)
+    assert fn.shape(ravelled_t) == (fn.size(t),)
+
+
 @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
 def test_shape_and_ndim_deep(interface):
     val = [[fn.asarray(1, like=interface)]]

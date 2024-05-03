@@ -407,6 +407,120 @@ def test_simple_composite_mcm(mcm_f, measure_f):
     validate_measurements(measure_f, shots, results1, results2)
 
 
+@pytest.mark.tf
+@pytest.mark.parametrize("shots", [3000, [3000, 3001]])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample, qml.expval, qml.var])
+@pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0], [0, 1], "mcm"])
+def test_tf(shots, postselect, reset, measure_f, meas_obj):
+    """Test that native MCM circuits are executed correctly with TensorFlow"""
+    if measure_f in (qml.var, qml.expval) and isinstance(meas_obj, list):
+        pytest.skip("Can't use wires with var or expval")
+
+    import tensorflow as tf
+
+    dev = get_device(shots=shots)
+    param = tf.Variable(np.pi / 3)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0, reset=reset)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1, postselect=postselect)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+
+        measurement_key = "wires" if isinstance(meas_obj, list) else "op"
+        measurement_value = m2 if isinstance(meas_obj, str) else meas_obj
+        return measure_f(**{measurement_key: measurement_value})
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(param)
+    results2 = func2(param)
+
+    validate_measurements(measure_f, shots, results1, results2)
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("shots", [3000, [3000, 3001]])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample, qml.expval, qml.var])
+@pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0], [0, 1], "mcm"])
+def test_torch(shots, postselect, reset, measure_f, meas_obj):
+    """Test that native MCM circuits are executed correctly with Torch"""
+    if measure_f in (qml.var, qml.expval) and isinstance(meas_obj, list):
+        pytest.skip("Can't use wires with var or expval")
+
+    import torch
+
+    dev = get_device(shots=shots)
+    param = torch.tensor(np.pi / 3)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0, reset=reset)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1, postselect=postselect)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+
+        measurement_key = "wires" if isinstance(meas_obj, list) else "op"
+        measurement_value = m2 if isinstance(meas_obj, str) else meas_obj
+        return measure_f(**{measurement_key: measurement_value})
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(param)
+    results2 = func2(param)
+
+    validate_measurements(measure_f, shots, results1, results2)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("shots", [3000, [3000, 3001]])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample, qml.expval, qml.var])
+@pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0], [0, 1], "mcm"])
+def test_jax(shots, postselect, reset, measure_f, meas_obj):
+    """Test that native MCM circuits are executed correctly with Jax"""
+    if measure_f in (qml.var, qml.expval) and isinstance(meas_obj, list):
+        pytest.skip("Can't use wires with var or expval")
+
+    import jax.numpy as jnp
+
+    dev = get_device(shots=shots)
+    param = jnp.array(np.pi / 3)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0, reset=reset)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1, postselect=postselect)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+
+        measurement_key = "wires" if isinstance(meas_obj, list) else "op"
+        measurement_value = m2 if isinstance(meas_obj, str) else meas_obj
+        return measure_f(**{measurement_key: measurement_value})
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(param)
+    results2 = func2(param)
+
+    validate_measurements(measure_f, shots, results1, results2)
+
+
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
