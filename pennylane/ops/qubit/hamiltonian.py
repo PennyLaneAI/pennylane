@@ -70,8 +70,7 @@ class Hamiltonian(Observable):
     .. warning::
 
         As of ``v0.36``, ``qml.Hamiltonian`` dispatches to :class:`~.pennylane.ops.op_math.LinearCombination`.
-        For further details,
-        see :doc:`Updated Operators </news/new_opmath/>`
+        For further details, see :doc:`Updated Operators </news/new_opmath/>`
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
@@ -88,8 +87,47 @@ class Hamiltonian(Observable):
 
     **Example:**
 
-    A Hamiltonian can be created by simply passing the list of coefficients
-    as well as the list of observables:
+    .. note::
+        As of ``v0.36``, ``qml.Hamiltonian`` returns a :class:`~.pennylane.ops.op_math.LinearCombination`,
+        by default, the following examples show the behaviour of :class:`~.pennylane.ops.op_math.LinearCombination`,
+
+    `qml.Hamiltonian` takes in a list of coefficients and a list of operators.
+
+    >>> coeffs = [0.2, -0.543]
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+
+    The coefficients can be a trainable tensor, for example:
+
+    >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+
+    A ``LinearCombination`` stores information on which commuting observables should be measured
+    together in a circuit:
+
+    >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
+    >>> coeffs = np.array([1., 2., 3.])
+    >>> H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+    >>> H.grouping_indices
+    ((0, 1), (2,))
+
+    This attribute can be used to compute groups of coefficients and observables:
+
+    >>> grouped_coeffs = [coeffs[list(indices)] for indices in H.grouping_indices]
+    >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
+    >>> grouped_coeffs
+    [array([1., 2.]), array([3.])]
+    >>> grouped_obs
+    [[X(0), X(1)], [Z(0)]]
+
+    .. note::
+        The following code examples show the behaviour of the legacy ``~qml.ops.Hamiltonian`` class,
+        which can be activated by disabling new operator arithmetic.
 
     >>> qml.operation.disable_new_opmath()
     >>> coeffs = [0.2, -0.543]
@@ -166,6 +204,7 @@ class Hamiltonian(Observable):
 
     Note that one can compute the ``grouping_indices`` for an already initialized Hamiltonian by
     using the :func:`compute_grouping <pennylane.Hamiltonian.compute_grouping>` method.
+
     """
 
     num_wires = qml.operation.AnyWires
