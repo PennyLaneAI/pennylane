@@ -40,13 +40,13 @@ Summary of the update
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
   standard Python operations like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.
 
-* You can now easily access Pauli operators via :class:`~.I`, :class:`~.X`, :class:`~.Y`, and :class:`~.Z`.
+* You can now easily access Pauli operators via :class:`~.pennylane.I`, :class:`~.pennylane.X`, :class:`~.pennylane.Y`, and :class:`~.pennylane.Z`.
 
   >>> from pennylane import I, X, Y, Z
   >>> X(0)
   X(0)
 
-  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to ``I``, ``X``, ``Y``, and ``Z``, but
+  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to :class:`~.pennylane.I`, :class:`~.pennylane.X`, :class:`~.pennylane.Y`, and :class:`~.pennylane.Z`, but
   use of the short-form names is now recommended.
 
 * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
@@ -60,7 +60,7 @@ Summary of the update
   >>> type(op.pauli_rep)
   pennylane.pauli.pauli_arithmetic.PauliSentence
 
-  You can transform the ``PauliSentence`` back to a suitable ``Operator`` via the :meth:`~pennylane.pauli.PauliSentence.operation` or :meth:`~pennylane.pauli.PauliSentence.hamiltonian`   method.
+  You can transform the :class:`~.pennylane.pauli.PauliSentence` back to a suitable :class:`~.pennylane.operation.Operator` via the :meth:`~pennylane.pauli.PauliSentence.operation` or :meth:`~pennylane.pauli.PauliSentence.hamiltonian`   method.
 
   >>> op.pauli_rep.operation()
   X(0) + Y(0)
@@ -111,8 +111,8 @@ Summary of the update
     +--------------------------------------------+----------------------+---------------------------+
 
 
-    The three main new opmath classes :class:`~.pennylane.ops.SProd`, :class:`~.pennylane.ops.Prod`, and :class:`~.pennylane.ops.Sum` have already been around for a while.
-    E.g., :func:`~.pennylane.dot` has always returned a :class:`~.pennylane.ops.Sum` instance.
+    The three main new opmath classes :class:`~.pennylane.ops.op_math.SProd`, :class:`~.pennylane.ops.op_math.Prod`, and :class:`~.pennylane.ops.op_math.Sum` have already been around for a while.
+    E.g., :func:`~.pennylane.dot` has always returned a :class:`~.pennylane.ops.op_math.Sum` instance.
 
     **Usage**
 
@@ -161,8 +161,8 @@ Summary of the update
 
     **qml.Hamiltonian**
 
-    The legacy classes :class:`~.pennylane.operation.Tensor` and :class:`~pennylane.Hamiltonian` will soon be deprecated.
-    :class:`~.ops.op_math.LinearCombination` offers the same API as :class:`~pennylane.Hamiltonian` but works well with new opmath classes.
+    The legacy classes :class:`~.pennylane.operation.Tensor` and :class:`~.pennylane.Hamiltonian` will soon be deprecated.
+    :class:`~.ops.op_math.LinearCombination` offers the same API as :class:`~.pennylane.Hamiltonian` but works well with new opmath classes.
 
     Depending on whether or not new opmath is active, ``qml.Hamiltonian`` will return either of the two classes.
 
