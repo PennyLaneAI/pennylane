@@ -556,6 +556,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
+  [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
+ 
 * Improves the error message for setting shots on the new device interface, or trying to access a property
   that no longer exists.
   [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
@@ -565,8 +568,9 @@
   [(#5610)](https://github.com/PennyLaneAI/pennylane/pull/5610)
 
 * Using shot vectors with `param_shift(... broadcast=True)` caused a bug. This combination is no longer supported
-  and will be added again in the next release.
+  and will be added again in the next release. Fixed a bug with custom gradient recipes that only consist of unshifted terms.
   [(#5612)](https://github.com/PennyLaneAI/pennylane/pull/5612)
+  [(#5623)](https://github.com/PennyLaneAI/pennylane/pull/5623)
 
 * Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
