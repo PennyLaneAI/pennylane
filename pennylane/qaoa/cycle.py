@@ -347,7 +347,7 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.op
     )
 
     >>> import rustworkx as rx
-    >>> g = rx.generators.directed_mesh_graph(3)
+    >>> g = rx.generators.directed_mesh_graph(3, [0, 1, 2])
     >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(g.edge_list()))}
     >>> for k, v in edge_weight_data.items():
             g.update_edge(k[0], k[1], {"weight": v})

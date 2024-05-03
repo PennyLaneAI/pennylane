@@ -833,7 +833,7 @@ class TestAdjointDiffTapeValidation:
         expectation value of a Hermitian operator emits a warning if the
         parameters to Hermitian are trainable."""
 
-        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        mx = qml.numpy.array(qml.matrix(qml.PauliX(0) @ qml.PauliY(2)))
         qs = qml.tape.QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
 
         qs.trainable_params = {0}

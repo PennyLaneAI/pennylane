@@ -564,6 +564,12 @@ dev = qml.device("default.qubit", wires=2)
 class TestLinearCombination:
     """Test the LinearCombination class"""
 
+    def test_error_if_observables_operator(self):
+        """Test thatt an error is raised if an operator is provided to observables."""
+
+        with pytest.raises(ValueError, match=r"observables must be an Iterable of Operator's"):
+            qml.ops.LinearCombination([1, 1], qml.X(0) @ qml.Y(1))
+
     PAULI_REPS = (
         ([], [], PauliSentence({})),
         (
