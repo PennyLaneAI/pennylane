@@ -257,6 +257,10 @@
 
 <h4>Updated operators</h4>
 
+* A summary of all changes has been added in the "Updated Operators" page in the new "Release news" section in the docs.
+  [(#5483)](https://github.com/PennyLaneAI/pennylane/pull/5483)
+  [(#5636)](https://github.com/PennyLaneAI/pennylane/pull/5636)
+
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
@@ -354,10 +358,6 @@
 
 * `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
-
-* A "Updated Operators" page has been added to the new "Release news" section in the docs.
-  [(#5483)](https://github.com/PennyLaneAI/pennylane/pull/5483)
-  [(#5636)](https://github.com/PennyLaneAI/pennylane/pull/5636)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
