@@ -249,6 +249,7 @@
     one way to obtain the DLA.
     [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
     [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+    [(#5627)](https://github.com/PennyLaneAI/pennylane/pull/5627)
 
     For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
     All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
@@ -710,6 +711,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
+  [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
+ 
 * Improves the error message for setting shots on the new device interface, or trying to access a property
   that no longer exists.
   [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
@@ -719,8 +723,9 @@
   [(#5610)](https://github.com/PennyLaneAI/pennylane/pull/5610)
 
 * Using shot vectors with `param_shift(... broadcast=True)` caused a bug. This combination is no longer supported
-  and will be added again in the next release.
+  and will be added again in the next release. Fixed a bug with custom gradient recipes that only consist of unshifted terms.
   [(#5612)](https://github.com/PennyLaneAI/pennylane/pull/5612)
+  [(#5623)](https://github.com/PennyLaneAI/pennylane/pull/5623)
 
 * `qml.counts` now returns the same keys with `dynamic_one_shot` and `defer_measurements`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
