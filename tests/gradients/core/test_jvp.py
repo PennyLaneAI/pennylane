@@ -18,19 +18,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
 
-dev = qml.device("lightning.qubit", wires=2)
-
-
-@qml.qnode(dev)
-def circuit(x):
-    qml.RX(x, wires=0)
-    return qml.expval(qml.Z(0))
-
-
-import jax
-
-circuit(jax.numpy.array(0.5))
-
 _x = np.arange(12).reshape((2, 3, 2))
 
 tests_compute_jvp_single = [
