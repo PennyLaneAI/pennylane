@@ -890,7 +890,7 @@ def molecular_hamiltonian(
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
     Returns:
-        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
+        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed  Hamiltonian
         and the number of qubits
 
     **Example**
