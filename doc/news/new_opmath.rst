@@ -60,7 +60,7 @@ Summary of the update
   >>> type(op.pauli_rep)
   pennylane.pauli.pauli_arithmetic.PauliSentence
 
-  You can transform the ``PauliSentence`` back to a suitable ``Operator`` via the :py:method:`~pennylane.pauli.PauliSentence.operation` or :py:method:`~pennylane.pauli.PauliSentence.hamiltonian`   method.
+  You can transform the ``PauliSentence`` back to a suitable ``Operator`` via the :meth:`~pennylane.pauli.PauliSentence.operation` or :meth:`~pennylane.pauli.PauliSentence.hamiltonian`   method.
 
   >>> op.pauli_rep.operation()
   X(0) + Y(0)
