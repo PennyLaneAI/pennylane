@@ -24,8 +24,7 @@ from pennylane.measurements import Shots
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
-config = pytest.importorskip("jax.config")
-config.config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 pytestmark = pytest.mark.jax
 

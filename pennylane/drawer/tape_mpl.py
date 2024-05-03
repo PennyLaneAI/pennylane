@@ -29,7 +29,13 @@ from pennylane.measurements import MidMeasureMP
 from .drawable_layers import drawable_layers
 from .mpldrawer import MPLDrawer
 from .style import _set_style
-from .utils import convert_wire_order, cwire_connections, default_bit_map, unwrap_controls
+from .utils import (
+    convert_wire_order,
+    cwire_connections,
+    default_bit_map,
+    transform_deferred_measurements_tape,
+    unwrap_controls,
+)
 
 has_mpl = True
 try:
@@ -217,6 +223,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     fontsize = kwargs.get("fontsize", None)
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    tape = transform_deferred_measurements_tape(tape)
     tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
     bit_map = default_bit_map(tape)
 

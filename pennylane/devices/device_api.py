@@ -176,6 +176,14 @@ class Device(abc.ABC):
         details = f"({', '.join(details)}) " if details else ""
         return f"<{self.name} device {details}at {hex(id(self))}>"
 
+    def __getattr__(self, key):
+        raise AttributeError(
+            f"{type(self).__name__} has no attribute '{key}'."
+            " You may be looking for a property or method present in the legacy device interface."
+            f" Please consult the {type(self).__name__} documentation for an updated list of public"
+            " properties and methods."
+        )
+
     @property
     def shots(self) -> Shots:
         """Default shots for execution workflows containing this device.
@@ -185,6 +193,16 @@ class Device(abc.ABC):
 
         """
         return self._shots
+
+    @shots.setter
+    def shots(self, _):
+        raise AttributeError(
+            (
+                "Shots can no longer be set on a device instance. "
+                "You can set shots on a call to a QNode, on individual tapes, or "
+                "create a new device instance instead."
+            )
+        )
 
     @property
     def wires(self) -> Wires:
