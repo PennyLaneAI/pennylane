@@ -326,11 +326,11 @@ To help identify a fix, select the option below that describes your situation.
     .. code-block:: python3
 
         # in some test file
-        with qml.operation.disable_new_opmath():
+        with qml.operation.disable_new_opmath_cm():
             legacy_ham_example = qml.Hamiltonian(coeffs, ops) # creates a Hamiltonian instance
 
         @pytest.mark.usefixtures("use_legacy_opmath")
-        @pytest.marl.parametrize("ham", [legacy_ham_example])
+        @pytest.mark.parametrize("ham", [legacy_ham_example])
         def test_qml_hamiltonian_legacy_opmath(ham):
             assert isinstance(ham, qml.Hamiltonian) # True
             assert isinstance(ham, qml.ops.Hamiltonian) # True
@@ -341,16 +341,16 @@ To help identify a fix, select the option below that describes your situation.
 
         ham_example = qml.Hamiltonian(coeffs, ops) # creates a LinearCombination instance
 
-        @pytest.mark.usefixtures("use_legacy_opmath")
-        @pytest.marl.parametrize("ham", [ham_example])
-        def test_qml_hamiltonian_legacy_opmath(ham):
+        @pytest.mark.usefixtures("use_new_opmath")
+        @pytest.mark.parametrize("ham", [ham_example])
+        def test_qml_hamiltonian_new_opmath(ham):
             assert isinstance(ham, qml.Hamiltonian) # True
             assert not isinstance(ham, qml.ops.Hamiltonian) # True
 
         @pytest.mark.usefixtures("use_legacy_opmath")
-        @pytest.marl.parametrize("ham", [ham_example])
+        @pytest.mark.parametrize("ham", [ham_example])
         def test_qml_hamiltonian_legacy_opmath(ham):
-            # Most likely you wanted to test things with an Hamiltonian instance
+            # Most likely you wanted to test things with a Hamiltonian instance
             legacy_ham_example = convert_to_legacy_H(ham)
             assert isinstance(legacy_ham_example, qml.ops.Hamiltonian) # True
             assert isinstance(legacy_ham_example, qml.Hamiltonian) # True because we are in legacy opmath context
