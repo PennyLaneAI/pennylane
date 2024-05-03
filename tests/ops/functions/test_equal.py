@@ -17,17 +17,16 @@ Tests are divided by number of parameters and wires different operators take.
 """
 # pylint: disable=too-many-arguments, too-many-public-methods
 import itertools
-
 from copy import deepcopy
+
 import numpy as np
 import pytest
-
 
 import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
-from pennylane.ops.op_math import SymbolicOp, Controlled
+from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -1456,8 +1455,8 @@ class TestSymbolicOpComparison:
     @pytest.mark.jax
     def test_kwargs_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base1 = qml.RX(torch.tensor(1.2), wires=0)
         base2 = qml.RX(jax.numpy.array(1.2), wires=0)
@@ -1710,8 +1709,8 @@ class TestProdComparisons:
     @pytest.mark.all_interfaces
     def test_prod_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
@@ -1804,8 +1803,8 @@ class TestSumComparisons:
     @pytest.mark.all_interfaces
     def test_sum_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]

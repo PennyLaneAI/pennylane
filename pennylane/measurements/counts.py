@@ -14,7 +14,8 @@
 """
 This module contains the qml.counts measurement.
 """
-from typing import Sequence, Tuple, Optional
+from typing import Optional, Sequence, Tuple
+
 import numpy as np
 
 import pennylane as qml

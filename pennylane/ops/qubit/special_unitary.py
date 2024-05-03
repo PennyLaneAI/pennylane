@@ -20,6 +20,7 @@ from functools import lru_cache, reduce
 from itertools import product
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot

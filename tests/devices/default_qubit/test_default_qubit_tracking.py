@@ -14,13 +14,12 @@
 """
 Tests for the tracking capabilities of default qubit.
 """
+import numpy as np
 import pytest
 
-import numpy as np
-
 import pennylane as qml
-from pennylane.resource import Resources
 from pennylane.devices import ExecutionConfig
+from pennylane.resource import Resources
 
 
 class TestTracking:

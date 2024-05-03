@@ -18,13 +18,13 @@ Unit tests for the pennylane.drawer.drawable_layers` module.
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP
-from pennylane.queuing import AnnotatedQueue
 from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
     _recursive_find_mcm_stats_layer,
     drawable_layers,
 )
+from pennylane.measurements import MidMeasureMP
+from pennylane.queuing import AnnotatedQueue
 
 
 class TestRecursiveFindLayer:

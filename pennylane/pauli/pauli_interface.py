@@ -14,23 +14,23 @@
 """
 Utility functions to interact with and extract information from Pauli words and Pauli sentences.
 """
-from typing import Union
 from functools import singledispatch
+from typing import Union
 
+from pennylane.operation import Tensor
 from pennylane.ops import (
     Hamiltonian,
-    LinearCombination,
     Identity,
+    LinearCombination,
     PauliX,
     PauliY,
     PauliZ,
     Prod,
     SProd,
 )
-from pennylane.operation import Tensor
 
-from .utils import is_pauli_word
 from .conversion import pauli_sentence
+from .utils import is_pauli_word
 
 
 def pauli_word_prefactor(observable):

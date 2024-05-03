@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
-from typing import Sequence, Callable
 from functools import partial
+from typing import Callable, Sequence
 
 import pytest
+
 import pennylane as qml
-from pennylane.transforms.core import transform, TransformError, TransformContainer
+from pennylane.transforms.core import TransformContainer, TransformError, transform
 from pennylane.typing import TensorLike
 
 dev = qml.device("default.qubit", wires=2)

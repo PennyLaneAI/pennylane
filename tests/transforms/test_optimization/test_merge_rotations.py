@@ -17,12 +17,12 @@ Unit tests for the optimization transform ``merge_rotations``.
 # pylint: disable=too-many-arguments
 
 import pytest
-
 from utils import compare_operation_lists
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.transforms.optimization import merge_rotations
+from pennylane.wires import Wires
 
 
 class TestMergeRotations:

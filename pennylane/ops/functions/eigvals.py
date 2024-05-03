@@ -14,16 +14,17 @@
 """
 This module contains the qml.eigvals function.
 """
-from typing import Sequence, Callable
 import warnings
 
 # pylint: disable=protected-access
-from functools import reduce, partial
+from functools import partial, reduce
+from typing import Callable, Sequence
+
 import scipy
 
 import pennylane as qml
-from pennylane.transforms import TransformError
 from pennylane import transform
+from pennylane.transforms import TransformError
 from pennylane.typing import TensorLike
 
 

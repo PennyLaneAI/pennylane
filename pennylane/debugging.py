@@ -30,7 +30,7 @@ class _Debugger:
 
     def __init__(self, dev):
         # old device API: check if Snapshot is supported
-        if isinstance(dev, qml.Device) and "Snapshot" not in dev.operations:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Snapshot" not in dev.operations:
             raise DeviceError("Device does not support snapshots.")
 
         # new device API: check if it's the simulator device

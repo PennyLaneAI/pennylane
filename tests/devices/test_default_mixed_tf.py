@@ -14,10 +14,11 @@
 """
 Tests for the ``default.mixed`` device for the TensorFlow interface
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
 
-import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed

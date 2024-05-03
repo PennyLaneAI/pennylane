@@ -15,12 +15,13 @@ r"""
 Contains the ``Interferometer`` template.
 """
 from itertools import product
+
 import pennylane as qml
+from pennylane.operation import AnyWires, CVOperation
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import Beamsplitter, Rotation
 from pennylane.wires import Wires
-from pennylane.operation import CVOperation, AnyWires
 
 
 class Interferometer(CVOperation):

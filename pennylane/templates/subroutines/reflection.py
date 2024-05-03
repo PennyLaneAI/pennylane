@@ -17,6 +17,7 @@ This submodule contains the template for the Reflection operation.
 """
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager

@@ -14,9 +14,9 @@
 """Unit Tests for the Fermionic representation classes."""
 import pickle
 from copy import copy, deepcopy
+
 import numpy as np
 import pytest
-
 
 from pennylane import numpy as pnp
 from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string
