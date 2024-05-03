@@ -11,34 +11,67 @@
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
   [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
+  [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
+  [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
-  Focusing on the [spectral norm](https://en.wikipedia.org/wiki/Matrix_norm)
-  error, it is possible to specify errors in the following operations:
+  Two new user-facing classes are now available to allow for calculating and propagating 
+  gate errors in PennyLane:
 
-  * For algorithmic-level usecases it is useful to create a custom operation representing a
-    major building block of the algorithm. This building block can have an error attached but
-    does not require a decomposition or matrix representation:
+  * `qml.resource.error.SpectralNormError`: the spectral norm error is defined as the 
+    distance, in [spectral norm](https://en.wikipedia.org/wiki/Matrix_norm), between 
+    the true unitary we intend to apply and the approximate unitary that is actually applied.
+
+  * `qml.resource.error.ErrorOperation`: a base class that inherits from `qml.operation.Operation` 
+    and represents quantum operations which carry some form of algorithmic error.
+
+  `SpectralNormError` can be used for back-of-the-napkin type calculations like obtaining the
+  spectral norm error between two unitaries via `get_error`:
+
+  ```python
+  import pennylane as qml
+  from pennylane.resource.error import ErrorOperation, SpectralNormError
+
+  intended_op = qml.RY(0.40, 0)
+  actual_op = qml.RY(0.41, 0) # angle of rotation is slightly off
+  ```
+  
+  ```pycon
+  >>> SpectralNormError.get_error(intended_op, actual_op)
+  0.004999994791668309
+  ```
+  
+  `SpectralNormError` is also the focus of specifying errors in the following ways:
+
+  * For operations representing a major building block of an algorithm, we can create a class
+    that inherits from `ErrorOperation`. This child class must override the `error` method and 
+    return a `SpectralNormError` instance:
 
     ```python
-    import pennylane as qml
-    from pennylane.resource.error import ErrorOperation, SpectralNormError
-
     class MyErrorOperation(ErrorOperation):
         def __init__(self, error_val, wires):
             self.error_val = error_val
             super().__init__(wires=wires)
+
         def error(self):
             return SpectralNormError(self.error_val)
+    ```
 
+    In this toy example, `MyErrorOperation` is doing nothing but introducing an arbitrary `SpectralNormError`
+    whenever `MyErrorOperation` is applied in a QNode. It does not require a decomposition or matrix representation
+    when used with `null.qubit` (suggested for use with resource and error estimation since circuit executions are
+    not required to calculates resources or errors).
+  
+    ```python
     dev = qml.device("null.qubit")
 
     @qml.qnode(dev)
     def circuit():
-        MyErrorOperation(0.1,[0])
-        MyErrorOperation(0.2,[1])
+        MyErrorOperation(0.1, wires=0)
+        MyErrorOperation(0.2, wires=1)
         return qml.state()
     ```
 
+    `default.qubit` can be used instead, but `MyErrorOperation` must define a decomposition or a matrix.
     The total spectral norm error of the circuit can be calculated using `qml.specs`:
 
     ```pycon
@@ -46,18 +79,12 @@
     {'SpectralNormError': SpectralNormError(0.30000000000000004)}
     ```
 
-  * PennyLane already includes a number of built-in building blocks like
-    `QuantumPhaseEstimation` and `TrotterProduct`. `TrotterProduct` now
-    propagates errors based on its input arguments:
-    the number of steps performed in the Trotter product affects the error estimation.
-    `QuantumPhaseEstimation` now propagates errors based on the error of its input
-    unitary.
-    [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
-    [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
+  * PennyLane already includes a number of built-in building blocks for algorithms like
+    `QuantumPhaseEstimation` and `TrotterProduct`. `TrotterProduct` now propagates errors 
+    based on the number of steps performed in the Trotter product. `QuantumPhaseEstimation` 
+    now propagates errors based on the error of its input unitary.
 
     ```python
-    import pennylane as qml
-    
     dev = qml.device('null.qubit')
     hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
 
@@ -68,12 +95,14 @@
         return qml.state()
     ```
 
-    As above, we can obtain the total spectral norm error of the circuit using `qml.specs`:
+    Again, the total spectral norm error of the circuit can be calculated using `qml.specs`:
 
     ```pycon
     >>> qml.specs(circuit)()["errors"]
     {'SpectralNormError': SpectralNormError(0.07616666666666666)}
     ```
+
+  Check out our amazing demo on using these new features in a real-world example!
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
