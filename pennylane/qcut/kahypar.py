@@ -92,11 +92,11 @@ def kahypar_cut(
 
     >>> graph = qml.qcut.tape_to_graph(tape)
     >>> cut_edges = qml.qcut.kahypar_cut(
-            graph=graph,
-            num_fragments=2,
-        )
+    ...     graph=graph,
+    ...     num_fragments=2,
+    ... )
     >>> cut_edges
-    [(CNOT(wires=[0, 'a']), RZ(0.24, wires=[0]), 0)]
+    [(Wrapped(CNOT(wires=[0, 'a'])), Wrapped(RZ(0.24, wires=[0])), 0)]
     """
     # pylint: disable=too-many-arguments, import-outside-toplevel
     try:

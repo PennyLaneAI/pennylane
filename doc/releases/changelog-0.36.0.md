@@ -152,6 +152,7 @@
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
   [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+  [(#5627)](https://github.com/PennyLaneAI/pennylane/pull/5627)
 
   The Lie closure, pronounced "Lee closure", is a way to compute the so-called dynamical Lie algebra (DLA) of a set of operators.
   For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
@@ -551,6 +552,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
+  [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
+ 
 * Improves the error message for setting shots on the new device interface, or trying to access a property
   that no longer exists.
   [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
