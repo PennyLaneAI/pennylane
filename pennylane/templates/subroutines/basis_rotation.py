@@ -38,9 +38,9 @@ class BasisRotation(Operation):
     `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ .
 
     Args:
-        wires (Iterable[Any]): wires that the operator acts on
-        unitary_matrix (array): matrix specifying the basis transformation
-        check (bool): test unitarity of the provided `unitary_matrix`
+        unitary_matrix (array): matrix specifying the basis transformation.
+        wires (Iterable[Any]): wires that the operator acts on.
+        check (bool): test unitarity of the provided `unitary_matrix`.
 
     Raises:
         ValueError: if the provided matrix is not square.
@@ -66,10 +66,10 @@ class BasisRotation(Operation):
         >>> umat = eigen_vecs.T
         >>> wires = range(len(umat))
         >>> def circuit():
-        ...    qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
+        ...    qml.adjoint(qml.BasisRotation(unitary_matrix=umat, wires=wires))
         ...    for idx, eigenval in enumerate(eigen_vals):
         ...        qml.RZ(eigenval, wires=[idx])
-        ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
+        ...    qml.BasisRotation(unitary_matrix=umat, wires=wires)
         >>> circ_unitary = qml.matrix(circuit)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
         tensor([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
@@ -100,7 +100,7 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires, unitary_matrix, check=False, id=None):
+    def __init__(self, unitary_matrix, wires, check=False, id=None):
         M, N = unitary_matrix.shape
         if M != N:
             raise ValueError(

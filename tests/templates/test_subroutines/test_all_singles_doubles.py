@@ -27,8 +27,8 @@ def test_standard_validity():
     """Run standard tests of operation validity."""
     op = qml.AllSinglesDoubles(
         [1, 2],
-        wires=range(4),
         hf_state=np.array([1, 1, 0, 0]),
+        wires=range(4),
         singles=[[0, 1]],
         doubles=[[0, 1, 2, 3]],
     )
@@ -98,7 +98,7 @@ class TestDecomposition:
 
         hf_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
+        op = qml.AllSinglesDoubles(weights, hf_state, wires, singles=singles, doubles=doubles)
         queue = op.expand().operations
 
         assert len(queue) == len(singles) + len(doubles) + 1
@@ -129,8 +129,8 @@ class TestDecomposition:
         def circuit():
             qml.AllSinglesDoubles(
                 weights,
-                wires=range(4),
                 hf_state=np.array([1, 1, 0, 0]),
+                wires=range(4),
                 singles=[[0, 1]],
                 doubles=[[0, 1, 2, 3]],
             )
@@ -140,8 +140,8 @@ class TestDecomposition:
         def circuit2():
             qml.AllSinglesDoubles(
                 weights,
-                wires=["z", "a", "k", "e"],
                 hf_state=np.array([1, 1, 0, 0]),
+                wires=["z", "a", "k", "e"],
                 singles=[["z", "a"]],
                 doubles=[["z", "a", "k", "e"]],
             )
@@ -271,8 +271,8 @@ class TestInputs:
         ):
             qml.AllSinglesDoubles(
                 weights=weights,
-                wires=wires,
                 hf_state=hf_state,
+                wires=wires,
                 singles=singles,
                 doubles=doubles,
             )
@@ -293,8 +293,8 @@ class TestInputs:
         """Tests that the id attribute can be set."""
         template = qml.AllSinglesDoubles(
             [1, 2],
-            wires=range(4),
             hf_state=np.array([1, 1, 0, 0]),
+            wires=range(4),
             singles=[[0, 1]],
             doubles=[[0, 1, 2, 3]],
             id="a",
@@ -325,8 +325,8 @@ class TestAttributes:
 def circuit_template(weights):
     qml.AllSinglesDoubles(
         weights,
-        wires=range(4),
         hf_state=np.array([1, 1, 0, 0]),
+        wires=range(4),
         singles=[[0, 1]],
         doubles=[[0, 1, 2, 3]],
     )

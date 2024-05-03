@@ -63,9 +63,9 @@ class AllSinglesDoubles(Operation):
         weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
             angles entering the :class:`~.pennylane.SingleExcitation` and
             :class:`~.pennylane.DoubleExcitation` operations, in that order
-        wires (Iterable): wires that the template acts on
         hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             Hartree-Fock state. ``hf_state`` is used to initialize the wires.
+        wires (Iterable): wires that the template acts on.
         singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
             the :class:`~.pennylane.SingleExcitation` operations act on
         doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
@@ -105,7 +105,7 @@ class AllSinglesDoubles(Operation):
 
             @qml.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
-                qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+                qml.templates.AllSinglesDoubles(weights, hf_state, wires, singles, doubles)
                 return qml.expval(qml.Z(0))
 
             # Evaluate the QNode for a given set of parameters
@@ -116,7 +116,7 @@ class AllSinglesDoubles(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
+    def __init__(self, weights, hf_state, wires, singles=None, doubles=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
@@ -140,6 +140,9 @@ class AllSinglesDoubles(Operation):
         exp_shape = self.shape(singles, doubles)
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
+
+        # convert hf_state to numpy array in case it is a list
+        hf_state = np.array(hf_state) if isinstance(hf_state, list) else hf_state
 
         if hf_state[0].dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")

@@ -80,7 +80,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         @qml.qnode(dev)
         def circuit(weights, hf_state, singles, doubles):
-            qml.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+            qml.AllSinglesDoubles(weights, hf_state, wires, singles, doubles)
             return qml.expval(qml.Z(0))
 
         # Evaluate the QNode for a given set of parameters
@@ -215,10 +215,10 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
-            qml.adjoint(qml.BasisRotation(wires=[0, 1], unitary_matrix=unitary_matrix))
+            qml.adjoint(qml.BasisRotation(unitary_matrix=unitary_matrix, wires=[0, 1]))
             for idx, eigenval in enumerate(eigen_values):
                 qml.RZ(-eigenval, wires=[idx])
-            qml.BasisRotation(wires=[0, 1], unitary_matrix=unitary_matrix)
+            qml.BasisRotation(unitary_matrix=unitary_matrix, wires=[0, 1])
             return qml.state()
 
         assert np.allclose(

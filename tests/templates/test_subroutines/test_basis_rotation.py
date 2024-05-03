@@ -30,7 +30,7 @@ def test_standard_validity():
             [-0.78582258, 0.53807284 + 0.30489424j],
         ]
     )
-    op = qml.BasisRotation(wires=range(2), unitary_matrix=weights)
+    op = qml.BasisRotation(unitary_matrix=weights, wires=range(2))
     qml.ops.functions.assert_valid(op)
 
 
@@ -85,7 +85,7 @@ class TestDecomposition:
             gate_angles.append(qml.numpy.array(angle))
             gate_wires.append(list(indices))
 
-        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
+        op = qml.BasisRotation(unitary_matrix=unitary_matrix, wires=range(num_wires))
         queue = op.expand().operations
 
         assert len(queue) == len(gate_ops)  # number of gates
@@ -112,8 +112,8 @@ class TestDecomposition:
         def circuit():
             qml.PauliX(wires=[0])
             qml.BasisRotation(
-                wires=range(2),
                 unitary_matrix=weights,
+                wires=range(2),
             )
             return qml.expval(qml.Identity(0)), qml.state()
 
@@ -121,8 +121,8 @@ class TestDecomposition:
         def circuit2():
             qml.PauliX(wires=["z"])
             qml.BasisRotation(
-                wires=["z", "a"],
                 unitary_matrix=weights,
+                wires=["z", "a"],
             )
             return qml.expval(qml.Identity("z")), qml.state()
 
@@ -257,10 +257,10 @@ class TestDecomposition:
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
-            qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix))
+            qml.adjoint(qml.BasisRotation(unitary_matrix=unitary_matrix, wires=wires))
             for idx, eigenval in enumerate(eigen_values):
                 qml.RZ(-eigenval, wires=[idx])
-            qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix)
+            qml.BasisRotation(unitary_matrix=unitary_matrix, wires=wires)
             return qml.state()
 
         assert np.allclose([qml.math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=1e-6)
@@ -308,7 +308,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
+            qml.BasisRotation(unitary_matrix=unitary_matrix, wires=wires, check=True)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match=msg_match):
@@ -316,19 +316,19 @@ class TestInputs:
 
         with pytest.raises(ValueError, match=msg_match):
             qml.BasisRotation.compute_decomposition(
-                wires=wires, unitary_matrix=unitary_matrix, check=True
+                unitary_matrix=unitary_matrix, wires=wires, check=True
             )
 
     def test_id(self):
         """Test that the id attribute can be set."""
         template = qml.BasisRotation(
-            wires=range(2),
             unitary_matrix=qml.math.array(
                 [
                     [-0.77228482 + 0.0j, -0.02959195 + 0.63458685j],
                     [0.63527644 + 0.0j, -0.03597397 + 0.77144651j],
                 ]
             ),
+            wires=range(2),
             id="a",
         )
         assert template.id == "a"
@@ -337,8 +337,8 @@ class TestInputs:
 def circuit_template(unitary_matrix):
     qml.BasisState(np.array([1, 1, 0]), wires=[0, 1, 2])
     qml.BasisRotation(
-        wires=range(3),
         unitary_matrix=unitary_matrix,
+        wires=range(3),
     )
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
