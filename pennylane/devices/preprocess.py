@@ -22,13 +22,10 @@ from copy import copy
 from typing import Callable, Generator, Optional, Sequence, Union
 
 import pennylane as qml
-from pennylane import Snapshot, DeviceError, transform
-from pennylane.operation import Tensor, StatePrepBase
-from pennylane.measurements import (
-    StateMeasurement,
-    SampleMeasurement,
-)
-from pennylane.typing import ResultBatch, Result
+from pennylane import DeviceError, Snapshot, transform
+from pennylane.measurements import SampleMeasurement, StateMeasurement
+from pennylane.operation import StatePrepBase, Tensor
+from pennylane.typing import Result, ResultBatch
 from pennylane.wires import WireError
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
