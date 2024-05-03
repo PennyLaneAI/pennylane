@@ -1093,7 +1093,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
         state = qnode(*params)
 
         def rqnode(*params):
-            return np.real(qnode(params))
+            return np.real(qnode(*params))
 
         def iqnode(*params):
             return np.imag(qnode(*params))
