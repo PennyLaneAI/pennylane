@@ -105,6 +105,21 @@ def test_building_hamiltonian(
     assert qubits == 2 * nact_orbs
 
 
+@pytest.mark.parametrize(
+    (
+        "charge",
+        "mult",
+        "package",
+        "nact_els",
+        "nact_orbs",
+        "mapping",
+    ),
+    [
+        (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
+        (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
+    ],
+)
+
 @pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
 def test_building_hamiltonian_molecule_class(
     charge,
@@ -120,7 +135,7 @@ def test_building_hamiltonian_molecule_class(
     required to run the quantum simulation. The latter is tested for different values of the
     molecule's charge and for active spaces with different size"""
 
-    args = (test_symbols, test_coordinates)
+    args = qchem.Molecule(test_symbols, test_coordinates, charge=charge, mult=mult)
     kwargs = {
         "method": package,
         "active_electrons": nact_els,
@@ -129,8 +144,7 @@ def test_building_hamiltonian_molecule_class(
         "outpath": tmpdir.strpath,
     }
 
-    molecule = qchem.Molecule(args, charge=charge, mult=mult)
-    built_hamiltonian, qubits = qchem.molecular_hamiltonian(molecule, **kwargs)
+    built_hamiltonian, qubits = qchem.molecular_hamiltonian(args, **kwargs)
 
     if active_new_opmath():
         assert not isinstance(built_hamiltonian, qml.Hamiltonian)
@@ -273,7 +287,105 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
-
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "h_ref_data"),
+    [
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
+            (
+                np.array(
+                    [
+                        0.2981788017,
+                        0.2081336485,
+                        0.2081336485,
+                        0.1786097698,
+                        0.042560361,
+                        -0.042560361,
+                        -0.042560361,
+                        0.042560361,
+                        -0.3472487379,
+                        0.1329029281,
+                        -0.3472487379,
+                        0.175463289,
+                        0.175463289,
+                        0.1329029281,
+                        0.1847091733,
+                    ]
+                ),
+                [
+                    Identity(wires=[0]),
+                    PauliZ(wires=[0]),
+                    PauliZ(wires=[1]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
+                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
+                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
+                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
+                    PauliZ(wires=[2]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[3]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
+            (
+                np.array(
+                    [
+                        0.2981788017,
+                        0.2081336485,
+                        0.2081336485,
+                        0.1786097698,
+                        0.042560361,
+                        -0.042560361,
+                        -0.042560361,
+                        0.042560361,
+                        -0.3472487379,
+                        0.1329029281,
+                        -0.3472487379,
+                        0.175463289,
+                        0.175463289,
+                        0.1329029281,
+                        0.1847091733,
+                    ]
+                ),
+                [
+                    Identity(wires=[0]),
+                    PauliZ(wires=[0]),
+                    PauliZ(wires=[1]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
+                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
+                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
+                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
+                    PauliZ(wires=[2]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[3]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                ],
+            ),
+        ),
+    ],
+)
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_hamiltonian_molecule_class(symbols, geometry, h_ref_data):
     r"""Test that molecular_hamiltonian generated using the molecule class
@@ -281,10 +393,11 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, h_ref_data
 
     geometry.requires_grad = True
     args = [geometry.reshape(2, 3)]
-    molecule = qchem.molecule(symbols, geometry)
+    molecule = qchem.Molecule(symbols, geometry)
     h_args = qchem.molecular_hamiltonian(molecule, method="dhf", args=args)[0]
 
-    molecule.geometry.requires_grad = False
+    geometry.requires_grad = False
+    molecule = qchem.Molecule(symbols, geometry)
     h_noargs = qchem.molecular_hamiltonian(molecule, method="dhf")[0]
 
     ops = [
@@ -343,7 +456,23 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tm
 
     assert set(hamiltonian.wires) == set(wiremap)
 
-
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "method", "wiremap"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "pyscf",
+            ["a", "b", "c", "d"],
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "pyscf",
+            [0, "z", 3, "ancilla"],
+        ),
+    ],
+)
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_custom_wiremap_hamiltonian_pyscf_molecule_class(
     symbols, geometry, method, wiremap, tmpdir
@@ -403,7 +532,24 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir
 
     assert wiremap_calc == wiremap_dict
 
-
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "wiremap", "args"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            [0, "z", 3, "ancilla"],
+            None,
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            [0, "z", 3, "ancilla"],
+            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
+        ),
+    ],
+)
 def test_custom_wiremap_hamiltonian_dhf_molecule_class(symbols, geometry, wiremap, args, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
 
@@ -492,20 +638,26 @@ def test_diff_hamiltonian_error(symbols, geometry):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
 
+@pytest.mark.parametrize(
+    ("symbols", "geometry"),
+    [
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+        ),
+    ],
+)
 def test_diff_hamiltonian_error_molecule_class(symbols, geometry):
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
-    #    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-    #        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
+    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
+            qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
     molecule = qchem.Molecule(symbols, geometry)
     with pytest.raises(
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
     ):
         qchem.molecular_hamiltonian(molecule, method="psi4")
-
-    with pytest.raises(ValueError, match="Openshell systems are not supported"):
-        qchem.molecular_hamiltonian(molecule, mult=3)
 
 
 @pytest.mark.parametrize(
@@ -545,7 +697,29 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
 
     assert np.isrealobj(hamiltonian.terms()[0])
 
-
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "method", "args"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "pyscf",
+            None,
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "dhf",
+            None,
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "dhf",
+            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
+        ),
+    ],
+)
 @pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
 def test_real_hamiltonian_molecule_class(symbols, geometry, method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
