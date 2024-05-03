@@ -142,7 +142,7 @@ PyYAML==6.0.1
 pyzmq==26.0.3
 pyzx==0.8.0
 qdldl==0.1.7.post2
-referencing==0.35.0
+referencing==0.35.1
 requests==2.31.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
@@ -170,7 +170,7 @@ toml==0.10.2
 tomli==2.0.1
 tomlkit==0.12.4
 tornado==6.4
-tqdm==4.66.2
+tqdm==4.66.4
 traitlets==5.14.3
 types-python-dateutil==2.9.0.20240316
 typing_extensions==4.11.0
