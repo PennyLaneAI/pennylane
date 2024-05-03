@@ -22,12 +22,12 @@ from pennylane import numpy as pnp
 
 
 @pytest.mark.parametrize("include_pi", (True, False))
-def test_standard_validity(include_pi):
-    """Check the operation using the assert_valid function."""
+@pytest.mark.parametrize("init_state", (None, qml.math.array([1, 1, 0, 0, 0, 0])))
+def test_standard_validity(include_pi, init_state):
+    """Check the operation using the assert_valid function, with two possible initial states."""
 
     layers = 2
     qubits = 6
-    init_state = qml.math.array([1, 1, 0, 0, 0, 0])
 
     weights = np.random.normal(0, 2 * np.pi, (layers, qubits // 2 - 1, 2))
 
@@ -44,10 +44,13 @@ class TestDecomposition:
         [
             (1, 4, qml.math.array([1, 1, 0, 0]), False),
             (2, 4, qml.math.array([1, 1, 0, 0]), True),
+            (1, 4, None, False),
             (1, 6, qml.math.array([1, 1, 0, 0, 0, 0]), False),
             (2, 6, qml.math.array([1, 1, 0, 0, 0, 0]), True),
+            (2, 6, None, True),
             (1, 8, qml.math.array([1, 1, 0, 0, 0, 0, 0, 0]), False),
             (2, 8, qml.math.array([1, 1, 1, 1, 0, 0, 0, 0]), True),
+            (2, 8, None, False),
         ],
     )
     def test_operations(self, layers, qubits, init_state, include_pi):

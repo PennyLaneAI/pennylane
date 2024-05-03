@@ -67,9 +67,9 @@ class GateFabric(Operation):
         weights (tensor_like): Array of weights of shape ``(D, L, 2)``\,
             where ``D`` is the number of gate fabric layers and ``L = N/2-1``
             is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
-        wires (Iterable): wires that the template acts on
-        init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
-            in the Jordan-Wigner representation.
+        wires (Iterable): wires that the template acts on.
+        init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
+            in the Jordan-Wigner representation. If ``None``, a tuple of zeros is selected as initial state. Default is ``None``.
         include_pi (boolean): If True, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
 
@@ -175,7 +175,7 @@ class GateFabric(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, init_state, include_pi=False, id=None):
+    def __init__(self, weights, wires, init_state=None, include_pi=False, id=None):
         if len(wires) < 4:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than four; got wires {wires}"
@@ -200,6 +200,8 @@ class GateFabric(Operation):
             raise ValueError(
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
+        
+        init_state = tuple(0 for _ in wires) if init_state is None else init_state
 
         self._hyperparameters = {
             "init_state": tuple(init_state),
