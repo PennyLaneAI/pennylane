@@ -62,6 +62,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.GateFabric`, `qml.AllSinglesDoubles`, and `qml.BasisRotation` now have the `wires` argument as the last positional argument,
+  which is a requirement for PennyLane operations.
+  [(#5643)](https://github.com/PennyLaneAI/pennylane/pull/5643)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>

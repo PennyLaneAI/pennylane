@@ -2055,7 +2055,7 @@ class TestBasisRotation:
         ]
     )
     op1 = qml.BasisRotation(unitary_matrix=rotation_mat, wires=range(2))
-    op2 = qml.BasisRotation(unitary_matrix=np.array(rotation_mat), wires=range(2),)
+    op2 = qml.BasisRotation(unitary_matrix=np.array(rotation_mat), wires=range(2))
     op3 = qml.BasisRotation(unitary_matrix=rotation_mat + 1e-7, wires=range(2))
     op4 = qml.BasisRotation(unitary_matrix=rotation_mat, wires=range(2, 4))
 
