@@ -23,17 +23,11 @@ functionality will explicitly raise a deprecation warning when used:
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
 
-* Accessing ``qml.ops.Hamiltonian`` with new operator arithmetic enabled is deprecated. Using ``qml.Hamiltonian``
-  with new operator arithmetic enabled now returns a ``LinearCombination`` instance. Some functionality
-  may not work as expected, and use of the Hamiltonian class with the new operator arithmetic will not
-  be supported in future releases of PennyLane.
-
-  You can update your code to the new operator arithmetic by using ``qml.Hamiltonian`` instead of importing
-  the Hamiltonian class directly or via ``qml.ops.Hamiltonian``. When the new operator arithmetic is enabled,
-  ``qml.Hamiltonian`` will access the new corresponding implementation.
-
-  Alternatively, to continue accessing the legacy functionality, you can use
-  ``qml.operation.disable_new_opmath()``.
+* Accessing ``qml.ops.Hamiltonian`` is deprecated because it points to the old version of the class
+  that may not be compatible with the new approach to operator arithmetic. Instead, using
+  ``qml.Hamiltonian`` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
+  ``qml.Hamiltonian`` with existing code without needing to make any changes.
 
   - Use of ``qml.ops.Hamiltonian`` is deprecated in v0.36
 
