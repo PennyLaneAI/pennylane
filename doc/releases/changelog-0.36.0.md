@@ -716,6 +716,10 @@
   deprecations, and other pages focusing on recent changes.
   [(#5548)](https://github.com/PennyLaneAI/pennylane/pull/5548)
 
+* A summary of all changes has been added in the "Updated Operators" page in the new "Release news" section in the docs.
+  [(#5483)](https://github.com/PennyLaneAI/pennylane/pull/5483)
+  [(#5636)](https://github.com/PennyLaneAI/pennylane/pull/5636)
+
 <h3>Bug fixes 🐛</h3>
 
 * Patches the QNode so that parameter-shift will be considered best with lightning if
