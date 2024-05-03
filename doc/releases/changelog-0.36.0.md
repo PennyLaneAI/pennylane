@@ -800,7 +800,6 @@
 * Failing tests due to changes with Lightning's adjoint diff pipeline have been fixed.
   [(#5450)](https://github.com/PennyLaneAI/pennylane/pull/5450)
 
-Context: When Torch has a GPU backed data-buffer, failures can occur when attempting to make autoray-dispatched calls to Torch method with paired CPU data. In this case, for probabilities on the GPU, and eigenvalues on the host (read from the observables), failures appeared with qml.dot, and can be reproduced from:
 
 * Failures occurring when making autoray-dispatched calls to Torch with paired CPU data have been fixed.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
