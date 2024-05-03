@@ -24,7 +24,6 @@ import pytest
 import pennylane as qml
 from pennylane.operation import (
     Channel,
-    DiagGatesUndefinedError,
     MatrixUndefinedError,
     Observable,
     Operation,
