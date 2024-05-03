@@ -451,6 +451,9 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
 
+    if len(shifts) == 0:
+        return tuple()
+
     if multipliers is None:
         multipliers = np.ones_like(shifts)
 

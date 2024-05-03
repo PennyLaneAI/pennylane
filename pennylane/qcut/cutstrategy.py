@@ -71,7 +71,7 @@ class CutStrategy:
     ``2`` to ``5`` fragments, with each fragment having at most ``6`` wires and
     at least ``4`` wires:
 
-    >>> cut_strategy = qml.transforms.CutStrategy(
+    >>> cut_strategy = qml.qcut.CutStrategy(
     ...     max_free_wires=6,
     ...     min_free_wires=4,
     ...     num_fragments_probed=(2, 5),

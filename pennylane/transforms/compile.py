@@ -73,7 +73,7 @@ def compile(
 
     .. code-block:: python
 
-        @compile
+        @qml.compile
         @qml.qnode(device=dev)
         def circuit(x, y, z):
             qml.Hadamard(wires=0)

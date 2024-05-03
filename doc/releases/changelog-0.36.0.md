@@ -152,6 +152,7 @@
 * A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
   [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
   [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+  [(#5627)](https://github.com/PennyLaneAI/pennylane/pull/5627)
 
   The Lie closure, pronounced "Lee closure", is a way to compute the so-called dynamical Lie algebra (DLA) of a set of operators.
   For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
@@ -548,9 +549,21 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
+  [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
+ 
+* Improves the error message for setting shots on the new device interface, or trying to access a property
+  that no longer exists.
+  [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
+
+* Fixed a bug where `qml.draw` and `qml.draw_mpl` incorrectly raised errors for circuits collecting statistics on mid-circuit measurements
+  while using `qml.defer_measurements`.
+  [(#5610)](https://github.com/PennyLaneAI/pennylane/pull/5610)
+
 * Using shot vectors with `param_shift(... broadcast=True)` caused a bug. This combination is no longer supported
-  and will be added again in the next release.
+  and will be added again in the next release. Fixed a bug with custom gradient recipes that only consist of unshifted terms.
   [(#5612)](https://github.com/PennyLaneAI/pennylane/pull/5612)
+  [(#5623)](https://github.com/PennyLaneAI/pennylane/pull/5623)
 
 * Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
@@ -608,7 +621,7 @@
   [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
 
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
-  [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
+  [(#5455)](https://github.com/PennyLaneAI/pennylane/pull/5455)
 
 * The `QNSPSAOptimizer` now properly handles differentiable parameters, resulting in being able to use it for more than one optimization step.
   [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
@@ -665,10 +678,17 @@
   [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
 
 * Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
-  [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
+  [(#5525)](https://github.com/PennyLaneAI/pennylane/pull/5525)
 
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
+
+* `CompositeOp.has_diagonalizing_gates` now does a more complete check of the base operators to ensure consistency 
+  between `op.has_diagonalzing_gates` and `op.diagonalizing_gates()`
+  [(#5603)](https://github.com/PennyLaneAI/pennylane/pull/5603)
+
+* Updated the `method` kwarg of `qml.TrotterProduct().error()` to be more clear that we are computing upper-bounds.
+  [(#5637)](https://github.com/PennyLaneAI/pennylane/pull/5637)
 
 <h3>Contributors ✍️</h3>
 
