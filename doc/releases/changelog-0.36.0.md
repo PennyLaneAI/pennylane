@@ -694,6 +694,9 @@
   between `op.has_diagonalzing_gates` and `op.diagonalizing_gates()`
   [(#5603)](https://github.com/PennyLaneAI/pennylane/pull/5603)
 
+* Updated the `method` kwarg of `qml.TrotterProduct().error()` to be more clear that we are computing upper-bounds.
+  [(#5637)](https://github.com/PennyLaneAI/pennylane/pull/5637)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
