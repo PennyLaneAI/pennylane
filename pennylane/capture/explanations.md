@@ -1,4 +1,4 @@
-This documentation explains the principles behind `qml.capture.PLXPRMeta`.
+This documentation explains the principles behind `qml.capture.CaptureMeta`.
 
 
 ```python

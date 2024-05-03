@@ -113,4 +113,5 @@ If needed, developers can also override the implementation method of the primiti
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
 from .switches import enable, disable, enabled
-from .meta_type import PLXPRMeta, create_operator_primitive
+from .meta_type import CaptureMeta
+from .primitives import create_operator_primitive

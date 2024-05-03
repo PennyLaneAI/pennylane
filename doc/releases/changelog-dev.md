@@ -315,7 +315,7 @@
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
-* Operators can now be automatically captured by `jax.make_jaxpr` via use of the new `qml.capture.PLXPRMeta`.
+* Operators can now be automatically captured by `jax.make_jaxpr` via use of the new `qml.capture.CaptureMeta`.
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
 
 * `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
