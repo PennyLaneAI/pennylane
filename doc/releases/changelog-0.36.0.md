@@ -615,6 +615,10 @@
   to see how this can be done.
   [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
 
+* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
+  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
+
 * Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
   [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
 
@@ -655,10 +659,6 @@
 * The contents of `qml.interfaces` has been moved inside `qml.workflow`. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
 
-* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
-  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
-  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
-
 * Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
   [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
 
@@ -666,6 +666,13 @@
   [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
 
 <h3>Deprecations 👋</h3>
+
+* Accessing ``qml.ops.Hamiltonian`` is deprecated because it points to the old version of the class
+  that may not be compatible with the new approach to operator arithmetic. Instead, using
+  ``qml.Hamiltonian`` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
+  ``qml.Hamiltonian`` with existing code without needing to make any changes.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 * `qml.load` has been deprecated. Instead, please use the functions outlined in the [Importing workflows quickstart guide](https://docs.pennylane.ai/en/latest/introduction/importing_workflows.html).
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
@@ -680,11 +687,6 @@
   >>> with open("test.qasm", "r") as f:
   ...     circuit = qml.from_qasm(f.read())
   ```
-
-* Accessing `qml.ops.Hamiltonian` with new operator arithmetic is deprecated. Using `qml.Hamiltonian` with new operator arithmetic enabled now
-  returns a `LinearCombination` instance. Some functionality may not work as expected. To continue using the `Hamiltonian` class, you can use
-  `qml.operation.disable_new_opmath()` to disable the new operator arithmetic.
-  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 <h3>Documentation 📝</h3>
 
