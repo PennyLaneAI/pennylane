@@ -25,7 +25,7 @@ from pennylane.queuing import QueuingManager
 class Reflection(Operation):
     r"""Apply a reflection about a state :math:`|\Psi\rangle`.
 
-    This operator works by providing an operation, :math:`U`, that prepares the desired state, :math:`\vert \psi \rangle`,
+    This operator works by providing an operation, :math:`U`, that prepares the desired state, :math:`\vert \Psi \rangle`,
     that we want to reflect about. We can also provide a reflection angle :math:`\alpha`
     to define the operation in a more generic form:
 
