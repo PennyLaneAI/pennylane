@@ -71,7 +71,7 @@ class Hamiltonian(Observable):
 
         As of ``v0.36``, ``qml.Hamiltonian`` dispatches to :class:`~.pennylane.ops.op_math.LinearCombination`.
         To obtain this class, use ``qml.ops.Hamiltonian``. For further details,
-        see :doc:`Updated Operators <news/new_opmath/>`
+        see :doc:`Updated Operators </news/new_opmath/>`
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
