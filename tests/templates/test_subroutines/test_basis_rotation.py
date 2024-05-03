@@ -24,13 +24,13 @@ import pennylane as qml
 @pytest.mark.xfail  # to be fixed by shortcut story 49160
 def test_standard_validity():
     """Run standard tests of operation validity."""
-    weights = np.array(
+    unitary_matrix = np.array(
         [
             [-0.618452, -0.68369054 - 0.38740723j],
             [-0.78582258, 0.53807284 + 0.30489424j],
         ]
     )
-    op = qml.BasisRotation(unitary_matrix=weights, wires=range(2))
+    op = qml.BasisRotation(unitary_matrix=unitary_matrix, wires=range(2))
     qml.ops.functions.assert_valid(op)
 
 

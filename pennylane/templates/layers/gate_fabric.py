@@ -69,7 +69,7 @@ class GateFabric(Operation):
             is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
         wires (Iterable): wires that the template acts on.
         init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
-            in the Jordan-Wigner representation. If ``None``, a tuple of zeros is selected as initial state. Default is ``None``.
+            in the Jordan-Wigner representation. If ``None`` (default), a tuple of zeros is selected as initial state.
         include_pi (boolean): If True, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
 
