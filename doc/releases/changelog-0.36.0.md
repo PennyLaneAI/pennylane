@@ -200,7 +200,7 @@
   :math:`\vert \psi \rangle = \vert + \rangle`, then :math:`U = H`:
 
   ```python
-  U = qml.Hadamard(wires=wires)
+  U = qml.Hadamard(wires=0)
 
   dev = qml.device('default.qubit')
   @qml.qnode(dev)
