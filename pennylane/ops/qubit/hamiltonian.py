@@ -67,6 +67,11 @@ class Hamiltonian(Observable):
     The Hamiltonian is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
 
+    .. warning::
+    
+        As of ``v0.36``, ``qml.Hamiltonian`` dispatches to :class:`~.pennylane.ops.op_math.LinearCombination`.
+        To obtain this class, use ``qml.ops.Hamiltonian``. For further details,
+        see :doc:`Updated Operators <news/new_opmath/>`
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
