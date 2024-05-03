@@ -180,8 +180,8 @@ PennyLane is in the process of replacing :class:`~pennylane.Hamiltonian` and :cl
 with newer, more general arithmetic operators. These consist of :class:`~pennylane.ops.op_math.Prod`,
 :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`. By default, using dunder
 methods (eg. ``+``, ``-``, ``@``, ``*``) to combine operators with scalars or other operators will
-create :class:`~pennylane.Hamiltonian`'s and :class:`~.Tensor`'s. If you would like to switch dunders to
-return newer arithmetic operators, the ``operation`` module provides the following helper functions:
+create the aforementioned newer operators. To toggle the dunders to return the older arithmetic operators,
+the ``operation`` module provides the following helper functions:
 
 .. currentmodule:: pennylane.operation
 
