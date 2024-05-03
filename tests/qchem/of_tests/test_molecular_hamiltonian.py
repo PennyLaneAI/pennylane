@@ -119,7 +119,6 @@ def test_building_hamiltonian(
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
-
 @pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
 def test_building_hamiltonian_molecule_class(
     charge,
@@ -286,6 +285,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops).compare(
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "h_ref_data"),
@@ -456,6 +456,7 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tm
 
     assert set(hamiltonian.wires) == set(wiremap)
 
+
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "wiremap"),
     [
@@ -531,6 +532,7 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir
     wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
 
     assert wiremap_calc == wiremap_dict
+
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
@@ -651,7 +653,7 @@ def test_diff_hamiltonian_error_molecule_class(symbols, geometry):
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
     with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-            qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
+        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
     molecule = qchem.Molecule(symbols, geometry)
     with pytest.raises(
@@ -696,6 +698,7 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
     )
 
     assert np.isrealobj(hamiltonian.terms()[0])
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "args"),
