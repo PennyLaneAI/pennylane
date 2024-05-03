@@ -21,7 +21,7 @@
     distance, in [spectral norm](https://en.wikipedia.org/wiki/Matrix_norm), between 
     the true unitary we intend to apply and the approximate unitary that is actually applied.
 
-  * `qml.resource.error.ErrorOperation`: a base class that inherits from `qml.operation.Operation` 
+  * `qml.resource.ErrorOperation`: a base class that inherits from `qml.operation.Operation` 
     and represents quantum operations which carry some form of algorithmic error.
 
   `SpectralNormError` can be used for back-of-the-envelope type calculations like obtaining the
@@ -29,7 +29,7 @@
 
   ```python
   import pennylane as qml
-  from pennylane.resource.error import ErrorOperation, SpectralNormError
+  from pennylane.resource import ErrorOperation, SpectralNormError
 
   intended_op = qml.RY(0.40, 0)
   actual_op = qml.RY(0.41, 0) # angle of rotation is slightly off
