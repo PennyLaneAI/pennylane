@@ -160,7 +160,7 @@
 
 * Reflecting about a given quantum state is now available via `qml.Reflection`.
   This operation is very useful in the amplitude amplification algorithm and offers a generalization
-  of `qml.FlipSign` which operates on basis states.
+  of `qml.FlipSign`, which operates on basis states.
   [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
 
   `qml.Reflection` works by providing an operation, :math:`U`, that *prepares* the 
@@ -172,7 +172,7 @@
   :math:`\vert \psi \rangle = \vert + \rangle`, then :math:`U = H`:
 
   ```python
-  U = qml.Hadamard(wires=wires)
+  U = qml.Hadamard(wires=0)
 
   dev = qml.device('default.qubit')
   @qml.qnode(dev)
@@ -196,6 +196,7 @@
 
   ```python
   H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
       # initialize the eigenvector
@@ -259,6 +260,7 @@
     Take for example the following operators:
 
     ```python
+    from pennylane import X, Y, Z
     ops = [X(0) @ X(1), Z(0), Z(1)]
     ```
 
@@ -266,16 +268,16 @@
 
     ```python
     >>> qml.commutator(X(0) @ X(1), Z(0))
-    -2j * (X(1) @ Y(0))
+    -2j * (Y(0) @ X(1))
     >>> qml.commutator(X(0) @ X(1), Z(1))
-    -2j * (Y(1) @ X(0))
+    -2j * (X(0) @ Y(1))
     ```
 
     A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
 
     ```python
     >>> qml.commutator(X(0) @ Y(1), Z(0))
-    -2j * (Y(1) @ Y(0))
+    -2j * (Y(0) @ Y(1))
     ```
 
     After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
@@ -284,13 +286,13 @@
     ```python
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
     >>> dla = qml.lie_closure(ops)
-    >>> print(dla)
-    [1.0 * X(1) @ X(0),
-     1.0 * Z(0),
-     1.0 * Z(1),
-     -1.0 * X(1) @ Y(0),
-     -1.0 * Y(1) @ X(0),
-     -1.0 * Y(1) @ Y(0)]
+    >>> dla
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
     ```
 
   * Computing the structure constants (the adjoint representation) of a dynamical Lie algebra.
@@ -301,7 +303,7 @@
     ```pycon
     >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
     >>> structure_const = qml.structure_constants(dla)
-    >>> structure_constp.shape
+    >>> structure_const.shape
     (6, 6, 6)
     ```
     Visit the [documentation of qml.structure_constants](https://docs.pennylane.ai/en/stable/code/api/pennylane.structure_constants.html)
@@ -310,7 +312,7 @@
   * Computing the center of a dynamical Lie algebra.
     [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
 
-    Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+    Given a DLA `g`, we can now compute its centre. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
 
     ```pycon
     >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
@@ -459,7 +461,7 @@
 * `qml.ApproxTimeEvolution` is now compatible with any operator that has a defined `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
-* `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of Pauli operators.
+* `Hamiltonian.pauli_rep` is now defined if the Hamiltonian is a linear combination of Pauli operators.
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
 * `Prod` instances created with qutrit operators now have a defined `eigvals()` method.
@@ -560,7 +562,7 @@
 
 * Entanglement entropy can now be calculated with 
   `qml.math.vn_entanglement_entropy`, which computes the von Neumann 
-  entanglement entropy from a density matrix. A corresponding a QNode transform,
+  entanglement entropy from a density matrix. A corresponding QNode transform,
   `qml.qinfo.vn_entanglement_entropy`, has also been added.
   [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
 
