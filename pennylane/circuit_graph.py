@@ -162,7 +162,6 @@ class CircuitGraph:
                 # add op to the grid, to the end of wire w
                 self._grid.setdefault(wire, []).append(op)
 
-        print(self._grid)
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
         # rx.PyDiGraph: DAG representation of the quantum circuit

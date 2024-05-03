@@ -450,7 +450,7 @@ def expval_param_shift(
     processing_fn.first_result_unshifted = at_least_one_unshifted
     processing_fn.gradient_data = gradient_data
 
-    return gradient_tapes, processing_fn, gradient_data
+    return gradient_tapes, processing_fn
 
 
 def _make_probs_tape(tape):
@@ -570,12 +570,12 @@ def expval_param_shift_with_mcms(
         p_recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, probs_tape)
         if len(recipe) < len(p_recipe) and len(recipe) != 0:
             raise ValueError(
-                "Scenarios in which the shift rule requires more terms in the aux tape"
+                "Scenarios in which the shift rule requires more terms in the aux tape "
                 "than in the original tape are not covered yet."
             )
         if len(recipe) > len(p_recipe) and len(p_recipe) != 0:
             warnings.warn(
-                "Scenarios in which the shift rule requires more terms in the original tape"
+                "Scenarios in which the shift rule requires more terms in the original tape "
                 "than in the aux tape assume equivalence of the two shift rules."
             )
         recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
@@ -686,6 +686,82 @@ def expval_param_shift_with_mcms(
     processing_fn.first_result_unshifted = at_least_one_unshifted
 
     return all_tapes, processing_fn
+
+
+def mcm_wrapper(tape, psr_tapes, **psr_kwargs):
+    mcms = [
+        op for op in tape.operations if isinstance(op, MidMeasureMP) and op.postselect is not None
+    ]
+    probs_tape, postselects, skip_probs_tapes = _structure_analysis_mcm(tape, mcms, **psr_kwargs)
+
+    postselect_int = np.dot(postselects, 1 << np.arange(len(postselects))[::-1])
+
+    probs_psr_tapes = [
+        _make_probs_tape(t)[0] for i, t in enumerate(psr_tapes) if i not in skip_probs_tapes
+    ]
+    first_result_unshifted = qml.math.allclose(
+        tape.get_parameters(trainable_only=False), psr_tapes[0].get_parameters(trainable_only=False)
+    )
+
+    if first_result_unshifted:
+        all_tapes = psr_tapes + probs_psr_tapes
+    else:
+        # This ordering is consistent with the case above where the unshifted
+        # function/probs tape is contained as first entry of the psr_tapes/probs_psr_tapes
+        all_tapes = [tape, *psr_tapes, probs_tape, *probs_psr_tapes]
+
+    orig_num_tapes = len(psr_tapes)
+
+    def mcm_postprocessing_function(results):
+        """Postprocessing function that computes parameter-shift rule values
+        from parameter-shift rule values that were extended by postselection probabilities."""
+        shift = 0 if first_result_unshifted else 1
+        r0 = results[0]
+        psr_results = results[shift : orig_num_tapes + shift]
+        p0 = results[orig_num_tapes + shift][postselect_int]
+        probs_results = [r[postselect_int] for r in results[orig_num_tapes + 2 * shift :]]
+        for i in skip_probs_tapes:
+            probs_results.insert(i, p0)
+        assert len(psr_results) == len(probs_results)
+        mod_results = [(r - r0) * p / p0 for r, p in zip(psr_results, probs_results)]
+        return mod_results
+
+    return all_tapes, mcm_postprocessing_function
+
+
+def _structure_analysis_mcm(tape, mcms, argnum=None, shifts=None, gradient_recipes=None):
+    probs_tape, postselects = _make_probs_tape(tape)
+    argnum = argnum or tape.trainable_params
+    skip_probs_tapes = []
+    start = 0
+    for idx, _ in enumerate(tape.trainable_params):
+        if idx not in argnum:
+            continue
+        op, op_idx, _ = tape.get_operation(idx)
+
+        if op.name in ["Hamiltonian", "LinearCombination"]:
+            continue
+
+        psr_recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
+        probs_recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, probs_tape)
+        if len(psr_recipe) < len(probs_recipe):
+            raise ValueError(
+                "Scenarios in which the shift rule requires more terms in the aux tape"
+                "than in the original tape are not covered yet."
+            )
+        if len(psr_recipe) > len(probs_recipe) and len(probs_recipe) != 0:
+            warnings.warn(
+                "Scenarios in which the shift rule requires more terms in the original tape"
+                "than in the aux tape assume equivalence of the two shift rules for the "
+                "postselection probs."
+            )
+
+        num_shifts = len(psr_recipe)
+        if not any(tape.graph.has_path(op, mcm) for mcm in mcms):
+            skip_probs_tapes.extend(range(start, start + num_shifts))
+        start += num_shifts
+
+    return probs_tape, postselects, skip_probs_tapes
 
 
 def _get_var_with_second_order(pdA2, f0, pdA):
@@ -950,7 +1026,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     )
 
     # evaluate the analytic derivative of <A>
-    pdA_tapes, pdA_fn, _ = expval_param_shift(
+    pdA_tapes, pdA_fn = expval_param_shift(
         expval_tape, argnum, shifts, gradient_recipes, f0, broadcast
     )
     gradient_tapes = [] if pdA_fn.first_result_unshifted else [expval_tape]
@@ -984,7 +1060,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         # Non-involutory observables are present; the partial derivative of <A^2>
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
-        pdA2_tapes, pdA2_fn, _ = expval_param_shift(
+        pdA2_tapes, pdA2_fn = expval_param_shift(
             tape_with_obs_squared_expval, argnum, shifts, gradient_recipes, f0, broadcast
         )
         gradient_tapes.extend(pdA2_tapes)
@@ -1004,6 +1080,7 @@ def _expand_transform_param_shift(
     f0=None,
     broadcast=False,
     deactivate_mcms=False,
+    mcm_version=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before parameter shift."""
     expanded_tape = expand_invalid_trainable(tape)
@@ -1032,6 +1109,7 @@ def param_shift(
     f0=None,
     broadcast=False,
     deactivate_mcms=False,
+    mcm_version=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
@@ -1356,14 +1434,23 @@ def param_shift(
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
     else:
-        if not deactivate_mcms and _requires_mcm_treatment(tape, argnum):
+        requires_mcm = _requires_mcm_treatment(tape, argnum)
+        if not deactivate_mcms and requires_mcm and mcm_version == 0:
             g_tapes, fn = expval_param_shift_with_mcms(
                 tape, argnum, shifts, gradient_recipes, f0, broadcast
             )
         else:
-            g_tapes, fn, _ = expval_param_shift(
-                tape, argnum, shifts, gradient_recipes, f0, broadcast
-            )
+            g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+            if not deactivate_mcms and requires_mcm and mcm_version == 1:
+                _fn = fn
+                g_tapes, mcm_fn = mcm_wrapper(
+                    tape,
+                    g_tapes,
+                    argnum=argnum,
+                    shifts=shifts,
+                    gradient_recipes=gradient_recipes,
+                )
+                fn = lambda results: _fn(mcm_fn(results))
 
     gradient_tapes.extend(g_tapes)
 
