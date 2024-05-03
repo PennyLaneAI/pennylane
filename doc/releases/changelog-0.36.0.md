@@ -257,10 +257,6 @@
 
 <h4>Updated operators</h4>
 
-* A summary of all changes has been added in the "Updated Operators" page in the new "Release news" section in the docs.
-  [(#5483)](https://github.com/PennyLaneAI/pennylane/pull/5483)
-  [(#5636)](https://github.com/PennyLaneAI/pennylane/pull/5636)
-
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
   `qml.dot`, `qml.sum`, or `qml.ops.Sum`. The grouping indices are stored in `Sum.grouping_indices`.
@@ -553,6 +549,10 @@
 * A new *Release news* section has been added to the table of contents, containing release notes,
   deprecations, and other pages focusing on recent changes.
   [(#5548)](https://github.com/PennyLaneAI/pennylane/pull/5548)
+
+* A summary of all changes has been added in the "Updated Operators" page in the new "Release news" section in the docs.
+  [(#5483)](https://github.com/PennyLaneAI/pennylane/pull/5483)
+  [(#5636)](https://github.com/PennyLaneAI/pennylane/pull/5636)
 
 <h3>Bug fixes 🐛</h3>
 
