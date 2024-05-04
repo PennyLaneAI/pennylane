@@ -27,10 +27,13 @@ from pennylane.gradients.parameter_shift import (
 from pennylane.operation import AnyWires, Observable
 from pennylane.measurements.shots import Shots
 
+
 class TestEvaluateGradient:
     """Test _evaluate_gradient."""
 
-    @pytest.mark.parametrize("coeffs, unshifted_coeff", [(np.arange(1, 5), None), (np.arange(1, 4), 4), (np.ones(0), 10)])
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff", [(np.arange(1, 5), None), (np.arange(1, 4), 4), (np.ones(0), 10)]
+    )
     @pytest.mark.parametrize("batch_size", [None, 4])
     def test_single_shots_single_meas(self, coeffs, unshifted_coeff, batch_size):
         """Test that a single shots, single measurement gradient is evaluated correctly."""
@@ -52,8 +55,7 @@ class TestEvaluateGradient:
 
         assert isinstance(grad, np.ndarray)
         assert grad.shape == ()
-        assert np.isclose(grad, np.sum(-np.arange(1, 5)**2))
-
+        assert np.isclose(grad, np.sum(-np.arange(1, 5) ** 2))
 
 
 # pylint: disable=too-few-public-methods
@@ -608,14 +610,19 @@ class TestParamShift:
             [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None
             for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
+        tapes, fn = qml.gradients.param_shift(
+            tape, gradient_recipes=gradient_recipes, broadcast=broadcast
+        )
 
         # two tapes per parameter that doesn't use a custom recipe,
         # one tape per parameter that uses custom recipe,
         # plus one global call if at least one uses the custom recipe
         num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
         tapes_per_param = 1 if broadcast else 2
-        assert len(tapes) == tapes_per_param * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
+        assert (
+            len(tapes)
+            == tapes_per_param * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
+        )
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
@@ -641,7 +648,9 @@ class TestParamShift:
         gradient_recipes = tuple(
             [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
+        tapes, fn = qml.gradients.param_shift(
+            tape, gradient_recipes=gradient_recipes, broadcast=broadcast
+        )
 
         # two tapes per parameter that doesn't use a custom recipe,
         # plus one global (unshifted) call if at least one uses the custom recipe
@@ -687,12 +696,16 @@ class TestParamShift:
             )
             for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
+        tapes, fn = qml.gradients.param_shift(
+            tape, gradient_recipes=gradient_recipes, broadcast=broadcast
+        )
 
         # two tapes per parameter, independent of recipe
         # plus one global (unshifted) call if at least one uses the custom recipe
         tapes_per_param = 1 if broadcast else 2
-        assert len(tapes) == tapes_per_param * tape.num_params + int(len(ops_with_custom_recipe) > 0)
+        assert len(tapes) == tapes_per_param * tape.num_params + int(
+            len(ops_with_custom_recipe) > 0
+        )
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)

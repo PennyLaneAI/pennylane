@@ -192,7 +192,7 @@ def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
         res = fn(res)
 
     *_, num_measurements, shots = tape_specs
-    scalar_shots, len_shot_vec = not shots.has_partitioned_shots, shots.num_copies 
+    scalar_shots, len_shot_vec = not shots.has_partitioned_shots, shots.num_copies
 
     if r0 is None and not scalar_shots:
         r0 = [None] * int(len_shot_vec)
@@ -220,7 +220,9 @@ def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
     # or with broadcasting (shots, measurements, parameters)
     if batch_size is None:
         # Move first axis (parameters) to last position
-        res = _move_first_axis_to_third_pos(res, len(res), len_shot_vec, num_measurements, squeeze=False)
+        res = _move_first_axis_to_third_pos(
+            res, len(res), len_shot_vec, num_measurements, squeeze=False
+        )
     # _multi_meas_grad expects (measurements, parameters), so we iterate over shot vector
     return tuple(
         _multi_meas_grad(r, coeffs, r0_, unshifted_coeff, num_measurements)
