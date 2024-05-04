@@ -454,11 +454,10 @@ def expval_param_shift(
 
 
 def _make_probs_tape(tape):
-    num_ops = len(tape.operations)
     new_ops = copy.deepcopy(tape.operations)
     old_postselects = []
     mvs = []
-    for i, op in enumerate(new_ops):
+    for op in new_ops:
         if isinstance(op, MidMeasureMP) and op.postselect is not None:
             old_postselects.append(op.postselect)
             op.postselect = None
@@ -483,12 +482,52 @@ def _requires_mcm_treatment(tape, argnum):
     for idx, _ in enumerate(tape.trainable_params):
         if idx not in argnum:
             continue
-        op, op_idx, _ = tape.get_operation(idx)
+        op, *_ = tape.get_operation(idx)
         if any(tape.graph.has_path(op, mcm) for mcm in mcms):
             # At least one MCM impacts at least one trainable operation
             return True
     # No MCM impacts any trainable operations
     return False
+
+def _extract_psp(results, idx, tape_specs):
+    # TODO support broadcasting
+    *_, shots = tape_specs
+    scalar_shots = not shots.has_partitioned_shots
+    if scalar_shots:
+        return tuple(r[idx] for r in results)
+    return tuple(tuple(r[idx] for r in _r) for _r in results)
+
+def a_times_b_over_c(a, b, c, factor, tape_specs):
+    # TODO support broadcasting
+    single_measure, *_, shots = tape_specs
+    scalar_shots = not shots.has_partitioned_shots
+
+    def scalar_fun(a_, b_, c_):
+        return a_ * b_ / c_ * factor
+
+    if single_measure:
+        if scalar_shots:
+            return scalar_fun(a, b, c)
+        return tuple(map(scalar_fun, a, b, c))
+    if scalar_shots:
+        return tuple(map(scalar_fun, a, b, c))
+    return tuple(tuple(map(scalar_fun, _a, _b, _c)) for _a, _b, _c in zip(a, b, c))
+
+def minus(a, b, tape_specs):
+    # TODO support broadcasting
+    single_measure, *_, shots = tape_specs
+    scalar_shots = not shots.has_partitioned_shots
+
+    def scalar_fun(a_, b_):
+        return a_ - b_
+
+    if single_measure:
+        if scalar_shots:
+            return scalar_fun(a, b)
+        return tuple(map(scalar_fun, a, b))
+    if scalar_shots:
+        return tuple(map(scalar_fun, a, b))
+    return tuple(tuple(map(scalar_fun, _a, _b)) for _a, _b, _c in zip(a, b, c))
 
 
 def expval_param_shift_with_mcms(
@@ -615,7 +654,7 @@ def expval_param_shift_with_mcms(
     tape_specs = (single_measure, num_params, num_measurements, tape.shots)
 
     def processing_fn(results):
-        p_results = [pr[postselect_int] for pr in results[num_g_tapes + 1 :]]
+        p_results = _extract_psp(results[num_g_tapes + 1 :], postselect_int, tape_specs)
         p0, *p_results = p_results
         r0, *results = results[: num_g_tapes + 1]
 
@@ -648,9 +687,8 @@ def expval_param_shift_with_mcms(
                     else p_results[p_start]
                 )
                 p_start = p_start + num_pg_tapes
-                data = list(data)
-                data[1] = data[1] * (r0 / p0)
-                g = -_evaluate_gradient(probs_tape, p_res, data, p0)
+                p_res = tuple(a_times_b_over_c(pr, r0, p0, -1., tape_specs) for pr in p_res)
+                g = _evaluate_gradient(probs_tape, p_res, data, p0)
 
             else:
                 assert num_pg_tapes == num_tapes  # This should never trigger!
@@ -661,16 +699,16 @@ def expval_param_shift_with_mcms(
                 )
                 if batch_size is None:
                     p_res = p_results[p_start : p_start + num_pg_tapes]
-                    p_res_mod = [r0 / p0 * p for p in p_res]
+                    p_res_mod = tuple(a_times_b_over_c(pr, r0, p0, 1., tape_specs) for pr in p_res)
                 else:
                     p_res = p_results[p_start]
-                    p_res_mod = p_res * r0 / p0
+                    #p_res_mod = p_res * r0 / p0
                 g_start = g_start + num_tapes
                 p_start = p_start + num_pg_tapes
-                first_term_res = [f * p / p0 for f, p in zip(res, p_res)]
+                first_term_res = tuple(a_times_b_over_c(f, p, p0, 1., tape_specs) for f, p in zip(res, p_res))
                 first_term = _evaluate_gradient(tape, first_term_res, data, r0)
                 second_term = _evaluate_gradient(probs_tape, p_res_mod, data, p0)
-                g = first_term - second_term
+                g = minus(first_term, second_term, tape_specs)
 
             grads.append(g)
 
@@ -711,6 +749,8 @@ def mcm_wrapper(tape, psr_tapes, **psr_kwargs):
         all_tapes = [tape, *psr_tapes, probs_tape, *probs_psr_tapes]
 
     orig_num_tapes = len(psr_tapes)
+    single_measure = len(tape.measurements) == 1
+    tape_specs = (single_measure, None, None, tape.shots)
 
     def mcm_postprocessing_function(results):
         """Postprocessing function that computes parameter-shift rule values
@@ -718,13 +758,12 @@ def mcm_wrapper(tape, psr_tapes, **psr_kwargs):
         shift = 0 if first_result_unshifted else 1
         r0 = results[0]
         psr_results = results[shift : orig_num_tapes + shift]
-        p0 = results[orig_num_tapes + shift][postselect_int]
-        probs_results = [r[postselect_int] for r in results[orig_num_tapes + 2 * shift :]]
+        probs_results = results[orig_num_tapes + shift:]
+        p0, *probs_results = _extract_psp(probs_results, postselect_int, tape_specs)
         for i in skip_probs_tapes:
             probs_results.insert(i, p0)
         assert len(psr_results) == len(probs_results)
-        mod_results = [(r - r0) * p / p0 for r, p in zip(psr_results, probs_results)]
-        return mod_results
+        return tuple(a_times_b_over_c(minus(r, r0, tape_specs), p, p0, 1., tape_specs) for r, p in zip(psr_results, probs_results))
 
     return all_tapes, mcm_postprocessing_function
 
