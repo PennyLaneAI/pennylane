@@ -41,6 +41,7 @@ from .gradient_transform import (
     _no_trainable_grad,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
+    assert_shot_vector_not_broadcasted,
     choose_trainable_params,
     find_and_validate_gradient_methods,
     reorder_grads,
