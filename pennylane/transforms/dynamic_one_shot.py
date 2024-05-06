@@ -87,8 +87,7 @@ def dynamic_one_shot(
     few-shots several-mid-circuit-measurement limit, whereas ``qml.defer_measurements`` is favorable
     in the opposite limit.
     """
-
-    if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
+    if not any(is_mcm(o) for o in tape.operations):
         return (tape,), null_postprocessing
 
     for m in tape.measurements:
@@ -103,9 +102,7 @@ def dynamic_one_shot(
         raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
-    postselect_present = any(
-        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
-    )
+    postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
     if postselect_present and samples_present and tape.batch_size is not None:
         raise ValueError(
             "Returning qml.sample is not supported when postselecting mid-circuit "
@@ -172,6 +169,12 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
+def is_mcm(operation):
+    """Returns True if the operation is a mid-circuit measurement and False otherwise."""
+    mcm = isinstance(operation, MidMeasureMP)
+    return mcm or "MidCircuitMeasure" in str(type(operation))
+
+
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
 
@@ -192,7 +195,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
             else:
                 new_measurements.append(m)
     for op in circuit:
-        if isinstance(op, MidMeasureMP):
+        if is_mcm(op):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
 
     return qml.tape.QuantumScript(
@@ -226,7 +229,7 @@ def parse_native_mid_circuit_measurements(
 
     interface = qml.math.get_deep_interface(circuit.data)
 
-    all_mcms = [op for op in aux_tapes[0].operations if isinstance(op, MidMeasureMP)]
+    all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
     n_mcms = len(all_mcms)
     post_process_tape = qml.tape.QuantumScript(
         aux_tapes[0].operations,
@@ -246,7 +249,7 @@ def parse_native_mid_circuit_measurements(
     ).reshape((1, -1))
     is_valid = qml.math.all(mcm_samples * has_postselect == postselect, axis=1)
     has_valid = qml.math.any(is_valid)
-    mid_meas = [op for op in circuit.operations if isinstance(op, MidMeasureMP)]
+    mid_meas = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = [mcm_samples[:, i : i + 1] for i in range(n_mcms)]
     mcm_samples = dict((k, v) for k, v in zip(mid_meas, mcm_samples))
 
