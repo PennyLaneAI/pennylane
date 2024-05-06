@@ -99,7 +99,8 @@ def test_hybrid_capture_parametrization():
     jaxpr = jax.make_jaxpr(f)(0.5)
     assert len(jaxpr.eqns) == 5
 
-    in1 = jaxpr.eqns[0].invars[1]
+    in1 = jaxpr.jaxpr.invars[0]
+    assert jaxpr.eqns[0].invars[1] == in1
     assert jaxpr.eqns[1].invars[0] == in1
     assert jaxpr.eqns[2].invars[0] == in1
     assert jaxpr.eqns[3].invars[-1] == in1  # the wire
