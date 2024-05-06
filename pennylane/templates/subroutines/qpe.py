@@ -16,8 +16,8 @@ Contains the QuantumPhaseEstimation template.
 """
 # pylint: disable=too-many-arguments,arguments-differ
 import pennylane as qml
-from pennylane.queuing import QueuingManager
 from pennylane.operation import AnyWires, Operator
+from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 
 
@@ -212,7 +212,8 @@ class QuantumPhaseEstimation(ErrorOperation):
         >>> Op = CustomOP(wires=[0])
         >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
         >>> QPE.error()
-        0.075
+        SpectralNormError(0.075)
+
         """
         base_unitary = self._hyperparameters["unitary"]
         if not isinstance(base_unitary, ErrorOperation):

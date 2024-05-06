@@ -15,13 +15,13 @@
 Provides transforms for inserting operations into quantum circuits.
 """
 from types import FunctionType
-from typing import Type, Union, Callable, Sequence
+from typing import Callable, Sequence, Type, Union
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.ops.op_math import Adjoint
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
-from pennylane.ops.op_math import Adjoint
 
 # pylint: disable=too-many-branches
 

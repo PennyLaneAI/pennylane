@@ -18,9 +18,9 @@ Unit tests for :mod:`fourier` coefficient and spectra calculations.
 from functools import partial
 
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.fourier import coefficients
 
 

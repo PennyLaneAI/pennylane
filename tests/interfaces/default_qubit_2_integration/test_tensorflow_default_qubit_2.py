@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tensorflow specific tests for execute and default qubit 2."""
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
+from pennylane import execute
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane import execute
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")

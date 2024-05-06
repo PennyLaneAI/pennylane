@@ -13,18 +13,13 @@
 # limitations under the License.
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
-# pylint: disable=too-few-public-methods
-from functools import partial
 import warnings
 
+# pylint: disable=too-few-public-methods
+from functools import partial
+
 import pennylane as qml
-from pennylane.measurements import (
-    MutualInfoMP,
-    StateMP,
-    VarianceMP,
-    VnEntropyMP,
-    ProbabilityMP,
-)
+from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
@@ -58,11 +53,21 @@ SUPPORTED_GRADIENT_KWARGS = [
 
 def assert_multimeasure_not_broadcasted(measurements, broadcast):
     """Assert that there are not simultaneously multiple measurements and
-    broadcasting activated.Otherwise raises an error."""
+    broadcasting activated. Otherwise raises an error."""
     if broadcast and len(measurements) > 1:
         raise NotImplementedError(
             "Broadcasting with multiple measurements is not supported yet. "
             f"Set broadcast to False instead. The tape measurements are {measurements}."
+        )
+
+
+def assert_shot_vector_not_broadcasted(shots, broadcast):
+    """Assert that there are not simultaneously multiple shot settings (shot vector) and
+    broadcasting activated. Otherwise raises an error."""
+    if broadcast and shots.has_partitioned_shots:
+        raise NotImplementedError(
+            "Broadcasting with shot vectors is not supported yet. "
+            f"Set broadcast to False instead. The tape shots are {shots}."
         )
 
 

@@ -14,6 +14,7 @@
 """Functions and variables to be utilized by qutrit mixed state simulator."""
 import functools
 from string import ascii_letters as alphabet
+
 import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np

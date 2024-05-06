@@ -16,7 +16,7 @@
 This module contains the qml.mutual_info measurement.
 """
 from copy import copy
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 import pennylane as qml
 from pennylane.wires import Wires

@@ -14,15 +14,16 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
-import warnings
 import itertools
 import numbers
+
+# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
+import warnings
 from copy import copy
 from typing import List
 
 import pennylane as qml
-from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
+from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath
 
 from .sum import Sum
 
@@ -117,6 +118,10 @@ class LinearCombination(Sum):
         _pauli_rep=None,
         id=None,
     ):
+        if isinstance(observables, Operator):
+            raise ValueError(
+                "observables must be an Iterable of Operator's, and not an Operator itself."
+            )
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid LinearCombination; "
@@ -370,7 +375,7 @@ class LinearCombination(Sum):
                 warnings.warn(
                     f"Attempting to compare a legacy operator class instance {other} of type {type(other)} with {self} of type {type(self)}."
                     f"You are likely disabling/enabling new opmath in the same script or explicitly create legacy operator classes Tensor and ops.Hamiltonian."
-                    f"Please visit https://docs.pennylane.ai/en/latest/introduction/new_opmath.html for more information and help troubleshooting.",
+                    f"Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
                     UserWarning,
                 )
                 op1 = self.simplify()

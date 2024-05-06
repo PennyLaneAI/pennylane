@@ -14,10 +14,12 @@
 """Contains a transform that computes the simple frequency spectrum
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
-from typing import Sequence, Callable
 from functools import partial
+from typing import Callable, Sequence
+
 from pennylane import transform
 from pennylane.tape import QuantumTape
+
 from .utils import get_spectrum, join_spectra
 
 

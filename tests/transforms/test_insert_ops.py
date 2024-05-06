@@ -15,6 +15,7 @@
 Tests for the insert transform.
 """
 from functools import partial
+
 import numpy as np
 import pytest
 

@@ -14,18 +14,21 @@
 """
 Tests for the Fourier reconstruction transform.
 """
+from functools import reduce
+
 # pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
 from inspect import signature
 from itertools import chain
-from functools import reduce
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.fourier.reconstruct import (
+    _prepare_jobs,
     _reconstruct_equ,
     _reconstruct_gen,
-    _prepare_jobs,
     reconstruct,
 )
 from pennylane.fourier.utils import join_spectra

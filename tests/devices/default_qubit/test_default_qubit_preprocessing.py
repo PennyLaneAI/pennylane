@@ -13,14 +13,12 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+import numpy as np
 import pytest
 
-import numpy as np
-
-from pennylane import numpy as pnp
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
-
 from pennylane.devices.default_qubit import stopping_condition
 
 
@@ -835,7 +833,7 @@ class TestAdjointDiffTapeValidation:
         expectation value of a Hermitian operator emits a warning if the
         parameters to Hermitian are trainable."""
 
-        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        mx = qml.numpy.array(qml.matrix(qml.PauliX(0) @ qml.PauliY(2)))
         qs = qml.tape.QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
 
         qs.trainable_params = {0}
