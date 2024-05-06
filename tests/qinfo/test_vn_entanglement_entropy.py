@@ -15,8 +15,9 @@
 """Unit tests for the vn entanglement entropy transform"""
 
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 
 

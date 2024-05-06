@@ -17,12 +17,12 @@ a vector and a list of operators.
 """
 # pylint: disable=too-many-branches
 from collections import defaultdict
-from typing import Sequence, Union, Callable
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
 from pennylane.operation import Operator, convert_to_opmath
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse import ParametrizedHamiltonian
-from pennylane.pauli import PauliWord, PauliSentence
 
 
 def dot(

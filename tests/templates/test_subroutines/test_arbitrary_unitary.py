@@ -14,15 +14,17 @@
 """
 Tests for the ArbitraryUnitary template.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods
 import pytest
-import numpy as np
-from pennylane import numpy as pnp
+
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
-    _tuple_to_word,
     _n_k_gray_code,
+    _tuple_to_word,
 )
 
 

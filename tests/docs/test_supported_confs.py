@@ -27,16 +27,9 @@ QNode without an exception being raised."""
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import QuantumFunctionError
-from pennylane.measurements import (
-    Probability,
-    Expectation,
-    Variance,
-    Sample,
-    VnEntropy,
-    MutualInfo,
-)
+from pennylane import numpy as np
+from pennylane.measurements import Expectation, MutualInfo, Probability, Sample, Variance, VnEntropy
 from pennylane.measurements.measurements import ObservableReturnTypes
 
 pytestmark = pytest.mark.all_interfaces

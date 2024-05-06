@@ -16,10 +16,11 @@ Tests for the Qubitization template.
 """
 
 import copy
+
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.templates.subroutines.qubitization import _positive_coeffs_hamiltonian
 
 

@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
+from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
 pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({0: Z, 2: Z, 4: Z})

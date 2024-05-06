@@ -16,11 +16,9 @@
 import pytest
 
 import pennylane as qml
+from pennylane import QutritBasisState
 from pennylane import numpy as np
 from pennylane.devices.qutrit_mixed import create_initial_state
-from pennylane import (
-    QutritBasisState,
-)
 from pennylane.operation import StatePrepBase
 
 

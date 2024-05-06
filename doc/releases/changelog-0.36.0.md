@@ -877,7 +877,7 @@
 * Fixed a bug in `qml.math.kron` that makes Torch incompatible with NumPy.
   [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
 
-* Fixed a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
+* Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
   [(#5525)](https://github.com/PennyLaneAI/pennylane/pull/5525)
 
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
@@ -886,9 +886,6 @@
 * `CompositeOp.has_diagonalizing_gates` now does a more complete check of the base operators to ensure consistency 
   between `op.has_diagonalzing_gates` and `op.diagonalizing_gates()`
   [(#5603)](https://github.com/PennyLaneAI/pennylane/pull/5603)
-
-* Updated the `method` kwarg of `qml.TrotterProduct().error()` to be more clear that we are computing upper-bounds.
-  [(#5637)](https://github.com/PennyLaneAI/pennylane/pull/5637)
 
 <h3>Contributors ✍️</h3>
 

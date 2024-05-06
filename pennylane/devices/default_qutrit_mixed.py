@@ -14,30 +14,30 @@
 """The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
 computations."""
 
-from dataclasses import replace
-from typing import Union, Callable, Tuple, Sequence, Optional
 import inspect
 import logging
+from dataclasses import replace
+from typing import Callable, Optional, Sequence, Tuple, Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.transforms.core import TransformProgram
 from pennylane.tape import QuantumTape
+from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
-from .modifiers import single_tape_support, simulator_tracking
-
+from .default_qutrit import DefaultQutrit
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
-    validate_observables,
-    validate_measurements,
-    validate_device_wires,
     no_sampling,
+    validate_device_wires,
+    validate_measurements,
+    validate_observables,
 )
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qutrit_mixed.simulate import simulate
-from .default_qutrit import DefaultQutrit
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

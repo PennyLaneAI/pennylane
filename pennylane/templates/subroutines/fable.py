@@ -15,10 +15,12 @@
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique.
 """
 import warnings
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.operation import AnyWires, Operation
+from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.wires import Wires
 
 

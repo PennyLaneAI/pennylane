@@ -17,26 +17,27 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 # pylint: disable=protected-access
 
 import copy
-import pytest
+
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane import StatePrep, BasisState, DeviceError
+from pennylane import BasisState, DeviceError, StatePrep
 from pennylane.devices import DefaultMixed
 from pennylane.ops import (
-    Identity,
-    PauliZ,
-    CZ,
-    PauliX,
-    Hadamard,
     CNOT,
-    SWAP,
+    CZ,
     ISWAP,
+    SWAP,
     AmplitudeDamping,
     DepolarizingChannel,
-    ResetError,
-    PauliError,
+    Hadamard,
+    Identity,
     MultiControlledX,
+    PauliError,
+    PauliX,
+    PauliZ,
+    ResetError,
 )
 from pennylane.wires import Wires
 

@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation, Shots
 from pennylane.devices.qubit.measure import flatten_state
+from pennylane.measurements import Expectation, Shots
 
 
 # TODO: Remove this when new CustomMP are the default

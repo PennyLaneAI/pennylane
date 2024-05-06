@@ -15,9 +15,9 @@
 Tests for the tracking capabilities of default qutrit mixed.
 """
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.resource import Resources

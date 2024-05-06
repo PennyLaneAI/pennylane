@@ -14,8 +14,9 @@
 """Tests for pennylane/dla/lie_closure.py functionality"""
 # pylint: disable=too-few-public-methods, protected-access
 from copy import copy
-import pytest
+
 import numpy as np
+import pytest
 
 import pennylane as qml
 

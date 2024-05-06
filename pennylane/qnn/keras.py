@@ -16,8 +16,8 @@ API."""
 import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
-from semantic_version import Version
 
+from semantic_version import Version
 
 try:
     import tensorflow as tf

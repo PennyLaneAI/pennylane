@@ -17,8 +17,8 @@ computing the sum of operations.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
 
-import warnings
 import itertools
+import warnings
 from collections.abc import Iterable
 from copy import copy
 from typing import List

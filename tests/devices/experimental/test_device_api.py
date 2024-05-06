@@ -18,7 +18,7 @@ Tests for the basic default behavior of the Device API.
 import pytest
 
 import pennylane as qml
-from pennylane.devices import Device, ExecutionConfig, DefaultExecutionConfig
+from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
 from pennylane.wires import Wires
 
 

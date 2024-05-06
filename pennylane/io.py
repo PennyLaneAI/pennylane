@@ -19,6 +19,7 @@ import warnings
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
+
 import pennylane as qml
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
