@@ -38,10 +38,10 @@ from .gradient_transform import (
     _all_zero_grad,
     _contract_qjac_with_cjac,
     _swap_first_two_axes,
+    _move_first_axis_to_third_pos,
     _no_trainable_grad,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
-    assert_shot_vector_not_broadcasted,
     choose_trainable_params,
     find_and_validate_gradient_methods,
     reorder_grads,
@@ -176,6 +176,8 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     the coefficients and each measurement result."""
     if r0 is None:
         r0 = [None] * num_measurements
+    if res == ():
+        res = tuple(() for _ in range(num_measurements))
     return tuple(_single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0))
 
 
@@ -210,7 +212,7 @@ def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
 
     if scalar_shots:
         # Res has axes (parameters, measurements) or with broadcasting (measurements, parameters)
-        if batch_size is None:
+        if batch_size is None and len(res) > 0:
             # Move measurements to first position
             res = _swap_first_two_axes(res, len(res), num_measurements, squeeze=False)
         # _multi_meas_grad expects axes (measurements, parameters)
@@ -219,10 +221,13 @@ def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
     # Res has axes (parameters, shots, measurements)
     # or with broadcasting (shots, measurements, parameters)
     if batch_size is None:
-        # Move first axis (parameters) to last position
-        res = _move_first_axis_to_third_pos(
-            res, len(res), len_shot_vec, num_measurements, squeeze=False
-        )
+        if len(res) > 0:
+            # Move first axis (parameters) to last position
+            res = _move_first_axis_to_third_pos(
+                res, len(res), len_shot_vec, num_measurements, squeeze=False
+            )
+        else:
+            res = (() for _ in range(len_shot_vec))
     # _multi_meas_grad expects (measurements, parameters), so we iterate over shot vector
     return tuple(
         _multi_meas_grad(r, coeffs, r0_, unshifted_coeff, num_measurements)
