@@ -315,10 +315,10 @@ def apply_mid_measure(
     sample = binomial_fn(1, 1 - prob0)
     mid_measurements[op] = sample
 
-    # Using apply_operation makes it easier to work with JAX
+    # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
+    # to select the sample branch enables jax.jit and prevents it from using Python callbacks
     matrix = qml.math.array([[(sample + 1) % 2, 0.0], [0.0, (sample) % 2]], like=interface)
     state = apply_operation(
-        # qml.Projector([sample], wire), # JAX doesn't like that
         qml.QubitUnitary(matrix, wire),
         state,
         is_state_batched=is_state_batched,
@@ -326,6 +326,8 @@ def apply_mid_measure(
     )
     state = state / qml.math.norm(state)
 
+    # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.X(wire), ...)
+    # to reset enables jax.jit and prevents it from using Python callbacks
     element = op.reset and sample == 1
     matrix = qml.math.array(
         [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]], like=interface

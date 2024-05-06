@@ -115,8 +115,6 @@ def test_obs_attribute():
     assert obs == (X(0), X(1), X(2))
 
 
-# currently failing due to has_diagonalizing_gates logic
-@pytest.mark.xfail  # TODO: fix with story 49608
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qml.PauliZ(0)
