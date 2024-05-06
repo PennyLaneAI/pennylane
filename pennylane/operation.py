@@ -725,6 +725,10 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
             return type.__call__(cls, *args, **kwargs)
 
         iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
+
+        # process wires so that we can handle them either as a final argument or as a keyword argument.
+        # Stick `n_wires` as a keyword argument so we have enough information to repack them during
+        # the implementation call.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
             wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
