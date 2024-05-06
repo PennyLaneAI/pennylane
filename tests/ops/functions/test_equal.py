@@ -15,8 +15,9 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
-# pylint: disable=too-many-arguments, too-many-public-methods
 import itertools
+
+# pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
 
 import numpy as np
@@ -26,6 +27,7 @@ import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
+from pennylane.ops.functions.equal import _equal, assert_equal
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
@@ -313,6 +315,34 @@ equal_pauli_operators = [
     (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.2), True),
     (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.3), False),
 ]
+
+
+def test_assert_equal_types():
+    """Test that assert equal raises if the operator types are different."""
+
+    op1 = qml.S(0)
+    op2 = qml.T(0)
+    with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+        assert_equal(op1, op2)
+
+
+def test_assert_equal_unspecified():
+
+    # pylint: disable=too-few-public-methods
+    class RandomType:
+        """dummy type"""
+
+        def __init__(self):
+            pass
+
+    # pylint: disable=unused-argument
+    @_equal.register
+    def _(op1: RandomType, op2, **_):
+        """always returns false"""
+        return False
+
+    with pytest.raises(AssertionError, match=r"for an unspecified reason"):
+        assert_equal(RandomType(), RandomType())
 
 
 class TestEqual:
@@ -2062,15 +2092,23 @@ class TestBasisRotation:
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
         assert qml.equal(op, other_op, atol=1e-5)
+        assert_equal(op, other_op, atol=1e-5)
         assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
+
+        with pytest.raises(AssertionError, match="The hyperparameter unitary_matrix is not equal"):
+            assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
     def test_non_equal_training_params_comparison(self, op, other_op):
         assert qml.equal(op, other_op)
+        assert_equal(op, other_op)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op4)])
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+            assert_equal(op, other_op)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [op1])
@@ -2085,7 +2123,11 @@ class TestBasisRotation:
         )
         other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
         assert qml.equal(op, other_op, check_interface=False)
+        assert_equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
+
+        with pytest.raises(AssertionError, match=r"has different interfaces for op1 and op2"):
+            assert_equal(op, other_op)
 
 
 class TestHilbertSchmidt:
