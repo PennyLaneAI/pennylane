@@ -53,7 +53,8 @@ def test_catalyst_incompatible():
         return qml.state()
 
     with pytest.raises(
-        CompileError, match="PennyLane-Catalyst 0.[0-9]+.0 or greater is required, but installed 0.0.1"
+        CompileError,
+        match="PennyLane-Catalyst 0.[0-9]+.0 or greater is required, but installed 0.0.1",
     ):
         qml.qjit(circuit)()
 
