@@ -100,17 +100,22 @@ will be called when constructing a new class instance instead of ``type.__call__
 As you can see, the input ``"Y"``, while being passed as a positional argument, is converted to 
 metadata within the custom ``_primitive_bind_call`` method.
 
-If needed, developers can also override the implementation method of the primitive like was done with ``Controlled``.
-``Controlled`` needs to do so to handle packing and unpacking the control wires.
+If needed, developers can also override the implementation method of the primitive like
+:class:`~.PauliRot`. This may be needed to undo any reording performed during ``_primitive_bind_call``.
 
 .. code-block:: python
 
     class MyCustomOp(qml.operation.Operator):
-        pass
+        
+        @classmethod
+        def _primitive_bind_call(cls, arg1, arg2, metadata):
+            return cls._primitive.bind(arg2, arg1, metadata=metadata)
 
-    @MyCustomOp._primitive.def_impl
-    def _(*args, **kwargs):
-        return type.__call__(MyCustomOp, *args, **kwargs)
+        @classmethod
+        def _primitive_def_impl(cls, arg2, arg1, metadata):
+            return type.__call__(cls, arg1, arg2, metadata=metadata)
+
 """
 from .switches import disable, enable, enabled
-from .meta_type import PLXPRMeta, create_operator_primitive, create_wires_primitive
+from .capture_meta import CaptureMeta
+from .primitives import create_operator_primitive, create_wires_primitive

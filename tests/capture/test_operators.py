@@ -18,14 +18,14 @@ Integration tests for the capture of pennylane operations into jaxpr.
 import pytest
 
 import pennylane as qml
-
-from pennylane.capture.meta_type import _get_abstract_operator
+from pennylane.capture.primitives import _get_abstract_operator, _get_abstract_wires
 
 jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.jax
 
 AbstractOperator = _get_abstract_operator()
+AbstractWires = _get_abstract_wires()
 
 
 @pytest.fixture(autouse=True)
@@ -137,18 +137,21 @@ def test_different_wires(w, as_kwarg):
 
     jaxpr = jax.make_jaxpr(qfunc)()
 
-    assert len(jaxpr.eqns) == 1
+    assert len(jaxpr.eqns) == 2
 
-    eqn = jaxpr.eqns[0]
+    assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+    assert isinstance(jaxpr.eqns[0].invars[0], jax.core.Literal)
+    assert jaxpr.eqns[0].invars[0].val == 0
+
+    eqn = jaxpr.eqns[1]
     assert eqn.primitive == qml.X._primitive
     assert len(eqn.invars) == 1
-    assert isinstance(eqn.invars[0], jax.core.Literal)
-    assert eqn.invars[0].val == 0
+    assert eqn.invars == jaxpr.eqns[0].outvars
 
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-    assert eqn.params == {"n_wires": 1}
+    assert eqn.params == {}
 
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
@@ -162,15 +165,20 @@ def test_parametrized_op():
 
     jaxpr = jax.make_jaxpr(qml.Rot)(1.0, 2.0, 3.0, 10)
 
-    assert len(jaxpr.eqns) == 1
-    eqn = jaxpr.eqns[0]
+    assert len(jaxpr.eqns) == 2
+
+    assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+    assert jaxpr.eqns[0].invars[0] == jaxpr.jaxpr.invars[3]
+
+    eqn = jaxpr.eqns[1]
 
     assert eqn.primitive == qml.Rot._primitive
     assert len(eqn.invars) == 4
-    assert jaxpr.jaxpr.invars == jaxpr.eqns[0].invars
+    assert jaxpr.jaxpr.invars[:3] == jaxpr.eqns[1].invars[:3]
+    assert jaxpr.eqns[1].invars[3] == jaxpr.eqns[0].outvars[0]
 
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-    assert eqn.params == {"n_wires": 1}
+    assert eqn.params == {}
 
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, 2.0, 3.0, 10)
@@ -186,14 +194,20 @@ def test_pauli_rot():
         qml.PauliRot(a, "XY", (wire0, wire1))
 
     jaxpr = jax.make_jaxpr(qfunc)(0.5, 2, 3)
-    assert len(jaxpr.eqns) == 1
-    eqn = jaxpr.eqns[0]
+    assert len(jaxpr.eqns) == 2
+
+    assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+    assert jaxpr.eqns[0].invars == jaxpr.jaxpr.invars[1:]
+    assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)  # two wires
+
+    eqn = jaxpr.eqns[1]
 
     assert eqn.primitive == qml.PauliRot._primitive
-    assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
+    assert eqn.params == {"pauli_word": "XY"}
 
-    assert len(eqn.invars) == 3  # The rotation parameter and the two wires
-    assert jaxpr.jaxpr.invars == eqn.invars
+    assert len(eqn.invars) == 2
+    assert jaxpr.jaxpr.invars[0] == eqn.invars[0]
+    assert eqn.invars[1] == jaxpr.eqns[0].outvars[0]
 
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
@@ -208,12 +222,16 @@ class TestTemplates:
 
         jaxpr = jax.make_jaxpr(qml.GroverOperator)(wires=(0, 1, 2, 3, 4, 5))
 
-        assert len(jaxpr.eqns) == 1
-        eqn = jaxpr.eqns[0]
+        assert len(jaxpr.eqns) == 2
+        assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[0].invars == jaxpr.jaxpr.invars
+        assert jaxpr.eqns[0].outvars[0].aval.shape == (6,)  # two wires
 
+        eqn = jaxpr.eqns[1]
+        assert eqn.invars == jaxpr.eqns[0].outvars
         assert eqn.primitive == qml.GroverOperator._primitive
-        assert eqn.params == {"n_wires": 6}
-        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == {}
+
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
     def test_nested_template(self):
@@ -228,19 +246,21 @@ class TestTemplates:
 
         jaxpr = jax.make_jaxpr(qfunc)(H)
 
-        assert len(jaxpr.eqns) == 6
+        assert len(jaxpr.eqns) == 8
 
         # due to flattening and unflattening H
-        assert jaxpr.eqns[0].primitive == qml.X._primitive
-        assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qml.Z._primitive
-        assert jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
-        assert jaxpr.eqns[4].primitive == qml.ops.Sum._primitive
+        assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[1].primitive == qml.X._primitive
+        assert jaxpr.eqns[2].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[3].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[4].primitive == qml.Z._primitive
+        assert jaxpr.eqns[5].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[6].primitive == qml.ops.Sum._primitive
         assert not any(isinstance(eqn.outvars[0], jax.core.DropVar) for eqn in jaxpr.eqns[:5])
 
-        eqn = jaxpr.eqns[5]
+        eqn = jaxpr.eqns[7]
         assert eqn.primitive == qml.TrotterProduct._primitive
-        assert eqn.invars == jaxpr.eqns[4].outvars  # the sum op
+        assert eqn.invars == jaxpr.eqns[6].outvars  # the sum op
 
         assert eqn.params == {"order": 2, "time": 2.4}
 
@@ -259,12 +279,13 @@ class TestOpmath:
 
         jaxpr = jax.make_jaxpr(qml.adjoint)(qml.X(0))
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qml.X._primitive
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[1].primitive == qml.X._primitive
 
-        eqn = jaxpr.eqns[1]
+        eqn = jaxpr.eqns[2]
         assert eqn.primitive == qml.ops.Adjoint._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars  # the pauli x op
+        assert eqn.invars == jaxpr.eqns[1].outvars  # the pauli x op
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {}
 
@@ -282,14 +303,16 @@ class TestOpmath:
 
         jaxpr = jax.make_jaxpr(qfunc)(qml.IsingXX(1.2, wires=(0, 1)))
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qml.IsingXX._primitive
+        assert len(jaxpr.eqns) == 4
+        assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[1].primitive == qml.IsingXX._primitive
+        assert jaxpr.eqns[2].primitive == qml.wires.Wires._primitive
 
-        eqn = jaxpr.eqns[1]
+        eqn = jaxpr.eqns[3]
         assert eqn.primitive == qml.ops.Controlled._primitive
-        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # the isingxx
-        assert eqn.invars[1].val == 3
-        assert eqn.invars[2].val == 4
+        assert eqn.invars[0] == jaxpr.eqns[1].outvars[0]  # the isingxx
+        assert isinstance(eqn.invars[1].aval, AbstractWires)
+        assert eqn.invars[1].aval.shape == (2,)
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {"control_values": [0, 1], "work_wires": None}
@@ -298,7 +321,7 @@ class TestOpmath:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)
 
         assert len(q) == 1
-        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0])
+        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
         assert qml.equal(q.queue[0], expected)
 
 
@@ -313,15 +336,17 @@ class TestAbstractDunders:
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
-        assert len(jaxpr.eqns) == 3
-        assert jaxpr.eqns[0].primitive == qml.X._primitive
-        assert jaxpr.eqns[1].primitive == qml.Y._primitive
+        assert len(jaxpr.eqns) == 5
+        assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[1].primitive == qml.X._primitive
+        assert jaxpr.eqns[2].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[3].primitive == qml.Y._primitive
 
-        eqn = jaxpr.eqns[2]
+        eqn = jaxpr.eqns[4]
 
         assert eqn.primitive == qml.ops.Sum._primitive
-        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
-        assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
+        assert eqn.invars[0] == jaxpr.eqns[1].outvars[0]
+        assert eqn.invars[1] == jaxpr.eqns[3].outvars[0]
 
         assert eqn.params == {"grouping_type": None, "id": None, "method": "rlf"}
 
@@ -335,15 +360,17 @@ class TestAbstractDunders:
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
-        assert len(jaxpr.eqns) == 3
-        assert jaxpr.eqns[0].primitive == qml.X._primitive
-        assert jaxpr.eqns[1].primitive == qml.Y._primitive
+        assert len(jaxpr.eqns) == 5
+        assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[1].primitive == qml.X._primitive
+        assert jaxpr.eqns[2].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[3].primitive == qml.Y._primitive
 
-        eqn = jaxpr.eqns[2]
+        eqn = jaxpr.eqns[4]
 
         assert eqn.primitive == qml.ops.Prod._primitive
-        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
-        assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
+        assert eqn.invars[0] == jaxpr.eqns[1].outvars[0]
+        assert eqn.invars[1] == jaxpr.eqns[3].outvars[0]
 
         assert eqn.params == {"id": None}
 
@@ -356,18 +383,19 @@ class TestAbstractDunders:
             return 2 * qml.Y(1) * 3
 
         jaxpr = jax.make_jaxpr(qfunc)()
-        assert len(jaxpr.eqns) == 3
+        assert len(jaxpr.eqns) == 4
 
-        assert jaxpr.eqns[0].primitive == qml.Y._primitive
-
-        assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
-        assert jaxpr.eqns[1].invars[0].val == 2
-        assert jaxpr.eqns[1].invars[1] == jaxpr.eqns[0].outvars[0]  # the y from the previous step
+        assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[1].primitive == qml.Y._primitive
 
         assert jaxpr.eqns[2].primitive == qml.ops.SProd._primitive
-        assert jaxpr.eqns[2].invars[0].val == 3
+        assert jaxpr.eqns[2].invars[0].val == 2
+        assert jaxpr.eqns[2].invars[1] == jaxpr.eqns[1].outvars[0]  # the y from the previous step
+
+        assert jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[3].invars[0].val == 3
         assert (
-            jaxpr.eqns[2].invars[1] == jaxpr.eqns[1].outvars[0]
+            jaxpr.eqns[3].invars[1] == jaxpr.eqns[2].outvars[0]
         )  # the sprod from the previous step
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -384,9 +412,10 @@ class TestAbstractDunders:
 
         jaxpr = jax.make_jaxpr(qfunc)(1.2)
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qml.IsingZZ._primitive
-        assert jaxpr.eqns[1].primitive == qml.ops.Pow._primitive
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.wires.Wires._primitive
+        assert jaxpr.eqns[1].primitive == qml.IsingZZ._primitive
+        assert jaxpr.eqns[2].primitive == qml.ops.Pow._primitive
 
-        assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]
-        assert jaxpr.eqns[1].invars[1].val == 2
+        assert jaxpr.eqns[2].invars[0] == jaxpr.eqns[1].outvars[0]
+        assert jaxpr.eqns[2].invars[1].val == 2
