@@ -171,7 +171,7 @@ class SingleExcitation(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.25 * (qml.X(w1) @ qml.Y(w2) - qml.Y(w1) @ qml.X(w2))
+        return qml.Hamiltonian([0.25, -0.25], [qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2)])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -316,11 +316,9 @@ class SingleExcitationMinus(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.25 * (
-            -qml.Identity(w1)
-            + qml.X(w1) @ qml.Y(w2)
-            - qml.Y(w1) @ qml.X(w2)
-            - qml.Z(w1) @ qml.Z(w2)
+        return qml.Hamiltonian(
+            [-0.25, 0.25, -0.25, -0.25],
+            [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
         )
 
     def __init__(self, phi, wires, id=None):
@@ -446,8 +444,9 @@ class SingleExcitationPlus(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.25 * (
-            qml.Identity(w1) + qml.X(w1) @ qml.Y(w2) - qml.Y(w1) @ qml.X(w2) + qml.Z(w1) @ qml.Z(w2)
+        return qml.Hamiltonian(
+            [0.25, 0.25, -0.25, 0.25],
+            [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
         )
 
     def __init__(self, phi, wires, id=None):
@@ -597,16 +596,18 @@ class DoubleExcitation(Operation):
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
-        # coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
-        return 0.0625 * (
-            qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3)
-            + qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3)
-            - qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3)
-            + qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3)
-            - qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3)
-            + qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3)
-            - qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3)
-            - qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3)
+        return qml.Hamiltonian(
+            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+            [
+                qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3),
+                qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3),
+                qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3),
+                qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3),
+                qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3),
+                qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3),
+            ],
         )
 
     def pow(self, z):
@@ -967,11 +968,14 @@ class OrbitalRotation(Operation):
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
-        return 0.25 * (
-            qml.X(w0) @ qml.Z(w1) @ qml.Y(w2)
-            - (qml.Y(w0) @ qml.Z(w1) @ qml.X(w2))
-            + (qml.X(w1) @ qml.Z(w2) @ qml.Y(w3))
-            - (qml.Y(w1) @ qml.Z(w2) @ qml.X(w3))
+        return qml.Hamiltonian(
+            [0.25, -0.25, 0.25, -0.25],
+            [
+                qml.X(w0) @ qml.Z(w1) @ qml.Y(w2),
+                (qml.Y(w0) @ qml.Z(w1) @ qml.X(w2)),
+                (qml.X(w1) @ qml.Z(w2) @ qml.Y(w3)),
+                (qml.Y(w1) @ qml.Z(w2) @ qml.X(w3)),
+            ],
         )
 
     def __init__(self, phi, wires, id=None):
@@ -1155,11 +1159,15 @@ class FermionicSWAP(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.5 * qml.Identity(w1) @ qml.Identity(w2) - 0.25 * (
-            qml.Identity(w1) @ qml.Z(w2)
-            + qml.Z(w1) @ qml.Identity(w2)
-            + qml.X(w1) @ qml.X(w2)
-            + qml.Y(w1) @ qml.Y(w2)
+        return qml.Hamiltonian(
+            [0.5, -0.25, -0.25, -0.25, -0.25],
+            [
+                qml.Identity(w1) @ qml.Identity(w2),
+                qml.Identity(w1) @ qml.Z(w2),
+                qml.Z(w1) @ qml.Identity(w2),
+                qml.X(w1) @ qml.X(w2),
+                qml.Y(w1) @ qml.Y(w2),
+            ],
         )
 
     def __init__(self, phi, wires, id=None):

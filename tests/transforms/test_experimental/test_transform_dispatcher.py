@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
-from typing import Sequence, Callable
 from functools import partial
+from typing import Callable, Sequence
 
 import pytest
+
 import pennylane as qml
-from pennylane.transforms.core import transform, TransformError, TransformContainer
+from pennylane.transforms.core import TransformContainer, TransformError, transform
 from pennylane.typing import TensorLike
 
 dev = qml.device("default.qubit", wires=2)
@@ -486,7 +487,10 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         # Create a simple device and tape
         tmp_dev = qml.device("default.qubit", wires=3)
-        H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+
+        H = qml.Hamiltonian(
+            [0.5, 1.0, 1.0], [qml.PauliZ(2), qml.PauliY(2) @ qml.PauliZ(1), qml.PauliZ(1)]
+        )
         measur = [qml.expval(H)]
         ops = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
         tape = qml.tape.QuantumTape(ops, measur)

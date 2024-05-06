@@ -14,6 +14,7 @@
 """SPSA optimizer"""
 
 import numpy as np
+
 from pennylane.measurements import Shots
 
 

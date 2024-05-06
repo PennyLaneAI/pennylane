@@ -15,7 +15,7 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 # pylint: disable=protected-access
 import json
 from os import path
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import numpy as np
 
@@ -311,7 +311,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     if (
-        not isinstance(hamiltonian, qml.Hamiltonian)
+        not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
         or len(tape.measurements) > 1
         or tape.measurements[0].return_type
         not in [qml.measurements.Expectation, qml.measurements.Variance]

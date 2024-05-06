@@ -17,13 +17,11 @@ Unit tests for molecular Hamiltonians.
 # pylint: disable=too-many-arguments, protected-access
 import pytest
 
+import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.ops import Hamiltonian
-from pennylane.ops.functions import dot
-from pennylane.pauli import pauli_sentence
-from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.operation import active_new_opmath
 
 test_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
 test_coordinates = np.array(
@@ -56,7 +54,6 @@ test_coordinates = np.array(
 )
 
 
-@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     (
         "charge",
@@ -73,7 +70,7 @@ test_coordinates = np.array(
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
 def test_building_hamiltonian(
     charge,
     mult,
@@ -82,7 +79,6 @@ def test_building_hamiltonian(
     nact_orbs,
     mapping,
     tmpdir,
-    op_arithmetic,
 ):
     r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
     Hamiltonian class and the correctness of the total number of qubits required to run the
@@ -99,20 +95,16 @@ def test_building_hamiltonian(
         "mapping": mapping,
         "outpath": tmpdir.strpath,
     }
-    if op_arithmetic:
-        enable_new_opmath()
 
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
 
-    if op_arithmetic:
-        disable_new_opmath()
-        assert not isinstance(built_hamiltonian, Hamiltonian)
+    if active_new_opmath():
+        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
     else:
-        assert isinstance(built_hamiltonian, Hamiltonian)
+        assert isinstance(built_hamiltonian, qml.Hamiltonian)
     assert qubits == 2 * nact_orbs
 
 
-@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "h_ref_data"),
     [
@@ -212,11 +204,10 @@ def test_building_hamiltonian(
         ),
     ],
 )
-def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic):
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
     backend."""
-    if op_arithmetic:
-        enable_new_opmath()
 
     geometry.requires_grad = True
     args = [geometry.reshape(2, 3)]
@@ -225,43 +216,31 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
     geometry.requires_grad = False
     h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf")[0]
 
-    h_ref = (
-        dot(h_ref_data[0], h_ref_data[1], pauli=True)
-        if op_arithmetic
-        else Hamiltonian(h_ref_data[0], h_ref_data[1])
+    ops = [
+        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+        for op in map(qml.simplify, h_ref_data[1])
+    ]
+    h_ref = qml.Hamiltonian(h_ref_data[0], ops)
+
+    h_ref_coeffs, h_ref_ops = h_ref.terms()
+    h_args_coeffs, h_args_ops = h_args.terms()
+    h_noargs_coeffs, h_noargs_ops = h_noargs.terms()
+
+    assert all(coeff.requires_grad is True for coeff in h_args_coeffs)
+    assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
+
+    assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
+    assert qml.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops).compare(
+        qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
 
-    if op_arithmetic:
-        disable_new_opmath()
-        h_args_ps = pauli_sentence(h_args)
-        h_noargs_ps = pauli_sentence(h_noargs)
-        h_ref_sorted_coeffs = np.sort(list(h_ref.values()))
-
-        assert set(h_args_ps) == set(h_ref)
-        assert set(h_noargs_ps) == set(h_ref)
-
-        assert np.allclose(np.sort(list(h_args_ps.values())), h_ref_sorted_coeffs)
-        assert np.allclose(np.sort(list(h_noargs_ps.values())), h_ref_sorted_coeffs)
-
-        assert all(val.requires_grad is True for val in h_args_ps.values())
-        assert all(val.requires_grad is False for val in h_noargs_ps.values())
-
-    else:
-        assert np.allclose(np.sort(h_args.coeffs), np.sort(h_ref.coeffs))
-        assert Hamiltonian(np.ones(len(h_args.coeffs)), h_args.ops).compare(
-            Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
-        )
-
-        assert np.allclose(np.sort(h_noargs.coeffs), np.sort(h_ref.coeffs))
-        assert Hamiltonian(np.ones(len(h_noargs.coeffs)), h_noargs.ops).compare(
-            Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
-        )
-
-        assert h_args.coeffs.requires_grad is True
-        assert h_noargs.coeffs.requires_grad is False
+    assert np.allclose(np.sort(h_noargs_coeffs), np.sort(h_ref_coeffs))
+    assert qml.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops).compare(
+        qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
+    )
 
 
-@pytest.mark.parametrize("op_arithmetic", [False, True])
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "wiremap"),
     [
@@ -280,12 +259,8 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_custom_wiremap_hamiltonian_pyscf(
-    symbols, geometry, method, wiremap, tmpdir, op_arithmetic
-):
+def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
-    if op_arithmetic:
-        enable_new_opmath()
 
     hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
@@ -297,11 +272,8 @@ def test_custom_wiremap_hamiltonian_pyscf(
 
     assert set(hamiltonian.wires) == set(wiremap)
 
-    if op_arithmetic:
-        disable_new_opmath()
 
-
-@pytest.mark.parametrize("op_arithmetic", [False, True])
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("symbols", "geometry", "wiremap", "args"),
     [
@@ -319,13 +291,10 @@ def test_custom_wiremap_hamiltonian_pyscf(
         ),
     ],
 )
-def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir, op_arithmetic):
+def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
 
     wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
-
-    if op_arithmetic:
-        enable_new_opmath()
 
     hamiltonian_ref, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
@@ -345,9 +314,6 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir
     wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
 
     assert wiremap_calc == wiremap_dict
-
-    if op_arithmetic:
-        disable_new_opmath()
 
 
 file_content = """\
@@ -397,7 +363,6 @@ def test_diff_hamiltonian_error(symbols, geometry):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
 
-@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "args"),
     [
@@ -421,11 +386,9 @@ def test_diff_hamiltonian_error(symbols, geometry):
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_real_hamiltonian(symbols, geometry, method, args, tmpdir, op_arithmetic):
+@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
-    if op_arithmetic:
-        enable_new_opmath()
 
     hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
@@ -435,13 +398,7 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir, op_arithmetic
         outpath=tmpdir.strpath,
     )
 
-    if op_arithmetic:
-        disable_new_opmath()
-        h_as_ps = pauli_sentence(hamiltonian)
-        assert np.isrealobj(np.array(h_as_ps.values()))
-
-    else:
-        assert np.isrealobj(hamiltonian.coeffs)
+    assert np.isrealobj(hamiltonian.terms()[0])
 
 
 @pytest.mark.parametrize(

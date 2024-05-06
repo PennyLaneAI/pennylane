@@ -16,6 +16,7 @@ This module contains the functions for converting an external operator to a Penn
 """
 import warnings
 from itertools import product
+
 import numpy as np
 
 # pylint: disable= import-outside-toplevel,no-member,too-many-function-args
@@ -137,7 +138,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
 
     **Example**
 
-    >>> q_op = 0.1*QubitOperator('X0') + 0.2*QubitOperator('Y0 Z2')
+    >>> q_op = 0.1 * QubitOperator('X0') + 0.2 * QubitOperator('Y0 Z2')
     >>> q_op
     0.1 [X0] +
     0.2 [Y0 Z2]
@@ -326,19 +327,20 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
 
     **Example**
 
+    >>> assert qml.operation.active_new_opmath() == True
+    >>> h_pl = import_operator(h_of, format='openfermion')
+    >>> print(h_pl)
+    (-0.0548 * X(0 @ X(1) @ Y(2) @ Y(3))) + (0.14297 * Z(0 @ Z(1)))
+
+    If the new op-math is deactivated, a :class:`~Hamiltonian` is returned instead.
+
+    >>> assert qml.operation.active_new_opmath() == False
     >>> from openfermion import QubitOperator
     >>> h_of = QubitOperator('X0 X1 Y2 Y3', -0.0548) + QubitOperator('Z0 Z1', 0.14297)
     >>> h_pl = import_operator(h_of, format='openfermion')
     >>> print(h_pl)
     (0.14297) [Z0 Z1]
     + (-0.0548) [X0 X1 Y2 Y3]
-
-    If the new op-math is active, an arithmetic operator is returned instead.
-
-    >>> qml.operation.enable_new_opmath()
-    >>> h_pl = import_operator(h_of, format='openfermion')
-    >>> print(h_pl)
-    (-0.0548 * X(0 @ X(1) @ Y(2) @ Y(3))) + (0.14297 * Z(0 @ Z(1)))
     """
     if format not in ["openfermion"]:
         raise TypeError(f"Converter does not exist for {format} format.")

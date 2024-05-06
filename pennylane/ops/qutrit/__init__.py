@@ -20,12 +20,12 @@ The operations are in one file:
   either unitary or hermitian depending.
 """
 
+from ..identity import Identity
 from .matrix_ops import *
-from .observables import *
 from .non_parametric_ops import *
+from .observables import *
 from .parametric_ops import *
 from .state_preparation import *
-from ..identity import Identity
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
 __ops__ = {

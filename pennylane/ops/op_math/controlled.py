@@ -14,8 +14,8 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-import warnings
 import functools
+import warnings
 from copy import copy
 from functools import wraps
 from inspect import signature
@@ -25,14 +25,14 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import operation
 from pennylane import math as qmlmath
+from pennylane import operation
+from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-from pennylane.compiler import compiler
 
-from .symbolicop import SymbolicOp
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
+from .symbolicop import SymbolicOp
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -667,6 +667,8 @@ class Controlled(SymbolicOp):
         projectors = (
             qml.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
         )
+        # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
+        # it otherwise can't handle ControlledGlobalPhase, see PR #5194
         return qml.prod(*projectors, sub_gen)
 
     @property
@@ -818,7 +820,7 @@ class ControlledOp(Controlled, operation.Operation):
     """
 
     def __new__(cls, *_, **__):
-        # overrides dispatch behavior of ``Controlled``
+        # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
     # pylint: disable=too-many-function-args

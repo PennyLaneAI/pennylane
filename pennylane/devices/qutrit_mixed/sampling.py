@@ -15,22 +15,25 @@
 Code relevant for sampling a qutrit mixed state.
 """
 import functools
+
 import numpy as np
+
 import pennylane as qml
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
-    Shots,
-    SampleMeasurement,
-    SampleMP,
     CountsMP,
     ExpectationMP,
+    SampleMeasurement,
+    SampleMP,
+    Shots,
     VarianceMP,
 )
+from pennylane.ops import Sum
 from pennylane.typing import TensorLike
-from .utils import QUDIT_DIM, get_num_wires
-from .measure import measure
+
 from .apply_operation import apply_operation
+from .measure import measure
+from .utils import QUDIT_DIM, get_num_wires
 
 
 def _apply_diagonalizing_gates(
@@ -203,13 +206,15 @@ def _measure_sum_with_samples(
                 )
             )
 
-        if isinstance(mp.obs, Hamiltonian):
+        if isinstance(mp.obs, qml.ops.Hamiltonian):
             # If Hamiltonian apply coefficients
             return sum((c * res for c, res in zip(mp.obs.terms()[0], results)))
+
         return sum(results)
 
     if shots.has_partitioned_shots:
         return tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
+
     return _sum_for_single_shot(shots)
 
 
@@ -350,7 +355,7 @@ def measure_with_samples(
         TensorLike[Any]: Sample measurement results
     """
 
-    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (Hamiltonian, Sum)):
+    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (qml.ops.Hamiltonian, Sum)):
         measure_fn = _measure_sum_with_samples
     else:
         # measure with the usual method (rotate into the measurement basis)

@@ -25,19 +25,19 @@ from scipy.special import factorial as fac
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.devices.default_gaussian import (
-    fock_prob,
-    rotation,
-    squeezing,
-    quadratic_phase,
     beamsplitter,
-    two_mode_squeezing,
+    coherent_state,
     controlled_addition,
     controlled_phase,
-    vacuum_state,
-    coherent_state,
-    squeezed_state,
     displaced_squeezed_state,
+    fock_prob,
+    quadratic_phase,
+    rotation,
+    squeezed_state,
+    squeezing,
     thermal_state,
+    two_mode_squeezing,
+    vacuum_state,
 )
 from pennylane.wires import Wires
 

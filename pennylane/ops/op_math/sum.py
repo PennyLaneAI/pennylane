@@ -15,15 +15,17 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
-import warnings
+# pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
+
 import itertools
+import warnings
+from collections.abc import Iterable
 from copy import copy
 from typing import List
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, convert_to_opmath
-from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
@@ -207,23 +209,31 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
+    grad_method = "A"
 
     def _flatten(self):
         return tuple(self.operands), (self.grouping_indices,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        # pylint: disable=protected-access
-        new_op = cls(*data)
-        new_op._grouping_indices = metadata[0]
-        return new_op
+        return cls(*data, _grouping_indices=metadata[0])
 
     def __init__(
-        self, *operands: Operator, grouping_type=None, method="rlf", id=None, _pauli_rep=None
+        self,
+        *operands: Operator,
+        grouping_type=None,
+        method="rlf",
+        id=None,
+        _grouping_indices=None,
+        _pauli_rep=None,
     ):
         super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
 
-        self._grouping_indices = None
+        self._grouping_indices = _grouping_indices
+        if _grouping_indices is not None and grouping_type is not None:
+            raise ValueError(
+                "_grouping_indices and grouping_type cannot be specified at the same time."
+            )
         if grouping_type is not None:
             self.compute_grouping(grouping_type=grouping_type, method=method)
 
@@ -240,6 +250,32 @@ class Sum(CompositeOp):
             list[list[int]]: indices needed to form groups of commuting observables
         """
         return self._grouping_indices
+
+    @grouping_indices.setter
+    def grouping_indices(self, value):
+        """Set the grouping indices, if known without explicit computation, or if
+        computation was done externally. The groups are not verified.
+
+        Args:
+            value (list[list[int]]): List of lists of indexes of the observables in ``self.ops``. Each sublist
+                represents a group of commuting observables.
+        """
+        if value is None:
+            return
+
+        _, ops = self.terms()
+
+        if (
+            not isinstance(value, Iterable)
+            or any(not isinstance(sublist, Iterable) for sublist in value)
+            or any(i not in range(len(ops)) for sl in value for i in sl)
+        ):
+            raise ValueError(
+                f"The grouped index value needs to be a tuple of tuples of integers between 0 and the "
+                f"number of observables in the Sum; got {value}"
+            )
+        # make sure all tuples so can be hashable
+        self._grouping_indices = tuple(tuple(sublist) for sublist in value)
 
     def __str__(self):
         """String representation of the Sum."""
@@ -261,6 +297,8 @@ class Sum(CompositeOp):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         if self.pauli_rep is not None:
             coeffs_list = list(self.pauli_rep.values())
+            if len(coeffs_list) == 0:
+                return True
             if not math.is_abstract(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
@@ -287,8 +325,10 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
+        if self.pauli_rep:
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
         gen = (
-            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+            (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix(), op.wires)
             for op in self
         )
 
@@ -330,6 +370,7 @@ class Sum(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
+
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             new_rep = qml.pauli.PauliSentence()
             for operand_rep in operand_pauli_reps:
@@ -391,7 +432,6 @@ class Sum(CompositeOp):
 
         **Example**
 
-        >>> qml.operation.enable_new_opmath()
         >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
         >>> op.terms()
         ([0.5, 0.7, 1.5],
@@ -535,7 +575,10 @@ class Sum(CompositeOp):
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return sorted(list(map(str, wires)))[0], len(wires), str(op)
+            if not op.wires:
+                return ("", 0, str(op))
+            sorted_wires = sorted(list(map(str, wires)))[0]
+            return sorted_wires, len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 

@@ -14,12 +14,11 @@
 """
 This module contains the transform dispatcher and the transform container.
 """
+import copy
 import functools
 import os
-import copy
-import warnings
 import types
-
+import warnings
 from typing import Sequence
 
 import pennylane as qml
@@ -120,7 +119,7 @@ class TransformDispatcher:
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(obj, targs, tkwargs)
         # TODO: Remove with the previous device generation
-        if isinstance(obj, qml.Device):
+        if isinstance(obj, qml.devices.LegacyDevice):
             return self._old_device_transform(obj, targs, tkwargs)
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)

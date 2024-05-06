@@ -14,10 +14,11 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
+
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
+from pennylane.resource.error import ErrorOperation, SpectralNormError
 
 
 def _scalar(order):
@@ -61,7 +62,7 @@ def _recursive_expression(x, order, ops):
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
 
-class TrotterProduct(Operation):
+class TrotterProduct(ErrorOperation):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 
@@ -88,7 +89,7 @@ class TrotterProduct(Operation):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a linear combination
+        hamiltonian (Union[.Hamiltonian, .Sum, .SProd]): The Hamiltonian written as a linear combination
             of operators with known matrix exponentials.
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of Trotter steps to perform
@@ -126,11 +127,31 @@ class TrotterProduct(Operation):
 
     .. warning::
 
-        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
-        due to the order in which those observables are stored.
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
+        mathematically identical :class:`~.Hamiltonian` objects may undergo different time
+        evolutions due to the order in which those observables are stored. The order of observables
+        can be queried using the :meth:`~.Sum.terms` method.
+
+    .. warning::
+
+        ``TrotterProduct`` does not automatically simplify the input Hamiltonian, allowing
+        for a more fine-grained control over the decomposition but also risking an increased
+        runtime and number of gates required. Simplification can be performed manually by
+        applying :func:`~.simplify` to your Hamiltonian before using it in ``TrotterProduct``.
 
     .. details::
         :title: Usage Details
+
+        An *upper-bound* for the error in approximating time-evolution using this operator can be
+        computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different methods; the
+        "one-norm-bound" scaling method and the "commutator-bound" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
+
+        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+        >>> op.error(method="one-norm-bound")
+        SpectralNormError(8.039062500000003e-06)
+        >>> op.error(method="commutator-bound")
+        SpectralNormError(6.166666666666668e-06)
 
         This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
         of :class:`~.ApproxTimeEvolution` by taking the adjoint:
@@ -171,16 +192,19 @@ class TrotterProduct(Operation):
                 f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
             )
 
-        if isinstance(hamiltonian, (qml.Hamiltonian)):
+        if isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             coeffs, ops = hamiltonian.terms()
             if len(coeffs) < 2:
                 raise ValueError(
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
-
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = qml.dot(coeffs, ops)
 
         if isinstance(hamiltonian, SProd):
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = hamiltonian.simplify()
             if len(hamiltonian.terms()[0]) < 2:
                 raise ValueError(
@@ -206,6 +230,80 @@ class TrotterProduct(Operation):
             "check_hermitian": check_hermitian,
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
+
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["base"])
+        context.append(self)
+        return self
+
+    def error(
+        self, method: str = "commutator-bound", fast: bool = True
+    ):  # pylint: disable=arguments-differ
+        # pylint: disable=protected-access
+        r"""Compute an *upper-bound* on the spectral norm error for approximating the
+        time-evolution of the base Hamiltonian using the Suzuki-Trotter product formula.
+
+        The error in the Suzuki-Trotter product formula is defined as
+
+        .. math:: || \ e^{iHt} - \left [S_{m}(t / n)  \right ]^{n} \ ||,
+
+        Where the norm :math:`||\cdot||` is the spectral norm. This function supports two methods
+        from literature for upper-bounding the error, the "one-norm" error bound and the "commutator"
+        error bound.
+
+        **Example:**
+
+        The "one-norm" error bound can be computed by passing the kwarg :code:`method="one-norm-bound"`, and
+        is defined according to Section 2.3 (lemma 6, equation 22 and 23) of
+        `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
+
+        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+        >>> op.error(method="one-norm-bound")
+        SpectralNormError(8.039062500000003e-06)
+
+        The "commutator" error bound can be computed by passing the kwarg :code:`method="commutator-bound"`, and
+        is defined according to Appendix C (equation 189) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
+
+        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+        >>> op.error(method="commutator-bound")
+        SpectralNormError(6.166666666666668e-06)
+
+        Args:
+            method (str, optional): Options include "one-norm-bound" and "commutator-bound" and specify the
+                method with which the error is computed. Defaults to "commutator-bound".
+            fast (bool, optional): Uses more approximations to speed up computation. Defaults to True.
+
+        Raises:
+            ValueError: The method is not supported.
+
+        Returns:
+            SpectralNormError: The spectral norm error.
+        """
+        base_unitary = self.hyperparameters["base"]
+        t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
+
+        parameters = [t] + base_unitary.parameters
+        if any(
+            qml.math.get_interface(param) == "tensorflow" for param in parameters
+        ):  # TODO: Add TF support
+            raise TypeError(
+                "Calculating error bound for Tensorflow objects is currently not supported"
+            )
+
+        terms = base_unitary.operands
+        if method == "one-norm-bound":
+            return SpectralNormError(qml.resource.error._one_norm_error(terms, t, p, n, fast=fast))
+
+        if method == "commutator-bound":
+            return SpectralNormError(
+                qml.resource.error._commutator_error(terms, t, p, n, fast=fast)
+            )
+
+        raise ValueError(
+            f"The '{method}' method is not supported for computing the error. Please select a valid method for computing the error."
+        )
 
     def _flatten(self):
         """Serialize the operation into trainable and non-trainable components.

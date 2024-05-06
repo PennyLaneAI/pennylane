@@ -16,12 +16,11 @@ This package provides a wrapped version of autograd.numpy.random, such that
 it works with the PennyLane :class:`~.tensor` class.
 """
 import semantic_version
-
 from autograd.numpy import random as _random
 from numpy import __version__ as np_version
-from numpy.random import MT19937, PCG64, Philox, SFC64  # pylint: disable=unused-import
+from numpy.random import MT19937, PCG64, SFC64, Philox  # pylint: disable=unused-import
 
-from .wrapper import wrap_arrays, tensor_wrapper
+from .wrapper import tensor_wrapper, wrap_arrays
 
 wrap_arrays(_random.__dict__, globals())
 

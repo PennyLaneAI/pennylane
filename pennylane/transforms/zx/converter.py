@@ -14,15 +14,16 @@
 """Transforms for interacting with PyZX, framework for ZX calculus."""
 # pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments
 
-from functools import partial
-from typing import Sequence, Callable
 from collections import OrderedDict
+from functools import partial
+from typing import Callable, Sequence
+
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.transforms import transform
+from pennylane.transforms import TransformError, transform
 from pennylane.wires import Wires
 
 
@@ -256,9 +257,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
     # If it is a simple operation just transform it to a tape
     if not isinstance(tape, Operator):
         if not isinstance(tape, (qml.tape.QuantumScript, qml.QNode)) and not callable(tape):
-            raise OperationTransformError(
-                "Input is not an Operator, tape, QNode, or quantum function"
-            )
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
         return _to_zx_transform(tape, expand_measurements=expand_measurements)
 
     return to_zx(QuantumScript([tape]))

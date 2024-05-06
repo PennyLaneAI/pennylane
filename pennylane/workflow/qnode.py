@@ -18,15 +18,15 @@ This module contains the QNode class and qnode decorator.
 import copy
 import functools
 import inspect
+import logging
 import warnings
 from collections.abc import Sequence
-from typing import Union, Optional
-import logging
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
 
@@ -54,7 +54,7 @@ def _convert_to_interface(res, interface):
 
 # pylint: disable=protected-access
 def _get_device_shots(device) -> Shots:
-    if isinstance(device, Device):
+    if isinstance(device, qml.devices.LegacyDevice):
         if device._shot_vector:
             return Shots(device._raw_shot_sequence)
         return Shots(device.shots)
@@ -81,6 +81,24 @@ def _make_execution_config(
             "device_vjp"
         ],
     )
+
+
+def _to_qfunc_output_type(
+    results: qml.typing.Result, qfunc_output, has_partitioned_shots
+) -> qml.typing.Result:
+
+    if has_partitioned_shots:
+        return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
+
+    # Special case of single Measurement in a list
+    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
+        results = [results]
+
+    # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+        return results
+
+    return type(qfunc_output)(results)
 
 
 class QNode:
@@ -449,7 +467,7 @@ class QNode:
                 f"one of {SUPPORTED_INTERFACES}."
             )
 
-        if not isinstance(device, (Device, qml.devices.Device)):
+        if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
@@ -509,9 +527,9 @@ class QNode:
         self.gradient_kwargs = {}
         self._tape_cached = False
 
+        self._transform_program = qml.transforms.core.TransformProgram()
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
-        self._transform_program = qml.transforms.core.TransformProgram()
 
     def __copy__(self):
         copied_qnode = QNode.__new__(QNode)
@@ -574,8 +592,17 @@ class QNode:
             return
         if tape is None and shots:
             tape = qml.tape.QuantumScript([], [], shots=shots)
+
+        diff_method = self.diff_method
+        if (
+            self.device.name == "lightning.qubit"
+            and qml.metric_tensor in self.transform_program
+            and self.diff_method == "best"
+        ):
+            diff_method = "parameter-shift"
+
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
-            self._original_device, self.interface, self.diff_method, tape=tape
+            self._original_device, self.interface, diff_method, tape=tape
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})
 
@@ -631,7 +658,7 @@ class QNode:
         if diff_method == "best":
             return QNode.get_best_method(device, interface, tape=tape)
 
-        if isinstance(device, qml.Device):
+        if isinstance(device, qml.devices.LegacyDevice):
             # handled by device.supports_derivatives with new device interface
             if diff_method == "backprop":
                 return QNode._validate_backprop_method(device, interface, tape=tape)
@@ -696,6 +723,7 @@ class QNode:
         """
         config = _make_execution_config(None, "best")
         if isinstance(device, qml.devices.Device):
+
             if device.supports_derivatives(config, circuit=tape):
                 new_config = device.preprocess(config)[1]
                 return new_config.gradient_method, {}, device
@@ -969,25 +997,18 @@ class QNode:
         if old_interface == "auto":
             self.interface = "auto"
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+    def _execution_component(self, args: tuple, kwargs: dict, override_shots) -> qml.typing.Result:
+        """Construct the transform program and execute the tapes. Helper function for ``__call__``
 
-        old_interface = self.interface
-        if old_interface == "auto":
-            interface = qml.math.get_interface(*args, *list(kwargs.values()))
-            self._interface = INTERFACE_MAP[interface]
+        Args:
+            args (tuple): the arguments the QNode is called with
+            kwargs (dict): the keyword arguments the QNode is called with
+            override_shots : the shots to use for the execution.
 
-        if self._qfunc_uses_shots_arg:
-            override_shots = False
-        else:
-            if "shots" not in kwargs:
-                kwargs["shots"] = _get_device_shots(self._original_device)
-            override_shots = kwargs["shots"]
+        Returns:
+            Result
 
-        # construct the tape
-        self.construct(args, kwargs)
-
-        original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
-        self._update_gradient_fn(shots=override_shots, tape=self._tape)
+        """
 
         cache = self.execute_kwargs.get("cache", False)
         using_custom_cache = (
@@ -1005,6 +1026,15 @@ class QNode:
         else:
             config = None
             full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        has_mcm_support = (
+            any(isinstance(op, MidMeasureMP) for op in self._tape)
+            and hasattr(self.device, "capabilities")
+            and self.device.capabilities().get("supports_mid_measure", False)
+        )
+        if has_mcm_support:
+            full_transform_program.add_transform(qml.dynamic_one_shot)
+            override_shots = 1
+
         # Add the gradient expand to the program if necessary
         if getattr(self.gradient_fn, "expand_transform", False):
             full_transform_program.insert_front_transform(
@@ -1037,24 +1067,39 @@ class QNode:
         ):
             res = _convert_to_interface(res, self.interface)
 
-        # Special case of single Measurement in a list
-        if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
-            res = [res]
+        return _to_qfunc_output_type(
+            res, self._qfunc_output, self._tape.shots.has_partitioned_shots
+        )
 
-        # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-        if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
-            has_partitioned_shots = self.tape.shots.has_partitioned_shots
-            if has_partitioned_shots:
-                res = tuple(type(self._qfunc_output)(r) for r in res)
-            else:
-                res = type(self._qfunc_output)(res)
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
 
+        old_interface = self.interface
         if old_interface == "auto":
-            self._interface = "auto"
+            interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            self._interface = INTERFACE_MAP[interface]
 
-        self._update_original_device()
+        if self._qfunc_uses_shots_arg:
+            override_shots = False
+        else:
+            if "shots" not in kwargs:
+                kwargs["shots"] = _get_device_shots(self._original_device)
+            override_shots = kwargs["shots"]
 
-        _, self.gradient_kwargs, self.device = original_grad_fn
+        # construct the tape
+        self.construct(args, kwargs)
+
+        original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
+        self._update_gradient_fn(shots=override_shots, tape=self._tape)
+
+        try:
+            res = self._execution_component(args, kwargs, override_shots=override_shots)
+        finally:
+            if old_interface == "auto":
+                self._interface = "auto"
+
+            self._update_original_device()
+
+            _, self.gradient_kwargs, self.device = original_grad_fn
 
         return res
 

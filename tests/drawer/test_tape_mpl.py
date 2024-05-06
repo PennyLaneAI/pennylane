@@ -18,13 +18,13 @@ page in the developement guide.
 """
 # pylint: disable=protected-access, expression-not-assigned
 
-import pytest
 import numpy as np
-import pennylane as qml
+import pytest
 
+import pennylane as qml
 from pennylane.drawer import tape_mpl
-from pennylane.tape import QuantumScript
 from pennylane.ops.op_math import Controlled
+from pennylane.tape import QuantumScript
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -321,7 +321,7 @@ class TestSpecialGates:
         """Test MultiControlledX special call with provided control values."""
 
         with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values="0101")
+            qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values=[0, 1, 0, 1])
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)

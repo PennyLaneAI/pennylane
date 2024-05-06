@@ -14,9 +14,9 @@
 """Contains template for QDrift subroutine."""
 
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane.math import requires_grad, unwrap
-from pennylane.ops import Sum, SProd, Hamiltonian
+from pennylane.operation import Operation
+from pennylane.ops import Hamiltonian, LinearCombination, SProd, Sum
 
 
 @qml.QueuingManager.stop_recording()
@@ -149,7 +149,7 @@ class QDrift(Operation):
     ):
         r"""Initialize the QDrift class"""
 
-        if isinstance(hamiltonian, Hamiltonian):
+        if isinstance(hamiltonian, (Hamiltonian, LinearCombination)):
             coeffs, ops = hamiltonian.terms()
 
         elif isinstance(hamiltonian, Sum):
@@ -189,6 +189,11 @@ class QDrift(Operation):
             "decomposition": decomposition,
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
+
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["base"])
+        context.append(self)
+        return self
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -273,7 +278,7 @@ class QDrift(Operation):
         Returns:
             float: upper bound on the precision achievable using the QDrift protocol
         """
-        if isinstance(hamiltonian, Hamiltonian):
+        if isinstance(hamiltonian, (Hamiltonian, LinearCombination)):
             lmbda = qml.math.sum(qml.math.abs(hamiltonian.coeffs))
 
         elif isinstance(hamiltonian, Sum):

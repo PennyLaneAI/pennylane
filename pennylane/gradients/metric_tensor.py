@@ -15,10 +15,11 @@
 Contains the metric_tensor batch_transform which wraps multiple
 methods of computing the metric tensor.
 """
-from typing import Sequence, Callable
 import functools
-from functools import partial
 import warnings
+from functools import partial
+from typing import Callable, Sequence
+
 import numpy as np
 
 import pennylane as qml
@@ -469,19 +470,14 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
         # Create a quantum tape with all operations
         # prior to the parametrized layer, and the rotations
         # to measure in the basis of the parametrized layer generators.
-        with qml.queuing.AnnotatedQueue() as layer_q:
-            for op in queue:
-                # TODO: Maybe there are gates that do not affect the
-                # generators of interest and thus need not be applied.
-                qml.apply(op)
+        # TODO: Maybe there are gates that do not affect the
+        # generators of interest and thus need not be applied.
 
-            for o, param_in_argnum in zip(layer_obs, in_argnum_list[-1]):
-                if param_in_argnum:
-                    o.diagonalizing_gates()
+        for o, param_in_argnum in zip(layer_obs, in_argnum_list[-1]):
+            if param_in_argnum:
+                queue.extend(o.diagonalizing_gates())
 
-            qml.probs(wires=tape.wires)
-
-        layer_tape = qml.tape.QuantumScript.from_queue(layer_q)
+        layer_tape = qml.tape.QuantumScript(queue, [qml.probs(wires=tape.wires)], shots=tape.shots)
         metric_tensor_tapes.append(layer_tape)
 
     def processing_fn(probs):
@@ -573,7 +569,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
         ) from e
 
 
-def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
+def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
     r"""Obtain the tapes for the first term of all tensor entries
     belonging to an off-diagonal block.
 
@@ -610,23 +606,16 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
         for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds):
             gen_op_j = _get_gen_op(WrappedObj(diffed_op_j), allow_nonunitary, aux_wire)
 
-            with qml.queuing.AnnotatedQueue() as q:
-                # Initialize auxiliary wire
-                qml.Hadamard(wires=aux_wire)
-                # Apply backward cone of first layer
-                for op in layer_i.pre_ops:
-                    qml.apply(op)
-                # Controlled-generator operation of first diff'ed op
-                qml.apply(gen_op_i)
-                # Apply first layer and operations between layers
-                for op in ops_between_cgens:
-                    qml.apply(op)
-                # Controlled-generator operation of second diff'ed op
-                qml.apply(gen_op_j)
-                # Measure X on auxiliary wire
-                qml.expval(qml.X(aux_wire))
+            ops = [
+                qml.Hadamard(wires=aux_wire),
+                *layer_i.pre_ops,
+                gen_op_i,
+                *ops_between_cgens,
+                gen_op_j,
+            ]
+            new_tape = qml.tape.QuantumScript(ops, [qml.expval(qml.X(aux_wire))], shots=shots)
 
-            tapes.append(qml.tape.QuantumScript.from_queue(q))
+            tapes.append(new_tape)
             # Memorize to which metric entry this tape belongs
             ids.append((par_idx_i, par_idx_j))
 
@@ -707,7 +696,9 @@ def _metric_tensor_hadamard(
         block_sizes.append(len(layer_i.param_inds))
 
         for layer_j in layers[idx_i + 1 :]:
-            _tapes, _ids = _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire)
+            _tapes, _ids = _get_first_term_tapes(
+                layer_i, layer_j, allow_nonunitary, aux_wire, shots=tape.shots
+            )
             first_term_tapes.extend(_tapes)
             ids.extend(_ids)
 

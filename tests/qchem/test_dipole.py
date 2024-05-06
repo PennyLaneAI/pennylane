@@ -22,7 +22,7 @@ from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-from pennylane.operation import disable_new_opmath, enable_new_opmath
+from pennylane.operation import Tensor
 
 
 @pytest.mark.parametrize(
@@ -183,26 +183,25 @@ def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     r"""Test that dipole_moment returns the correct result."""
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-    d_ref = qml.Hamiltonian(coeffs, ops)
+    dops = [Tensor(*op) if isinstance(op, qml.ops.Prod) else op for op in map(qml.simplify, ops)]
+    d_ref = qml.Hamiltonian(coeffs, dops)
 
-    assert np.allclose(sorted(d.coeffs), sorted(d_ref.coeffs))
-    assert qml.Hamiltonian(np.ones(len(d.coeffs)), d.ops).compare(
-        qml.Hamiltonian(np.ones(len(d_ref.coeffs)), d_ref.ops)
+    d_coeff, d_ops = d.terms()
+    dref_coeff, dref_ops = d_ref.terms()
+
+    assert np.allclose(sorted(d_coeff), sorted(dref_coeff))
+    assert qml.Hamiltonian(np.ones(len(d_coeff)), d_ops).compare(
+        qml.Hamiltonian(np.ones(len(dref_coeff)), dref_ops)
     )
-
-    enable_new_opmath()
-    d_op_math = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-    disable_new_opmath()
-    d_ref_op_math = qml.dot(coeffs, ops)
-
     assert np.allclose(
-        qml.matrix(d_op_math, wire_order=[0, 1, 2, 3]),
-        qml.matrix(d_ref_op_math, wire_order=[0, 1, 2, 3]),
+        qml.matrix(d, wire_order=[0, 1, 2, 3]),
+        qml.matrix(d_ref, wire_order=[0, 1, 2, 3]),
     )
 
 
@@ -217,6 +216,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     r"""Test that the dipole moment is constructed properly with basis sets having different numbers
     of primitive Gaussian functions."""
@@ -229,8 +229,7 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha, basis_name="6-31g")
     args = [alpha]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-
-    assert isinstance(d, qml.Hamiltonian)
+    assert isinstance(d, (qml.Hamiltonian, qml.ops.Sum))
 
 
 @pytest.mark.parametrize(

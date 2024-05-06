@@ -19,29 +19,25 @@ from functools import partial
 import numpy as np
 import pytest
 from gate_data import (
+    CCZ,
+    CH,
     CNOT,
     CSWAP,
     CY,
     CZ,
-    CCZ,
-    CH,
+    ControlledPhaseShift,
     CRot3,
     CRotx,
     CRoty,
     CRotz,
     Toffoli,
-    ControlledPhaseShift,
 )
 from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError, Operation, Operator
-from pennylane.ops.op_math.controlled import (
-    Controlled,
-    ControlledOp,
-    ctrl,
-)
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
 from pennylane.tape.tape import expand_tape
 from pennylane.wires import Wires
@@ -462,12 +458,8 @@ class TestControlledMiscMethods:
 
         assert op.has_generator is False
 
-    @pytest.mark.parametrize("use_new_op_math", [True, False])
-    def test_generator(self, use_new_op_math):
+    def test_generator(self):
         """Test that the generator is a tensor product of projectors and the base's generator."""
-
-        if use_new_op_math:
-            qml.operation.enable_new_opmath()
 
         base = qml.RZ(-0.123, wires="a")
         control_values = [0, 1]
@@ -492,8 +484,32 @@ class TestControlledMiscMethods:
             expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
         )
 
-        if use_new_op_math:
-            qml.operation.disable_new_opmath()
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_generator_legacy_opmath(self):
+        """Test that the generator is a tensor product of projectors and the base's generator."""
+
+        base = qml.RZ(-0.123, wires="a")
+        control_values = [0, 1]
+        op = Controlled(base, ("b", "c"), control_values=control_values)
+
+        base_gen, base_gen_coeff = qml.generator(base, format="prefactor")
+        gen_tensor, gen_coeff = qml.generator(op, format="prefactor")
+
+        assert base_gen_coeff == gen_coeff
+
+        for wire, val in zip(op.control_wires, control_values):
+            ob = list(op for op in gen_tensor.operands if op.wires == qml.wires.Wires(wire))
+            assert len(ob) == 1
+            assert ob[0].data == ([val],)
+
+        ob = list(op for op in gen_tensor.operands if op.wires == base.wires)
+        assert len(ob) == 1
+        assert ob[0].__class__ is base_gen.__class__
+
+        expected = qml.exp(op.generator(), 1j * op.data[0])
+        assert qml.math.allclose(
+            expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
+        )
 
     def test_diagonalizing_gates(self):
         """Test that the Controlled diagonalizing gates is the same as the base diagonalizing gates."""

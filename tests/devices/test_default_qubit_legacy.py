@@ -17,10 +17,10 @@ Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 # pylint: disable=too-many-arguments,too-few-public-methods
 # pylint: disable=protected-access,cell-var-from-loop
 import cmath
-
+import copy
 import math
-
 from functools import partial
+
 import pytest
 
 import pennylane as qml
@@ -87,6 +87,35 @@ U_cswap = np.array(
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
+
+
+def test_qnode_native_mcm(mocker):
+    """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
+
+    class MCMDevice(DefaultQubitLegacy):
+        def apply(self, *args, **kwargs):
+            for op in args[0]:
+                if isinstance(op, qml.measurements.MidMeasureMP):
+                    kwargs["mid_measurements"][op] = 0
+
+        @classmethod
+        def capabilities(cls):
+            default_capabilities = copy.copy(DefaultQubitLegacy.capabilities())
+            default_capabilities["supports_mid_measure"] = True
+            return default_capabilities
+
+    dev = MCMDevice(wires=1, shots=100)
+    dev.operations.add("MidMeasureMP")
+    spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+
+    @qml.qnode(dev, interface=None, diff_method=None)
+    def func():
+        _ = qml.measure(0)
+        return qml.expval(op=qml.PauliZ(0))
+
+    res = func()
+    assert spy.call_count == 1
+    assert isinstance(res, float)
 
 
 def test_analytic_deprecation():
@@ -2349,7 +2378,8 @@ class TestHamiltonianSupport:
         # evaluated one expval per Pauli observable
         assert spy.call_count == 2
 
-    def test_error_hamiltonian_expval_finite_shots(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")  # only a problem for legacy opmath
+    def test_error_hamiltonian_expval_finite_shots_legacy_opmath(self):
         """Tests that the Hamiltonian is split for finite shots."""
         dev = qml.device("default.qubit.legacy", wires=2, shots=10)
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
@@ -2357,7 +2387,8 @@ class TestHamiltonianSupport:
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
             dev.expval(H)
 
-    def test_error_hamiltonian_expval_wrong_wires(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_error_hamiltonian_expval_wrong_wires_legacy_opmath(self):
         """Tests that expval fails if Hamiltonian uses non-device wires."""
         dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         H = qml.Hamiltonian([0.1, 0.2, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)])
@@ -2368,6 +2399,7 @@ class TestHamiltonianSupport:
         ):
             dev.expval(H)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_Hamiltonian_filtered_from_rotations(self, mocker):
         """Tests that the device does not attempt to get rotations for Hamiltonians."""
         dev = qml.device("default.qubit.legacy", wires=2, shots=10)

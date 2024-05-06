@@ -80,16 +80,17 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
-        if obs is not None and isinstance(obs, Tensor):
+        if obs is not None and isinstance(obs, (Tensor, qml.ops.Prod)):
             if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
                     "is not supported in circuit cutting"
                 )
-            for o in obs.obs:
-                m_ = m.__class__(obs=o)
 
+            for o in obs.operands if isinstance(obs, qml.ops.op_math.Prod) else obs.obs:
+                m_ = m.__class__(obs=o)
                 _add_operator_node(graph, m_, order, wire_latest_node)
+
         elif isinstance(m, SampleMP) and obs is None:
             for w in m.wires:
                 s_ = qml.sample(qml.Projector([1], wires=w))
@@ -202,7 +203,8 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
         if measurement_type is ExpectationMP:
             if len(observables) > 1:
-                measurements_from_graph.append(qml.expval(Tensor(*observables)))
+                prod_type = qml.prod if qml.operation.active_new_opmath() else Tensor
+                measurements_from_graph.append(qml.expval(prod_type(*observables)))
             else:
                 measurements_from_graph.append(qml.expval(obs))
 

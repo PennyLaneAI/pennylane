@@ -30,7 +30,13 @@ def hamiltonian_grad(tape, idx):
     # get position in queue
     queue_position = m_pos - len(tape.operations)
     new_measurements = list(tape.measurements)
-    new_measurements[queue_position] = qml.expval(op.ops[p_idx])
+
+    new_parameters = [0 * d for d in op.data]
+    new_parameters[p_idx] = qml.math.ones_like(op.data[p_idx])
+    new_obs = qml.ops.functions.bind_new_parameters(op, new_parameters)
+    new_obs = qml.simplify(new_obs)
+
+    new_measurements[queue_position] = qml.expval(new_obs)
 
     new_tape = qml.tape.QuantumScript(tape.operations, new_measurements, shots=tape.shots)
 
@@ -40,9 +46,7 @@ def hamiltonian_grad(tape, idx):
             res = results[0][queue_position]
             zeros = qml.math.zeros_like(res)
 
-            final = []
-            for i, _ in enumerate(tape.measurements):
-                final.append(res if i == queue_position else zeros)
+            final = [res if i == queue_position else zeros for i, _ in enumerate(tape.measurements)]
 
             return qml.math.expand_dims(qml.math.stack(final), 0)
 

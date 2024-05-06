@@ -15,17 +15,19 @@
 Unit tests for the get_unitary_matrix transform
 """
 # pylint: disable=too-few-public-methods,too-many-function-args
-from functools import reduce, partial
+from functools import partial, reduce
 from warnings import catch_warnings
 
 import pytest
-
-from gate_data import I, X, Y, Z, H, S, CNOT, Rotx as RX, Roty as RY
+from gate_data import CNOT, H, I
+from gate_data import Rotx as RX
+from gate_data import Roty as RY
+from gate_data import S, X, Y, Z
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.transforms import TransformError
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -548,7 +550,7 @@ class TestValidation:
     def test_invalid_argument(self):
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match="Input is not an Operator, tape, QNode, or quantum function",
         ):
             _ = qml.matrix(None)
@@ -563,13 +565,13 @@ class TestValidation:
         wires = [0, "b"]
 
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match=r"Wires in circuit \[1, 0\] are inconsistent with those in wire_order \[0, 'b'\]",
         ):
             qml.matrix(circuit, wire_order=wires)()
 
         with pytest.raises(
-            OperationTransformError,
+            TransformError,
             match=r"Wires in circuit \[0\] are inconsistent with those in wire_order \[1\]",
         ):
             qml.matrix(qml.PauliX(0), wire_order=[1])

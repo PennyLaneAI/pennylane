@@ -16,12 +16,12 @@ import contextlib
 
 # pylint: disable=import-outside-toplevel, too-few-public-methods
 import sys
-from typing import Union, TypeVar, Tuple
+from typing import Tuple, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox]
+_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
 
 class TensorLikeMETA(type):

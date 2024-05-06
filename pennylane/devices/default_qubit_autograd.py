@@ -15,7 +15,6 @@
 reference plugin.
 """
 from pennylane import numpy as pnp
-
 from pennylane.devices import DefaultQubitLegacy
 
 

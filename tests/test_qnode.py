@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
+import copy
+
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
-import copy
 from dataclasses import replace
-
 from functools import partial
 from typing import Callable, Tuple
 
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
-
 
 import pennylane as qml
 from pennylane import QNode
@@ -49,6 +48,8 @@ class CustomDevice(qml.devices.Device):
 
 
 class CustomDeviceWithDiffMethod(qml.devices.Device):
+    """A device that defines a derivative."""
+
     def execute(self, circuits, execution_config=None):
         return 0
 
@@ -79,6 +80,8 @@ def test_copy():
 
 
 class TestInitialization:
+    """Testing the initialization of the qnode."""
+
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""
 
@@ -927,6 +930,25 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == call_count  # once for each preprocessing
 
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
+    def test_dynamic_one_shot_if_mcm_unsupported(self, dev_name):
+        """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
+        does not support mid circuit measurements.
+        """
+        dev = qml.device(dev_name, wires=2, shots=100)
+
+        with pytest.raises(
+            TypeError,
+            match="does not support mid-circuit measurements natively, and hence it does not support the dynamic_one_shot transform.",
+        ):
+
+            @qml.transforms.dynamic_one_shot
+            @qml.qnode(dev)
+            def _():
+                qml.RX(1.23, 0)
+                ms = [qml.measure(0) for _ in range(10)]
+                return qml.probs(op=ms)
+
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
@@ -1347,6 +1369,8 @@ class TestShots:
 
 
 class TestTransformProgramIntegration:
+    """Tests for the integration of the transform program with the qnode."""
+
     def test_transform_program_modifies_circuit(self):
         """Test qnode integration with a transform that turns the circuit into just a pauli x."""
         dev = qml.device("default.qubit", wires=1)
@@ -1622,6 +1646,8 @@ class TestNewDeviceIntegration:
         """Test a device that has its own custom diff method."""
 
         class CustomDeviceWithDiffMethod2(qml.devices.DefaultQubit):
+            """A device with a custom derivative named hello."""
+
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
@@ -1844,3 +1870,21 @@ class TestTapeExpansion:
         ):
             x = pnp.array([0.5, 0.4, 0.3], requires_grad=True)
             circuit.construct([x], {})
+
+
+def test_resets_after_execution_error():
+    """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
+
+    # pylint: disable=too-few-public-methods
+    class BadOp(qml.operation.Operator):
+        """An operator that will cause an error during execution."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit(x):
+        BadOp(x, wires=0)
+        return qml.state()
+
+    with pytest.raises(qml.DeviceError):
+        circuit(qml.numpy.array(0.1))
+
+    assert circuit.interface == "auto"

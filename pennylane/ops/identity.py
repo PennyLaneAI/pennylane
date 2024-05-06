@@ -16,10 +16,11 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
+
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
+from pennylane.operation import AllWires, AnyWires, CVObservable, Operation
 
 
 class Identity(CVObservable, Operation):
@@ -412,4 +413,6 @@ class GlobalPhase(Operation):
         return [GlobalPhase(z * self.data[0], self.wires)]
 
     def generator(self):
+        # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
+        # it otherwise can't handle Identity with no wires, see PR #5194
         return qml.s_prod(-1, qml.I(self.wires))

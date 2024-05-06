@@ -15,13 +15,13 @@
 """Setup file for package installation."""
 # pylint: disable=unspecified-encoding, consider-using-with
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy",
+    "numpy<2.0",
     "scipy",
     "networkx",
     "rustworkx",
@@ -59,6 +59,7 @@ info = {
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
+            "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },

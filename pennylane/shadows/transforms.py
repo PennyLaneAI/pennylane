@@ -14,15 +14,16 @@
 """Classical shadow transforms"""
 
 import warnings
-from functools import reduce, partial
+from functools import partial, reduce
 from itertools import product
-from typing import Sequence, Callable
+from typing import Callable, Sequence
+
 import numpy as np
 
 import pennylane as qml
+from pennylane import transform
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane import transform
 
 
 @transform

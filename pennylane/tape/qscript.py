@@ -20,19 +20,14 @@ executed by a device.
 import contextlib
 import copy
 from collections import Counter
-from typing import List, Union, Optional, Sequence
+from typing import List, Optional, Sequence, Union
 
 import pennylane as qml
-from pennylane.measurements import (
-    MeasurementProcess,
-    ProbabilityMP,
-    StateMP,
-    Shots,
-)
-from pennylane.typing import TensorLike
-from pennylane.operation import Observable, Operator, Operation, _UNSET_BATCH_SIZE
+from pennylane.measurements import MeasurementProcess, ProbabilityMP, Shots, StateMP
+from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 _empty_wires = Wires([])
@@ -760,19 +755,8 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-
-        if isinstance(device, qml.devices.Device):
-            # MP.shape (called below) takes 2 arguments: `device` and `shots`.
-            # With the new device interface, shots are stored on tapes rather than the device
-            # TODO: refactor MP.shape to accept `wires` instead of device (not currently done
-            # because probs.shape uses device.cutoff)
-            shots = self.shots
-        else:
-            shots = (
-                Shots(device._raw_shot_sequence)
-                if device.shot_vector is not None
-                else Shots(device.shots)
-            )
+        shots = self.shots
+        # even with the legacy device interface, the shots on the tape will agree with the shots used by the device for the execution
 
         if len(shots.shot_vector) > 1 and self.batch_size is not None:
             raise NotImplementedError(
@@ -991,13 +975,14 @@ class QuantumScript:
         gate_sizes:
         {1: 4, 2: 2}
         """
+        # pylint: disable=protected-access
         if self._specs is None:
-            resources = qml.resource.resource._count_resources(
-                self
-            )  # pylint: disable=protected-access
+            resources = qml.resource.resource._count_resources(self)
+            algo_errors = qml.resource.error._compute_algo_error(self)
 
             self._specs = {
                 "resources": resources,
+                "errors": algo_errors,
                 "num_observables": len(self.observables),
                 "num_diagonalizing_gates": len(self.diagonalizing_gates),
                 "num_trainable_params": self.num_params,

@@ -14,21 +14,20 @@
 """Unit tests for measuring states in devices/qutrit_mixed."""
 
 from functools import reduce
+
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import math
-
-from pennylane.devices.qutrit_mixed import measure
+from pennylane import numpy as np
+from pennylane.devices.qutrit_mixed import apply_operation, create_initial_state, measure
 from pennylane.devices.qutrit_mixed.measure import (
-    apply_observable_einsum,
-    get_measurement_function,
     calculate_expval,
     calculate_expval_sum_of_terms,
-    calculate_reduced_density_matrix,
     calculate_probability,
+    calculate_reduced_density_matrix,
     calculate_variance,
+    get_measurement_function,
 )
 
 ml_frameworks_list = [
@@ -116,49 +115,6 @@ class TestMeasurementDispatch:
         """Check that the compute variance method is used when variance"""
         obs = qml.GellMann(0, 1)
         assert get_measurement_function(qml.var(obs)) is calculate_variance
-
-
-@pytest.mark.parametrize(
-    "obs",
-    [
-        qml.GellMann(2, 2),
-        qml.GellMann(1, 8),
-        qml.GellMann(0, 5),
-        (qml.GellMann(0, 5) @ qml.GellMann(1, 8)),
-    ],
-)
-@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestApplyObservableEinsum:
-    """Tests that observables are applied correctly for calculate expval method."""
-
-    num_qutrits = 3
-    dims = (3**num_qutrits, 3**num_qutrits)
-
-    def test_apply_observable_einsum(self, obs, three_qutrit_state, ml_framework):
-        """Tests that unbatched observables are applied correctly to a unbatched state."""
-        res = apply_observable_einsum(
-            obs, qml.math.asarray(three_qutrit_state, like=ml_framework), is_state_batched=False
-        )
-        expected = get_expanded_op_mult_state(obs, three_qutrit_state)
-        expected = expected.reshape([3] * (3 * 2))
-
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
-
-    def test_apply_observable_einsum_batched(self, obs, three_qutrit_batched_state, ml_framework):
-        """Tests that unbatched observables are applied correctly to a batched state."""
-        res = apply_observable_einsum(
-            obs,
-            qml.math.asarray(three_qutrit_batched_state, like=ml_framework),
-            is_state_batched=True,
-        )
-        expected = [
-            get_expanded_op_mult_state(obs, state).reshape([3] * (3 * 2))
-            for state in three_qutrit_batched_state
-        ]
-
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
 
 
 class TestMeasurements:
@@ -471,4 +427,177 @@ class TestBroadcasting:
         assert np.allclose(res, expected)
 
 
-# TODO TestSumOfTermsDifferentiability in future PR (with other differentiabilty tests)
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+class TestSumOfTermsDifferentiability:
+    x = 0.52
+
+    @staticmethod
+    def f(scale, coeffs, n_wires=5, offset=0.1):
+        """Function to differentiate that implements a circuit with a SumOfTerms operator"""
+        ops = [qml.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(n_wires)]
+        H = qml.Hamiltonian(
+            coeffs,
+            [
+                reduce(lambda x, y: x @ y, (qml.GellMann(i, 3) for i in range(n_wires))),
+                reduce(lambda x, y: x @ y, (qml.GellMann(i, 5) for i in range(n_wires))),
+            ],
+        )
+        state = create_initial_state(range(n_wires), like=math.get_interface(scale))
+        for op in ops:
+            state = apply_operation(op, state)
+        return measure(qml.expval(H), state)
+
+    @staticmethod
+    def expected(scale, coeffs, n_wires=5, offset=0.1, like="numpy"):
+        """Get the expected expval of the class' circuit."""
+        phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
+        cosines = math.cos(phase / 2) ** 2
+        sines = -math.sin(phase)
+        return coeffs[0] * qml.math.prod(cosines) + coeffs[1] * qml.math.prod(sines)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize(
+        "coeffs",
+        [
+            (qml.numpy.array(2.5), qml.numpy.array(6.2)),
+            (qml.numpy.array(2.5, requires_grad=False), qml.numpy.array(6.2, requires_grad=False)),
+        ],
+    )
+    def test_autograd_backprop(self, coeffs):
+        """Test that backpropagation derivatives work in autograd with
+        Hamiltonians using new and old math."""
+
+        x = qml.numpy.array(self.x)
+        out = self.f(x, coeffs)
+        expected_out = self.expected(x, coeffs)
+        assert qml.math.allclose(out, expected_out)
+
+        gradient = qml.grad(self.f)(x, coeffs)
+        expected_gradient = qml.grad(self.expected)(x, coeffs)
+        assert qml.math.allclose(expected_gradient, gradient)
+
+    @pytest.mark.autograd
+    def test_autograd_backprop_coeffs(self):
+        """Test that backpropagation derivatives work in autograd with
+        the coefficients of Hamiltonians using new and old math."""
+
+        coeffs = qml.numpy.array((2.5, 6.2), requires_grad=True)
+        gradient = qml.grad(self.f, argnum=1)(self.x, coeffs)
+        expected_gradient = qml.grad(self.expected)(self.x, coeffs)
+
+        assert len(gradient) == 2
+        assert qml.math.allclose(expected_gradient, gradient)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_jax_backprop(self, use_jit):
+        """Test that backpropagation derivatives work with jax with
+        Hamiltonians using new and old math."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        x = jax.numpy.array(self.x, dtype=jax.numpy.float64)
+        coeffs = (5.2, 6.7)
+        f = jax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
+
+        out = f(x, coeffs)
+        expected_out = self.expected(x, coeffs)
+        assert qml.math.allclose(out, expected_out)
+
+        gradient = jax.grad(f)(x, coeffs)
+        expected_gradient = jax.grad(self.expected)(x, coeffs)
+        assert qml.math.allclose(expected_gradient, gradient)
+
+    @pytest.mark.jax
+    def test_jax_backprop_coeffs(self):
+        """Test that backpropagation derivatives work with jax with
+        the coefficients of Hamiltonians using new and old math."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        coeffs = jax.numpy.array((5.2, 6.7), dtype=jax.numpy.float64)
+
+        gradient = jax.grad(self.f, argnums=1)(self.x, coeffs)
+        expected_gradient = jax.grad(self.expected, argnums=1)(self.x, coeffs)
+        assert len(gradient) == 2
+        assert qml.math.allclose(expected_gradient, gradient)
+
+    @pytest.mark.torch
+    def test_torch_backprop(self):
+        """Test that backpropagation derivatives work with torch with
+        Hamiltonians using new and old math."""
+        import torch
+
+        coeffs = [
+            torch.tensor(9.2, requires_grad=False, dtype=torch.float64),
+            torch.tensor(6.2, requires_grad=False, dtype=torch.float64),
+        ]
+
+        x = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
+        x2 = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
+        out = self.f(x, coeffs)
+        expected_out = self.expected(x2, coeffs, like="torch")
+        assert qml.math.allclose(out, expected_out)
+
+        out.backward()
+        expected_out.backward()
+        assert qml.math.allclose(x.grad, x2.grad)
+
+    @pytest.mark.torch
+    def test_torch_backprop_coeffs(self):
+        """Test that backpropagation derivatives work with torch with
+        the coefficients of Hamiltonians using new and old math."""
+        import torch
+
+        coeffs = torch.tensor((9.2, 6.2), requires_grad=True, dtype=torch.float64)
+        coeffs_expected = torch.tensor((9.2, 6.2), requires_grad=True, dtype=torch.float64)
+
+        x = torch.tensor(-0.289, requires_grad=False, dtype=torch.float64)
+        out = self.f(x, coeffs)
+        expected_out = self.expected(x, coeffs_expected, like="torch")
+        assert qml.math.allclose(out, expected_out)
+
+        out.backward()
+        expected_out.backward()
+        assert len(coeffs.grad) == 2
+        assert qml.math.allclose(coeffs.grad, coeffs_expected.grad)
+
+    @pytest.mark.tf
+    def test_tf_backprop(self):
+        """Test that backpropagation derivatives work with tensorflow with
+        Hamiltonians using new and old math."""
+        import tensorflow as tf
+
+        x = tf.Variable(self.x)
+        coeffs = [8.3, 5.7]
+
+        with tf.GradientTape() as tape1:
+            out = self.f(x, coeffs)
+
+        with tf.GradientTape() as tape2:
+            expected_out = self.expected(x, coeffs)
+
+        assert qml.math.allclose(out, expected_out)
+        gradient = tape1.gradient(out, x)
+        expected_gradient = tape2.gradient(expected_out, x)
+        assert qml.math.allclose(expected_gradient, gradient)
+
+    @pytest.mark.tf
+    def test_tf_backprop_coeffs(self):
+        """Test that backpropagation derivatives work with tensorflow with
+        the coefficients of Hamiltonians using new and old math."""
+        import tensorflow as tf
+
+        coeffs = tf.Variable([8.3, 5.7])
+
+        with tf.GradientTape() as tape1:
+            out = self.f(self.x, coeffs)
+
+        with tf.GradientTape() as tape2:
+            expected_out = self.expected(self.x, coeffs)
+
+        gradient = tape1.gradient(out, coeffs)
+        expected_gradient = tape2.gradient(expected_out, coeffs)
+        assert len(gradient) == 2
+        assert qml.math.allclose(expected_gradient, gradient)

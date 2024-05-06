@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Quantum natural gradient optimizer"""
+import pennylane as qml
+
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
 from pennylane import numpy as pnp
-
-import pennylane as qml
 from pennylane.utils import _flatten, unflatten
+
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -123,7 +124,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. seealso::
 
-        See the :ref:`quantum natural gradient example <quantum_natural_gradient>`
+        See the :doc:`quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`
         for more details on Fubini-Study metric tensor and this optimization class.
 
     Keyword Args:

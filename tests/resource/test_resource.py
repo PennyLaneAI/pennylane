@@ -14,15 +14,16 @@
 """
 Test base Resource class and its associated methods
 """
-from dataclasses import FrozenInstanceError
 from collections import defaultdict
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Operation
-from pennylane.tape import QuantumScript
-from pennylane.resource.resource import Resources, ResourcesOperation, _count_resources
 from pennylane.measurements import Shots
+from pennylane.operation import Operation
+from pennylane.resource.resource import Resources, ResourcesOperation, _count_resources
+from pennylane.tape import QuantumScript
 
 
 class TestResources:

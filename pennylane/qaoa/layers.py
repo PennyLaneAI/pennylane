@@ -31,7 +31,12 @@ def _diagonal_terms(hamiltonian):
     val = True
 
     for i in hamiltonian.ops:
-        obs = i.obs if isinstance(i, Tensor) else [i]
+        if isinstance(i, Tensor):
+            obs = i.obs
+        elif isinstance(i, qml.ops.Prod):
+            obs = i.operands
+        else:
+            obs = [i]
         for j in obs:
             if j.name not in ("PauliZ", "Identity"):
                 val = False
@@ -94,7 +99,7 @@ def cost_layer(gamma, hamiltonian):
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, qml.Hamiltonian):
+    if not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise ValueError(
             f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
@@ -156,7 +161,7 @@ def mixer_layer(alpha, hamiltonian):
         1: ──H───────────╰RXX(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, qml.Hamiltonian):
+    if not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise ValueError(
             f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )

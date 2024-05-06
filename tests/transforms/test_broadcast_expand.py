@@ -14,14 +14,15 @@
 """
 Unit tests for the ``broadcast_expand`` transform.
 """
-# pylint: disable=too-few-public-methods
-import pytest
 import numpy as np
+
+# pylint: disable=too-few-public-methods, unused-argument
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 
-
-dev = qml.device("default.qubit", wires=2)
+dev = qml.device("default.qubit", wires=2, seed=123)
 """Defines the device used for all tests"""
 
 
@@ -78,6 +79,8 @@ observables_and_exp_fns = [
 class TestBroadcastExpand:
     """Tests for the broadcast_expand transform"""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn):
@@ -112,6 +115,117 @@ class TestBroadcastExpand:
         expected = exp_fn(*params)
 
         assert qml.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
+    def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic):
+        """Test that expansion works as expected with shot vectors"""
+        ops = make_ops(*params)
+        expvals = [qml.expval(ob) for ob in obs]
+        shots = [20000, 20001]
+        tape = qml.tape.QuantumScript(ops, expvals, shots=shots)
+        assert tape.batch_size == size
+
+        tapes, fn = qml.transforms.broadcast_expand(tape)
+        assert len(tapes) == size
+        assert all(_tape.batch_size is None for _tape in tapes)
+
+        result = fn(qml.execute(tapes, dev, None))
+        expected = exp_fn(*params)
+
+        assert len(result) == len(shots)
+        for r in result:
+            assert qml.math.allclose(r, expected, atol=tol_stochastic, rtol=0)
+
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize(
+        "args, shapes",
+        [
+            ([{"op": qml.PauliZ(0)}, {"op": qml.PauliX(1)}], [2, 2]),
+            ([{"wires": 0}, {"wires": 1}], [2, 2]),
+            ([{"op": qml.PauliZ(0)}, {"wires": [0, 1]}], [2, 4]),
+        ],
+    )
+    def test_shot_vector_probs(self, params, size, args, shapes):
+        """Test that expansion works as expected with shot vectors"""
+        ops = make_ops(*params)
+        mps = [qml.probs(**a) for a in args]
+        shots = [10, 5, 4]
+        tape = qml.tape.QuantumScript(ops, mps, shots=shots)
+        assert tape.batch_size == size
+
+        tapes, fn = qml.transforms.broadcast_expand(tape)
+        assert len(tapes) == size
+        assert all(_tape.batch_size is None for _tape in tapes)
+
+        result = fn(qml.execute(tapes, dev, None))
+        assert len(result) == len(shots)
+        for r in result:
+            for i, _r in enumerate(r):
+                assert qml.math.shape(_r) == (size, shapes[i]) if size > 1 else (shapes[i],)
+
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize(
+        "args, shapes",
+        [
+            ([{"op": qml.PauliZ(0)}, {"op": qml.PauliX(1)}], [(), ()]),
+            ([{"wires": 0}, {"wires": 1}], [(), ()]),
+            ([{"op": qml.PauliZ(0)}, {"wires": [0, 1]}], [(), (2,)]),
+        ],
+    )
+    def test_shot_vector_sample(self, params, size, args, shapes):
+        """Test that expansion works as expected with shot vectors"""
+        ops = make_ops(*params)
+        mps = [qml.sample(**a) for a in args]
+        shots = [10, 5, 4]
+        tape = qml.tape.QuantumScript(ops, mps, shots=shots)
+        assert tape.batch_size == size
+
+        tapes, fn = qml.transforms.broadcast_expand(tape)
+        assert len(tapes) == size
+        assert all(_tape.batch_size is None for _tape in tapes)
+
+        result = fn(qml.execute(tapes, dev, None))
+        assert len(result) == len(shots)
+        for i, r in enumerate(result):
+            for j, _r in enumerate(r):
+                assert (
+                    qml.math.shape(_r) == (size, shots[i], *shapes[j])
+                    if size > 1
+                    else (shots[i], *shapes[j])
+                )
+
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize(
+        "args",
+        [
+            [{"op": qml.PauliZ(0)}, {"op": qml.PauliX(1)}],
+            [{"wires": 0}, {"wires": 1}],
+            [{"op": qml.PauliZ(0)}, {"wires": [0, 1]}],
+        ],
+    )
+    def test_shot_vector_counts(self, params, size, args):
+        """Test that expansion works as expected with shot vectors"""
+        ops = make_ops(*params)
+        mps = [qml.counts(**a) for a in args]
+        shots = [10, 5, 4]
+        tape = qml.tape.QuantumScript(ops, mps, shots=shots)
+        assert tape.batch_size == size
+
+        tapes, fn = qml.transforms.broadcast_expand(tape)
+        assert len(tapes) == size
+        assert all(_tape.batch_size is None for _tape in tapes)
+
+        result = fn(qml.execute(tapes, dev, None))
+        assert len(result) == len(shots)
+        for r in result:
+            for _r in r:
+                if size > 1:
+                    assert len(_r) == size
+                    assert all(isinstance(counts_dict, dict) for counts_dict in _r)
+                else:
+                    # TODO: Update broadcast_expand to unwrap counts dictionaries from 0-D numpy arrays
+                    assert isinstance(_r.item(), dict)
 
     def test_state_prep(self):
         """Test that expansion works for state preparations"""

@@ -16,9 +16,11 @@ Contains the TTN template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 def compute_indices(wires, n_block_wires):

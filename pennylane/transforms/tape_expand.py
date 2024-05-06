@@ -18,8 +18,8 @@ import contextlib
 
 import pennylane as qml
 from pennylane.operation import (
-    has_gen,
     gen_is_multi_term_hamiltonian,
+    has_gen,
     has_grad_method,
     has_nopar,
     has_unitary_gen,
@@ -435,14 +435,17 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
                 container.kwargs["max_expansion"] = decomp_depth
 
                 for cond in ["stopping_condition", "stopping_condition_shots"]:
-                    original_stopping_condition = container.kwargs[cond]
+                    # Devices that do not support native mid-circuit measurements
+                    # will not have "stopping_condition_shots".
+                    if cond in container.kwargs:
+                        original_stopping_condition = container.kwargs[cond]
 
-                    def stopping_condition(obj):
-                        if obj.name in custom_decomps or type(obj) in custom_decomps:
-                            return False
-                        return original_stopping_condition(obj)
+                        def stopping_condition(obj):
+                            if obj.name in custom_decomps or type(obj) in custom_decomps:
+                                return False
+                            return original_stopping_condition(obj)
 
-                    container.kwargs[cond] = stopping_condition
+                        container.kwargs[cond] = stopping_condition
 
                 break
 
@@ -499,7 +502,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
-    if isinstance(dev, qml.Device):
+    if isinstance(dev, qml.devices.LegacyDevice):
         original_custom_expand_fn = dev.custom_expand_fn
 
         # Create a new expansion function; stop at things that do not have

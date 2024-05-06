@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
+
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
@@ -111,7 +112,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         return ProbabilityMP(obs=op)
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
     if op is not None and not op.has_diagonalizing_gates:

@@ -25,13 +25,8 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.ops.qubit import (
-    RX as old_loc_RX,
-    MultiRZ as old_loc_MultiRZ,
-)
-
-from pennylane.ops.op_math.sprod import SProd
-
+from pennylane.ops.qubit import RX as old_loc_RX
+from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -129,7 +124,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     qml.PauliX(wires=0),
     qml.PauliZ(wires=0),
     qml.PauliY(wires=0),
-    qml.MultiControlledX(wires=[0, 1, 2], control_values="01"),
+    qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1]),
     qml.QubitSum(wires=[0, 1, 2]),
 ]
 
@@ -236,6 +231,7 @@ class TestOperations:
 
 
 class TestParameterFrequencies:
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not qml.operation.has_gen(op):
@@ -2974,12 +2970,13 @@ class TestPauliRot:
             ("IIIXYZ"),
         ],
     )
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_multirz_generator(self, pauli_word):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
         gen = op.generator()
 
-        assert isinstance(gen, SProd)
+        assert isinstance(gen, qml.Hamiltonian)
 
         if pauli_word[0] == "I":
             # this is the identity
@@ -2994,7 +2991,7 @@ class TestPauliRot:
             else:
                 expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
-        assert qml.equal(gen, qml.s_prod(-0.5, expected_gen))
+        assert qml.equal(gen, qml.Hamiltonian([-0.5], [expected_gen]))
 
     @pytest.mark.torch
     @pytest.mark.gpu
@@ -3016,7 +3013,8 @@ class TestPauliRot:
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
         assert qml.math.allclose(mat, exp)
 
-    def test_pauli_rot_generator(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_pauli_rot_generator_legacy_opmath(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
         op = qml.PauliRot(0.65, "ZY", wires=["a", 7])
@@ -3026,6 +3024,17 @@ class TestPauliRot:
         assert coeff == -0.5
         assert gen.operands[0].name == expected.obs[0].name
         assert gen.operands[1].wires == expected.obs[1].wires
+
+    @pytest.mark.usefixtures("use_new_opmath")
+    def test_pauli_rot_generator(self):
+        """Test that the generator of the PauliRot operation
+        is correctly returned."""
+        op = qml.PauliRot(0.65, "ZY", wires=["a", 7])
+        gen, coeff = qml.generator(op)
+        expected = qml.PauliZ("a") @ qml.PauliY(7)
+
+        assert coeff == -0.5
+        assert gen == expected
 
 
 class TestMultiRZ:
@@ -3178,18 +3187,19 @@ class TestMultiRZ:
         assert np.allclose(qml.jacobian(circuit)(angle), qml.jacobian(decomp_circuit)(angle))
 
     @pytest.mark.parametrize("qubits", range(3, 6))
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_multirz_generator(self, qubits, mocker):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.MultiRZ(0.3, wires=range(qubits))
         gen = op.generator()
 
-        assert isinstance(gen, SProd)
+        assert isinstance(gen, qml.Hamiltonian)
 
         expected_gen = qml.PauliZ(wires=0)
         for i in range(1, qubits):
             expected_gen = expected_gen @ qml.PauliZ(wires=i)
 
-        assert qml.equal(gen, qml.s_prod(-0.5, expected_gen))
+        assert qml.equal(gen, qml.Hamiltonian([-0.5], [expected_gen]))
 
         spy = mocker.spy(qml.utils, "pauli_eigs")
 

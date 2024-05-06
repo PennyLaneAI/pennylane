@@ -14,8 +14,10 @@
 """Functions to prepare a qutrit mixed state."""
 
 from typing import Iterable, Union
+
 import pennylane as qml
 from pennylane.operation import StatePrepBase
+
 from .utils import QUDIT_DIM
 
 

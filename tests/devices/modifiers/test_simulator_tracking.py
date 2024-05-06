@@ -16,7 +16,6 @@ Tests for qml.devices.modifiers.simulator_tracking.
 """
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
 import pennylane as qml
-
 from pennylane.devices.modifiers import simulator_tracking
 
 
@@ -44,7 +43,7 @@ def test_tracking_execute():
         out = dev.execute((tape1, tape2))
 
     assert out == ((0.0, 0.0), 0.0)
-    assert len(dev.tracker.history) == 6
+    assert len(dev.tracker.history) == 7
     assert dev.tracker.history["batches"] == [1]
     assert dev.tracker.history["simulations"] == [1, 1]
     assert dev.tracker.history["executions"] == [2, 2]

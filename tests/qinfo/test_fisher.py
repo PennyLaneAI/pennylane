@@ -14,16 +14,15 @@
 """
 Tests for the classical fisher information matrix in the pennylane.qinfo
 """
+import numpy as np
+
 # pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error, too-few-public-methods, bad-continuation
 import pytest
 
-import numpy as np
 import pennylane as qml
 import pennylane.numpy as pnp
-
-
 from pennylane.qinfo import classical_fisher, quantum_fisher
-from pennylane.qinfo.transforms import _make_probs, _compute_cfim
+from pennylane.qinfo.transforms import _compute_cfim, _make_probs
 
 
 class TestMakeProbs:
@@ -145,12 +144,19 @@ class TestIntegration:
         res = qml.qinfo.classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
 
-    def test_quantum_fisher_info(self):
+    @pytest.mark.parametrize(
+        "dev",
+        (
+            qml.device("default.qubit"),
+            qml.device("default.mixed", wires=3),
+            qml.device("lightning.qubit", wires=3),
+        ),
+    )
+    def test_quantum_fisher_info(self, dev):
         """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
 
         n_wires = 2
 
-        dev = qml.device("default.qubit", wires=n_wires)
         dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000)
 
         def qfunc(params):
@@ -444,8 +450,8 @@ class TestDiffCFIM:
     @pytest.mark.jax
     def test_diffability_jax(self):
         """Testing diffability with an analytic example for jax. The CFIM of this single qubit is constant, so the gradient should be zero."""
-        import jax.numpy as jnp
         import jax
+        import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -517,10 +523,10 @@ class TestDiffCFIM:
         """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
         Currently failing as (jax and autograd) and (torch and tf) are giving two different results.
         """
+        import jax
+        import jax.numpy as jnp
         import tensorflow as tf
         import torch
-        import jax.numpy as jnp
-        import jax
 
         dev = qml.device("default.qubit", wires=3)
 

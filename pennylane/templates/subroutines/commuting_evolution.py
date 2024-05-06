@@ -16,7 +16,7 @@ Contains the CommutingEvolution template.
 """
 # pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class CommutingEvolution(Operation):
@@ -117,15 +117,14 @@ class CommutingEvolution(Operation):
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
         # pylint: disable=import-outside-toplevel
-        from pennylane.gradients.general_shift_rules import (
-            generate_shift_rule,
-        )
+        from pennylane.gradients.general_shift_rules import generate_shift_rule
 
-        if not isinstance(hamiltonian, qml.Hamiltonian):
-            type_name = type(hamiltonian).__name__
-            raise TypeError(f"hamiltonian must be of type pennylane.Hamiltonian, got {type_name}")
+        if getattr(hamiltonian, "pauli_rep", None) is None:
+            raise TypeError(
+                f"hamiltonian must be a linear combination of pauli words. Got {hamiltonian}"
+            )
 
-        trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
+        trainable_hamiltonian = qml.math.requires_grad(hamiltonian.data)
         if frequencies is not None and not trainable_hamiltonian:
             c, s = generate_shift_rule(frequencies, shifts).T
             recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
@@ -140,16 +139,21 @@ class CommutingEvolution(Operation):
 
         super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
 
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["hamiltonian"])
+        context.append(self)
+        return self
+
     @staticmethod
     def compute_decomposition(
-        time, *coeffs, wires, hamiltonian, **kwargs
+        time, *_, wires, hamiltonian, **__
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         Args:
-            time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
+            *time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
                 variable
             wires (Any or Iterable[Any]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
@@ -164,11 +168,10 @@ class CommutingEvolution(Operation):
             list[.Operator]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
         return [qml.ApproxTimeEvolution(hamiltonian, time, 1)]
 
     def adjoint(self):
-        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)
+        hamiltonian = self.hyperparameters["hamiltonian"]
         time = self.parameters[0]
         frequencies = self.hyperparameters["frequencies"]
         shifts = self.hyperparameters["shifts"]

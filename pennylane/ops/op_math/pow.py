@@ -84,7 +84,7 @@ def pow(base, z=1, lazy=True, id=None):
     >>> qml.pow(qml.X(0), 2, lazy=False)
     I(0)
 
-    Lazy behavior can also be accessed via ``op ** z``.
+    Lazy behaviour can also be accessed via ``op ** z``.
 
     """
     if lazy:
@@ -177,7 +177,7 @@ class Pow(ScalarSymbolicOp):
         super().__init__(base, scalar=z, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+            if (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
                 self.batch_size is None
             ):
                 pr = base_pauli_rep
@@ -329,7 +329,7 @@ class Pow(ScalarSymbolicOp):
 
         See also :func:`~.generator`
         """
-        return qml.s_prod(self.z, self.base.generator(), lazy=False)
+        return self.z * self.base.generator()
 
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]

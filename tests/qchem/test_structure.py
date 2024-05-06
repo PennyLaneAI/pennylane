@@ -14,18 +14,19 @@
 """
 Unit tests for the functions of the structure module.
 """
+import functools as ft
+
 # pylint: disable=too-many-arguments
 import os
 import sys
-import functools as ft
 from unittest.mock import patch
+
 import pytest
 
 import pennylane as qml
-from pennylane import qchem
 from pennylane import numpy as np
+from pennylane import qchem
 from pennylane.templates.subroutines import UCCSD
-
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -216,20 +217,70 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
 
 
 @pytest.mark.parametrize(
-    ("electrons", "orbitals", "exp_state"),
+    ("electrons", "orbitals", "basis", "exp_state"),
+    # Obtained manually using Eqs (10, 14) of
+    # [`Tranter et al. Int. J. Quantum Chem. 115, 1431 (2015)
+    # <https://doi.org/10.1002/qua.24969>`_]
     [
-        (2, 5, np.array([1, 1, 0, 0, 0])),
-        (1, 5, np.array([1, 0, 0, 0, 0])),
-        (5, 5, np.array([1, 1, 1, 1, 1])),
+        (1, 1, "occupation_number", np.array([1])),
+        (2, 5, "occupation_number", np.array([1, 1, 0, 0, 0])),
+        (1, 5, "occupation_number", np.array([1, 0, 0, 0, 0])),
+        (5, 5, "occupation_number", np.array([1, 1, 1, 1, 1])),
+        (1, 1, "parity", np.array([1])),
+        (2, 5, "parity", np.array([1, 0, 0, 0, 0])),
+        (1, 5, "parity", np.array([1, 1, 1, 1, 1])),
+        (5, 5, "parity", np.array([1, 0, 1, 0, 1])),
+        (1, 1, "bravyi_kitaev", np.array([1])),
+        (2, 5, "bravyi_kitaev", np.array([1, 0, 0, 0, 0])),
+        (1, 5, "bravyi_kitaev", np.array([1, 1, 0, 1, 0])),
+        (5, 5, "bravyi_kitaev", np.array([1, 0, 1, 0, 1])),
     ],
 )
-def test_hf_state(electrons, orbitals, exp_state):
+def test_hf_state(electrons, orbitals, basis, exp_state):
     r"""Test the correctness of the generated occupation-number vector"""
 
-    res_state = qchem.hf_state(electrons, orbitals)
+    res_state = qchem.hf_state(electrons, orbitals, basis)
 
     assert len(res_state) == len(exp_state)
     assert np.allclose(res_state, exp_state)
+
+
+@pytest.mark.parametrize(
+    ("electrons", "symbols", "geometry", "charge"),
+    [
+        (2, ["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False), 0),
+        (
+            2,
+            ["H", "H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], requires_grad=False),
+            1,
+        ),
+    ],
+)
+def test_hf_state_basis(electrons, symbols, geometry, charge):
+    r"""Test the correctness of the generated HF state in a circuit."""
+
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    h_ferm = qchem.fermionic_hamiltonian(mol)()
+    qubits = len(h_ferm.wires)
+
+    state_occ = qchem.hf_state(electrons, qubits, basis="occupation_number")
+    state_parity = qchem.hf_state(electrons, qubits, basis="parity")
+    state_bk = qchem.hf_state(electrons, qubits, basis="bravyi_kitaev")
+
+    h_occ = qml.jordan_wigner(h_ferm, ps=True, tol=1e-16).hamiltonian()
+    h_parity = qml.parity_transform(h_ferm, qubits, ps=True, tol=1e-16).hamiltonian()
+    h_bk = qml.bravyi_kitaev(h_ferm, qubits, ps=True, tol=1e-16).hamiltonian()
+
+    dev = qml.device("default.qubit", wires=qubits)
+
+    @qml.qnode(dev)
+    def circuit(hf_state, h):
+        qml.BasisState(hf_state, wires=range(qubits))
+        return qml.expval(h)
+
+    assert circuit(state_occ, h_occ) == circuit(state_parity, h_parity)
+    assert circuit(state_occ, h_occ) == circuit(state_bk, h_bk)
 
 
 @pytest.mark.parametrize(

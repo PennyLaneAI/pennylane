@@ -17,14 +17,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import (
-    MeasurementProcess,
-    Probability,
-    ProbabilityMP,
-    Shots,
-)
+from pennylane.measurements import MeasurementProcess, Probability, ProbabilityMP, Shots
 from pennylane.queuing import AnnotatedQueue
-
 
 # make the test deterministic
 np.random.seed(42)

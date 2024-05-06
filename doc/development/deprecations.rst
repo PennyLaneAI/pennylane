@@ -9,6 +9,47 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+New operator arithmetic deprecations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The v0.36 release completes the main phase of PennyLane's switchover to an updated approach for handling
+arithmetic operations between operators, check out the :ref:`Updated operators <new_opmath>` page
+for more details. The old system is still accessible via :func:`~.disable_new_opmath`. However, the
+old system will be removed in an upcoming release and should be treated as deprecated. The following
+functionality will explicitly raise a deprecation warning when used:
+
+* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
+  :meth:`~.Operator.terms` instead.
+
+  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
+
+* Accessing ``qml.ops.Hamiltonian`` is deprecated because it points to the old version of the class
+  that may not be compatible with the new approach to operator arithmetic. Instead, using
+  ``qml.Hamiltonian`` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
+  ``qml.Hamiltonian`` with existing code without needing to make any changes.
+
+  - Use of ``qml.ops.Hamiltonian`` is deprecated in v0.36
+
+* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
+  A user should use :class:`op.operands <~.CompositeOp>` instead.
+
+  - Deprecated in v0.36
+
+Other deprecations
+~~~~~~~~~~~~~~~~~~
+
+* PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
+  
+  - Last supported version of ``manylinux2014`` with v0.36
+  - Fully migrated to ``manylinux_2_28`` with v0.37
+
+* ``MultiControlledX`` is the only controlled operation that still supports specifying control
+  values with a bit string. In the future, it will no longer accepts strings as control values.
+
+  - Deprecated in v0.36
+  - Will be removed in v0.37
+
 * ``qml.from_qasm_file`` is deprecated. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
 
   >>> with open("test.qasm", "r") as f:
@@ -24,27 +65,17 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
-* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
-  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
-  does not provide wires, or quantum functions.
+Completed deprecation cycles
+----------------------------
 
-  - Deprecated in v0.35
-  - Will raise an error in v0.36
-
-* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
-  deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
+  ``gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
+  ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
   to see how this can be done.
 
   - Deprecated in v0.34
-  - Will be removed in v0.36
-
-* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
-
-  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.36
 
 * ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
   but instead use ``@`` to conform with the PennyLane convention.
@@ -79,7 +110,7 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.36
 
-* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
   
   - Deprecated in v0.35
