@@ -123,11 +123,11 @@ time and can store tangents in place of the variables, we can use a batch of tap
 must be a non-pytree non-differenatible argument that accompanies the tree leaves.
 
 """
+import dataclasses
+
 # pylint: disable=unused-argument
 import logging
-from typing import Tuple, Callable
-
-import dataclasses
+from typing import Callable, Tuple
 
 import jax
 import jax.numpy as jnp

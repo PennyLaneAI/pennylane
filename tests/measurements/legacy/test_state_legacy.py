@@ -18,13 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubitLegacy
-from pennylane.measurements import (
-    State,
-    Shots,
-    density_matrix,
-    expval,
-    state,
-)
+from pennylane.measurements import Shots, State, density_matrix, expval, state
 
 
 class TestState:

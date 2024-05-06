@@ -24,9 +24,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-
 from pennylane.wires import Wires
-
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [

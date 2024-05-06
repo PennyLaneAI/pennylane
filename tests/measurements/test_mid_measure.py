@@ -14,11 +14,12 @@
 """Unit tests for the mid_measure module"""
 
 from itertools import product
+
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MidMeasureMP, MeasurementValue
+from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
@@ -503,3 +504,98 @@ class TestMeasurementCompositeValueManipulation:
         division_dunder = getattr(m0, div)
         res = division_dunder(other)
         assert isinstance(res, MeasurementValue)
+
+
+class TestMeasurementValueItems:
+    """Test that a MeasurementValue returns its items correctly."""
+
+    # pylint: disable=protected-access
+
+    funcs_and_expected_single = [
+        ((lambda v: v), [0, 1]),
+        ((lambda v: 1 - v), [1, 0]),
+    ]
+
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    @pytest.mark.parametrize("func, expected", funcs_and_expected_single)
+    def test_items_single_mp(self, func, expected, postselect):
+        """Test the full items. Note that postselect should not affect the
+        output at all."""
+        mp = MidMeasureMP(0, postselect=postselect)
+        mv = MeasurementValue([mp], func)
+        items = list(mv._items())
+        assert items == [((0,), expected[0]), ((1,), expected[1])]
+
+    funcs_and_expected_multi = [
+        ((lambda *v: sum(v) == 1), [0, 1, 1, 0, 1, 0, 0, 0]),
+        ((lambda *v: v[0]), [0, 0, 0, 0, 1, 1, 1, 1]),
+    ]
+
+    @pytest.mark.parametrize("func, expected", funcs_and_expected_multi)
+    def test_items_multiple_mps(self, func, expected):
+        """Test the full items."""
+        MP0 = MidMeasureMP(0)
+        MP1 = MidMeasureMP(1)
+        MP2 = MidMeasureMP(2)
+        branches3 = [
+            (0, 0, 0),
+            (0, 0, 1),
+            (0, 1, 0),
+            (0, 1, 1),
+            (1, 0, 0),
+            (1, 0, 1),
+            (1, 1, 0),
+            (1, 1, 1),
+        ]
+        mv = MeasurementValue([MP0, MP1, MP2], func)
+        items = list(mv._items())
+        assert len(items) == len(branches3) == len(expected)
+        for item, branch, exp in zip(items, branches3, expected):
+            assert item == (branch, exp)
+
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    @pytest.mark.parametrize("func, expected", funcs_and_expected_single)
+    def test_postselected_items_single_mp(self, postselect, func, expected):
+        """Test the full items."""
+        mp = MidMeasureMP(0, postselect=postselect)
+        mv = MeasurementValue([mp], func)
+        items = list(mv._postselected_items())
+        if postselect is None:
+            assert items == [((0,), expected[0]), ((1,), expected[1])]
+        else:
+            all_items = [((), expected[0]), ((), expected[1])]
+            assert items == [all_items[postselect]]
+
+    branches3 = [
+        (0, 0, 0),
+        (0, 0, 1),
+        (0, 1, 0),
+        (0, 1, 1),
+        (1, 0, 0),
+        (1, 0, 1),
+        (1, 1, 0),
+        (1, 1, 1),
+    ]
+
+    postselects_and_branches = [
+        ((None, 1, None), [(0, 1, 0), (0, 1, 1), (1, 1, 0), (1, 1, 1)]),
+        ((None, 1, 0), [(0, 1, 0), (1, 1, 0)]),
+        ((1, 1, 1), [(1, 1, 1)]),
+        ((0, None, None), [(0, 0, 0), (0, 0, 1), (0, 1, 0), (0, 1, 1)]),
+        ((None, None, None), branches3),
+    ]
+
+    @pytest.mark.parametrize("postselects, branches", postselects_and_branches)
+    @pytest.mark.parametrize("func, expected", funcs_and_expected_multi)
+    def test_postselected_items_multiple_mps(self, func, expected, postselects, branches):
+        """Test the full items."""
+        MP0 = MidMeasureMP(0, postselect=postselects[0])
+        MP1 = MidMeasureMP(1, postselect=postselects[1])
+        MP2 = MidMeasureMP(2, postselect=postselects[2])
+
+        mv = MeasurementValue([MP0, MP1, MP2], func)
+        items = list(mv._postselected_items())
+        assert len(items) == len(branches)
+        for item, branch in zip(items, branches):
+            pruned_branch = tuple(b for i, b in enumerate(branch) if postselects[i] is None)
+            assert item == (pruned_branch, expected[self.branches3.index(branch)])

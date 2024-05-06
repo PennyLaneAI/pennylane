@@ -16,10 +16,12 @@ Tests for the Grover Diffusion Operator template
 """
 import functools
 import itertools
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane.ops import Hadamard, PauliZ, MultiControlledX
+from pennylane.ops import Hadamard, MultiControlledX, PauliZ
 
 
 def test_repr():

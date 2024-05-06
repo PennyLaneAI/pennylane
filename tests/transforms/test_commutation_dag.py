@@ -15,10 +15,12 @@
 Unit tests for CommutationDAG
 """
 from collections import OrderedDict
+
 import pytest
-from pennylane.wires import Wires
-import pennylane.numpy as np
+
 import pennylane as qml
+import pennylane.numpy as np
+from pennylane.wires import Wires
 
 
 class TestCommutationDAG:

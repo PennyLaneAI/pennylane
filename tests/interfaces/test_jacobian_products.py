@@ -14,20 +14,20 @@
 """
 Tests for the jacobian product calculator classes.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
 from cachetools import LRUCache
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.workflow.jacobian_products import (
-    JacobianProductCalculator,
-    TransformJacobianProducts,
     DeviceDerivatives,
     DeviceJacobianProducts,
+    JacobianProductCalculator,
     LightningVJPs,
+    TransformJacobianProducts,
 )
 
 dev = qml.device("default.qubit")

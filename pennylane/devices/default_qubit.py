@@ -15,39 +15,40 @@
 The default.qubit device is PennyLane's standard qubit-based device.
 """
 
-from dataclasses import replace
-from functools import partial
-from numbers import Number
-from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
 import inspect
 import logging
+from dataclasses import replace
+from functools import partial
+from numbers import Number
+from typing import Callable, Optional, Sequence, Tuple, Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import Conditional
 from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumTape
-from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
-from .modifiers import single_tape_support, simulator_tracking
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     mid_circuit_measurements,
-    validate_observables,
+    no_sampling,
+    validate_adjoint_trainable_params,
+    validate_device_wires,
     validate_measurements,
     validate_multiprocessing_workers,
-    validate_device_wires,
-    validate_adjoint_trainable_params,
-    no_sampling,
+    validate_observables,
 )
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 from .qubit.sampling import jax_random_split
-from .qubit.simulate import simulate, get_final_state, measure_final_state
-from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+from .qubit.simulate import get_final_state, measure_final_state, simulate
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -489,11 +490,7 @@ class DefaultQubit(Device):
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
-        This device:
-
-        * Supports any qubit operations that provide a matrix
-        * Currently does not support finite shots
-        * Currently does not intrinsically support parameter broadcasting
+        This device supports any qubit operations that provide a matrix
 
         """
         config = self._setup_execution_config(execution_config)
@@ -591,29 +588,29 @@ class DefaultQubit(Device):
             if execution_config.gradient_method in {"backprop", None}
             else None
         )
+        prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
+
         if max_workers is None:
             return tuple(
-                simulate(
+                _simulate_wrapper(
                     c,
-                    rng=self._rng,
-                    prng_key=self.get_prng_keys()[0],
-                    debugger=self._debugger,
-                    interface=interface,
-                    state_cache=self._state_cache,
+                    {
+                        "rng": self._rng,
+                        "debugger": self._debugger,
+                        "interface": interface,
+                        "state_cache": self._state_cache,
+                        "prng_key": _key,
+                    },
                 )
-                for c in circuits
+                for c, _key in zip(circuits, prng_keys)
             )
 
         vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-        _wrap_simulate = partial(simulate, debugger=None, interface=interface)
+        simulate_kwargs = [{"rng": _rng, "prng_key": _key} for _rng, _key in zip(seeds, prng_keys)]
+
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            exec_map = executor.map(
-                _wrap_simulate,
-                vanilla_circuits,
-                seeds,
-                self.get_prng_keys(num=len(vanilla_circuits)),
-            )
+            exec_map = executor.map(_simulate_wrapper, vanilla_circuits, simulate_kwargs)
             results = tuple(exec_map)
 
         # reset _rng to mimic serial behaviour
@@ -839,6 +836,10 @@ class DefaultQubit(Device):
                 )
 
         return tuple(zip(*results))
+
+
+def _simulate_wrapper(circuit, kwargs):
+    return simulate(circuit, **kwargs)
 
 
 def _adjoint_jac_wrapper(c, debugger=None):

@@ -17,11 +17,11 @@ from functools import partial
 from typing import Callable, Sequence
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy, DefaultMixed
-from pennylane.measurements import StateMP, DensityMatrixMP
-from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane import transform
+from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
+from pennylane.gradients import adjoint_metric_tensor, metric_tensor
+from pennylane.measurements import DensityMatrixMP, StateMP
+from pennylane.tape import QuantumTape
 
 
 @partial(transform, final_transform=True)
@@ -312,6 +312,42 @@ def _vn_entropy_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
+def _bipartite_qinfo_transform(
+    transform_func: Callable,
+    tape: QuantumTape,
+    wires0: Sequence[int],
+    wires1: Sequence[int],
+    base: float = None,
+    **kwargs,
+):
+
+    # device_wires is provided by the custom QNode transform
+    all_wires = kwargs.get("device_wires", tape.wires)
+    wire_map = {w: i for i, w in enumerate(all_wires)}
+    indices0 = [wire_map[w] for w in wires0]
+    indices1 = [wire_map[w] for w in wires1]
+
+    # Check measurement
+    measurements = tape.measurements
+    if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+        raise ValueError("The qfunc return type needs to be a state.")
+
+    def processing_fn(res):
+        # device is provided by the custom QNode transform
+        device = kwargs.get("device", None)
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
+
+        density_matrix = (
+            res[0]
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
+            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
+        )
+        entropy = transform_func(density_matrix, indices0, indices1, base=base, c_dtype=c_dtype)
+        return entropy
+
+    return [tape], processing_fn
+
+
 @partial(transform, final_transform=True)
 def mutual_info(
     tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
@@ -365,33 +401,7 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
-    # device_wires is provided by the custom QNode transform
-    all_wires = kwargs.get("device_wires", tape.wires)
-    wire_map = {w: i for i, w in enumerate(all_wires)}
-    indices0 = [wire_map[w] for w in wires0]
-    indices1 = [wire_map[w] for w in wires1]
-
-    # Check measurement
-    measurements = tape.measurements
-    if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
-        raise ValueError("The qfunc return type needs to be a state.")
-
-    def processing_fn(res):
-        # device is provided by the custom QNode transform
-        device = kwargs.get("device", None)
-        c_dtype = getattr(device, "C_DTYPE", "complex128")
-
-        density_matrix = (
-            res[0]
-            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
-            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
-        )
-        entropy = qml.math.mutual_info(
-            density_matrix, indices0, indices1, base=base, c_dtype=c_dtype
-        )
-        return entropy
-
-    return [tape], processing_fn
+    return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
 @mutual_info.custom_qnode_transform
@@ -410,6 +420,42 @@ def _mutual_info_qnode(self, qnode, targs, tkwargs):
     tkwargs.setdefault("device", qnode.device)
     tkwargs.setdefault("device_wires", qnode.device.wires)
     return self.default_qnode_transform(qnode, targs, tkwargs)
+
+
+@partial(transform, final_transform=True)
+def vn_entanglement_entropy(
+    tape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
+):
+    r"""Compute the Von Neumann entanglement entropy from a circuit returning a :func:`~pennylane.state`:
+
+    .. math::
+
+        S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
+
+    where :math:`S` is the von Neumann entropy; :math:`\rho_A = \text{Tr}_B [\rho_{AB}]` and
+    :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
+
+    The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
+    two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
+    Von Neumann entropy of the reduced density matrix for any of the subsystems. If it is non-zero,
+    it indicates the two subsystems are entangled.
+
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
+        wires0 (Sequence(int)): List of wires in the first subsystem.
+        wires1 (Sequence(int)): List of wires in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the entanglement entropy in the form of a tensor.
+
+    """
+    return _bipartite_qinfo_transform(
+        qml.math.vn_entanglement_entropy, tape, wires0, wires1, base, **kwargs
+    )
 
 
 # TODO: create qml.math.jacobian and replace it here

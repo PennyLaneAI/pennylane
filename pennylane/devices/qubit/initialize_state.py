@@ -16,6 +16,7 @@
 from typing import Iterable, Union
 
 import numpy as np
+
 import pennylane as qml
 
 

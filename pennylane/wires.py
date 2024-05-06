@@ -17,7 +17,9 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 import functools
 import itertools
 from collections.abc import Iterable, Sequence
+
 import numpy as np
+
 from pennylane.pytrees import register_pytree
 
 

@@ -16,14 +16,14 @@ Tests for mitigation transforms.
 """
 # pylint:disable=no-self-use
 from functools import partial
-import pytest
 
+import pytest
 from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumScript
-from pennylane.transforms import mitigate_with_zne, richardson_extrapolate, fold_global
+from pennylane.transforms import fold_global, mitigate_with_zne, richardson_extrapolate
 
 with qml.queuing.AnnotatedQueue() as q_tape:
     qml.BasisState([1], wires=0)
@@ -320,8 +320,8 @@ class TestMitiqIntegration:
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
         set not equal to 1"""
-        from mitiq.zne.scaling import fold_gates_at_random
         from mitiq.zne.inference import RichardsonFactory
+        from mitiq.zne.scaling import fold_gates_at_random
 
         noise_strength = 0.05
 

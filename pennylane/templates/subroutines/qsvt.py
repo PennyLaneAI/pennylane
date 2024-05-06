@@ -16,12 +16,14 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.queuing import QueuingManager
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
-from pennylane.operation import AnyWires, Operation
+from pennylane.queuing import QueuingManager
 
 
 def qsvt(A, angles, wires, convention=None):
@@ -418,7 +420,9 @@ class QSVT(Operation):
         UA = kwargs["UA"]
         projectors = kwargs["projectors"]
 
-        with QueuingManager.stop_recording():  # incase this method is called in a queue context, this prevents
+        with (
+            QueuingManager.stop_recording()
+        ):  # incase this method is called in a queue context, this prevents
             UA_copy = copy.copy(UA)  # us from queuing operators unnecessarily
 
             for idx, op in enumerate(projectors[:-1]):
