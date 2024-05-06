@@ -778,8 +778,17 @@ def test_molecule_as_kwargs(tmpdir):
     keyword argument
     """
 
-    molecule = qchem.Molecule(test_symbols, test_coordinates, )
-    built_hamiltonian, qubits = qchem.molecular_hamiltonian(molecule=molecule, method="pyscf", active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath)
+    molecule = qchem.Molecule(
+        test_symbols,
+        test_coordinates,
+    )
+    built_hamiltonian, qubits = qchem.molecular_hamiltonian(
+        molecule=molecule,
+        method="pyscf",
+        active_electrons=2,
+        active_orbitals=2,
+        outpath=tmpdir.strpath,
+    )
 
     if active_new_opmath():
         assert not isinstance(built_hamiltonian, qml.Hamiltonian)
