@@ -141,8 +141,8 @@ class AllSinglesDoubles(Operation):
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
-        # convert hf_state to numpy array in case it is a list
-        hf_state = np.array(hf_state) if isinstance(hf_state, list) else hf_state
+        # convert hf_state to numpy array in case it is a list or a tuple
+        hf_state = np.array(hf_state) if isinstance(hf_state, (list, tuple)) else hf_state
 
         if hf_state[0].dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
