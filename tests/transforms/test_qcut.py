@@ -301,6 +301,37 @@ def test_node_ids(monkeypatch):
         assert pn.id == "some_string"
 
 
+@pytest.mark.parametrize("cls", [qcut.MeasureNode, qcut.PrepareNode])
+class TestMeasurePrepareNodes:
+    """Tests for the MeasureNode and PrepareNode classes."""
+
+    def test_initialization(self, cls):
+        """Test that nodes can be initialized with wires."""
+        n = cls(wires=0)
+        assert n.wires == qml.wires.Wires(0)
+        n = cls(0)
+        assert n.wires == qml.wires.Wires(0)
+        with pytest.raises(TypeError, match="got multiple values for argument 'wires'"):
+            cls(0.5, wires=0)
+
+    def test_id(self, cls):
+        """Test that nodes can be initialized with an id or recieves its own UUID."""
+        n = cls(wires=0, id="hi")
+        assert n.id == "hi"
+        n = cls(wires=0, id=None)
+        assert n.id is not None
+        n2 = cls(wires=0, id=None)
+        assert n.id != n2.id
+
+    @pytest.mark.parametrize("decimals", [0, 1, 5])
+    @pytest.mark.parametrize("base_label", [None, "CustomNode"])
+    def test_label(self, cls, decimals, base_label):
+        """Test the label."""
+        expected_base_label = base_label or cls.__name__
+        n = cls(wires=0)
+        assert n.label(decimals=decimals, base_label=base_label) == expected_base_label
+
+
 class TestTapeToGraph:
     """
     Tests conversion of tapes to graph representations that are amenable to
