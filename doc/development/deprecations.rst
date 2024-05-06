@@ -58,15 +58,15 @@ Other deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
+Completed deprecation cycles
+----------------------------
+
 * The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
-  libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
+  libraries. It has been deprecated in favour of the more specific functions ``from_qiskit``,
   ``from_qasm``, etc.
 
   - Deprecated in v0.36
-  - Will be removed in v0.37
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.37
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
   ``gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
