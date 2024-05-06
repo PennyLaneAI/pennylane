@@ -515,43 +515,6 @@ def from_qasm(quantum_circuit: str):
     return plugin_converter(quantum_circuit)
 
 
-def from_qasm_file(qasm_filename: str):
-    """Loads quantum circuits from a QASM file using the converter in the
-    PennyLane-Qiskit plugin.
-
-    **Example:**
-
-    >>> my_circuit = qml.from_qasm_file("hadamard_circuit.qasm")
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
-
-    Args:
-        qasm_filename (str): path to a QASM file containing a valid quantum circuit
-
-    Returns:
-        function: the PennyLane template created based on the QASM file
-
-    .. warning::
-        qml.from_qasm_file is deprecated and will be removed in a future release.
-        Please use qml.from_qasm instead.
-
-    """
-    warnings.warn(
-        "qml.from_qasm_file is deprecated and will be removed in a future release. "
-        "Please use qml.from_qasm instead.",
-        qml.PennyLaneDeprecationWarning,
-    )
-    plugin_converter = plugin_converters["qasm_file"].load()
-    return plugin_converter(qasm_filename)
-
-
 def from_pyquil(pyquil_program):
     """Loads pyQuil Program objects by using the converter in the
     PennyLane-Rigetti plugin.
