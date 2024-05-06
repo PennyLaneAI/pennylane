@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify
 from pennylane.qchem.molecule import Molecule
+from .basis_data import atomic_numbers
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -1032,11 +1033,16 @@ def _molecular_hamiltonian(
             raise ValueError(
                 "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
             )
-        if mult != 1:
+        nuclear_charges = [atomic_numbers[s] for s in symbols]
+
+        n_electrons = sum(nuclear_charges) - charge
+
+        if n_electrons % 2 == 1 or mult != 1:
             raise ValueError(
                 "Openshell systems are not supported for the differentiable workflow. Use "
                 "`method = 'pyscf'` or change the charge or spin multiplicity of the molecule."
             )
+
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(

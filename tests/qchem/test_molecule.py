@@ -47,17 +47,6 @@ class TestMolecule:
             qchem.Molecule(symbols, geometry, basis_name="6-3_1_g")
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "charge", "mult"),
-        [
-            (["H", "He"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 0, 2),
-        ],
-    )
-    def test_openshell_error(self, symbols, geometry, charge, mult):
-        r"""Test that an error is raised if the molecule has unpaired electrons."""
-        with pytest.raises(ValueError, match="Openshell systems are not supported"):
-            qchem.Molecule(symbols, geometry, charge=charge, mult=mult)
-
-    @pytest.mark.parametrize(
         ("symbols", "geometry"),
         [
             (["H", "Og"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),

@@ -116,6 +116,8 @@ def test_building_hamiltonian(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
+        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER"),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
@@ -661,6 +663,10 @@ def test_diff_hamiltonian_error_molecule_class(symbols, geometry):
     ):
         qchem.molecular_hamiltonian(molecule, method="psi4")
 
+    with pytest.raises(ValueError, match="Openshell systems are not supported"):
+
+        qchem.molecular_hamiltonian(symbols, geometry, mult=3)
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "args"),
@@ -778,8 +784,17 @@ def test_molecule_as_kwargs(tmpdir):
     keyword argument
     """
 
-    molecule = qchem.Molecule(test_symbols, test_coordinates, )
-    built_hamiltonian, qubits = qchem.molecular_hamiltonian(molecule=molecule, method="pyscf", active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath)
+    molecule = qchem.Molecule(
+        test_symbols,
+        test_coordinates,
+    )
+    built_hamiltonian, qubits = qchem.molecular_hamiltonian(
+        molecule=molecule,
+        method="pyscf",
+        active_electrons=2,
+        active_orbitals=2,
+        outpath=tmpdir.strpath,
+    )
 
     if active_new_opmath():
         assert not isinstance(built_hamiltonian, qml.Hamiltonian)

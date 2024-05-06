@@ -107,12 +107,6 @@ class Molecule:
 
         self.n_electrons = sum(self.nuclear_charges) - self.charge
 
-        if self.n_electrons % 2 == 1 or self.mult != 1:
-            raise ValueError(
-                "Openshell systems are not supported. Change the charge or spin "
-                "multiplicity of the molecule."
-            )
-
         if l is None:
             l = [i[0] for i in self.basis_data]
 
