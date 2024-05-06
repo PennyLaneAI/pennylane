@@ -179,7 +179,8 @@ def _processing_fn(results, shots, single_shot_batch_fn):
 def _finite_diff_stopping_condition(op) -> bool:
     if not op.has_decomposition:
         # let things without decompositions through without error
-        # error will happen when calculating parameter shift tapes
+        # error will happen when calculating shifted tapes for finite diff
+
         return True
     if isinstance(op, qml.operation.Operator) and any(qml.math.requires_grad(p) for p in op.data):
         return op.grad_method is not None
@@ -201,7 +202,8 @@ def _expand_transform_finite_diff(
         tape,
         stopping_condition=_finite_diff_stopping_condition,
         skip_initial_state_prep=False,
-        name="param_shift",
+        name="finite_diff",
+
     )
     if new_tape is tape:
         return [tape], postprocessing

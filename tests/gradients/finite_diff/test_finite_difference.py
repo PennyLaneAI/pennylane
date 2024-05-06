@@ -101,7 +101,7 @@ class TestFiniteDiff:
     """Tests for the finite difference gradient transform"""
 
     def test_finite_diff_non_commuting_observables(self):
-        """Test that parameter shift works even if the measurements do not commute with each other."""
+        """Test that finite differences work even if the measurements do not commute with each other."""
 
         ops = (qml.RX(0.5, wires=0),)
         ms = (qml.expval(qml.X(0)), qml.expval(qml.Z(0)))

@@ -263,7 +263,7 @@ class Pow(ScalarSymbolicOp):
         except PowUndefinedError:
             return False
         except Exception as e:  # pylint: disable=broad-except
-            # some Pow methods cant handle a batched z
+            # some pow methods cant handle a batched z
             if qml.math.ndim(self.z) != 0:
                 return False
             raise e
