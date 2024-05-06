@@ -26,13 +26,13 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import (
+    _UNSET_BATCH_SIZE,
     Operation,
     Operator,
     StatePrepBase,
     Tensor,
     convert_to_legacy_H,
     operation_derivative,
-    _UNSET_BATCH_SIZE,
 )
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
@@ -2632,14 +2632,9 @@ pairs_of_ops = [
 ]
 
 
+@pytest.mark.usefixtures("use_new_opmath")
 class TestNewOpMath:
     """Tests dunder operations with new operator arithmetic enabled."""
-
-    # @pytest.fixture(autouse=True, scope="function") # this came from a push to ham-tests but I think it should not be there as it explicitly disabled new opmath after each test, so also leaving it in that state for other tests.
-    # def run_before_and_after_tests(self):
-    #     qml.operation.enable_new_opmath()
-    #     yield
-    #     qml.operation.disable_new_opmath()
 
     class TestAdd:
         """Test the __add__/__radd__/__sub__ dunders."""
@@ -2694,16 +2689,15 @@ class TestNewOpMath:
             assert op[1].scalar == 1.1
             assert qml.equal(op[1].base, qml.Identity(1))
 
-        def test_adding_many_does_not_auto_simplify(self):
+        def test_adding_many_does_auto_simplify(self):
             """Tests that adding more than two operators creates nested Sums."""
             op0, op1, op2 = qml.S(0), qml.T(0), qml.PauliZ(0)
             op = op0 + op1 + op2
             assert isinstance(op, Sum)
-            assert len(op) == 2
-            assert isinstance(op[0], Sum)
-            assert qml.equal(op[0][0], op0)
-            assert qml.equal(op[0][1], op1)
-            assert qml.equal(op[1], op2)
+            assert len(op) == 3
+            assert qml.equal(op[0], op0)
+            assert qml.equal(op[1], op1)
+            assert qml.equal(op[2], op2)
 
     class TestMul:
         """Test the __mul__/__rmul__ dunders."""
@@ -2726,13 +2720,13 @@ class TestNewOpMath:
             assert qml.math.allequal(op.scalar, 1 / scalar)
             assert qml.equal(op.base, base)
 
-        def test_mul_does_not_auto_simplify(self):
+        def test_mul_does_auto_simplify(self):
             """Tests that multiplying an SProd with a scalar creates nested SProds."""
             op = 2 * qml.PauliX(0)
             nested = 0.5 * op
             assert isinstance(nested, SProd)
-            assert nested.scalar == 0.5
-            assert qml.equal(nested.base, op)
+            assert nested.scalar == 1.0
+            assert qml.equal(nested.base, qml.X(0))
 
     class TestMatMul:
         """Test the __matmul__/__rmatmul__ dunders."""
@@ -2743,44 +2737,49 @@ class TestNewOpMath:
             op = op0 @ op1
             assert isinstance(op, Prod)
             assert qml.equal(op[0], op0)
-            assert qml.equal(op[1], op1)
+            if isinstance(op1, Prod):
+                assert qml.equal(op[1], op1[0])
+                assert qml.equal(op[2], op1[1])
+            else:
+                assert qml.equal(op[1], op1)
 
-        def test_mul_does_not_auto_simplify(self):
+        def test_mul_does_auto_simplify(self):
             """Tests that matrix-multiplying a Prod with another operator creates nested Prods."""
             op0, op1, op2 = qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)
             op = op0 @ op1 @ op2
             assert isinstance(op, Prod)
-            assert len(op) == 2
-            assert isinstance(op[0], Prod)
-            assert qml.equal(op[0], op0 @ op1)
-            assert qml.equal(op[1], op2)
+            assert len(op) == 3
+            assert qml.equal(op[0], op0)
+            assert qml.equal(op[1], op1)
+            assert qml.equal(op[2], op2)
 
-    class TestHamiltonianLinearCombinationAlias:
-        """Unit tests for using qml.Hamiltonian as an alias for LinearCombination"""
 
-        @pytest.mark.usefixtures("use_new_opmath")
-        def test_hamiltonian_linear_combination_alias_enabled(self):
-            """Test that qml.Hamiltonian is an alias for LinearCombination with new operator
-            arithmetic enabled"""
-            op = qml.Hamiltonian([1.0], [qml.X(0)])
+class TestHamiltonianLinearCombinationAlias:
+    """Unit tests for using qml.Hamiltonian as an alias for LinearCombination"""
 
-            assert isinstance(op, qml.ops.LinearCombination)
-            assert isinstance(op, qml.Hamiltonian)
-            assert not isinstance(op, qml.ops.Hamiltonian)
-            assert not isinstance(op, qml.ops.qubit.Hamiltonian)
-            assert not isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
+    @pytest.mark.usefixtures("use_new_opmath")
+    def test_hamiltonian_linear_combination_alias_enabled(self):
+        """Test that qml.Hamiltonian is an alias for LinearCombination with new operator
+        arithmetic enabled"""
+        op = qml.Hamiltonian([1.0], [qml.X(0)])
 
-        @pytest.mark.usefixtures("use_legacy_opmath")
-        def test_hamiltonian_linear_combination_alias_disabled(self):
-            """Test that qml.Hamiltonian is not an alias for LinearCombination with new operator
-            arithmetic disabled"""
-            op = qml.Hamiltonian([1.0], [qml.X(0)])
+        assert isinstance(op, qml.ops.LinearCombination)
+        assert isinstance(op, qml.Hamiltonian)
+        assert not isinstance(op, qml.ops.Hamiltonian)
+        assert not isinstance(op, qml.ops.qubit.Hamiltonian)
+        assert not isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
 
-            assert not isinstance(op, qml.ops.LinearCombination)
-            assert isinstance(op, qml.Hamiltonian)
-            assert isinstance(op, qml.ops.Hamiltonian)
-            assert isinstance(op, qml.ops.qubit.Hamiltonian)
-            assert isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_hamiltonian_linear_combination_alias_disabled(self):
+        """Test that qml.Hamiltonian is not an alias for LinearCombination with new operator
+        arithmetic disabled"""
+        op = qml.Hamiltonian([1.0], [qml.X(0)])
+
+        assert not isinstance(op, qml.ops.LinearCombination)
+        assert isinstance(op, qml.Hamiltonian)
+        assert isinstance(op, qml.ops.Hamiltonian)
+        assert isinstance(op, qml.ops.qubit.Hamiltonian)
+        assert isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
 
 
 @pytest.mark.parametrize(
@@ -2819,6 +2818,7 @@ def test_symmetric_matrix_early_return(op, mocker):
     assert np.allclose(actual, manually_expanded)
 
 
+@pytest.mark.usefixtures("use_new_opmath")
 def test_op_arithmetic_toggle():
     """Tests toggling op arithmetic on and off, and that it is on by default."""
     assert qml.operation.active_new_opmath()
@@ -2830,6 +2830,23 @@ def test_op_arithmetic_toggle():
     with qml.operation.disable_new_opmath_cm():
         assert not qml.operation.active_new_opmath()
         assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
+
+
+@pytest.mark.usefixtures("use_new_opmath")
+def test_disable_enable_new_opmath():
+    """Test that disabling and re-enabling new opmath works and raises the correct warning"""
+    with pytest.warns(UserWarning, match="Disabling the new Operator arithmetic"):
+        qml.operation.disable_new_opmath()
+
+    assert not qml.operation.active_new_opmath()
+
+    with pytest.warns(
+        UserWarning,
+        match="Re-enabling the new Operator arithmetic system after disabling it is not advised.",
+    ):
+        qml.operation.enable_new_opmath()
+
+    assert qml.operation.active_new_opmath()
 
 
 def test_docstring_example_of_operator_class(tol):
@@ -2954,6 +2971,7 @@ CONVERT_HAMILTONAIN = [
 ]
 
 
+@pytest.mark.usefixtures("use_new_opmath")
 @pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONAIN)
 def test_convert_to_hamiltonian(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
@@ -2999,6 +3017,7 @@ def test_convert_to_hamiltonian_error(coeffs, obs):
         convert_to_legacy_H(qml.dot(coeffs, obs))
 
 
+@pytest.mark.usefixtures("use_new_opmath")
 def test_convert_to_H():
     operator = (
         2 * qml.X(0)
@@ -3052,3 +3071,22 @@ def test_get_attr():
     assert (
         StatePrep is qml.operation.StatePrepBase
     )  # StatePrep imported from operation.py is an alias for StatePrepBase
+
+
+@pytest.mark.parametrize(
+    "make_op",
+    [
+        lambda: qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)]),
+        lambda: 1.2 * qml.PauliX(0),
+    ],
+)
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_convert_to_opmath_queueing(make_op):
+    """Tests that converting to opmath dequeues the original operation"""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        original_op = make_op()
+        new_op = qml.operation.convert_to_opmath(original_op)
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is new_op

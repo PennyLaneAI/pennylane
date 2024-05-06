@@ -14,9 +14,9 @@
 """
 Tests for the pennylane.qnn.torch module.
 """
-from unittest import mock
 import math
 from collections import defaultdict
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -367,6 +367,32 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
 
         assert torch.allclose(layer_out, circuit_out)
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    def test_evaluate_qnode_shots(
+        self, get_circuit_shots, n_qubits, shots
+    ):  # pylint: disable=no-self-use
+        """Tests _evaluate_qnode() works with different type of shots"""
+
+        c, w = get_circuit_shots
+        layer = TorchLayer(c, w)
+        x = torch.ones(n_qubits)
+
+        layer_out = layer._evaluate_qnode(x)  # pylint: disable=protected-access
+        weights = layer.qnode_weights.values()
+        circuit_out_raw = c(x, *weights)
+
+        if isinstance(shots, list):
+
+            assert isinstance(layer_out, tuple)
+            for out, exp in zip(layer_out, circuit_out_raw):
+                circuit_out = torch.hstack(exp)
+                assert out.shape == circuit_out.shape
+
+        else:
+            circuit_out = torch.hstack(circuit_out_raw)
+            assert layer_out.shape == circuit_out.shape
+
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_evaluate_qnode_shuffled_args(
         self, get_circuit, output_dim, n_qubits
@@ -454,6 +480,33 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         layer_out = layer.forward(x)
 
         assert layer_out.shape == torch.Size((2, output_dim))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("shots", [[10, 10]])
+    def test_forward_shot_batching(self, get_circuit_shots, output_dim, n_qubits):
+        """Tests forward() works with shot batching"""
+
+        c, w = get_circuit_shots
+        layer = TorchLayer(c, w)
+        x = torch.Tensor(np.ones(n_qubits))
+
+        layer_out = layer.forward(x)
+        assert layer_out.shape == torch.Size((2, output_dim))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("batch_size", [4, 6])
+    @pytest.mark.parametrize("shots", [[10, 10]])
+    def test_forward_shot_batching_broadcasting(
+        self, get_circuit_shots, batch_size, output_dim, n_qubits
+    ):
+        """Tests forward() works with shot batching and broadcasting"""
+
+        c, w = get_circuit_shots
+        layer = TorchLayer(c, w)
+        x = torch.Tensor(np.ones((batch_size, n_qubits)))
+
+        layer_out = layer.forward(x)
+        assert layer_out.shape == torch.Size((2, batch_size, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2, 4, 6])

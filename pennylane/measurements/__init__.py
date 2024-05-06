@@ -103,8 +103,10 @@ Wires can be reused as normal after making mid-circuit measurements. Moreover, a
 reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qml.measure`` to ``True``.
 
 Users can also collect statistics on mid-circuit measurements along with other terminal measurements. Currently,
-``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. Users have the
-ability to collect statistics on single measurement values.
+``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. ``qml.probs``,
+``qml.sample``, and ``qml.counts`` support sequences of measurement values, ``qml.expval`` and ``qml.var`` do not.
+Statistics of arithmetic combinations of measurement values are supported by all but ``qml.probs``, and only as
+long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is not supported.
 
 .. code-block:: python
 
@@ -225,11 +227,11 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     >>> H = 2.0 * qml.X(0)
     >>> mp = qml.expval(H)
     >>> mp._flatten()
-    ((<Hamiltonian: terms=1, wires=[0]>, None), ())
+    ((2.0 * X(0), None), (('wires', None),))
     >>> type(mp)._unflatten(*mp._flatten())
-    expval(  (2) [X0])
+    expval(2.0 * X(0))
     >>> jax.tree_util.tree_leaves(mp)
-    [2]
+    [2.0]
 
 Adding your new measurement to PennyLane
 ----------------------------------------
@@ -276,8 +278,8 @@ from .measurements import (
     MidMeasure,
     MutualInfo,
     ObservableReturnTypes,
-    Purity,
     Probability,
+    Purity,
     Sample,
     SampleMeasurement,
     Shadow,
@@ -289,10 +291,10 @@ from .measurements import (
 )
 from .mid_measure import MeasurementValue, MidMeasureMP, measure
 from .mutual_info import MutualInfoMP, mutual_info
-from .purity import PurityMP, purity
 from .probs import ProbabilityMP, probs
+from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import Shots, ShotCopies
-from .state import StateMP, DensityMatrixMP, density_matrix, state
+from .shots import ShotCopies, Shots
+from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy

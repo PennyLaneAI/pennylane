@@ -17,10 +17,10 @@ Defines classes that take the vjps, jvps, and jacobians of circuits.
 import abc
 import inspect
 import logging
-from typing import Tuple, Callable, Optional, Union
+from typing import Callable, Optional, Tuple, Union
 
-from cachetools import LRUCache
 import numpy as np
+from cachetools import LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
@@ -221,7 +221,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     Keyword Args:
         cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
             instead of treating each call as independent. This keyword argument is used to patch problematic
-            autograd behavior when caching is turned off. In this case, caching will be based on the identity
+            autograd behaviour when caching is turned off. In this case, caching will be based on the identity
             of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
             by the cache.
 
@@ -414,7 +414,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._uses_new_device = not isinstance(device, qml.Device)
+        self._uses_new_device = not isinstance(device, qml.devices.LegacyDevice)
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)

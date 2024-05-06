@@ -21,12 +21,12 @@ This module contains the :class:`QubitDevice` abstract base class.
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 # pylint: disable=too-many-arguments
 import abc
+import inspect
 import itertools
+import logging
 import warnings
 from collections import defaultdict
-from typing import Union, List
-import inspect
-import logging
+from typing import List, Union
 
 import numpy as np
 
@@ -47,14 +47,14 @@ from pennylane.measurements import (
     SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
+    Shots,
     StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
-    Shots,
 )
+from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
-from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
@@ -152,7 +152,7 @@ class QubitDevice(Device):
         "Identity",
         "Projector",
         "Sum",
-        "Sprod",
+        "SProd",
         "Prod",
     }
 
@@ -285,39 +285,41 @@ class QubitDevice(Device):
         )
         if has_mcm:
             mid_measurements = kwargs["mid_measurements"]
-            mid_values = np.array(tuple(mid_measurements.values()))
-            if np.any(mid_values == -1):
-                for k, v in tuple(mid_measurements.items()):
-                    if v == -1:
-                        mid_measurements.pop(k)
-                return None, mid_measurements
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
             # Lightning does not support apply(rotations) anymore, so we need to rotate here
             # Lightning without binaries fallbacks to `QubitDevice`, and hence the _CPP_BINARY_AVAILABLE condition
-            is_lightning = (
-                hasattr(self, "name")
-                and isinstance(self.name, str)
-                and "Lightning" in self.name
-                and getattr(self, "_CPP_BINARY_AVAILABLE", False)
-            )
+            is_lightning = self._is_lightning_device()
             diagonalizing_gates = self._get_diagonalizing_gates(circuit) if is_lightning else None
             if is_lightning and diagonalizing_gates:  # pragma: no cover
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
+                # pylint: disable=bad-reversed-sequence
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
+        if has_mcm:
+            n_mcms = len(mid_measurements)
+            stat_circuit = qml.tape.QuantumScript(
+                circuit.operations,
+                circuit.measurements[0:-n_mcms],
+                shots=1,
+                trainable_params=circuit.trainable_params,
+            )
+        else:
+            stat_circuit = circuit
         if self._shot_vector is not None:
-            results = self.shot_vec_statistics(circuit)
+            results = self.shot_vec_statistics(stat_circuit)
 
         else:
-            results = self.statistics(circuit)
+            results = self.statistics(stat_circuit)
+            if has_mcm:
+                results.extend(list(mid_measurements.values()))
             single_measurement = len(circuit.measurements) == 1
-
             results = results[0] if single_measurement else tuple(results)
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -339,7 +341,7 @@ class QubitDevice(Device):
             )
             self.tracker.record()
 
-        return (results, mid_measurements) if has_mcm else results
+        return results
 
     def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device
@@ -669,8 +671,16 @@ class QubitDevice(Device):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
+                is_lightning = self._is_lightning_device()
+                diagonalizing_gates = (
+                    self._get_diagonalizing_gates(circuit) if is_lightning else None
+                )
+                if is_lightning and diagonalizing_gates:  # pragma: no cover
+                    self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
-
+                if is_lightning and diagonalizing_gates:  # pragma: no cover
+                    # pylint: disable=bad-reversed-sequence
+                    self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
@@ -869,13 +879,29 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
+        # pylint:disable = import-outside-toplevel
+        if (
+            qml.math.is_abstract(state_probability)
+            and qml.math.get_interface(state_probability) == "jax"
+        ):
+            import jax
+
+            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
+            if jax.numpy.ndim(state_probability) == 2:
+                return jax.numpy.array(
+                    [
+                        jax.random.choice(key, basis_states, shape=(shots,), p=prob)
+                        for prob in state_probability
+                    ]
+                )
+            return jax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
+
+        state_probs = qml.math.unwrap(state_probability)
         if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
-            return np.array(
-                [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
-            )
+            return np.array([np.random.choice(basis_states, shots, p=prob) for prob in state_probs])
 
-        return np.random.choice(basis_states, shots, p=state_probability)
+        return np.random.choice(basis_states, shots, p=state_probs)
 
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):
@@ -1746,3 +1772,11 @@ class QubitDevice(Device):
         """
         # pylint:disable=no-self-use
         return circuit.diagonalizing_gates
+
+    def _is_lightning_device(self):
+        """Returns True if the device is a Lightning plugin with C++ binaries and False otherwise."""
+        return (
+            hasattr(self, "name")
+            and "Lightning" in str(self.name)
+            and getattr(self, "_CPP_BINARY_AVAILABLE", False)
+        )

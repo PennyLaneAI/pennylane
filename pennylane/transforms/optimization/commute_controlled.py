@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform

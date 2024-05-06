@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumScript"""
-from collections import defaultdict
 import copy
+from collections import defaultdict
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, State, VnEntropy, Shots
+from pennylane.measurements import MutualInfo, Shots, State, VnEntropy
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
@@ -448,7 +449,7 @@ class TestInfomationProperties:
         assert qs.specs["num_diagonalizing_gates"] == 0
         assert qs.specs["num_trainable_params"] == 0
 
-        assert len(qs.specs) == 4
+        assert len(qs.specs) == 5
 
         assert qs._specs is qs.specs
 
@@ -460,7 +461,7 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 4
+        assert len(specs) == 5
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         gate_sizes = defaultdict(int, {1: 3, 2: 1})

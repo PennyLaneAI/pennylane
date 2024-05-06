@@ -16,9 +16,10 @@ Unit tests for the ``QNSPSAOptimizer``
 """
 # pylint: disable=protected-access
 from copy import deepcopy
-import pytest
 
+import pytest
 from scipy.linalg import sqrtm
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -347,8 +348,12 @@ class TestQNSPSAOptimizer:
             new_params_tensor_expected,
         )
 
-    def test_step_and_cost_with_non_trainable_input(self, finite_diff_step, seed):
-        """Test step_and_cost() function with the qnode with non-trainable input."""
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    def test_step_and_cost_with_non_trainable_input(self, device_name, finite_diff_step, seed):
+        """
+        Test step_and_cost() function with the qnode with non-trainable input,
+        both using the `default.qubit` and `default.qubit.legacy` device.
+        """
         regularization = 1e-3
         stepsize = 1e-2
         opt = qml.QNSPSAOptimizer(
@@ -362,7 +367,7 @@ class TestQNSPSAOptimizer:
         )
         # a deep copy of the same opt, to be applied to qnode_reduced
         target_opt = deepcopy(opt)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(device_name, wires=2)
         non_trainable_param = np.random.rand(1)
         non_trainable_param.requires_grad = False
 
@@ -451,7 +456,7 @@ def test_workflow_integration():
 
     params = qml.numpy.array([0.5, 0.5], requires_grad=True)
     opt = qml.optimize.QNSPSAOptimizer(stepsize=5e-2)
-    for _ in range(51):
+    for _ in range(101):
         params, loss = opt.step_and_cost(cost, params)
 
     assert qml.math.allclose(loss, -1, atol=1e-3)

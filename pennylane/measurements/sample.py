@@ -15,8 +15,7 @@
 This module contains the qml.sample measurement.
 """
 import functools
-import warnings
-from typing import Sequence, Tuple, Optional, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -28,7 +27,10 @@ from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -> "SampleMP":
+def sample(
+    op: Optional[Union[Operator, MeasurementValue]] = None,
+    wires=None,
+) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -132,30 +134,6 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
            [0, 0]])
 
     """
-    if isinstance(op, MeasurementValue):
-        return SampleMP(obs=op)
-
-    if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
-            raise qml.QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
-                "MeasurementValues manipulated using arithmetic operators cannot be used when "
-                "collecting statistics for a sequence of mid-circuit measurements."
-            )
-
-        return SampleMP(obs=op)
-
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
-
-    if wires is not None:
-        if op is not None:
-            raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
-            )
-        wires = Wires(wires)
-
     return SampleMP(obs=op, wires=wires)
 
 
@@ -177,6 +155,33 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
+    def __init__(self, obs=None, wires=None, eigvals=None, id=None):
+
+        if isinstance(obs, MeasurementValue):
+            super().__init__(obs=obs)
+            return
+
+        if isinstance(obs, Sequence):
+            if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs):
+                raise qml.QuantumFunctionError(
+                    "Only sequences of single MeasurementValues can be passed with the op "
+                    "argument. MeasurementValues manipulated using arithmetic operators cannot be "
+                    "used when collecting statistics for a sequence of mid-circuit measurements."
+                )
+
+            super().__init__(obs=obs)
+            return
+
+        if wires is not None:
+            if obs is not None:
+                raise ValueError(
+                    "Cannot specify the wires to sample if an observable is provided. The wires "
+                    "to sample will be determined directly from the observable."
+                )
+            wires = Wires(wires)
+
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
     @property
     def return_type(self):
         return Sample
@@ -190,7 +195,7 @@ class SampleMP(SampleMeasurement):
             # Computational basis samples
             return int
         int_eigval_obs = {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-        tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+        tensor_terms = self.obs.obs if isinstance(self.obs, qml.operation.Tensor) else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
@@ -249,7 +254,7 @@ class SampleMP(SampleMeasurement):
         num_wires = samples.shape[-1]  # wires is the last dimension
 
         # If we're sampling wires or a list of mid-circuit measurements
-        if self.obs is None and not isinstance(self.mv, MeasurementValue):
+        if self.obs is None and not isinstance(self.mv, MeasurementValue) and self._eigvals is None:
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 

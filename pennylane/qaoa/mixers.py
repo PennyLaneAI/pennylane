@@ -14,9 +14,10 @@
 r"""
 Methods for constructing QAOA mixer Hamiltonians.
 """
+import functools
+
 # pylint: disable=unnecessary-lambda-assignment
 import itertools
-import functools
 from typing import Iterable, Union
 
 import networkx as nx
@@ -53,9 +54,7 @@ def x_mixer(wires: Union[Iterable, Wires]):
     >>> wires = range(3)
     >>> mixer_h = qaoa.x_mixer(wires)
     >>> print(mixer_h)
-      (1) [X0]
-    + (1) [X1]
-    + (1) [X2]
+    1 * X(0) + 1 * X(1) + 1 * X(2)
     """
 
     wires = Wires(wires)
@@ -172,15 +171,17 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     >>> from networkx import Graph
     >>> graph = Graph([(0, 1), (1, 2)])
     >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
-    >>> print(mixer_h)
-      (0.25) [X1]
-    + (0.5) [X0]
-    + (0.5) [X2]
-    + (0.25) [X1 Z2]
-    + (0.25) [X1 Z0]
-    + (0.5) [X0 Z1]
-    + (0.5) [X2 Z1]
-    + (0.25) [X1 Z0 Z2]
+    >>> mixer_h
+    (
+        0.5 * X(0)
+      + 0.5 * (X(0) @ Z(1))
+      + 0.25 * X(1)
+      + 0.25 * (X(1) @ Z(2))
+      + 0.25 * (X(1) @ Z(0))
+      + 0.25 * (X(1) @ Z(0) @ Z(2))
+      + 0.5 * X(2)
+      + 0.5 * (X(2) @ Z(1))
+    )
 
     >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
@@ -188,14 +189,16 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
     >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
     >>> print(mixer_h)
-      (0.25) [X1]
-    + (0.5) [X0]
-    + (0.5) [X2]
-    + (0.25) [X1 Z0]
-    + (0.25) [X1 Z2]
-    + (0.5) [X0 Z1]
-    + (0.5) [X2 Z1]
-    + (0.25) [X1 Z2 Z0]
+    (
+        0.5 * X(0)
+      + 0.5 * (X(0) @ Z(1))
+      + 0.25 * X(1)
+      + 0.25 * (X(1) @ Z(2))
+      + 0.25 * (X(1) @ Z(0))
+      + 0.25 * (X(1) @ Z(0) @ Z(2))
+      + 0.5 * X(2)
+      + 0.5 * (X(2) @ Z(1))
+    )
     """
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):

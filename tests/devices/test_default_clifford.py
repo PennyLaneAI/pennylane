@@ -15,11 +15,12 @@
 This module contains the tests for the clifford simulator based on stim
 """
 import os
-import pytest
-import numpy as np
-import scipy as sp
-import pennylane as qml
 
+import numpy as np
+import pytest
+import scipy as sp
+
+import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
 
 stim = pytest.importorskip("stim")
@@ -484,6 +485,7 @@ def test_tracker():
         "batches": [1, 1],
         "simulations": [1, 1],
         "executions": [1, 1],
+        "errors": [{}, {}],
     }
 
 

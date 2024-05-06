@@ -123,11 +123,11 @@ time and can store tangents in place of the variables, we can use a batch of tap
 must be a non-pytree non-differenatible argument that accompanies the tree leaves.
 
 """
+import dataclasses
+
 # pylint: disable=unused-argument
 import logging
-from typing import Tuple, Callable
-
-import dataclasses
+from typing import Callable, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -199,7 +199,8 @@ def get_jax_interface_name(tapes):
     for t in tapes:
         for op in t:
             # Unwrap the observable from a MeasurementProcess
-            op = op.obs if hasattr(op, "obs") else op
+            if not isinstance(op, qml.ops.Prod):
+                op = op.obs if hasattr(op, "obs") else op
             if op is not None:
                 # Some MeasurementProcess objects have op.obs=None
                 for param in op.data:

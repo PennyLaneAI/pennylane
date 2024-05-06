@@ -16,6 +16,7 @@ This module contains the functions needed for creating fermionic and qubit obser
 """
 # pylint: disable= too-many-branches, too-many-return-statements
 import numpy as np
+
 import pennylane as qml
 from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath
@@ -109,6 +110,15 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
 
     **Example**
 
+    >>> qml.operation.enable_new_opmath()
+    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> print(qubit_observable(s))
+    -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
+
+    If the new op-math is deactivated, a :class:`~Hamiltonian` instance is returned.
+
     >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
@@ -121,15 +131,6 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     + ((0.3+0j)) [X0 X1]
     + ((0.775+0j)) [Y1 Y2]
     + ((0.775+0j)) [X1 X2]
-
-    If the new op-math is active, an arithmetic operator is returned.
-
-    >>> qml.operation.enable_new_opmath()
-    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
-    >>> print(qubit_observable(s))
-    -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
     h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     h.simplify(tol=cutoff)

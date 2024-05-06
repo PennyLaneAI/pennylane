@@ -15,9 +15,9 @@
 Unit tests for functions needed for estimating the complexity of measuring expectation values.
 """
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 
 coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
 error = 0.0016  # chemical accuracy
