@@ -118,12 +118,6 @@ class TestParamShift:
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
 
-        if broadcast:
-            match_ = "Broadcasting with shot vectors is not supported yet"
-            with pytest.raises(NotImplementedError, match=match_):
-                g_tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-            return
-
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         all_res = fn(qml.execute(g_tapes, dev, None))
@@ -498,9 +492,8 @@ class TestParamShift:
                 qml.gradients.param_shift(tape)
 
 
-# TODO: add test class for parameter broadcasting - both when using broadcasting in the transform
-# via `broadcast=True`, and when using the transform on an already broadcasted tape, with
-# `broadcast=False` (as double broadcasting is not supported).
+# TODO: add test class for parameter broadcasting - when using the transform on an already broadcasted
+# tape with `broadcast=False` (as double broadcasting is not supported).
 
 
 # The first line of pylint disable is for cost1 through cost6
@@ -1958,7 +1951,7 @@ class TestParameterShiftRule:
 
         dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", broadcast=broadcast)
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
