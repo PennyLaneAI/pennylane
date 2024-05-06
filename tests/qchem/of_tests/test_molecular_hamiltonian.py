@@ -804,3 +804,13 @@ def test_error_raised_for_incompatible_type():
 
     with pytest.raises(NotImplementedError, match="Unsupported type"):
         qchem.molecular_hamiltonian(symbols=1, coordinates=test_coordinates, method="dhf")
+
+
+def test_error_raised_for_missing_molecule_information():
+    r"""Test that molecular_hamiltonian raises an error when symbols, and coordinates
+    information is not provided.
+    """
+
+    with pytest.raises(NotImplementedError, match="Unsupported type"):
+        qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
+
