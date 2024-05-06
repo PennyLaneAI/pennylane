@@ -63,6 +63,9 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* PennyLane operators can now automatically be captured as instructions in JAXPR.
+  [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
