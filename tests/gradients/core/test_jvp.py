@@ -284,6 +284,7 @@ class TestComputeJVPSingle:
         determined by the dtype of the dy."""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
         dtype = dtype1
         dtype1 = getattr(jax.numpy, dtype1)
         dtype2 = getattr(jax.numpy, dtype2)
