@@ -30,7 +30,7 @@ def test_standard_validity():
             [-0.78582258, 0.53807284 + 0.30489424j],
         ]
     )
-    op = qml.BasisRotation(unitary_matrix=unitary_matrix, wires=range(2))
+    op = qml.BasisRotation(unitary_matrix, wires=range(2))
     qml.ops.functions.assert_valid(op)
 
 
