@@ -813,4 +813,3 @@ def test_error_raised_for_missing_molecule_information():
 
     with pytest.raises(NotImplementedError, match="Unsupported type"):
         qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
-
