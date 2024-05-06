@@ -770,3 +770,29 @@ def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     assert np.allclose(core, core_ref)
     assert np.allclose(one, one_ref)
     assert np.allclose(two, two_ref)
+
+
+@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+def test_molecule_as_kwargs(tmpdir):
+    r"""Test that molecular_hamiltonian function works with molecule as
+    keyword argument
+    """
+
+    molecule = qchem.Molecule(test_symbols, test_coordinates, )
+    built_hamiltonian, qubits = qchem.molecular_hamiltonian(molecule=molecule, method="pyscf", active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath)
+
+    if active_new_opmath():
+        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
+    else:
+        assert isinstance(built_hamiltonian, qml.Hamiltonian)
+    assert qubits == 4
+
+
+def test_error_raised_for_incompatible_type():
+    r"""Test that molecular_hamiltonian raises an error when input is not
+    a list or molecule object.
+    """
+
+    with pytest.raises(NotImplementedError, match="Unsupported type"):
+        qchem.molecular_hamiltonian(symbols=1, coordinates=test_coordinates, method="dhf")
+    

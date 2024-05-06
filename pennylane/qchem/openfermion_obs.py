@@ -901,9 +901,9 @@ def molecular_hamiltonian(*args, **kwargs):
         return _molecular_hamiltonian_dispatch(symbols, **kwargs)
 
     if "molecule" in kwargs:
-        symbols = kwargs["molecule"]
+        molecule = kwargs["molecule"]
         kwargs.pop("molecule")
-        return _molecular_hamiltonian_dispatch(symbols, **kwargs)
+        return _molecular_hamiltonian_dispatch(molecule, **kwargs)
 
     raise NotImplementedError("Unsupported type")
 
@@ -930,7 +930,7 @@ def _(
     return _molecular_hamiltonian(
         molecule.symbols,
         molecule.coordinates,
-        "molecule",  # the Molecule class does not yet have name
+        molecule.name,
         molecule.charge,
         molecule.mult,
         molecule.basis_name,
