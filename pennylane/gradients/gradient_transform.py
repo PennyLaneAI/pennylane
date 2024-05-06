@@ -305,7 +305,9 @@ def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True)
     )
 
 
-def _move_first_axis_to_third_pos(grads, first_axis_size, second_axis_size, third_axis_size, squeeze=True):
+def _move_first_axis_to_third_pos(
+    grads, first_axis_size, second_axis_size, third_axis_size, squeeze=True
+):
     """Transpose the first two axes of an iterable of iterables, returning
     a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 2)``"""
     if first_axis_size == 1 and squeeze:

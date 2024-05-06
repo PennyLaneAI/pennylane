@@ -3108,7 +3108,6 @@ class TestParameterShiftRuleBroadcast:
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
             qml.gradients.param_shift(tape, broadcast=True)
 
-
         # TODO: Uncomment the following when #2693 is resolved. Add test fixture arg `tol`
         # dev = qml.device("default.qubit", wires=2)
         # tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
@@ -3131,7 +3130,6 @@ class TestParameterShiftRuleBroadcast:
         ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT([0, 1])]
         meas = [qml.expval(qml.Z(0)), qml.var(qml.X(1))]
         tape = qml.tape.QuantumScript(ops, meas)
-
 
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
             qml.gradients.param_shift(tape, broadcast=True)
@@ -3158,7 +3156,6 @@ class TestParameterShiftRuleBroadcast:
         meas = [qml.expval(qml.Z(0)), qml.probs([0, 1])]
         tape = qml.tape.QuantumScript(ops, meas)
 
-
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
             qml.gradients.param_shift(tape, broadcast=True)
         # TODO: Uncomment the following when #2693 is resolved. Add test fixture arg `tol`
@@ -3175,24 +3172,24 @@ class TestParameterShiftRuleBroadcast:
 
         # expected_expval = (-np.sin(x), 0)
         # expected_probs = (
-            # np.array(
-                # [
-                    # -(np.cos(y / 2) ** 2 * np.sin(x)),
-                    # -(np.sin(x) * np.sin(y / 2) ** 2),
-                    # (np.sin(x) * np.sin(y / 2) ** 2),
-                    # (np.cos(y / 2) ** 2 * np.sin(x)),
-                # ]
-            # )
-            # / 2,
-            # np.array(
-                # [
-                    # -(np.cos(x / 2) ** 2 * np.sin(y)),
-                    # (np.cos(x / 2) ** 2 * np.sin(y)),
-                    # (np.sin(x / 2) ** 2 * np.sin(y)),
-                    # -(np.sin(x / 2) ** 2 * np.sin(y)),
-                # ]
-            # )
-            # / 2,
+        # np.array(
+        # [
+        # -(np.cos(y / 2) ** 2 * np.sin(x)),
+        # -(np.sin(x) * np.sin(y / 2) ** 2),
+        # (np.sin(x) * np.sin(y / 2) ** 2),
+        # (np.cos(y / 2) ** 2 * np.sin(x)),
+        # ]
+        # )
+        # / 2,
+        # np.array(
+        # [
+        # -(np.cos(x / 2) ** 2 * np.sin(y)),
+        # (np.cos(x / 2) ** 2 * np.sin(y)),
+        # (np.sin(x / 2) ** 2 * np.sin(y)),
+        # -(np.sin(x / 2) ** 2 * np.sin(y)),
+        # ]
+        # )
+        # / 2,
         # )
 
         # assert np.allclose(res[0], expected_expval, atol=tol, rtol=0)
