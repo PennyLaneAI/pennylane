@@ -65,6 +65,9 @@
   (e.g. `qml.sample(X(0))`) is also changed to `float`. 
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
+* Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
+  [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+
 <h3>Breaking changes 💔</h3>
 
 * Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
@@ -85,4 +88,5 @@
 This release contains contributions from (in alphabetical order):
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
+Christina Lee,
 David Wierichs.
