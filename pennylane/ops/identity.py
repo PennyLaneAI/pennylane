@@ -16,10 +16,11 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
+
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
+from pennylane.operation import AllWires, AnyWires, CVObservable, Operation
 
 
 class Identity(CVObservable, Operation):

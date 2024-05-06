@@ -18,15 +18,15 @@ This module contains the QNode class and qnode decorator.
 import copy
 import functools
 import inspect
+import logging
 import warnings
 from collections.abc import Sequence
-from typing import Union, Optional
-import logging
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
 
@@ -54,7 +54,7 @@ def _convert_to_interface(res, interface):
 
 # pylint: disable=protected-access
 def _get_device_shots(device) -> Shots:
-    if isinstance(device, Device):
+    if isinstance(device, qml.devices.LegacyDevice):
         if device._shot_vector:
             return Shots(device._raw_shot_sequence)
         return Shots(device.shots)
@@ -467,7 +467,7 @@ class QNode:
                 f"one of {SUPPORTED_INTERFACES}."
             )
 
-        if not isinstance(device, (Device, qml.devices.Device)):
+        if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
@@ -658,7 +658,7 @@ class QNode:
         if diff_method == "best":
             return QNode.get_best_method(device, interface, tape=tape)
 
-        if isinstance(device, qml.Device):
+        if isinstance(device, qml.devices.LegacyDevice):
             # handled by device.supports_derivatives with new device interface
             if diff_method == "backprop":
                 return QNode._validate_backprop_method(device, interface, tape=tape)

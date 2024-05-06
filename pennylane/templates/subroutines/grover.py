@@ -15,8 +15,9 @@
 Contains the Grover Operation template.
 """
 import numpy as np
+
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops import Hadamard, PauliZ, MultiControlledX, GlobalPhase
+from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires
 
 

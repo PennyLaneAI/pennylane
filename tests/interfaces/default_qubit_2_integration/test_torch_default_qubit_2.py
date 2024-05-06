@@ -14,13 +14,12 @@
 """Torch specific tests for execute and default qubit 2."""
 import numpy as np
 import pytest
-
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
+from pennylane import execute
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane import execute
 from pennylane.measurements import Shots
 
 torch = pytest.importorskip("torch")

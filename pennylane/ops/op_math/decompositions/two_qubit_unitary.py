@@ -21,7 +21,6 @@ from pennylane import math
 
 from .single_qubit_unitary import one_qubit_decomposition
 
-
 ###################################################################################
 # Developer notes:
 #

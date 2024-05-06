@@ -14,12 +14,13 @@
 """Contains a function extracting the tapes at postprocessing at any stage of a transform program.
 
 """
-from functools import wraps
 import inspect
-from typing import Union, Callable, Tuple
+from functools import wraps
+from typing import Callable, Tuple, Union
 
 import pennylane as qml
-from .qnode import QNode, _make_execution_config, _get_device_shots
+
+from .qnode import QNode, _get_device_shots, _make_execution_config
 
 
 def null_postprocessing(results):

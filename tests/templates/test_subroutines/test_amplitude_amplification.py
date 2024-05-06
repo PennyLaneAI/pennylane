@@ -15,8 +15,9 @@
 Tests for the AmplitudeAmplification template.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
 

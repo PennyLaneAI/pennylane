@@ -15,9 +15,10 @@
 This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
+import autograd
+
 # pylint: disable=no-member, too-many-branches
 import numpy as np
-import autograd
 
 import pennylane as qml
 

@@ -21,10 +21,11 @@ from functools import lru_cache
 
 import autograd
 import autoray as ar
+
 import pennylane as qml
 
-from .utils import cast
 from .quantum import _check_density_matrix, _check_state_vector
+from .utils import cast
 
 
 def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"):

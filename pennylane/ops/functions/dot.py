@@ -17,12 +17,12 @@ a vector and a list of operators.
 """
 # pylint: disable=too-many-branches
 from collections import defaultdict
-from typing import Sequence, Union, Callable
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
 from pennylane.operation import Operator, convert_to_opmath
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse import ParametrizedHamiltonian
-from pennylane.pauli import PauliWord, PauliSentence
 
 
 def dot(
@@ -142,6 +142,12 @@ def dot(
         raise ValueError("Number of coefficients and operators does not match.")
     if len(coeffs) == 0 and len(ops) == 0:
         raise ValueError("Cannot compute the dot product of an empty sequence.")
+
+    for t in (Operator, PauliWord, PauliSentence):
+        if isinstance(ops, t):
+            raise ValueError(
+                f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
+            )
 
     if any(callable(c) for c in coeffs):
         return ParametrizedHamiltonian(coeffs, ops)

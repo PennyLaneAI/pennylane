@@ -14,10 +14,10 @@
 """
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
-
-import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator

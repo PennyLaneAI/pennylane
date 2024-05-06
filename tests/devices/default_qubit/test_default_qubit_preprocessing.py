@@ -13,14 +13,12 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+import numpy as np
 import pytest
 
-import numpy as np
-
-from pennylane import numpy as pnp
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
-
 from pennylane.devices.default_qubit import stopping_condition
 
 

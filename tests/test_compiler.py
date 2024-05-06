@@ -16,11 +16,12 @@ Unit tests for the compiler subpackage.
 """
 # pylint: disable=import-outside-toplevel
 from unittest.mock import patch
-import pytest
-import pennylane as qml
-from pennylane.compiler.compiler import CompileError
 
+import pytest
+
+import pennylane as qml
 from pennylane import numpy as np
+from pennylane.compiler.compiler import CompileError
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")

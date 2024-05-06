@@ -247,9 +247,9 @@ import copy
 import functools
 import itertools
 import warnings
+from contextlib import contextmanager
 from enum import IntEnum
 from typing import List, Tuple
-from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -261,8 +261,8 @@ from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .utils import pauli_eigs
 from .pytrees import register_pytree
+from .utils import pauli_eigs
 
 # =============================================================================
 # Errors

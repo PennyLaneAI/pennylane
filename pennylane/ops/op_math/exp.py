@@ -34,11 +34,11 @@ from pennylane.operation import (
 )
 from pennylane.wires import Wires
 
+from ..qubit.hamiltonian import Hamiltonian
+from .linear_combination import LinearCombination
 from .sprod import SProd
 from .sum import Sum
-from .linear_combination import LinearCombination
 from .symbolicop import ScalarSymbolicOp
-from ..qubit.hamiltonian import Hamiltonian
 
 
 def exp(op, coeff=1, num_steps=None, id=None):

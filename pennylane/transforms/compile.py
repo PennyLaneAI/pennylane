@@ -14,19 +14,18 @@
 """Code for the high-level quantum function transform that executes compilation."""
 # pylint: disable=too-many-branches
 from functools import partial
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
-from pennylane.queuing import QueuingManager
 from pennylane.ops import __all__ as all_ops
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform, TransformDispatcher
+from pennylane.transforms.core import TransformDispatcher, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
     merge_rotations,
     remove_barrier,
 )
-
 
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
 

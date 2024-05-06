@@ -13,12 +13,13 @@
 # limitations under the License.
 """Contains a function that computes the fourier series of
 a quantum expectation value."""
+import warnings
 from functools import wraps
 from inspect import signature
-import warnings
 
 import numpy as np
 from autoray import numpy as anp
+
 import pennylane as qml
 
 

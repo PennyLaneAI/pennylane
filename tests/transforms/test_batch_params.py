@@ -16,6 +16,7 @@ Unit tests for the batch params transform.
 """
 # pylint:disable=comparison-with-callable
 import functools
+
 import pytest
 
 import pennylane as qml

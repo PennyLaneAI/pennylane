@@ -14,12 +14,12 @@
 """
 Contains the tape transform that splits non-commuting terms
 """
-# pylint: disable=protected-access
-from typing import Sequence, Callable
 from functools import reduce
 
-import pennylane as qml
+# pylint: disable=protected-access
+from typing import Callable, Sequence
 
+import pennylane as qml
 from pennylane.transforms import transform
 
 

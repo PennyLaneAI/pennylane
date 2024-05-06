@@ -16,7 +16,6 @@
 import pytest
 
 import pennylane as qml
-
 from pennylane.pauli import PauliSentence, center
 
 
