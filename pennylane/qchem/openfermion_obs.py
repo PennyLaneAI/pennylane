@@ -1028,10 +1028,6 @@ def _molecular_hamiltonian(
 
     if method == "dhf":
 
-        if mapping != "jordan_wigner":
-            raise ValueError(
-                "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
-            )
         if mult != 1:
             raise ValueError(
                 "Openshell systems are not supported for the differentiable workflow. Use "
@@ -1055,9 +1051,9 @@ def _molecular_hamiltonian(
 
         requires_grad = args is not None
         h = (
-            qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+            qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
             if requires_grad
-            else qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
+            else qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
         )
 
         if active_new_opmath():
@@ -1078,7 +1074,7 @@ def _molecular_hamiltonian(
             h = qml.map_wires(h, wires_map)
         return h, 2 * len(active)
 
-    if method == "pyscf" and mapping.strip().lower() == "jordan_wigner":
+    if method == "pyscf":
         core_constant, one_mo, two_mo = _pyscf_integrals(
             symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
         )
@@ -1086,10 +1082,24 @@ def _molecular_hamiltonian(
         hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
 
         if active_new_opmath():
-            h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
-
+            if mapping.strip().lower() == "jordan_wigner":
+                h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
+            elif mapping.strip().lower() == "parity":
+                qubits = len(hf.wires)
+                h_pl = qml.jordan_wigner(hf, qubits, wire_map=wires_map, tol=1.0e-10).simplify()
+            elif mapping.strip().lower() == "bravyi_kitaev":
+                qubits = len(hf.wires)
+                h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10).simplify()
         else:
-            h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
+            if mapping.strip().lower() == "jordan_wigner":
+                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
+            elif mapping.strip().lower() == "parity":
+                qubits = len(hf.wires)
+                h_pl = qml.parity_transform(hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
+            elif mapping.strip().lower() == "bravyi_kitaev":
+                qubits = len(hf.wires)
+                h_pl = qml.bravyi_kitaev(hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
+
             h_pl = simplify(h_pl)
 
         return h_pl, len(h_pl.wires)
