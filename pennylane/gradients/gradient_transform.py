@@ -51,6 +51,26 @@ SUPPORTED_GRADIENT_KWARGS = [
 ]
 
 
+def assert_multimeasure_not_broadcasted(measurements, broadcast):
+    """Assert that there are not simultaneously multiple measurements and
+    broadcasting activated. Otherwise raises an error."""
+    if broadcast and len(measurements) > 1:
+        raise NotImplementedError(
+            "Broadcasting with multiple measurements is not supported yet. "
+            f"Set broadcast to False instead. The tape measurements are {measurements}."
+        )
+
+
+def assert_shot_vector_not_broadcasted(shots, broadcast):
+    """Assert that there are not simultaneously multiple shot settings (shot vector) and
+    broadcasting activated. Otherwise raises an error."""
+    if broadcast and shots.has_partitioned_shots:
+        raise NotImplementedError(
+            "Broadcasting with shot vectors is not supported yet. "
+            f"Set broadcast to False instead. The tape shots are {shots}."
+        )
+
+
 def assert_no_state_returns(measurements, transform_name):
     """Check whether a set of measurements contains a measurement process that returns the quantum
     state and raise an error if this is the case.
@@ -277,7 +297,7 @@ def _no_trainable_grad(tape):
 
 def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):
     """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 1)``"""
     if first_axis_size == 1 and squeeze:
         return tuple(grads[0][i] for i in range(second_axis_size))
     return tuple(
@@ -285,11 +305,9 @@ def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True)
     )
 
 
-def _move_first_axis_to_third_pos(
-    grads, first_axis_size, second_axis_size, third_axis_size, squeeze=True
-):
-    """Transpose the first three axes of an iterable of iterables like a tuple of tuples
-    the same way as np.transpose(..., [1, 2, 0]) would do."""
+def _move_first_axis_to_third_pos(grads, first_axis_size, second_axis_size, third_axis_size, squeeze=True):
+    """Transpose the first two axes of an iterable of iterables, returning
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 2)``"""
     if first_axis_size == 1 and squeeze:
         return tuple(
             tuple(grads[0][i][j] for j in range(third_axis_size)) for i in range(second_axis_size)
