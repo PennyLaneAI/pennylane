@@ -16,6 +16,7 @@
 from functools import partial
 from typing import Callable, Sequence
 
+import pennylane as qml
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape

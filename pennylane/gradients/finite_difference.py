@@ -30,7 +30,6 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (

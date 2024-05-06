@@ -15,6 +15,7 @@
 # pylint: disable=too-many-branches
 from typing import Callable, Sequence
 
+import pennylane as qml
 from pennylane.math import allclose, cast_like, get_interface, is_abstract, stack, zeros
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
