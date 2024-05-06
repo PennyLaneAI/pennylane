@@ -65,8 +65,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The ``qml.load`` has been deprecated in favour of the more specific functions.
-  [(#...)](https://github.com/PennyLaneAI/pennylane/pull/...)
+* The ``qml.load`` has been deprecated in favour of more specific functions, such as ``qml.from_qiskit``, etc.
+  [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
 <h3>Deprecations 👋</h3>
 
