@@ -65,8 +65,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality to the code.
-  [(#...)](https://github.com/PennyLaneAI/pennylane/pull/...)
+* `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
+  [(#5660)](https://github.com/PennyLaneAI/pennylane/pull/5660)
 
 <h3>Deprecations 👋</h3>
 
