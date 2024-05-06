@@ -109,6 +109,7 @@ packaging==24.0
 pandocfilters==1.5.1
 parso==0.8.4
 pathspec==0.12.1
+git+https://github.com/PennyLaneAI/pennylane@v0.36.0-rc0
 PennyLane-Catalyst==0.6.0
 PennyLane_Lightning==0.36.0
 pexpect==4.9.0
