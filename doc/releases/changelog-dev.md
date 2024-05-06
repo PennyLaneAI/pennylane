@@ -65,6 +65,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
+  [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
