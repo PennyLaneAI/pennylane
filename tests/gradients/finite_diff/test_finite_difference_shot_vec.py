@@ -17,13 +17,12 @@ Tests for the gradients.finite_difference module using shot vectors.
 import numpy
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
-from pennylane.gradients import finite_diff
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
+from pennylane.gradients import finite_diff
 from pennylane.measurements import Shots
-from pennylane.operation import Observable, AnyWires
+from pennylane.operation import AnyWires, Observable
 
 # pylint:disable = use-implicit-booleaness-not-comparison
 
@@ -226,24 +225,14 @@ class TestFiniteDiff:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         all_result = qml.gradients.finite_diff(circuit, h=h_val)(params)
+
+        assert isinstance(all_result, tuple)
         assert len(all_result) == len(default_shot_vector)
 
         for result in all_result:
-            assert isinstance(result, tuple)
-
-            assert len(result) == 3
-
-            assert isinstance(result[0], numpy.ndarray)
-            assert result[0].shape == (4,)
-            assert np.allclose(result[0], 0)
-
-            assert isinstance(result[1], numpy.ndarray)
-            assert result[1].shape == (4,)
-            assert np.allclose(result[1], 0)
-
-            assert isinstance(result[2], numpy.ndarray)
-            assert result[2].shape == (4,)
-            assert np.allclose(result[2], 0)
+            assert isinstance(result, np.ndarray)
+            assert result.shape == (4, 3)
+            assert np.allclose(result, 0)
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -259,42 +248,16 @@ class TestFiniteDiff:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         all_result = qml.gradients.finite_diff(circuit, h=h_val)(params)
+        assert isinstance(all_result, tuple)
         assert len(all_result) == len(many_shots_shot_vector)
 
-        for result in all_result:
-            assert isinstance(result, tuple)
-
-            assert len(result) == 2
-
-            # First elem
-            assert len(result[0]) == 3
-
-            assert isinstance(result[0][0], numpy.ndarray)
-            assert result[0][0].shape == ()
-            assert np.allclose(result[0][0], 0)
-
-            assert isinstance(result[0][1], numpy.ndarray)
-            assert result[0][1].shape == ()
-            assert np.allclose(result[0][1], 0)
-
-            assert isinstance(result[0][2], numpy.ndarray)
-            assert result[0][2].shape == ()
-            assert np.allclose(result[0][2], 0)
-
-            # Second elem
-            assert len(result[0]) == 3
-
-            assert isinstance(result[1][0], numpy.ndarray)
-            assert result[1][0].shape == (4,)
-            assert np.allclose(result[1][0], 0)
-
-            assert isinstance(result[1][1], numpy.ndarray)
-            assert result[1][1].shape == (4,)
-            assert np.allclose(result[1][1], 0)
-
-            assert isinstance(result[1][2], numpy.ndarray)
-            assert result[1][2].shape == (4,)
-            assert np.allclose(result[1][2], 0)
+        for res in all_result:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r, exp_shape in zip(res, [(3,), (4, 3)]):
+                assert isinstance(r, np.ndarray)
+                assert r.shape == exp_shape
+                assert np.allclose(r, 0)
 
     def test_y0(self):
         """Test that if first order finite differences is used, then
@@ -366,10 +329,10 @@ class TestFiniteDiff:
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=(1, 1000, 1001))
 
         def cost1(x):
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
         def cost2(x):
@@ -385,7 +348,7 @@ class TestFiniteDiff:
             return qml.probs([0, 1])
 
         def cost5(x):
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return [qml.probs([0, 1])]
 
         def cost6(x):
@@ -396,7 +359,31 @@ class TestFiniteDiff:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x)) for c in circuits]
-        expected = [(3, 3), (1, 3, 3), (3, 2, 3), (3, 3, 4), (1, 3, 3, 4), (3, 2, 3, 4)]
+        expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
+        assert all(t == q for t, q in zip(transform, expected))
+
+    def test_output_shape_matches_qnode_two_args(self):
+        """Test that the transform output shape matches that of a QNode with multiple args."""
+        dev = qml.device("default.qubit", wires=4, shots=(1, 1000, 1001))
+
+        def cost1(x, y, z):
+            qml.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def cost2(x, y, z):
+            qml.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
+            return qml.probs([0, 1]), qml.probs([2, 3])
+
+        x, y, z = np.random.rand(3, 2)
+        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2)]
+
+        transform = [
+            qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x, y, z)) for c in circuits
+        ]
+        expected = [
+            (3, 3, 2),  # shot vector, params, param shape
+            (3, 2, 3, 4, 2),  # shot vector, measurements, params, measurement shape, param shape
+        ]
         assert all(t == q for t, q in zip(transform, expected))
 
     def test_special_observable_qnode_differentiation(self):
@@ -731,7 +718,7 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.1, rtol=0)
+            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.15, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 

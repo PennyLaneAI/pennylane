@@ -14,13 +14,15 @@
 """Unit tests for apply_operation in devices/qutrit_mixed/apply_operation."""
 
 from functools import reduce
-import pytest
+
 import numpy as np
+import pytest
 from scipy.stats import unitary_group
+
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Channel
 from pennylane.devices.qutrit_mixed import apply_operation, measure
+from pennylane.operation import Channel
 
 ml_frameworks_list = [
     "numpy",

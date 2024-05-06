@@ -62,7 +62,7 @@ The shape of the result object may be dictated either by the device or the other
 >>> tape = qml.tape.QuantumScript([qml.S(0)], (qml.probs(),))
 >>> qml.device('default.qubit').execute(tape)
 array([1., 0.])
->>> qml.device('lightning.qubit', wires=(0,1,2)).execute(tape)
+>>> qml.device('default.mixed', wires=(0,1,2)).execute(tape)
 array([1., 0., 0., 0., 0., 0., 0., 0.])
 
 Broadcasting
@@ -73,7 +73,7 @@ Parameter broadcasting adds a leading dimension to the numeric array itself.
 If the corresponding tape has a ``batch_size`` and the result object is numeric, then the numeric object should
 gain a leading dimension.
 
->>> op = qml.RX((0, np.pi/4, np.pi/2), wires=0))
+>>> op = qml.RX((0, np.pi/4, np.pi/2), wires=0)
 >>> tape = qml.tape.QuantumScript((op,), [qml.probs(wires=0)])
 >>> result = qml.device('default.qubit').execute(tape)
 >>> result

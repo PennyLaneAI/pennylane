@@ -22,8 +22,8 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
-from .sample import SampleMP
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
 def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":

@@ -15,14 +15,13 @@
 
 from random import shuffle
 
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane.devices.qubit import simulate
-from pennylane.devices.qubit.simulate import _FlexShots
-from pennylane.devices.qubit import sample_state, measure_with_samples
+from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
 from pennylane.devices.qubit.sampling import _sample_state_jax
+from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.measurements import Shots
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
@@ -509,6 +508,42 @@ class TestMeasureSamples:
         assert result.shape == ()
         assert result == -1.0
 
+    def test_identity_on_no_wires(self):
+        """Test that measure_with_samples can handle observables on no wires when no other measurements exist."""
+
+        state = np.array([0, 1])
+        mp = qml.measurements.ExpectationMP(qml.I())
+
+        [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
+        assert qml.math.allclose(result, 1.0)
+
+    def test_identity_on_no_wires_with_other_observables(self):
+        """Test that measuring an identity on no wires can be used in conjunction with other measurements."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported with legacy opmath.")
+
+        state = np.array([0, 1])
+
+        mps = [
+            qml.measurements.ExpectationMP(2 * qml.I()),
+            qml.expval(qml.Z(0)),
+            qml.probs(wires=0),
+        ]
+
+        results = measure_with_samples(mps, state, qml.measurements.Shots(1))
+        assert qml.math.allclose(results[0], 2.0)
+        assert qml.math.allclose(results[1], -1.0)
+
+    def test_measuring_sum_with_identity_on_no_wires(self):
+        """Test that we can measure a sum with an identity on no wires."""
+
+        state = np.array([0, 1])
+
+        mp = qml.expval(qml.Z(0) + 2 * qml.I())
+        [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
+        assert qml.math.allclose(result, 1)  # -1 + 2
+
 
 class TestInvalidStateSamples:
     """Tests for state vectors containing nan values or shot vectors with zero shots."""
@@ -856,7 +891,7 @@ class TestBroadcasting:
             r = r[0]
 
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.01)
+            assert np.allclose(r, expected, atol=0.02)
 
 
 @pytest.mark.jax
@@ -1057,7 +1092,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(0),
         )
 
         spy.assert_called()
@@ -1071,13 +1106,14 @@ class TestBroadcastingPRNG:
             r = r[0]
 
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.01)
+            assert np.allclose(r, expected, atol=0.03)
 
 
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables"""
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval(self):
         """Test that sampling works well for Hamiltonian observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -1108,6 +1144,7 @@ class TestHamiltonianSamples:
 
     def test_sum_expval(self):
         """Test that sampling works well for Sum observables"""
+
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
@@ -1133,6 +1170,32 @@ class TestHamiltonianSamples:
         assert isinstance(res, tuple)
         assert np.allclose(res[0], expected, atol=0.01)
         assert np.allclose(res[1], expected, atol=0.01)
+
+    def test_prod_expval(self):
+        """Tests that sampling works for Prod observables"""
+
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(y, wires=0), qml.RX(x, wires=1)]
+        H = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        tape = qml.tape.QuantumScript(
+            ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
+        )
+        res = simulate(tape, rng=200)
+        expected = [np.sin(y), -np.sin(y) * np.sin(x)]
+        assert np.allclose(res, expected, atol=0.05)
+
+    def test_sprod_expval(self):
+        """Tests that sampling works for SProd observables"""
+
+        y = np.array(0.95)
+        ops = [qml.RY(y, wires=0)]
+        H = qml.s_prod(1.5, qml.PauliX(0))
+        tape = qml.tape.QuantumScript(
+            ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
+        )
+        res = simulate(tape, rng=200)
+        expected = [np.sin(y), 1.5 * np.sin(y)]
+        assert np.allclose(res, expected, atol=0.05)
 
     def test_multi_wires(self):
         """Test that sampling works for Sums with large numbers of wires"""

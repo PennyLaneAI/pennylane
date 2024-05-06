@@ -14,8 +14,8 @@
 """
 Integration tests for the ``default.qubit.jax`` device.
 """
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane import DeviceError

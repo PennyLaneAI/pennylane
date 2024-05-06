@@ -14,9 +14,11 @@
 """
 Unit tests for the CosineWindow template.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane.wires import WireError
 

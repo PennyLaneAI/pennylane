@@ -23,12 +23,12 @@ import pytest
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as pnp, X, Y, Z
-from pennylane.wires import Wires
-from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.ops import LinearCombination
-
+from pennylane import X, Y, Z
+from pennylane import numpy as pnp
 from pennylane.operation import enable_new_opmath_cm
+from pennylane.ops import LinearCombination
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.wires import Wires
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -51,6 +51,31 @@ class TestParityWithHamiltonian:
     def test_isinstance_Hamiltonian(self):
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
         assert isinstance(H, qml.Hamiltonian)
+
+
+@pytest.mark.filterwarnings(
+    "ignore:Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated"
+)
+def test_mixed_legacy_warning_Hamiltonian():
+    """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
+    op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
+    op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
+
+    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
+        res = op1.compare(op2)
+
+    assert res
+
+
+def test_mixed_legacy_warning_Tensor():
+    """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
+    op1 = qml.ops.LinearCombination([1.0], [X(0) @ qml.Hadamard(1)])
+    op2 = qml.operation.Tensor(X(0), qml.Hadamard(1))
+
+    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
+        res = op1.compare(op2)
+
+    assert res
 
 
 # Make test data in different interfaces, if installed
@@ -535,8 +560,15 @@ def circuit2(param):
 dev = qml.device("default.qubit", wires=2)
 
 
+@pytest.mark.usefixtures("use_new_opmath")
 class TestLinearCombination:
     """Test the LinearCombination class"""
+
+    def test_error_if_observables_operator(self):
+        """Test thatt an error is raised if an operator is provided to observables."""
+
+        with pytest.raises(ValueError, match=r"observables must be an Iterable of Operator's"):
+            qml.ops.LinearCombination([1, 1], qml.X(0) @ qml.Y(1))
 
     PAULI_REPS = (
         ([], [], PauliSentence({})),
@@ -617,12 +649,11 @@ class TestLinearCombination:
         data, metadata = H._flatten()
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
-        assert len(data) == 3
+        assert len(data) == 2
         assert qml.math.allequal(
             data[0], H._coeffs
         )  # Previously checking "is" instead of "==", problem?
         assert data[1] == H._ops
-        assert data[2] == H.data
 
         new_H = LinearCombination._unflatten(*H._flatten())
         assert qml.equal(H, new_H)
@@ -704,50 +735,11 @@ class TestLinearCombination:
         # check that the simplified LinearCombination is in the queue
         assert q.get_info(H) is not None
 
-    def test_data(self):
-        """Tests the obs_data method"""
-        # pylint: disable=protected-access
-
-        H = qml.ops.LinearCombination(
-            [1, 1, 0.5],
-            [Z(0), Z(0) @ X(1), X(2) @ qml.Identity(1)],
-        )
-        data = H._obs_data()
-
-        expected = {
-            (0.5, frozenset({("Prod", qml.wires.Wires([2, 1]), ())})),
-            (1.0, frozenset({("PauliZ", qml.wires.Wires(0), ())})),
-            (1.0, frozenset({("Prod", qml.wires.Wires([0, 1]), ())})),
-        }
-
-        assert data == expected
-
-    def test_data_gell_mann(self):
-        """Tests that the obs_data method for LinearCombinations with qml.GellMann
-        observables includes the Gell-Mann index."""
-        H = qml.ops.LinearCombination(
-            [1, -1, 0.5],
-            [
-                qml.GellMann(wires=0, index=3),
-                qml.GellMann(wires=0, index=3) @ qml.GellMann(wires=1, index=1),
-                qml.GellMann(wires=2, index=2),
-            ],
-        )
-        data = H._obs_data()
-
-        expected = {
-            (-1.0, frozenset({("Prod", qml.wires.Wires([0, 1]), ())})),
-            (0.5, frozenset({("GellMann", qml.wires.Wires(2), (2,))})),
-            (1.0, frozenset({("GellMann", qml.wires.Wires(0), (3,))})),
-        }
-
-        assert data == expected
-
     COMPARE_WITH_OPS = (
         (qml.ops.LinearCombination([0.5], [X(0) @ X(1)]), qml.s_prod(0.5, X(0) @ X(1))),
         (qml.ops.LinearCombination([0.5], [X(0) + X(1)]), qml.s_prod(0.5, qml.sum(X(0), X(1)))),
         (qml.ops.LinearCombination([1.0], [X(0)]), X(0)),
-        (qml.ops.LinearCombination([1.0], [qml.Hadamard(0)]), qml.Hadamard(0)),
+        # (qml.ops.LinearCombination([1.0], [qml.Hadamard(0)]), qml.Hadamard(0)), # TODO fix qml.equal check for Observables having to be the same type
         (qml.ops.LinearCombination([1.0], [X(0) @ X(1)]), X(0) @ X(1)),
     )
 
@@ -912,7 +904,6 @@ class TestLinearCombination:
 
     def test_LinearCombination_queue_inside(self):
         """Tests that LinearCombination are queued correctly when components are instantiated inside the recording context."""
-        assert qml.operation.active_new_opmath()
         with qml.queuing.AnnotatedQueue() as q:
             m = qml.expval(qml.ops.LinearCombination([1, 3, 1], [X(1), Z(0) @ Z(2), Z(1)]))
 
@@ -1457,6 +1448,12 @@ class TestLinearCombinationArithmeticJax:
 class TestGrouping:
     """Tests for the grouping functionality"""
 
+    def test_set_on_initialization(self):
+        """Test that grouping indices can be set on initialization."""
+
+        op = qml.ops.LinearCombination([1, 1], [qml.X(0), qml.Y(1)], _grouping_indices=[[0, 1]])
+        assert op.grouping_indices == [[0, 1]]
+
     def test_indentities_preserved(self):
         """Tests that the grouping indices do not drop identity terms when the wire order is nonstandard."""
 
@@ -1636,6 +1633,16 @@ class TestLinearCombinationEvaluation:
         pars = circuit.qtape.get_parameters(trainable_only=False)
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
+
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+    def test_queuing_behaviour(self):
+        """Tests that the base observables are correctly dequeued with simplify=True"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            obs = qml.Hamiltonian([1, 1, 1], [qml.X(0), qml.X(0), qml.Z(0)], simplify=True)
+
+        assert len(q) == 1
+        assert q.queue[0] == obs
 
 
 class TestLinearCombinationDifferentiation:

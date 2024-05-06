@@ -14,15 +14,16 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
-
 import itertools
 import numbers
+
+# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
+import warnings
 from copy import copy
 from typing import List
 
 import pennylane as qml
-from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
+from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath
 
 from .sum import Sum
 
@@ -100,14 +101,11 @@ class LinearCombination(Sum):
 
     def _flatten(self):
         # note that we are unable to restore grouping type or method without creating new properties
-        return (self._coeffs, self._ops, self.data), (self.grouping_indices,)
+        return self.terms(), (self.grouping_indices,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        new_op = cls(data[0], data[1])
-        new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
-        new_op.data = data[2]
-        return new_op
+        return cls(data[0], data[1], _grouping_indices=metadata[0])
 
     def __init__(
         self,
@@ -116,9 +114,14 @@ class LinearCombination(Sum):
         simplify=False,
         grouping_type=None,
         method="rlf",
+        _grouping_indices=None,
         _pauli_rep=None,
         id=None,
     ):
+        if isinstance(observables, Operator):
+            raise ValueError(
+                "observables must be an Iterable of Operator's, and not an Operator itself."
+            )
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid LinearCombination; "
@@ -147,7 +150,12 @@ class LinearCombination(Sum):
             operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
 
         super().__init__(
-            *operands, grouping_type=grouping_type, method=method, id=id, _pauli_rep=_pauli_rep
+            *operands,
+            grouping_type=grouping_type,
+            method=method,
+            id=id,
+            _grouping_indices=_grouping_indices,
+            _pauli_rep=_pauli_rep,
         )
 
     @staticmethod
@@ -321,58 +329,17 @@ class LinearCombination(Sum):
         coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
-    def _obs_data(self):
-        r"""Extracts the data from a ``LinearCombination`` and serializes it in an order-independent fashion.
-
-        This allows for comparison between ``LinearCombination``s that are equivalent, but are defined with terms and tensors
-        expressed in different orders. For example, `qml.X(0) @ qml.Z(1)` and
-        `qml.Z(1) @ qml.X(0)` are equivalent observables with different orderings.
-
-        .. Note::
-
-            In order to store the data from each term of the ``LinearCombination`` in an order-independent serialization,
-            we make use of sets. Note that all data contained within each term must be immutable, hence the use of
-            strings and frozensets.
-
-        **Example**
-
-        >>> H = qml.ops.LinearCombination([1, 1], [qml.X(0) @ qml.X(1), qml.Z(0)])
-        >>> print(H._obs_data())
-        {(1, frozenset({('Prod', <Wires = [0, 1]>, ())})),
-         (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
-        """
-        data = set()
-
-        coeffs_arr = qml.math.toarray(self.coeffs)
-        for co, op in zip(coeffs_arr, self.ops):
-            obs = op.non_identity_obs if isinstance(op, Tensor) else [op]
-            tensor = []
-            for ob in obs:
-                parameters = tuple(
-                    str(param) for param in ob.parameters
-                )  # Converts params into immutable type
-                if isinstance(ob, qml.GellMann):
-                    parameters += (ob.hyperparameters["index"],)
-                tensor.append((ob.name, ob.wires, parameters))
-            data.add((co, frozenset(tensor)))
-
-        return data
-
     def compare(self, other):
-        r"""Determines whether the operator is equivalent to another.
+        r"""Determines mathematical equivalence between operators
 
-        Currently only supported for :class:`~LinearCombination`, :class:`~.Observable`, or :class:`~.Tensor`.
-        LinearCombinations/observables are equivalent if they represent the same operator
-        (their matrix representations are equal), and they are defined on the same wires.
+        ``LinearCombination`` and other operators are equivalent if they mathematically represent the same operator
+        (their matrix representations are equal), acting on the same wires.
 
         .. Warning::
 
-            The compare method does **not** check if the matrix representation
-            of a :class:`~.Hermitian` observable is equal to an equivalent
-            observable expressed in terms of Pauli matrices, or as a
-            linear combination of Hermitians.
-            To do so would require the matrix form of LinearCombinations and Tensors
-            be calculated, which would drastically increase runtime.
+            This method does not compute explicit matrices but uses the underlyding operators and coefficients for comparisons. When both operators
+            consist purely of Pauli operators, and therefore have a valid ``op.pauli_rep``, the comparison is cheap.
+            When that is not the case (e.g. one of the operators contains a ``Hadamard`` gate), it can be more expensive as it involves mathematical simplification of both operators.
 
         Returns:
             (bool): True if equivalent.
@@ -404,16 +371,20 @@ class LinearCombination(Sum):
                 pr2.simplify()
                 return pr1 == pr2
 
-            if isinstance(other, (LinearCombination, qml.ops.Hamiltonian)):
+            if isinstance(other, (qml.ops.Hamiltonian, Tensor)):
+                warnings.warn(
+                    f"Attempting to compare a legacy operator class instance {other} of type {type(other)} with {self} of type {type(self)}."
+                    f"You are likely disabling/enabling new opmath in the same script or explicitly create legacy operator classes Tensor and ops.Hamiltonian."
+                    f"Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
+                    UserWarning,
+                )
                 op1 = self.simplify()
                 op2 = other.simplify()
-                return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
 
-            if isinstance(other, (Tensor, Observable)):
-                op1 = self.simplify()
-                return op1._obs_data() == {
-                    (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
-                }
+                op2 = qml.operation.convert_to_opmath(op2)
+                op2 = qml.ops.LinearCombination(*op2.terms())
+
+                return qml.equal(op1, op2)
 
             op1 = self.simplify()
             op2 = other.simplify()

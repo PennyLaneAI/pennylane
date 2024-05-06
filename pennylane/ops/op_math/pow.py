@@ -84,7 +84,7 @@ def pow(base, z=1, lazy=True, id=None):
     >>> qml.pow(qml.X(0), 2, lazy=False)
     I(0)
 
-    Lazy behavior can also be accessed via ``op ** z``.
+    Lazy behaviour can also be accessed via ``op ** z``.
 
     """
     if lazy:

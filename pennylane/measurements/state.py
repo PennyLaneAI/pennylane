@@ -14,10 +14,10 @@
 """
 This module contains the qml.state measurement.
 """
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 import pennylane as qml
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError, Wires
 
 from .measurements import State, StateMeasurement
 
@@ -156,9 +156,10 @@ class StateMP(StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
+        is_tf_interface = qml.math.get_deep_interface(state) == "tensorflow"
         wires = self.wires
         if not wires or wire_order == wires:
-            return qml.math.cast(state, "complex128")
+            return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
 
         if set(wires) != set(wire_order):
             raise WireError(
@@ -178,7 +179,7 @@ class StateMP(StateMeasurement):
         state = qml.math.reshape(state, shape)
         state = qml.math.transpose(state, desired_axes)
         state = qml.math.reshape(state, flat_shape)
-        return qml.math.cast(state, "complex128")
+        return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
 
 
 class DensityMatrixMP(StateMP):
@@ -211,4 +212,7 @@ class DensityMatrixMP(StateMP):
         # pylint:disable=redefined-outer-name
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        return qml.math.reduce_statevector(state, indices=mapped_wires)
+        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
+        if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
+            kwargs["c_dtype"] = state.dtype
+        return qml.math.reduce_statevector(state, **kwargs)

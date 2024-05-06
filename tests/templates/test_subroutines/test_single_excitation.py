@@ -14,10 +14,11 @@
 """
 Tests for the FermionicSingleExcitation template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 class TestDecomposition:

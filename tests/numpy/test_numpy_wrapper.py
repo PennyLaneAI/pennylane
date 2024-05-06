@@ -18,8 +18,8 @@ modifies Autograd NumPy arrays so that they have an additional property,
 """
 import numpy as onp
 import pytest
-
 from autograd.numpy.numpy_boxes import ArrayBox
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.numpy.tensor import tensor_to_arraybox

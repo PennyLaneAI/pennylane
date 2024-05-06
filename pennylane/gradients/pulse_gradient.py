@@ -15,27 +15,28 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
-from typing import Sequence, Callable
-from functools import partial
 import warnings
+from functools import partial
+from typing import Callable, Sequence
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.pulse import ParametrizedEvolution, HardwareHamiltonian
 from pennylane import transform
+from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
 
-from .parameter_shift import _make_zero_rep
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from .gradient_transform import (
     _all_zero_grad,
+    _no_trainable_grad,
     assert_no_state_returns,
-    assert_no_tape_batching,
+    assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_params,
     find_and_validate_gradient_methods,
-    _no_trainable_grad,
     reorder_grads,
 )
+from .parameter_shift import _make_zero_rep
 
 has_jax = True
 try:
@@ -391,7 +392,7 @@ def stoch_pulse_grad(
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit.jax")
 
         def sin(p, t):
             return jax.numpy.sin(p * t)
@@ -608,7 +609,7 @@ def stoch_pulse_grad(
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if num_split_times < 1:
         raise ValueError(

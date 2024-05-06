@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumScript"""
-from collections import defaultdict
 import copy
+from collections import defaultdict
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, State, VnEntropy, Shots
+from pennylane.measurements import MutualInfo, Shots, State, VnEntropy
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 

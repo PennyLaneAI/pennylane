@@ -29,7 +29,7 @@ def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
 
 def cost1(x):
     """Cost function."""
-    qml.Rot(*x, wires=0)
+    qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -42,7 +42,7 @@ def cost2(x):
 def cost3(x):
     """Cost function."""
     qml.Rot(*x, wires=0)
-    return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+    return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
 
 
 def cost4(x):
@@ -60,18 +60,58 @@ def cost5(x):
 def cost6(x):
     """Cost function."""
     qml.Rot(*x, wires=0)
-    return [qml.probs([0, 1]), qml.probs([2, 3])]
+    return (qml.probs([0, 1]), qml.probs([2, 3]))
+
+
+def cost7(x):
+    """Cost function."""
+    qml.RX(x, 0)
+    return qml.expval(qml.PauliZ(0))
+
+
+def cost8(x):
+    """Cost function."""
+    qml.RX(x, 0)
+    return [qml.expval(qml.PauliZ(0))]
+
+
+def cost9(x):
+    """Cost function."""
+    qml.RX(x, 0)
+    return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
 
 
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
-    def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape."""
+    def test_trainable_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the Hadamard test gradient"
+        _match = r"Computing the gradient of broadcasted tapes .* using the Hadamard test gradient"
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.hadamard_grad(tape)
+
+    def test_nontrainable_batched_tape(self):
+        """Test that no error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is not differentiated, and that the results correspond to the stacked
+        results of the single-tape derivatives."""
+        dev = qml.device("default.qubit")
+        x = [0.4, 0.2]
+        tape = qml.tape.QuantumScript(
+            [qml.RY(0.6, 0), qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
+        batched_tapes, batched_fn = qml.gradients.hadamard_grad(tape)
+        batched_grad = batched_fn(dev.execute(batched_tapes))
+        separate_tapes = [
+            qml.tape.QuantumScript(
+                [qml.RY(0.6, 0), qml.RX(_x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            )
+            for _x in x
+        ]
+        separate_tapes_and_fns = [qml.gradients.hadamard_grad(t) for t in separate_tapes]
+        separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
+        assert np.allclose(batched_grad, separate_grad)
 
     def test_tape_with_partitioned_shots_multiple_measurements_raises(self):
         """Test that an error is raised with multiple measurements and partitioned shots."""
@@ -458,15 +498,36 @@ class TestHadamardGrad:
         assert np.allclose(res_hadamard[1][0], probs_expected[:, 0], tol)
         assert np.allclose(res_hadamard[1][1], probs_expected[:, 1], tol)
 
-    costs_and_expected_expval = [
-        (cost1, [3]),
-        (cost2, [3]),
-        (cost3, [2, 3]),
+    costs_and_expected_expval_scalar = [
+        (cost7, (), np.ndarray),
+        (cost8, (1,), list),
+        (cost9, (2,), tuple),
     ]
 
-    @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_expval)
-    def test_output_shape_matches_qnode_expval(self, cost, expected_shape):
-        """Test that the transform output shape matches that of the QNode."""
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_scalar)
+    def test_output_shape_matches_qnode_expval_scalar(self, cost, exp_shape, exp_type):
+        """Test that the transform output shape matches that of the QNode for
+        expectation values and a scalar parameter."""
+        dev = qml.device("default.qubit", wires=4)
+
+        x = np.array(0.419)
+        circuit = qml.QNode(cost, dev)
+
+        res_hadamard = qml.gradients.hadamard_grad(circuit)(x)
+
+        assert isinstance(res_hadamard, exp_type)
+        assert np.array(res_hadamard).shape == exp_shape
+
+    costs_and_expected_expval_array = [
+        (cost1, [3], np.ndarray),
+        (cost2, [3], list),
+        (cost3, [2, 3], tuple),
+    ]
+
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_array)
+    def test_output_shape_matches_qnode_expval_array(self, cost, exp_shape, exp_type):
+        """Test that the transform output shape matches that of the QNode for
+        expectation values and an array-valued parameter."""
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
@@ -474,24 +535,24 @@ class TestHadamardGrad:
 
         res_hadamard = qml.gradients.hadamard_grad(circuit)(x)
 
-        assert isinstance(res_hadamard, (tuple, list))
+        assert isinstance(res_hadamard, exp_type)
         if len(res_hadamard) == 1:
             res_hadamard = res_hadamard[0]
-        assert len(res_hadamard) == expected_shape[0]
+        assert len(res_hadamard) == exp_shape[0]
 
-        if len(expected_shape) > 1:
+        if len(exp_shape) > 1:
             for r in res_hadamard:
-                assert isinstance(r, tuple)
-                assert len(r) == expected_shape[1]
+                assert isinstance(r, np.ndarray)
+                assert len(r) == exp_shape[1]
 
     costs_and_expected_probs = [
-        (cost4, [3, 4]),
-        (cost5, [3, 4]),
-        (cost6, [2, 3, 4]),
+        (cost4, [4, 3], np.ndarray),
+        (cost5, [4, 3], list),
+        (cost6, [2, 4, 3], tuple),
     ]
 
-    @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_probs)
-    def test_output_shape_matches_qnode_probs(self, cost, expected_shape):
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
+    def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type):
         """Test that the transform output shape matches that of the QNode."""
         dev = qml.device("default.qubit", wires=5)
 
@@ -499,24 +560,24 @@ class TestHadamardGrad:
         circuit = qml.QNode(cost, dev)
 
         res_hadamard = qml.gradients.hadamard_grad(circuit)(x)
-        assert isinstance(res_hadamard, (tuple, list))
+        assert isinstance(res_hadamard, exp_type)
         if len(res_hadamard) == 1:
             res_hadamard = res_hadamard[0]
-        assert len(res_hadamard) == expected_shape[0]
+        assert len(res_hadamard) == exp_shape[0]
 
-        if len(expected_shape) > 2:
+        if len(exp_shape) > 2:
             for r in res_hadamard:
-                assert isinstance(r, tuple)
-                assert len(r) == expected_shape[1]
+                assert isinstance(r, np.ndarray)
+                assert len(r) == exp_shape[1]
 
                 for r_ in r:
-                    assert isinstance(r_, qml.numpy.ndarray)
-                    assert len(r_) == expected_shape[2]
+                    assert isinstance(r_, np.ndarray)
+                    assert len(r_) == exp_shape[2]
 
-        elif len(expected_shape) > 1:
+        elif len(exp_shape) > 1:
             for r in res_hadamard:
-                assert isinstance(r, qml.numpy.ndarray)
-                assert len(r) == expected_shape[1]
+                assert isinstance(r, np.ndarray)
+                assert len(r) == exp_shape[1]
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):
@@ -975,35 +1036,24 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[1][2].shape == (4,)
         assert np.allclose(res_hadamard[1][2], 0)
 
-    def test_all_zero_diff_methods(self):
+    @pytest.mark.parametrize("prefactor", [1.0, 2.0])
+    def test_all_zero_diff_methods(self, prefactor):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def circuit(params):
-            qml.Rot(*params, wires=0)
+            qml.Rot(*(prefactor * params), wires=0)
             return qml.probs([2, 3])
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.hadamard_grad(circuit)(params)
 
-        assert isinstance(result, tuple)
-
-        assert len(result) == 3
-
-        assert isinstance(result[0], np.ndarray)
-        assert result[0].shape == (4,)
-        assert np.allclose(result[0], 0)
-
-        assert isinstance(result[1], np.ndarray)
-        assert result[1].shape == (4,)
-        assert np.allclose(result[1], 0)
-
-        assert isinstance(result[2], np.ndarray)
-        assert result[2].shape == (4,)
-        assert np.allclose(result[2], 0)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (4, 3)
+        assert np.allclose(result, 0)
 
 
 class TestHadamardTestGradDiff:
@@ -1281,7 +1331,6 @@ class TestJaxArgnums:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         x = jax.numpy.array([0.543, -0.654])
@@ -1292,12 +1341,11 @@ class TestJaxArgnums:
         )
         res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
 
-        if argnums == [0]:
-            assert np.allclose(res[0][0], res_expected[0][0][0])
-            assert np.allclose(res[1][0], res_expected[0][0][1])
+        if len(argnums) == 1:
+            # jax.hessian produces an additional tuple axis, which we have to index away here
+            assert np.allclose(res, res_expected[0])
         else:
-            if len(argnums) != 1:
-                res = res[0]
-
-            for r, r_e in zip(res, res_expected[0]):
-                assert np.allclose(r, r_e)
+            # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]
+            for r, r_e in zip(res, res_expected):
+                for r_, r_e_ in zip(r, r_e):
+                    assert np.allclose(r_, r_e_)
