@@ -795,4 +795,3 @@ def test_error_raised_for_incompatible_type():
 
     with pytest.raises(NotImplementedError, match="Unsupported type"):
         qchem.molecular_hamiltonian(symbols=1, coordinates=test_coordinates, method="dhf")
-    
