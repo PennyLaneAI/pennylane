@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `param_shift` with the `broadcast=True` option now supports shot vectors and multiple measurements.
+  [(#5667)](https://github.com/PennyLaneAI/pennylane/pull/5667)
+
 * When using `defer_measurements` with postselecting mid-circuit measurements, operations
   that will never be active due to the postselected state are skipped in the transformed
   quantum circuit. In addition, postselected controls are skipped, as they are evaluated
