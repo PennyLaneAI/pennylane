@@ -49,6 +49,7 @@ class SymbolicOp(Operator):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        # has no wires, so doesn't need any wires processing
         return cls._primitive.bind(*args, **kwargs)
 
     # pylint: disable=attribute-defined-outside-init

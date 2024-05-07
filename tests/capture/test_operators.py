@@ -122,6 +122,8 @@ def test_hybrid_capture_parametrization():
 @pytest.mark.parametrize("as_kwarg", (True, False))
 @pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0), {0}))
 def test_different_wires(w, as_kwarg):
+    """Test that wires can be passed positionally and as a keyword in a variety of differnt types."""
+
     def qfunc():
         if as_kwarg:
             qml.X(wires=w)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Integration tests for the capture of pennylane operations into jaxpr.
+Unit tests for the CaptureMeta metaclass.
 """
 # pylint: disable=protected-access
 import pytest
@@ -68,3 +68,9 @@ def test_custom_capture_meta_no_bind_primitive_call():
 
     with pytest.raises(NotImplementedError, match="Types using CaptureMeta must implement"):
         MyObj(0.5)
+
+    def f():
+        MyObj(0.5)
+
+    with pytest.raises(NotImplementedError, match="Types using CaptureMeta must implement"):
+        jax.make_jaxpr(f)()

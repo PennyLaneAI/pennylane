@@ -184,6 +184,7 @@ class TrotterProduct(ErrorOperation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        # accepts no wires, so bypasses the wire processing.
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(  # pylint: disable=too-many-arguments
