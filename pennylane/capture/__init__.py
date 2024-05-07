@@ -71,7 +71,7 @@ But an operator developer may need to override custom behavior for calling ``cls
 * The operator does not accept wires, like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
 * The operator allows metadata to be provided positionally, like :class:`~.PauliRot`.
 
-In such cases, the operator developer can override ``cls._primitive_bind_call``.  This is what
+In such cases, the operator developer can override ``cls._primitive_bind_call``, which
 will be called when constructing a new class instance instead of ``type.__call__``.  For example,
 
 .. code-block:: python
@@ -90,7 +90,7 @@ will be called when constructing a new class instance instead of ``type.__call__
     def qfunc():
         JustMetadataOp("Y")
 
-    qml.capture.enable_plxpr()
+    qml.capture.enable()
     print(jax.make_jaxpr(qfunc)())
 
 .. code-block::
