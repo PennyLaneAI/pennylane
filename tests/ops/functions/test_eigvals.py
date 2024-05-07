@@ -16,10 +16,11 @@ Unit tests for the eigvals transform
 """
 # pylint: disable=too-few-public-methods
 from functools import reduce
+
 import pytest
 import scipy
-
 from gate_data import CNOT, H, I, S, X, Y, Z
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import TransformError

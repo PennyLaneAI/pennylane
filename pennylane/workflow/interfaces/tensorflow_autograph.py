@@ -24,11 +24,7 @@ import tensorflow as tf
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP
 
-from .tensorflow import (
-    _res_restructured,
-    _to_tensors,
-    set_parameters_on_copy,
-)
+from .tensorflow import _res_restructured, _to_tensors, set_parameters_on_copy
 
 
 def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):

@@ -13,12 +13,12 @@
 # limitations under the License.
 """Unit tests for the var module"""
 
-from flaky import flaky
 import numpy as np
 import pytest
+from flaky import flaky
 
 import pennylane as qml
-from pennylane.measurements import Variance, Shots, VarianceMP
+from pennylane.measurements import Shots, Variance, VarianceMP
 
 
 class TestVar:

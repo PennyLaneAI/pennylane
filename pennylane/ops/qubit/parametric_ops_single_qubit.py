@@ -18,10 +18,12 @@ core parameterized gates.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
 stack_last = functools.partial(qml.math.stack, axis=-1)

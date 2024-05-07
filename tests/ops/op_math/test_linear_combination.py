@@ -23,12 +23,12 @@ import pytest
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as pnp, X, Y, Z
-from pennylane.wires import Wires
-from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.ops import LinearCombination
-
+from pennylane import X, Y, Z
+from pennylane import numpy as pnp
 from pennylane.operation import enable_new_opmath_cm
+from pennylane.ops import LinearCombination
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.wires import Wires
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")

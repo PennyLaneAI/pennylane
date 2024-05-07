@@ -14,6 +14,7 @@
 """Test the pennylane drawer with Catalyst."""
 # pylint: disable=import-outside-toplevel,protected-access
 import pytest
+
 import pennylane as qml
 
 pytest.skip(allow_module_level=True)

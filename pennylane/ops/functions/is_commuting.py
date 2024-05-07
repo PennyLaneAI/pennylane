@@ -16,9 +16,10 @@ Defines `is_commuting`, an function for determining if two functions commute.
 """
 
 import numpy as np
+
 import pennylane as qml
+from pennylane.ops.op_math import Prod, SProd, Sum
 from pennylane.pauli.utils import _wire_map_from_pauli_pair
-from pennylane.ops.op_math import SProd, Prod, Sum
 
 
 def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):

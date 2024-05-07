@@ -13,9 +13,9 @@
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
 import warnings
-
 from dataclasses import dataclass
 from typing import Callable, List, Union
+
 import numpy as np
 
 import pennylane as qml

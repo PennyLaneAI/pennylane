@@ -14,8 +14,9 @@
 """
 Tests for the Interferometer template.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.wires import Wires
 

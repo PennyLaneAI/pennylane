@@ -15,39 +15,40 @@
 The default.qubit device is PennyLane's standard qubit-based device.
 """
 
-from dataclasses import replace
-from functools import partial
-from numbers import Number
-from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
 import inspect
 import logging
+from dataclasses import replace
+from functools import partial
+from numbers import Number
+from typing import Callable, Optional, Sequence, Tuple, Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import Conditional
 from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumTape
-from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
-from .modifiers import single_tape_support, simulator_tracking
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     mid_circuit_measurements,
-    validate_observables,
+    no_sampling,
+    validate_adjoint_trainable_params,
+    validate_device_wires,
     validate_measurements,
     validate_multiprocessing_workers,
-    validate_device_wires,
-    validate_adjoint_trainable_params,
-    no_sampling,
+    validate_observables,
 )
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 from .qubit.sampling import jax_random_split
-from .qubit.simulate import simulate, get_final_state, measure_final_state
-from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+from .qubit.simulate import get_final_state, measure_final_state, simulate
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

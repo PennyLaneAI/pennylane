@@ -26,13 +26,13 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import (
+    _UNSET_BATCH_SIZE,
     Operation,
     Operator,
     StatePrepBase,
     Tensor,
     convert_to_legacy_H,
     operation_derivative,
-    _UNSET_BATCH_SIZE,
 )
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires

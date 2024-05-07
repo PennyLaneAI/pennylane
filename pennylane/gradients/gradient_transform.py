@@ -13,18 +13,13 @@
 # limitations under the License.
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
-# pylint: disable=too-few-public-methods
-from functools import partial
 import warnings
 
+# pylint: disable=too-few-public-methods
+from functools import partial
+
 import pennylane as qml
-from pennylane.measurements import (
-    MutualInfoMP,
-    StateMP,
-    VarianceMP,
-    VnEntropyMP,
-    ProbabilityMP,
-)
+from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",

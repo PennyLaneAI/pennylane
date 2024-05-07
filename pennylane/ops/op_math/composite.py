@@ -16,12 +16,12 @@ This submodule defines a base class for composite operations.
 """
 # pylint: disable=too-many-instance-attributes
 import abc
-from typing import Callable, List
 import copy
+from typing import Callable, List
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, _UNSET_BATCH_SIZE
+from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes

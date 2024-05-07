@@ -15,12 +15,13 @@
 Tests for the gradients.pulse_gradient module.
 """
 
-import warnings
 import copy
-import pytest
-import numpy as np
-import pennylane as qml
+import warnings
 
+import numpy as np
+import pytest
+
+import pennylane as qml
 from pennylane.gradients.general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from pennylane.gradients.pulse_gradient import (
     _parshift_and_integrate,

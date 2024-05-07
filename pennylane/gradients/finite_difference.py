@@ -15,29 +15,30 @@
 This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
-from typing import Sequence, Callable
 import functools
 from functools import partial
+
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+from typing import Callable, Sequence
 from warnings import warn
 
 import numpy as np
-from scipy.special import factorial
 from scipy.linalg import solve as linalg_solve
+from scipy.special import factorial
 
 import pennylane as qml
-from pennylane.measurements import ProbabilityMP
 from pennylane import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.measurements import ProbabilityMP
+from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
+    _no_trainable_grad,
     assert_no_trainable_tape_batching,
     choose_trainable_params,
     find_and_validate_gradient_methods,
-    _no_trainable_grad,
 )
 
 

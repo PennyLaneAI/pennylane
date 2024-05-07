@@ -3,10 +3,11 @@ Unit tests for transpiler function.
 """
 
 from math import isclose
+
 import pytest
 
-from pennylane import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.transforms.transpile import transpile
 
 

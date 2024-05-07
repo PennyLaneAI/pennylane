@@ -14,11 +14,12 @@
 """ Tests for the transform ``qml.transform.split_non_commuting()`` """
 # pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error
 import itertools
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 import pennylane.numpy as pnp
-
 from pennylane.transforms import split_non_commuting
 
 # list of observables with 2 commuting groups [[1, 3], [0, 2, 4]]

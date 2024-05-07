@@ -27,10 +27,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
-    MeasurementProcess,
     CountsMP,
     Expectation,
     ExpectationMP,
+    MeasurementProcess,
     MidMeasureMP,
     Probability,
     ProbabilityMP,
@@ -40,12 +40,11 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-
-from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
-from pennylane.ops import Hamiltonian, Sum, LinearCombination, Prod, SProd
+from pennylane.operation import Observable, Operation, Operator, StatePrepBase, Tensor
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
-from pennylane.queuing import QueuingManager
 
 
 def _local_tape_expand(tape, depth, stop_at):

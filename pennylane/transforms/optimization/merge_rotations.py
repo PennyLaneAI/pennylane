@@ -13,15 +13,15 @@
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
 # pylint: disable=too-many-branches
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
+from pennylane.math import allclose, cast_like, get_interface, is_abstract, stack, zeros
+from pennylane.ops.op_math import Adjoint
+from pennylane.ops.qubit.attributes import composable_rotations
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
-from pennylane.math import allclose, stack, cast_like, zeros, is_abstract, get_interface
-from pennylane.queuing import QueuingManager
 
-from pennylane.ops.qubit.attributes import composable_rotations
-from pennylane.ops.op_math import Adjoint
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 

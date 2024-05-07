@@ -14,8 +14,9 @@
 """
 Unit tests for the debugging module.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 
 

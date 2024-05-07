@@ -14,9 +14,9 @@
 """Contains template for QDrift subroutine."""
 
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane.math import requires_grad, unwrap
-from pennylane.ops import Sum, SProd, Hamiltonian, LinearCombination
+from pennylane.operation import Operation
+from pennylane.ops import Hamiltonian, LinearCombination, SProd, Sum
 
 
 @qml.QueuingManager.stop_recording()

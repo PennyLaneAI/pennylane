@@ -625,7 +625,7 @@ class TestVectorValuedQNode:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            **kwargs
+            **kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1013,7 +1013,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1071,7 +1071,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1140,7 +1140,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1212,7 +1212,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1315,7 +1315,7 @@ class TestQubitIntegrationHigherOrder:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -1502,7 +1502,7 @@ class TestTapeExpansion:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
@@ -1575,7 +1575,7 @@ class TestTapeExpansion:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
