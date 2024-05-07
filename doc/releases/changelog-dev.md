@@ -63,6 +63,11 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+<h4>Community contributions 🥳</h4>
+
+* Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support for `_equal_pow`, `_equal_adjoint`, `_equal_exp` and `_equal_sprod`, overloads of the `qml.equal` method.
+  [(#5408)](https://github.com/PennyLaneAI/pennylane/issues/5408)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -77,4 +82,5 @@ This release contains contributions from (in alphabetical order):
 
 Pietropaolo Frisoni,
 Christina Lee,
+Kenya Sakka,
 David Wierichs.
