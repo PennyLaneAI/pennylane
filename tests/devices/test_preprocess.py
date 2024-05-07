@@ -115,7 +115,7 @@ class TestPrivateHelpers:
         op = NoMatNoDecompOp("a")
         with pytest.raises(
             DeviceError,
-            match=r"not supported on abc and does",
+            match=r"not supported with abc and does",
         ):
             tuple(
                 _operator_decomposition_gen(
@@ -192,7 +192,7 @@ class TestDecomposeValidation:
         """Test that expand_fn throws an error when an operation is does not define a matrix or decomposition."""
 
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
-        with pytest.raises(DeviceError, match="not supported on abc"):
+        with pytest.raises(DeviceError, match="not supported with abc"):
             decompose(tape, lambda op: op.has_matrix, name="abc")
 
     def test_decompose(self):

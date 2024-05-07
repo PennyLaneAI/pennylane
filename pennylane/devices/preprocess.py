@@ -58,7 +58,7 @@ def _operator_decomposition_gen(
             current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
-                f"Operator {op} not supported on {name} and does not provide a decomposition."
+                f"Operator {op} not supported with {name} and does not provide a decomposition."
             ) from e
 
         for sub_op in decomp:
