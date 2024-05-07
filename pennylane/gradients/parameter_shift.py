@@ -153,7 +153,7 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
 
     If an unshifted term exists, its contribution is added to the gradient.
     """
-    if isinstance(result, (list, tuple)) and (result == [] or result == ()):
+    if isinstance(result, tuple) and result == ():
         if unshifted_coeff is None:
             raise ValueError(
                 "This gradient component neither has a shifted nor an unshifted component. "
@@ -424,7 +424,7 @@ def expval_param_shift(
                     grads.append(None)
                     continue
                 # The gradient for this parameter is computed from r0 alone.
-                g = _evaluate_gradient(tape_specs, [], data, r0, batch_size)
+                g = _evaluate_gradient(tape_specs, (), data, r0, batch_size)
                 grads.append(g)
                 continue
 
