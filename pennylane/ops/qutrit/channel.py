@@ -27,21 +27,110 @@ class QutritDepolarizingChannel(Channel):
     r"""
     Single-qutrit symmetrically depolarizing error channel.
     This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-p} \begin{bmatrix}
+                1 & 0 & 0\\
+                0 & 1 & 0\\
+                0 & 0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{p/9}\begin{bmatrix}
+                0 & 1 & 0 \\
+                0 & 0 & 1 \\
+                1 & 0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_2 = \sqrt{p/9}\begin{bmatrix}
+                0 & 0 & 1 \\
+                1 & 0 & 0 \\
+                0 & 1 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_3 = \sqrt{p/9}\begin{bmatrix}
+                1 & 0 & 0\\
+                0 & \omega & 0\\
+                0 & 0 & \omega^2
+                \end{bmatrix}
+    .. math::
+        K_4 = \sqrt{p/9}\begin{bmatrix}
+                1 & 0 & 0\\
+                0 & \omega^2 & 0\\
+                0 & 0 & \omega^4
+                \end{bmatrix}
+
+    .. math::
+        K_5 = \sqrt{p/9}\begin{bmatrix}
+                0 & \omega & 0 \\
+                0 & 0 & \omega^2 \\
+                1 & 0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_6 = \sqrt{p/9}\begin{bmatrix}
+                0 & 0 & omega^2 \\
+                1 & 0 & 0 \\
+                0 & omega & 0
+                \end{bmatrix}
+
+    .. math::
+        K_7 = \sqrt{p/9}\begin{bmatrix}
+                0 & \omega^2 & 0 \\
+                0 & 0 & \omega \\
+                1 & 0 & 0
+                \end{bmatrix}
+
+    .. math::
+        K_8 = \sqrt{p/9}\begin{bmatrix}
+                0 & 0 & \omega \\
+                1 & 0 & 0 \\
+                0 & \omega^2 & 0
+                \end{bmatrix}
+
+    OR:
+        .. math::
+        X = \sqrt{p/9}\begin{bmatrix}
+                0 & 1 & 0 \\
+                0 & 0 & 1 \\
+                1 & 0 & 0
+                \end{bmatrix}
+
+        .. math::
+        Z = \sqrt{p/9}\begin{bmatrix}
+                1 & 0 & 0\\
+                0 & \omega & 0\\
+                0 & 0 & \omega^2
+                \end{bmatrix}
+
+        .. math::
+        K_0 = \sqrt{1-p} \begin{bmatrix}
+                1 & 0 & 0\\
+                0 & 1 & 0\\
+                0 & 0 & 1
+                \end{bmatrix}
+
+        .. math::
+        K_{i,j} = \sqrt{p/9}X^iZ^j, \{i,j\} \neq \{0,0\}
+
+    Where :math:`\omega=\exp(\frac{2\pi}{3})`  is the phase defining the third root of identity.
     where :math:`p \in [0, 1]` is the depolarization probability and is equally
-    divided in the application of all TODO operations.
+    divided in the application of all qutrit Pauli operators.
     .. note::
-        Multiple equivalent definitions of the Kraus operators :math:`\{K_0 \ldots K_8\}` exist in #TODO fix liturature
-        the literature [`1 <https://michaelnielsen.org/qcqi/>`_] (Eqs. 8.102-103). Here, we adopt the
-        one from Eq. 8.103, which is also presented in [`2 <http://theory.caltech.edu/~preskill/ph219/chap3_15.pdf>`_] (Eq. 3.85).  # TODO change sources
+        The Kraus operators :math:`\{K_0 \ldots K_8\} used are the representations of the single qutrit Pauli group.
+        These Kraus operators are defined in [`1 <https://arxiv.org/pdf/quant-ph/9802007>`_] (Eq. 5).
+        [`2 <https://ui.adsabs.harvard.edu/link_gateway/1988JMP....29..665P/doi:10.1063/1.52800611.>`_] (Eq. 3.2)
         For this definition, please make a note of the following:
         * For :math:`p = 0`, the channel will be an Identity channel, i.e., a noise-free channel.
-        * For :math:`p = TODO \frac{3}{4}`, the channel will be a fully depolarizing channel.
-        * For :math:`p = 1`, the channel will be a uniform TODO error channel.
+        * For :math:`p = \frac{8}{9}`, the channel will be a fully depolarizing channel.
+        * For :math:`p = 1`, the channel will be a uniform error channel.
     **Details:**
     * Number of wires: 1
     * Number of parameters: 1
     Args:
-        p (float): Each TODO gate is applied with probability :math:`\frac{p}{3}`
+        p (float): Each gate is applied with probability :math:`\frac{p}{9}`
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
@@ -56,48 +145,46 @@ class QutritDepolarizingChannel(Channel):
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
         r"""Kraus matrices representing the depolarizing channel.
         Args:
-            p (float): each TODO gate is applied with probability :math:`\frac{p}{9}`
+            p (float): each gate is applied with probability :math:`\frac{p}{9}`
         Returns:
             list (array): list of Kraus matrices
         **Example**
-        >>> qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5)
-        [array([[0.74535599+0.j, 0.        +0.j, 0.        +0.j],
-       [0.        +0.j, 0.74535599+0.j, 0.        +0.j],
-       [0.        +0.j, 0.        +0.j, 0.74535599+0.j]]), array([[0.        , 0.23570226, 0.        ],
-       [0.        , 0.        , 0.23570226],
-       [0.23570226, 0.        , 0.        ]]), array([[0.        , 0.        , 0.23570226],
-       [0.23570226, 0.        , 0.        ],
-       [0.        , 0.23570226, 0.        ]]), array([[ 0.23570226+0.j        ,  0.        +0.j        ,
-         0.        +0.j        ],
-       [ 0.        +0.j        , -0.11785113+0.20412415j,
-         0.        +0.j        ],
-       [ 0.        +0.j        ,  0.        +0.j        ,
-        -0.11785113-0.20412415j]]), array([[ 0.        +0.j        , -0.11785113+0.20412415j,
-         0.        +0.j        ],
-       [ 0.        +0.j        ,  0.        +0.j        ,
-        -0.11785113-0.20412415j],
-       [ 0.23570226+0.j        ,  0.        +0.j        ,
-         0.        +0.j        ]]), array([[ 0.        +0.j        ,  0.        +0.j        ,
-        -0.11785113-0.20412415j],
-       [ 0.23570226+0.j        ,  0.        +0.j        ,
-         0.        +0.j        ],
-       [ 0.        +0.j        , -0.11785113+0.20412415j,
-         0.        +0.j        ]]), array([[ 0.23570226+0.j        ,  0.        +0.j        ,
-         0.        +0.j        ],
-       [ 0.        +0.j        , -0.11785113-0.20412415j,
-         0.        +0.j        ],
-       [ 0.        +0.j        ,  0.        +0.j        ,
-        -0.11785113+0.20412415j]]), array([[ 0.        +0.j        , -0.11785113-0.20412415j,
-         0.        +0.j        ],
-       [ 0.        +0.j        ,  0.        +0.j        ,
-        -0.11785113+0.20412415j],
-       [ 0.23570226+0.j        ,  0.        +0.j        ,
-         0.        +0.j        ]]), array([[ 0.        +0.j        ,  0.        +0.j        ,
-        -0.11785113+0.20412415j],
-       [ 0.23570226+0.j        ,  0.        +0.j        ,
-         0.        +0.j        ],
-       [ 0.        +0.j        , -0.11785113-0.20412415j,
-         0.        +0.j        ]])]
+        >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
+        array([[[ 0.745+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.745+0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   ,  0.745+0.j   ]],
+
+       [[ 0.   +0.j   ,  0.236+0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   ,  0.236+0.j   ],
+        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+
+       [[ 0.   +0.j   ,  0.   +0.j   ,  0.236+0.j   ],
+        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.236+0.j   ,  0.   +0.j   ]],
+
+       [[ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j]],
+
+       [[ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j],
+        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+
+       [[ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j],
+        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ]],
+
+       [[ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j]],
+
+       [[ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j],
+        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+
+       [[ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j],
+        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ]]])
         """
         if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
