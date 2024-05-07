@@ -13,9 +13,10 @@
 # limitations under the License.
 """This module contains the tape expansion function for expanding a
 broadcasted tape into multiple tapes."""
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import pennylane as qml
+
 from .core import transform
 
 

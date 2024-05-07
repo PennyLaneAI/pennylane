@@ -13,16 +13,16 @@
 # limitations under the License.
 """Compiler developer functions"""
 
-from typing import List, Optional
-from sys import version_info
-from importlib import reload, metadata
-from collections import defaultdict
 import dataclasses
 import re
+from collections import defaultdict
+from importlib import metadata, reload
+from sys import version_info
+from typing import List, Optional
 
 from semantic_version import Version
 
-PL_CATALYST_MIN_VERSION = Version("0.5.0")
+PL_CATALYST_MIN_VERSION = Version("0.6.0")
 
 
 class CompileError(Exception):

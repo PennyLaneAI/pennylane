@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 # pylint: disable=too-many-branches
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform

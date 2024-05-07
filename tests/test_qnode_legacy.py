@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-# pylint: disable=import-outside-toplevel, protected-access, no-member
-import warnings
 import copy
 
+# pylint: disable=import-outside-toplevel, protected-access, no-member
+import warnings
 from functools import partial
 from typing import Callable, Tuple
 
@@ -23,13 +23,12 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-
 import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 from pennylane.resource import Resources
+from pennylane.tape import QuantumScript
 
 
 def dummyfunc():

@@ -21,8 +21,8 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
-from .sample import SampleMP
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
 def expval(

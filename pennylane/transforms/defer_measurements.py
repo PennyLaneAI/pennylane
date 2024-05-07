@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
-from typing import Sequence, Callable
-import pennylane as qml
-from pennylane.measurements import MidMeasureMP, ProbabilityMP, SampleMP, CountsMP, MeasurementValue
-from pennylane.ops.op_math import ctrl
+from typing import Callable, Sequence
 
+import pennylane as qml
+from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
+from pennylane.ops.op_math import ctrl
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
-
 from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager
 
 # pylint: disable=too-many-branches, protected-access, too-many-statements
 

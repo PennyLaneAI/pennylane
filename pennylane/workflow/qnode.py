@@ -18,15 +18,15 @@ This module contains the QNode class and qnode decorator.
 import copy
 import functools
 import inspect
+import logging
 import warnings
 from collections.abc import Sequence
-from typing import Union, Optional
-import logging
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.debugging import PLDB
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
@@ -528,9 +528,9 @@ class QNode:
         self.gradient_kwargs = {}
         self._tape_cached = False
 
+        self._transform_program = qml.transforms.core.TransformProgram()
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
-        self._transform_program = qml.transforms.core.TransformProgram()
 
     def __copy__(self):
         copied_qnode = QNode.__new__(QNode)
@@ -593,8 +593,17 @@ class QNode:
             return
         if tape is None and shots:
             tape = qml.tape.QuantumScript([], [], shots=shots)
+
+        diff_method = self.diff_method
+        if (
+            self.device.name == "lightning.qubit"
+            and qml.metric_tensor in self.transform_program
+            and self.diff_method == "best"
+        ):
+            diff_method = "parameter-shift"
+
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
-            self._original_device, self.interface, self.diff_method, tape=tape
+            self._original_device, self.interface, diff_method, tape=tape
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})
 
@@ -715,6 +724,7 @@ class QNode:
         """
         config = _make_execution_config(None, "best")
         if isinstance(device, qml.devices.Device):
+
             if device.supports_derivatives(config, circuit=tape):
                 new_config = device.preprocess(config)[1]
                 return new_config.gradient_method, {}, device

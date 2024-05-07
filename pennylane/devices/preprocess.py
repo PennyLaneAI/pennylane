@@ -17,21 +17,15 @@ that they are supported for execution by a device."""
 # pylint: disable=protected-access, too-many-arguments
 
 import os
-from typing import Generator, Callable, Union, Sequence, Optional
-from copy import copy
 import warnings
+from copy import copy
+from typing import Callable, Generator, Optional, Sequence, Union
 
 import pennylane as qml
-from pennylane import Snapshot
-from pennylane.operation import Tensor, StatePrepBase
-from pennylane.measurements import (
-    MeasurementProcess,
-    StateMeasurement,
-    SampleMeasurement,
-)
-from pennylane.typing import ResultBatch, Result
-from pennylane import DeviceError
-from pennylane import transform
+from pennylane import DeviceError, Snapshot, transform
+from pennylane.measurements import SampleMeasurement, StateMeasurement
+from pennylane.operation import StatePrepBase, Tensor
+from pennylane.typing import Result, ResultBatch
 from pennylane.wires import WireError
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
@@ -64,7 +58,7 @@ def _operator_decomposition_gen(
             current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
-                f"Operator {op} not supported on {name} and does not provide a decomposition."
+                f"Operator {op} not supported with {name} and does not provide a decomposition."
             ) from e
 
         for sub_op in decomp:
@@ -236,16 +230,13 @@ def validate_adjoint_trainable_params(
                 "Differentiating with respect to the input parameters of state-prep operations "
                 "is not supported with the adjoint differentiation method."
             )
-    for k in tape.trainable_params:
-        mp_or_op = tape[tape._par_info[k]["op_idx"]]
-        if isinstance(mp_or_op, MeasurementProcess):
+    for m in tape.measurements:
+        if m.obs and qml.operation.is_trainable(m.obs):
             warnings.warn(
-                "Differentiating with respect to the input parameters of "
-                f"{mp_or_op.obs.name} is not supported with the "
-                "adjoint differentiation method. Gradients are computed "
-                "only with regards to the trainable parameters of the circuit.\n\n Mark "
-                "the parameters of the measured observables as non-trainable "
-                "to silence this warning.",
+                f"Differentiating with respect to the input parameters of {m.obs.name} "
+                "is not supported with the adjoint differentiation method. Gradients are computed "
+                "only with regards to the trainable parameters of the circuit.\n\n Mark the "
+                "parameters of the measured observables as non-trainable to silence this warning.",
                 UserWarning,
             )
     return (tape,), null_postprocessing
@@ -334,30 +325,32 @@ def decompose(
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    if not all(stopping_condition(op) for op in tape.operations):
-        try:
-            # don't decompose initial operations if its StatePrepBase
-            prep_op = (
-                [tape[0]] if isinstance(tape[0], StatePrepBase) and skip_initial_state_prep else []
-            )
+    if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
+        prep_op = [tape[0]]
+    else:
+        prep_op = []
 
-            new_ops = [
-                final_op
-                for op in tape.operations[bool(prep_op) :]
-                for final_op in _operator_decomposition_gen(
-                    op,
-                    stopping_condition,
-                    decomposer=decomposer,
-                    max_expansion=max_expansion,
-                    name=name,
-                )
-            ]
-        except RecursionError as e:
-            raise DeviceError(
-                "Reached recursion limit trying to decompose operations. "
-                "Operator decomposition may have entered an infinite loop."
-            ) from e
-        tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
+    if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
+        return (tape,), null_postprocessing
+    try:
+
+        new_ops = [
+            final_op
+            for op in tape.operations[len(prep_op) :]
+            for final_op in _operator_decomposition_gen(
+                op,
+                stopping_condition,
+                decomposer=decomposer,
+                max_expansion=max_expansion,
+                name=name,
+            )
+        ]
+    except RecursionError as e:
+        raise DeviceError(
+            "Reached recursion limit trying to decompose operations. "
+            "Operator decomposition may have entered an infinite loop."
+        ) from e
+    tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
 
     return (tape,), null_postprocessing
 

@@ -39,6 +39,12 @@ class DummyDevice(DefaultGaussian):
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
 
+@pytest.fixture(autouse=True)
+def set_numpy_seed():
+    np.random.seed(9872653)
+    yield
+
+
 @pytest.fixture(scope="session")
 def tol():
     """Numerical tolerance for equality tests."""

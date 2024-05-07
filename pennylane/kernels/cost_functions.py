@@ -16,6 +16,7 @@ This file contains functionalities for kernel related costs.
 See `here <https://www.doi.org/10.1007/s10462-012-9369-4>`_ for a review.
 """
 import numpy as np
+
 from ..math import frobenius_inner_product
 from .utils import square_kernel_matrix
 
@@ -67,7 +68,7 @@ def polarity(
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=2, shots=None)
+        dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit(x1, x2):
             qml.templates.AngleEmbedding(x1, wires=dev.wires)
@@ -143,7 +144,7 @@ def target_alignment(
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=2, shots=None)
+        dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit(x1, x2):
             qml.templates.AngleEmbedding(x1, wires=dev.wires)

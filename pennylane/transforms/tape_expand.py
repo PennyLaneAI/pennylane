@@ -18,8 +18,8 @@ import contextlib
 
 import pennylane as qml
 from pennylane.operation import (
-    has_gen,
     gen_is_multi_term_hamiltonian,
+    has_gen,
     has_grad_method,
     has_nopar,
     has_unitary_gen,

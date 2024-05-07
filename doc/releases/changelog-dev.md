@@ -60,6 +60,9 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
+* Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
+  [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -68,8 +71,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
+  with circuits with non-commuting measurements.
+  [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
 Pietropaolo Frisoni,
+Christina Lee,
 David Wierichs.

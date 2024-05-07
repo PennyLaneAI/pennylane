@@ -19,7 +19,6 @@ from typing import Callable, Sequence
 
 import pennylane as qml
 
-
 from .core import transform
 
 

@@ -14,9 +14,9 @@
 """Tests for default qutrit mixed."""
 
 from functools import reduce
-import pytest
-import numpy as np
 
+import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane import math
@@ -1059,9 +1059,9 @@ class TestPRNGKeySeed:
 
     def test_prng_key_as_seed(self):
         """Test that a jax PRNG can be passed as a seed."""
-        from jax.config import config
+        import jax
 
-        config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
 
         from jax import random
 

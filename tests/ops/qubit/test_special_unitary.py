@@ -16,16 +16,18 @@ Unit tests for the SpecialUnitary operation and its utility functions.
 """
 # pylint:disable=import-outside-toplevel
 from functools import partial
+
 import numpy as np
-from scipy.linalg import expm
 import pytest
+from scipy.linalg import expm
+
 import pennylane as qml
 from pennylane.ops.qubit.special_unitary import (
-    pauli_basis_matrices,
-    pauli_basis_strings,
     TmpPauliRot,
     _pauli_letters,
     _pauli_matrices,
+    pauli_basis_matrices,
+    pauli_basis_strings,
 )
 from pennylane.transforms.convert_to_numpy_parameters import _convert_op_to_numpy_data
 from pennylane.wires import Wires

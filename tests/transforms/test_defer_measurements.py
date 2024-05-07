@@ -14,16 +14,18 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
+import math
+
 # pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
-import math
+
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP, MeasurementValue
-from pennylane.ops import Controlled
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
+from pennylane.measurements import MeasurementValue, MidMeasureMP
+from pennylane.ops import Controlled
 
 
 def test_broadcasted_postselection(mocker):
@@ -1650,6 +1652,57 @@ class TestDrawing:
             "3: ─╰X─╰●─╰●──────────────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected
+
+    @pytest.mark.parametrize(
+        "mp, label",
+        [
+            (qml.sample, "Sample"),
+            (qml.probs, "Probs"),
+            (qml.var, "Var[None]"),
+            (qml.counts, "Counts"),
+            (qml.expval, "<None>"),
+        ],
+    )
+    def test_drawing_with_mcm_terminal_measure(self, mp, label):
+        """Test that drawing a func works correctly when collecting statistics on
+        mid-circuit measurements."""
+
+        def qfunc():
+            m_0 = qml.measure(0, reset=True)
+            qml.cond(m_0, qml.RY)(0.312, wires=1)
+
+            return mp(op=m_0), qml.expval(qml.Z(1))
+
+        dev = qml.device("default.qubit", wires=4)
+
+        transformed_qfunc = qml.transforms.defer_measurements(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        spaces = " " * len(label)
+        expval = "<Z>".ljust(len(label))
+        expected = (
+            f"0: ─╭●─╭X───────────┤  {spaces}\n"
+            f"1: ─│──│──╭RY(0.31)─┤  {expval}\n"
+            f"2: ─╰X─╰●─╰●────────┤  {label}"
+        )
+        assert qml.draw(transformed_qnode)() == expected
+
+    @pytest.mark.parametrize("mp", [qml.sample, qml.probs, qml.var, qml.counts, qml.expval])
+    def test_draw_mpl_with_mcm_terminal_measure(self, mp):
+        """Test that no error is raised when drawing a circuit which collects
+        statistics on mid-circuit measurements"""
+
+        def qfunc():
+            m_0 = qml.measure(0, reset=True)
+            qml.cond(m_0, qml.RY)(0.312, wires=1)
+
+            return mp(op=m_0), qml.expval(qml.Z(1))
+
+        dev = qml.device("default.qubit", wires=4)
+
+        transformed_qfunc = qml.transforms.defer_measurements(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        _ = qml.draw_mpl(transformed_qnode)()
 
 
 def test_custom_wire_labels_allowed_without_reuse():

@@ -14,11 +14,12 @@
 """Unit tests for the mid_measure module"""
 
 from itertools import product
+
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MidMeasureMP, MeasurementValue
+from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods

@@ -23,12 +23,12 @@ import pytest
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as pnp, X, Y, Z
-from pennylane.wires import Wires
-from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.ops import LinearCombination
-
+from pennylane import X, Y, Z
+from pennylane import numpy as pnp
 from pennylane.operation import enable_new_opmath_cm
+from pennylane.ops import LinearCombination
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.wires import Wires
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -563,6 +563,12 @@ dev = qml.device("default.qubit", wires=2)
 @pytest.mark.usefixtures("use_new_opmath")
 class TestLinearCombination:
     """Test the LinearCombination class"""
+
+    def test_error_if_observables_operator(self):
+        """Test thatt an error is raised if an operator is provided to observables."""
+
+        with pytest.raises(ValueError, match=r"observables must be an Iterable of Operator's"):
+            qml.ops.LinearCombination([1, 1], qml.X(0) @ qml.Y(1))
 
     PAULI_REPS = (
         ([], [], PauliSentence({})),

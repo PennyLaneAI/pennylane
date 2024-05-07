@@ -25,11 +25,8 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.ops.qubit import (
-    RX as old_loc_RX,
-    MultiRZ as old_loc_MultiRZ,
-)
-
+from pennylane.ops.qubit import RX as old_loc_RX
+from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
