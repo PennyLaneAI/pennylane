@@ -58,7 +58,7 @@ def _operator_decomposition_gen(
             current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
-                f"Operator {op} not supported on {name} and does not provide a decomposition."
+                f"Operator {op} not supported with {name} and does not provide a decomposition."
             ) from e
 
         for sub_op in decomp:
@@ -325,30 +325,32 @@ def decompose(
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    if not all(stopping_condition(op) for op in tape.operations):
-        try:
-            # don't decompose initial operations if its StatePrepBase
-            prep_op = (
-                [tape[0]] if isinstance(tape[0], StatePrepBase) and skip_initial_state_prep else []
-            )
+    if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
+        prep_op = [tape[0]]
+    else:
+        prep_op = []
 
-            new_ops = [
-                final_op
-                for op in tape.operations[bool(prep_op) :]
-                for final_op in _operator_decomposition_gen(
-                    op,
-                    stopping_condition,
-                    decomposer=decomposer,
-                    max_expansion=max_expansion,
-                    name=name,
-                )
-            ]
-        except RecursionError as e:
-            raise DeviceError(
-                "Reached recursion limit trying to decompose operations. "
-                "Operator decomposition may have entered an infinite loop."
-            ) from e
-        tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
+    if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
+        return (tape,), null_postprocessing
+    try:
+
+        new_ops = [
+            final_op
+            for op in tape.operations[len(prep_op) :]
+            for final_op in _operator_decomposition_gen(
+                op,
+                stopping_condition,
+                decomposer=decomposer,
+                max_expansion=max_expansion,
+                name=name,
+            )
+        ]
+    except RecursionError as e:
+        raise DeviceError(
+            "Reached recursion limit trying to decompose operations. "
+            "Operator decomposition may have entered an infinite loop."
+        ) from e
+    tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
 
     return (tape,), null_postprocessing
 
