@@ -123,7 +123,7 @@ def _kernel(binary_matrix):
     return nullspace
 
 
-def symmetry_generators(h):
+def symmetry_generators(h, num_qubits=None):
     r"""Compute the generators :math:`\{\tau_1, \ldots, \tau_k\}` for a Hamiltonian over the binary
     field :math:`\mathbb{Z}_2`.
 
@@ -132,6 +132,8 @@ def symmetry_generators(h):
 
     Args:
         h (Operator): Hamiltonian for which symmetries are to be generated to perform tapering
+        num_qubits (int): Number of wires on which the Hamiltonian acts. If ``None``, these are
+            calculated from ``h.wires``.
 
     Returns:
         list[Operator]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
@@ -145,7 +147,7 @@ def symmetry_generators(h):
     >>> t
     [Z(0) @ Z(1), Z(0) @ Z(2), Z(0) @ Z(3)]
     """
-    num_qubits = len(h.wires)
+    num_qubits = len(h.wires) if num_qubits is None else num_qubits
 
     # Generate binary matrix for qubit_op
     ps = pauli_sentence(h)
@@ -198,23 +200,47 @@ def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
     >>> paulix_ops(generators, 4)
     [X(1), X(2), X(3)]
     """
-    ops_generator = functools.reduce(
-        lambda a, b: list(a) + list(b), [pauli_sentence(g) for g in generators]
+    ops_generator = list(
+        functools.reduce(lambda a, b: list(a) + list(b), [pauli_sentence(g) for g in generators])
     )
     bmat = _binary_matrix_from_pws(ops_generator, num_qubits)
+    bshp = bmat.shape[0], bmat.shape[1] // 2
+    all_zsymm = ~np.any(bmat[:, bshp[1] :])
 
     paulixops = []
-    for row in range(bmat.shape[0]):
+    for row in range(bshp[0]):
         bmatrow = bmat[row]
         bmatrest = np.delete(bmat, row, axis=0)
-        # reversing the order to prioritize removing higher index wires first
-        for col in range(bmat.shape[1] // 2)[::-1]:
-            # Anti-commutes with the (row) and commutes with all other symmetries.
-            if bmatrow[col] and np.array_equal(
-                bmatrest[:, col], np.zeros(bmat.shape[0] - 1, dtype=int)
-            ):
-                paulixops.append(qml.X(col))
-                break
+     
+        if all_zsymm:
+            # reversing the order to prioritize removing higher index wires first
+            for col in range(bshp[1])[::-1]:
+                if bmatrow[col] and np.array_equal(
+                    bmatrest[:, col], np.zeros(bmat.shape[0] - 1, dtype=int)
+                ):
+                    paulixops.append(qml.X(col))
+                    break
+        else:
+            paulixwrs = []
+            anti_symm_row = {
+                (1, 0): [(0, 1), (1, 1)], # Z --> (X or Y)
+                (0, 1): [(1, 0), (1, 1)], # X --> (Z or Y)
+                (1, 1): [(1, 0), (0, 1)], # Y --> (X or Z)
+            }
+            symm_type_map = {(1, 0): qml.Z, (0, 1): qml.X, (1, 1): lambda wire: 1j * qml.Y(wire)}
+            # if non-Z generators are present, begin with the lower index wires
+            for col in range(bshp[1]):
+                curr_cols = bmatrow[col], bmatrow[col + bshp[1]]
+                if any(curr_cols) and col not in paulixwrs:
+                    rest_cols = bmatrest[:, col], bmatrest[:, col + bshp[1]]
+                    for xop in [(0, 1), (1, 0), (1, 1)]: # [Z-type, X-type, Y-type]
+                        if curr_cols in anti_symm_row[xop] and all(
+                            [xop == (c1, c2) for (c1, c2) in zip(*rest_cols) if c1 and c2]
+                        ):
+                            paulixops.append(symm_type_map[xop](col))
+                            paulixwrs.append(col)
+                            break
+                    break
 
     return paulixops
 
@@ -303,6 +329,9 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
 
     wires_tap = [i for i in ts_ps.wires if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
+
+    if not wires_tap:
+        return ps_h if active_new_opmath() else ps_h.hamiltonian()
 
     for i, pw_coeff in enumerate(ts_ps.items()):
         pw, _ = pw_coeff
