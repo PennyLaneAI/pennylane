@@ -136,11 +136,11 @@ def _create_commute_function():
         Relies on ``commutation_map`` from the enclosing namespace of ``_create_commute_function``.
 
         Args:
-            op_name1 (str): name of one operation
-            op_name2 (str): name of the second operation
+            op_name1 (str): name of one operation.
+            op_name2 (str): name of the second operation.
 
         Returns:
-            Bool
+            bool: True if the operations commute, False otherwise.
 
         """
         return op_name1 in commutation_map[op_name2]
@@ -173,7 +173,7 @@ def intersection(wires1, wires2):
         wires2 (pennylane.wires.Wires: Second set of wires.
 
     Returns:
-         bool: True if the two sets of wires are not disjoint and False if disjoint.
+        bool: True if the two sets of wires are not disjoint and False if disjoint.
     """
     return len(qml.wires.Wires.shared_wires([wires1, wires2])) != 0
 
@@ -186,7 +186,7 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
         operation2 (pennylane.Operation): Second operation.
 
     Returns:
-         Bool: True if commutation, False otherwise.
+        bool: True if commutation, False otherwise.
     """
     # Two non simplified CRot
     target_wires_1 = qml.wires.Wires(
@@ -224,7 +224,7 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
         operation2 (pennylane.Operation): Second operation.
 
     Returns:
-         Bool: True if commutation, False otherwise, None if not two rotations.
+        bool: True if commutation, False otherwise, None if not two rotations.
     """
 
     target_wires_1 = qml.wires.Wires(
@@ -331,7 +331,7 @@ def is_commuting(operation1, operation2):
         operation2 (.Operation): A second quantum operation.
 
     Returns:
-        bool: ``True`` if the operations commute, ``False`` otherwise.
+        bool: True if the operations commute, False otherwise.
 
     **Example**
 
