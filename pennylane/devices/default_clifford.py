@@ -136,7 +136,7 @@ def _pl_op_to_stim(op):
         stim_tg = map(str, op.wires)
     except KeyError as e:
         raise qml.DeviceError(
-            f"Operator {op} not supported on default.clifford and does not provide a decomposition."
+            f"Operator {op} not supported with default.clifford and does not provide a decomposition."
         ) from e
 
     # Check if the operation is noisy
