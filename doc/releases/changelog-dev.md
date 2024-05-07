@@ -63,6 +63,10 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
+  allowing error types to be more consistent with the context the `decompose` function is used in.
+  [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
