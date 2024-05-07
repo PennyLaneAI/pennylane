@@ -292,7 +292,7 @@ class TestOpmath:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)
 
         assert len(q) == 1
-        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0])
+        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
         assert qml.equal(q.queue[0], expected)
 
 
