@@ -70,6 +70,7 @@ def _operator_decomposition_gen(
                 max_expansion=max_expansion,
                 current_depth=current_depth,
                 name=name,
+                error=error,
             )
 
 
@@ -254,6 +255,7 @@ def decompose(
     ] = None,
     max_expansion: Union[int, None] = None,
     name: str = "device",
+    error: Exception = DeviceError,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
 
@@ -344,6 +346,7 @@ def decompose(
                 decomposer=decomposer,
                 max_expansion=max_expansion,
                 name=name,
+                error=error,
             )
         ]
     except RecursionError as e:
