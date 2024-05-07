@@ -277,7 +277,7 @@ def _no_trainable_grad(tape):
 
 def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):
     """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 1)``"""
     if first_axis_size == 1 and squeeze:
         return tuple(grads[0][i] for i in range(second_axis_size))
     return tuple(
@@ -288,8 +288,8 @@ def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True)
 def _move_first_axis_to_third_pos(
     grads, first_axis_size, second_axis_size, third_axis_size, squeeze=True
 ):
-    """Transpose the first three axes of an iterable of iterables like a tuple of tuples
-    the same way as np.transpose(..., [1, 2, 0]) would do."""
+    """Transpose the first two axes of an iterable of iterables, returning
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 2)``"""
     if first_axis_size == 1 and squeeze:
         return tuple(
             tuple(grads[0][i][j] for j in range(third_axis_size)) for i in range(second_axis_size)
