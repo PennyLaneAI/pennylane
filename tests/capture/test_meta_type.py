@@ -18,8 +18,7 @@ Integration tests for the capture of pennylane operations into jaxpr.
 import pytest
 
 import pennylane as qml
-
-from pennylane.capture.meta_type import CaptureMeta
+from pennylane.capture.capture_meta import CaptureMeta
 
 jax = pytest.importorskip("jax")
 

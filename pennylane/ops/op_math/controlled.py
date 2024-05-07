@@ -882,6 +882,7 @@ class ControlledOp(Controlled, operation.Operation):
 
 # Program capture with controlled ops needs to unpack and re-pack the control wires to support dynamic wires
 # See capture module for more information on primitives
+# If None, jax isn't installed so the class never got a primitive.
 if Controlled._primitive is not None:  # pylint: disable=protected-access
 
     @Controlled._primitive.def_impl  # pylint: disable=protected-access
