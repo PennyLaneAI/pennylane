@@ -90,7 +90,7 @@ will be called when constructing a new class instance instead of ``type.__call__
     def qfunc():
         JustMetadataOp("Y")
 
-    qml.capture.enable_plxpr()
+    qml.capture.enable()
     print(jax.make_jaxpr(qfunc)())
 
 .. code-block::
