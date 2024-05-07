@@ -45,6 +45,7 @@ def _operator_decomposition_gen(
     max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
+    error: Exception = DeviceError,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     max_depth_reached = False
@@ -57,7 +58,7 @@ def _operator_decomposition_gen(
             decomp = decomposer(op)
             current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
-            raise DeviceError(
+            raise error(
                 f"Operator {op} not supported with {name} and does not provide a decomposition."
             ) from e
 
