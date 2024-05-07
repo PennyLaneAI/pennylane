@@ -36,7 +36,7 @@ Z = np.sum(-np.arange(1, 5) ** 2)
 # Single coefficient/expectation value that leads to the same result as X
 w = np.sqrt(30)
 # Prefactors to emulate a shot vector
-c = np.array([0.1, 0.4, 0.7])
+shv = np.array([0.1, 0.4, 0.7])
 # Fake probability vector (just a 1d array)
 p = np.array([0.01, 0.06, -0.2, 0.5, -0.1, 0.7, -0.09])
 # Second fake probability vector (just a 1d array)
@@ -50,11 +50,13 @@ v = w * p
 # Single unshifted result that lead to the same result as P2
 v2 = w * p2
 # Prefactors to emulate different shot values and multi measurement
-cm = np.outer([0.1, 0.4, 0.7], [1, 2])
+shv_m = np.outer([0.1, 0.4, 0.7], [1, 2])
 
 
 class TestEvaluateGradient:
     """Test _evaluate_gradient."""
+
+    # pylint: disable=too-many-arguments
 
     # We could theoretically compute the required res, r0 and expected from the parametrization of coeffs,
     # unshifted_coeff and batch_size, but that turned out to take lots of effort and edge case logic
@@ -134,26 +136,26 @@ class TestEvaluateGradient:
             assert isinstance(g, np.ndarray) and g.shape == e.shape
             assert np.allclose(g, e)
 
-    shot_vec_X = tuple(zip(*(-_c * X for _c in c)))
-    shot_vec_P = tuple(zip(*(-_c * P for _c in c)))
-    shot_vec_P_partial = tuple(-_c * P[:-1] for _c in c)
+    shot_vec_X = tuple(zip(*(-c * X for c in shv)))
+    shot_vec_P = tuple(zip(*(-c * P for c in shv)))
+    shot_vec_P_partial = tuple(-c * P[:-1] for c in shv)
 
-    exp_shot_vec_prob = np.outer(c, p) * Z
+    exp_shot_vec_prob = np.outer(shv, p) * Z
     test_cases_multi_shots_single_meas = [
         # Expectation value
-        (X, None, None, shot_vec_X, None, c * Z),
-        (X, None, 4, tuple(-_c * X for _c in c), None, c * Z),
-        (X[:-1], X[-1], None, shot_vec_X[:-1], shot_vec_X[-1], c * Z),
-        (X[:-1], X[-1], 4, tuple(-_c * X[:-1] for _c in c), tuple(-c * X[-1]), c * Z),
-        (np.ones(0), w, None, (), tuple(-_c * w for _c in c), c * Z),
-        (np.ones(0), w, 4, ((), (), ()), tuple(-_c * w for _c in c), c * Z),
+        (X, None, None, shot_vec_X, None, shv * Z),
+        (X, None, 4, tuple(-c * X for c in shv), None, shv * Z),
+        (X[:-1], X[-1], None, shot_vec_X[:-1], shot_vec_X[-1], shv * Z),
+        (X[:-1], X[-1], 4, tuple(-c * X[:-1] for c in shv), tuple(-shv * X[-1]), shv * Z),
+        (np.ones(0), w, None, (), tuple(-c * w for c in shv), shv * Z),
+        (np.ones(0), w, 4, ((), (), ()), tuple(-c * w for c in shv), shv * Z),
         # Probability
         (X, None, None, shot_vec_P, None, exp_shot_vec_prob),
-        (X, None, 4, tuple(-_c * P for _c in c), None, exp_shot_vec_prob),
+        (X, None, 4, tuple(-c * P for c in shv), None, exp_shot_vec_prob),
         (X[:-1], X[-1], None, shot_vec_P[:-1], shot_vec_P[-1], exp_shot_vec_prob),
-        (X[:-1], X[-1], 4, shot_vec_P_partial, tuple(np.outer(-c, P[-1])), exp_shot_vec_prob),
-        (np.ones(0), w, None, (), tuple(-_c * v for _c in c), exp_shot_vec_prob),
-        (np.ones(0), w, 4, ((), (), ()), tuple(-_c * v for _c in c), exp_shot_vec_prob),
+        (X[:-1], X[-1], 4, shot_vec_P_partial, tuple(np.outer(-shv, P[-1])), exp_shot_vec_prob),
+        (np.ones(0), w, None, (), tuple(-c * v for c in shv), exp_shot_vec_prob),
+        (np.ones(0), w, 4, ((), (), ()), tuple(-c * v for c in shv), exp_shot_vec_prob),
     ]
 
     @pytest.mark.parametrize(
@@ -173,31 +175,31 @@ class TestEvaluateGradient:
             assert isinstance(g, np.ndarray) and g.shape == e.shape
             assert np.allclose(g, e)
 
-    multi_X = tuple(tuple((-_c * x, -2 * _c * x) for _c in c) for x in X)
-    batched_multi_X = tuple((-_c * X, -2 * _c * X) for _c in c)
-    partial_multi_X = tuple((-_c * X[:-1], -2 * _c * X[:-1]) for _c in c)
-    expvals_r0 = tuple((-_c * w, -2 * _c * w) for _c in c)
+    multi_X = tuple(tuple((-c * x, -2 * c * x) for c in shv) for x in X)
+    batched_multi_X = tuple((-c * X, -2 * c * X) for c in shv)
+    partial_multi_X = tuple((-c * X[:-1], -2 * c * X[:-1]) for c in shv)
+    expvals_r0 = tuple((-c * w, -2 * c * w) for c in shv)
 
-    multi_X_P = tuple(tuple((-_c * _p, -2 * _c * x) for _c in c) for x, _p in zip(X, P))
-    batched_multi_X_P = tuple((-_c * P, -2 * _c * X) for _c in c)
-    partial_multi_X_P = tuple((-_c * P[:-1], -2 * _c * X[:-1]) for _c in c)
-    prob_expval_r0 = tuple((-_c * v, -2 * _c * w) for _c in c)
+    multi_X_P = tuple(tuple((-c * _p, -2 * c * x) for c in shv) for x, _p in zip(X, P))
+    batched_multi_X_P = tuple((-c * P, -2 * c * X) for c in shv)
+    partial_multi_X_P = tuple((-c * P[:-1], -2 * c * X[:-1]) for c in shv)
+    prob_expval_r0 = tuple((-c * v, -2 * c * w) for c in shv)
 
-    multi_P_P = tuple(tuple((-_c * _p, -2 * _c * _q) for _c in c) for _q, _p in zip(P2, P))
-    batched_multi_P_P = tuple((-_c * P, -2 * _c * P2) for _c in c)
-    partial_multi_P_P = tuple((-_c * P[:-1], -2 * _c * P2[:-1]) for _c in c)
-    probs_r0 = tuple((-_c * v, -2 * _c * v2) for _c in c)
+    multi_P_P = tuple(tuple((-c * _p, -2 * c * _q) for c in shv) for _q, _p in zip(P2, P))
+    batched_multi_P_P = tuple((-c * P, -2 * c * P2) for c in shv)
+    partial_multi_P_P = tuple((-c * P[:-1], -2 * c * P2[:-1]) for c in shv)
+    probs_r0 = tuple((-c * v, -2 * c * v2) for c in shv)
 
-    exp_shot_vec_prob_expval = tuple((_c * p * Z, 2 * _c * Z) for _c in c)
-    exp_shot_vec_probs = tuple((_c * p * Z, 2 * _c * p2 * Z) for _c in c)
+    exp_shot_vec_prob_expval = tuple((c * p * Z, 2 * c * Z) for c in shv)
+    exp_shot_vec_probs = tuple((c * p * Z, 2 * c * p2 * Z) for c in shv)
     test_cases_multi_shots_multi_meas = [
         # Expectation values
-        (X, None, None, multi_X, None, cm * Z),
-        (X, None, 4, batched_multi_X, None, cm * Z),
-        (X[:-1], X[-1], None, multi_X[:-1], multi_X[-1], cm * Z),
-        (X[:-1], X[-1], 4, partial_multi_X, multi_X[-1], cm * Z),
-        (np.ones(0), w, None, (), expvals_r0, cm * Z),
-        (np.ones(0), w, 4, ((), (), ()), expvals_r0, cm * Z),
+        (X, None, None, multi_X, None, shv_m * Z),
+        (X, None, 4, batched_multi_X, None, shv_m * Z),
+        (X[:-1], X[-1], None, multi_X[:-1], multi_X[-1], shv_m * Z),
+        (X[:-1], X[-1], 4, partial_multi_X, multi_X[-1], shv_m * Z),
+        (np.ones(0), w, None, (), expvals_r0, shv_m * Z),
+        (np.ones(0), w, 4, ((), (), ()), expvals_r0, shv_m * Z),
         # Probability and expectation
         (X, None, None, multi_X_P, None, exp_shot_vec_prob_expval),
         (X, None, 4, batched_multi_X_P, None, exp_shot_vec_prob_expval),
