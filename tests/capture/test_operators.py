@@ -121,7 +121,7 @@ def test_hybrid_capture_parametrization():
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
-@pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0)))
+@pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0), {0}))
 def test_different_wires(w, as_kwarg):
     def qfunc():
         if as_kwarg:
@@ -198,7 +198,7 @@ def test_pauli_rot():
 
 class TestTemplates:
     def test_variable_wire_non_parametrized_template(self):
-        """Test capturing a variable wire, non-parametrized template like GroverOperator."""
+        """Test capturing a variable wire count, non-parametrized template like GroverOperator."""
 
         jaxpr = jax.make_jaxpr(qml.GroverOperator)(wires=(0, 1, 2, 3, 4, 5))
 

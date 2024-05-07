@@ -33,7 +33,7 @@ def enable_disable_plxpr():
     qml.capture.disable()
 
 
-def test_custom_CaptureMeta():
+def test_custom_capture_meta():
     """Test that we can capture custom classes with the CaptureMeta metaclass by defining
     the _primitive_bind_call method."""
 
@@ -57,7 +57,7 @@ def test_custom_CaptureMeta():
     assert jaxpr.eqns[0].primitive == p
 
 
-def test_custom_capturemeta_no_bind_primitive_call():
+def test_custom_capture_meta_no_bind_primitive_call():
     """Test that an NotImplementedError is raised if the type does not define _primitive_bind_call."""
 
     # pylint: disable=too-few-public-methods
