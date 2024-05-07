@@ -75,13 +75,17 @@ class TestQutritDepolarizingChannel:
 
         @qml.qnode(dev)
         def circuit(p):
-            qml.TRX(angle, wires=0)
+            qml.TRX(angle, wires=0, subspace=(0,1))
+            qml.TRX(angle, wires=0, subspace=(1,2))
             qml.QutritDepolarizingChannel(p, wires=0)
             return qml.expval(qml.GellMann(0, 3) + qml.GellMann(0, 8))
 
+        expected_errorless = (np.sqrt(3)-3)*(1-np.cos(2*angle))/24 -2/np.sqrt(3)*np.sin(angle/2)**4+(np.sqrt(1/3)+1)*np.cos(angle/2)**2
+        assert np.allclose(circuit(prob), prob * expected_errorless)
+
         gradient = np.squeeze(qml.grad(circuit)(prob))
         assert np.allclose(gradient, circuit(1) - circuit(0))
-        assert np.allclose(gradient, -(4 / 3) * np.cos(angle))
+        assert np.allclose(gradient, -expected_errorless)
 
     def test_p_invalid_parameter(self):
         """Test that error is raised given an inappropriate p value."""

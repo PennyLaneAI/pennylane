@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
+from pennylane.ops import _qutrit__channel__ops__ as channels
 
 from . import Device
 from .default_qutrit import DefaultQutrit
@@ -39,6 +40,7 @@ from .preprocess import (
 )
 from .qutrit_mixed.simulate import simulate
 
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -49,7 +51,6 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 # always a function from a resultbatch to either a result or a result batch
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
-channels = set()
 observables = {
     "THermitian",
     "GellMann",
