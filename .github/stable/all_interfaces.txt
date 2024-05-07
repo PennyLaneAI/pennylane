@@ -11,7 +11,7 @@ charset-normalizer==3.3.2
 clarabel==0.7.1
 click==8.1.7
 contourpy==1.2.1
-coverage==7.5.0
+coverage==7.5.1
 cvxopt==1.3.2
 cvxpy==1.4.3
 cycler==0.12.1
@@ -37,7 +37,7 @@ iniconfig==2.0.0
 isort==5.13.2
 jax==0.4.23
 jaxlib==0.4.23
-Jinja2==3.1.3
+Jinja2==3.1.4
 keras==3.3.3
 kiwisolver==1.4.5
 libclang==18.1.1
@@ -67,7 +67,7 @@ protobuf==4.25.3
 py==1.11.0
 py-cpuinfo==9.0.0
 pybind11==2.12.0
-Pygments==2.17.2
+Pygments==2.18.0
 pyparsing==3.1.2
 pytest==8.2.0
 pytest-benchmark==4.0.0
@@ -99,6 +99,6 @@ torch==2.3.0+rocm6.0
 typing_extensions==4.11.0
 urllib3==2.2.1
 virtualenv==20.26.1
-Werkzeug==3.0.2
+Werkzeug==3.0.3
 wrapt==1.16.0
 zipp==3.18.1
