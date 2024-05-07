@@ -76,6 +76,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
+  with circuits with non-commuting measurements.
+  [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

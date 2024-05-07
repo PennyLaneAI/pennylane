@@ -11,6 +11,6 @@ jobs:
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
-      branch: 'master'
+      branch: 'v0.36.0-rc0'
       run_lightened_ci: false
       disable_new_opmath: "True"
