@@ -44,7 +44,7 @@ def catalyst_incompatible_version():
 
 @pytest.mark.usefixtures("catalyst_incompatible_version")
 def test_catalyst_incompatible():
-    """Test qjit with an incompatible Catalyst version < 0.4.0"""
+    """Test qjit with an incompatible Catalyst version that's lower than required."""
 
     dev = qml.device("lightning.qubit", wires=1)
 
@@ -54,7 +54,8 @@ def test_catalyst_incompatible():
         return qml.state()
 
     with pytest.raises(
-        CompileError, match="PennyLane-Catalyst 0.5.0 or greater is required, but installed 0.0.1"
+        CompileError,
+        match="PennyLane-Catalyst 0.[0-9]+.0 or greater is required, but installed 0.0.1",
     ):
         qml.qjit(circuit)()
 

@@ -50,13 +50,6 @@ Other deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
-* The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
-  libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
-  ``from_qasm``, etc.
-
-  - Deprecated in v0.36
-  - Will be removed in v0.37
-
 Completed deprecation cycles
 ----------------------------
 
@@ -64,6 +57,12 @@ Completed deprecation cycles
 
   >>> with open("test.qasm", "r") as f:
   ...     circuit = qml.from_qasm(f.read())
+
+  - Deprecated in v0.36
+  - Removed in v0.37
+
+* The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
+  libraries. It has been removed in favour of the more specific functions ``from_qiskit``, ``from_qasm``, etc.
 
   - Deprecated in v0.36
   - Removed in v0.37
