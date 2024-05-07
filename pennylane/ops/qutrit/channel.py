@@ -134,6 +134,7 @@ class QutritDepolarizingChannel(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
@@ -144,47 +145,47 @@ class QutritDepolarizingChannel(Channel):
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
         r"""Kraus matrices representing the depolarizing channel.
-        Args:
-            p (float): each gate is applied with probability :math:`\frac{p}{9}`
-        Returns:
-            list (array): list of Kraus matrices
-        **Example**
-        >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
-        array([[[ 0.745+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.745+0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   ,  0.745+0.j   ]],
+         Args:
+             p (float): each gate is applied with probability :math:`\frac{p}{9}`
+         Returns:
+             list (array): list of Kraus matrices
+         **Example**
+         >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
+         array([[[ 0.745+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.745+0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   ,  0.745+0.j   ]],
 
-       [[ 0.   +0.j   ,  0.236+0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   ,  0.236+0.j   ],
-        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        [[ 0.   +0.j   ,  0.236+0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   ,  0.236+0.j   ],
+         [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-       [[ 0.   +0.j   ,  0.   +0.j   ,  0.236+0.j   ],
-        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.236+0.j   ,  0.   +0.j   ]],
+        [[ 0.   +0.j   ,  0.   +0.j   ,  0.236+0.j   ],
+         [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.236+0.j   ,  0.   +0.j   ]],
 
-       [[ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j]],
+        [[ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j]],
 
-       [[ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j],
-        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        [[ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j],
+         [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-       [[ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j],
-        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ]],
+        [[ 0.   +0.j   ,  0.   +0.j   , -0.118-0.204j],
+         [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   , -0.118+0.204j,  0.   +0.j   ]],
 
-       [[ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j]],
+        [[ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j]],
 
-       [[ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j],
-        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        [[ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j],
+         [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-       [[ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j],
-        [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ]]])
+        [[ 0.   +0.j   ,  0.   +0.j   , -0.118+0.204j],
+         [ 0.236+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   , -0.118-0.204j,  0.   +0.j   ]]])
         """
         if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
@@ -202,17 +203,17 @@ class QutritDepolarizingChannel(Channel):
         depolarizing_mats = [
             [[z, one, z], [z, z, one], [one, z, z]],
             [[z, z, one], [one, z, z], [z, one, z]],
-
-            [[one, z, z], [z, w, z], [z, z, w ** 2]],
+            [[one, z, z], [z, w, z], [z, z, w**2]],
             [[z, w, 0j], [z, z, w**2], [one, z, z]],
             [[z, z, w**2], [one, z, z], [z, w, z]],
-
-            [[one, z, z], [z, w ** 2, z], [z, z, w ** 4]],
-            [[z, w ** 2, z], [z, z, w ** 4], [one, z, z]],
-            [[z, z, w**4], [one, z, z], [z, w**2, z]]
+            [[one, z, z], [z, w**2, z], [z, z, w**4]],
+            [[z, w**2, z], [z, z, w**4], [one, z, z]],
+            [[z, z, w**4], [one, z, z], [z, w**2, z]],
         ]
         normalization = math.sqrt(p / 9 + math.eps)
         Ks = [normalization * math.array(m, like=interface) for m in depolarizing_mats]
-        identity = math.sqrt(1 - (8 * p / 9) + math.eps) * math.array(math.eye(QUDIT_DIM, dtype=complex), like=interface)
+        identity = math.sqrt(1 - (8 * p / 9) + math.eps) * math.array(
+            math.eye(QUDIT_DIM, dtype=complex), like=interface
+        )
 
         return [identity] + Ks

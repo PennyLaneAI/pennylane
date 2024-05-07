@@ -32,8 +32,8 @@ class TestQutritDepolarizingChannel:
         w = np.exp(2j * np.pi / 3)
 
         Z0 = np.eye(QUDIT_DIM)
-        Z1 = np.diag([1, w, w ** 2])
-        Z2 = np.diag([1, w ** 2, w ** 4])
+        Z1 = np.diag([1, w, w**2])
+        Z2 = np.diag([1, w**2, w**4])
 
         X0 = np.eye(QUDIT_DIM)
         X1 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
@@ -75,12 +75,16 @@ class TestQutritDepolarizingChannel:
 
         @qml.qnode(dev)
         def circuit(p):
-            qml.TRX(angle, wires=0, subspace=(0,1))
-            qml.TRX(angle, wires=0, subspace=(1,2))
+            qml.TRX(angle, wires=0, subspace=(0, 1))
+            qml.TRX(angle, wires=0, subspace=(1, 2))
             qml.QutritDepolarizingChannel(p, wires=0)
             return qml.expval(qml.GellMann(0, 3) + qml.GellMann(0, 8))
 
-        expected_errorless = (np.sqrt(3)-3)*(1-np.cos(2*angle))/24 -2/np.sqrt(3)*np.sin(angle/2)**4+(np.sqrt(1/3)+1)*np.cos(angle/2)**2
+        expected_errorless = (
+            (np.sqrt(3) - 3) * (1 - np.cos(2 * angle)) / 24
+            - 2 / np.sqrt(3) * np.sin(angle / 2) ** 4
+            + (np.sqrt(1 / 3) + 1) * np.cos(angle / 2) ** 2
+        )
         assert np.allclose(circuit(prob), prob * expected_errorless)
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
@@ -98,8 +102,8 @@ class TestQutritDepolarizingChannel:
         w = np.exp(2j * np.pi / 3)
 
         Z0 = np.eye(QUDIT_DIM)
-        Z1 = np.diag([1, w, w ** 2])
-        Z2 = np.diag([1, w ** 2, w ** 4])
+        Z1 = np.diag([1, w, w**2])
+        Z2 = np.diag([1, w**2, w**4])
 
         X0 = np.eye(QUDIT_DIM)
         X1 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
@@ -154,6 +158,7 @@ class TestQutritDepolarizingChannel:
     def test_kraus_jac_tf(self):
         """Tests Jacobian of Kraus matrices using tensorflow."""
         import tensorflow as tf
+
         p = tf.Variable(0.43)
         with tf.GradientTape() as real_tape:
             real_out = self.kraus_fn_real(p)
