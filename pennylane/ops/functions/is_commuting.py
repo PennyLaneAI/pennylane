@@ -25,8 +25,8 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2):
     r"""Checks if two Pauli words commute.
 
     Args:
-        pauli_word_1 (Observable): first Pauli word in commutator.
-        pauli_word_2 (Observable): second Pauli word in commutator.
+        pauli_word_1 (Operator): first Pauli word in commutator.
+        pauli_word_2 (Operator): second Pauli word in commutator.
 
     Returns:
         bool: returns True if the input Pauli commute, False otherwise.
