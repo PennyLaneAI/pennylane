@@ -15,12 +15,9 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
-import warnings
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
-
-import pennylane as qml
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
