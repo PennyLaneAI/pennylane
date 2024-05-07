@@ -19,7 +19,7 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Dict, Union, Any
+from typing import Any, Callable, Dict, Union
 
 from pennylane import QNode
 
@@ -401,6 +401,11 @@ class TorchLayer(Module):
         # calculate the forward pass as usual
         results = self._evaluate_qnode(inputs)
 
+        if isinstance(results, tuple):
+            if has_batch_dim:
+                results = [torch.reshape(r, (*batch_dims, *r.shape[1:])) for r in results]
+            return torch.stack(results, dim=0)
+
         # reshape to the correct number of batch dims
         if has_batch_dim:
             results = torch.reshape(results, (*batch_dims, *results.shape[1:]))
@@ -425,10 +430,15 @@ class TorchLayer(Module):
         if isinstance(res, torch.Tensor):
             return res.type(x.dtype)
 
-        if len(x.shape) > 1:
-            res = [torch.reshape(r, (x.shape[0], -1)) for r in res]
+        def _combine_dimensions(_res):
+            if len(x.shape) > 1:
+                _res = [torch.reshape(r, (x.shape[0], -1)) for r in _res]
+            return torch.hstack(_res).type(x.dtype)
 
-        return torch.hstack(res).type(x.dtype)
+        if isinstance(res, tuple) and len(res) > 1:
+            return tuple(_combine_dimensions(r) for r in res)
+
+        return _combine_dimensions(res)
 
     def construct(self, args, kwargs):
         """Constructs the wrapped QNode on input data using the initialized weights.

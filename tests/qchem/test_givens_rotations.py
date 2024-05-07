@@ -16,7 +16,6 @@ Unit tests for functions needed for performing givens decomposition of a unitary
 """
 
 import pytest
-
 from scipy.stats import unitary_group
 
 from pennylane import numpy as np

@@ -16,6 +16,7 @@ This submodule contains the template for AQFT.
 """
 
 import warnings
+
 import numpy as np
 
 import pennylane as qml

@@ -23,22 +23,22 @@ quantum-classical programs.
 
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
-the switches ``qml.capture.enable_plxpr`` and ``qml.capture.disable_plxpr``.
+the switches ``qml.capture.enable`` and ``qml.capture.disable``.
 Whether or not the capturing mechanism is currently being used can be
-queried with ``qml.capture.plxpr_enabled``.
+queried with ``qml.capture.enabled``.
 By default, the mechanism is disabled:
 
 .. code-block:: pycon
 
     >>> import pennylane as qml
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.enabled()
     False
-    >>> qml.capture.enable_plxpr()
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.enable()
+    >>> qml.capture.enabled()
     True
-    >>> qml.capture.disable_plxpr()
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.disable()
+    >>> qml.capture.enabled()
     False
 
 """
-from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
+from .switches import disable, enable, enabled

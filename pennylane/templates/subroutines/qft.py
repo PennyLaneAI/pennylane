@@ -17,6 +17,7 @@ This submodule contains the template for QFT.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 
 import functools
+
 import numpy as np
 
 import pennylane as qml

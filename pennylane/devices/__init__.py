@@ -92,7 +92,7 @@ Other transforms that may be relevant to device preprocessing include:
 Modifiers
 ---------
 
-The ``modifiers`` allow for the easy addition of default behavior to a device.
+The ``modifiers`` allow for the easy addition of default behaviour to a device.
 
 .. currentmodule:: pennylane.devices.modifiers
 .. autosummary::
@@ -158,3 +158,4 @@ from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
 from .default_qutrit_mixed import DefaultQutritMixed
+from .._device import Device as LegacyDevice

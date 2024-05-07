@@ -881,14 +881,14 @@ def norm(tensor, like=None, **kwargs):
 
 @multi_dispatch(argnum=[0])
 def svd(tensor, like=None, **kwargs):
-    """Compute the singular value decomposition of a tensor in each interface.
+    r"""Compute the singular value decomposition of a tensor in each interface.
 
     The singular value decomposition for a matrix :math:`A` consist of three matrices :math:`S`,
     :math:`U` and :math:`V_h`, such that:
 
     .. math::
 
-        A = U . Diag(S) . V_h
+        A = U \cdot Diag(S) \cdot V_h
 
     Args:
         tensor (tensor_like): input tensor
@@ -901,7 +901,7 @@ def svd(tensor, like=None, **kwargs):
         if ``compute_uv`` is ``False``
     """
     if like == "tensorflow":
-        from tensorflow.linalg import svd, adjoint
+        from tensorflow.linalg import adjoint, svd
 
         # Tensorflow results need some post-processing to keep it similar to other frameworks.
 
@@ -1005,7 +1005,7 @@ def detach(tensor, like=None):
 
 def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
-    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behaviour
     of Jax in order to mark trainable parameters.
 
     Args:

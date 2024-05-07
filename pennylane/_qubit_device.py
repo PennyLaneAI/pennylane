@@ -285,12 +285,6 @@ class QubitDevice(Device):
         )
         if has_mcm:
             mid_measurements = kwargs["mid_measurements"]
-            mid_values = np.array(tuple(mid_measurements.values()))
-            if np.any(mid_values == -1):
-                for k, v in tuple(mid_measurements.items()):
-                    if v == -1:
-                        mid_measurements.pop(k)
-                return None, mid_measurements
 
         # generate computational basis samples
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
@@ -308,13 +302,24 @@ class QubitDevice(Device):
                 self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
+        if has_mcm:
+            n_mcms = len(mid_measurements)
+            stat_circuit = qml.tape.QuantumScript(
+                circuit.operations,
+                circuit.measurements[0:-n_mcms],
+                shots=1,
+                trainable_params=circuit.trainable_params,
+            )
+        else:
+            stat_circuit = circuit
         if self._shot_vector is not None:
-            results = self.shot_vec_statistics(circuit)
+            results = self.shot_vec_statistics(stat_circuit)
 
         else:
-            results = self.statistics(circuit)
+            results = self.statistics(stat_circuit)
+            if has_mcm:
+                results.extend(list(mid_measurements.values()))
             single_measurement = len(circuit.measurements) == 1
-
             results = results[0] if single_measurement else tuple(results)
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -336,7 +341,7 @@ class QubitDevice(Device):
             )
             self.tracker.record()
 
-        return (results, mid_measurements) if has_mcm else results
+        return results
 
     def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device
@@ -872,8 +877,26 @@ class QubitDevice(Device):
             )
 
         shots = self.shots
-        state_probs = qml.math.unwrap(state_probability)
+
         basis_states = np.arange(number_of_states)
+        # pylint:disable = import-outside-toplevel
+        if (
+            qml.math.is_abstract(state_probability)
+            and qml.math.get_interface(state_probability) == "jax"
+        ):
+            import jax
+
+            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
+            if jax.numpy.ndim(state_probability) == 2:
+                return jax.numpy.array(
+                    [
+                        jax.random.choice(key, basis_states, shape=(shots,), p=prob)
+                        for prob in state_probability
+                    ]
+                )
+            return jax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
+
+        state_probs = qml.math.unwrap(state_probability)
         if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
             return np.array([np.random.choice(basis_states, shots, p=prob) for prob in state_probs])
@@ -1457,7 +1480,7 @@ class QubitDevice(Device):
         if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
-            samples = qml.math.cast_like(samples, qml.math.int64(0))
+            samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = np.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if mp.all_outcomes:

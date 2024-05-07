@@ -15,12 +15,13 @@
 Tests for the gradients.pulse_gradient module.
 """
 
-import warnings
 import copy
-import pytest
-import numpy as np
-import pennylane as qml
+import warnings
 
+import numpy as np
+import pytest
+
+import pennylane as qml
 from pennylane.gradients.general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from pennylane.gradients.pulse_gradient import (
     _parshift_and_integrate,
@@ -770,7 +771,7 @@ class TestStochPulseGradErrors:
         x = [0.4, 0.2]
         params = [jnp.array(0.14)]
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
-        op = qml.evolve(ham_single_q_const)(params, 0.1)
+        op = qml.evolve(ham_single_q_const)(params, 0.7)
         tape = qml.tape.QuantumScript(
             [qml.RX(x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
         )

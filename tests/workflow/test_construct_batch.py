@@ -16,14 +16,14 @@ Contains tests for the `qml.workflow.get_transform_program` getter and `construc
 
 """
 from functools import partial
-import pytest
 
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
 from pennylane.transforms.core.transform_program import TransformProgram
-from pennylane.workflow import get_transform_program, construct_batch
+from pennylane.workflow import construct_batch, get_transform_program
 from pennylane.workflow.construct_batch import expand_fn_transform
 
 

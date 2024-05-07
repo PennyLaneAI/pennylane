@@ -17,8 +17,9 @@ Contains the RandomLayers template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class RandomLayers(Operation):

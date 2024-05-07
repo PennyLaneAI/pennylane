@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample, Shots, MeasurementValue
+from pennylane.measurements import MeasurementShapeError, MeasurementValue, Sample, Shots
 from pennylane.operation import Operator
 
 # pylint: disable=protected-access, no-member

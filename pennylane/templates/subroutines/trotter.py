@@ -127,21 +127,30 @@ class TrotterProduct(ErrorOperation):
 
     .. warning::
 
-        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
-        due to the order in which those observables are stored.
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
+        mathematically identical :class:`~.Hamiltonian` objects may undergo different time
+        evolutions due to the order in which those observables are stored. The order of observables
+        can be queried using the :meth:`~.Sum.terms` method.
+
+    .. warning::
+
+        ``TrotterProduct`` does not automatically simplify the input Hamiltonian, allowing
+        for a more fine-grained control over the decomposition but also risking an increased
+        runtime and number of gates required. Simplification can be performed manually by
+        applying :func:`~.simplify` to your Hamiltonian before using it in ``TrotterProduct``.
 
     .. details::
         :title: Usage Details
 
         An *upper-bound* for the error in approximating time-evolution using this operator can be
         computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different methods; the
-        "one-norm" scaling method and the "commutator" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
+        "one-norm-bound" scaling method and the "commutator-bound" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
 
         >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
         >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm")
+        >>> op.error(method="one-norm-bound")
         SpectralNormError(8.039062500000003e-06)
-        >>> op.error(method="commutator")
+        >>> op.error(method="commutator-bound")
         SpectralNormError(6.166666666666668e-06)
 
         This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
@@ -189,9 +198,13 @@ class TrotterProduct(ErrorOperation):
                 raise ValueError(
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = qml.dot(coeffs, ops)
 
         if isinstance(hamiltonian, SProd):
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = hamiltonian.simplify()
             if len(hamiltonian.terms()[0]) < 2:
                 raise ValueError(
@@ -218,8 +231,13 @@ class TrotterProduct(ErrorOperation):
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["base"])
+        context.append(self)
+        return self
+
     def error(
-        self, method: str = "commutator", fast: bool = True
+        self, method: str = "commutator-bound", fast: bool = True
     ):  # pylint: disable=arguments-differ
         # pylint: disable=protected-access
         r"""Compute an *upper-bound* on the spectral norm error for approximating the
@@ -235,26 +253,26 @@ class TrotterProduct(ErrorOperation):
 
         **Example:**
 
-        The "one-norm" error bound can be computed by passing the kwarg :code:`method="one-norm"`, and
+        The "one-norm" error bound can be computed by passing the kwarg :code:`method="one-norm-bound"`, and
         is defined according to Section 2.3 (lemma 6, equation 22 and 23) of
         `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
 
         >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
         >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm")
+        >>> op.error(method="one-norm-bound")
         SpectralNormError(8.039062500000003e-06)
 
-        The "commutator" error bound can be computed by passing the kwarg :code:`method="commutator"`, and
+        The "commutator" error bound can be computed by passing the kwarg :code:`method="commutator-bound"`, and
         is defined according to Appendix C (equation 189) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
 
         >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
         >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="commutator")
+        >>> op.error(method="commutator-bound")
         SpectralNormError(6.166666666666668e-06)
 
         Args:
-            method (str, optional): Options include "one-norm" and "commutator" and specify the
-                method with which the error is computed. Defaults to "commutator".
+            method (str, optional): Options include "one-norm-bound" and "commutator-bound" and specify the
+                method with which the error is computed. Defaults to "commutator-bound".
             fast (bool, optional): Uses more approximations to speed up computation. Defaults to True.
 
         Raises:
@@ -275,10 +293,10 @@ class TrotterProduct(ErrorOperation):
             )
 
         terms = base_unitary.operands
-        if method == "one-norm":
+        if method == "one-norm-bound":
             return SpectralNormError(qml.resource.error._one_norm_error(terms, t, p, n, fast=fast))
 
-        if method == "commutator":
+        if method == "commutator-bound":
             return SpectralNormError(
                 qml.resource.error._commutator_error(terms, t, p, n, fast=fast)
             )

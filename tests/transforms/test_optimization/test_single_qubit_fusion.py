@@ -15,12 +15,12 @@
 Unit tests for the optimization transform ``single_qubit_fusion``.
 """
 import pytest
-from utils import compare_operation_lists, check_matrix_equivalence
+from utils import check_matrix_equivalence, compare_operation_lists
 
-from pennylane import numpy as np
 import pennylane as qml
-from pennylane.wires import Wires
+from pennylane import numpy as np
 from pennylane.transforms.optimization import single_qubit_fusion
+from pennylane.wires import Wires
 
 
 class TestSingleQubitFusion:

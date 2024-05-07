@@ -13,15 +13,15 @@
 # limitations under the License.
 """Riemannian gradient optimizer"""
 import warnings
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import numpy as np
 from scipy.sparse.linalg import expm
-import pennylane as qml
 
+import pennylane as qml
 from pennylane import transform
-from pennylane.tape import QuantumTape
 from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
 
 
 @transform
@@ -197,7 +197,7 @@ class RiemannianGradientOptimizer:
     but will quickly get out of control as the number of qubits increases.
 
     To resolve this issue, we can restrict the Riemannian gradient to a subspace of the Lie algebra and calculate an
-    approximate Riemannian gradient flow. The choice of restriction will affect the optimization behavior
+    approximate Riemannian gradient flow. The choice of restriction will affect the optimization behaviour
     and quality of the final solution.
 
     For more information on Riemannian gradient flows on Lie groups see
