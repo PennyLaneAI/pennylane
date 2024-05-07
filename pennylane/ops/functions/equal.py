@@ -419,7 +419,7 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
     if op1.z != op2.z:
         return False
-    return qml.equal(op1.base, op2.base)
+    return qml.equal(op1.base, op2.base, **kwargs)
 
 
 @_equal.register
@@ -427,32 +427,61 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
 def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
-    return qml.equal(op1.base, op2.base)
+    return qml.equal(op1.base, op2.base, **kwargs)
 
 
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     """Determine whether two Exp objects are equal"""
-    rtol, atol = (kwargs["rtol"], kwargs["atol"])
+    check_interface, check_trainability, rtol, atol = (
+        kwargs["check_interface"],
+        kwargs["check_trainability"],
+        kwargs["rtol"],
+        kwargs["atol"],
+    )
+
+    if check_interface:
+        for params1, params2 in zip(op1.data, op2.data):
+            if qml.math.get_interface(params1) != qml.math.get_interface(params2):
+                return False
+    if check_trainability:
+        for params1, params2 in zip(op1.data, op2.data):
+            if qml.math.requires_grad(params1) != qml.math.requires_grad(params2):
+                return False
 
     if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
         return False
-    return qml.equal(op1.base, op2.base)
+
+    return qml.equal(op1.base, op2.base, **kwargs)
 
 
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
-    rtol, atol = (kwargs["rtol"], kwargs["atol"])
+    check_interface, check_trainability, rtol, atol = (
+        kwargs["check_interface"],
+        kwargs["check_trainability"],
+        kwargs["rtol"],
+        kwargs["atol"],
+    )
+
+    if check_interface:
+        for params1, params2 in zip(op1.data, op2.data):
+            if qml.math.get_interface(params1) != qml.math.get_interface(params2):
+                return False
+    if check_trainability:
+        for params1, params2 in zip(op1.data, op2.data):
+            if qml.math.requires_grad(params1) != qml.math.requires_grad(params2):
+                return False
 
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
-
     if not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
         return False
-    return qml.equal(op1.base, op2.base)
+
+    return qml.equal(op1.base, op2.base, **kwargs)
 
 
 @_equal.register

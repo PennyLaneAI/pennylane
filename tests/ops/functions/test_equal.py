@@ -1622,6 +1622,30 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2)
         assert not qml.equal(op1, op3)
 
+    def test_adjoint_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance of the Adjoint class."""
+        op1 = qml.adjoint(qml.RX(1.2, wires=0))
+        op2 = qml.adjoint(qml.RX(1.2 + 1e-4, wires=0))
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-5)
+
+    def test_adjoint_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the Adjoint class."""
+        op1 = qml.adjoint(qml.RX(1.2, wires=0))
+        op2 = qml.adjoint(qml.RX(npp.array(1.2), wires=0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_adjoint_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the Adjoint class."""
+        op1 = qml.adjoint(qml.RX(npp.array(1.2, requires_grad=False), wires=0))
+        op2 = qml.adjoint(qml.RX(npp.array(1.2, requires_grad=True), wires=0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+
     @pytest.mark.parametrize("bases_bases_match", BASES)
     @pytest.mark.parametrize("params_params_match", PARAMS)
     def test_pow_comparison(self, bases_bases_match, params_params_match):
@@ -1631,6 +1655,30 @@ class TestSymbolicOpComparison:
         op1 = qml.pow(base1, param1)
         op2 = qml.pow(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
+
+    def test_pow_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance of the Pow class."""
+        op1 = qml.pow(qml.RX(1.2, wires=0), 2)
+        op2 = qml.pow(qml.RX(1.2 + 1e-4, wires=0), 2)
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-5)
+
+    def test_pow_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the Pow class."""
+        op1 = qml.pow(qml.RX(1.2, wires=0), 2)
+        op2 = qml.pow(qml.RX(npp.array(1.2), wires=0), 2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_pow_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the Pow class."""
+        op1 = qml.pow(qml.RX(npp.array(1.2, requires_grad=False), wires=0), 2)
+        op2 = qml.pow(qml.RX(npp.array(1.2, requires_grad=True), wires=0), 2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
     @pytest.mark.parametrize("bases_bases_match", BASES)
     @pytest.mark.parametrize("params_params_match", PARAMS)
@@ -1643,12 +1691,28 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
     def test_exp_comparison_with_tolerance(self):
-        """Test that equal compares the parameters within a provided tolerance."""
+        """Test that equal compares the parameters within a provided tolerance of the Exp class."""
         op1 = qml.exp(qml.PauliX(0), 0.12345)
         op2 = qml.exp(qml.PauliX(0), 0.12356)
 
         assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
         assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
+
+    def test_exp_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the Exp class."""
+        op1 = qml.exp(qml.PauliX(0), 1.2)
+        op2 = qml.exp(qml.PauliX(0), npp.array(1.2))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_exp_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the Exp class."""
+        op1 = qml.exp(qml.PauliX(0), npp.array(1.2, requires_grad=False))
+        op2 = qml.exp(qml.PauliX(0), npp.array(1.2, requires_grad=True))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
     additional_cases = [
         (qml.sum(qml.PauliX(0), qml.PauliY(0)), qml.sum(qml.PauliY(0), qml.PauliX(0)), True),
@@ -1668,12 +1732,28 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
     def test_s_prod_comparison_with_tolerance(self):
-        """Test that equal compares the parameters within a provided tolerance."""
+        """Test that equal compares the parameters within a provided tolerance of the SProd class."""
         op1 = qml.s_prod(0.12345, qml.PauliX(0))
         op2 = qml.s_prod(0.12356, qml.PauliX(0))
 
         assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
         assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
+
+    def test_s_prod_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the SProd class."""
+        op1 = qml.s_prod(0.12, qml.PauliX(0))
+        op2 = qml.s_prod(npp.array(0.12), qml.PauliX(0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_s_prod_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the SProd class."""
+        op1 = qml.s_prod(npp.array(0.12, requires_grad=False), qml.PauliX(0))
+        op2 = qml.s_prod(npp.array(0.12, requires_grad=True), qml.PauliX(0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
 
 @pytest.mark.usefixtures("use_new_opmath")
