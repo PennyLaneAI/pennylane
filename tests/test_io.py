@@ -73,13 +73,6 @@ def mock_plugin_converters_fixture(monkeypatch):
 class TestLoad:
     """Test that the convenience load functions access the correct entrypoint."""
 
-    def test_load_is_deprecated(self, monkeypatch):
-        """Test that qml.load is deprecated"""
-        mock_converter_dict = {entry: MockPluginConverter(entry) for entry in load_entry_points}
-        monkeypatch.setattr(qml.io, "plugin_converters", mock_converter_dict)
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="deprecated"):
-            _ = qml.load("test", format="qiskit")
-
     @pytest.mark.parametrize(
         "method, entry_point_name",
         [(qml.from_qiskit, "qiskit"), (qml.from_qiskit_op, "qiskit_op")],
