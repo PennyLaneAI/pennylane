@@ -36,7 +36,6 @@ differentiate and optimize the circuit using :ref:`quantum-specific optimizers <
 
     ~pennylane.from_pyquil
     ~pennylane.from_qasm
-    ~pennylane.from_qasm_file
     ~pennylane.from_qiskit
     ~pennylane.from_quil
     ~pennylane.from_quil_file
