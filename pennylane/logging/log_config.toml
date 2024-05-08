@@ -67,7 +67,6 @@ formatter = "local_standard"
 level = "DEBUG"
 address = "/dev/log"
 
-
 [handlers.qml_debug_file]
 class = "logging.handlers.RotatingFileHandler"
 formatter = "local_standard"
@@ -106,6 +105,12 @@ propagate = false
 [loggers.pennylane]
 handlers = ["qml_debug_stream",]
 level = "DEBUG" # Set to TRACE for highest verbosity
+propagate = false
+
+# Control logging across catalyst
+[loggers.catalyst]
+handlers = ["qml_debug_stream",]
+level = "TRACE" # Set to TRACE for highest verbosity
 propagate = false
 
 # Control logging specifically in the pennylane.qnode module
