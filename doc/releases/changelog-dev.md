@@ -70,7 +70,7 @@
 
 * ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
   [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
-  
+
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
@@ -87,7 +87,7 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
 Pietropaolo Frisoni,
 Christina Lee,
 David Wierichs.
-
