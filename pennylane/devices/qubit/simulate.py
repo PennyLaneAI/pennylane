@@ -14,12 +14,15 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from functools import partial
+import inspect
+import logging
 from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
 
 import pennylane as qml
+from pennylane.logging import debug_logger
 from pennylane.measurements import MidMeasureMP
 from pennylane.typing import Result
 
@@ -27,6 +30,9 @@ from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import jax_random_split, measure_with_samples
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
@@ -106,7 +112,7 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_ke
     state = state / norm
     return state, shots
 
-
+@debug_logger
 def get_final_state(circuit, debugger=None, **execution_kwargs):
     """
     Get the final state that results from executing the given quantum script.
@@ -175,6 +181,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
 
 
 # pylint: disable=too-many-arguments
+@debug_logger
 def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
@@ -237,7 +244,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 
     return results
 
-
+@debug_logger
 def simulate(
     circuit: qml.tape.QuantumScript,
     debugger=None,
@@ -292,6 +299,7 @@ def simulate(
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=meas_key)
 
 
+@debug_logger
 def simulate_one_shot_native_mcm(
     circuit: qml.tape.QuantumScript, debugger=None, **execution_kwargs
 ) -> Result:
