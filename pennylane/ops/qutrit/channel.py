@@ -59,17 +59,17 @@ class QutritDepolarizingChannel(Channel):
                 0 & 1 & 0\\
                 0 & 0 & 1
                 \end{bmatrix}&
-            K_3 = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_1 = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \omega & 0\\
                 0 & 0 & \omega^2
                 \end{bmatrix}&
-            K_6 = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_2 = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \omega^2 & 0\\
                 0 & 0 & \omega^4
                 \end{bmatrix}\\
-            K_1 = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_3 = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & 1 & 0 \\
                 0 & 0 & 1 \\
                 1 & 0 & 0
@@ -79,17 +79,17 @@ class QutritDepolarizingChannel(Channel):
                 0 & 0 & \omega^2 \\
                 1 & 0 & 0
                 \end{bmatrix}&
-            K_7 = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_5 = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & \omega^2 & 0 \\
                 0 & 0 & \omega \\
                 1 & 0 & 0
                 \end{bmatrix}\\
-            K_2 = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_6 = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & 0 & 1 \\
                 1 & 0 & 0 \\
                 0 & 1 & 0
                 \end{bmatrix}&
-            K_5 = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_7 = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & 0 & \omega^2 \\
                 1 & 0 & 0 \\
                 0 & \omega & 0
@@ -123,7 +123,7 @@ class QutritDepolarizingChannel(Channel):
     * Number of parameters: 1
 
     Args:
-        p (float): Each gate is applied with probability :math:`\frac{p}{9}`
+        p (float): Each gate is applied with probability :math:`\frac{p}{8}`
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
@@ -139,49 +139,49 @@ class QutritDepolarizingChannel(Channel):
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
         r"""Kraus matrices representing the depolarizing channel.
-          Args:
-              p (float): each gate is applied with probability :math:`\frac{p}{9}`
-          Returns:
-              list (array): list of Kraus matrices
+        Args:
+            p (float): each gate is applied with probability :math:`\frac{p}{9}`
+        Returns:
+            list (array): list of Kraus matrices
 
-          **Example**
+        **Example**
 
-          >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
-          array([[[ 0.707+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
+        >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
+        array([[[ 0.707+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+           [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
+           [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
 
-        [[ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+          [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+           [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
+           [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j]],
 
-        [[ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ]],
+          [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+           [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
+           [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j]],
 
-        [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j]],
+          [[ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ],
+           [ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
+           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-        [[ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+          [[ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
+           [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
+           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-        [[ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ]],
+          [[ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
+           [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
+           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-        [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j]],
+          [[ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
+           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+           [ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ]],
 
-        [[ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
-         [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+          [[ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
+           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+           [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ]],
 
-        [[ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
-         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-         [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ]]])
+          [[ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
+           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+           [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ]]])
         """
         if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
@@ -198,13 +198,13 @@ class QutritDepolarizingChannel(Channel):
         w2 = w**2
 
         depolarizing_mats = [
-            [[z, one, z], [z, z, one], [one, z, z]],
-            [[z, z, one], [one, z, z], [z, one, z]],
             [[one, z, z], [z, w, z], [z, z, w2]],
-            [[z, w, z], [z, z, w2], [one, z, z]],
-            [[z, z, w2], [one, z, z], [z, w, z]],
             [[one, z, z], [z, w2, z], [z, z, w]],
+            [[z, one, z], [z, z, one], [one, z, z]],
+            [[z, w, z], [z, z, w2], [one, z, z]],
             [[z, w2, z], [z, z, w], [one, z, z]],
+            [[z, z, one], [one, z, z], [z, one, z]],
+            [[z, z, w2], [one, z, z], [z, w, z]],
             [[z, z, w], [one, z, z], [z, w2, z]],
         ]
         normalization = math.sqrt(p / 8 + math.eps)

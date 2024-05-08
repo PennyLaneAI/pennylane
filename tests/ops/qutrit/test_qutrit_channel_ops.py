@@ -16,6 +16,7 @@ Unit tests for the available built-in qutrit quantum channels.
 """
 import pytest
 import numpy as np
+from numpy.linalg import matrix_power
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops.qutrit import channel
@@ -31,21 +32,15 @@ class TestQutritDepolarizingChannel:
         """Gets the expected Kraus matrices given probability p."""
         w = np.exp(2j * np.pi / 3)
 
-        Z0 = np.eye(QUDIT_DIM)
-        Z1 = np.diag([1, w, w**2])
-        Z2 = np.diag([1, w**2, w**4])
-
-        X0 = np.eye(QUDIT_DIM)
-        X1 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
-        X2 = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+        X = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
+        Z = np.diag([1, w, w**2])
 
         Ks = [np.sqrt(1 - p) * np.eye(QUDIT_DIM)]
-        for i, Z in enumerate((Z0, Z1, Z2)):
-            for j, X in enumerate((X0, X1, X2)):
+        for i in range(3):
+            for j in range(3):
                 if i == 0 and j == 0:
                     continue
-                Ks.append(np.sqrt(p / 8) * X @ Z)
-
+                Ks.append(np.sqrt(p / 8) * matrix_power(X, i) @ matrix_power(Z, j))
         return Ks
 
     def test_p_zero(self, tol):
@@ -103,20 +98,15 @@ class TestQutritDepolarizingChannel:
         """Gets the expected Jacobian of Kraus matrices given probability p."""
         w = np.exp(2j * np.pi / 3)
 
-        Z0 = np.eye(QUDIT_DIM)
-        Z1 = np.diag([1, w, w**2])
-        Z2 = np.diag([1, w**2, w**4])
-
-        X0 = np.eye(QUDIT_DIM)
-        X1 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
-        X2 = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+        X = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
+        Z = np.diag([1, w, w**2])
 
         jacs = [-1 / (2 * np.sqrt(1 - p)) * np.eye(QUDIT_DIM)]
-        for i, Z in enumerate((Z0, Z1, Z2)):
-            for j, X in enumerate((X0, X1, X2)):
+        for i in range(3):
+            for j in range(3):
                 if i == 0 and j == 0:
                     continue
-                jacs.append(np.sqrt(1 / (32 * p)) * X @ Z)
+                jacs.append(np.sqrt(1 / (32 * p)) * matrix_power(X, i) @ matrix_power(Z, j))
 
         return jacs
 
