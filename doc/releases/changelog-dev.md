@@ -71,6 +71,11 @@
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
+<h4>Community contributions 🥳</h4>
+
+* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
