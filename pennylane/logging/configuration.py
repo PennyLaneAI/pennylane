@@ -16,7 +16,9 @@ This module contains support methods for configuring the logging functionality.
 """
 import logging
 import logging.config
-import os, platform, subprocess
+import os
+import platform
+import subprocess
 from importlib import import_module
 from importlib.util import find_spec
 
@@ -53,10 +55,10 @@ def _add_trace_level():
     lc.trace = trace
 
 
-def _configure_logging(config_file: str, config_override: dict = {}):
+def _configure_logging(config_file: str, config_override=None):
     """
     This method allows custom logging configuration throughout PennyLane.
-    All configurations are read through the ``log_config.toml`` file.
+    All configurations are read through the ``log_config.toml`` file, with additional custom options provided through the ``config_override`` dictionary.
     """
     if not has_toml:
         raise ImportError(
@@ -68,7 +70,10 @@ def _configure_logging(config_file: str, config_override: dict = {}):
         )
     with open(os.path.join(_path, config_file), "rb") as f:
         pl_config = tomllib.load(f)
-        logging.config.dictConfig(pl_config)
+        if config_override:
+            logging.config.dictConfig(pl_config)
+        else:
+            logging.config.dictConfig({**pl_config, **config_override})
 
 
 def enable_logging(config_file: str = "log_config.toml"):
@@ -105,6 +110,7 @@ def show_system_config():
     """
     This function opens the logging configuration file in the system-default browser.
     """
+    # pylint:disable = import-outside-toplevel
     import webbrowser
 
     webbrowser.open(config_path())
@@ -125,12 +131,13 @@ def edit_system_config(wait_on_close=False):
         p = subprocess.Popen((editor, config_path()))
         if wait_on_close:  # Only valid when editor is known
             p.wait()
-    elif (s := platform.system()) in ["Linux", "Darwin"]:
+    elif s := platform.system() in ["Linux", "Darwin"]:
         f_cmd = None
         if s == "Linux":
             f_cmd = "xdg-open"
         else:
             f_cmd = "open"
         subprocess.Popen((f_cmd, config_path()))
-    else:  # Windows
+    else:  # Windows-only, does not exist on MacOS/Linux
+        # pylint:disable = no-member
         os.startfile(config_path())

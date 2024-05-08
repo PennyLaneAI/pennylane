@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply adjoint jacobian differentiation"""
+import logging
 from numbers import Number
 from typing import Tuple
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.logging import debug_logger
 from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumTape
 
@@ -26,6 +28,9 @@ from .initialize_state import create_initial_state
 from .simulate import get_final_state
 
 # pylint: disable=protected-access, too-many-branches
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _dot_product_real(bra, ket, num_wires):
@@ -68,6 +73,7 @@ def _adjoint_jacobian_state(tape: QuantumTape):
     return tuple(jac.flatten() for jac in jacobian)
 
 
+@debug_logger
 def adjoint_jacobian(tape: QuantumTape, state=None):
     """Implements the adjoint method outlined in
     `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
@@ -143,6 +149,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
     return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
 
+@debug_logger
 def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
     """The jacobian vector product used in forward mode calculation of derivatives.
 
@@ -316,6 +323,7 @@ def _get_vjp_bras(tape, cotangents, ket):
     return bras, batch_size, null_batch_indices
 
 
+@debug_logger
 def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     """The vector jacobian product used in reverse-mode differentiation.
 

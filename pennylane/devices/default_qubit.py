@@ -16,7 +16,6 @@ The default.qubit device is PennyLane's standard qubit-based device.
 """
 
 import concurrent.futures
-import inspect
 import logging
 from dataclasses import replace
 from functools import partial
@@ -26,6 +25,7 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumTape
@@ -419,6 +419,7 @@ class DefaultQubit(Device):
     """
 
     # pylint:disable = too-many-arguments
+    @debug_logger_init
     def __init__(
         self,
         wires=None,
@@ -439,6 +440,7 @@ class DefaultQubit(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
+    @debug_logger
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -475,6 +477,7 @@ class DefaultQubit(Device):
             return _supports_adjoint(circuit=circuit)
         return False
 
+    @debug_logger
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
@@ -566,20 +569,13 @@ class DefaultQubit(Device):
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
         return replace(execution_config, **updated_values)
 
+    @debug_logger
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
         self.reset_prng_key()
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                """Entry with args=(circuits=%s) called by=%s""",
-                circuits,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
@@ -618,6 +614,7 @@ class DefaultQubit(Device):
 
         return results
 
+    @debug_logger
     def compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
@@ -637,6 +634,7 @@ class DefaultQubit(Device):
 
         return res
 
+    @debug_logger
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
@@ -659,6 +657,7 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
+    @debug_logger
     def supports_jvp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -678,6 +677,7 @@ class DefaultQubit(Device):
         """
         return self.supports_derivatives(execution_config, circuit)
 
+    @debug_logger
     def compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
@@ -697,6 +697,7 @@ class DefaultQubit(Device):
 
         return res
 
+    @debug_logger
     def execute_and_compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
@@ -724,6 +725,7 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
+    @debug_logger
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -743,6 +745,7 @@ class DefaultQubit(Device):
         """
         return self.supports_derivatives(execution_config, circuit)
 
+    @debug_logger
     def compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
@@ -810,6 +813,7 @@ class DefaultQubit(Device):
 
         return res
 
+    @debug_logger
     def execute_and_compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,

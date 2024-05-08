@@ -78,7 +78,7 @@ def bash_ansi_codes():
 class DefaultFormatter(Formatter):
     """This formatter has the default rules used for formatting PennyLane log messages."""
 
-    fmt_str = '[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::"%(message)s"'
+    fmt_str = '[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s::"%(message)s"\n'
 
     # 0x000000 Background
     _text_bg = (0, 0, 0)
@@ -135,7 +135,8 @@ class DynamicFormatter(Formatter):
         use_rgb=True,
     )
 
-    def _build_formats(self, fmt_str):
+    @staticmethod
+    def _build_formats(fmt_str):
         cmap = DynamicFormatter.cmap
         local_formats = {
             logging.DEBUG: build_code_rgb(cmap.debug, cmap.debug_bg) + fmt_str + _ANSI_CODES["end"],
