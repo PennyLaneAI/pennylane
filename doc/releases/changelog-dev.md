@@ -65,11 +65,21 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
+  [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
+  
+* ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
+  [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
+  with circuits with non-commuting measurements.
+  [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
 
 <h3>Contributors ✍️</h3>
 
