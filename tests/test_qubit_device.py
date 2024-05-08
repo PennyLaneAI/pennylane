@@ -30,11 +30,11 @@ from pennylane.measurements import (
     ProbabilityMP,
     Sample,
     SampleMP,
+    Shots,
     State,
     StateMP,
     Variance,
     VarianceMP,
-    Shots,
 )
 from pennylane.resource import Resources
 from pennylane.tape import QuantumScript

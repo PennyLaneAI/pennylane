@@ -13,15 +13,15 @@
 # limitations under the License.
 """Riemannian gradient optimizer"""
 import warnings
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import numpy as np
 from scipy.sparse.linalg import expm
-import pennylane as qml
 
+import pennylane as qml
 from pennylane import transform
-from pennylane.tape import QuantumTape
 from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
 
 
 @transform

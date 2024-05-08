@@ -21,16 +21,17 @@ import copy
 import itertools
 import string
 import sys
+from functools import partial
 from itertools import product
 from os import environ
 from pathlib import Path
-from functools import partial
 
 import numpy as onp
 import pytest
 from flaky import flaky
-from networkx import MultiDiGraph, number_of_selfloops
+from networkx import MultiDiGraph
 from networkx import __version__ as networkx_version
+from networkx import number_of_selfloops
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -298,6 +299,37 @@ def test_node_ids(monkeypatch):
 
         assert mn.id == "some_string"
         assert pn.id == "some_string"
+
+
+@pytest.mark.parametrize("cls", [qcut.MeasureNode, qcut.PrepareNode])
+class TestMeasurePrepareNodes:
+    """Tests for the MeasureNode and PrepareNode classes."""
+
+    def test_initialization(self, cls):
+        """Test that nodes can be initialized with wires."""
+        n = cls(wires=0)
+        assert n.wires == qml.wires.Wires(0)
+        n = cls(0)
+        assert n.wires == qml.wires.Wires(0)
+        with pytest.raises(TypeError, match="got multiple values for argument 'wires'"):
+            cls(0.5, wires=0)
+
+    def test_id(self, cls):
+        """Test that nodes can be initialized with an id or recieves its own UUID."""
+        n = cls(wires=0, id="hi")
+        assert n.id == "hi"
+        n = cls(wires=0, id=None)
+        assert n.id is not None
+        n2 = cls(wires=0, id=None)
+        assert n.id != n2.id
+
+    @pytest.mark.parametrize("decimals", [0, 1, 5])
+    @pytest.mark.parametrize("base_label", [None, "CustomNode"])
+    def test_label(self, cls, decimals, base_label):
+        """Test the label."""
+        expected_base_label = base_label or cls.__name__
+        n = cls(wires=0)
+        assert n.label(decimals=decimals, base_label=base_label) == expected_base_label
 
 
 class TestTapeToGraph:
@@ -2505,7 +2537,7 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        dev = dev_fn(wires=2, shots=10000)
+        dev = dev_fn(wires=2, shots=20000)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)

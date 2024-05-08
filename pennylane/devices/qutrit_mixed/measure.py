@@ -15,23 +15,24 @@
 Code relevant for performing measurements on a qutrit mixed state.
 """
 
-from typing import Callable
 from string import ascii_letters as alphabet
+from typing import Callable
+
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
-    StateMeasurement,
-    MeasurementProcess,
     ExpectationMP,
-    StateMP,
+    MeasurementProcess,
     ProbabilityMP,
+    StateMeasurement,
+    StateMP,
     VarianceMP,
 )
+from pennylane.ops import Hamiltonian, Sum
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .utils import reshape_state_as_matrix, get_num_wires, QUDIT_DIM
 from .apply_operation import apply_operation
+from .utils import QUDIT_DIM, get_num_wires, reshape_state_as_matrix
 
 
 def calculate_expval(

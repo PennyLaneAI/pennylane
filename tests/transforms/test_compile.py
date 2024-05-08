@@ -21,9 +21,8 @@ from test_optimization.utils import compare_operation_lists
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
-from pennylane.transforms.compile import compile
 from pennylane.transforms import unitary_to_rot
+from pennylane.transforms.compile import compile
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
@@ -31,6 +30,7 @@ from pennylane.transforms.optimization import (
     single_qubit_fusion,
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
+from pennylane.wires import Wires
 
 
 def build_qfunc(wires):
@@ -98,6 +98,28 @@ class TestCompile:
         ]
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+
+    def test_compile_non_commuting_observables(self):
+        """Test that compile works with non-commuting observables."""
+
+        ops = (qml.RX(0.1, 0), qml.RX(0.2, 0), qml.Barrier(only_visual=True), qml.X(0), qml.X(0))
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+
+        [out], _ = qml.compile(tape)
+        expected = qml.tape.QuantumScript((qml.RX(0.3, 0),), ms, shots=50)
+        assert qml.equal(out, expected)
+
+    def test_compile_mcm(self):
+        """Test that compile works with mid circuit measurements and conditionals."""
+
+        m0 = qml.measure(0)
+        ops = [qml.X(0), qml.X(0), *m0.measurements, qml.ops.Conditional(m0, qml.S(0))]
+        tape = qml.tape.QuantumScript(ops, [qml.probs()], shots=50)
+
+        [new_tape], _ = qml.compile(tape)
+        assert new_tape.shots == tape.shots
+        assert new_tape.circuit == tape[2:]
 
 
 class TestCompileIntegration:
@@ -479,8 +501,8 @@ class TestCompileInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode, argnums=(1))(x, params),
-            jax.grad(transformed_qnode, argnums=(1))(x, params),
+            jax.grad(original_qnode, argnums=1)(x, params),
+            jax.grad(transformed_qnode, argnums=1)(x, params),
             atol=1e-7,
         )
 

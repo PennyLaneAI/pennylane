@@ -15,17 +15,17 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
-from typing import Sequence, Callable
 from functools import partial
+
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
+from typing import Callable, Sequence
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import VarianceMP
 from pennylane import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.measurements import VarianceMP
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
@@ -36,12 +36,13 @@ from .general_shift_rules import (
 )
 from .gradient_transform import (
     _all_zero_grad,
+    _no_trainable_grad,
+    assert_multimeasure_not_broadcasted,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
-    assert_multimeasure_not_broadcasted,
+    assert_shot_vector_not_broadcasted,
     choose_trainable_params,
     find_and_validate_gradient_methods,
-    _no_trainable_grad,
     reorder_grads,
 )
 
@@ -754,6 +755,16 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     return gradient_tapes, processing_fn
 
 
+def _param_shift_stopping_condition(op) -> bool:
+    if not op.has_decomposition:
+        # let things without decompositions through without error
+        # error will happen when calculating parameter shift tapes
+        return True
+    if isinstance(op, qml.operation.Operator) and any(qml.math.requires_grad(p) for p in op.data):
+        return op.grad_method is not None
+    return True
+
+
 def _expand_transform_param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,
@@ -764,15 +775,17 @@ def _expand_transform_param_shift(
     broadcast=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before parameter shift."""
-    expanded_tape = expand_invalid_trainable(tape)
-
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
-
-    return [expanded_tape], null_postprocessing
+    [new_tape], postprocessing = qml.devices.preprocess.decompose(
+        tape,
+        stopping_condition=_param_shift_stopping_condition,
+        skip_initial_state_prep=False,
+        name="param_shift",
+    )
+    if new_tape is tape:
+        return [tape], postprocessing
+    params = new_tape.get_parameters(trainable_only=False)
+    new_tape.trainable_params = qml.math.get_trainable_indices(params)
+    return [new_tape], postprocessing
 
 
 @partial(
@@ -1079,6 +1092,7 @@ def param_shift(
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
+    assert_shot_vector_not_broadcasted(tape.shots, broadcast)
     assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:

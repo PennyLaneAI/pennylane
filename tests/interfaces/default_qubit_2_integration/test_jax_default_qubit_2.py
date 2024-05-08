@@ -12,21 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Jax specific tests for execute and default qubit 2."""
-import pytest
 import numpy as np
-
+import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
+from pennylane import execute
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane import execute
 from pennylane.measurements import Shots
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
-config = pytest.importorskip("jax.config")
-config.config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 pytestmark = pytest.mark.jax
 

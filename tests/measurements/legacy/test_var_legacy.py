@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Variance, Shots
 from pennylane.devices.qubit.measure import flatten_state
+from pennylane.measurements import Shots, Variance
 
 
 # TODO: Remove this when new CustomMP are the default

@@ -20,11 +20,13 @@ import itertools
 
 import numpy as np
 import pytest
-
 from gate_data import (
+    CCZ,
+    CH,
     CNOT,
     CSWAP,
-    CCZ,
+    CY,
+    CZ,
     ECR,
     ISWAP,
     SISWAP,
@@ -37,9 +39,6 @@ from gate_data import (
     X,
     Y,
     Z,
-    CH,
-    CY,
-    CZ,
 )
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group

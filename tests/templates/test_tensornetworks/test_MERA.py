@@ -14,9 +14,11 @@
 """
 Tests for the MERA template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane.templates.tensornetworks.mera import MERA, compute_indices
 

@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
 from tests.param_shift_dev import ParamShiftDerivativesDevice
 
 # dev, diff_method, grad_on_execution, device_vjp

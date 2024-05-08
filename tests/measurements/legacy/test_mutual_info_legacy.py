@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.workflow import INTERFACE_MAP
 from pennylane.measurements import Shots
+from pennylane.workflow import INTERFACE_MAP
 
 
 @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])

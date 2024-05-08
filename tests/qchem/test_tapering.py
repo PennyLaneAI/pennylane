@@ -26,12 +26,12 @@ from pennylane.pauli import pauli_sentence
 from pennylane.qchem.tapering import (
     _kernel,
     _reduced_row_echelon,
+    _split_pauli_sentence,
+    _taper_pauli_sentence,
     clifford,
     optimal_sector,
     taper_hf,
     taper_operation,
-    _split_pauli_sentence,
-    _taper_pauli_sentence,
 )
 
 

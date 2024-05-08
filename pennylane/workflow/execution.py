@@ -22,25 +22,25 @@ differentiation support.
 # pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args
 
 import inspect
+import logging
 import warnings
 from functools import partial
-from typing import Callable, MutableMapping, Sequence, Optional, Union, Tuple
-import logging
+from typing import Callable, MutableMapping, Optional, Sequence, Tuple, Union
 
-from cachetools import LRUCache, Cache
+from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
 from pennylane.typing import ResultBatch
 
-from .set_shots import set_shots
 from .jacobian_products import (
-    TransformJacobianProducts,
     DeviceDerivatives,
     DeviceJacobianProducts,
     LightningVJPs,
+    TransformJacobianProducts,
 )
+from .set_shots import set_shots
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -266,7 +266,7 @@ def _make_inner_execute(
     For higher order derivatives, the "inner execute" will be another ml framework execute.
     """
 
-    if isinstance(device, qml.Device):
+    if isinstance(device, qml.devices.LegacyDevice):
         device_execution = set_shots(device, override_shots)(device.batch_execute)
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
@@ -534,7 +534,7 @@ def execute(
 
     if (
         device_vjp
-        and isinstance(device, qml.Device)
+        and isinstance(device, qml.devices.LegacyDevice)
         and "lightning" not in getattr(device, "short_name", "").lower()
     ):
         raise qml.QuantumFunctionError(

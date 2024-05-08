@@ -17,12 +17,12 @@ a vector and a list of operators.
 """
 # pylint: disable=too-many-branches
 from collections import defaultdict
-from typing import Sequence, Union, Callable
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
 from pennylane.operation import Operator, convert_to_opmath
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse import ParametrizedHamiltonian
-from pennylane.pauli import PauliWord, PauliSentence
 
 
 def dot(
@@ -39,7 +39,8 @@ def dot(
 
     Args:
         coeffs (Sequence[float, Callable]): sequence containing the coefficients of the linear combination
-        ops (Sequence[Operator]): sequence containing the operators of the linear combination
+        ops (Sequence[Operator, PauliWord, PauliSentence]): sequence containing the operators of the linear combination.
+           Can also be ``PauliWord`` or ``PauliSentence`` instances.
         pauli (bool, optional): If ``True``, a :class:`~.PauliSentence`
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
             is returned. Defaults to ``False``. Note that when ``ops`` consists solely of ``PauliWord``
@@ -131,10 +132,22 @@ def dot(
         :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.group_observables`.
     """
 
+    for t in (Operator, PauliWord, PauliSentence):
+        if isinstance(ops, t):
+            raise ValueError(
+                f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
+            )
+
     if len(coeffs) != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")
     if len(coeffs) == 0 and len(ops) == 0:
         raise ValueError("Cannot compute the dot product of an empty sequence.")
+
+    for t in (Operator, PauliWord, PauliSentence):
+        if isinstance(ops, t):
+            raise ValueError(
+                f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
+            )
 
     if any(callable(c) for c in coeffs):
         return ParametrizedHamiltonian(coeffs, ops)

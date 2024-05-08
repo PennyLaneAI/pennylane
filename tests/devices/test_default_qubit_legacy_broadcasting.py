@@ -14,45 +14,45 @@
 """
 Unit tests for the :class:`pennylane.devices.DefaultQubitLegacy` device when using broadcasting.
 """
-from itertools import product
-
 # pylint: disable=protected-access,cell-var-from-loop,too-many-arguments
 import math
+from itertools import product
 
 import pytest
 from gate_data import (
-    X,
-    Y,
-    Z,
-    S,
-    T,
-    H,
     CNOT,
-    SWAP,
+    CSWAP,
     CZ,
     ISWAP,
     SISWAP,
-    CSWAP,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    MultiRZ1,
-    Rot3,
+    SWAP,
+    CRot3,
     CRotx,
     CRoty,
     CRotz,
-    MultiRZ2,
+    H,
+    I,
     IsingXX,
     IsingYY,
     IsingZZ,
-    CRot3,
-    I,
+    MultiRZ1,
+    MultiRZ2,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    T,
     Toffoli,
+    X,
+    Y,
+    Z,
 )
 
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
+from pennylane import DeviceError
+from pennylane import numpy as np
 from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy
 
 THETA = np.linspace(0.11, 1, 3)

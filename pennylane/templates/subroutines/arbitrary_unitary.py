@@ -15,7 +15,7 @@ r"""
 Contains the ArbitraryUnitary template.
 """
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import PauliRot
 
 _PAULIS = ["I", "X", "Y", "Z"]

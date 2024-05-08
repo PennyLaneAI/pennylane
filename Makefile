@@ -70,9 +70,11 @@ coverage:
 .PHONY:format
 format:
 ifdef check
-	black -l 100 ./pennylane ./tests --check
+	isort --py 311 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests --check
+	black -t py39 -t py310 -t py311 -l 100 ./pennylane ./tests --check
 else
-	black -l 100 ./pennylane ./tests
+	isort --py 311 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
+	black -t py39 -t py310 -t py311 -l 100 ./pennylane ./tests
 endif
 
 .PHONY: lint
