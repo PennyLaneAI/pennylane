@@ -285,7 +285,7 @@ def decompose(
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        Error: Type defaults to ``DeviceError`` but can be modified via keyword argument. Raised if
+        Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument. Raised if
             an operator is not accepted and does not define a decomposition, or if the decomposition
             enters an infinite loop and raises a ``RecursionError``.
 
