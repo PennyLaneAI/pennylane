@@ -14,6 +14,7 @@
 """
 Tests for the gradients.finite_difference module.
 """
+# pylint: disable=use-implicit-booleaness-not-comparison
 import numpy
 import pytest
 
@@ -98,6 +99,20 @@ class TestCoeffs:
 
 class TestFiniteDiff:
     """Tests for the finite difference gradient transform"""
+
+    def test_finite_diff_non_commuting_observables(self):
+        """Test that finite differences work even if the measurements do not commute with each other."""
+
+        ops = (qml.RX(0.5, wires=0),)
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Z(0)))
+        tape = qml.tape.QuantumScript(ops, ms, trainable_params=[0])
+
+        batch, _ = qml.gradients.finite_diff(tape)
+        assert len(batch) == 2
+        tape0 = qml.tape.QuantumScript((qml.RX(0.5, 0),), ms, trainable_params=[0])
+        tape1 = qml.tape.QuantumScript((qml.RX(0.5 + 1e-7, 0),), ms, trainable_params=[0])
+        assert qml.equal(batch[0], tape0)
+        assert qml.equal(batch[1], tape1)
 
     def test_trainable_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
