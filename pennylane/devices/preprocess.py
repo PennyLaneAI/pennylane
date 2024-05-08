@@ -264,13 +264,19 @@ def decompose(
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
             a ``DecompositionUndefinedError`` will be raised.
+
+    Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
             a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape has shots.
-        skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
+        skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if it inherits
+            from :class:`~.StatePrepBase`. Defaults to ``True``.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
-        max_expansion (int): The maximum depth of the expansion.
+        max_expansion (int): The maximum depth of the expansion. Defaults to None.
+        name (str): The name of the operation or device using the transform. Used in the error message.
+        error (Error): An error type to raise if it is not possible to obtain a decomposition that fulfills
+            the ``stopping_condition``. Defaults to ``DeviceError``.
 
 
     Returns:
@@ -279,9 +285,9 @@ def decompose(
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        DecompositionUndefinedError: if an operator is not accepted and does not define a decomposition
-
-        DeviceError: If the decomposition enters and infinite loop and raises a ``RecursionError``.
+        Error: Type defaults to ``DeviceError`` but can be modified via keyword argument. Raised if
+            an operator is not accepted and does not define a decomposition, or if the decomposition
+            enters and infinite loop and raises a ``RecursionError``.
 
     **Example:**
 
@@ -350,7 +356,7 @@ def decompose(
             )
         ]
     except RecursionError as e:
-        raise DeviceError(
+        raise error(
             "Reached recursion limit trying to decompose operations. "
             "Operator decomposition may have entered an infinite loop."
         ) from e
