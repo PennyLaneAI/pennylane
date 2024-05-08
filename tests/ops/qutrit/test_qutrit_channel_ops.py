@@ -57,8 +57,8 @@ class TestQutritDepolarizingChannel:
         p = 0.1
         kraus_matrices = qml.QutritDepolarizingChannel(p, wires=0).kraus_matrices()
         expected_matrices = self.get_expected_kraus_matrices(p)
-        for krause_matrix, expected_matrix in zip(kraus_matrices, expected_matrices):
-            assert np.allclose(krause_matrix, expected_matrix, atol=tol, rtol=0)
+        for kraus_matrix, expected_matrix in zip(kraus_matrices, expected_matrices):
+            assert np.allclose(kraus_matrix, expected_matrix, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_depolarizing(self, angle):
