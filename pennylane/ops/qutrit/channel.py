@@ -17,6 +17,7 @@ This module contains the available built-in noisy qutrit
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import numpy as np
+
 from pennylane import math
 from pennylane.operation import Channel
 

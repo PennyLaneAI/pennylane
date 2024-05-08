@@ -17,7 +17,6 @@ import inspect
 import logging
 from dataclasses import replace
 from typing import Callable, Optional, Sequence, Tuple, Union
-
 import numpy as np
 
 import pennylane as qml
