@@ -65,6 +65,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
+  [(#5660)](https://github.com/PennyLaneAI/pennylane/pull/5660)
+
 * ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
   [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
   
