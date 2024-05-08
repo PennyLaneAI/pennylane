@@ -20,6 +20,7 @@ from typing import Optional, Sequence, Tuple, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.math.utils import is_abstract
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -173,7 +174,7 @@ class SampleMP(SampleMeasurement):
             return
 
         if wires is not None:
-            if obs is not None:
+            if obs is not None and not is_abstract(obs):
                 raise ValueError(
                     "Cannot specify the wires to sample if an observable is provided. The wires "
                     "to sample will be determined directly from the observable."
