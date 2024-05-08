@@ -27,6 +27,7 @@ pytestmark = pytest.mark.jax
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
+    """enable and disable capture around each test."""
     qml.capture.enable()
     yield
     qml.capture.disable()

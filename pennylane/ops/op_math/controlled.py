@@ -896,13 +896,7 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
             id=id,
         )
 
-    @ControlledOp._primitive.def_impl  # pylint: disable=protected-access
-    def _(base, *control_wires, control_values=None, work_wires=None, id=None):
-        return type.__call__(
-            ControlledOp,
-            base,
-            control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            id=id,
-        )
+
+# easier to just keep the same primitive for both versions
+# dispatch between the two types happens inside instance creation anyway
+ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-access

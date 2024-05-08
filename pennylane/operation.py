@@ -249,7 +249,7 @@ import itertools
 import warnings
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -703,7 +703,7 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
-    _primitive = None
+    _primitive: Optional["jax.core.Primitive"] = None
     """
     Optional[jax.core.Primitive]
     """

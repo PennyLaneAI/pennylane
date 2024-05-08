@@ -68,6 +68,24 @@ def test_operators_constructed_when_plxpr_enabled():
     assert op.base[1] == qml.Y(1)
 
 
+def test_fallback_if_primitive_still_None():
+    """Test that if the primitive is None (no jax or something went wrong) that the instance is simply created."""
+
+    class MyOp(qml.operation.Operator):
+        """A dummy operator."""
+
+    MyOp._primitive = None
+
+    op = MyOp(wires=0)
+    assert isinstance(op, qml.operation.Operator)
+
+    def f():
+        MyOp(wires=0)
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert len(jaxpr.eqns) == 0
+
+
 def test_hybrid_capture_wires():
     """That a hybrid quantum-classical jaxpr can be captured with wire processing."""
 
@@ -269,7 +287,7 @@ class TestOpmath:
         assert len(q) == 1
         assert qml.equal(q.queue[0], qml.adjoint(qml.X(0)))
 
-    def test_control(self):
+    def test_Controlled(self):
         """Test a nested control operation."""
 
         def qfunc(op):
