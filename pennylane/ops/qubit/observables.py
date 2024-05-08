@@ -442,13 +442,15 @@ class BasisStateProjector(Projector, Operation):
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
 
-        if not qml.math.is_abstract(state):
-            casted_state = list(qml.math.toarray(state).astype(int))
-            if not set(casted_state).issubset({0, 1}):
-                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
-        else:
-            if qml.math.dtype(state).name[0:3] not in {"int", "boo"}:
+        if qml.math.get_interface(state) == "jax":
+            if qml.math.dtype(state).name[:3] not in {"int", "boo"}:
                 raise ValueError("Basis state must consist of integers or booleans.")
+        else:
+            # state is index into data, rather than data, so cast it to built-ins when
+            # no need for tracing
+            state = tuple(qml.math.toarray(state).astype(int))
+            if not set(state).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
         super().__init__(state, wires=wires, id=id)
 
@@ -477,7 +479,7 @@ class BasisStateProjector(Projector, Operation):
 
         if base_label is not None:
             return base_label
-        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        basis_string = "".join(str(int(i)) for i in self.data[0])
         return f"|{basis_string}⟩⟨{basis_string}|"
 
     @staticmethod
@@ -503,13 +505,16 @@ class BasisStateProjector(Projector, Operation):
          [0. 0. 0. 0.]
          [0. 0. 0. 0.]]
         """
-        n = len(basis_state)
-        mask = qml.math.flip(2 ** qml.math.arange(n))
-        idx = qml.math.sum(mask * basis_state)
-        mat = qml.math.zeros((2**n, 2**n), like=basis_state)
         if qml.math.get_interface(basis_state) == "jax":
+            n = len(basis_state)
+            mask = qml.math.flip(2 ** qml.math.arange(n))
+            idx = qml.math.sum(mask * basis_state)
+            mat = qml.math.zeros((2**n, 2**n), like=basis_state)
             return mat.at[idx, idx].set(1.0)
 
+        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        m[idx, idx] = 1
         mat[idx, idx] = 1
         return mat
 
@@ -539,18 +544,17 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
-        mask = 2 ** np.arange(len(basis_state) - 1, -1, -1)
-        mask = qml.math.asarray(mask, like=basis_state)
-        mask = qml.math.cast_like(mask, basis_state)
-        idx = qml.math.sum(mask * basis_state)
-        eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
-        framework = qml.math.get_interface(basis_state)
-        if framework == "jax":
+        if qml.math.get_interface(basis_state) == "jax":
+            mask = 2 ** np.arange(len(basis_state) - 1, -1, -1)
+            mask = qml.math.asarray(mask, like=basis_state)
+            mask = qml.math.cast_like(mask, basis_state)
+            idx = qml.math.sum(mask * basis_state)
+            eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
             return eigvals.at[idx].set(1.0)
-        if framework == "tensorflow":
-            return eigvals[idx].assign(1.0)
-        eigvals[int(idx)] = 1
-        return eigvals
+        w = np.zeros(2 ** len(basis_state))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        w[idx] = 1
+        return w
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -591,7 +595,6 @@ class StateVectorProjector(Projector):
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-
         super().__init__(state, wires=wires, id=id)
 
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
