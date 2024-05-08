@@ -15,19 +15,18 @@
 Tests the apply_operation functions from devices/qubit
 """
 from functools import reduce
-import pytest
 
 import numpy as np
+import pytest
 from scipy.stats import unitary_group
+
 import pennylane as qml
-from pennylane.operation import _UNSET_BATCH_SIZE, Operation
-
-
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation
 
 ml_frameworks_list = [
     "numpy",

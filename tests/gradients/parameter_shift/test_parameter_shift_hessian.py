@@ -14,15 +14,15 @@
 """Tests for the gradients.param_shift_hessian module."""
 
 from itertools import product
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.gradients.parameter_shift_hessian import (
-    _process_argnum,
     _collect_recipes,
     _generate_offdiag_tapes,
+    _process_argnum,
 )
 
 

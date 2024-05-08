@@ -18,8 +18,9 @@ This submodule contains the template for Amplitude Amplification.
 
 # pylint: disable-msg=too-many-arguments
 import numpy as np
-from pennylane.operation import Operation
+
 import pennylane as qml
+from pennylane.operation import Operation
 
 
 def _get_fixed_point_angles(iters, p_min):

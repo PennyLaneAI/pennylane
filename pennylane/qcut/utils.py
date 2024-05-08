@@ -17,19 +17,20 @@ Support functions for cut_circuit and cut_circuit_mc.
 
 
 import uuid
-from typing import Any, Callable, Sequence, Tuple
 import warnings
+from typing import Any, Callable, Sequence, Tuple
+
 import numpy as np
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
+from pennylane.operation import Operation
 from pennylane.ops.meta import WireCut
 from pennylane.queuing import WrappedObj
-from pennylane.operation import Operation
 
-from .kahypar import kahypar_cut
 from .cutstrategy import CutStrategy
+from .kahypar import kahypar_cut
 
 
 class MeasureNode(Operation):
@@ -37,11 +38,16 @@ class MeasureNode(Operation):
 
     num_wires = 1
     grad_method = None
+    num_params = 0
 
-    def __init__(self, *params, wires=None, id=None):
+    def __init__(self, wires=None, id=None):
         id = id or str(uuid.uuid4())
 
-        super().__init__(*params, wires=wires, id=id)
+        super().__init__(wires=wires, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        op_label = base_label or self.__class__.__name__
+        return op_label
 
 
 class PrepareNode(Operation):
@@ -49,11 +55,16 @@ class PrepareNode(Operation):
 
     num_wires = 1
     grad_method = None
+    num_params = 0
 
-    def __init__(self, *params, wires=None, id=None):
+    def __init__(self, wires=None, id=None):
         id = id or str(uuid.uuid4())
 
-        super().__init__(*params, wires=wires, id=id)
+        super().__init__(wires=wires, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        op_label = base_label or self.__class__.__name__
+        return op_label
 
 
 def _prep_zero_state(wire):
@@ -138,29 +149,29 @@ def find_and_place_cuts(
         measurements = [qml.expval(qml.X(0) @ qml.Y("a") @ qml.Z("b"))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape.text(tape))
-     0: ──RX(0.1)──╭●──────────╭●───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
-     1: ──RY(0.2)──╰X──//──╭●──╰X───────────│┤
-     a: ──RX(0.3)──╭●──────╰X──╭●──RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
-     b: ──RY(0.4)──╰X──────────╰X──RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩
+    >>> print(qml.drawer.tape_text(tape, decimals=1))
+    0: ──RX(0.1)─╭●────────╭●──────────┤ ╭<X@Y@Z>
+    1: ──RY(0.2)─╰X──//─╭●─╰X──────────┤ │
+    a: ──RX(0.3)─╭●─────╰X─╭●──RX(0.5)─┤ ├<X@Y@Z>
+    b: ──RY(0.4)─╰X────────╰X──RY(0.6)─┤ ╰<X@Y@Z>
 
     Since the existing :class:`~.WireCut` doesn't sufficiently fragment the circuit, we can find the
     remaining cuts using the default KaHyPar partitioner:
 
     >>> graph = qml.qcut.tape_to_graph(tape)
     >>> cut_graph = qml.qcut.find_and_place_cuts(
-            graph=graph,
-            num_fragments=2,
-            imbalance=0.5,
-        )
+    ...     graph=graph,
+    ...     num_fragments=2,
+    ...     imbalance=0.5,
+    ... )
 
     Visualizing the newly-placed cut:
 
-    >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
-     0: ──RX(0.1)──╭●───────────────╭●────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
-     1: ──RY(0.2)──╰X──//──╭●───//──╰X────────│┤
-     a: ──RX(0.3)──╭●──────╰X──╭●────RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
-     b: ──RY(0.4)──╰X──────────╰X────RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩
+    >>> print(qml.qcut.graph_to_tape(cut_graph).draw(decimals=1))
+    0: ──RX(0.1)─╭●────────────╭●───────┤ ╭<X@Y@Z>
+    1: ──RY(0.2)─╰X──//─╭●──//─╰X───────┤ │
+    a: ──RX(0.3)─╭●─────╰X─╭●───RX(0.5)─┤ ├<X@Y@Z>
+    b: ──RY(0.4)─╰X────────╰X───RY(0.6)─┤ ╰<X@Y@Z>
 
     We can then proceed with the usual process of replacing :class:`~.WireCut` nodes with
     pairs of :class:`~.MeasureNode` and :class:`~.PrepareNode`, and then break the graph
@@ -168,11 +179,11 @@ def find_and_place_cuts(
     ``replace_wire_cuts=True``:
 
     >>> cut_graph = qml.qcut.find_and_place_cuts(
-            graph=graph,
-            num_fragments=2,
-            imbalance=0.5,
-            replace_wire_cuts=True,
-        )
+    ...     graph=graph,
+    ...     num_fragments=2,
+    ...     imbalance=0.5,
+    ...     replace_wire_cuts=True,
+    ... )
     >>> frags, comm_graph = qml.qcut.fragment_graph(cut_graph)
     >>> for t in frags:
     ...     print(qml.qcut.graph_to_tape(t).draw())
@@ -194,20 +205,20 @@ def find_and_place_cuts(
     directly passing a :class:`pennylane.Device` to the ``device`` argument):
 
     >>> cut_strategy = qml.qcut.CutStrategy(max_free_wires=2)
-    >>> print(cut_strategy.get_cut_kwargs(graph))
-     [{'num_fragments': 2, 'imbalance': 0.5714285714285714},
-      {'num_fragments': 3, 'imbalance': 1.4},
-      {'num_fragments': 4, 'imbalance': 1.75},
-      {'num_fragments': 5, 'imbalance': 2.3333333333333335},
-      {'num_fragments': 6, 'imbalance': 2.0},
-      {'num_fragments': 7, 'imbalance': 3.0},
-      {'num_fragments': 8, 'imbalance': 2.5},
-      {'num_fragments': 9, 'imbalance': 2.0},
-      {'num_fragments': 10, 'imbalance': 1.5},
-      {'num_fragments': 11, 'imbalance': 1.0},
-      {'num_fragments': 12, 'imbalance': 0.5},
-      {'num_fragments': 13, 'imbalance': 0.05},
-      {'num_fragments': 14, 'imbalance': 0.1}]
+    >>> cut_strategy.get_cut_kwargs(graph)
+    [{'num_fragments': 2, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 3, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 4, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 5, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 6, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 7, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 8, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 9, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 10, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 11, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 12, 'imbalance': 0.2857142857142858},
+     {'num_fragments': 13, 'imbalance': 0.0},
+     {'num_fragments': 14, 'imbalance': 0.0}]
 
     The printed list above shows all the possible cutting configurations one can attempt to perform
     in order to search for the optimal cut. This is done by directly passing a
@@ -218,10 +229,10 @@ def find_and_place_cuts(
             cut_strategy=cut_strategy,
         )
     >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
-     0: ──RX──//─╭●──//────────╭●──//─────────┤ ╭<X@Y@Z>
-     1: ──RY──//─╰X──//─╭●──//─╰X─────────────┤ │
-     a: ──RX──//─╭●──//─╰X──//─╭●──//──RX──//─┤ ├<X@Y@Z>
-     b: ──RY──//─╰X──//────────╰X──//──RY─────┤ ╰<X@Y@Z>
+    0: ──RX──//─╭●──//────────╭●──//────────┤ ╭<X@Y@Z>
+    1: ──RY──//─╰X──//─╭●──//─╰X────────────┤ │
+    a: ──RX──//─╭●──//─╰X──//─╭●──//──RX─//─┤ ├<X@Y@Z>
+    b: ──RY──//─╰X──//────────╰X──//──RY────┤ ╰<X@Y@Z>
 
     As one can tell, quite a few cuts have to be made in order to execute the circuit on solely
     2-qubit devices. To verify, let's print the fragments:
@@ -482,9 +493,9 @@ def place_wire_cuts(
         measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape))
-     0: ──RX(0.432)──╭●──┤ ⟨Z⟩
-     a: ──RY(0.543)──╰X──┤
+    >>> print(qml.drawer.tape_text(tape, decimals=3))
+    0: ──RX(0.432)─╭●─┤  <Z>
+    a: ──RY(0.543)─╰X─┤
 
     If we know we want to place a :class:`~.WireCut` node between the nodes corresponding to the
     ``RY(0.543, wires=["a"])`` and ``CNOT(wires=[0, 'a'])`` operations after the tape is constructed,
@@ -492,9 +503,9 @@ def place_wire_cuts(
 
     >>> graph = qml.qcut.tape_to_graph(tape)
     >>> op0, op1 = tape.operations[1], tape.operations[2]
-    >>> cut_edges = [e for e in graph.edges if e[0] is op0 and e[1] is op1]
+    >>> cut_edges = [e for e in graph.edges if e[0].obj is op0 and e[1].obj is op1]
     >>> cut_edges
-    [(RY(0.543, wires=['a']), CNOT(wires=[0, 'a']), 0)]
+    [(Wrapped(RY(0.543, wires=['a'])), Wrapped(CNOT(wires=[0, 'a'])), 0)]
 
     Then feed it to this function for placement:
 
@@ -504,9 +515,9 @@ def place_wire_cuts(
 
     And visualize the cut by converting back to a tape:
 
-    >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
-     0: ──RX(0.432)──────╭●──┤ ⟨Z⟩
-     a: ──RY(0.543)──//──╰X──┤
+    >>> print(qml.qcut.graph_to_tape(cut_graph).draw(decimals=3))
+    0: ──RX(0.432)─────╭●─┤  <Z>
+    a: ──RY(0.543)──//─╰X─┤
     """
     cut_graph = graph.copy()
 
@@ -613,10 +624,10 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     >>> graph = qml.qcut.tape_to_graph(tape)
     >>> qml.qcut.replace_wire_cut_nodes(graph)
     >>> qml.qcut.fragment_graph(graph)
-    ((<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
+    ([<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311c10>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e2820>,
-      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e27f0>),
+      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e27f0>],
      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e26a0>)
     """
 

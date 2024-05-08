@@ -14,14 +14,15 @@
 """
 Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``/pauli/grouping/group_observables.py``.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import numpy as pnp
 from pennylane.operation import Tensor
 from pennylane.pauli import are_identical_pauli_words
 from pennylane.pauli.grouping.group_observables import PauliGroupingStrategy, group_observables
-from pennylane import numpy as pnp
 
 
 class TestPauliGroupingStrategy:
@@ -468,6 +469,9 @@ class TestGroupObservables:
     def test_observables_on_no_wires_coeffs(self):
         """Test that observables on no wires are stuck in the first group and
         coefficients are tracked when provided."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported with legacy opmath.")
 
         observables = [
             qml.X(0),

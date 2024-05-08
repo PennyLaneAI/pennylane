@@ -15,15 +15,14 @@
 # pylint: disable=protected-access,too-few-public-methods
 import sys
 
-
 import autograd
 import pytest
-from pennylane import numpy as np
-from pennylane.operation import Observable, AnyWires
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import finite_diff, param_shift
+from pennylane.operation import AnyWires, Observable
 
 pytestmark = pytest.mark.autograd
 

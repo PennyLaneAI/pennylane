@@ -180,8 +180,8 @@ PennyLane is in the process of replacing :class:`~pennylane.Hamiltonian` and :cl
 with newer, more general arithmetic operators. These consist of :class:`~pennylane.ops.op_math.Prod`,
 :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`. By default, using dunder
 methods (eg. ``+``, ``-``, ``@``, ``*``) to combine operators with scalars or other operators will
-create :class:`~pennylane.Hamiltonian`'s and :class:`~.Tensor`'s. If you would like to switch dunders to
-return newer arithmetic operators, the ``operation`` module provides the following helper functions:
+create the aforementioned newer operators. To toggle the dunders to return the older arithmetic operators,
+the ``operation`` module provides the following helper functions:
 
 .. currentmodule:: pennylane.operation
 
@@ -247,9 +247,9 @@ import copy
 import functools
 import itertools
 import warnings
+from contextlib import contextmanager
 from enum import IntEnum
 from typing import List, Tuple
-from contextlib import contextmanager
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -261,8 +261,8 @@ from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .utils import pauli_eigs
 from .pytrees import register_pytree
+from .utils import pauli_eigs
 
 # =============================================================================
 # Errors
@@ -3043,10 +3043,14 @@ def convert_to_opmath(op):
         Operator: An operator using the new arithmetic operations, if relevant
     """
     if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(op)
         c, ops = op.terms()
         ops = tuple(convert_to_opmath(o) for o in ops)
         return qml.dot(c, ops)
     if isinstance(op, Tensor):
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(op)
         return qml.prod(*op.obs)
     return op
 

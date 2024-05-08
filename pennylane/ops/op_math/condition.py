@@ -18,9 +18,9 @@ from functools import wraps
 from typing import Type
 
 from pennylane import QueuingManager
+from pennylane.compiler import compiler
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.tape import make_qscript
-from pennylane.compiler import compiler
 
 
 class ConditionalTransformError(ValueError):

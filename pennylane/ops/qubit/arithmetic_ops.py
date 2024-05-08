@@ -22,8 +22,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires
 from pennylane.ops import Identity
+from pennylane.wires import Wires
 
 
 class QubitCarry(Operation):

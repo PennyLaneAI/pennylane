@@ -13,23 +13,24 @@
 # limitations under the License.
 """Unit and integration tests for the transform program."""
 # pylint: disable=no-member
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import pytest
+
 import pennylane as qml
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import (
-    transform,
-    TransformProgram,
-    TransformError,
     TransformContainer,
+    TransformError,
+    TransformProgram,
+    transform,
 )
 from pennylane.transforms.core.transform_program import (
-    _batch_postprocessing,
     _apply_postprocessing_stack,
+    _batch_postprocessing,
     null_postprocessing,
 )
-from pennylane.typing import ResultBatch, Result
+from pennylane.typing import Result, ResultBatch
 
 
 def first_valid_transform(

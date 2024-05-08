@@ -13,19 +13,18 @@
 # limitations under the License.
 """Unit tests for measure in devices/qubit."""
 
-import pytest
-
 import numpy as np
+import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit.measure import (
-    measure,
-    state_diagonalizing_gates,
     csr_dot_products,
     full_dot_products,
     get_measurement_function,
+    measure,
+    state_diagonalizing_gates,
     sum_of_terms_method,
 )
 
@@ -192,6 +191,10 @@ class TestMeasurements:
 
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported with legacy opmath.")
+
         state = np.random.random([2, 2, 2])
         out = measure(qml.measurements.ExpectationMP(qml.I()), state)
         assert qml.math.allclose(out, 1.0)
