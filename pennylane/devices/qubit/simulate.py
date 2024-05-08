@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
-# pylint: disable=protected-access
-from functools import partial
 import inspect
 import logging
+
+# pylint: disable=protected-access
+from functools import partial
 from typing import Optional
 
 import numpy as np
@@ -111,6 +112,7 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_ke
 
     state = state / norm
     return state, shots
+
 
 @debug_logger
 def get_final_state(circuit, debugger=None, **execution_kwargs):
@@ -243,6 +245,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         return results[0]
 
     return results
+
 
 @debug_logger
 def simulate(

@@ -32,6 +32,7 @@ from .simulate import get_final_state
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
 def _dot_product_real(bra, ket, num_wires):
     """Helper for calculating the inner product for adjoint differentiation."""
     # broadcasted inner product not summing over first dimension of the bra tensor
@@ -70,6 +71,7 @@ def _adjoint_jacobian_state(tape: QuantumTape):
         state = apply_operation(op, state)
 
     return tuple(jac.flatten() for jac in jacobian)
+
 
 @debug_logger
 def adjoint_jacobian(tape: QuantumTape, state=None):
@@ -145,6 +147,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
 
     # must be 2-dimensional
     return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
+
 
 @debug_logger
 def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
@@ -318,6 +321,7 @@ def _get_vjp_bras(tape, cotangents, ket):
     bras = bras if batched_cotangents else np.squeeze(bras)
 
     return bras, batch_size, null_batch_indices
+
 
 @debug_logger
 def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):

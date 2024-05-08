@@ -16,7 +16,9 @@ This module contains support methods for configuring the logging functionality.
 """
 import logging
 import logging.config
-import os, platform, subprocess
+import os
+import platform
+import subprocess
 from importlib import import_module
 from importlib.util import find_spec
 
@@ -100,11 +102,13 @@ def config_path():
     path = os.path.join(_path, "log_config.toml")
     return path
 
+
 def show_system_config():
     """
     This function opens the logging configuration file in the system-default browser.
     """
     import webbrowser
+
     webbrowser.open(config_path())
 
 

@@ -1,6 +1,6 @@
 import inspect
-from functools import partial, wraps
 import logging
+from functools import partial, wraps
 
 # Stack level allows moving up the stack with the log records, and prevents
 # the decorator function names appearing in the resulting messages.
@@ -76,6 +76,7 @@ def log_string_debug_class(cl, log_level):
         else:
             setattr(cl, f_name, types.MethodType(f_par_entry(f), cl))
     return cl
+
 
 # For ease-of-use ``debug_logger`` is provided for decoration of public methods and free functions, with ``debug_logger_init`` provided for use with class constructors.
 debug_logger = partial(log_string_debug_func, log_level=logging.DEBUG, use_entry=True)
