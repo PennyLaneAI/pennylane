@@ -243,6 +243,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.n
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "ravel"] = "tensorflow.experimental.numpy"
 
 tf_fft_functions = [
     "fft",
@@ -309,6 +310,9 @@ ar.register_function(
     lambda x: _i("tf").math.sqrt(
         _i("tf").cast(x, "float64") if x.dtype.name in ("int64", "int32") else x
     ),
+)
+ar.register_function(
+    "tensorflow", "var", lambda tensor, **kwargs: _i("tf").math.reduce_variance(tensor, **kwargs)
 )
 
 

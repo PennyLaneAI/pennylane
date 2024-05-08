@@ -301,7 +301,7 @@ def apply_mid_measure(
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)
     slices[axis] = 0
-    prob0 = qml.math.norm(state[tuple(slices)]) ** 2
+    prob0 = qml.math.cast(qml.math.norm(state[tuple(slices)]) ** 2, float)
     interface = qml.math.get_deep_interface(state)
     if prng_key is not None:
         # pylint: disable=import-outside-toplevel
@@ -329,9 +329,12 @@ def apply_mid_measure(
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.X(wire), ...)
     # to reset enables jax.jit and prevents it from using Python callbacks
     element = op.reset and sample == 1
-    matrix = qml.math.array(
-        [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]], like=interface
-    ).astype(float)
+    matrix = qml.math.cast(
+        qml.math.array(
+            [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]], like=interface
+        ),
+        float,
+    )
     state = apply_operation(
         qml.QubitUnitary(matrix, wire), state, is_state_batched=is_state_batched, debugger=debugger
     )
