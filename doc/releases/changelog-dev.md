@@ -86,11 +86,15 @@
   with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
 
+* A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
+  [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Pietropaolo Frisoni,
+Soran Jahangiri,
 Christina Lee,
 Vincent Michaud-Rioux,
 David Wierichs.
