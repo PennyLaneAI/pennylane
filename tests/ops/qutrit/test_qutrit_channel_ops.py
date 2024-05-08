@@ -39,12 +39,12 @@ class TestQutritDepolarizingChannel:
         X1 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
         X2 = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
 
-        Ks = [np.sqrt(1 - (8 * p / 9)) * np.eye(QUDIT_DIM)]
+        Ks = [np.sqrt(1 - p) * np.eye(QUDIT_DIM)]
         for i, Z in enumerate((Z0, Z1, Z2)):
             for j, X in enumerate((X0, X1, X2)):
                 if i == 0 and j == 0:
                     continue
-                Ks.append(np.sqrt(p / 9) * X @ Z)
+                Ks.append(np.sqrt(p / 8) * X @ Z)
 
         return Ks
 
@@ -85,11 +85,13 @@ class TestQutritDepolarizingChannel:
             - 2 / np.sqrt(3) * np.sin(angle / 2) ** 4
             + (np.sqrt(1 / 3) + 1) * np.cos(angle / 2) ** 2
         )
-        assert np.allclose(circuit(prob), prob * expected_errorless)
+
+        assert np.allclose(circuit(prob), ((prob - (1 / 9)) / (8 / 9)) * expected_errorless)
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
+        print(circuit(prob) / gradient)
         assert np.allclose(gradient, circuit(1) - circuit(0))
-        assert np.allclose(gradient, -expected_errorless)
+        assert np.allclose(gradient, -(9 / 8) * expected_errorless)
 
     def test_p_invalid_parameter(self):
         """Test that error is raised given an inappropriate p value."""
@@ -109,12 +111,12 @@ class TestQutritDepolarizingChannel:
         X1 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
         X2 = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
 
-        jacs = [-(4 / 9) / np.sqrt(1 - (8 * p / 9)) * np.eye(QUDIT_DIM)]
+        jacs = [-1 / (2 * np.sqrt(1 - p)) * np.eye(QUDIT_DIM)]
         for i, Z in enumerate((Z0, Z1, Z2)):
             for j, X in enumerate((X0, X1, X2)):
                 if i == 0 and j == 0:
                     continue
-                jacs.append(1 / (18 * np.sqrt(p / 9)) * X @ Z)
+                jacs.append(np.sqrt(1 / (32 * p)) * X @ Z)
 
         return jacs
 
