@@ -489,6 +489,7 @@ def _requires_mcm_treatment(tape, argnum):
     # No MCM impacts any trainable operations
     return False
 
+
 def _extract_psp(results, idx, tape_specs):
     # TODO support broadcasting
     *_, shots = tape_specs
@@ -496,6 +497,7 @@ def _extract_psp(results, idx, tape_specs):
     if scalar_shots:
         return tuple(r[idx] for r in results)
     return tuple(tuple(r[idx] for r in _r) for _r in results)
+
 
 def a_times_b_over_c(a, b, c, factor, tape_specs):
     # TODO support broadcasting
@@ -512,6 +514,7 @@ def a_times_b_over_c(a, b, c, factor, tape_specs):
     if scalar_shots:
         return tuple(map(scalar_fun, a, b, c))
     return tuple(tuple(map(scalar_fun, _a, _b, _c)) for _a, _b, _c in zip(a, b, c))
+
 
 def minus(a, b, tape_specs):
     # TODO support broadcasting
@@ -687,7 +690,7 @@ def expval_param_shift_with_mcms(
                     else p_results[p_start]
                 )
                 p_start = p_start + num_pg_tapes
-                p_res = tuple(a_times_b_over_c(pr, r0, p0, -1., tape_specs) for pr in p_res)
+                p_res = tuple(a_times_b_over_c(pr, r0, p0, -1.0, tape_specs) for pr in p_res)
                 g = _evaluate_gradient(probs_tape, p_res, data, p0)
 
             else:
@@ -699,13 +702,15 @@ def expval_param_shift_with_mcms(
                 )
                 if batch_size is None:
                     p_res = p_results[p_start : p_start + num_pg_tapes]
-                    p_res_mod = tuple(a_times_b_over_c(pr, r0, p0, 1., tape_specs) for pr in p_res)
+                    p_res_mod = tuple(a_times_b_over_c(pr, r0, p0, 1.0, tape_specs) for pr in p_res)
                 else:
                     p_res = p_results[p_start]
-                    #p_res_mod = p_res * r0 / p0
+                    # p_res_mod = p_res * r0 / p0
                 g_start = g_start + num_tapes
                 p_start = p_start + num_pg_tapes
-                first_term_res = tuple(a_times_b_over_c(f, p, p0, 1., tape_specs) for f, p in zip(res, p_res))
+                first_term_res = tuple(
+                    a_times_b_over_c(f, p, p0, 1.0, tape_specs) for f, p in zip(res, p_res)
+                )
                 first_term = _evaluate_gradient(tape, first_term_res, data, r0)
                 second_term = _evaluate_gradient(probs_tape, p_res_mod, data, p0)
                 g = minus(first_term, second_term, tape_specs)
@@ -758,12 +763,15 @@ def mcm_wrapper(tape, psr_tapes, **psr_kwargs):
         shift = 0 if first_result_unshifted else 1
         r0 = results[0]
         psr_results = results[shift : orig_num_tapes + shift]
-        probs_results = results[orig_num_tapes + shift:]
+        probs_results = results[orig_num_tapes + shift :]
         p0, *probs_results = _extract_psp(probs_results, postselect_int, tape_specs)
         for i in skip_probs_tapes:
             probs_results.insert(i, p0)
         assert len(psr_results) == len(probs_results)
-        return tuple(a_times_b_over_c(minus(r, r0, tape_specs), p, p0, 1., tape_specs) for r, p in zip(psr_results, probs_results))
+        return tuple(
+            a_times_b_over_c(minus(r, r0, tape_specs), p, p0, 1.0, tape_specs)
+            for r, p in zip(psr_results, probs_results)
+        )
 
     return all_tapes, mcm_postprocessing_function
 

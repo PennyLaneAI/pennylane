@@ -106,100 +106,23 @@ class CircuitGraph:
 
         self._depth = None
 
-        self._grid = {}
+        self.wires = wires
+        """Wires: wires that are addressed in the operations.
+        Required to translate between wires and indices of the wires on the device."""
+
+        self.num_wires = len(wires)
+        """int: number of wires the circuit contains"""
+
+        self._grid = self._compute_grid(queue, wires)
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
 
-        self._indices = {}
-        # Store indices for the nodes of the DAG here
-
-        self.wires = wires
-        """Wires: wires that are addressed in the operations.
-        Required to translate between wires and indices of the wires on the device."""
-        self.num_wires = len(wires)
-        """int: number of wires the circuit contains"""
-
-        for k, op in enumerate(queue):
-            op.queue_idx = k  # store the queue index in the Operator
-
-            if isinstance(op, MidMeasureMP):
-                # A mid-circuit measurement creates a unique classical wire, labelled with the op id
-                self._grid[op.id] = [op]
-                # Optional modification: Do not put the MidMeasure op on the classical wire
-                # if it postselects, because it "does not affect" the wire causally.
-                # Mod 1: Add a "classical node" with postselection value
-                # self._grid[op.id] = [op if op.postselect is None else op.postselect]
-                # Mod 2: Don't add anything for this MCM
-                # if op.postselect is None:
-                #    self._grid[op.id] = [op]
-            elif isinstance(op, Conditional):
-                # A conditional operation needs to be added to the classical wires that control it
-                for m in op.meas_val.measurements:
-                    self._grid[m.id].append(op)
-            elif isinstance(op, MeasurementProcess):
-                # A Measurement process of mid-circuit measured quantities needs to be
-                # added to the classical wires of the MCMs.
-                meas_val = getattr(op, "mv", None)
-                if meas_val is not None:
-                    any_m_id_in_grid = False
-                    if not isinstance(meas_val, list):
-                        meas_val = [meas_val]
-                    for _mv in meas_val:
-                        for m in _mv.measurements:
-                            if m.id in self._grid:
-                                self._grid[m.id].append(op)
-                                no_m_id_in_grid = True
-
-                    # It should _not_ be added to the quantum wire, so we continue with the loop
-                    # over the queue and skip the block below.
-                    if any_m_id_in_grid:
-                        continue
-
-            for w in wires if len(op.wires) == 0 else op.wires:
-                # get the index of the wire on the device
-                wire = wires.index(w)
-                # add op to the grid, to the end of wire w
-                self._grid.setdefault(wire, []).append(op)
-
-        # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
-
-        # rx.PyDiGraph: DAG representation of the quantum circuit
-        self._graph = rx.PyDiGraph(multigraph=False)
-
-        # Iterate over each (populated) wire in the grid
-        for key, wire in self._grid.items():
-            # Add the first operator on the wire to the graph
-            # This operator does not depend on any others
-
-            # Check if wire[0] in self._grid.values()
-            # is already added to the graph; this
-            # condition avoids adding new nodes with
-            # the same value but different indexes
-            first_op_on_wire = wire[0]
-            if all(first_op_on_wire is not op for op in self._graph.nodes()):
-                _ind = self._graph.add_node(first_op_on_wire)
-                self._indices.setdefault(id(first_op_on_wire), _ind)
-
-            for i, op in enumerate(wire[1:], start=1):
-                # For subsequent operators on the wire:
-                if all(op is not _op for _op in self._graph.nodes()):
-                    # Add them to the graph if they are not already
-                    # in the graph (multi-qubit operators might already have been placed)
-                    _ind = self._graph.add_node(op)
-                    self._indices.setdefault(id(op), _ind)
-
-                # If the key is a string, it's a classical wire and all causal relationships are
-                # with the initial node on that wire, rather than the previous node
-                if isinstance(key, str):
-                    start_node = self._indices[id(first_op_on_wire)]
-                else:
-                    start_node = self._indices[id(wire[i - 1])]
-
-                # Create an edge between this and the previous (or initial, for MCM) operator
-                # There isn't any default value for the edge-data in
-                # rx.PyDiGraph.add_edge(); this is set to an empty string
-                self._graph.add_edge(start_node, self._indices[id(op)], "")
+        self._graph, self._indices = self._compute_graph_and_indices(self._grid)
+        """
+        _graph: rx.PyDiGraph: DAG representation of the quantum circuit.
+        _indices: dict: indices for the nodes of the DAG here.
+        """
 
         # For computing depth; want only a graph with the operations, not
         # including the observables
@@ -208,6 +131,96 @@ class CircuitGraph:
         # Required to keep track if we need to handle multiple returned
         # observables per wire
         self._max_simultaneous_measurements = None
+
+    @staticmethod
+    def _compute_grid(queue, wires):
+        """Compute the grid representation of the quantum circuit, which is a dictionary.
+        Here, the key is the wire number, and the value is a list containing the operators on that wire.
+        """
+        # TODO: Once sc-62336 is resolved, remove the `any_m_id_in_grid` logic and always
+        # `continue` if `meas_val is not None` in the `isinstance(op, MeasurementProcess)` branch
+        grid = {}
+        for k, op in enumerate(queue):
+            op.queue_idx = k  # store the queue index in the Operator
+
+            if isinstance(op, MidMeasureMP):
+                # A mid-circuit measurement creates a unique classical wire, labelled with the op id
+                grid[op.id] = [op]
+                # Optional modification: Do not put the MidMeasure op on the classical wire
+                # if it postselects, because it "does not affect" the wire causally.
+                # Mod 1: Add a "classical node" with postselection value
+                # grid[op.id] = [op if op.postselect is None else op.postselect]
+                # Mod 2: Don't add anything for this MCM
+                # if op.postselect is None:
+                #    grid[op.id] = [op]
+            elif isinstance(op, Conditional):
+                # A conditional operation needs to be added to the classical wires that control it
+                for m in op.meas_val.measurements:
+                    grid[m.id].append(op)
+            elif isinstance(op, MeasurementProcess):
+                # A Measurement process of mid-circuit measured quantities needs to be
+                # added to the classical wires of the MCMs.
+                meas_val = getattr(op, "mv", None)
+                if meas_val is not None:
+                    # The MeasurementProcess uses MCM values
+                    any_m_id_in_grid = False  # hotfix for deferred measurements
+                    if not isinstance(meas_val, list):
+                        meas_val = [meas_val]
+                    # Iterate over MeasurementValues in the MeasurementProcess
+                    for mv in meas_val:
+                        # Iterate over MidMeasureMPs in the MeasurementValue
+                        for m in mv.measurements:
+                            if m.id in grid:
+                                grid[m.id].append(op)
+                                any_m_id_in_grid = True  # hotfix for deferred measurements
+
+                    # It should _not_ be added to the quantum wire, so we continue with the loop
+                    # over the queue and skip the block below.
+                    if any_m_id_in_grid:  # hotfix for deferred measurements
+                        continue
+
+            for w in wires if len(op.wires) == 0 else op.wires:
+                # get the index of the wire on the device and add op to the grid, to the end of wire w
+                grid.setdefault(wires.index(w), []).append(op)
+
+        print(grid)
+        return grid
+
+    @staticmethod
+    def _compute_graph_and_indices(grid):
+        """Compute the DAG representation and the indices within the DAG from the grid
+        representation of a quantum circuit."""
+        # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
+
+        graph = rx.PyDiGraph(multigraph=False)
+        indices = {}
+
+        # Iterate over each (populated) wire in the grid
+        for key, wire in grid.items():
+            first_op_on_wire = wire[0]
+            # Add the first operator on the wire to the graph unless it was already added because
+            # it is also part of the operations list on another wire (multi-qubit operators)
+            if id(first_op_on_wire) not in indices:
+                _ind = graph.add_node(first_op_on_wire)
+                indices.setdefault(id(first_op_on_wire), _ind)
+
+            for i, op in enumerate(wire[1:], start=1):
+                # Add the subsequent operators on the wire to the graph unless they were already
+                # added because they were also part of the operations list on another wire
+                if id(op) not in indices:
+                    _ind = graph.add_node(op)
+                    indices.setdefault(id(op), _ind)
+
+                # If the key is a string, it's a classical wire and all causal relationships are
+                # from the initial node on that wire, rather than the previous node
+                start_node_op = first_op_on_wire if isinstance(key, str) else wire[i - 1]
+
+                # Create an edge between this and the previous (or initial, for classical wires)
+                # operator. There isn't any default value for the edge-data in
+                # rx.PyDiGraph.add_edge(); this is set to an empty string
+                graph.add_edge(indices[id(start_node_op)], indices[id(op)], "")
+
+        return graph, indices
 
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
