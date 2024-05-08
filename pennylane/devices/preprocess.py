@@ -274,7 +274,7 @@ def decompose(
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
         max_expansion (int): The maximum depth of the expansion. Defaults to None.
-        name (str): The name of the operation or device using the transform. Used in the error message.
+        name (str): The name of the transform, process or device using decompose. Used in the error message. Defaults to "device".
         error (Error): An error type to raise if it is not possible to obtain a decomposition that fulfills
             the ``stopping_condition``. Defaults to ``DeviceError``.
 
