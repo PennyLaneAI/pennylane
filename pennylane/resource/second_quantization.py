@@ -17,6 +17,7 @@ method.
 """
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
 import numpy as np
+
 from pennylane.operation import AnyWires, Operation
 from pennylane.qchem import factorize
 

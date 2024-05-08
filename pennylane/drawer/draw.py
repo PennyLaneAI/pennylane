@@ -16,11 +16,12 @@
 """
 Contains the drawing function.
 """
+import warnings
 from functools import wraps
 from importlib.metadata import distribution
-import warnings
 
 import pennylane as qml
+
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 

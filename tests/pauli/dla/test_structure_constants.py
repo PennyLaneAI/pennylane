@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/pauli/dla/structure_constants.py functionality"""
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
-
-from pennylane.pauli import PauliWord, PauliSentence, structure_constants
+from pennylane.pauli import PauliSentence, PauliWord, structure_constants
 
 ## Construct some example DLAs
 # TFIM

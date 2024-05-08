@@ -18,13 +18,12 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
-
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Optional, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import pennylane as qml
-from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
+from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires

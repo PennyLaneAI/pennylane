@@ -17,23 +17,23 @@ Tests for the gradients.pulse_odegen module.
 # pylint:disable=import-outside-toplevel, use-implicit-booleaness-not-comparison
 
 import copy
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
-
-from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
-from pennylane.math import expand_matrix
 from pennylane.gradients.pulse_gradient_odegen import (
     _generate_tapes_and_coeffs,
-    pulse_odegen,
     _insert_op,
     _nonzero_coeffs_and_words,
     _one_parameter_generators,
     _one_parameter_paulirot_coeffs,
     _parshift_and_contract,
+    pulse_odegen,
 )
-
+from pennylane.math import expand_matrix
+from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 

@@ -15,14 +15,13 @@
 This module contains unit tests for ``qml.bind_parameters``.
 """
 
-import pytest
-from gate_data import X, Y, Z, I, GELL_MANN
-
 import numpy as np
-import pennylane as qml
+import pytest
+from gate_data import GELL_MANN, I, X, Y, Z
 
-from pennylane.ops.functions import bind_new_parameters
+import pennylane as qml
 from pennylane.operation import Tensor
+from pennylane.ops.functions import bind_new_parameters
 
 
 @pytest.mark.parametrize(

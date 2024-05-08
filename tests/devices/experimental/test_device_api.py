@@ -18,7 +18,7 @@ Tests for the basic default behavior of the Device API.
 import pytest
 
 import pennylane as qml
-from pennylane.devices import Device, ExecutionConfig, DefaultExecutionConfig
+from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
 from pennylane.wires import Wires
 
 
@@ -71,8 +71,19 @@ class TestMinimalDevice:
         shots_dev = self.MinimalDevice(shots=100)
         assert shots_dev.shots == qml.measurements.Shots(100)
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(
+            AttributeError, match="Shots can no longer be set on a device instance."
+        ):
             self.dev.shots = 100  # pylint: disable=attribute-defined-outside-init
+
+    def test_getattr_error(self):
+        """Test that querying a property that doesn't exist informs about interface change."""
+
+        with pytest.raises(
+            AttributeError,
+            match=r"You may be looking for a property or method present in the legacy device",
+        ):
+            _ = self.dev.expand_fn
 
     def test_tracker_set_on_initialization(self):
         """Test that a new tracker instance is initialized with the class."""

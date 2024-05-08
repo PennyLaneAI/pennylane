@@ -17,12 +17,12 @@ Unit tests for the optimization transform ``merge_rotations``.
 # pylint: disable=too-many-arguments
 
 import pytest
-
 from utils import compare_operation_lists
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.transforms.optimization import merge_rotations
+from pennylane.wires import Wires
 
 
 class TestMergeRotations:
@@ -260,6 +260,17 @@ class TestMergeRotations:
 
         assert ops[0].parameters[0] == 0.2
         assert ops[1].parameters[0] == 0.3
+
+    def test_merge_rotations_non_commuting_observables(self):
+        """Test that merge_rotations can be used with non-commuting observables."""
+
+        ops = (qml.RX(0.1, 0), qml.RX(0.3, 0))
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+        [out], _ = qml.transforms.merge_rotations(tape)
+        expected = qml.tape.QuantumScript((qml.RX(0.4, 0),), ms, shots=50)
+        assert qml.equal(out, expected)
 
 
 # Example QNode and device for interface testing

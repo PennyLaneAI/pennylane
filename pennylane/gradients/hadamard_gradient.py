@@ -15,24 +15,27 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=unused-argument
-from typing import Sequence, Callable
 from functools import partial
+
+# pylint: disable=unused-argument
+from typing import Callable, Sequence
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.gradients.metric_tensor import _get_aux_wire
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.gradients.metric_tensor import _get_aux_wire
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 
 from .gradient_transform import (
     _all_zero_grad,
+    _no_trainable_grad,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_params,
     find_and_validate_gradient_methods,
-    _no_trainable_grad,
 )
 
 

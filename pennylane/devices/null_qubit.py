@@ -17,34 +17,35 @@ benchmarking PennyLane's auxiliary functionality outside direct circuit evaluati
 """
 # pylint:disable=unused-argument
 
+import inspect
+import logging
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Union, Callable, Tuple, Sequence
-import inspect
-import logging
+from typing import Callable, Sequence, Tuple, Union
+
 import numpy as np
+
 from pennylane import math
 from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
-
+from pennylane.measurements import (
+    ClassicalShadowMP,
+    CountsMP,
+    DensityMatrixMP,
+    MeasurementProcess,
+    MeasurementValue,
+    ProbabilityMP,
+    Shots,
+    StateMP,
+)
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
-from pennylane.measurements import (
-    MeasurementProcess,
-    CountsMP,
-    StateMP,
-    ProbabilityMP,
-    Shots,
-    MeasurementValue,
-    ClassicalShadowMP,
-    DensityMatrixMP,
-)
 
-from . import Device, DefaultQubit
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from . import DefaultQubit, Device
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import decompose
 
 logger = logging.getLogger(__name__)

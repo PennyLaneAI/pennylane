@@ -18,6 +18,7 @@ from collections.abc import Iterable
 from string import ascii_letters as ABC
 
 import numpy as np
+
 import pennylane as qml
 
 
