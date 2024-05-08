@@ -7,7 +7,7 @@ from functools import partial, wraps
 _debug_log_kwargs = {"stacklevel": 2}
 
 
-def log_string_debug_func(func, log_level, use_entry, override={}):
+def log_string_debug_func(func, log_level, use_entry, override=None):
     """
     This decorator utility generates a string containing the called function, the passed arguments, and the source of the function call.
     """
@@ -15,7 +15,7 @@ def log_string_debug_func(func, log_level, use_entry, override={}):
 
     def _get_bound_signature(*args, **kwargs) -> str:
         s = inspect.signature(func)
-
+        # pylint:disable = broad-except
         try:
             ba = s.bind(*args, **kwargs)
         except Exception as e:
@@ -25,7 +25,7 @@ def log_string_debug_func(func, log_level, use_entry, override={}):
             else:
                 raise e
         ba.apply_defaults()
-        if len(override):
+        if override and len(override):
             for k, v in override.keys():
                 ba[k] = v
 
@@ -60,22 +60,6 @@ def log_string_debug_func(func, log_level, use_entry, override={}):
         return output
 
     return wrapper_entry if use_entry else wrapper_exit
-
-
-def log_string_debug_class(cl, log_level):
-    import types
-
-    lgr = logging.getLogger(cl.__module__)
-    cl_func = inspect.getmembers(cl, predicate=inspect.isfunction)
-    f_par_entry = partial(log_string_debug_func, log_level=log_level, use_entry=True)
-    f_par_exit = partial(log_string_debug_func, log_level=log_level, use_entry=False)
-
-    for f_name, f in cl_func:
-        if f_name == "__init__":
-            setattr(cl, f_name, types.MethodType(f_par_exit(f), cl))
-        else:
-            setattr(cl, f_name, types.MethodType(f_par_entry(f), cl))
-    return cl
 
 
 # For ease-of-use ``debug_logger`` is provided for decoration of public methods and free functions, with ``debug_logger_init`` provided for use with class constructors.

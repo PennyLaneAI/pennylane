@@ -1,6 +1,8 @@
 import inspect
 import sys
 
+from .decorators import debug_logger
+
 
 def _is_local_fn(f, mod_name):
     """

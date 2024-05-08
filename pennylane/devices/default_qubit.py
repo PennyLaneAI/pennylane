@@ -16,7 +16,6 @@ The default.qubit device is PennyLane's standard qubit-based device.
 """
 
 import concurrent.futures
-import inspect
 import logging
 from dataclasses import replace
 from functools import partial

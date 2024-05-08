@@ -135,7 +135,8 @@ class DynamicFormatter(Formatter):
         use_rgb=True,
     )
 
-    def _build_formats(self, fmt_str):
+    @staticmethod
+    def _build_formats(fmt_str):
         cmap = DynamicFormatter.cmap
         local_formats = {
             logging.DEBUG: build_code_rgb(cmap.debug, cmap.debug_bg) + fmt_str + _ANSI_CODES["end"],
