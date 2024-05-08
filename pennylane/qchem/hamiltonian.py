@@ -109,7 +109,7 @@ def electron_integrals(mol, core=None, active=None):
         """
         if mol.n_electrons % 2 == 1 or mol.mult != 1:
             raise ValueError(
-                "Openshell systems are not supported. Change the charge or spin multiplicity of the molecule."
+                "Open shell systems are not supported. Change the charge or spin multiplicity of the molecule."
             )
 
         _, coeffs, _, h_core, repulsion_tensor = scf(mol)(*args)
