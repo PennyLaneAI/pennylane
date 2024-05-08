@@ -69,6 +69,15 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
+  [(#5660)](https://github.com/PennyLaneAI/pennylane/pull/5660)
+
+* ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
+  [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
+  
+* ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
+  [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -79,10 +88,14 @@
   with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
 
+* A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
+  [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Pietropaolo Frisoni,
+Soran Jahangiri,
 Christina Lee,
 David Wierichs.
