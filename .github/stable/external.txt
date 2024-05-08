@@ -168,7 +168,7 @@ tf_keras==2.16.0
 tinycss2==1.3.0
 toml==0.10.2
 tomli==2.0.1
-tomlkit==0.12.4
+tomlkit==0.12.5
 tornado==6.4
 tqdm==4.66.4
 traitlets==5.14.3
