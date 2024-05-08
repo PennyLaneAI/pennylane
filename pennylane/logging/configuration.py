@@ -19,7 +19,6 @@ import logging.config
 import os
 import platform
 import subprocess
-
 from importlib import import_module
 from importlib.util import find_spec
 
