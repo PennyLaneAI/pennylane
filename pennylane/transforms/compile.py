@@ -190,7 +190,11 @@ def compile(
             return obj.name in basis_set and (not getattr(obj, "only_visual", False))
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
-            tape, stopping_condition=stop_at, max_expansion=expand_depth, name="compile"
+            tape,
+            stopping_condition=stop_at,
+            max_expansion=expand_depth,
+            name="compile",
+            error=qml.operation.DecompositionUndefinedError,
         )
 
         # Apply the full set of compilation transforms num_passes times
