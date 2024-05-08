@@ -91,7 +91,6 @@
 This release contains contributions from (in alphabetical order):
 
 Pietropaolo Frisoni,
-Soran Jahangiri,
 Christina Lee,
 Vincent Michaud-Rioux,
 David Wierichs.
