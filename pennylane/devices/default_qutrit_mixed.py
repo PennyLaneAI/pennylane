@@ -13,7 +13,6 @@
 # limitations under the License.
 """The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
 computations."""
-
 import inspect
 import logging
 from dataclasses import replace
