@@ -263,12 +263,12 @@ def decompose(
         tape (QuantumTape or QNode or Callable): a quantum circuit.
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            a ``DecompositionUndefinedError`` will be raised.
+            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg).
 
     Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape has shots.
+             an ``Exception`` will be raised (of a type specified by the ``error`` kwarg). This replaces stopping_condition if and only if the tape has shots.
         skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if it inherits
             from :class:`~.StatePrepBase`. Defaults to ``True``.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
@@ -287,7 +287,7 @@ def decompose(
     Raises:
         Error: Type defaults to ``DeviceError`` but can be modified via keyword argument. Raised if
             an operator is not accepted and does not define a decomposition, or if the decomposition
-            enters and infinite loop and raises a ``RecursionError``.
+            enters an infinite loop and raises a ``RecursionError``.
 
     **Example:**
 
