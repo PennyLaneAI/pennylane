@@ -139,5 +139,4 @@ def edit_system_config(wait_on_close=False):
             f_cmd = "open"
         subprocess.Popen((f_cmd, config_path()))
     else:  # Windows-only, does not exist on MacOS/Linux
-        # pylint:disable = no-member
-        os.startfile(config_path())
+        os.startfile(config_path())  # pylint:disable = no-member
