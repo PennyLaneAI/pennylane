@@ -128,9 +128,9 @@ def edit_system_config(wait_on_close=False):
     instead open this file manually with the `config_path()` provided path.
     """
     if editor := os.getenv("EDITOR"):
-        p = subprocess.Popen((editor, config_path()))
-        if wait_on_close:  # Only valid when editor is known
-            p.wait()
+        with subprocess.Popen((editor, config_path())) as p:
+            if wait_on_close:  # Only valid when editor is known
+                p.wait()
     elif s := platform.system() in ["Linux", "Darwin"]:
         f_cmd = None
         if s == "Linux":
@@ -139,5 +139,4 @@ def edit_system_config(wait_on_close=False):
             f_cmd = "open"
         subprocess.Popen((f_cmd, config_path()))
     else:  # Windows-only, does not exist on MacOS/Linux
-        # pylint:disable = no-member
-        os.startfile(config_path())
+        os.startfile(config_path())  # pylint:disable = no-member
