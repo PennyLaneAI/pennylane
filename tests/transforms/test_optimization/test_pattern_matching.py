@@ -16,15 +16,16 @@ Unit tests for the optimization transform ``pattern_matching_optimization``.
 """
 # pylint: disable=too-many-statements
 import pytest
+
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.transforms.optimization.pattern_matching import (
+    BackwardMatch,
+    ForwardMatch,
+    _update_qubits,
     pattern_matching,
     pattern_matching_optimization,
-    ForwardMatch,
-    BackwardMatch,
-    _update_qubits,
 )
 
 
@@ -610,6 +611,7 @@ class TestPatternMatchingOptimization:
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
+    @pytest.mark.slow
     def test_vbe_adder_3_pattern_matching(self):
         """Test pattern matching algorithm for vbe_adder_3 with a CNOTs template."""
 

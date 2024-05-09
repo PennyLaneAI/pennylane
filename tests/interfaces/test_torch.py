@@ -17,8 +17,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.gradients import finite_diff, param_shift
 from pennylane import execute
+from pennylane.gradients import finite_diff, param_shift
+from pennylane.typing import TensorLike
 
 pytestmark = pytest.mark.torch
 torch = pytest.importorskip("torch")
@@ -170,7 +171,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow, "cache_execute")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -187,7 +188,7 @@ class TestCaching:
         params = torch.tensor([0.1, 0.2], requires_grad=True)
         res = cost(params, cachesize=2)
         res.backward()
-        cache = spy.call_args[0][1]
+        cache = spy.call_args.kwargs["cache"]
 
         assert cache.maxsize == 2
         assert cache.currsize == 2
@@ -196,7 +197,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow, "cache_execute")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -215,7 +216,7 @@ class TestCaching:
         res = cost(params, cache=custom_cache)
         res.backward()
 
-        cache = spy.call_args[0][1]
+        cache = spy.call_args.kwargs["cache"]
         assert cache is custom_cache
 
     def test_caching_param_shift(self):
@@ -421,7 +422,7 @@ class TestTorchExecuteIntegration:
 
         res = execute([tape1, tape2], dev, **execute_kwargs)
 
-        assert isinstance(res, list)
+        assert isinstance(res, TensorLike)
         assert len(res) == 2
         assert res[0].shape == ()
         assert res[1].shape == ()

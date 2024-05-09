@@ -38,8 +38,7 @@ interface_and_qubit_device_and_diff_method = [
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-config = pytest.importorskip("jax.config")
-config.config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 TOL_FOR_SPSA = 1.0
 SEED_FOR_SPSA = 32651
@@ -626,7 +625,7 @@ class TestVectorValuedQNode:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            **kwargs
+            **kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -817,14 +816,15 @@ class TestShotsIntegration:
 
         cost_fn(a, b)
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
         cost_fn(a, b, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert cost_fn.gradient_fn == "backprop"
 
-        # original QNode settings are unaffected
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
         cost_fn(a, b)
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 
@@ -871,7 +871,10 @@ class TestQubitIntegration:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
+            return (
+                qml.counts(qml.PauliZ(0), all_outcomes=True),
+                qml.counts(qml.PauliX(1), all_outcomes=True),
+            )
 
         res = circuit()
 
@@ -1010,7 +1013,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1068,7 +1071,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1137,7 +1140,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1209,7 +1212,7 @@ class TestQubitIntegrationHigherOrder:
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1312,7 +1315,7 @@ class TestQubitIntegrationHigherOrder:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -1499,7 +1502,7 @@ class TestTapeExpansion:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
@@ -1572,7 +1575,7 @@ class TestTapeExpansion:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)

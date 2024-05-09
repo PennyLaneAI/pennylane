@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the qml.counts measurement process."""
 import copy
+
 import numpy as np
 import pytest
 
@@ -61,13 +62,6 @@ class TestCounts:
         ):
             qml.counts(qml.PauliZ(0), wires=[0, 1])
 
-    def test_observable_might_not_be_hermitian(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
     def test_hash(self):
         """Test that the hash property includes the all_outcomes property."""
         m1 = qml.counts(all_outcomes=True)
@@ -86,8 +80,8 @@ class TestCounts:
         m2 = CountsMP(obs=qml.PauliX(0), all_outcomes=True)
         assert repr(m2) == "CountsMP(X(0), all_outcomes=True)"
 
-        m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
-        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
+        m3 = CountsMP(eigvals=(-1, 1), wires=[0], all_outcomes=False)
+        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[0], all_outcomes=False)"
 
         mv = qml.measure(0)
         m4 = CountsMP(obs=mv, all_outcomes=False)
@@ -152,6 +146,30 @@ class TestProcessSamples:
         total_counts = sum(count for count in result.values())
         assert total_counts == 997
 
+    @pytest.mark.parametrize("batch_size", [None, 1, 4])
+    @pytest.mark.parametrize("n_wires", [4, 10, 65])
+    @pytest.mark.parametrize("all_outcomes", [False, True])
+    def test_counts_multi_wires_no_overflow(self, n_wires, all_outcomes, batch_size):
+        """Test that binary strings for wire samples are not negative due to overflow."""
+        if all_outcomes and n_wires == 65:
+            pytest.skip("Too much memory being used, skipping")
+        shots = 1000
+        total_wires = 65
+        shape = (batch_size, shots, total_wires) if batch_size else (shots, total_wires)
+        samples = np.random.choice([0, 1], size=shape).astype(np.float64)
+        result = qml.counts(wires=list(range(n_wires)), all_outcomes=all_outcomes).process_samples(
+            samples, wire_order=list(range(total_wires))
+        )
+
+        if batch_size:
+            assert len(result) == batch_size
+            for r in result:
+                assert sum(r.values()) == shots
+                assert all("-" not in sample for sample in r.keys())
+        else:
+            assert sum(result.values()) == shots
+            assert all("-" not in sample for sample in result.keys())
+
     def test_counts_obs(self):
         """Test that the counts function outputs counts of the right size for observables"""
         shots = 1000
@@ -159,6 +177,17 @@ class TestProcessSamples:
 
         result = qml.counts(qml.PauliZ(0)).process_samples(samples, wire_order=[0])
 
+        assert len(result) == 2
+        assert set(result.keys()) == {1, -1}
+        assert result[1] == np.count_nonzero(samples[:, 0] == 0)
+        assert result[-1] == np.count_nonzero(samples[:, 0] == 1)
+
+    def test_count_eigvals(self):
+        """Tests that eigvals are used instead of obs for counts"""
+
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        result = CountsMP(eigvals=[1, -1], wires=0).process_samples(samples, wire_order=[0])
         assert len(result) == 2
         assert set(result.keys()) == {1, -1}
         assert result[1] == np.count_nonzero(samples[:, 0] == 0)
@@ -867,3 +896,74 @@ def test_batched_counts_and_expval_operator_finite_shots(interface):
     assert isinstance(res, tuple) and len(res) == 2
     assert res[0] == type(res[0])([{-1: n_shots}, {1: n_shots}])
     assert len(res[1]) == 2 and qml.math.allequal(res[1], [-1, 1])
+
+
+class TestProcessCounts:
+    """Unit tests for the counts.process_counts method"""
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_should_not_modify_counts_dictionary(self, all_outcomes):
+        """Tests that count dictionary is not modified"""
+
+        counts = {"000": 100, "100": 100}
+        expected = counts.copy()
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        qml.counts(wires=(0, 1), all_outcomes=all_outcomes).process_counts(counts, wire_order)
+
+        assert counts == expected
+
+    def test_all_outcomes_is_true(self):
+        """When all_outcomes is True, 0 count should be added to missing outcomes in the counts dictionary"""
+
+        counts_to_process = {"00": 100, "10": 100}
+        wire_order = qml.wires.Wires((0, 1))
+
+        actual = qml.counts(wires=wire_order, all_outcomes=True).process_counts(
+            counts_to_process, wire_order=wire_order
+        )
+
+        expected_counts = {"00": 100, "01": 0, "10": 100, "11": 0}
+        assert actual == expected_counts
+
+    def test_all_outcomes_is_false(self):
+        """When all_outcomes is True, 0 count should be removed from the counts dictionary"""
+
+        counts_to_process = {"00": 0, "01": 0, "10": 0, "11": 100}
+        wire_order = qml.wires.Wires((0, 1))
+
+        actual = qml.counts(wires=wire_order, all_outcomes=False).process_counts(
+            counts_to_process, wire_order=wire_order
+        )
+
+        expected_counts = {"11": 100}
+        assert actual == expected_counts
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            ((0, 1), {"00": 100, "10": 100}),
+            ((1, 0), {"00": 100, "01": 100}),
+        ],
+    )
+    def test_wire_order(self, wires, expected):
+        """Test impact of wires in qml.counts"""
+        counts = {"000": 100, "100": 100}
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        actual = qml.counts(wires=wires, all_outcomes=False).process_counts(counts, wire_order)
+
+        assert actual == expected
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_process_count_returns_same_count_dictionary(self, all_outcomes):
+        """
+        Test that process_count returns same dictionary when all outcomes are in count dictionary and wire_order is same
+        """
+
+        expected = {"0": 100, "1": 100}
+        wires = qml.wires.Wires(0)
+
+        actual = qml.counts(wires=wires, all_outcomes=all_outcomes).process_counts(expected, wires)
+
+        assert actual == expected

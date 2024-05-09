@@ -17,7 +17,7 @@ a feature:
 1. Identify the new or preferred way of achieving the same functionality once the deprecated
    feature is removed. The exception to this is when a feature is being removed for lack of use.
 
-2. At the beginning of the relevant code (eg. the ``__init__()`` method of a class that's being
+2. At the beginning of the relevant code (e.g., the ``__init__()`` method of a class that's being
    removed), add the following lines of code, filling in the relevant details:
 
    .. code-block:: python
@@ -28,7 +28,7 @@ a feature:
            qml.PennyLaneDeprecationWarning,
        )
 
-   If the feature is being relocated, consider rephrashing the warning to discuss relocation as
+   If the feature is being relocated, consider rephrasing the warning to discuss relocation as
    opposed to deprecation. As well, if the deprecated feature is fairly minor, it is likely safe to
    state that it will be removed in the next release. Otherwise, it is a good practice to wait 2 or
    more releases before fully removing the feature. Consult the product manager if you are not sure
@@ -38,7 +38,7 @@ a feature:
    its docstring using a ``.. warning::`` Sphinx directive.
 
 4. Replace all uses of the deprecated code within PennyLane's own source code. This is to ensure
-   that the warning isn't unexpectedly raised for users that did not personally call the deprecated
+   that the warning isn't unexpectedly raised for users who did not personally call the deprecated
    piece of code.
 
 5. Add a test to ensure that the deprecation warning is being raised. It should look similar to the

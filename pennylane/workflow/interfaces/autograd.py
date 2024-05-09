@@ -70,12 +70,12 @@ can potentially be quite expensive. Autograd would naively
 request indepedent vjps for each entry in the output, even though the internal circuits will be
 exactly the same.
 
-When normal caching provided by :func:`~.cache_execute` is present, the expensive part (re-executing
-identical circuits) is avoided, but when normal caching is turned off, the above can lead to an explosion
+When caching is enabled, the expensive part (re-executing identical circuits) is
+avoided, but when normal caching is turned off, the above can lead to an explosion
 in the number of required circuit executions.
 
 To avoid this explosion in the number of executed circuits when caching is turned off, we will instead internally
-cache the full jacobian so that is is reused between different calls to the same ``grad_fn``. This behavior is toggled
+cache the full jacobian so that is is reused between different calls to the same ``grad_fn``. This behaviour is toggled
 by the ``cache_full_jacobian`` keyword argument to :class:`~.TransformJacobianProducts`.
 
 Other interfaces are capable of calculating the full jacobian in one call, so this patch is only present for autograd.
@@ -83,7 +83,7 @@ Other interfaces are capable of calculating the full jacobian in one call, so th
 """
 # pylint: disable=too-many-arguments, unused-argument
 import logging
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -124,7 +124,7 @@ def autograd_execute(
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
     >>> jpc = DeviceDerivatives(qml.device('default.qubit'), config)
     >>> def f(x):
-    ...     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+    ...     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
     ...     batch = (tape, )
     ...     return autograd_execute(batch, execute_fn, jpc)
     >>> qml.grad(f)(qml.numpy.array(0.1))

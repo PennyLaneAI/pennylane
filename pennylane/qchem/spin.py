@@ -15,6 +15,7 @@
 This module contains the functions needed for computing the spin observables.
 """
 import numpy as np
+
 from pennylane.fermi import FermiSentence, FermiWord
 
 from .observable_hf import qubit_observable
@@ -140,26 +141,28 @@ def spin2(electrons, orbitals):
 
     >>> electrons = 2
     >>> orbitals = 4
-    >>> print(spin2(electrons, orbitals))
-    (0.75) [I0]
-    + (0.375) [Z1]
-    + (-0.375) [Z0 Z1]
-    + (0.125) [Z0 Z2]
-    + (0.375) [Z0]
-    + (-0.125) [Z0 Z3]
-    + (-0.125) [Z1 Z2]
-    + (0.125) [Z1 Z3]
-    + (0.375) [Z2]
-    + (0.375) [Z3]
-    + (-0.375) [Z2 Z3]
-    + (0.125) [Y0 X1 Y2 X3]
-    + (0.125) [Y0 Y1 X2 X3]
-    + (0.125) [Y0 Y1 Y2 Y3]
-    + (-0.125) [Y0 X1 X2 Y3]
-    + (-0.125) [X0 Y1 Y2 X3]
-    + (0.125) [X0 X1 X2 X3]
-    + (0.125) [X0 X1 Y2 Y3]
-    + (0.125) [X0 Y1 X2 Y3]
+    >>> spin2(electrons, orbitals)
+    (
+        0.75 * I(0)
+      + 0.375 * Z(0)
+      + 0.375 * Z(1)
+      + -0.375 * (Z(0) @ Z(1))
+      + 0.375 * Z(2)
+      + 0.125 * (Z(0) @ Z(2))
+      + 0.375 * Z(3)
+      + -0.125 * (Z(0) @ Z(3))
+      + -0.125 * (Z(1) @ Z(2))
+      + 0.125 * (Z(1) @ Z(3))
+      + -0.375 * (Z(2) @ Z(3))
+      + 0.125 * (Y(0) @ Y(2) @ X(3) @ X(1))
+      + 0.125 * (Y(0) @ X(2) @ X(3) @ Y(1))
+      + 0.125 * (Y(0) @ Y(2) @ Y(3) @ Y(1))
+      + -0.125 * (Y(0) @ X(2) @ Y(3) @ X(1))
+      + -0.125 * (X(0) @ Y(2) @ X(3) @ Y(1))
+      + 0.125 * (X(0) @ X(2) @ X(3) @ X(1))
+      + 0.125 * (X(0) @ Y(2) @ Y(3) @ X(1))
+      + 0.125 * (X(0) @ X(2) @ Y(3) @ Y(1))
+    )
     """
 
     if electrons <= 0:
@@ -221,10 +224,12 @@ def spinz(orbitals):
 
     >>> orbitals = 4
     >>> print(spinz(orbitals))
-    (-0.25) [Z0]
-    + (0.25) [Z1]
-    + (-0.25) [Z2]
-    + (0.25) [Z3]
+    (
+        -0.25 * Z(0)
+      + 0.25 * Z(1)
+      + -0.25 * Z(2)
+      + 0.25 * Z(3)
+    )
     """
 
     if orbitals <= 0:

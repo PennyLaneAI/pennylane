@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the specs transform"""
-from typing import Sequence, Callable
 from collections import defaultdict
 from contextlib import nullcontext
+from typing import Callable, Sequence
+
 import pytest
 
 import pennylane as qml
@@ -25,7 +26,7 @@ class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 11), ("parameter-shift", 12), ("adjoint", 11)]
+        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
     def test_empty(self, diff_method, len_info):
         dev = qml.device("default.qubit", wires=1)
@@ -57,7 +58,7 @@ class TestSpecsTransform:
             assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 11), ("parameter-shift", 12), ("adjoint", 11)]
+        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
     def test_specs(self, diff_method, len_info):
         """Test the specs transforms works in standard situations"""
@@ -102,7 +103,7 @@ class TestSpecsTransform:
             assert info["num_gradient_executions"] == 6
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 11), ("parameter-shift", 12), ("adjoint", 11)]
+        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
     )
     def test_specs_state(self, diff_method, len_info):
         """Test specs works when state returned"""
@@ -173,7 +174,7 @@ class TestSpecsTransform:
         info = qml.specs(circuit, expansion_strategy="device")(params)
         assert circuit.expansion_strategy == "gradient"
 
-        assert len(info) == 11
+        assert len(info) == 12
 
     def test_gradient_transform(self):
         """Test that a gradient transform is properly labelled"""

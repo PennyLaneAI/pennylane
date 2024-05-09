@@ -17,8 +17,9 @@ Contains the RandomLayers template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class RandomLayers(Operation):
@@ -78,12 +79,12 @@ class RandomLayers(Operation):
             @qml.qnode(dev)
             def circuit1(weights):
                 qml.RandomLayers(weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             @qml.qnode(dev)
             def circuit2(weights):
                 qml.RandomLayers(weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> np.allclose(circuit1(weights), circuit2(weights))
         True
@@ -107,7 +108,7 @@ class RandomLayers(Operation):
         >>> @qml.qnode(dev)
         ... def circuit(weights, seed=None):
         ...     qml.RandomLayers(weights=weights, wires=range(2), seed=seed)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> np.allclose(circuit(weights, seed=9), circuit(weights, seed=12))
         False
         >>>  print(qml.draw(circuit, expansion_strategy="device")(weights, seed=9))
@@ -131,7 +132,7 @@ class RandomLayers(Operation):
             @qml.qnode(dev)
             def circuit_rnd(weights):
                 qml.RandomLayers(weights=weights, wires=range(2), seed=None)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             first_call = circuit_rnd(weights)
             second_call = circuit_rnd(weights)
@@ -146,7 +147,7 @@ class RandomLayers(Operation):
             @qml.qnode(dev, mutable=False)
             def circuit_rnd(weights):
                 qml.RandomLayers(weights=weights, wires=range(2), seed=None)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             first_call = circuit_rnd(weights)
             second_call = circuit_rnd(weights)

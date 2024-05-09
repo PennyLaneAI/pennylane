@@ -34,7 +34,9 @@ to verify and test quantum gradient computations.
     default_gaussian
     default_mixed
     default_qutrit
+    default_qutrit_mixed
     default_clifford
+    null_qubit
     tests
 
 Next generation devices
@@ -53,6 +55,8 @@ accessible from the ``pennylane.devices`` submodule.
     ExecutionConfig
     Device
     DefaultQubit
+    NullQubit
+    DefaultQutritMixed
 
 Preprocessing Transforms
 ------------------------
@@ -84,11 +88,60 @@ Other transforms that may be relevant to device preprocessing include:
     transforms.split_non_commuting
     transforms.hamiltonian_expand
 
+
+Modifiers
+---------
+
+The ``modifiers`` allow for the easy addition of default behaviour to a device.
+
+.. currentmodule:: pennylane.devices.modifiers
+.. autosummary::
+    :toctree: api
+
+    single_tape_support
+    simulator_tracking
+
+For example with a custom device we can add simulator-style tracking and the ability
+to handle a single circuit. See the documentation for each modifier for more details.
+
+.. code-block:: python
+
+    @simulator_tracking
+    @single_tape_support
+    class MyDevice(qml.devices.Device):
+
+        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+            return tuple(0.0 for _ in circuits)
+
+>>> dev = MyDevice()
+>>> tape = qml.tape.QuantumTape([qml.S(0)], [qml.expval(qml.X(0))])
+>>> with dev.tracker:
+...     out = dev.execute(tape)
+>>> out
+0.0
+>>> dev.tracker.history
+{'batches': [1],
+ 'simulations': [1],
+ 'executions': [1],
+ 'results': [0.0],
+ 'resources': [Resources(num_wires=1, num_gates=1,
+ gate_types=defaultdict(<class 'int'>, {'S': 1}),
+ gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1,
+ shots=Shots(total_shots=None, shot_vector=()))]}
+
+
 Qubit Simulation Tools
 ----------------------
 
 .. currentmodule:: pennylane.devices.qubit
 .. automodule:: pennylane.devices.qubit
+
+
+Qutrit Mixed-State Simulation Tools
+-----------------------------------
+
+.. currentmodule:: pennylane.devices.qutrit_mixed
+.. automodule:: pennylane.devices.qutrit_mixed
 
 """
 
@@ -104,3 +157,5 @@ from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
+from .default_qutrit_mixed import DefaultQutritMixed
+from .._device import Device as LegacyDevice

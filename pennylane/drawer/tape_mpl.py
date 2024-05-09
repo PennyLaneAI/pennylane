@@ -25,10 +25,17 @@ from functools import singledispatch
 import pennylane as qml
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
-from .mpldrawer import MPLDrawer
+
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
+from .mpldrawer import MPLDrawer
 from .style import _set_style
+from .utils import (
+    convert_wire_order,
+    cwire_connections,
+    default_bit_map,
+    transform_deferred_measurements_tape,
+    unwrap_controls,
+)
 
 has_mpl = True
 try:
@@ -125,8 +132,10 @@ def _(op: ops.Barrier, drawer, layer, _):
     mapped_wires = op.wires if len(op.wires) != 0 else list(range(drawer.n_wires))
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
-    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
-    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+    # by default, uses rcParams['lines.color'] at time when displayed, not at time when added to figure
+    # so we have to force it to use the value at the time the line was added to the figure
+    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax, color=mpl.pyplot.rcParams["lines.color"])
+    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax, color=mpl.pyplot.rcParams["lines.color"])
 
 
 @_add_operation_to_drawer.register
@@ -214,6 +223,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     fontsize = kwargs.get("fontsize", None)
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    tape = transform_deferred_measurements_tape(tape)
     tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
     bit_map = default_bit_map(tape)
 
@@ -267,6 +277,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     return drawer.fig, drawer.ax
 
 
+# pylint: disable=too-many-arguments
 def tape_mpl(
     tape, wire_order=None, show_all_wires=False, decimals=None, style=None, *, fig=None, **kwargs
 ):
@@ -309,7 +320,7 @@ def tape_mpl(
             qml.RX(1.2345, wires=0),
             qml.CRZ(1.2345, wires=(3,0))
         ]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
         fig, ax = tape_mpl(tape)
@@ -331,7 +342,7 @@ def tape_mpl(
     .. code-block:: python
 
         ops = [qml.RX(1.23456, wires=0), qml.Rot(1.2345,2.3456, 3.456, wires=0)]
-        measurements = [qml.expval(qml.PauliZ(0))]
+        measurements = [qml.expval(qml.Z(0))]
         tape2 = qml.tape.QuantumTape(ops, measurements)
 
         fig, ax = tape_mpl(tape2, decimals=2)

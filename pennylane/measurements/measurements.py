@@ -18,14 +18,12 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
-from warnings import warn
-
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Optional, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import pennylane as qml
-from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
+from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -191,28 +189,6 @@ class MeasurementProcess(ABC):
         self.queue()
 
     @property
-    def name(self):
-        """A deprecated property that always returns 'Identity'."""
-        warn(
-            "MeasurementProcess.name is deprecated, and will be removed "
-            "in an upcoming release. To get the name of an observable "
-            "from a measurement, use MeasurementProcess.obs.name instead",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return "Identity"
-
-    @property
-    def data(self):
-        """A deprecated property that always returns an empty list."""
-        warn(
-            "MeasurementProcess.data is deprecated, and will be removed "
-            "in an upcoming release. To get the data of an observable "
-            "from a measurement, use MeasurementProcess.obs.data instead",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return []
-
-    @property
     def return_type(self) -> Optional[ObservableReturnTypes]:
         """Measurement return type."""
         return None
@@ -284,6 +260,7 @@ class MeasurementProcess(ABC):
         base = 2 if cutoff is None else cutoff
         return base**num_wires
 
+    @qml.QueuingManager.stop_recording()
     def diagonalizing_gates(self):
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
@@ -291,11 +268,7 @@ class MeasurementProcess(ABC):
         Returns:
             List[.Operation]: the operations that diagonalize the observables
         """
-        try:
-            # pylint: disable=no-member
-            return self.expand().operations
-        except qml.operation.DecompositionUndefinedError:
-            return []
+        return self.obs.diagonalizing_gates() if self.obs else []
 
     def __eq__(self, other):
         return qml.equal(self, other)
@@ -313,7 +286,7 @@ class MeasurementProcess(ABC):
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{self.return_type.value}(wires={self.wires.tolist()})"
+        return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -370,7 +343,7 @@ class MeasurementProcess(ABC):
 
         **Example:**
 
-        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
+        >>> m = MeasurementProcess(Expectation, obs=qml.X(1))
         >>> m.eigvals()
         array([1, -1])
 
@@ -539,7 +512,7 @@ class SampleMeasurement(MeasurementProcess):
     >>> dev = qml.device("default.qubit", wires=2, shots=1000)
     >>> @qml.qnode(dev)
     ... def circuit():
-    ...     qml.PauliX(0)
+    ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
     >>> circuit()
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
@@ -565,6 +538,7 @@ class SampleMeasurement(MeasurementProcess):
                 provided, the entire shot range is treated as a single bin.
         """
 
+    @abstractmethod
     def process_counts(self, counts: dict, wire_order: Wires):
         """Calculate the measurement given a counts histogram dictionary.
 
@@ -574,7 +548,6 @@ class SampleMeasurement(MeasurementProcess):
 
         Note that the input dictionary may only contain states with non-zero entries (``all_outcomes=False``).
         """
-        raise NotImplementedError
 
 
 class StateMeasurement(MeasurementProcess):

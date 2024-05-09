@@ -14,14 +14,15 @@
 """
 Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``/pauli/grouping/group_observables.py``.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import numpy as pnp
 from pennylane.operation import Tensor
 from pennylane.pauli import are_identical_pauli_words
 from pennylane.pauli.grouping.group_observables import PauliGroupingStrategy, group_observables
-from pennylane import numpy as pnp
 
 
 class TestPauliGroupingStrategy:
@@ -396,11 +397,6 @@ class TestGroupObservables:
     def test_return_new_opmath(self):
         """Test that using new opmath causes grouped observables to have Prods instead of
         Tensors"""
-        old_observables = [
-            Tensor(PauliX(0), PauliZ(1)),
-            Tensor(PauliY(2), PauliZ(1)),
-            Tensor(PauliZ(1), PauliZ(2)),
-        ]
         new_observables = [
             qml.prod(PauliX(0), PauliZ(1)),
             qml.prod(PauliY(2), PauliZ(1)),
@@ -412,13 +408,81 @@ class TestGroupObservables:
             qml.s_prod(1.5, qml.prod(PauliZ(1), PauliZ(2))),
         ]
 
-        old_groups = group_observables(old_observables)
         new_groups = group_observables(new_observables)
         mixed_groups = group_observables(mixed_observables)
 
-        assert all(isinstance(o, Tensor) for g in old_groups for o in g)
         assert all(isinstance(o, qml.ops.Prod) for g in new_groups for o in g)
         assert all(isinstance(o, qml.ops.Prod) for g in mixed_groups for o in g)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_return_new_opmath_legacy_opmath(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        old_observables = [
+            Tensor(PauliX(0), PauliZ(1)),
+            Tensor(PauliY(2), PauliZ(1)),
+            Tensor(PauliZ(1), PauliZ(2)),
+        ]
+
+        old_groups = group_observables(old_observables)
+
+        assert all(isinstance(o, Tensor) for g in old_groups for o in g)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_return_deactive_opmath_prod(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        observables = [
+            qml.prod(PauliX(0), PauliZ(1)),
+            qml.prod(PauliY(2), PauliZ(1)),
+            qml.prod(PauliZ(1), PauliZ(2)),
+        ]
+
+        old_groups = group_observables(observables)
+
+        assert all(isinstance(o, qml.ops.Prod) for g in old_groups for o in g)
+
+    def test_observables_on_no_wires(self):
+        """Test that observables on no wires are stuck in the first group."""
+
+        observables = [
+            qml.I(),
+            qml.X(0) @ qml.Y(1),
+            qml.Z(0),
+            2 * qml.I(),
+        ]
+
+        groups = group_observables(observables)
+        assert groups == [[qml.X(0) @ qml.Y(1), qml.I(), 2 * qml.I()], [qml.Z(0)]]
+
+    def test_no_observables_with_wires(self):
+        """Test when only observables with no wires are present."""
+
+        observables = [qml.I(), 2 * qml.I()]
+        groups = group_observables(observables)
+        assert groups == [observables]
+
+        groups, coeffs = group_observables(observables, [1, 2])
+        assert groups == [observables]
+        assert coeffs == [[1, 2]]
+
+    def test_observables_on_no_wires_coeffs(self):
+        """Test that observables on no wires are stuck in the first group and
+        coefficients are tracked when provided."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported with legacy opmath.")
+
+        observables = [
+            qml.X(0),
+            qml.Z(0),
+            2 * qml.I(),
+            qml.I() @ qml.I(),
+        ]
+        coeffs = [1, 2, 3, 4]
+        groups, out_coeffs = group_observables(observables, coeffs)
+        assert groups == [[qml.X(0), 2 * qml.I(), qml.I() @ qml.I()], [qml.Z(0)]]
+        assert out_coeffs == [[1, 3, 4], [2]]
 
 
 class TestDifferentiable:

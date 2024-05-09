@@ -75,16 +75,16 @@ def pow(base, z=1, lazy=True, id=None):
 
     **Example**
 
-    >>> qml.pow(qml.PauliX(0), 0.5)
-    PauliX(wires=[0])**0.5
-    >>> qml.pow(qml.PauliX(0), 0.5, lazy=False)
+    >>> qml.pow(qml.X(0), 0.5)
+    X(0)**0.5
+    >>> qml.pow(qml.X(0), 0.5, lazy=False)
     SX(wires=[0])
-    >>> qml.pow(qml.PauliX(0), 0.1, lazy=False)
-    PauliX(wires=[0])**0.1
-    >>> qml.pow(qml.PauliX(0), 2, lazy=False)
-    Identity(wires=[0])
+    >>> qml.pow(qml.X(0), 0.1, lazy=False)
+    X(0)**0.1
+    >>> qml.pow(qml.X(0), 2, lazy=False)
+    I(0)
 
-    Lazy behavior can also be accessed via ``op ** z``.
+    Lazy behaviour can also be accessed via ``op ** z``.
 
     """
     if lazy:
@@ -115,7 +115,7 @@ class Pow(ScalarSymbolicOp):
 
     **Example**
 
-    >>> sqrt_x = Pow(qml.PauliX(0), 0.5)
+    >>> sqrt_x = Pow(qml.X(0), 0.5)
     >>> sqrt_x.decomposition()
     [SX(wires=[0])]
     >>> qml.matrix(sqrt_x)
@@ -153,7 +153,7 @@ class Pow(ScalarSymbolicOp):
         True
         >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
         True
-        >>> Pow(qml.PauliX(0), 1.2).__class__ is Pow._operation_observable_type
+        >>> Pow(qml.X(0), 1.2).__class__ is Pow._operation_observable_type
         True
 
         """
@@ -177,7 +177,7 @@ class Pow(ScalarSymbolicOp):
         super().__init__(base, scalar=z, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+            if (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
                 self.batch_size is None
             ):
                 pr = base_pauli_rep
@@ -262,6 +262,11 @@ class Pow(ScalarSymbolicOp):
             self.base.pow(self.z)
         except PowUndefinedError:
             return False
+        except Exception as e:  # pylint: disable=broad-except
+            # some pow methods cant handle a batched z
+            if qml.math.ndim(self.z) != 0:
+                return False
+            raise e
         return True
 
     def decomposition(self):
@@ -274,6 +279,8 @@ class Pow(ScalarSymbolicOp):
                 return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
+            raise DecompositionUndefinedError from e
+        except Exception as e:  # pylint: disable=broad-except
             raise DecompositionUndefinedError from e
 
     @property

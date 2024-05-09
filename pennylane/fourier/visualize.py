@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains visualization functions for Fourier series and coefficients."""
 from itertools import product
+
 import numpy as np
 
 # pylint:disable=too-many-arguments,blacklisted-name
@@ -151,7 +152,7 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     We would like to compute and plot the distribution of Fourier coefficients
     for many random values of the weights ``w``. First, we generate all the coefficients:
@@ -257,7 +258,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     We would like to compute and plot the distribution of Fourier coefficients
     for many random values of the weights ``w``. First, we generate all the coefficients:
@@ -374,7 +375,7 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     We would like to compute and plot a single set of Fourier coefficients. We will
     choose some values for ``w`` at random:
@@ -476,7 +477,7 @@ def panel(coeffs, n_inputs, ax, colour=None):
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     We would like to compute and plot the distribution of Fourier coefficients
     for many random values of the weights ``w``. First, we generate all the coefficients:
@@ -609,7 +610,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[1, 0])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     We would like to compute and plot the distribution of Fourier coefficients
     for many random values of the weights ``w``. First, we generate all the coefficients:

@@ -15,13 +15,13 @@
 """Setup file for package installation."""
 # pylint: disable=unspecified-encoding, consider-using-with
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy",
+    "numpy<2.0",
     "scipy",
     "networkx",
     "rustworkx",
@@ -31,7 +31,7 @@ requirements = [
     "semantic-version>=2.7",
     "autoray>=0.6.1",
     "cachetools",
-    "pennylane-lightning>=0.34",
+    "pennylane-lightning>=0.36",
     "requests",
     "typing_extensions",
 ]
@@ -59,10 +59,11 @@ info = {
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
+            "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
-    "description": "PennyLane is a Python quantum machine learning library by Xanadu Inc.",
+    "description": "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network.",
     "long_description": open("README.md").read(),
     "long_description_content_type": "text/markdown",
     "provides": ["pennylane"],

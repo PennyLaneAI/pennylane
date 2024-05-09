@@ -13,16 +13,14 @@
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
 from copy import copy
-
-from typing import Any, Dict, Optional, Sequence, Callable
-
-from pennylane import apply, adjoint
-from pennylane.math import mean, shape, round
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumTape, QuantumScript
-from pennylane.transforms import transform
+from typing import Any, Callable, Dict, Optional, Sequence
 
 import pennylane as qml
+from pennylane import adjoint, apply
+from pennylane.math import mean, round, shape
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms import transform
 
 
 @transform
@@ -63,7 +61,7 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
             qml.RX(x[3], wires=0)
             qml.RY(x[4], wires=1)
             qml.RZ(x[5], wires=2)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+            return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
 
     Setting ``scale_factor=1`` does not affect the circuit:
@@ -119,7 +117,7 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
 
             x = np.arange(6)
 
-            H = 1.*qml.PauliX(0) @ qml.PauliX(1) + 1.*qml.PauliX(1) @ qml.PauliX(2)
+            H = 1.*qml.X(0) @ qml.X(1) + 1.*qml.X(1) @ qml.X(2)
 
             def circuit(x):
                 qml.RY(x[0], wires=0)
@@ -261,7 +259,7 @@ def _polyfit(x, y, order):
     # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
     c = qml.math.linalg.pinv(qml.math.transpose(X) @ X)
     c = c @ qml.math.transpose(X)
-    c = qml.math.dot(c, y)
+    c = qml.math.tensordot(c, y, axes=1)
     c = qml.math.transpose(qml.math.transpose(c) / scale)
     return c
 
@@ -402,7 +400,7 @@ def mitigate_with_zne(
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     Executions of ``circuit`` will now be mitigated:
 
@@ -525,6 +523,10 @@ def mitigate_with_zne(
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
+
+        # content of `results` must be modified in this post-processing function
+        results = list(results)
+
         for i, tape in enumerate(out_tapes):
             # stack the results if there are multiple measurements
             # this will not create ragged arrays since only expval measurements are allowed

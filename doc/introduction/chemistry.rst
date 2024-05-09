@@ -120,7 +120,7 @@ The circuit parameter can be optimized using the interface of choice.
 .. note::
 
     For more details on VQE and the quantum chemistry functionality available in
-    :mod:`~pennylane.qchem`, check out the PennyLane `quantum chemistry tutorials <https://pennylane.ai/qml/demos_quantum-chemistry.html>`_.
+    :mod:`~pennylane.qchem`, check out the PennyLane `quantum chemistry tutorials <https://pennylane.ai/search/?contentType=DEMO&categories=quantum%20chemistry>`_.
 
 
 Quantum chemistry functions and classes

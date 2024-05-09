@@ -15,9 +15,10 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
+from collections import namedtuple
+
 # pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
 from numbers import Number
-from collections import namedtuple
 
 import numpy as np
 import rustworkx as rx
@@ -554,13 +555,13 @@ class CircuitGraph:
 
         >>> dev = qml.device('default.qubit', wires=3)
         >>> def circuit_measure_max_once():
-        ...     return qml.expval(qml.PauliX(wires=0))
+        ...     return qml.expval(qml.X(0))
         >>> qnode = qml.QNode(circuit_measure_max_once, dev)
         >>> qnode()
         >>> qnode.qtape.graph.max_simultaneous_measurements
         1
         >>> def circuit_measure_max_twice():
-        ...     return qml.expval(qml.PauliX(wires=0)), qml.probs(wires=0)
+        ...     return qml.expval(qml.X(0)), qml.probs(wires=0)
         >>> qnode = qml.QNode(circuit_measure_max_twice, dev)
         >>> qnode()
         >>> qnode.qtape.graph.max_simultaneous_measurements

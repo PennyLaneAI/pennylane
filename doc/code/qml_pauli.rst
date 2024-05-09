@@ -14,6 +14,7 @@ for Pauli-word partitioning functionality used in measurement optimization.
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
+    :skip: lie_closure, structure_constants, center
 
 PauliWord and PauliSentence
 ---------------------------
@@ -106,6 +107,7 @@ We can also displace the Hamiltonian by an arbitrary amount. Here, for example, 
 
 >>> H = H - np.min(np.linalg.eigvalsh(H.to_mat()))
 
+.. _graph_colouring:
 
 Graph colouring
 ---------------
@@ -147,3 +149,21 @@ the groups of observables:
  [PauliY(wires=[0]), PauliZ(wires=[1])]]
 >>> coeffs_groupings
 [[4.21], [1.43, 0.97]]
+
+For a larger example of how grouping can be used with PennyLane, check out the
+`Measurement Optimization demo <https://pennylane.ai/qml/demos/tutorial_measurement_optimize/>`_.
+
+Dynamical Lie Algebras
+----------------------
+
+PennyLane provides support for working with dynamical Lie algebras (DLA) of Pauli operators.
+See our `introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~lie_closure
+    ~structure_constants
+    ~center

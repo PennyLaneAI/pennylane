@@ -28,8 +28,8 @@ errors if ``matplotlib`` is not installed.
 
 _has_mpl = True  # pragma: no cover
 try:  # pragma: no cover
-    import matplotlib.pyplot as plt
     import matplotlib.font_manager as fm
+    import matplotlib.pyplot as plt
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     _has_mpl = False
 
@@ -237,7 +237,7 @@ def use_style(style: str):
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)
             qml.CRZ(z, wires=(3,0))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
 
         fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)

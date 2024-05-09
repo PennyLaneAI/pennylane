@@ -14,16 +14,17 @@
 """
 This module contains the qml.eigvals function.
 """
-from typing import Sequence, Callable
 import warnings
 
 # pylint: disable=protected-access
-from functools import reduce, partial
+from functools import partial, reduce
+from typing import Callable, Sequence
+
 import scipy
 
 import pennylane as qml
-from pennylane.transforms.op_transforms import OperationTransformError
 from pennylane import transform
+from pennylane.transforms import TransformError
 from pennylane.typing import TensorLike
 
 
@@ -63,7 +64,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
     Given an operation, ``qml.eigvals`` returns the eigenvalues:
 
-    >>> op = qml.PauliZ(0) @ qml.PauliX(1) - 0.5 * qml.PauliY(1)
+    >>> op = qml.Z(0) @ qml.X(1) - 0.5 * qml.Y(1)
     >>> qml.eigvals(op)
     array([-1.11803399, -1.11803399,  1.11803399,  1.11803399])
 
@@ -98,7 +99,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
 
             def circuit(theta):
                 qml.RX(theta, wires=1)
-                qml.PauliZ(wires=0)
+                qml.Z(0)
 
         We can use ``qml.eigvals`` to generate a new function that returns the eigenvalues
         corresponding to the function ``circuit``:
@@ -111,12 +112,11 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
-            raise OperationTransformError(
-                "Input is not an Operator, tape, QNode, or quantum function"
-            )
+            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
         return _eigvals_tranform(op, k=k, which=which)
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, qml.ops.Hamiltonian):
+
         warnings.warn(
             "For Hamiltonians, the eigenvalues will be computed numerically. "
             "This may be computationally intensive for a large number of wires. "

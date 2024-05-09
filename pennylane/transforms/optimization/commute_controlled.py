@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
@@ -42,7 +42,7 @@ def _commute_controlled_right(op_list):
         # We are looking only at the gates that can be pushed through
         # controls/targets; these are single-qubit gates with the basis
         # property specified.
-        if current_gate.basis is None or len(current_gate.wires) != 1:
+        if getattr(current_gate, "basis", None) is None or len(current_gate.wires) != 1:
             current_location -= 1
             continue
 
@@ -56,7 +56,7 @@ def _commute_controlled_right(op_list):
             next_gate = op_list[new_location + next_gate_idx + 1]
 
             # Only go ahead if information is available
-            if next_gate.basis is None:
+            if getattr(next_gate, "basis", None) is None:
                 break
 
             # If the next gate does not have control_wires defined, it is not
@@ -179,12 +179,12 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
         @qml.qnode(device=dev)
         def circuit(theta):
             qml.CZ(wires=[0, 2])
-            qml.PauliX(wires=2)
+            qml.X(2)
             qml.S(wires=0)
 
             qml.CNOT(wires=[0, 1])
 
-            qml.PauliY(wires=1)
+            qml.Y(1)
             qml.CRY(theta, wires=[0, 1])
             qml.PhaseShift(theta/2, wires=0)
 
@@ -192,7 +192,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
             qml.T(wires=0)
             qml.RZ(theta/2, wires=1)
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> circuit(0.5)
     0.9999999999999999
@@ -206,12 +206,12 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
 
             def qfunc(theta):
                 qml.CZ(wires=[0, 2])
-                qml.PauliX(wires=2)
+                qml.X(2)
                 qml.S(wires=0)
 
                 qml.CNOT(wires=[0, 1])
 
-                qml.PauliY(wires=1)
+                qml.Y(1)
                 qml.CRY(theta, wires=[0, 1])
                 qml.PhaseShift(theta/2, wires=0)
 
@@ -219,7 +219,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
                 qml.T(wires=0)
                 qml.RZ(theta/2, wires=1)
 
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> qnode = qml.QNode(qfunc, dev)
         >>> print(qml.draw(qnode)(0.5))

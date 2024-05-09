@@ -17,17 +17,16 @@ import math
 from functools import reduce
 
 import pytest
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.transforms.decompositions.clifford_t_transform import (
+    _CLIFFORD_T_GATES,
+    _one_qubit_decompose,
+    _rot_decompose,
+    _two_qubit_decompose,
     check_clifford_t,
     clifford_t_decomposition,
-    _rot_decompose,
-    _one_qubit_decompose,
-    _two_qubit_decompose,
-    _CLIFFORD_T_GATES,
 )
-
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
 _SKIP_GATES = (qml.Barrier, qml.Snapshot, qml.WireCut)
@@ -90,6 +89,7 @@ class TestCliffordCompile:
             (qml.DoubleExcitation(2.0, wires=[0, 1, 2, 3]), False),
             (qml.PauliX(wires=[1]), True),
             (qml.RX(3 * PI, wires=[1]), True),
+            (qml.adjoint(qml.RX(3 * PI, wires=[1])), True),
             (qml.PhaseShift(2 * PI, wires=["a"]), True),
             (qml.ECR(wires=["e", "f"]), True),
             (qml.CH(wires=["a", "b"]), False),
@@ -338,8 +338,8 @@ class TestCliffordCompile:
         )
 
         import jax
-        import torch
         import tensorflow as tf
+        import torch
 
         funres = []
         igrads = []

@@ -15,13 +15,14 @@
 Unit tests for the available qubit state preparation operations.
 """
 import itertools as it
-import pytest
-import numpy as np
-from scipy.stats import unitary_group
-import pennylane as qml
 
-from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
+import numpy as np
+import pytest
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane.operation import AnyWires
+from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
@@ -84,7 +85,7 @@ class TestAttribute:
 
     def test_tensor_check(self):
         """Test that we can ask if a tensor is in the attribute."""
-        assert not qml.PauliX(wires=0) @ qml.PauliZ(wires=1) in new_attribute
+        assert qml.operation.Tensor(qml.PauliX(wires=0), qml.PauliZ(wires=1)) not in new_attribute
 
 
 single_scalar_single_wire_ops = [

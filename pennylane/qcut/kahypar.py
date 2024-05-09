@@ -85,18 +85,18 @@ def kahypar_cut(
             qml.RX(0.432, wires=0),
             qml.RY(0.543, wires="a"),
         ]
-        measurements = [qml.expval(qml.PauliZ(wires=[0]))]
+        measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can let KaHyPar automatically find the optimal edges to place cuts:
 
     >>> graph = qml.qcut.tape_to_graph(tape)
     >>> cut_edges = qml.qcut.kahypar_cut(
-            graph=graph,
-            num_fragments=2,
-        )
+    ...     graph=graph,
+    ...     num_fragments=2,
+    ... )
     >>> cut_edges
-    [(CNOT(wires=[0, 'a']), RZ(0.24, wires=[0]), 0)]
+    [(Wrapped(CNOT(wires=[0, 'a'])), Wrapped(RZ(0.24, wires=[0])), 0)]
     """
     # pylint: disable=too-many-arguments, import-outside-toplevel
     try:

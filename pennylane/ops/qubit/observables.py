@@ -16,9 +16,9 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
+from collections.abc import Sequence
 from copy import copy
 
-from collections.abc import Sequence
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -233,7 +233,7 @@ class SparseHamiltonian(Observable):
 
     >>> wires = range(20)
     >>> coeffs = [1 for _ in wires]
-    >>> observables = [qml.PauliZ(i) for i in wires]
+    >>> observables = [qml.Z(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = H.sparse_matrix()
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)

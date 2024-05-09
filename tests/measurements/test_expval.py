@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the expval module"""
 import copy
+
 import numpy as np
 import pytest
 
@@ -48,7 +49,7 @@ def test_expval_identity_nowires_LQ():
 class TestExpval:
     """Tests for the expval function"""
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -73,19 +74,6 @@ class TestExpval:
         else:
             assert res.dtype == r_dtype
 
-    def test_not_an_observable(self):
-        """Test that a warning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
     def test_observable_return_type_is_expectation(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
         dev = qml.device("default.qubit", wires=2)
@@ -98,7 +86,7 @@ class TestExpval:
 
         circuit()
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(
         self, shots, phi, tol, tol_stochastic
@@ -113,21 +101,21 @@ class TestExpval:
             m0 = qml.measure(0)
             return qml.expval(m0)
 
-        res = circuit(phi)
-
         atol = tol if shots is None else tol_stochastic
-        assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
 
-    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(
         self, shots, phi, tol, tol_stochastic
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
+        np.random.seed(0)
         dev = qml.device("default.qubit")
 
-        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -137,8 +125,6 @@ class TestExpval:
             qml.RX(2 * phi, 2)
             m2 = qml.measure(2)
             return qml.expval(m0 * m1 + m2)
-
-        res = circuit(phi, shots=shots)
 
         @qml.qnode(dev)
         def expected_circuit(phi):
@@ -155,7 +141,19 @@ class TestExpval:
         expected = evals[0] * evals[1] + evals[2]
 
         atol = tol if shots is None else tol_stochastic
-        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi, shots=shots)
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+    def test_eigvals_instead_of_observable(self):
+        """Tests process samples with eigvals instead of observables"""
+
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        expected = qml.expval(qml.PauliZ(0)).process_samples(samples, [0, 1])
+        assert (
+            ExpectationMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
+        )
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""
@@ -201,7 +199,7 @@ class TestExpval:
         assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
-    @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])
     def test_projector_expval(self, state, shots):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
         its subclasses."""
@@ -319,3 +317,20 @@ class TestExpval:
         energy_batched = cost_circuit(params)
 
         assert qml.math.allequal(energy_batched, energy)
+
+    @pytest.mark.parametrize(
+        "wire, expected",
+        [
+            (0, 0.0),
+            (1, 1.0),
+        ],
+    )
+    def test_estimate_expectation_with_counts(self, wire, expected):
+        """Test that the expectation value of an observable is estimated correctly using counts"""
+        counts = {"000": 100, "100": 100}
+
+        wire_order = qml.wires.Wires((0, 1, 2))
+
+        res = qml.expval(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
+
+        assert np.allclose(res, expected)

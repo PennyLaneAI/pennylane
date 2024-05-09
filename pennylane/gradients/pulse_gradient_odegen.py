@@ -15,28 +15,28 @@
 This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
-from typing import Callable, Sequence
 from functools import partial
+from typing import Callable, Sequence
+
 import numpy as np
 
 import pennylane as qml
-
-from pennylane.pulse import ParametrizedEvolution
-from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
 from pennylane import transform
+from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
+from pennylane.pulse import ParametrizedEvolution
 
-from .parameter_shift import _make_zero_rep
-from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
 from .gradient_transform import (
     _all_zero_grad,
+    _no_trainable_grad,
     assert_no_state_returns,
-    assert_no_tape_batching,
+    assert_no_trainable_tape_batching,
     assert_no_variance,
     choose_trainable_params,
     find_and_validate_gradient_methods,
-    _no_trainable_grad,
     reorder_grads,
 )
+from .parameter_shift import _make_zero_rep
+from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
 
 try:
     import jax
@@ -469,11 +469,12 @@ def pulse_odegen(
 
     .. code-block:: python
 
+        from jax import numpy as jnp
         jax.config.update("jax_enable_x64", True)
         H = (
-            qml.pulse.constant * qml.PauliY(0)
-            + jnp.polyval * qml.PauliY(1)
-            + qml.pulse.constant * (qml.PauliZ(0) @ qml.PauliX(1))
+            qml.pulse.constant * qml.Y(0)
+            + jnp.polyval * qml.Y(1)
+            + qml.pulse.constant * (qml.Z(0) @ qml.X(1))
         )
         params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
         t = [0.1, 0.9]
@@ -483,12 +484,12 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit.jax")
 
         @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
             op = qml.evolve(H)(params, t)
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.X(0))
 
     We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally
@@ -503,7 +504,8 @@ def pulse_odegen(
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
     >>> circuit.construct((params,), {}) # Build the tape of the circuit.
-    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnums=[0, 1, 2])
+    >>> circuit.tape.trainable_params = [0, 1, 2]
+    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnum=[0, 1, 2])
     >>> len(tapes)
     12
 
@@ -681,7 +683,7 @@ def pulse_odegen(
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    assert_no_tape_batching(tape, transform_name)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)

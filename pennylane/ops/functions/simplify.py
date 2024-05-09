@@ -15,14 +15,14 @@
 This module contains the qml.simplify function.
 """
 from copy import copy
-from typing import Callable, Union, Sequence
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
-from pennylane.workflow import QNode
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.workflow import QNode
 
 
 def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):
@@ -43,7 +43,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
 
     Given an instantiated operator, ``qml.simplify`` reduces the operator's arithmetic depth:
 
-    >>> op = qml.adjoint(qml.RX(0.54, wires=0) + qml.PauliX(0) + qml.PauliZ(1))
+    >>> op = qml.adjoint(qml.RX(0.54, wires=0) + qml.X(0) + qml.Z(1))
     >>> op.arithmetic_depth
     3
     >>> sim_op = qml.simplify(op)
@@ -63,7 +63,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
 
     Both types of simplification occur together:
 
-    >>> op = qml.adjoint(qml.U2(-np.pi/2, np.pi/2, wires=0) + qml.PauliX(0))
+    >>> op = qml.adjoint(qml.U2(-np.pi/2, np.pi/2, wires=0) + qml.X(0))
     >>> op
     Adjoint(Sum)([-1.5707963267948966, 1.5707963267948966], [], wires=[0])
     >>> qml.simplify(op)

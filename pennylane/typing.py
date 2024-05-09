@@ -16,12 +16,12 @@ import contextlib
 
 # pylint: disable=import-outside-toplevel, too-few-public-methods
 import sys
-from typing import Union, TypeVar, Tuple
+from typing import Tuple, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox]
+_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
 
 class TensorLikeMETA(type):
@@ -86,7 +86,7 @@ def _is_jax(other, subclass=False):
                     jax.Array  # TODO: keep this after jax>=0.4 is required
                     if hasattr(jax, "Array")
                     else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer]
-                ),
+                ),  # pylint: disable=c-extension-no-member
             ]
             check = issubclass if subclass else isinstance
 

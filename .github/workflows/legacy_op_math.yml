@@ -1,0 +1,16 @@
+name: Legacy opmath tests
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  tests:
+    uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      branch: 'master'
+      run_lightened_ci: false
+      disable_new_opmath: "True"

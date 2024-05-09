@@ -16,13 +16,14 @@ Unit tests for the pennylane.drawer.utils` module.
 """
 
 import pytest
+
 import pennylane as qml
 from pennylane.drawer.utils import (
-    default_wire_map,
-    default_bit_map,
     convert_wire_order,
-    unwrap_controls,
     cwire_connections,
+    default_bit_map,
+    default_wire_map,
+    unwrap_controls,
 )
 from pennylane.wires import Wires
 
@@ -137,8 +138,8 @@ class TestUnwrapControls:
         "op,expected_control_wires,expected_control_values",
         [
             (qml.PauliX(wires="a"), Wires([]), None),
-            (qml.CNOT(wires=["a", "b"]), Wires("a"), None),
-            (qml.ctrl(qml.PauliX(wires="b"), control="a"), Wires("a"), None),
+            (qml.CNOT(wires=["a", "b"]), Wires("a"), [True]),
+            (qml.ctrl(qml.PauliX(wires="b"), control="a"), Wires("a"), [True]),
             (
                 qml.ctrl(qml.PauliX(wires="b"), control=["a", "c", "d"]),
                 Wires(["a", "c", "d"]),

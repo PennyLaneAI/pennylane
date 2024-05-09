@@ -14,14 +14,23 @@
 """
 Utility functions to interact with and extract information from Pauli words and Pauli sentences.
 """
-from typing import Union
 from functools import singledispatch
+from typing import Union
 
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd
 from pennylane.operation import Tensor
+from pennylane.ops import (
+    Hamiltonian,
+    Identity,
+    LinearCombination,
+    PauliX,
+    PauliY,
+    PauliZ,
+    Prod,
+    SProd,
+)
 
-from .utils import is_pauli_word
 from .conversion import pauli_sentence
+from .utils import is_pauli_word
 
 
 def pauli_word_prefactor(observable):
@@ -41,9 +50,9 @@ def pauli_word_prefactor(observable):
 
     >>> pauli_word_prefactor(qml.Identity(0))
     1
-    >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(1))
+    >>> pauli_word_prefactor(qml.X(0) @ qml.Y(1))
     1
-    >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(0))
+    >>> pauli_word_prefactor(qml.X(0) @ qml.Y(0))
     1j
     """
     return _pauli_word_prefactor(observable)
@@ -72,8 +81,9 @@ def _pw_prefactor_tensor(observable: Tensor):
     raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
-@_pauli_word_prefactor.register
-def _pw_prefactor_ham(observable: Hamiltonian):
+@_pauli_word_prefactor.register(Hamiltonian)
+@_pauli_word_prefactor.register(LinearCombination)
+def _pw_prefactor_ham(observable: Union[Hamiltonian, LinearCombination]):
     if is_pauli_word(observable):
         return observable.coeffs[0]
     raise ValueError(f"Expected a valid Pauli word, got {observable}")

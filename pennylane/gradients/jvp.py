@@ -44,7 +44,7 @@ def compute_jvp_single(tangent, jac):
         >>> tangent = np.array([1.0])
         >>> jac = np.array(0.2)
         >>> qml.gradients.compute_jvp_single(tangent, jac)
-        np.array(0.2)
+        array(0.2)
 
     2. For a single parameter and a single measurement with shape (e.g. ``probs``):
 
@@ -53,7 +53,7 @@ def compute_jvp_single(tangent, jac):
         >>> tangent = np.array([2.0])
         >>> jac = np.array([0.3, 0.4])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
-        np.array([0.6, 0.8])
+        array([0.6, 0.8])
 
     3. For multiple parameters (in this case 2 parameters) and a single measurement
        without shape (e.g. ``expval``, ``var``):
@@ -63,7 +63,7 @@ def compute_jvp_single(tangent, jac):
         >>> tangent = np.array([1.0, 2.0])
         >>> jac = tuple([np.array(0.1), np.array(0.2)])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
-        np.array(0.5)
+        array(0.5)
 
     4. For multiple parameters (in this case 2 parameters) and a single measurement with
        shape (e.g. ``probs``):
@@ -73,7 +73,7 @@ def compute_jvp_single(tangent, jac):
         >>> tangent = np.array([1.0, 0.5])
         >>> jac = tuple([np.array([0.1, 0.3]), np.array([0.2, 0.4])])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
-        np.array([0.2, 0.5])
+        array([0.2, 0.5])
 
     .. details::
         :title: Technical description
@@ -219,7 +219,7 @@ def compute_jvp_multi(tangent, jac):
         >>> tangent = np.array([2.0])
         >>> jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
         >>> qml.gradients.compute_jvp_multi(tangent, jac)
-        (np.array([0.6]), np.array([0.4, 1. ]))
+        (array([0.6]), array([0.4, 1. ]))
 
     2. For multiple parameters (in this case 2 parameters) and multiple measurements (one without shape and one with
     shape, e.g. expval and probs):
@@ -229,7 +229,7 @@ def compute_jvp_multi(tangent, jac):
         >>> tangent = np.array([1.0, 2.0])
         >>> jac = tuple([tuple([np.array([0.3]), np.array([0.4])]), tuple([np.array([0.2, 0.5]), np.array([0.3, 0.8])]),])
         >>> qml.gradients.compute_jvp_multi(tangent, jac)
-        (np.array([1.1]), np.array([0.8, 2.1]))
+        (array([1.1]), array([0.8, 2.1]))
     """
     if jac is None:
         return None
@@ -273,7 +273,7 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
             qml.RY(x[1, 1], wires=0),
             qml.RZ(x[1, 2], wires=1)
         ]
-        measurements = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
+        measurements = [qml.expval(qml.Z(0)), qml.probs(wires=1)]
         tape = qml.tape.QuantumTape(ops, measurements)
 
     We can use the ``jvp`` function to compute the Jacobian vector product,
@@ -286,10 +286,11 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
 
     Executing the JVP tapes, and applying the processing function:
 
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> jvp = fn(dev.execute(jvp_tapes))
     >>> jvp
-    (Array(-0.62073976, dtype=float32), Array([-0.3259707 ,  0.32597077], dtype=float32))
+    (Array(-0.62073968, dtype=float64),
+     Array([-0.32597067,  0.32597067], dtype=float64))
     """
     if len(tape.trainable_params) == 0:
         # The tape has no trainable parameters; the JVP
@@ -377,10 +378,10 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
             qml.RY(x[1, 1], wires=0),
             qml.RZ(x[1, 2], wires=1)
         ]
-        measurements1 = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
+        measurements1 = [qml.expval(qml.Z(0)), qml.probs(wires=1)]
         tape1 = qml.tape.QuantumTape(ops, measurements1)
 
-        measurements2 = [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))]
+        measurements2 = [qml.expval(qml.Z(0) @ qml.Z(1))]
         tape2 = qml.tape.QuantumTape(ops, measurements2)
 
         tapes = [tape1, tape2]
@@ -400,10 +401,12 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     >>> jvp_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, qml.gradients.param_shift)
 
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> jvps = fn(dev.execute(jvp_tapes))
     >>> jvps
-    ((Array(-0.62073976, dtype=float32), Array([-0.3259707 ,  0.32597077], dtype=float32)), Array(-0.6900841, dtype=float32))
+    ((Array(-0.62073968, dtype=float64),
+      Array([-0.32597067,  0.32597067], dtype=float64)),
+     Array(-0.690084, dtype=float64))
 
     We have two JVPs; one per tape. Each one corresponds to the shape of the output of their respective tape.
     """

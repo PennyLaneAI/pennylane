@@ -14,24 +14,24 @@
 """
 Unit tests for the available qubit operations for quantum chemistry purposes.
 """
-# pylint: disable=too-few-public-methods
-import pytest
 import numpy as np
+
+# pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
+import pytest
+from gate_data import (
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    FermionicSWAP,
+    OrbitalRotation,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+)
 from scipy.linalg import expm, fractional_matrix_power
 
-from gate_data import (
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
-    OrbitalRotation,
-    FermionicSWAP,
-)
 import pennylane as qml
 from pennylane import numpy as pnp
-
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qml.SingleExcitation(0.14, wires=[0, 1]),
@@ -46,6 +46,7 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 
 
 class TestParameterFrequencies:
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not qml.operation.has_gen(op):
@@ -1227,3 +1228,15 @@ def test_label_method(op, label1, label2, label3):
     assert op.label() == label1
     assert op.label(decimals=2) == label2
     assert op.label(decimals=0) == label3
+
+
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+@pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
+def test_generators(op):
+    """Check that the type of the generator returned by the qchem ops is
+    the same as the type pointed to by qml.Hamiltonian (either Hamiltonian
+    or LinearCombiantion) for both legacy and new opmath"""
+    if isinstance(op, (qml.ops.DoubleExcitationPlus, qml.ops.DoubleExcitationMinus)):
+        pytest.skip(reason="Operator has SparseHamiltonian generator instead")
+
+    assert isinstance(op.generator(), qml.Hamiltonian)

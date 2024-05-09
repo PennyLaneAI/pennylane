@@ -13,18 +13,18 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 # pylint: disable=too-many-branches
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 from pennylane.ops.op_math import Adjoint
-from pennylane.wires import Wires
-from pennylane.tape import QuantumTape
-from pennylane.transforms import transform
-
 from pennylane.ops.qubit.attributes import (
     self_inverses,
     symmetric_over_all_wires,
     symmetric_over_control_wires,
 )
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
+from pennylane.wires import Wires
+
 from .optimization_utils import find_next_gate
 
 
@@ -91,12 +91,12 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             qml.Hadamard(wires=0)
             qml.RX(x, wires=2)
             qml.RY(y, wires=1)
-            qml.PauliX(wires=1)
+            qml.X(1)
             qml.RZ(z, wires=0)
             qml.RX(y, wires=2)
             qml.CNOT(wires=[0, 2])
-            qml.PauliX(wires=1)
-            return qml.expval(qml.PauliZ(0))
+            qml.X(1)
+            return qml.expval(qml.Z(0))
 
     >>> circuit(0.1, 0.2, 0.3)
     0.999999999999999
@@ -114,12 +114,12 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 qml.Hadamard(wires=0)
                 qml.RX(x, wires=2)
                 qml.RY(y, wires=1)
-                qml.PauliX(wires=1)
+                qml.X(1)
                 qml.RZ(z, wires=0)
                 qml.RX(y, wires=2)
                 qml.CNOT(wires=[0, 2])
-                qml.PauliX(wires=1)
-                return qml.expval(qml.PauliZ(0))
+                qml.X(1)
+                return qml.expval(qml.Z(0))
 
         The circuit before optimization:
 

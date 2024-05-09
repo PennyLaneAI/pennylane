@@ -18,13 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubitLegacy
-from pennylane.measurements import (
-    State,
-    Shots,
-    density_matrix,
-    expval,
-    state,
-)
+from pennylane.measurements import Shots, State, density_matrix, expval, state
 
 
 class TestState:
@@ -384,7 +378,7 @@ class TestDensityMatrix:
         assert obs[0].return_type is State
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.torch", "default.mixed"])
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_torch(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using torch interface."""
@@ -402,7 +396,7 @@ class TestDensityMatrix:
         dev = func.device
 
         if dev_name != "default.mixed":
-            assert np.allclose(
+            assert qml.math.allclose(
                 expected,
                 qml.density_matrix(wires=0).process_state(state=dev.state, wire_order=dev.wires),
             )

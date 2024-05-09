@@ -595,10 +595,10 @@ class TestShotsIntegration:
         # if we set the shots to None, backprop can now be used
         cost_fn(a, b, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert cost_fn.gradient_fn == "backprop"
 
-        # original QNode settings are unaffected
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
         cost_fn(a, b)
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 
@@ -1673,7 +1673,7 @@ class TestTapeExpansion:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)

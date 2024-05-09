@@ -112,8 +112,9 @@ PennyLane-compatible quantum device.
 
 Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
 available for running your hybrid optimizations—these include
-IBM Q, provided by the `PennyLane-Qiskit <https://pennylaneqiskit.rtfd.io>`__ plugin,
-as well as the Rigetti Aspen QPU provided by `PennyLane-Forest <https://pennylane-forest.rtfd.io>`__.
+IBM Q, provided by the `PennyLane-Qiskit <https://docs.pennylane.ai/projects/qiskit/en/stable/>`__
+plugin, as well as the Rigetti Aspen QPU provided by `PennyLane-Rigetti
+<https://docs.pennylane.ai/projects/rigetti/en/stable/>`__.
 
 How to cite
 -----------
@@ -162,10 +163,19 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/inspecting_circuits
    introduction/compiling_circuits
    introduction/compiling_workflows
+   introduction/importing_workflows
    introduction/chemistry
    introduction/data
-   introduction/returns
    introduction/logging
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Release news
+   :hidden:
+
+   development/release_notes.md
+   development/deprecations
+   news/new_opmath
 
 .. toctree::
    :maxdepth: 1
@@ -175,8 +185,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    development/guide
    development/plugins
    development/adding_operators
-   development/deprecations
-   development/release_notes.md
 
 .. toctree::
    :maxdepth: 1
@@ -211,6 +219,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Internals
    :hidden:
 
+   code/qml_capture
    code/qml_devices
    code/qml_measurements
    code/qml_operation

@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
-from typing import Sequence, Callable
-import pennylane as qml
-from pennylane.measurements import MidMeasureMP, ProbabilityMP, SampleMP, CountsMP, MeasurementValue
-from pennylane.ops.op_math import ctrl
+from typing import Callable, Sequence
 
+import pennylane as qml
+from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
+from pennylane.ops.op_math import ctrl
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
-
 from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager
 
-# pylint: disable=too-many-branches, protected-access
+# pylint: disable=too-many-branches, protected-access, too-many-statements
 
 
 def _check_tape_validity(tape: QuantumTape):
@@ -55,6 +54,16 @@ def _check_tape_validity(tape: QuantumTape):
                 "Deferred measurements can occur automatically when using mid-circuit "
                 "measurements on a device that does not support them."
             )
+
+    samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
+    postselect_present = any(
+        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+    )
+    if postselect_present and samples_present and tape.batch_size is not None:
+        raise ValueError(
+            "Returning qml.sample is not supported when postselecting mid-circuit "
+            "measurements with broadcasting"
+        )
 
 
 def _collect_mid_measure_info(tape: QuantumTape):
@@ -93,7 +102,9 @@ def null_postprocessing(results):
 
 
 @transform
-def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], Callable):
+def defer_measurements(
+    tape: QuantumTape, reduce_postselected: bool = True, **kwargs
+) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -117,8 +128,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         Devices that inherit from :class:`~pennylane.QubitDevice` **must** be initialized
         with an additional wire for each mid-circuit measurement after which the measured
         wire is reused or reset for ``defer_measurements`` to transform the quantum tape
-        correctly. Hence, devices and quantum tapes must also be initialized without custom
-        wire labels for correct behaviour.
+        correctly.
 
     .. note::
 
@@ -139,12 +149,26 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         :func:`~.pennylane.counts` can only be used with ``defer_measurements`` if wires
         or an observable are explicitly specified.
 
+    .. warning::
+
+        ``defer_measurements`` does not support using custom wire labels if any measured
+        wires are reused or reset.
+
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
+        reduce_postselected (bool): Whether or not to use postselection information to
+            reduce the number of operations and control wires in the output tape. Active by default.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
         transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    Raises:
+        ValueError: If custom wire labels are used with qubit reuse or reset
+        ValueError: If any measurements with no wires or observable are present
+        ValueError: If continuous variable operations or measurements are present
+        ValueError: If using the transform with any device other than
+            :class:`default.qubit <~pennylane.devices.DefaultQubit>` and postselection is used
 
     **Example**
 
@@ -158,7 +182,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
             qml.Hadamard(wires=1)
             m_0 = qml.measure(1)
             qml.cond(m_0, qml.RY)(par, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     The ``defer_measurements`` transform allows executing such quantum
     functions without having to perform mid-circuit measurements:
@@ -197,14 +221,58 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     >>> pars = np.array([0.643, 0.246], requires_grad=True)
     >>> func(*pars)
     tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
+
+    .. details::
+        :title: Usage Details
+
+        By default, ``defer_measurements`` makes use of postselection information of
+        mid-circuit measurements in the circuit in order to reduce the number of controlled
+        operations and control wires. We can explicitly switch this feature off and compare
+        the created circuits with and without this optimization. Consider the following circuit:
+
+        .. code-block:: python3
+
+            @qml.qnode(qml.device("default.qubit"))
+            def node(x):
+                qml.RX(x, 0)
+                qml.RX(x, 1)
+                qml.RX(x, 2)
+
+                mcm0 = qml.measure(0, postselect=0, reset=False)
+                mcm1 = qml.measure(1, postselect=None, reset=True)
+                mcm2 = qml.measure(2, postselect=1, reset=False)
+                qml.cond(mcm0+mcm1+mcm2==1, qml.RX)(0.5, 3)
+                return qml.expval(qml.Z(0) @ qml.Z(3))
+
+        Without the optimization, we find three gates controlled on the three measured
+        qubits. They correspond to the combinations of controls that satisfy the condition
+        ``mcm0+mcm1+mcm2==1``.
+
+        >>> print(qml.draw(qml.defer_measurements(node, reduce_postselected=False))(0.6))
+        0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────────────────────────────────┤ ╭<Z@Z>
+        1: ──RX(0.60)─────────│──╭●─╭X───────────────────────────────────────┤ │
+        2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|─╭○────────╭○────────╭●────────┤ │
+        3: ───────────────────│──│──│──────────├RX(0.50)─├RX(0.50)─├RX(0.50)─┤ ╰<Z@Z>
+        4: ───────────────────╰X─│──│──────────├○────────├●────────├○────────┤
+        5: ──────────────────────╰X─╰●─────────╰●────────╰○────────╰○────────┤
+
+        If we do not explicitly deactivate the optimization, we obtain a much simpler circuit:
+
+        >>> print(qml.draw(qml.defer_measurements(node))(0.6))
+        0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────┤ ╭<Z@Z>
+        1: ──RX(0.60)─────────│──╭●─╭X───────────┤ │
+        2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|───┤ │
+        3: ───────────────────│──│──│──╭RX(0.50)─┤ ╰<Z@Z>
+        4: ───────────────────╰X─│──│──│─────────┤
+        5: ──────────────────────╰X─╰●─╰○────────┤
+
+        There is only one controlled gate with only one control wire.
     """
 
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
     _check_tape_validity(tape)
-
-    device = kwargs.get("device", None)
 
     device = kwargs.get("device", None)
 
@@ -220,6 +288,11 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     if is_postselecting and device is not None and not isinstance(device, qml.devices.DefaultQubit):
         raise ValueError(f"Postselection is not supported on the {device} device.")
+
+    if len(reused_measurement_wires) > 0 and not all(isinstance(w, int) for w in tape.wires):
+        raise ValueError(
+            "qml.defer_measurements does not support custom wire labels with qubit reuse/reset."
+        )
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
@@ -252,7 +325,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
                             # We know that the measured wire will be in the |1> state if
                             # postselected |1>. So we can just apply a PauliX instead of
                             # a CNOT to reset
-                            new_operations.append(qml.PauliX(op.wires[0]))
+                            new_operations.append(qml.X(op.wires[0]))
 
                 cur_wire += 1
             else:
@@ -260,7 +333,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
         elif op.__class__.__name__ == "Conditional":
             with QueuingManager.stop_recording():
-                new_operations.extend(_add_control_gate(op, control_wires))
+                new_operations.extend(_add_control_gate(op, control_wires, reduce_postselected))
         else:
             new_operations.append(op)
 
@@ -318,13 +391,23 @@ def _defer_measurements_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-def _add_control_gate(op, control_wires):
+def _add_control_gate(op, control_wires, reduce_postselected):
     """Helper function to add control gates"""
-    control = [control_wires[m.id] for m in op.meas_val.measurements]
+    if reduce_postselected:
+        control = [control_wires[m.id] for m in op.meas_val.measurements if m.postselect is None]
+        items = op.meas_val._postselected_items()
+    else:
+        control = [control_wires[m.id] for m in op.meas_val.measurements]
+        items = op.meas_val._items()
+
     new_ops = []
 
-    for branch, value in op.meas_val._items():
+    for branch, value in items:
         if value:
+            # Empty sampling branches can occur when using _postselected_items
+            if branch == ():
+                new_ops.append(op.then_op)
+                continue
             qscript = qml.tape.make_qscript(
                 ctrl(
                     lambda: qml.apply(op.then_op),  # pylint: disable=cell-var-from-loop

@@ -163,21 +163,6 @@ instead to the documentation of :func:`qml.transform <pennylane.transform>`.
     ~transforms.core.transform_dispatcher
     ~transforms.core.transform_program
 
-Old transforms framework
-------------------------
-
-These utility functions were previously used to create transforms in PennyLane and are now
-deprecated. It is now recommended to use :class:`qml.transform <pennylane.transform>`
-for the creation of custom transforms.
-
-.. autosummary::
-    :toctree: api
-
-    ~single_tape_transform
-    ~batch_transform
-    ~qfunc_transform
-    ~op_transform
-
 Transforming circuits
 ---------------------
 
@@ -221,10 +206,10 @@ function in this scenario, we include a function that simply returns the first a
         operations = filter(lambda op: op.name != "RX", tape.operations)
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
 
-        def postprocessing(results):
+        def null_postprocessing(results):
             return results[0]
 
-        return [new_tape], postprocessing
+        return [new_tape], null_postprocessing
 
 To make your transform applicable to both :class:`~.QNode` and quantum functions, you can use the :func:`pennylane.transform` decorator.
 
@@ -233,7 +218,10 @@ To make your transform applicable to both :class:`~.QNode` and quantum functions
     dispatched_transform = qml.transform(remove_rx)
 
 For a more advanced example, let's consider a transform that sums a circuit with its adjoint. We define the adjoint
-of the tape operations, create a new tape, and return both tapes. The processing function then sums the results.
+of the tape operations, create a new tape with these new operations, and return both tapes.
+The processing function then sums the results of the original and the adjoint tape.
+In this example, we use ``qml.transform`` in the form of a decorator in order to turn the custom
+function into a quantum transform.
 
 .. code-block:: python
 
@@ -246,10 +234,10 @@ of the tape operations, create a new tape, and return both tapes. The processing
         operations = [qml.adjoint(op) for op in tape.operation]
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
 
-        def null_postprocessing(results):
+        def sum_postprocessing(results):
             return qml.sum(results)
 
-        return [tape, shifted_tape], null_postprocessing
+        return [tape, new_tape], sum_postprocessing
 
 Composability of transforms
 ---------------------------
@@ -271,7 +259,7 @@ passes on a QNode to maximize gate reduction before execution.
             qml.RY(y, wires=0)
             qml.RZ(y, wires=0)
             qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
 In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
 merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
@@ -282,13 +270,15 @@ Additional information
 Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
 For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/qml_gradients>`.
 Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
-for a comprehensive overview of transforms and core functionalities, consult the :doc:`transforms documentation <../code/qml_transforms>`.
+for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qml_transforms>`.
 """
+
+# Leave as alias for backwards-compatibility
+from pennylane.tape import make_qscript as make_tape
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, TransformError
-from .batch_transform import batch_transform, map_batch_transform
-from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
-from .op_transforms import op_transform
+from .batch_transform import map_batch_transform
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
@@ -298,6 +288,7 @@ from .compile import compile
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
+from .dynamic_one_shot import dynamic_one_shot
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
@@ -330,6 +321,7 @@ from .tape_expand import (
     expand_trainable_multipar,
     create_expand_fn,
     create_decomp_expand_fn,
+    create_expand_trainable_multipar,
     set_decomposition,
 )
 from .transpile import transpile

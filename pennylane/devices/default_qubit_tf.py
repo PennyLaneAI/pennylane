@@ -15,6 +15,7 @@
 reference plugin.
 """
 import itertools
+
 import numpy as np
 import semantic_version
 
@@ -35,6 +36,7 @@ except ImportError as e:  # pragma: no cover
 
 
 from pennylane.math.single_dispatch import _ndim_tf
+
 from . import DefaultQubitLegacy
 from .default_qubit_legacy import tolerance
 
@@ -69,7 +71,7 @@ class DefaultQubitTF(DefaultQubitLegacy):
     ... def circuit(x):
     ...     qml.RX(x[1], wires=0)
     ...     qml.Rot(x[0], x[1], x[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> weights = tf.Variable([0.2, 0.5, 0.1])
     >>> with tf.GradientTape() as tape:
     ...     res = circuit(weights)

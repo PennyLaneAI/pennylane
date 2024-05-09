@@ -15,7 +15,7 @@
 This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 
-**How to bind a custom derivative with Tensorflow.**
+**How to bind a custom derivative with TensorFlow.**
 
 To bind a custom derivative with tensorflow, you:
 
@@ -78,7 +78,7 @@ Unfortunately, we then get an extra call to the vjp function.
 
         @tf.py_function(Tout=x.dtype)
         def vjp(*dy):
-            print("In the VJP function with")
+            print("In the VJP function with: ", dy)
             print("eager? ", tf.executing_eagerly())
             return dy[0] * 2 * x
 
@@ -88,17 +88,13 @@ Unfortunately, we then get an extra call to the vjp function.
 >>> with tf.GradientTape(persistent=True) as tape:
 ...         y = f(x)
 >>> tape.jacobian(y, x)
-In the VJP function with:  (<tf.Tensor: shape=(2,), dtype=float32, numpy=array([1., 0.], dtype=float32)>,)
+In the VJP function with:  (<tf.Tensor: shape=(), dtype=float32, numpy=1.0>,)
 eager?  True
-In the VJP function with:  (<tf.Tensor: shape=(2,), dtype=float32, numpy=array([1., 0.], dtype=float32)>,)
+In the VJP function with:  (<tf.Tensor: shape=(), dtype=float32, numpy=1.0>,)
 eager?  True
-In the VJP function with:  (<tf.Tensor: shape=(2,), dtype=float32, numpy=array([0., 1.], dtype=float32)>,)
-eager?  True
-<tf.Tensor: shape=(2, 2), dtype=float32, numpy=
-array([[0.2, 0. ],
-       [0. , 0.4]], dtype=float32)>
+<tf.Tensor: shape=(), dtype=float32, numpy=0.2>
 
-As you can see, we got 3 calls to ``vjp`` instead of 2, and the first calls have identical ``dy``. We do not want
+As you can see, we got 2 calls to ``vjp`` instead of 1, and the calls have identical ``dy``. We do not want
 to have to perform this extra call.
 
 """
@@ -122,7 +118,20 @@ def set_parameters_on_copy(tapes, params):
     return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
 
-def _to_tensors(x, dtype=None):
+def _get_parameters_dtype(parameters):
+    for p in parameters:
+        if qml.math.get_interface(p) == "tensorflow":
+            return p.dtype
+    return None
+
+
+_complex_dtype_map = {
+    tf.float32: tf.complex64,
+    tf.float64: tf.complex128,
+}
+
+
+def _to_tensors(x, dtype=None, complex_safe=False):
     """
     Convert a nested tuple structure of arrays into a nested tuple
     structure of TF tensors
@@ -132,8 +141,10 @@ def _to_tensors(x, dtype=None):
         return x
 
     if isinstance(x, (tuple, list)):
-        return tuple(_to_tensors(x_, dtype=dtype) for x_ in x)
+        return tuple(_to_tensors(x_, dtype=dtype, complex_safe=complex_safe) for x_ in x)
 
+    if complex_safe and "complex" in qml.math.get_dtype_name(x):
+        return tf.convert_to_tensor(x, dtype=_complex_dtype_map.get(dtype, dtype))
     return tf.convert_to_tensor(x, dtype=dtype)
 
 
@@ -216,7 +227,10 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
 
     # need to use same tapes for forward pass execution that we will use for the vjp
     # if we are using device derivatives (`not differentiable`) so we can find them in the cache
-    res = _to_tensors(execute_fn(numpy_tapes))
+    params_dtype = _get_parameters_dtype(parameters)
+    dtype = params_dtype if params_dtype in {tf.float64, tf.complex128} else None
+    # make sure is float64 if data is float64.  May cause errors otherwise if device returns float32 precision
+    res = _to_tensors(execute_fn(numpy_tapes), dtype=dtype, complex_safe=True)
 
     @tf.custom_gradient
     def custom_gradient_execute(*parameters):  # pylint:disable=unused-argument

@@ -126,19 +126,6 @@ class TestSample:
         assert result[2].dtype == np.dtype("int")
         assert np.array_equal(result[2].shape, (n_sample,))
 
-    def test_not_an_observable(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.sample(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
     def test_observable_return_type_is_sample(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
         n_shots = 10
@@ -165,13 +152,13 @@ class TestSample:
             m0 = qml.measure(0)
             return qml.sample(m0)
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s,) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots,)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s,) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots,)
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
@@ -180,7 +167,6 @@ class TestSample:
         are correct for a composite measurement value."""
         dev = qml.device("default.qubit", shots=shots)
 
-        @qml.defer_measurements
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -189,13 +175,13 @@ class TestSample:
             m1 = qml.measure(1)
             return qml.sample(op=m0 + m1)
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s,) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots,)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s,) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots,)
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
@@ -212,13 +198,13 @@ class TestSample:
             m1 = qml.measure(1)
             return qml.sample(op=[m0, m1])
 
-        res = circuit(phi)
-
-        if isinstance(shots, list):
-            assert len(res) == len(shots)
-            assert all(r.shape == (s, 2) for r, s in zip(res, shots))
-        else:
-            assert res.shape == (shots, 2)
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if isinstance(shots, list):
+                assert len(res) == len(shots)
+                assert all(r.shape == (s, 2) for r, s in zip(res, shots))
+            else:
+                assert res.shape == (shots, 2)
 
     def test_mixed_lists_as_op_not_allowed(self):
         """Test that passing a list not containing only measurement values raises an error."""
@@ -321,38 +307,43 @@ class TestSample:
         circuit()
 
     @pytest.mark.parametrize(
-        "obs,exp",
+        "obs",
         [
             # Single observables
-            (None, int),  # comp basis samples
-            (qml.PauliX(0), int),
-            (qml.PauliY(0), int),
-            (qml.PauliZ(0), int),
-            (qml.Hadamard(0), int),
-            (qml.Identity(0), int),
-            (qml.Hermitian(np.diag([1, 2]), 0), float),
-            (qml.Hermitian(np.diag([1.0, 2.0]), 0), float),
+            (None),  # comp basis samples, expected to be int
+            (qml.PauliX(0)),
+            (qml.PauliY(0)),
+            (qml.PauliZ(0)),
+            (qml.Hadamard(0)),
+            # (qml.Identity(0)),
+            (qml.Hermitian(np.diag([1, 2]), 0)),
+            (qml.Hermitian(np.diag([1.0, 2.0]), 0)),
             # Tensor product observables
             (
                 qml.PauliX("c")
                 @ qml.PauliY("a")
                 @ qml.PauliZ(1)
                 @ qml.Hadamard("wire1")
-                @ qml.Identity("b"),
-                int,
+                @ qml.Identity("b")
             ),
-            (qml.Projector([0, 1], wires=[0, 1]) @ qml.PauliZ(2), float),
-            (qml.Hermitian(np.array(np.eye(2)), wires=[0]) @ qml.PauliZ(2), float),
-            (
-                qml.Projector([0, 1], wires=[0, 1]) @ qml.Hermitian(np.array(np.eye(2)), wires=[2]),
-                float,
-            ),
+            (qml.Projector([0, 1], wires=[0, 1]) @ qml.PauliZ(2)),
+            (qml.Hermitian(np.array(np.eye(2)), wires=[0]) @ qml.PauliZ(2)),
+            (qml.Projector([0, 1], wires=[0, 1]) @ qml.Hermitian(np.array(np.eye(2)), wires=[2])),
         ],
     )
-    def test_numeric_type(self, obs, exp):
+    def test_numeric_type(self, obs):
         """Test that the numeric type is correct."""
+        eigval_type = type(obs.eigvals()[0]) if obs is not None else np.int64
+
         res = qml.sample(obs) if obs is not None else qml.sample()
-        assert res.numeric_type is exp
+        if res.numeric_type == int:
+            expected_type = np.int64
+        elif res.numeric_type == float:
+            expected_type = np.float64
+        elif res.numeric_type == complex:
+            expected_type = np.complex64
+
+        assert expected_type == eigval_type
 
     def test_shape_no_shots_error(self):
         """Test that the appropriate error is raised with no shots are specified"""
@@ -452,6 +443,36 @@ class TestSample:
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
 
+    def test_sample_allowed_with_parameter_shift(self):
+        """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
+        dev = qml.device("default.qubit", shots=10)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.sample(qml.PauliX(0))
+
+        angle = qml.numpy.array(0.1)
+        res = qml.jacobian(circuit)(angle)
+        assert qml.math.shape(res) == (10,)
+        assert all(r in {-1, 0, 1} for r in np.round(res, 13))
+
+    @pytest.mark.jax
+    def test_sample_fails_with_jax_jacobian(self):
+        """Test that qml.sample raises an error with parameter-shift and jax."""
+        import jax
+
+        dev = qml.device("default.qubit", shots=10)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.sample(qml.PauliX(0))
+
+        angle = jax.numpy.array(0.1)
+        with pytest.raises(TypeError, match=r"got int64\[10\] and float64\[10\] respectively"):
+            _ = jax.jacobian(circuit)(angle)
+
 
 @pytest.mark.jax
 @pytest.mark.parametrize("samples", (1, 10))
@@ -477,3 +498,57 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
     assert (
         circuit._qfunc_output.shape(dev, Shots(samples)) == (samples, 2) if samples != 1 else (2,)
     )
+
+
+class TestSampleProcessCounts:
+    """Tests for the process_counts method in the SampleMP class."""
+
+    def test_process_counts_multiple_wires(self):
+        """Test process_counts method with multiple wires."""
+        sample_mp = qml.sample(wires=[0, 1])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([[0, 0], [0, 0], [1, 0], [1, 0], [1, 0]]))
+
+    def test_process_counts_single_wire(self):
+        """Test process_counts method with a single wire."""
+        sample_mp = qml.sample(wires=[0])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([0, 0, 1, 1, 1]))
+
+    def test_process_counts_with_eigen_values(self):
+        """Test process_counts method with eigen values."""
+        sample_mp = qml.sample(qml.Z(0))
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([1, 1, -1, -1, -1]))
+
+    def test_process_counts_with_inverted_wire_order(self):
+        """Test process_counts method with inverted wire order."""
+        sample_mp = qml.sample(wires=[0, 1])
+        counts = {"00": 2, "01": 3}
+        wire_order = qml.wires.Wires((1, 0))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([[0, 0], [0, 0], [1, 0], [1, 0], [1, 0]]))
+
+    def test_process_counts_with_second_single_wire(self):
+        """Test process_counts method with the second single wire."""
+        sample_mp = qml.sample(wires=[1])
+        counts = {"00": 2, "10": 3}
+        wire_order = qml.wires.Wires((0, 1))
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array([0, 0, 0, 0, 0]))

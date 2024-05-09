@@ -9,21 +9,94 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
-  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and will be removed
-  from the ``Operator`` class.
+New operator arithmetic deprecations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The v0.36 release completes the main phase of PennyLane's switchover to an updated approach for handling
+arithmetic operations between operators, check out the :ref:`Updated operators <new_opmath>` page
+for more details. The old system is still accessible via :func:`~.disable_new_opmath`. However, the
+old system will be removed in an upcoming release and should be treated as deprecated. The following
+functionality will explicitly raise a deprecation warning when used:
+
+* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
+  :meth:`~.Operator.terms` instead.
+
+  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
+
+* Accessing ``qml.ops.Hamiltonian`` is deprecated because it points to the old version of the class
+  that may not be compatible with the new approach to operator arithmetic. Instead, using
+  ``qml.Hamiltonian`` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
+  ``qml.Hamiltonian`` with existing code without needing to make any changes.
+
+  - Use of ``qml.ops.Hamiltonian`` is deprecated in v0.36
+
+* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
+  A user should use :class:`op.operands <~.CompositeOp>` instead.
+
+  - Deprecated in v0.36
+
+Other deprecations
+~~~~~~~~~~~~~~~~~~
+
+* PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
+  
+  - Last supported version of ``manylinux2014`` with v0.36
+  - Fully migrated to ``manylinux_2_28`` with v0.37
+
+* ``MultiControlledX`` is the only controlled operation that still supports specifying control
+  values with a bit string. In the future, it will no longer accepts strings as control values.
+
+  - Deprecated in v0.36
+  - Will be removed in v0.37
+
+Completed deprecation cycles
+----------------------------
+
+* ``qml.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
+
+  >>> with open("test.qasm", "r") as f:
+  ...     circuit = qml.from_qasm(f.read())
+
+  - Deprecated in v0.36
+  - Removed in v0.37
+
+* The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
+  libraries. It has been removed in favour of the more specific functions ``from_qiskit``, ``from_qasm``, etc.
+
+  - Deprecated in v0.36
+  - Removed in v0.37
+
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
+  ``gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
+  ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+
+  - Deprecated in v0.34
+  - Removed in v0.36
+
+* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
+  but instead use ``@`` to conform with the PennyLane convention.
 
   - Deprecated in v0.35
-  - Will be removed in v0.36
+  - Removed in v0.36
 
 * The private functions ``_pauli_mult``, ``_binary_matrix`` and ``_get_pauli_map`` from the
-  ``pauli`` module have been deprecated, as they are no longer used anywhere and the same
+  ``pauli`` module have been removed, as they are no longer used anywhere and the same
   functionality can be achieved using newer features in the ``pauli`` module.
 
   - Deprecated in v0.35
-  - Will be removed in v0.36
+  - Removed in v0.36
 
-* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now deprecated. Instead, you
+* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
+  ambiguous now raises an error. This includes tapes with multiple wires, QNodes with a device that
+  does not provide wires, or quantum functions.
+
+  - Deprecated in v0.35
+  - Raises an error in v0.36
+
+* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you
   should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
 
   >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
@@ -34,42 +107,25 @@ Pending deprecations
   (-1j, PauliY(wires=[0]))
 
   - Deprecated in v0.35
-  - Will be removed in v0.36
+  - Removed in v0.36
 
-* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
-  ambiguous now raises a warning. This includes tapes with multiple wires, QNodes with a device that
-  does not provide wires, or quantum functions.
-
-  - Deprecated in v0.35
-  - Will raise an error in v0.36
-
-* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
-
+  
   - Deprecated in v0.35
-  - Will be removed in v0.36
+  - Removed in v0.36
 
 * The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
 
   - Contents moved in v0.35
-  - Old import path removed in v0.36.
+  - Old import path removed in v0.36
 
-* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
-  deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
-  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
-  to see how this can be done.
-
-  - Deprecated in v0.34
-  - Will be removed in v0.36
-
-* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
-  but instead use ``@`` to conform with the PennyLane convention.
+* The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
+  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and has been removed
+  from the ``Operator`` class.
 
   - Deprecated in v0.35
-  - Will be removed in v0.36
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.36
 
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are removed. Instead,
   you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition``.
@@ -419,7 +475,7 @@ Completed deprecation cycles
    - Removed in 0.29
 
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
-  use ``qml.adjoint`` or ``qml.pow`` instead. 
+  use ``qml.adjoint`` or ``qml.pow`` instead.
 
   - Still accessible in v0.27 and v0.28
   - Removed in v0.29
@@ -468,7 +524,7 @@ Completed deprecation cycles
   - Deprecated in v0.27
   - Removed in v0.28
 
-* ``QueuingContext`` is renamed ``QueuingManager``. 
+* ``QueuingContext`` is renamed ``QueuingManager``.
 
   - Deprecated name ``QueuingContext`` in v0.27
   - Removed in v0.28
@@ -497,7 +553,7 @@ Completed deprecation cycles
   - Removed in v0.28
 
 * ``qml.transforms.measurement_grouping`` has been removed. Please use ``qml.transforms.hamiltonian_expand``
-  instead. 
+  instead.
 
   - Deprecated in v0.28
   - Removed in v0.29

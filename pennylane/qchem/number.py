@@ -47,11 +47,13 @@ def particle_number(orbitals):
 
     >>> orbitals = 4
     >>> print(particle_number(orbitals))
-    (2.0) [I0]
-    + (-0.5) [Z0]
-    + (-0.5) [Z1]
-    + (-0.5) [Z2]
-    + (-0.5) [Z3]
+    (
+        2.0 * I(0)
+      + -0.5 * Z(0)
+      + -0.5 * Z(1)
+      + -0.5 * Z(2)
+      + -0.5 * Z(3)
+    )
     """
 
     if orbitals <= 0:

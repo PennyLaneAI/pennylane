@@ -19,10 +19,16 @@ import copy
 from threading import RLock
 
 import pennylane as qml
-from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP, MeasurementProcess
+from pennylane.measurements import (
+    CountsMP,
+    MeasurementProcess,
+    MidMeasureMP,
+    ProbabilityMP,
+    SampleMP,
+)
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
-from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 from pennylane.pytrees import register_pytree
+from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
 
@@ -40,34 +46,47 @@ def _err_msg_for_some_meas_not_qwc(measurements):
     )
 
 
-def _validate_computational_basis_sampling(measurements):
+def _validate_computational_basis_sampling(tape):
     """Auxiliary function for validating computational basis state sampling with other measurements considering the
     qubit-wise commutativity relation."""
+    measurements = tape.measurements
+    n_meas = len(measurements)
+    n_mcms = sum(isinstance(op, MidMeasureMP) for op in tape.operations)
     non_comp_basis_sampling_obs = []
     comp_basis_sampling_obs = []
-    for o in measurements:
+    comp_basis_indices = []
+    for i, o in enumerate(measurements):
         if o.samples_computational_basis:
             comp_basis_sampling_obs.append(o)
+            comp_basis_indices.append(i)
         else:
             non_comp_basis_sampling_obs.append(o)
 
     if non_comp_basis_sampling_obs:
         all_wires = []
         empty_wires = qml.wires.Wires([])
-        for idx, cb_obs in enumerate(comp_basis_sampling_obs):
+        for idx, (cb_obs, global_idx) in enumerate(
+            zip(comp_basis_sampling_obs, comp_basis_indices)
+        ):
             if cb_obs.wires == empty_wires:
                 all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
                 break
-
-            all_wires.append(cb_obs.wires)
+            if global_idx < n_meas - n_mcms:
+                all_wires.append(cb_obs.wires)
             if idx == len(comp_basis_sampling_obs) - 1:
                 all_wires = qml.wires.Wires.all_wires(all_wires)
 
-        with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
+        # This happens when a MeasurementRegisterMP is the only computational basis state measurement
+        if all_wires == empty_wires:
+            return
+
+        with (
+            QueuingManager.stop_recording()
+        ):  # stop recording operations - the constructed operator is just aux
             pauliz_for_cb_obs = (
-                qml.PauliZ(all_wires)
+                qml.Z(all_wires)
                 if len(all_wires) == 1
-                else qml.operation.Tensor(*[qml.PauliZ(w) for w in all_wires])
+                else qml.operation.Tensor(*[qml.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:
@@ -83,7 +102,9 @@ def rotations_and_diagonal_measurements(tape):
     if not tape._obs_sharing_wires:
         return [], tape.measurements
 
-    with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
+    with (
+        QueuingManager.stop_recording()
+    ):  # stop recording operations to active context when computing qwc groupings
         try:
             rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
         except (TypeError, ValueError) as e:
@@ -176,7 +197,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape.samples_computational_basis and len(tape.measurements) > 1:
-        _validate_computational_basis_sampling(tape.measurements)
+        _validate_computational_basis_sampling(tape)
 
     diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     for queue, new_queue in [
@@ -242,16 +263,16 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     If a ``StatePrepBase`` occurs as the first operation of a tape, the operation will not be expanded:
 
-    >>> ops = [qml.StatePrep([0, 1], wires=0), qml.PauliZ(1), qml.StatePrep([1, 0], wires=0)]
+    >>> ops = [qml.StatePrep([0, 1], wires=0), qml.Z(1), qml.StatePrep([1, 0], wires=0)]
     >>> tape = qml.tape.QuantumScript(ops, [])
     >>> new_tape = qml.tape.tape.expand_tape_state_prep(tape)
     >>> new_tape.operations
-    [StatePrep(array([0, 1]), wires=[0]), PauliZ(wires=[1]), MottonenStatePreparation(array([1, 0]), wires=[0])]
+    [StatePrep(array([0, 1]), wires=[0]), Z(1), MottonenStatePreparation(array([1, 0]), wires=[0])]
 
     To force expansion, the keyword argument ``skip_first`` can be set to ``False``:
 
     >>> new_tape = qml.tape.tape.expand_tape_state_prep(tape, skip_first=False)
-    [MottonenStatePreparation(array([0, 1]), wires=[0]), PauliZ(wires=[1]), MottonenStatePreparation(array([1, 0]), wires=[0])]
+    [MottonenStatePreparation(array([0, 1]), wires=[0]), Z(1), MottonenStatePreparation(array([1, 0]), wires=[0])]
     """
     first_op = tape.operations[0]
     new_ops = (
@@ -316,7 +337,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            qml.expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.Z(0))
 
     A ``QuantumTape`` can also be constructed directly from an :class:`~.AnnotatedQueue`:
 
@@ -327,7 +348,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             qml.RY(0.543, wires=0)
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
-            qml.expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.Z(0))
 
         tape = qml.tape.QuantumTape.from_queue(q)
 
@@ -335,11 +356,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     about the quantum circuit can be queried:
 
     >>> list(tape)
-    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(PauliZ(wires=[0]))]
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
     >>> tape.operations
     [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> tape.observables
-    [expval(PauliZ(wires=[0]))]
+    [expval(Z(0))]
     >>> tape.get_parameters()
     [0.432, 0.543, 0.133]
     >>> tape.wires
@@ -358,7 +379,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
     RX(0.133, wires=['a'])
-    expval(PauliZ(wires=[0]))
+    expval(Z(0))
 
     Tapes can also as sequences and support indexing and the ``len`` function:
 

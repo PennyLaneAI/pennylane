@@ -19,7 +19,7 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Dict, Union, Any
+from typing import Any, Callable, Dict, Union
 
 from pennylane import QNode
 
@@ -71,7 +71,7 @@ class TorchLayer(Module):
             qml.Rot(*weights_0, wires=0)
             qml.RY(weight_1, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
     The signature of the QNode **must** contain an ``inputs`` named argument for input data,
     with all other arguments to be treated as internal weights. We can then convert to a Torch
@@ -131,7 +131,7 @@ class TorchLayer(Module):
                 x = torch.zeros((batch_dim, n_qubits))
                 return qlayer(x).shape
 
-        >>> print_output_shape([qml.expval(qml.PauliZ(0))])
+        >>> print_output_shape([qml.expval(qml.Z(0))])
         torch.Size([5])
         >>> print_output_shape([qml.probs(wires=[0, 1])])
         torch.Size([5, 4])
@@ -141,7 +141,7 @@ class TorchLayer(Module):
         If the QNode returns multiple measurements, then the measurement results will be flattened
         and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
 
-        >>> print_output_shape([qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])])
+        >>> print_output_shape([qml.expval(qml.Z(0)), qml.probs(wires=[0, 1])])
         torch.Size([5, 5])
         >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
         torch.Size([5, 204])
@@ -173,7 +173,7 @@ class TorchLayer(Module):
                 qml.RY(weight_3, wires=1)
                 qml.RZ(weight_4, wires=1)
                 qml.CNOT(wires=[0, 1])
-                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
 
             weight_shapes = {
@@ -261,7 +261,7 @@ class TorchLayer(Module):
             def qnode(inputs, weights):
                 qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
@@ -401,6 +401,11 @@ class TorchLayer(Module):
         # calculate the forward pass as usual
         results = self._evaluate_qnode(inputs)
 
+        if isinstance(results, tuple):
+            if has_batch_dim:
+                results = [torch.reshape(r, (*batch_dims, *r.shape[1:])) for r in results]
+            return torch.stack(results, dim=0)
+
         # reshape to the correct number of batch dims
         if has_batch_dim:
             results = torch.reshape(results, (*batch_dims, *results.shape[1:]))
@@ -425,10 +430,15 @@ class TorchLayer(Module):
         if isinstance(res, torch.Tensor):
             return res.type(x.dtype)
 
-        if len(x.shape) > 1:
-            res = [torch.reshape(r, (x.shape[0], -1)) for r in res]
+        def _combine_dimensions(_res):
+            if len(x.shape) > 1:
+                _res = [torch.reshape(r, (x.shape[0], -1)) for r in _res]
+            return torch.hstack(_res).type(x.dtype)
 
-        return torch.hstack(res).type(x.dtype)
+        if isinstance(res, tuple) and len(res) > 1:
+            return tuple(_combine_dimensions(r) for r in res)
+
+        return _combine_dimensions(res)
 
     def construct(self, args, kwargs):
         """Constructs the wrapped QNode on input data using the initialized weights.

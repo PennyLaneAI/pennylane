@@ -14,7 +14,7 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
-# pylint:disable=protected-access
+# pylint:disable=protected-access, unused-argument
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -89,8 +89,32 @@ ops_hermitian_status = (  # computed manually
 )
 
 
-# currently failing due to has_diagonalizing_gates logic
-@pytest.mark.xfail  # TODO: fix with story 49608
+def test_legacy_ops():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
+        _ = H.ops
+
+
+def test_legacy_coeffs():
+    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
+    H = qml.prod(X(0), X(1))
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
+        _ = H.coeffs
+
+
+def test_obs_attribute():
+    """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
+    op = qml.prod(X(0), X(1), X(2))
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="Accessing the terms of a tensor product operator via op.obs is deprecated",
+    ):
+        obs = op.obs
+
+    assert obs == (X(0), X(1), X(2))
+
+
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qml.PauliZ(0)
@@ -241,11 +265,31 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert coeffs == coeffs_true
         assert ops1 == ops_true
 
+    def test_terms_pauli_rep_wire_order(self):
+        """Test that the wire order of the terms is the same as the wire order of the original
+        operands when the Prod has a valid pauli_rep"""
+        H = qml.prod(X(0), X(1), X(2))
+        _, H_ops = H.terms()
+
+        assert len(H_ops) == 1
+        assert H_ops[0].wires == H.wires
+
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
         prod_op = prod(qml.PauliX(0), qml.RX(x, wires=0))
         assert prod_op.batch_size == 3
+
+    @pytest.mark.parametrize(
+        "op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI + PROD_TERMS_OP_PAIRS_MIXED
+    )
+    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
+        """Test that calling Prod.terms does not queue anything."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.apply(op)
+            _, _ = op.terms()
+
+        assert q.queue == [op]
 
     def test_batch_size_None(self):
         """Test that the batch size is none if no factors have batching."""
@@ -480,6 +524,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert qml.equal(prod_op, qml.PauliX(0))
         assert not isinstance(prod_op, Prod)
 
+    @pytest.mark.xfail  # this requirement has been lifted
     def test_prod_accepts_single_operator_but_Prod_does_not(self):
         """Tests that the prod wrapper can accept a single operator, and return it."""
 
@@ -933,6 +978,26 @@ class TestProperties:
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
 
+    def test_qutrit_eigvals(self):
+        """Test that the eigvals can be computed with qutrit observables."""
+
+        op1 = qml.GellMann(wires=0)
+        op2 = qml.GellMann(index=8, wires=1)
+
+        prod_op = qml.prod(op1, op2)
+        eigs = prod_op.eigvals()
+
+        mat_eigs = np.linalg.eigvals(prod_op.matrix())
+
+        sorted_eigs = np.sort(eigs)
+        sorted_mat_eigs = np.sort(mat_eigs)
+        assert qml.math.allclose(sorted_eigs, sorted_mat_eigs)
+
+        # pylint: disable=import-outside-top-level
+        from pennylane.ops.functions.assert_valid import _check_eigendecomposition
+
+        _check_eigendecomposition(prod_op)
+
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
@@ -946,6 +1011,23 @@ class TestProperties:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
+
+    @pytest.mark.jax
+    def test_eigvals_jax_jit(self):
+        """Assert computing the eigvals of a Prod is compatible with jax-jit."""
+        import jax
+
+        def f(t1, t2):
+            return qml.prod(qml.RX(t1, 0), qml.RX(t2, 0)).eigvals()
+
+        assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
+
+    def test_eigvals_no_wires_identity(self):
+        """Test that eigvals can be computed if a component is an identity on no wires."""
+        op = qml.X(0) @ qml.Y(1) @ qml.I()
+        op2 = qml.X(0) @ qml.Y(1)
+
+        assert qml.math.allclose(op.eigvals(), op2.eigvals())
 
     # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
@@ -979,8 +1061,8 @@ class TestProperties:
         """
         op = qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
         pw = list(op.pauli_rep.keys())[0]
-        assert list(pw.keys()) == [1, 0, 2]
-        assert list(pw.values()) == ["Y", "X", "Z"]
+        assert list(pw.keys()) == [0, 1, 2]
+        assert list(pw.values()) == ["X", "Y", "Z"]
 
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
@@ -1025,9 +1107,9 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        prod_op = (
-            qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1) @ qml.PauliX(0)
-        )
+        o1 = qml.prod(qml.RZ(1.32, wires=0), qml.I(wires=0))
+        o2 = qml.prod(o1, qml.RX(1.9, wires=1))
+        prod_op = qml.prod(o2, qml.X(0))
         assert prod_op.arithmetic_depth == 3
 
         op_constructed = Prod(
@@ -1063,7 +1145,7 @@ class TestSimplify:
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
         final_op = qml.sum(
-            Prod(qml.PauliX(1), qml.PauliX(0)),
+            Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
             qml.PauliX(1) @ qml.RX(1, 0),
             qml.RX(1, 0) @ qml.RX(1, 1),
@@ -1261,7 +1343,11 @@ class TestSimplify:
         """Test that simplifying operators with a valid pauli representation works with tf interface."""
         import tensorflow as tf
 
-        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j)
+        c1, c2, c3 = (
+            tf.Variable(1.23, dtype=tf.complex128),
+            tf.Variable(2.0, dtype=tf.complex128),
+            tf.Variable(2.46j, dtype=tf.complex128),
+        )
 
         op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
@@ -1372,11 +1458,11 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.probs(op=prod_op)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        x_probs = np.array([0.5, 0.5])
+        h_probs = np.array([np.cos(-np.pi / 4 / 2) ** 2, np.sin(-np.pi / 4 / 2) ** 2])
+        expected = np.tensordot(x_probs, h_probs, axes=0).flatten()
+        out = my_circ()
+        assert qml.math.allclose(out, expected)
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""
@@ -1425,8 +1511,8 @@ class TestIntegration:
         true_grad = -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_obs_not_supported(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
+    def test_non_supported_obs_not_supported(self):
+        """Test that non-supported ops in a measurement process will raise an error."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
@@ -1589,6 +1675,15 @@ class TestSortWires:
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert op1.data == op2.data
+
+    def test_sorting_operators_with_no_wires(self):
+        """Test that sorting can occur when an operator acts on no wires."""
+
+        op_list = (qml.GlobalPhase(0.5), qml.X(0), qml.I(), qml.CNOT((1, 2)), qml.I())
+
+        sorted_list = qml.ops.Prod._sort(op_list)
+        expected = [qml.X(0), qml.CNOT((1, 2)), qml.I(), qml.I(), qml.GlobalPhase(0.5)]
+        assert sorted_list == expected
 
 
 swappable_ops = [

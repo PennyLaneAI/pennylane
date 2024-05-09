@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
+import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
-import numpy as np
 
 import pennylane as qml
 from pennylane import qnode
@@ -610,14 +611,15 @@ class TestShotsIntegration:
 
         circuit(weights)
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert circuit.gradient_fn is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
         circuit(weights, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
 
-        # original QNode settings are unaffected
-        assert circuit.gradient_fn is qml.gradients.param_shift
         circuit(weights)
+        assert circuit.gradient_fn is qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 

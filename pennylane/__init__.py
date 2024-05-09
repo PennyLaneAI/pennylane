@@ -26,17 +26,24 @@ from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.capture
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose
+from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
-from pennylane.fermi import FermiC, FermiA, jordan_wigner
+from pennylane.fermi import (
+    FermiC,
+    FermiA,
+    jordan_wigner,
+    parity_transform,
+    bravyi_kitaev,
+)
 from pennylane.qchem import (
     taper,
     symmetry_generators,
@@ -89,9 +96,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     defer_measurements,
-    qfunc_transform,
-    op_transform,
-    single_tape_transform,
+    dynamic_one_shot,
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
@@ -135,8 +140,6 @@ import pennylane.compiler
 
 import pennylane.data
 
-import pennylane.interfaces
-
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
@@ -147,6 +150,18 @@ class QuantumFunctionError(Exception):
 
 class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
+
+
+del globals()["Hamiltonian"]
+
+
+def __getattr__(name):
+    if name == "Hamiltonian":
+        if pennylane.operation.active_new_opmath():
+            return pennylane.ops.LinearCombination
+        return pennylane.ops.Hamiltonian
+
+    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 
 
 def _get_device_entrypoints():
@@ -273,7 +288,7 @@ def device(name, *args, **kwargs):
         @qml.qnode(dev)
         def circuit(a):
           qml.RX(a, wires=0)
-          return qml.sample(qml.PauliZ(wires=0))
+          return qml.sample(qml.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
@@ -295,7 +310,7 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        def ion_trap_cnot(wires):
+        def ion_trap_cnot(wires, **_):
             return [
                 qml.RY(np.pi/2, wires=wires[0]),
                 qml.IsingXX(np.pi/2, wires=wires),
@@ -307,6 +322,8 @@ def device(name, *args, **kwargs):
     Next, we create a device, and a QNode for testing. When constructing the
     QNode, we can set the expansion strategy to ``"device"`` to ensure the
     decomposition is applied and will be viewable when we draw the circuit.
+    Note that custom decompositions should accept keyword arguments even when
+    it is not used.
 
     .. code-block:: python
 
@@ -319,7 +336,7 @@ def device(name, *args, **kwargs):
         @qml.qnode(dev, expansion_strategy="device")
         def run_cnot():
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(wires=1))
+            return qml.expval(qml.X(1))
 
     >>> print(qml.draw(run_cnot)())
     0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
@@ -378,7 +395,7 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
-            if isinstance(dev, pennylane.Device):
+            if isinstance(dev, pennylane.devices.LegacyDevice):
                 custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
                     custom_decomps, dev, decomp_depth=decomp_depth
                 )

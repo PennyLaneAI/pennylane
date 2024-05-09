@@ -18,6 +18,7 @@ from collections.abc import Iterable
 from string import ascii_letters as ABC
 
 import numpy as np
+
 import pennylane as qml
 
 
@@ -76,12 +77,12 @@ class ClassicalShadow:
     After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
     For example, we can compute the expectation value of a Pauli string
 
-    >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
+    >>> shadow.expval(qml.X(0) @ qml.X(1), k=1)
     array(0.972)
 
     or of a Hamiltonian:
 
-    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+    >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
     >>> shadow.expval(H, k=1)
     array(1.917)
 
@@ -111,9 +112,9 @@ class ClassicalShadow:
             )
 
         self.observables = [
-            qml.matrix(qml.PauliX(0)),
-            qml.matrix(qml.PauliY(0)),
-            qml.matrix(qml.PauliZ(0)),
+            qml.matrix(qml.X(0)),
+            qml.matrix(qml.Y(0)),
+            qml.matrix(qml.Z(0)),
         ]
 
     @property
@@ -228,11 +229,27 @@ class ClassicalShadow:
             (T, 2**n, 2**n),
         )
 
+    def _convert_to_pauli_words_with_pauli_rep(self, pr, num_wires):
+        """Convert to recipe using pauli representation"""
+        pr_to_recipe_map = {"X": 0, "Y": 1, "Z": 2, "I": -1}
+
+        coeffs_and_words = []
+        for pw, c in pr.items():
+            word = [-1] * num_wires
+            for i, s in pw.items():
+                word[self.wire_map.index(i)] = pr_to_recipe_map[s]
+
+            coeffs_and_words.append((c, word))
+
+        return coeffs_and_words
+
     def _convert_to_pauli_words(self, observable):
         """Given an observable, obtain a list of coefficients and Pauli words, the
         sum of which is equal to the observable"""
 
         num_wires = self.bits.shape[1]
+
+        # Legacy support for old opmath
         obs_to_recipe_map = {"PauliX": 0, "PauliY": 1, "PauliZ": 2, "Identity": -1}
 
         def pauli_list_to_word(obs):
@@ -245,7 +262,7 @@ class ClassicalShadow:
 
             return word
 
-        if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)):
+        if isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Identity)):
             word = pauli_list_to_word([observable])
             return [(1, word)]
 
@@ -253,15 +270,21 @@ class ClassicalShadow:
             word = pauli_list_to_word(observable.obs)
             return [(1, word)]
 
-        # TODO: cases for new operator arithmetic
-
-        if isinstance(observable, qml.Hamiltonian):
+        if isinstance(observable, qml.ops.Hamiltonian):
             coeffs_and_words = []
             for coeff, op in zip(observable.data, observable.ops):
                 coeffs_and_words.extend(
                     [(coeff * c, w) for c, w in self._convert_to_pauli_words(op)]
                 )
             return coeffs_and_words
+
+        # Support for all operators with a valid pauli_rep
+        if (pr := observable.pauli_rep) is not None:
+            return self._convert_to_pauli_words_with_pauli_rep(pr, num_wires)
+
+        raise ValueError(
+            f"Observable must have a valid pauli representation. Received {observable} with observable.pauli_rep = {pr}"
+        )
 
     def expval(self, H, k=1):
         r"""Compute expectation value of an observable :math:`H`.
@@ -297,16 +320,16 @@ class ClassicalShadow:
 
         Compute Pauli string observables
 
-        >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
+        >>> shadow.expval(qml.X(0) @ qml.X(1), k=1)
         array(1.116)
 
         or of a Hamiltonian using `the same` measurement results
 
-        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+        >>> H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
         >>> shadow.expval(H, k=1)
         array(1.9980000000000002)
         """
-        if not isinstance(H, Iterable):
+        if not isinstance(H, (list, tuple)):
             H = [H]
 
         coeffs_and_words = [self._convert_to_pauli_words(h) for h in H]
@@ -491,7 +514,7 @@ def pauli_expval(bits, recipes, word):
             to PauliX, ``1`` to PauliY, and ``2`` to PauliZ.
         word (tensor-like[int]): An array with shape ``(n,)``. Each entry must be
             either ``0``, ``1``, ``2``, or ``-1`` depending on the Pauli observable
-            on each qubit. For example, when ``n=3``, the observable ``PauliY(0) @ PauliX(2)``
+            on each qubit. For example, when ``n=3``, the observable ``Y(0) @ X(2)``
             corresponds to the word ``np.array([1 -1 0])``.
 
     Returns:

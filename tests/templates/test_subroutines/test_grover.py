@@ -16,10 +16,12 @@ Tests for the Grover Diffusion Operator template
 """
 import functools
 import itertools
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane.ops import Hadamard, PauliZ, MultiControlledX
+from pennylane.ops import Hadamard, MultiControlledX, PauliZ
 
 
 def test_repr():
@@ -134,7 +136,7 @@ def test_grover_diffusion_matrix(n_wires):
     oplist = list(itertools.repeat(Hadamard.compute_matrix(), n_wires - 1))
     oplist.append(PauliZ.compute_matrix())
 
-    ctrl_str = "0" * (n_wires - 1)
+    ctrl_str = [0] * (n_wires - 1)
     CX = MultiControlledX(
         control_values=ctrl_str,
         wires=wires,

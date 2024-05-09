@@ -316,6 +316,7 @@ def test_empty_error(two_tensor):
         ),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_basis_rotation_output(
     one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref
 ):
@@ -328,7 +329,7 @@ def test_basis_rotation_output(
     for j, op in enumerate(ops):
         ops_ref_str = [qml.pauli.pauli_word_to_string(t) for t in ops_ref[j]]
         for o in op:
-            assert qml.pauli.pauli_word_to_string(o) in ops_ref_str
+            assert (qml.pauli.pauli_word_to_string(o) or "I") in ops_ref_str
 
     for i, vecs in enumerate(eigvecs):
         checks = []
@@ -363,6 +364,7 @@ def test_basis_rotation_output(
         )
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_basis_rotation_utransform(core, one_electron, two_electron):
     r"""Test that basis_rotation function returns the correct transformation matrices. This test
     constructs the matrix representation of a factorized Hamiltonian and then applies the

@@ -15,13 +15,12 @@
 Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
 import abc
-from functools import partial
 import inspect
 import logging
-from typing import Tuple, Callable, Optional, Union
+from typing import Callable, Optional, Tuple, Union
 
-from cachetools import LRUCache
 import numpy as np
+from cachetools import LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
@@ -97,8 +96,8 @@ class JacobianProductCalculator(abc.ABC):
 
         For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0))])
         >>> batch = (tape0, tape1)
         >>> tangents0 = (1.5, )
         >>> tangents1 = (2.0, )
@@ -137,8 +136,8 @@ class JacobianProductCalculator(abc.ABC):
 
         For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> dy0 = (0.5, )
         >>> dy1 = (2.0, 3.0)
@@ -171,8 +170,8 @@ class JacobianProductCalculator(abc.ABC):
 
         For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> jpc.compute_jacobian(batch)
         (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
@@ -195,8 +194,8 @@ class JacobianProductCalculator(abc.ABC):
 
         For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> results, jacs = jpc.execute_and_compute_jacobian(batch)
         >>> results
@@ -222,9 +221,9 @@ class TransformJacobianProducts(JacobianProductCalculator):
     Keyword Args:
         cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
             instead of treating each call as independent. This keyword argument is used to patch problematic
-            autograd behavior when caching is turned off. In this case, caching will be based on the identity
+            autograd behaviour when caching is turned off. In this case, caching will be based on the identity
             of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
-            by :func:`~.cache_execute`.
+            by the cache.
 
     >>> inner_execute = qml.device('default.qubit').execute
     >>> gradient_transform = qml.gradients.param_shift
@@ -310,10 +309,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
         num_result_tapes = len(tapes)
 
-        partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
-        jac_tapes, jac_postprocessing = qml.transforms.map_batch_transform(
-            partial_gradient_fn, tapes
-        )
+        jac_tapes, jac_postprocessing = self._gradient_transform(tapes, **self._gradient_kwargs)
 
         full_batch = tapes + tuple(jac_tapes)
         full_results = self._inner_execute(full_batch)
@@ -327,10 +323,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
             logger.debug("compute_jacobian called with %s", tapes)
         if tapes in self._cache:
             return self._cache[tapes]
-        partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
-        jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
-            partial_gradient_fn, tapes
-        )
+        jac_tapes, batch_post_processing = self._gradient_transform(tapes, **self._gradient_kwargs)
         results = self._inner_execute(jac_tapes)
         jacs = tuple(batch_post_processing(results))
         self._cache[tapes] = jacs
@@ -375,7 +368,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     When a forward pass with :meth:`~.execute_and_cache_jacobian` is called, both the results and the jacobian for the object are stored.
 
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.Z(0))])
     >>> batch = (tape, )
     >>> with device.tracker:
     ...     results = jpc.execute_and_cache_jacobian(batch )
@@ -421,7 +414,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._uses_new_device = not isinstance(device, qml.Device)
+        self._uses_new_device = not isinstance(device, qml.devices.LegacyDevice)
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)
@@ -501,8 +494,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0))])
         >>> batch = (tape0, tape1)
         >>> tangents0 = (1.5, )
         >>> tangents1 = (2.0, )
@@ -546,8 +539,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> dy0 = (0.5, )
         >>> dy1 = (2.0, 3.0)
@@ -594,8 +587,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
-        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.Z(0)), qml.expval(qml.X(0))])
         >>> batch = (tape0, tape1)
         >>> jpc.compute_jacobian(batch)
         (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
@@ -685,7 +678,14 @@ class DeviceJacobianProducts(JacobianProductCalculator):
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         dy = qml.math.unwrap(dy)
-        return self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+        vjps = self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+        res = []
+        for t, r in zip(tapes, vjps):
+            if len(t.trainable_params) == 1 and qml.math.shape(r) == ():
+                res.append((r,))
+            else:
+                res.append(r)
+        return res
 
     def compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -704,12 +704,12 @@ class LightningVJPs(DeviceDerivatives):
     """Calculates VJPs natively using lightning.qubit.
 
     Args:
-        device (LightningBase): a device in the lightning ecosystem (``lightning.qubit``, ``lightning.gpu``, ``lightning.kokkos``.)
+        device (LightningBase): Lightning ecosystem devices ``lightning.gpu`` or ``lightning.kokkos``.
         gradient_kwargs (Optional[dict]):  Any gradient options.
 
     >>> dev = qml.device('lightning.qubit', wires=5)
     >>> jpc = LightningVJPs(dev, gradient_kwargs={"use_device_state": True, "method": "adjoint_jacobian"})
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0))])
     >>> dev.batch_execute((tape,))
     [array(0.36235775)]
     >>> jpc.compute_vjp((tape,), (0.5,) )
@@ -720,7 +720,12 @@ class LightningVJPs(DeviceDerivatives):
     """
 
     def __repr__(self):
-        return f"<LightningVJPs: {self._device.short_name}, {self._gradient_kwargs}>"
+        long_to_short_name = {
+            "LightningQubit": "lightning.qubit",
+            "LightningKokkos": "lightning.kokkos",
+            "LightningGPU": "lightning.gpu",
+        }
+        return f"<LightningVJPs: {long_to_short_name[type(self._device).__name__]}, {self._gradient_kwargs}>"
 
     def __init__(self, device, gradient_kwargs=None):
         super().__init__(device, gradient_kwargs=gradient_kwargs)
@@ -728,7 +733,7 @@ class LightningVJPs(DeviceDerivatives):
             key: value for key, value in self._gradient_kwargs.items() if key != "method"
         }
 
-    def compute_vjp(self, tapes, dy):
+    def compute_vjp(self, tapes, dy):  # pragma: no cover
         if not all(
             isinstance(m, qml.measurements.ExpectationMP) for t in tapes for m in t.measurements
         ):

@@ -16,11 +16,12 @@
 """
 Contains the drawing function.
 """
+import warnings
 from functools import wraps
 from importlib.metadata import distribution
-import warnings
 
 import pennylane as qml
+
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
@@ -47,7 +48,9 @@ def draw(
 
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
+           If not provided, the wire order defaults to the device wires. If device wires are not
+           available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             ``None`` will omit parameters from operation labels.
@@ -78,7 +81,7 @@ def draw(
             qml.CRX(a, wires=[0, 1])
             qml.Rot(*w, wires=[1], id="arbitrary")
             qml.CRX(-a, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
     >>> print(qml.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
     0: ──H─╭●─────────────────────────────────────────╭●─────────┤ ╭<Z@Z>
@@ -106,7 +109,7 @@ def draw(
     >>> @qml.qnode(qml.device('lightning.qubit', wires=1))
     ... def circuit2(x):
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit2)("x"))
     0: ──RX(x)─┤  <Z>
 
@@ -144,7 +147,7 @@ def draw(
         @qml.qnode(qml.device('lightning.qubit', wires=3))
         def longer_circuit(params):
             qml.StronglyEntanglingLayers(params, wires=range(3))
-            return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+            return [qml.expval(qml.Z(i)) for i in range(3)]
 
         print(qml.draw(longer_circuit, max_length=60)(params))
 
@@ -168,7 +171,7 @@ def draw(
     If the device or ``wire_order`` has wires not used by operations, those wires are omitted
     unless requested with ``show_all_wires=True``
 
-    >>> empty_qfunc = lambda : qml.expval(qml.PauliZ(0))
+    >>> empty_qfunc = lambda : qml.expval(qml.Z(0))
     >>> empty_circuit = qml.QNode(empty_qfunc, qml.device('lightning.qubit', wires=3))
     >>> print(qml.draw(empty_circuit, show_all_wires=True)())
     0: ───┤  <Z>
@@ -185,7 +188,7 @@ def draw(
         @qml.qnode(qml.device('default.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
 
@@ -230,7 +233,14 @@ def draw(
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
-        _wire_order = wire_order or tape.wires
+
+        if wire_order:
+            _wire_order = wire_order
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_text(
             tape,
@@ -259,21 +269,29 @@ def _draw_qnode(
             expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
         ):
             qnode.construct(args, kwargs)
+            tapes = qnode.transform_program([qnode.tape])[0]
             program, _ = qnode.device.preprocess()
-            tapes = program([qnode.tape])
+            tapes = program(tapes)[0]
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 tapes = qnode.construct(args, kwargs)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    tapes = program([qnode.tape])
+                program = qnode.transform_program
+                tapes = program([qnode.tape])[0]
 
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires or qnode.tape.wires
+        if wire_order:
+            _wire_order = wire_order
+        elif qnode.device.wires:
+            _wire_order = qnode.device.wires
+        else:
+            try:
+                _wire_order = sorted(tapes[0].wires)
+            except TypeError:
+                _wire_order = tapes[0].wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -287,7 +305,7 @@ def _draw_qnode(
                     max_length=max_length,
                     cache=cache,
                 )
-                for t in tapes[0]
+                for t in tapes
             ]
             if show_matrices and cache["matrices"]:
                 mat_str = ""
@@ -327,7 +345,9 @@ def draw_mpl(
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
 
     Keyword Args:
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
+           If not provided, the wire order defaults to the device wires. If device wires are not
+           available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
@@ -370,10 +390,13 @@ def draw_mpl(
             qml.QFT(wires=(0,1,2,3))
             qml.IsingXX(1.234, wires=(0,2))
             qml.Toffoli(wires=(0,1,2))
+            mcm = qml.measure(1)
+            mcm_out = qml.measure(2)
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)
+            qml.cond(mcm, qml.RY)(np.pi / 4, wires=3)
             qml.CRZ(z, wires=(3,0))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0)), qml.probs(op=mcm_out)
 
 
         fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
@@ -398,7 +421,7 @@ def draw_mpl(
             def circuit2(x, y):
                 qml.RX(x, wires=0)
                 qml.Rot(*y, wires=0)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             fig, ax = qml.draw_mpl(circuit2, decimals=2)(1.23456, [1.2345,2.3456,3.456])
             fig.show()
@@ -449,8 +472,12 @@ def draw_mpl(
             box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
             ax.add_patch(box1)
 
-            ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
+            ax.annotate("CSWAP", xy=(5, 2.5), xycoords='data', xytext=(5.8,1.5), textcoords='data',
                         arrowprops={'facecolor': 'black'}, fontsize=14)
+
+            ax.annotate("classical control flow", xy=(3.5, 4.2), xycoords='data', xytext=(0.8,4.2),
+                        textcoords='data', arrowprops={'facecolor': 'blue'}, fontsize=14,
+                        va="center")
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/postprocessing.png
@@ -490,7 +517,7 @@ def draw_mpl(
             plt.rcParams['patch.linewidth'] = 4
             plt.rcParams['patch.force_edgecolor'] = True
             plt.rcParams['lines.color'] = 'indigo'
-            plt.rcParams['lines.linewidth'] = 5
+            plt.rcParams['lines.linewidth'] = 2
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
             fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345,1.2345)
@@ -540,7 +567,13 @@ def draw_mpl(
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
-        _wire_order = wire_order or tape.wires
+        if wire_order:
+            _wire_order = wire_order
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_mpl(
             tape,
@@ -570,8 +603,9 @@ def _draw_mpl_qnode(
     def wrapper(*args, **kwargs_qnode):
         if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
             qnode.construct(args, kwargs)
+            tapes, _ = qnode.transform_program([qnode.tape])
             program, _ = qnode.device.preprocess()
-            tapes, _ = program([qnode.tape])
+            tapes, _ = program(tapes)
             tape = tapes[0]
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
@@ -579,15 +613,20 @@ def _draw_mpl_qnode(
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 qnode.construct(args, kwargs_qnode)
-                if isinstance(qnode.device, qml.devices.Device):
-                    program = qnode.transform_program
-                    [tape], _ = program([qnode.tape])
-                else:
-                    tape = qnode.tape
+                program = qnode.transform_program
+                [tape], _ = program([qnode.tape])
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires or tape.wires
+        if wire_order:
+            _wire_order = wire_order
+        elif qnode.device.wires:
+            _wire_order = qnode.device.wires
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_mpl(
             tape,

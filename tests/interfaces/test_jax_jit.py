@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the JAX-JIT interface"""
+import numpy as np
+
 # pylint: disable=protected-access,too-few-public-methods
 import pytest
 
-import numpy as np
-
 import pennylane as qml
-from pennylane.gradients import param_shift
 from pennylane import execute
+from pennylane.gradients import param_shift
+from pennylane.typing import TensorLike
 
 pytestmark = pytest.mark.jax
 
@@ -183,7 +184,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow, "cache_execute")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
 
         def cost(a, cachesize):
             with qml.queuing.AnnotatedQueue() as q:
@@ -202,7 +203,7 @@ class TestCaching:
 
         params = jax.numpy.array([0.1, 0.2])
         jax.jit(jax.grad(cost), static_argnums=1)(params, cachesize=2)
-        cache = spy.call_args[0][1]
+        cache = spy.call_args.kwargs["cache"]
 
         assert cache.maxsize == 2
         assert cache.currsize == 2
@@ -211,7 +212,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow, "cache_execute")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -232,13 +233,13 @@ class TestCaching:
         params = jax.numpy.array([0.1, 0.2])
         jax.grad(cost)(params, cache=custom_cache)
 
-        cache = spy.call_args[0][1]
+        cache = spy.call_args.kwargs["cache"]
         assert cache is custom_cache
 
     def test_custom_cache_multiple(self, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.workflow, "cache_execute")
+        spy = mocker.spy(qml.workflow.execution._cache_transform, "_transform")
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -269,7 +270,7 @@ class TestCaching:
         custom_cache = {}
         jax.grad(cost)(a, b, cache=custom_cache)
 
-        cache = spy.call_args[0][1]
+        cache = spy.call_args.kwargs["cache"]
         assert cache is custom_cache
 
     def test_caching_param_shift(self, tol):
@@ -580,7 +581,7 @@ class TestJaxExecuteIntegration:
             return execute(tapes=[tape1, tape2], device=dev, **execute_kwargs)
 
         res = jax.jit(cost_fn)(params)
-        assert isinstance(res, list)
+        assert isinstance(res, TensorLike)
         assert all(isinstance(r, jax.numpy.ndarray) for r in res)
         assert all(r.shape == () for r in res)
 
@@ -810,7 +811,7 @@ class TestVectorValuedJIT:
                 qml.RY(a[2], wires=0)
                 qml.sample(qml.PauliZ(0))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=dev.shots)
 
             res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res

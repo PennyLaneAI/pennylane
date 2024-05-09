@@ -82,15 +82,14 @@ Creating a Dataset
 
 To create a new dataset in-memory, initialize a new :class:`~.Dataset` with the desired attributes:
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
 >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
 >>> dataset = qml.data.Dataset(
 ...   hamiltonian = hamiltonian,
 ...   eigen = {"eigvals": eigvals, "eigvecs": eigvecs}
 ... )
 >>> dataset.hamiltonian
-(1.0) [Z0]
-+ (1.0) [Z1]
+1.0 * Z(0) + 1.0 * Z(1)
 >>> dataset.eigen
 {'eigvals': array([-2.,  0.,  0.,  2.]),
 'eigvecs': array([[0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
@@ -146,7 +145,7 @@ Attribute Metadata
 Dataset attributes can also contain additional metadata, such as docstrings. The :func:`~.data.attribute`
 function can be used to attach metadata on assignment or initialization.
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
 >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
 >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
 ...     hamiltonian,
@@ -192,7 +191,7 @@ definition:
 >>> dataset = QuantumOscillator(
 ...     mass=1,
 ...     force_constant=0.5,
-...     hamiltonian=qml.PauliX(0),
+...     hamiltonian=qml.X(0),
 ...     energy_levels=np.array([0.1, 0.2])
 ... )
 >>> dataset.attr_info["mass"]["doc"]
@@ -216,14 +215,7 @@ from .attributes import (
 from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
 from .base.dataset import Dataset, field
-from .data_manager import (
-    DEFAULT,
-    FULL,
-    list_attributes,
-    list_datasets,
-    load,
-    load_interactive,
-)
+from .data_manager import DEFAULT, FULL, list_attributes, list_datasets, load, load_interactive
 
 __all__ = (
     "AttributeInfo",

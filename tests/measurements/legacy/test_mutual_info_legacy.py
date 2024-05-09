@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.workflow import INTERFACE_MAP
 from pennylane.measurements import Shots
+from pennylane.workflow import INTERFACE_MAP
 
 
 @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
@@ -44,7 +44,7 @@ class TestIntegration:
     )
     def test_mutual_info_output(self, interface, state, expected):
         """Test the output of qml.mutual_info"""
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device(f"default.qubit.{interface}", wires=4)
 
         @qml.qnode(dev, interface=interface)
         def circuit():

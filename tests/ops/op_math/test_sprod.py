@@ -24,9 +24,8 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math import SProd, s_prod, Prod, Sum
+from pennylane.ops.op_math import Prod, SProd, Sum, s_prod
 from pennylane.wires import Wires
-
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
@@ -711,6 +710,13 @@ class TestProperties:
             op = s_prod(scalar, qml.PauliX(wires=0))
             assert op.is_hermitian == hermitian_state
 
+    @pytest.mark.tf
+    def test_no_dtype_promotion(self):
+        import tensorflow as tf
+
+        op = qml.s_prod(tf.constant(0.5), qml.X(0))
+        assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
+
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
@@ -1009,13 +1015,10 @@ class TestIntegration:
         @qml.qnode(dev)
         def my_circ():
             qml.PauliX(0)
-            return qml.probs(op=sprod_op)
+            return qml.probs(op=sprod_op), qml.probs(op=qml.Hadamard(1))
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not supported for rotating probabilities yet.",
-        ):
-            my_circ()
+        res1, res2 = my_circ()
+        assert qml.math.allclose(res1, res2)
 
     def test_measurement_process_sample(self):
         """Test SProd class instance in sample measurement process."""
@@ -1079,20 +1082,6 @@ class TestIntegration:
 
         true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
-
-    def test_non_hermitian_obs_not_supported(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
-        wires = [0, 1]
-        dev = qml.device("default.qubit", wires=wires)
-        sprod_op = SProd(1.0 + 2.0j, qml.RX(1.23, wires=0))
-
-        @qml.qnode(dev)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.expval(sprod_op)
-
-        with pytest.raises(NotImplementedError):
-            my_circ()
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))

@@ -14,9 +14,9 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
-import pennylane as qml
-from pennylane.ops import Controlled, Conditional
-from pennylane.measurements import MeasurementProcess, MidMeasureMP, MeasurementValue
+from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
+from pennylane.ops import Conditional, Controlled
+from pennylane.tape import QuantumScript
 
 
 def default_wire_map(tape):
@@ -96,12 +96,6 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
     return {wire: ind for ind, wire in enumerate(wire_order)}
 
 
-def _is_controlled(op):
-    """Checks whether an operation is a controlled operation."""
-    # TODO: remove the other ones once they all inherit from Controlled [sc-37951]
-    return isinstance(op, (Controlled, qml.CCZ, qml.CSWAP, qml.CH, qml.CNOT, qml.Toffoli))
-
-
 def unwrap_controls(op):
     """Unwraps nested controlled operations for drawing.
 
@@ -129,7 +123,7 @@ def unwrap_controls(op):
 
         while hasattr(next_ctrl, "base"):
 
-            if _is_controlled(next_ctrl.base):
+            if isinstance(next_ctrl.base, Controlled):
                 base_control_wires = getattr(next_ctrl.base, "control_wires", [])
                 control_wires += base_control_wires
 
@@ -162,7 +156,7 @@ def cwire_connections(layers, bit_map):
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
     ...     m1 = qml.measure(1)
-    ...     qml.cond(m0 & m1, qml.PauliY)(0)
+    ...     qml.cond(m0 & m1, qml.Y)(0)
     ...     qml.cond(m0, qml.S)(3)
     >>> tape = qml.tape.QuantumScript.from_queue(q)
     >>> layers = drawable_layers(tape)
@@ -208,3 +202,22 @@ def cwire_connections(layers, bit_map):
                         connected_layers[cwire].append(layer_idx)
 
     return connected_layers, connected_wires
+
+
+def transform_deferred_measurements_tape(tape):
+    """Helper function to replace MeasurementValues with wires for tapes using
+    deferred measurements."""
+    if not any(isinstance(op, MidMeasureMP) for op in tape.operations) and any(
+        m.mv is not None for m in tape.measurements
+    ):
+        new_measurements = []
+        for m in tape.measurements:
+            if m.mv is not None:
+                new_m = type(m)(wires=m.wires)
+                new_measurements.append(new_m)
+            else:
+                new_measurements.append(m)
+        new_tape = QuantumScript(tape.operations, new_measurements)
+        return new_tape
+
+    return tape

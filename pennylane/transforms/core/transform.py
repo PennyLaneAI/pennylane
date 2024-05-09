@@ -16,6 +16,7 @@ This module contains the transform function/decorator to make your custom transf
 functions and QNodes.
 """
 from typing import get_type_hints
+
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
@@ -25,7 +26,8 @@ def transform(
     classical_cotransform=None,
     is_informative=False,
     final_transform=False,
-):
+    use_argnum_in_expand=False,
+):  # pylint: disable=too-many-arguments
     """Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
     :class:`~.QNode`.
 
@@ -55,6 +57,8 @@ def transform(
             of the transform program and the tapes or qnode aren't executed.
         final_transform=False (bool): Whether or not the transform is terminal. If true the transform is queued at the end
             of the transform program. ``is_informative`` supersedes ``final_transform``.
+        use_argnum_in_expand=False (bool): Whether or not to use ``argnum`` of the tape to determine trainable parameters
+            during the expansion transform process.
 
     Returns:
 
@@ -92,9 +96,9 @@ def transform(
         def qnode_circuit(a):
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=0)
+            qml.X(0)
             qml.RZ(a, wires=1)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     We first apply ``transform`` to ``my_quantum_transform``:
 
@@ -177,7 +181,7 @@ def transform(
                 "The expand transform must have the same signature as the transform"
             )
 
-    # 3: CHeck the classical co-transform
+    # 3: Check the classical co-transform
     if classical_cotransform is not None and not callable(classical_cotransform):
         raise TransformError("The classical co-transform must be a valid Python function.")
 
@@ -187,4 +191,5 @@ def transform(
         classical_cotransform=classical_cotransform,
         is_informative=is_informative,
         final_transform=final_transform,
+        use_argnum_in_expand=use_argnum_in_expand,
     )

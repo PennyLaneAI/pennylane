@@ -89,6 +89,16 @@ on:
         required: false
         type: string
         default: ''
+      requirements_file:
+        description: File name to store stable version of requirements for a test group
+        required: false
+        type: string
+        default: ''
+      disable_new_opmath:
+        description: Whether to disable the new op_math or not when running the tests
+        required: false
+        type: string
+        default: "False"
 
 jobs:
   test:
@@ -128,53 +138,17 @@ jobs:
             || (inputs.pipeline_mode == 'reference-benchmarks'
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
-      - name: Setup Python
+      - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
-        uses: actions/setup-python@v4
+        uses: ./.github/workflows/install_deps
         with:
-          python-version: '${{ inputs.python_version }}'
-
-      - name: Upgrade PIP
-        if: steps.continue.outputs.confirm == 'true'
-        run: pip install --upgrade pip && pip install wheel --upgrade
-
-      - name: Install PennyLane dependencies
-        if: steps.continue.outputs.confirm == 'true'
-        run: |
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
-
-      - name: Install PyTorch
-        if: inputs.install_pytorch == true && steps.continue.outputs.confirm == 'true'
-        env:
-          TORCH_VERSION: ${{ inputs.pytorch_version != '' && format('=={0}', inputs.pytorch_version) || '' }}
-        run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
-
-      - name: Install TensorFlow
-        if: inputs.install_tensorflow == true && steps.continue.outputs.confirm == 'true'
-        env:
-          TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
-        run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
-
-      - name: Install JAX
-        if: inputs.install_jax == true && steps.continue.outputs.confirm == 'true'
-        env:
-          JAX_VERSION: ${{ inputs.jax_version != '' && format('=={0}', inputs.jax_version) || '' }}
-        run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}"
-
-      - name: Install additional PIP packages
-        if: inputs.additional_pip_packages != '' && steps.continue.outputs.confirm == 'true'
-        run: pip install ${{ inputs.additional_pip_packages }}
-
-      - name: Install PennyLane
-        if: steps.continue.outputs.confirm == 'true'
-        run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-
-      - name: Install PennyLane-Lightning master
-        if: inputs.install_pennylane_lightning_master == true && steps.continue.outputs.confirm == 'true'
-        run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+          python_version: ${{ inputs.python_version }}
+          install_pytorch: ${{ inputs.install_pytorch }}
+          install_tensorflow: ${{ inputs.install_tensorflow }}
+          install_jax: ${{ inputs.install_jax }}
+          additional_pip_packages: ${{ inputs.additional_pip_packages }}
+          install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
+          requirements_file: ${{ inputs.requirements_file }}
 
       - name: Set PyTest Args
         if: steps.continue.outputs.confirm == 'true'
@@ -199,8 +173,9 @@ jobs:
           COV_CORE_SOURCE: pennylane
           COV_CORE_CONFIG: .coveragerc
           COV_CORE_DATAFILE: .coverage.eager
+          TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
 
       - name: Adjust coverage file for Codecov
         if: inputs.pipeline_mode == 'unit-tests'

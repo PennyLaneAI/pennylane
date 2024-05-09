@@ -33,6 +33,14 @@ class TestIdentity:
         new_op = Identity._unflatten(*op._flatten())
         assert qml.equal(op, new_op)
 
+    def test_class_name(self, wires):
+        """Test the class name of either I and Identity is by default 'Identity'"""
+        assert qml.I.__name__ == "Identity"
+        assert qml.Identity.__name__ == "Identity"
+
+        assert qml.I(wires).name == "Identity"
+        assert qml.Identity(wires).name == "Identity"
+
     @pytest.mark.jax
     def test_jax_pytree_integration(self, wires):
         """Test that identity is a pytree by jitting a function of it."""

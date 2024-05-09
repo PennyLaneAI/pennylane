@@ -195,9 +195,9 @@ For example, we could run the previous circuit with ``all_outcomes=True``:
 >>> print(result)
 {'00': 518, '01': 0, '10': 0, '11': 482}
 
-Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating 
-eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output 
-dictionary showing possible computational basis states grows rapidly. 
+Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating
+eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output
+dictionary showing possible computational basis states grows rapidly.
 
 If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
 a tuple is returned to provide differentiability for the outputs of QNodes.
@@ -208,11 +208,11 @@ a tuple is returned to provide differentiability for the outputs of QNodes.
     def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0,1])
-        qml.PauliX(wires=1)
+        qml.X(1)
         return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.counts()
 
 >>> circuit()
-(-0.036, 0.036, {'01': 482, '10': 518}) 
+(-0.036, 0.036, {'01': 482, '10': 518})
 
 Probability
 -----------
@@ -242,6 +242,9 @@ The returned probability array uses lexicographical ordering,
 so corresponds to a :math:`99.75\%` probability of measuring
 state :math:`|00\rangle`, and a :math:`0.25\%` probability of
 measuring state :math:`|01\rangle`.
+
+
+.. _mid_circuit_measurements:
 
 Mid-circuit measurements and conditional operations
 ---------------------------------------------------
@@ -288,7 +291,7 @@ PennyLane device capabilities.
 >>> transformed_qnode(*pars)
 tensor([0.90165331, 0.09834669], requires_grad=True)
 
-The decorator syntax applies equally well:
+``qml.defer_measurements`` can be applied as decorator equally well:
 
 .. code-block:: python
 
@@ -296,6 +299,56 @@ The decorator syntax applies equally well:
     @qml.defer_measurements
     def qnode(x, y):
         (...)
+
+    @qml.defer_measurements
+    @qml.qnode(dev)
+    def qnode(x, y):
+        (...)
+
+.. note::
+
+    The deferred measurements principle requires an additional wire, or qubit, for each mid-circuit
+    measurement, limiting the number of measurements that can be used both on classical simulators
+    and quantum hardware. The one-shot transform below does not have this limitation, but has
+    computational cost that scales with the number of shots used.
+
+The one-shot transform
+**********************
+
+Devices supporting mid-circuit measurements (defined using
+:func:`~.pennylane.measure`) and conditional operations (defined using
+:func:`~.pennylane.cond`) natively can estimate dynamic circuits by executing
+them one shot at a time. This is the default behaviour of a :class:`~.pennylane.QNode` that has a
+device supporting mid-circuit measurements, as well as any :class:`~.pennylane.QNode` with the
+:func:`~.pennylane.dynamic_one_shot` quantum function transform.
+As the name suggests, this transform only works for a :class:`~.pennylane.QNode` executing with finite shots
+and it will raise an error if the device does not support mid-circuit measurements
+natively.
+The :func:`~.pennylane.defer_measurements` transform therefore remains the default for
+analytic calculations.
+
+The :func:`~.pennylane.dynamic_one_shot` transform is usually advantageous compared
+with the :func:`~.pennylane.defer_measurements` transform in the
+large-number-of-mid-circuit-measurements and small-number-of-shots limit.  This is because, unlike the
+deferred measurement principle, the method does not need an additional wire for every
+mid-circuit measurement present in the circuit. Otherwise, one generally gets
+equivalent results, so you may try both in an attempt to improve performance without
+worrying further about accuracy.
+
+The transform can be applied to a QNode as follows:
+
+.. code-block:: python
+
+    @qml.dynamic_one_shot
+    @qml.qnode(dev)
+    def my_quantum_function(x, y):
+        (...)
+
+.. warning::
+
+    Dynamic circuits executed with shots should be differentiated with the finite-difference method.
+    If the ``defer_measurements`` transform is used in analytic mode, ``backprop`` is also a viable
+    option.
 
 Resetting wires
 ***************
@@ -324,8 +377,9 @@ Conditional operators
 *********************
 
 Users can create conditional operators controlled on mid-circuit measurements using
-:func:`~.pennylane.cond`. We can also specify an outcome when defining a conditional
-operation:
+:func:`~.pennylane.cond`. The condition for a conditional operator may simply be
+the measured value returned by a ``measure()`` call, or we may construct a boolean
+condition based on such values and pass it to ``cond()``:
 
 .. code-block:: python
 
@@ -381,6 +435,8 @@ documentation.
 
     Currently, postselection support is only available on :class:`~.pennylane.devices.DefaultQubit`. Using
     postselection on other devices will raise an error.
+
+.. _mid_circuit_measurements_statistics:
 
 Mid-circuit measurement statistics
 **********************************

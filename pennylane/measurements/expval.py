@@ -14,7 +14,6 @@
 """
 This module contains the qml.expval measurement.
 """
-import warnings
 from typing import Sequence, Tuple, Union
 
 import pennylane as qml
@@ -23,9 +22,12 @@ from pennylane.wires import Wires
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
-def expval(op: Union[Operator, MeasurementValue]):
+def expval(
+    op: Union[Operator, MeasurementValue],
+):
     r"""Expectation value of the supplied observable.
 
     **Example:**
@@ -39,7 +41,7 @@ def expval(op: Union[Operator, MeasurementValue]):
             qml.RX(x, wires=0)
             qml.Hadamard(wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(0))
+            return qml.expval(qml.Y(0))
 
     Executing this QNode:
 
@@ -64,12 +66,10 @@ def expval(op: Union[Operator, MeasurementValue]):
 
     if isinstance(op, qml.Identity) and len(op.wires) == 0:
         # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+        # allow once we have testing and confidence in qml.expval(I())
         raise NotImplementedError(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
-
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
 
     return ExpectationMP(obs=op)
 
@@ -112,10 +112,16 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = SampleMP(
+                obs=op,
+                eigvals=self._eigvals,
+                wires=self.wires if self._eigvals is not None else None,
+            ).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 
@@ -128,11 +134,26 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
-        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
-
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
         with qml.queuing.QueuingManager.stop_recording():
             prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
-        return qml.math.dot(prob, eigvals)
+        return self._calculate_expectation(prob)
+
+    def process_counts(self, counts: dict, wire_order: Wires):
+        with qml.QueuingManager.stop_recording():
+            probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
+        return self._calculate_expectation(probs)
+
+    def _calculate_expectation(self, probabilities):
+        """
+        Calculate the of expectation set of probabilities.
+
+        Args:
+            probabilities (array): the probabilities of collapsing to eigen states
+        """
+        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
+        return qml.math.dot(probabilities, eigvals)

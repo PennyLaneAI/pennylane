@@ -14,45 +14,45 @@
 """
 Unit tests for the :class:`pennylane.devices.DefaultQubitLegacy` device when using broadcasting.
 """
-from itertools import product
-
 # pylint: disable=protected-access,cell-var-from-loop,too-many-arguments
 import math
+from itertools import product
 
 import pytest
 from gate_data import (
-    X,
-    Y,
-    Z,
-    S,
-    T,
-    H,
     CNOT,
-    SWAP,
+    CSWAP,
     CZ,
     ISWAP,
     SISWAP,
-    CSWAP,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    MultiRZ1,
-    Rot3,
+    SWAP,
+    CRot3,
     CRotx,
     CRoty,
     CRotz,
-    MultiRZ2,
+    H,
+    I,
     IsingXX,
     IsingYY,
     IsingZZ,
-    CRot3,
-    I,
+    MultiRZ1,
+    MultiRZ2,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    T,
     Toffoli,
+    X,
+    Y,
+    Z,
 )
 
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
+from pennylane import DeviceError
+from pennylane import numpy as np
 from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy
 
 THETA = np.linspace(0.11, 1, 3)
@@ -1959,7 +1959,7 @@ class TestBroadcastingSupportViaExpansion:
         single parametrized operation works."""
         dev = mock_default_qubit(wires=2, shots=shots)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -1979,7 +1979,7 @@ class TestBroadcastingSupportViaExpansion:
         single parametrized operation works."""
         dev = mock_default_qubit(wires=2, shots=shots)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RX(y, wires=1)
@@ -2005,7 +2005,7 @@ class TestBroadcastingSupportViaExpansion:
         Ham = qml.Hamiltonian([0.3, 0.9], [qml.PauliZ(0), qml.PauliY(1)])
         Ham.compute_grouping()
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RX(y, wires=1)

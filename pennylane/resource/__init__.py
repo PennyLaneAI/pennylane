@@ -58,6 +58,7 @@ Error Tracking
     :toctree: api
 
     ~AlgorithmicError
+    ~SpectralNormError
     ~ErrorOperation
 
 Resource Classes
@@ -98,7 +99,7 @@ used in a quantum circuit with custom operations without execution.
         qml.RZ(theta, wires=0)
         qml.CNOT(wires=[0,1])
         MyCustomAlgorithm(wires=[1, 2])
-        return qml.expval(qml.PauliZ(wires=1))
+        return qml.expval(qml.Z(1))
 
     x = np.array(1.23, requires_grad=True)
 
@@ -118,9 +119,9 @@ gate_types:
 gate_sizes:
 {1: 5, 2: 2}
 """
-from .resource import Resources, ResourcesOperation
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .first_quantization import FirstQuantization
-from .second_quantization import DoubleFactorization
 from .measurement import estimate_error, estimate_shots
+from .resource import Resources, ResourcesOperation
+from .second_quantization import DoubleFactorization
 from .specs import specs
-from .error import AlgorithmicError, ErrorOperation

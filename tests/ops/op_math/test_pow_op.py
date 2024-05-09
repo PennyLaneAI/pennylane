@@ -156,6 +156,28 @@ class TestInheritanceMixins:
         assert isinstance(ob, Pow)
         assert isinstance(ob, qml.operation.Operator)
         assert not isinstance(ob, qml.operation.Operation)
+        assert not isinstance(ob, PowOperation)
+
+        # Check some basic observable functionality
+        assert ob.compare(ob)
+
+        # check the dir
+        assert "grad_recipe" not in dir(ob)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_observable_legacy_opmath(self, power_method):
+        """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
+
+        class CustomObs(qml.operation.Observable):
+            num_wires = 1
+            num_params = 0
+
+        base = CustomObs(wires=0)
+        ob: Pow = power_method(base=base, z=-1.2)
+
+        assert isinstance(ob, Pow)
+        assert isinstance(ob, qml.operation.Operator)
+        assert not isinstance(ob, qml.operation.Operation)
         assert isinstance(ob, qml.operation.Observable)
         assert not isinstance(ob, PowOperation)
 
@@ -236,9 +258,10 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires((0, 1))
         assert op.num_wires == 2
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_base(self, power_method):
         """Test pow initialization for a hamiltonian."""
-        base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
+        base = qml.Hamiltonian([2.0, 1.0], [qml.PauliX(0) @ qml.PauliY(0), qml.PauliZ("b")])
 
         op: Pow = power_method(base=base, z=3.4)
 
@@ -320,6 +343,36 @@ class TestProperties:
 
         assert op.has_decomposition is False
 
+    def test_no_decomposition_batching_error(self, power_method):
+        """Test that if an error occurs with a batched exponent, has_decomposition is False."""
+
+        class MyOp(qml.operation.Operator):
+
+            def pow(self, z):
+                return super().pow(z % 2)
+
+        pow_op = power_method(base=MyOp(wires=0), z=np.array([1.0, 2.0]))
+        assert not pow_op.has_decomposition
+
+        with pytest.raises(DecompositionUndefinedError):
+            pow_op.decomposition()
+
+    def test_error_raised_if_no_batching(self, power_method):
+        """Test that if Operator.pow raises an error and no batching is present, the erorr is raised."""
+
+        class MyOp(qml.operation.Operator):
+
+            def pow(self, z):
+                raise ValueError
+
+        pow_op = power_method(base=MyOp(0), z=2.5)
+
+        with pytest.raises(ValueError):
+            _ = pow_op.has_decomposition
+
+        with pytest.raises(DecompositionUndefinedError):
+            _ = pow_op.decomposition()
+
     @pytest.mark.parametrize("value", (True, False))
     def test_has_diagonalizing_gates(self, value, power_method):
         """Test that Pow defers has_diagonalizing_gates to base operator."""
@@ -349,6 +402,7 @@ class TestProperties:
         op: Pow = power_method(base=qml.PauliX(0), z=3.5)
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_queue_category_None(self, power_method):
         """Test that the queue category `None` for some observables carries over."""
         op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
@@ -468,8 +522,7 @@ class TestSimplify:
         final_op = qml.CH([1, 0], id=3)
         simplified_op = pow_op.simplify()
 
-        # TODO: uncomment this check when all controlled operations inherit from ControlledOp
-        # assert isinstance(simplified_op, ControlledOp)
+        assert isinstance(simplified_op, ControlledOp)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -782,6 +835,7 @@ class TestMatrix:
 
         assert qml.math.allclose(op_mat, compare_mat)
 
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pow_hamiltonian(self):
         """Test that a hamiltonian object can be exponentiated."""
         U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0)])

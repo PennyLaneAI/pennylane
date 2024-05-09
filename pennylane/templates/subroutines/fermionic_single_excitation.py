@@ -16,9 +16,10 @@ Contains the FermionicSingleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
-from pennylane.ops import RZ, RX, CNOT, Hadamard
+from pennylane.operation import AnyWires, Operation
+from pennylane.ops import CNOT, RX, RZ, Hadamard
 
 
 class FermionicSingleExcitation(Operation):
@@ -105,7 +106,7 @@ class FermionicSingleExcitation(Operation):
             @qml.qnode(dev)
             def circuit(weight, wires=None):
                 qml.FermionicSingleExcitation(weight, wires=wires)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             weight = 0.56
             print(circuit(weight, wires=[0, 1, 2]))

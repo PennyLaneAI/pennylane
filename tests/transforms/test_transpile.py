@@ -3,10 +3,11 @@ Unit tests for transpiler function.
 """
 
 from math import isclose
+
 import pytest
 
-from pennylane import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.transforms.transpile import transpile
 
 
@@ -44,6 +45,7 @@ def build_qfunc_pauli_z(wires):
     return qfunc
 
 
+# pylint: disable=too-many-public-methods
 class TestTranspile:
     """Unit tests for transpile function"""
 
@@ -76,12 +78,11 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = (
-            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
-        )
+        err_msg = "Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_transpile_raise_not_implemented_tensorproduct_mmt(self):
         """test that error is raised when measurement is expectation of a Tensor product"""
         dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
@@ -94,11 +95,36 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = (
-            r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
-        )
+        err_msg = r"Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
+
+    def test_transpile_raise_not_implemented_prod_mmt(self):
+        """test that error is raised when measurement is expectation of a Prod"""
+        dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
+
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 3])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # build circuit
+        transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
+        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+        err_msg = r"Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
+        with pytest.raises(NotImplementedError, match=err_msg):
+            transpiled_qnode()
+
+    def test_transpile_non_commuting_observables(self):
+        """Test that transpile will work with non-commuting observables."""
+
+        ops = (qml.CRX(0.1, wires=(0, 2)),)
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+        [out], _ = qml.transforms.transpile(tape, coupling_map=((0, 1), (1, 2)))
+
+        expected = qml.tape.QuantumScript((qml.SWAP((1, 2)), qml.CRX(0.1, (0, 1))), ms, shots=50)
+        assert qml.equal(out, expected)
 
     def test_transpile_qfunc_transpiled_mmt_obs(self):
         """test that transpile does not alter output for expectation value of an observable"""
@@ -271,6 +297,18 @@ class TestTranspile:
         assert qml.math.allclose(
             original_expectation, transpiled_expectation, atol=np.finfo(float).eps
         )
+
+    def test_transpile_mcm(self):
+        """Test that transpile can be used with mid circuit measurements."""
+
+        m0 = qml.measure(0)
+        ops = [qml.CNOT((0, 2)), *m0.measurements, qml.ops.Conditional(m0, qml.S(0))]
+        tape = qml.tape.QuantumScript(ops, [qml.probs()], shots=50)
+
+        [new_tape], _ = transpile(tape, [(0, 1), (1, 2)])
+        expected_ops = [qml.SWAP((1, 2)), qml.CNOT((0, 1))] + ops[1:]
+        assert new_tape.operations == expected_ops
+        assert new_tape.shots == tape.shots
 
     def test_transpile_ops_anywires_1_qubit_qnode(self):
         """test that transpile does not alter output for expectation value of an observable if the qfunc contains

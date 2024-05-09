@@ -13,13 +13,13 @@
 # limitations under the License.
 """Transform for fusing sequences of single-qubit gates."""
 # pylint: disable=too-many-branches
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
+from pennylane.math import allclose, is_abstract, stack
+from pennylane.ops.qubit import Rot
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
-from pennylane.ops.qubit import Rot
-from pennylane.math import allclose, stack, is_abstract
-from pennylane.queuing import QueuingManager
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
@@ -63,7 +63,7 @@ def single_qubit_fusion(
             qml.Rot(*r2, wires=0)
             qml.RZ(r1[0], wires=0)
             qml.RZ(r2[0], wires=0)
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.X(0))
 
     The single qubit gates are fused before execution.
 
@@ -80,7 +80,7 @@ def single_qubit_fusion(
                 qml.Rot(*r2, wires=0)
                 qml.RZ(r1[0], wires=0)
                 qml.RZ(r2[0], wires=0)
-                return qml.expval(qml.PauliX(0))
+                return qml.expval(qml.X(0))
 
         The circuit before optimization:
 

@@ -16,6 +16,7 @@ This module contains the qml.iterative_qpe function.
 """
 
 import numpy as np
+
 import pennylane as qml
 
 
@@ -45,7 +46,7 @@ def iterative_qpe(base, ancilla, iters):
         def circuit():
 
           # Initial state
-          qml.PauliX(wires=[0])
+          qml.X(0)
 
           # Iterative QPE
           measurements = qml.iterative_qpe(qml.RZ(2.0, wires=[0]), ancilla=1, iters=3)

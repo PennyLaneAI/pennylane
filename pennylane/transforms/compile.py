@@ -14,19 +14,19 @@
 """Code for the high-level quantum function transform that executes compilation."""
 # pylint: disable=too-many-branches
 from functools import partial
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
-from pennylane.queuing import QueuingManager
+import pennylane as qml
 from pennylane.ops import __all__ as all_ops
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform, TransformDispatcher
+from pennylane.transforms.core import TransformDispatcher, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
     merge_rotations,
     remove_barrier,
 )
-
 
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
 
@@ -73,7 +73,7 @@ def compile(
 
     .. code-block:: python
 
-        @compile
+        @qml.compile
         @qml.qnode(device=dev)
         def circuit(x, y, z):
             qml.Hadamard(wires=0)
@@ -87,9 +87,9 @@ def compile(
             qml.CNOT(wires=[1, 0])
             qml.RZ(-z, wires=2)
             qml.RX(y, wires=2)
-            qml.PauliY(wires=2)
+            qml.Y(2)
             qml.CY(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     The default compilation pipeline is applied before execution.
 
@@ -109,9 +109,9 @@ def compile(
             qml.CNOT(wires=[1, 0])
             qml.RZ(-z, wires=2)
             qml.RX(y, wires=2)
-            qml.PauliY(wires=2)
+            qml.Y(2)
             qml.CY(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     Visually, the original function looks like this:
 
@@ -124,8 +124,7 @@ def compile(
     We can compile it down to a smaller set of gates using the ``qml.compile``
     transform.
 
-    >>> compiled_qfunc = qml.compile(qfunc)
-    >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+    >>> compiled_qnode = qml.compile(qnode)
     >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.60)─────────────────┤  <Z>
     1: ──H─╭X──────────────────╭●────┤
@@ -139,7 +138,8 @@ def compile(
 
     .. code-block:: python3
 
-        compiled_qfunc = qml.compile(
+        compiled_qnode = qml.compile(
+            qnode,
             pipeline=[
                 partial(qml.transforms.commute_controlled, direction="left"),
                 partial(qml.transforms.merge_rotations, atol=1e-6),
@@ -147,9 +147,7 @@ def compile(
             ],
             basis_set=["CNOT", "RX", "RY", "RZ"],
             num_passes=2
-        )(qfunc)
-
-        compiled_qnode = qml.QNode(compiled_qfunc, dev)
+        )
 
         print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
 
@@ -185,9 +183,19 @@ def compile(
         basis_set = basis_set or all_ops
 
         def stop_at(obj):
+            if not isinstance(obj, qml.operation.Operator):
+                return True
+            if not obj.has_decomposition:
+                return True
             return obj.name in basis_set and (not getattr(obj, "only_visual", False))
 
-        expanded_tape = tape.expand(depth=expand_depth, stop_at=stop_at)
+        [expanded_tape], _ = qml.devices.preprocess.decompose(
+            tape,
+            stopping_condition=stop_at,
+            max_expansion=expand_depth,
+            name="compile",
+            error=qml.operation.DecompositionUndefinedError,
+        )
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):

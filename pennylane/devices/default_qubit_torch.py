@@ -14,9 +14,10 @@
 """This module contains a PyTorch implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
-import warnings
 import inspect
 import logging
+import warnings
+
 import semantic_version
 
 try:
@@ -30,7 +31,9 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
+
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
 from . import DefaultQubitLegacy
 
 logger = logging.getLogger(__name__)
@@ -70,7 +73,7 @@ class DefaultQubitTorch(DefaultQubitLegacy):
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True)
     >>> res = circuit(weights)
@@ -99,7 +102,7 @@ class DefaultQubitTorch(DefaultQubitLegacy):
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True, device='cuda')
     >>> res = circuit(weights)

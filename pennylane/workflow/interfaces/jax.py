@@ -123,11 +123,11 @@ time and can store tangents in place of the variables, we can use a batch of tap
 must be a non-pytree non-differenatible argument that accompanies the tree leaves.
 
 """
+import dataclasses
+
 # pylint: disable=unused-argument
 import logging
-from typing import Tuple, Callable
-
-import dataclasses
+from typing import Callable, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -153,7 +153,7 @@ class _NonPytreeWrapper:
 
     * Operators that aren't valid pytrees: ex. ParametrizedEvolution, ParametrizedHamiltonian, HardwareHamiltonian
     * Validation checks on initialization: see BasisStateProjector, StatePrep that does not allow the operator to store the cotangents
-    * Jitting non-jax parametrized circuits.  Numpy parameters turn into abstract parameters during the pytree process.
+    * Jitting non-jax parametrized circuits.  NumPy parameters turn into abstract parameters during the pytree process.
 
     ``jax.custom_vjp`` forbids any non-differentiable argument to be a pytree, so we need to wrap it in a non-pytree type.
 
@@ -199,7 +199,8 @@ def get_jax_interface_name(tapes):
     for t in tapes:
         for op in t:
             # Unwrap the observable from a MeasurementProcess
-            op = op.obs if hasattr(op, "obs") else op
+            if not isinstance(op, qml.ops.Prod):
+                op = op.obs if hasattr(op, "obs") else op
             if op is not None:
                 # Some MeasurementProcess objects have op.obs=None
                 for param in op.data:

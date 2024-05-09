@@ -17,10 +17,11 @@ Contains the MERA template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
 from typing import Callable
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 def compute_indices(wires, n_block_wires):
@@ -155,7 +156,7 @@ class MERA(Operation):
             @qml.qnode(dev)
             def circuit(template_weights):
                 qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.PauliZ(wires=1))
+                return qml.expval(qml.Z(1))
 
         It may be necessary to reorder the wires to see the MERA architecture clearly:
 

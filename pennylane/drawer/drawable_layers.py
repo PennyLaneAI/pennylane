@@ -15,8 +15,9 @@
 This module contains a helper function to sort operations into layers.
 """
 
+from pennylane.measurements import MeasurementProcess, MidMeasureMP
 from pennylane.ops import Conditional
-from pennylane.measurements import MidMeasureMP, MeasurementProcess
+
 from .utils import default_wire_map
 
 
@@ -139,7 +140,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
     refers to a wire that will be altered in the drawing of an operation.
     Assuming wire ``1`` is between ``0`` and ``2`` in the ordering, ``qml.CNOT(wires=(0,2))``
     will also "occupy" wire ``1``.  In this scenario, an operation on wire ``1``, like
-    ``qml.PauliX(wires=1)``, will not be pushed to the left
+    ``qml.X(1)``, will not be pushed to the left
     of the ``qml.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
     ordering and makes placement more intuitive.
 

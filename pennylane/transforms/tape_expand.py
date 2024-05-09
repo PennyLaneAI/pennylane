@@ -18,8 +18,8 @@ import contextlib
 
 import pennylane as qml
 from pennylane.operation import (
-    has_gen,
     gen_is_multi_term_hamiltonian,
+    has_gen,
     has_grad_method,
     has_nopar,
     has_unitary_gen,
@@ -162,6 +162,32 @@ expand_trainable_multipar = create_expand_fn(
     | (has_gen & ~gen_is_multi_term_hamiltonian),
     docstring=_expand_trainable_multipar_doc,
 )
+
+
+def create_expand_trainable_multipar(tape, use_tape_argnum=False):
+    """Creates the expand_trainable_multipar expansion transform with an option to include argnums."""
+
+    if not use_tape_argnum:
+        return expand_trainable_multipar
+
+    # pylint: disable=protected-access
+    trainable_par_info = [tape._par_info[i] for i in tape.trainable_params]
+    trainable_ops = [info["op"] for info in trainable_par_info]
+
+    @qml.BooleanFn
+    def _is_trainable(obj):
+        return obj in trainable_ops
+
+    return create_expand_fn(
+        depth=10,
+        stop_at=not_tape
+        | is_measurement
+        | has_nopar
+        | (~_is_trainable)
+        | (has_gen & ~gen_is_multi_term_hamiltonian),
+        docstring=_expand_trainable_multipar_doc,
+    )
+
 
 _expand_nonunitary_gen_doc = """Expand out a tape so that all its parametrized
 operations have a unitary generator.
@@ -409,14 +435,17 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
                 container.kwargs["max_expansion"] = decomp_depth
 
                 for cond in ["stopping_condition", "stopping_condition_shots"]:
-                    original_stopping_condition = container.kwargs[cond]
+                    # Devices that do not support native mid-circuit measurements
+                    # will not have "stopping_condition_shots".
+                    if cond in container.kwargs:
+                        original_stopping_condition = container.kwargs[cond]
 
-                    def stopping_condition(obj):
-                        if obj.name in custom_decomps or type(obj) in custom_decomps:
-                            return False
-                        return original_stopping_condition(obj)
+                        def stopping_condition(obj):
+                            if obj.name in custom_decomps or type(obj) in custom_decomps:
+                                return False
+                            return original_stopping_condition(obj)
 
-                    container.kwargs[cond] = stopping_condition
+                        container.kwargs[cond] = stopping_condition
 
                 break
 
@@ -459,7 +488,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
         @qml.qnode(dev, expansion_strategy="device")
         def circuit():
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(circuit)())
     0: ─╭●─┤  <Z>
@@ -473,7 +502,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
-    if isinstance(dev, qml.Device):
+    if isinstance(dev, qml.devices.LegacyDevice):
         original_custom_expand_fn = dev.custom_expand_fn
 
         # Create a new expansion function; stop at things that do not have

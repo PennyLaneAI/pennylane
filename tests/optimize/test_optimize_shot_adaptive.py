@@ -599,6 +599,7 @@ class TestOptimization:
     """Integration test to ensure that the optimizer
     minimizes simple examples"""
 
+    @pytest.mark.slow
     def test_multi_qubit_rotation(self):
         """Test that multiple qubit rotation can be optimized"""
         dev = qml.device("default.qubit", wires=2, shots=100)
@@ -668,6 +669,7 @@ class TestStepAndCost:
     # pylint: disable=too-few-public-methods
     """Tests for the step_and_cost method"""
 
+    @pytest.mark.slow
     @flaky(max_runs=3)
     def test_qnode_cost(self, tol):
         """Test that the cost is correctly returned

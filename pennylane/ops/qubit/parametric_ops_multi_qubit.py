@@ -19,6 +19,7 @@ core parameterized gates.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
 from operator import matmul
+
 import numpy as np
 
 import pennylane as qml
@@ -28,7 +29,7 @@ from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
-from .parametric_ops_single_qubit import _can_replace, stack_last, RX, RY, RZ, PhaseShift
+from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last
 
 
 class MultiRZ(Operation):
@@ -115,7 +116,7 @@ class MultiRZ(Operation):
         )
 
     def generator(self):
-        return -0.5 * functools.reduce(matmul, [PauliZ(w) for w in self.wires])
+        return qml.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
     @staticmethod
     def compute_eigvals(theta, num_wires):  # pylint: disable=arguments-differ
@@ -236,7 +237,7 @@ class PauliRot(Operation):
     >>> @qml.qnode(dev)
     ... def example_circuit():
     ...     qml.PauliRot(0.5, 'X',  wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(example_circuit())
     0.8775825618903724
     """
@@ -406,7 +407,10 @@ class PauliRot(Operation):
     def generator(self):
         pauli_word = self.hyperparameters["pauli_word"]
         wire_map = {w: i for i, w in enumerate(self.wires)}
-        return -0.5 * qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)
+
+        return qml.Hamiltonian(
+            [-0.5], [qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)]
+        )
 
     @staticmethod
     def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ
@@ -774,7 +778,7 @@ class IsingXX(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
+        return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -910,7 +914,7 @@ class IsingYY(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
+        return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -1053,7 +1057,7 @@ class IsingZZ(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
+        return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
     def __init__(self, phi, wires, id=None):
         super().__init__(phi, wires=wires, id=id)
@@ -1236,9 +1240,13 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return 0.25 * (
-            PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
-            + PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
+
+        return qml.Hamiltonian(
+            [0.25, 0.25],
+            [
+                qml.X(wires=self.wires[0]) @ qml.X(wires=self.wires[1]),
+                qml.Y(wires=self.wires[0]) @ qml.Y(wires=self.wires[1]),
+            ],
         )
 
     def __init__(self, phi, wires, id=None):
@@ -1673,15 +1681,15 @@ class CPhaseShift00(Operation):
         **Example:**
 
         >>> qml.CPhaseShift00.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[0]),
-        PauliX(wires=[1]),
+        [X(0),
+        X(1),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[1]),
-        PauliX(wires=[0])]
+        X(1),
+        X(0)]
 
         """
         decomp_ops = [
@@ -1857,13 +1865,13 @@ class CPhaseShift01(Operation):
         **Example:**
 
         >>> qml.CPhaseShift01.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[0]),
+        [X(0),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[0])]
+        X(0)]
 
         """
         decomp_ops = [
@@ -2036,13 +2044,13 @@ class CPhaseShift10(Operation):
         **Example:**
 
         >>> qml.CPhaseShift10.compute_decomposition(1.234, wires=(0,1))
-        [PauliX(wires=[1]),
+        [X(1),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PauliX(wires=[1])]
+        X(1)]
 
         """
         decomp_ops = [

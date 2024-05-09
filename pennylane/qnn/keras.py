@@ -17,11 +17,22 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
 
+from semantic_version import Version
+
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
 
-    CORRECT_TF_VERSION = int(tf.__version__.split(".", maxsplit=1)[0]) > 1
+    CORRECT_TF_VERSION = Version(tf.__version__) >= Version("2.0.0")
+    try:
+        # this feels a bit hacky, but if users *only* have an old (i.e. PL-compatible) version of Keras installed
+        # then tf.keras doesn't have a version attribute, and we *should be* good to go.
+        # if you have a newer version of Keras installed, then you can use tf.keras.version to check if you
+        # are configured to use Keras 3 or Keras 2
+        CORRECT_KERAS_VERSION = Version(tf.keras.version()) < Version("3.0.0")
+    except AttributeError:
+        CORRECT_KERAS_VERSION = True
+
 except ImportError:
     # The following allows this module to be imported even if TensorFlow is not installed. Users
     # will instead see an ImportError when instantiating the KerasLayer.
@@ -39,6 +50,13 @@ class KerasLayer(Layer):
     `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
+
+    .. note::
+
+        ``KerasLayer`` currently only supports Keras 2. If you are running the newest version
+        of TensorFlow and Keras, you may automatically be using Keras 3. For instructions
+        on running with Keras 2, instead, see the
+        `documentation on backwards compatibility <https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility>`__ .
 
     Args:
         qnode (qml.QNode): the PennyLane QNode to be converted into a Keras Layer_
@@ -69,7 +87,7 @@ class KerasLayer(Layer):
             qml.Rot(*weights_0, wires=0)
             qml.RY(weight_1, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
     The signature of the QNode **must** contain an ``inputs`` named argument for input data,
     with all other arguments to be treated as internal weights. We can then convert to a Keras
@@ -130,7 +148,7 @@ class KerasLayer(Layer):
                 x = tf.zeros((batch_dim, n_qubits))
                 return qlayer(x).shape
 
-        >>> print_output_shape([qml.expval(qml.PauliZ(0))])
+        >>> print_output_shape([qml.expval(qml.Z(0))])
         TensorShape([5])
         >>> print_output_shape([qml.probs(wires=[0, 1])])
         TensorShape([5, 4])
@@ -140,7 +158,7 @@ class KerasLayer(Layer):
         If the QNode returns multiple measurements, then the measurement results will be flattened
         and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
 
-        >>> print_output_shape([qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])])
+        >>> print_output_shape([qml.expval(qml.Z(0)), qml.probs(wires=[0, 1])])
         TensorShape([5, 5])
         >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
         TensorShape([5, 204])
@@ -233,7 +251,7 @@ class KerasLayer(Layer):
             def qnode(inputs, weights):
                 qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
@@ -297,6 +315,12 @@ class KerasLayer(Layer):
                 "version of TensorFlow can be installed using:\n"
                 "pip install tensorflow --upgrade\nAlternatively, visit "
                 "https://www.tensorflow.org/install for detailed instructions."
+            )
+
+        if not CORRECT_KERAS_VERSION:
+            raise ImportError(
+                "KerasLayer requires a Keras version lower than 3. For instructions on running with Keras 2,"
+                "visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
             )
 
         self.weight_shapes = {

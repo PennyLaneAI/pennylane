@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.workflow import INTERFACE_MAP
 from pennylane.measurements import Shots
 from pennylane.measurements.vn_entropy import VnEntropyMP
+from pennylane.workflow import INTERFACE_MAP
 
 # pylint: disable=too-many-arguments
 
@@ -73,7 +73,7 @@ class TestInitialization:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_vn_entropy(self, interface, state_vector, expected):
         """Tests the output of qml.vn_entropy"""
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device(f"default.qubit.{interface}", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit():

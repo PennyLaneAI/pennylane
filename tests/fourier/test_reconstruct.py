@@ -14,18 +14,21 @@
 """
 Tests for the Fourier reconstruction transform.
 """
+from functools import reduce
+
 # pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
 from inspect import signature
 from itertools import chain
-from functools import reduce
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.fourier.reconstruct import (
+    _prepare_jobs,
     _reconstruct_equ,
     _reconstruct_gen,
-    _prepare_jobs,
     reconstruct,
 )
 from pennylane.fourier.utils import join_spectra
@@ -423,6 +426,8 @@ class TestReconstructGen:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="jax")
@@ -917,6 +922,8 @@ class TestReconstruct:
     ):
         """Tests the reconstruction and differentiability with JAX."""
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         params = tuple(jax.numpy.array(par) for par in params)
         qnode = qml.QNode(qnode, dev_1, interface="jax")

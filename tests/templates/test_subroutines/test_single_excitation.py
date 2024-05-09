@@ -14,10 +14,11 @@
 """
 Tests for the FermionicSingleExcitation template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 class TestDecomposition:
@@ -102,7 +103,7 @@ class TestDecomposition:
             assert isinstance(res_gate, exp_gate)
 
             exp_wires = gate[2]
-            res_wires = queue[idx]._wires
+            res_wires = queue[idx].wires
             assert res_wires.tolist() == exp_wires
 
             exp_weight = gate[3]

@@ -21,6 +21,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import active_new_opmath
+from pennylane.pauli.utils import simplify
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -30,7 +31,8 @@ def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
         # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
-        import openfermion, openfermionpyscf
+        import openfermion
+        import openfermionpyscf
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermionpyscf. "
@@ -38,6 +40,19 @@ def _import_of():
         ) from Error
 
     return openfermion, openfermionpyscf
+
+
+def _import_pyscf():
+    """Import pyscf."""
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import pyscf
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires pyscf. It can be installed with: pip install pyscf."
+        ) from Error
+
+    return pyscf
 
 
 def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
@@ -109,13 +124,15 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     >>> t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", 0.25)
     >>> v = FermionOperator("1^ 0^ 0 1", -0.15) + FermionOperator("2^ 0^ 2 0", 0.3)
-    >>> print(observable([t, v], mapping="jordan_wigner"))
-    (0.2625) [I0]
-    + (-0.1375) [Z0]
-    + (-0.0875) [Z1]
-    + (-0.0375) [Z0 Z1]
-    + (0.075) [Z2]
-    + (-0.075) [Z0 Z2]
+    >>> observable([t, v], mapping="jordan_wigner")
+    (
+        0.2625 * I(0)
+      + -0.1375 * Z(0)
+      + -0.0875 * Z(1)
+      + -0.0375 * (Z(0) @ Z(1))
+      + 0.075 * Z(2)
+      + -0.075 * (Z(0) @ Z(2))
+    )
     """
     openfermion, _ = _import_of()
 
@@ -548,30 +565,30 @@ def dipole_of(
     >>> symbols = ["H", "H", "H"]
     >>> coordinates = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
     >>> dipole_obs = dipole_of(symbols, coordinates, charge=1)
-    >>> print(dipole_obs)
-    [<Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
-    <Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
-    <Hamiltonian: terms=1, wires=[0]>]
+    >>> print([(h.wires) for h in dipole_obs])
+    [<Wires = [0, 1, 2, 3, 4, 5]>, <Wires = [0, 1, 2, 3, 4, 5]>, <Wires = [0]>]
 
-    >>> print(dipole_obs[0]) # x-component of D
-    (0.24190977644628117) [Z4]
-    + (0.24190977644628117) [Z5]
-    + (0.4781123173263878) [Z0]
-    + (0.4781123173263878) [Z1]
-    + (0.714477906181248) [Z2]
-    + (0.714477906181248) [Z3]
-    + (-0.3913638489487808) [Y0 Z1 Y2]
-    + (-0.3913638489487808) [X0 Z1 X2]
-    + (-0.3913638489487808) [Y1 Z2 Y3]
-    + (-0.3913638489487808) [X1 Z2 X3]
-    + (-0.1173495878099553) [Y2 Z3 Y4]
-    + (-0.1173495878099553) [X2 Z3 X4]
-    + (-0.1173495878099553) [Y3 Z4 Y5]
-    + (-0.1173495878099553) [X3 Z4 X5]
-    + (0.26611147045300276) [Y0 Z1 Z2 Z3 Y4]
-    + (0.26611147045300276) [X0 Z1 Z2 Z3 X4]
-    + (0.26611147045300276) [Y1 Z2 Z3 Z4 Y5]
-    + (0.26611147045300276) [X1 Z2 Z3 Z4 X5]
+    >>> dipole_obs[0] # x-component of D
+    (
+        0.4781123173263876 * Z(0)
+      + 0.4781123173263876 * Z(1)
+      + -0.3913638489489803 * (Y(0) @ Z(1) @ Y(2))
+      + -0.3913638489489803 * (X(0) @ Z(1) @ X(2))
+      + -0.3913638489489803 * (Y(1) @ Z(2) @ Y(3))
+      + -0.3913638489489803 * (X(1) @ Z(2) @ X(3))
+      + 0.2661114704527088 * (Y(0) @ Z(1) @ Z(2) @ Z(3) @ Y(4))
+      + 0.2661114704527088 * (X(0) @ Z(1) @ Z(2) @ Z(3) @ X(4))
+      + 0.2661114704527088 * (Y(1) @ Z(2) @ Z(3) @ Z(4) @ Y(5))
+      + 0.2661114704527088 * (X(1) @ Z(2) @ Z(3) @ Z(4) @ X(5))
+      + 0.7144779061810713 * Z(2)
+      + 0.7144779061810713 * Z(3)
+      + -0.11734958781031017 * (Y(2) @ Z(3) @ Y(4))
+      + -0.11734958781031017 * (X(2) @ Z(3) @ X(4))
+      + -0.11734958781031017 * (Y(3) @ Z(4) @ Y(5))
+      + -0.11734958781031017 * (X(3) @ Z(4) @ X(5))
+      + 0.24190977644645698 * Z(4)
+      + 0.24190977644645698 * Z(5)
+    )
     """
     openfermion, _ = _import_of()
 
@@ -812,7 +829,7 @@ def molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e012,
-):  # pylint:disable=too-many-arguments
+):  # pylint:disable=too-many-arguments, too-many-statements
     r"""Generate the qubit Hamiltonian of a molecule.
 
     This function drives the construction of the second-quantized electronic Hamiltonian
@@ -850,8 +867,9 @@ def molecular_hamiltonian(
         basis (str): atomic basis set used to represent the molecular orbitals
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
-            to specify the built-in differentiable Hartree-Fock solver, or ``method="pyscf"``
-            to use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
+            to specify the built-in differentiable Hartree-Fock solver, ``method="pyscf"`` to use
+            the PySCF package (requires ``pyscf`` to be installed), or ``method="openfermion"`` to
+            use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
@@ -899,8 +917,8 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
-    if method not in ["dhf", "pyscf"]:
-        raise ValueError("Only 'dhf' and 'pyscf' backends are supported.")
+    if method not in ["dhf", "pyscf", "openfermion"]:
+        raise ValueError("Only 'dhf', 'pyscf' and 'openfermion' backends are supported.")
 
     if len(coordinates) == len(symbols) * 3:
         geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
@@ -909,10 +927,13 @@ def molecular_hamiltonian(
         geometry_dhf = qml.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
 
+    wires_map = None
+
+    if wires:
+        wires_new = qml.qchem.convert._process_wires(wires)
+        wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
+
     if method == "dhf":
-        if wires:
-            wires_new = qml.qchem.convert._process_wires(wires)
-            wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
 
         if mapping != "jordan_wigner":
             raise ValueError(
@@ -964,9 +985,25 @@ def molecular_hamiltonian(
             h = qml.map_wires(h, wires_map)
         return h, 2 * len(active)
 
+    if method == "pyscf" and mapping.strip().lower() == "jordan_wigner":
+        core_constant, one_mo, two_mo = _pyscf_integrals(
+            symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
+        )
+
+        hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
+
+        if active_new_opmath():
+            h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
+
+        else:
+            h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
+            h_pl = simplify(h_pl)
+
+        return h_pl, len(h_pl.wires)
+
     openfermion, _ = _import_of()
 
-    hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
+    hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, "pyscf", outpath)
 
     molecule = openfermion.MolecularData(filename=hf_file)
 
@@ -978,4 +1015,73 @@ def molecular_hamiltonian(
 
     h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
 
-    return h_pl, qubits
+    return h_pl, len(h_pl.wires)
+
+
+def _pyscf_integrals(
+    symbols,
+    coordinates,
+    charge=0,
+    mult=1,
+    basis="sto-3g",
+    active_electrons=None,
+    active_orbitals=None,
+):
+    r"""Compute pyscf integrals."""
+
+    pyscf = _import_pyscf()
+
+    geometry = [
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
+        for i, symbol in enumerate(symbols)
+    ]
+
+    # create the Mole object
+    mol = pyscf.gto.Mole()
+    mol.atom = geometry
+    mol.basis = basis
+    mol.charge = charge
+    mol.spin = mult - 1
+    mol.verbose = 0
+
+    # initialize the molecule
+    mol_pyscf = mol.build()
+
+    # run HF calculations
+    if mult == 1:
+        molhf = pyscf.scf.RHF(mol_pyscf)
+    else:
+        molhf = pyscf.scf.ROHF(mol_pyscf)
+    _ = molhf.kernel()
+
+    # compute atomic and molecular orbitals
+    one_ao = mol_pyscf.intor_symmetric("int1e_kin") + mol_pyscf.intor_symmetric("int1e_nuc")
+    two_ao = mol_pyscf.intor("int2e_sph")
+    one_mo = np.einsum("pi,pq,qj->ij", molhf.mo_coeff, one_ao, molhf.mo_coeff, optimize=True)
+    two_mo = pyscf.ao2mo.incore.full(two_ao, molhf.mo_coeff)
+
+    core_constant = np.array([molhf.energy_nuc()])
+
+    # convert the two-electron integral tensor to the physicists’ notation
+    two_mo = np.swapaxes(two_mo, 1, 3)
+
+    # define the active space and recompute the integrals
+    core, active = qml.qchem.active_space(
+        mol.nelectron, mol.nao, mult, active_electrons, active_orbitals
+    )
+
+    if core and active:
+        for i in core:
+            core_constant = core_constant + 2 * one_mo[i][i]
+            for j in core:
+                core_constant = core_constant + 2 * two_mo[i][j][j][i] - two_mo[i][j][i][j]
+
+        for p in active:
+            for q in active:
+                for i in core:
+                    one_mo[p, q] = one_mo[p, q] + (2 * two_mo[i][p][q][i] - two_mo[i][p][i][q])
+
+        one_mo = one_mo[qml.math.ix_(active, active)]
+        two_mo = two_mo[qml.math.ix_(active, active, active, active)]
+
+    return core_constant, one_mo, two_mo

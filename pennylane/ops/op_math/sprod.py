@@ -15,8 +15,8 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-from typing import Union
 from copy import copy
+from typing import Union
 
 import pennylane as qml
 import pennylane.math as qnp
@@ -65,9 +65,9 @@ def s_prod(scalar, operator, lazy=True, id=None):
 
     **Example**
 
-    >>> sprod_op = s_prod(2.0, qml.PauliX(0))
+    >>> sprod_op = s_prod(2.0, qml.X(0))
     >>> sprod_op
-    2.0*(PauliX(wires=[0]))
+    2.0 * X(0)
     >>> sprod_op.matrix()
     array([[ 0., 2.],
            [ 2., 0.]])
@@ -99,9 +99,9 @@ class SProd(ScalarSymbolicOp):
 
     **Example**
 
-    >>> sprod_op = SProd(1.23, qml.PauliX(0))
+    >>> sprod_op = SProd(1.23, qml.X(0))
     >>> sprod_op
-    1.23*(PauliX(wires=[0]))
+    1.23 * X(0)
     >>> qml.matrix(sprod_op)
     array([[0.  , 1.23],
            [1.23, 0.  ]])
@@ -145,12 +145,10 @@ class SProd(ScalarSymbolicOp):
 
         if _pauli_rep:
             self._pauli_rep = _pauli_rep
-        elif (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+        elif (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
             self.batch_size is None
         ):
             scalar = copy(self.scalar)
-            if qnp.get_interface(scalar) == "tensorflow" and not scalar.dtype.is_complex:
-                scalar = qnp.cast(scalar, "complex128")
 
             pr = {pw: qnp.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)
@@ -263,7 +261,7 @@ class SProd(ScalarSymbolicOp):
     @property
     def has_matrix(self):
         """Bool: Whether or not the Operator returns a defined matrix."""
-        return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
+        return isinstance(self.base, qml.ops.Hamiltonian) or self.base.has_matrix
 
     @staticmethod
     def _matrix(scalar, mat):

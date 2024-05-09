@@ -16,9 +16,10 @@ Contains the FermionicDoubleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
-from pennylane.ops import RZ, RX, CNOT, Hadamard
+from pennylane.operation import AnyWires, Operation
+from pennylane.ops import CNOT, RX, RZ, Hadamard
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):
@@ -486,7 +487,7 @@ class FermionicDoubleExcitation(Operation):
             @qml.qnode(dev)
             def circuit(weight, wires1=None, wires2=None):
                 qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             weight = 1.34817
             print(circuit(weight, wires1=[0, 1], wires2=[2, 3, 4]))

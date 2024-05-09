@@ -16,8 +16,9 @@ Contains the AllSinglesDoubles template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BasisState
 
 
@@ -105,7 +106,7 @@ class AllSinglesDoubles(Operation):
             @qml.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
                 qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             # Evaluate the QNode for a given set of parameters
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))

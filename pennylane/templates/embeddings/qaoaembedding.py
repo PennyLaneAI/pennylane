@@ -16,13 +16,13 @@ Contains the QAOAEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access, consider-using-enumerate
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class QAOAEmbedding(Operation):
     r"""
     Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
-    circuit that is inspired by the QAOA ansatz.
+    circuit that is inspired by the QAOA ansatz proposed by `Killoran et al. (2020) <https://arxiv.org/abs/2001.03622>`_.
 
     A single layer applies two circuits or "Hamiltonians": The first encodes the features, and the second is
     a variational ansatz inspired by a 1-dimensional Ising model. The feature-encoding circuit associates features with
@@ -85,7 +85,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(weights, f=None):
                 qml.QAOAEmbedding(features=f, weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             features = [1., 2.]
             layer1 = [0.1, -0.3, 1.5]
@@ -129,7 +129,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit2(weights, features):
                 qml.QAOAEmbedding(features=features, weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
 
             features = [1., 2.]
@@ -150,7 +150,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(weights, f=None):
                 qml.QAOAEmbedding(features=f, weights=weights, wires=range(2), local_field='Z')
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         Choosing ``'Z'`` fields implements a QAOAEmbedding where the second Hamiltonian is a
         1-dimensional Ising model.

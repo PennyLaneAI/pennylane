@@ -14,10 +14,12 @@
 """Contains a transform that computes the simple frequency spectrum
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
-from typing import Sequence, Callable
 from functools import partial
+from typing import Callable, Sequence
+
 from pennylane import transform
 from pennylane.tape import QuantumTape
+
 from .utils import get_spectrum, join_spectra
 
 
@@ -113,7 +115,7 @@ def circuit_spectrum(
                     qml.RX(x[i], wires=i, id="x"+str(i))
                     qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
             qml.RZ(x[0], wires=0, id="x0")
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
         x = np.array([1, 2, 3])
         w = np.random.random((n_layers, n_qubits, 3))
@@ -148,7 +150,7 @@ def circuit_spectrum(
             qml.RX(x[0], wires=0, id="x0")
             qml.PhaseShift(x[0], wires=0, id="x0")
             qml.RX(x[1], wires=0, id="x1")
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
         x = np.array([1, 2])
         res = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x0"])(x)
@@ -174,7 +176,7 @@ def circuit_spectrum(
         def circuit(x):
             qml.RX(x[0], wires=0, id="x0")
             qml.PhaseShift(x[1], wires=0, id="x1")
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
         x = tf.constant([1, 2])
         res = qml.fourier.circuit_spectrum(circuit)(x)

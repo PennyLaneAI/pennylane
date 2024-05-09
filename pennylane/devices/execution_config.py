@@ -18,17 +18,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 from pennylane.workflow import SUPPORTED_INTERFACES
-from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
-
-SUPPORTED_GRADIENT_METHODS = [
-    "best",
-    "parameter-shift",
-    "backprop",
-    "finite-diff",
-    "device",
-    "adjoint",
-    "gradient-transform",
-]
 
 
 # pylint: disable=too-many-instance-attributes
@@ -49,7 +38,7 @@ class ExecutionConfig:
     use_device_gradient: Optional[bool] = None
     """Whether or not to compute the gradient on the device.
 
-    ``None`` indicates to use the device if possible, but to fall back to pennylane behavior if it isn't.
+    ``None`` indicates to use the device if possible, but to fall back to pennylane behaviour if it isn't.
 
     True indicates a request to either use the device gradient or fail.
     """
@@ -94,24 +83,11 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
-        if (
-            self.gradient_method is not None
-            and self.gradient_method not in SUPPORTED_GRADIENT_METHODS
-        ):
-            raise ValueError(
-                f"gradient_method must be in {SUPPORTED_GRADIENT_METHODS}, got {self.gradient_method} instead."
-            )
-
         if self.device_options is None:
             self.device_options = {}
 
         if self.gradient_keyword_arguments is None:
             self.gradient_keyword_arguments = {}
-
-        if any(arg not in SUPPORTED_GRADIENT_KWARGS for arg in self.gradient_keyword_arguments):
-            raise ValueError(
-                f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"
-            )
 
 
 DefaultExecutionConfig = ExecutionConfig()

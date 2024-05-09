@@ -52,13 +52,13 @@ class Evolution(Exp):
     This symbolic operator can be used to make general rotation operators:
 
     >>> theta = np.array(1.23)
-    >>> op = Evolution(qml.PauliX(0), 0.5 * theta)
+    >>> op = Evolution(qml.X(0), 0.5 * theta)
     >>> qml.math.allclose(op.matrix(), qml.RX(theta, wires=0).matrix())
     True
 
     Or to define a time evolution operator for a time-independent Hamiltonian:
 
-    >>> H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliX(1)])
+    >>> H = qml.Hamiltonian([1, 1], [qml.Y(0), qml.X(1)])
     >>> t = 10e-6
     >>> U = Evolution(H, t)
 
@@ -67,8 +67,8 @@ class Evolution(Exp):
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     qml.ops.Evolution(qml.PauliX(0), 0.5 * x)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     qml.ops.Evolution(qml.X(0), 0.5 * x)
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit)(1.23))
     0: ──Exp(-0.61j X)─┤  <Z>
 
@@ -137,8 +137,7 @@ class Evolution(Exp):
         we get the generator
 
         >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
+          0.5 * Y(0) + Z(0) @ X(1)
 
         """
         if not self.base.is_hermitian:

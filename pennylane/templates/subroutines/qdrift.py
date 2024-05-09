@@ -14,9 +14,9 @@
 """Contains template for QDrift subroutine."""
 
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane.math import requires_grad, unwrap
-from pennylane.ops import Sum, SProd, Hamiltonian
+from pennylane.operation import Operation
+from pennylane.ops import Hamiltonian, LinearCombination, SProd, Sum
 
 
 @qml.QueuingManager.stop_recording()
@@ -85,7 +85,7 @@ class QDrift(Operation):
     .. code-block:: python3
 
         coeffs = [0.25, 0.75]
-        ops = [qml.PauliX(0), qml.PauliZ(0)]
+        ops = [qml.X(0), qml.Z(0)]
         H = qml.dot(coeffs, ops)
 
         dev = qml.device("default.qubit", wires=2)
@@ -118,7 +118,7 @@ class QDrift(Operation):
             @qml.qnode(dev)
             def my_circ(time):
                 # Prepare H:
-                H = qml.dot([0.2, -0.1], [qml.PauliY(0), qml.PauliZ(1)])
+                H = qml.dot([0.2, -0.1], [qml.Y(0), qml.Z(1)])
 
                 # Prepare some state
                 qml.Hadamard(0)
@@ -127,7 +127,7 @@ class QDrift(Operation):
                 qml.QDrift(H, time, n=10, seed=10)
 
                 # Measure some quantity
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                return qml.expval(qml.Z(0) @ qml.Z(1))
 
 
         >>> time = np.array(1.23)
@@ -138,7 +138,7 @@ class QDrift(Operation):
         directly related to the number of samples used in the product. We provide a
         method to upper-bound the error:
 
-        >>> H = qml.dot([0.25, 0.75], [qml.PauliX(0), qml.PauliZ(0)])
+        >>> H = qml.dot([0.25, 0.75], [qml.X(0), qml.Z(0)])
         >>> print(qml.QDrift.error(H, time=1.2, n=10))
         0.3661197552925645
 
@@ -149,7 +149,7 @@ class QDrift(Operation):
     ):
         r"""Initialize the QDrift class"""
 
-        if isinstance(hamiltonian, Hamiltonian):
+        if isinstance(hamiltonian, (Hamiltonian, LinearCombination)):
             coeffs, ops = hamiltonian.terms()
 
         elif isinstance(hamiltonian, Sum):
@@ -189,6 +189,11 @@ class QDrift(Operation):
             "decomposition": decomposition,
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
+
+    def queue(self, context=qml.QueuingManager):
+        context.remove(self.hyperparameters["base"])
+        context.append(self)
+        return self
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -273,7 +278,7 @@ class QDrift(Operation):
         Returns:
             float: upper bound on the precision achievable using the QDrift protocol
         """
-        if isinstance(hamiltonian, Hamiltonian):
+        if isinstance(hamiltonian, (Hamiltonian, LinearCombination)):
             lmbda = qml.math.sum(qml.math.abs(hamiltonian.coeffs))
 
         elif isinstance(hamiltonian, Sum):
