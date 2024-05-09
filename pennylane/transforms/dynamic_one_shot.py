@@ -305,7 +305,7 @@ def gather_non_mcm(circuit_measurement, measurement, is_valid):
         if is_interface_jax and measurement.ndim == 2:
             is_valid = is_valid.reshape((-1, 1))
         return (
-            qml.math.where(is_valid, measurement, fillin_value)
+            qml.math.where(is_valid, measurement, fill_in_value)
             if is_interface_jax
             else measurement[is_valid]
         )
