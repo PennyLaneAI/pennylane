@@ -196,10 +196,10 @@ class SampleMP(SampleMeasurement):
         n_wires = n_wires or 1  # if no wires, will have a single output dimension
 
         shape = []
-        if n_wires != 1:
-            shape.append(n_wires)
         if shots != 1:
             shape.append(shots)
+        if n_wires != 1:
+            shape.append(n_wires)
         return shape, dtype
 
     @property
