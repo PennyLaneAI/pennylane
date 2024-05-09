@@ -253,7 +253,8 @@ def parse_native_mid_circuit_measurements(
     mcm_samples = dict((k, v) for k, v in zip(mid_meas, mcm_samples))
 
     normalized_meas = []
-    for i, m in enumerate(circuit.measurements):
+    m_count = 0
+    for m in circuit.measurements:
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
@@ -264,9 +265,11 @@ def parse_native_mid_circuit_measurements(
             meas = gather_mcm(m, mcm_samples, is_valid)
         elif interface != "jax" and not has_valid:
             meas = measurement_with_no_shots(m)
+            m_count += 1
         else:
-            result = qml.math.array([res[i] for res in results], like=interface)
+            result = qml.math.array([res[m_count] for res in results], like=interface)
             meas = gather_non_mcm(m, result, is_valid)
+            m_count += 1
         if isinstance(m, SampleMP):
             meas = qml.math.squeeze(meas)
         normalized_meas.append(meas)
