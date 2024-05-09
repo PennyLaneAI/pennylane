@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types."""
+# pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 
 import pennylane as qml
@@ -341,6 +342,20 @@ class TestParamShift:
         tapes, _ = qml.gradients.param_shift(tape)
         assert not tapes
 
+    def test_parameter_shift_non_commuting_observables(self):
+        """Test that parameter shift works even if the measurements do not commute with each other."""
+
+        ops = (qml.RX(0.5, wires=0),)
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Z(0)))
+        tape = qml.tape.QuantumScript(ops, ms, trainable_params=[0])
+
+        batch, _ = qml.gradients.param_shift(tape)
+        assert len(batch) == 2
+        tape0 = qml.tape.QuantumScript((qml.RX(0.5 + np.pi / 2, 0),), ms, trainable_params=[0])
+        tape1 = qml.tape.QuantumScript((qml.RX(0.5 - np.pi / 2, 0),), ms, trainable_params=[0])
+        assert qml.equal(batch[0], tape0)
+        assert qml.equal(batch[1], tape1)
+
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a state"""
@@ -536,7 +551,8 @@ class TestParamShift:
     #     tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
     #     assert tapes == []
 
-    def test_with_gradient_recipes(self):
+    @pytest.mark.parametrize("broadcast", [True, False])
+    def test_with_gradient_recipes(self, broadcast):
         """Test that the function behaves as expected"""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -549,18 +565,34 @@ class TestParamShift:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
         gradient_recipes = ([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]])
-        tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, _ = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
-        assert len(tapes) == 5
-        assert [t.batch_size for t in tapes] == [None] * 5
-        assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
-        assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
-        assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
-        assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
-        assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
+        if broadcast:
+            assert len(tapes) == 2
+            assert [t.batch_size for t in tapes] == [2, 3]
 
+            shifted_batch = [0.2 * 1.0 + 0.3, 0.5 * 1.0 + 0.6]
+            tape_par = tapes[0].get_parameters(trainable_only=False)
+            assert np.allclose(tape_par[0], shifted_batch)
+            assert tape_par[1:] == [2.0, 3.0, 4.0]
+
+            shifted_batch = [1 * 3.0 + 1, 2 * 3.0 + 2, 3 * 3.0 + 3]
+            tape_par = tapes[1].get_parameters(trainable_only=False)
+            assert tape_par[:2] == [1.0, 2.0]
+            assert np.allclose(tape_par[2], shifted_batch)
+            assert tape_par[3:] == [4.0]
+        else:
+            assert len(tapes) == 5
+            assert [t.batch_size for t in tapes] == [None] * 5
+            assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
+            assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
+            assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
+            assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
+            assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
+
+    @pytest.mark.parametrize("broadcast", [True, False])
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
-    def test_recycled_unshifted_tape(self, ops_with_custom_recipe):
+    def test_recycled_unshifted_tape(self, ops_with_custom_recipe, broadcast):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -577,23 +609,28 @@ class TestParamShift:
             [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None
             for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
-        # two tapes per parameter that doesn't use a custom recipe,
+        # two (one with broadcast) tapes per parameter that doesn't use a custom recipe,
         # one tape per parameter that uses custom recipe,
         # plus one global call if at least one uses the custom recipe
-        num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
-        assert len(tapes) == 2 * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
+        num_custom = len(ops_with_custom_recipe)
+        num_ops_standard_recipe = tape.num_params - num_custom
+        tapes_per_param = 1 if broadcast else 2
+        assert len(tapes) == tapes_per_param * num_ops_standard_recipe + num_custom + 1
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
 
+    @pytest.mark.parametrize("broadcast", [False, True])
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
     @pytest.mark.parametrize("multi_measure", [False, True])
-    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure):
+    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure, broadcast):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
+        if multi_measure and broadcast:
+            pytest.skip("Multiple measurements are not supported with `broadcast=True` yet.")
         dev = qml.device("default.qubit", wires=2)
         x = [0.543, -0.654]
 
@@ -608,12 +645,13 @@ class TestParamShift:
         gradient_recipes = tuple(
             [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
-        # two tapes per parameter that doesn't use a custom recipe,
+        # two (one with broadcast) tapes per parameter that doesn't use a custom recipe,
         # plus one global (unshifted) call if at least one uses the custom recipe
         num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
-        assert len(tapes) == 2 * num_ops_standard_recipe + int(
+        tapes_per_param = 1 if broadcast else 2
+        assert len(tapes) == tapes_per_param * num_ops_standard_recipe + int(
             tape.num_params != num_ops_standard_recipe
         )
         # Test that executing the tapes and the postprocessing function works
@@ -662,8 +700,9 @@ class TestParamShift:
         assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)
         assert qml.math.allclose(grad[1], 0, atol=1e-5)
 
+    @pytest.mark.parametrize("broadcast", [True, False])
     @pytest.mark.parametrize("y_wire", [0, 1])
-    def test_f0_provided(self, y_wire):
+    def test_f0_provided(self, y_wire, broadcast):
         """Test that if the original tape output is provided, then
         the tape is not executed additionally at the current parameter
         values."""
@@ -677,7 +716,7 @@ class TestParamShift:
         tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
         f0 = dev.execute(tape)
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, f0=f0)
+        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, f0=f0, broadcast=broadcast)
 
         # one tape per parameter that impacts the expval
         assert len(tapes) == 2 if y_wire == 0 else 1

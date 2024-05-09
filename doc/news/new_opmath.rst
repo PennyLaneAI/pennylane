@@ -40,13 +40,13 @@ Summary of the update
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
   standard Python operations like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.
 
-* You can now easily access Pauli operators via :class:`~.I`, :class:`~.X`, :class:`~.Y`, and :class:`~.Z`.
+* You can now easily access Pauli operators via :obj:`~.pennylane.I`, :obj:`~.pennylane.X`, :obj:`~.pennylane.Y`, and :obj:`~.pennylane.Z`.
 
   >>> from pennylane import I, X, Y, Z
   >>> X(0)
   X(0)
 
-  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to ``I``, ``X``, ``Y``, and ``Z``, but
+  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to :obj:`~.pennylane.I`, :obj:`~.pennylane.X`, :obj:`~.pennylane.Y`, and :obj:`~.pennylane.Z`, but
   use of the short-form names is now recommended.
 
 * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
@@ -60,7 +60,7 @@ Summary of the update
   >>> type(op.pauli_rep)
   pennylane.pauli.pauli_arithmetic.PauliSentence
 
-  You can transform the ``PauliSentence`` back to a suitable ``Operator`` via the :meth:`~.pennylane.ops.PauliSentence.operation` or :meth:`~.pennylane.ops.PauliSentence.hamiltonian` method.
+  You can transform the :class:`~.pennylane.pauli.PauliSentence` back to a suitable :class:`~.pennylane.operation.Operator` via the :meth:`~pennylane.pauli.PauliSentence.operation` or :meth:`~pennylane.pauli.PauliSentence.hamiltonian`   method.
 
   >>> op.pauli_rep.operation()
   X(0) + Y(0)
@@ -111,8 +111,8 @@ Summary of the update
     +--------------------------------------------+----------------------+---------------------------+
 
 
-    The three main new opmath classes :class:`~.pennylane.ops.SProd`, :class:`~.pennylane.ops.Prod`, and :class:`~.pennylane.ops.Sum` have already been around for a while.
-    E.g., :func:`~.pennylane.dot` has always returned a :class:`~.pennylane.ops.Sum` instance.
+    The three main new opmath classes :class:`~.pennylane.ops.op_math.SProd`, :class:`~.pennylane.ops.op_math.Prod`, and :class:`~.pennylane.ops.op_math.Sum` have already been around for a while.
+    E.g., :func:`~.pennylane.dot` has always returned a :class:`~.pennylane.ops.op_math.Sum` instance.
 
     **Usage**
 
@@ -161,8 +161,8 @@ Summary of the update
 
     **qml.Hamiltonian**
 
-    The legacy classes :class:`~.pennylane.operation.Tensor` and :class:`~.Hamiltonian` will soon be deprecated.
-    :class:`~.ops.LinearCombination` offers the same API as :class:`~.Hamiltonian` but works well with new opmath classes.
+    The legacy classes :class:`~.pennylane.operation.Tensor` and :class:`~.pennylane.Hamiltonian` will soon be deprecated.
+    :class:`~.ops.op_math.LinearCombination` offers the same API as :class:`~.pennylane.Hamiltonian` but works well with new opmath classes.
 
     Depending on whether or not new opmath is active, ``qml.Hamiltonian`` will return either of the two classes.
 
@@ -231,7 +231,7 @@ To help identify a fix, select the option below that describes your situation.
     :title: Sharp bits about the qml.Hamiltonian dispatch
     :href: sharp-bits-hamiltonian
 
-    One of the reasons that :class:`~.ops.LinearCombination` exists is that the old Hamiltonian class is not compatible with new opmath tensor products.
+    One of the reasons that :class:`~.ops.op_math.LinearCombination` exists is that the old Hamiltonian class is not compatible with new opmath tensor products.
     We can try to instantiate an old ``qml.ops.Hamiltonian`` class with a ``X(0) @ X(1)`` tensor product, which returns a :class:`~.pennylane.ops.Prod` instance with new opmath enabled.
 
     >>> qml.operation.active_new_opmath() # confirm opmath is active (by default)
@@ -245,7 +245,7 @@ To help identify a fix, select the option below that describes your situation.
     >>> qml.Hamiltonian([0.5], [X(0) @ X(1)])
     0.5 * (X(0) @ X(1))
 
-    The API of :class:`~.ops.LinearCombination` is identical to that of :class:`~.Hamiltonian`. We can group observables or simplify upon initialization.
+    The API of :class:`~.ops.op_math.LinearCombination` is identical to that of :class:`~.Hamiltonian`. We can group observables or simplify upon initialization.
 
     >>> H1 = qml.Hamiltonian([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
     >>> H2 = qml.ops.LinearCombination([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
@@ -326,11 +326,11 @@ To help identify a fix, select the option below that describes your situation.
     .. code-block:: python3
 
         # in some test file
-        with qml.operation.disable_new_opmath():
+        with qml.operation.disable_new_opmath_cm():
             legacy_ham_example = qml.Hamiltonian(coeffs, ops) # creates a Hamiltonian instance
 
         @pytest.mark.usefixtures("use_legacy_opmath")
-        @pytest.marl.parametrize("ham", [legacy_ham_example])
+        @pytest.mark.parametrize("ham", [legacy_ham_example])
         def test_qml_hamiltonian_legacy_opmath(ham):
             assert isinstance(ham, qml.Hamiltonian) # True
             assert isinstance(ham, qml.ops.Hamiltonian) # True
@@ -341,23 +341,23 @@ To help identify a fix, select the option below that describes your situation.
 
         ham_example = qml.Hamiltonian(coeffs, ops) # creates a LinearCombination instance
 
-        @pytest.mark.usefixtures("use_legacy_opmath")
-        @pytest.marl.parametrize("ham", [ham_example])
-        def test_qml_hamiltonian_legacy_opmath(ham):
+        @pytest.mark.usefixtures("use_new_opmath")
+        @pytest.mark.parametrize("ham", [ham_example])
+        def test_qml_hamiltonian_new_opmath(ham):
             assert isinstance(ham, qml.Hamiltonian) # True
             assert not isinstance(ham, qml.ops.Hamiltonian) # True
 
         @pytest.mark.usefixtures("use_legacy_opmath")
-        @pytest.marl.parametrize("ham", [ham_example])
+        @pytest.mark.parametrize("ham", [ham_example])
         def test_qml_hamiltonian_legacy_opmath(ham):
-            # Most likely you wanted to test things with an Hamiltonian instance
+            # Most likely you wanted to test things with a Hamiltonian instance
             legacy_ham_example = convert_to_legacy_H(ham)
             assert isinstance(legacy_ham_example, qml.ops.Hamiltonian) # True
             assert isinstance(legacy_ham_example, qml.Hamiltonian) # True because we are in legacy opmath context
             assert not isinstance(legacy_ham_example, qml.ops.LinearCombination) # True
     
-    For all that, keep in mind that ``qml.Hamiltonian`` points to :class:`~Hamiltonian` and :class:`LinearCombination` depending on the status of ``qml.operation.active_new_opmath()``.
-    So if you want to test something specifically for the old :class:`~Hamiltonian`` class, use ``qml.ops.Hamiltonian`` instead.
+    For all that, keep in mind that ``qml.Hamiltonian`` points to :class:`~pennylane.Hamiltonian` and :class:`LinearCombination` depending on the status of ``qml.operation.active_new_opmath()``.
+    So if you want to test something specifically for the old :class:`~pennylane.Hamiltonian`` class, use ``qml.ops.Hamiltonian`` instead.
 
 .. details::
     :title: Sharp bits about the nesting structure of new opmath instances
