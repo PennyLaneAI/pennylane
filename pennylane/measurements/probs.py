@@ -263,7 +263,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         def _count_samples_core(indices, dim, interface):
             return qml.math.array(
-                [[qml.math.sum(idx == p) for p in range(dim)] for idx in indices], like=interface
+                [[qml.math.sum(idx == p) for idx in indices] for p in range(dim)], like=interface
             )
 
         if batch_size is None:
