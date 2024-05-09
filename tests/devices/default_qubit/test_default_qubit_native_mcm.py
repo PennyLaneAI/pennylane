@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
-from pennylane.transforms.dynamic_one_shot import fillin_value
+from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
 
@@ -346,7 +346,7 @@ def test_single_mcm_multiple_measurements(postselect, reset, measure_f):
     @qml.qnode(dev)
     def func(x, y, z):
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
-        return measure_f(op=obs), measure_f(op=mcms[0])
+        return measure_f(op=obs), measure_f(op=mcms[0]), measure_f(op=obs), measure_f(op=mcms[0])
 
     func1 = func
     func2 = qml.defer_measurements(func)
@@ -713,7 +713,7 @@ def test_jax_jit(diff_method, postselect, reset):
     for measure_f, r1, r2 in zip(measures, results1, results2):
         r1, r2 = np.array(r1).ravel(), np.array(r2).ravel()
         if measure_f == qml.sample:
-            r2 = r2[r2 != fillin_value]
+            r2 = r2[r2 != fill_in_value]
         np.allclose(r1, r2)
 
 

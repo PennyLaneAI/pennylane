@@ -36,7 +36,7 @@ from pennylane.measurements import (
 
 from .core import transform
 
-fillin_value = np.iinfo(np.int32).min
+fill_in_value = np.iinfo(np.int32).min
 
 
 def null_postprocessing(results):
@@ -77,7 +77,7 @@ def dynamic_one_shot(
             qml.RX(x, wires=0)
             m0 = qml.measure(0)
             qml.cond(m0, qml.RY)(y, wires=1)
-            return measure_f(op=m0)
+            return qml.expval(op=m0)
 
     The ``qml.dynamic_one_shot`` decorator prompts the QNode to perform a hundred one-shot
     calculations, where in each calculation the ``qml.measure`` operations dynamically
@@ -253,7 +253,8 @@ def parse_native_mid_circuit_measurements(
     mcm_samples = dict((k, v) for k, v in zip(mid_meas, mcm_samples))
 
     normalized_meas = []
-    for i, m in enumerate(circuit.measurements):
+    m_count = 0
+    for m in circuit.measurements:
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
@@ -264,9 +265,11 @@ def parse_native_mid_circuit_measurements(
             meas = gather_mcm(m, mcm_samples, is_valid)
         elif interface != "jax" and not has_valid:
             meas = measurement_with_no_shots(m)
+            m_count += 1
         else:
-            result = qml.math.array([res[i] for res in results], like=interface)
+            result = qml.math.array([res[m_count] for res in results], like=interface)
             meas = gather_non_mcm(m, result, is_valid)
+            m_count += 1
         if isinstance(m, SampleMP):
             meas = qml.math.squeeze(meas)
         normalized_meas.append(meas)
@@ -302,7 +305,7 @@ def gather_non_mcm(circuit_measurement, measurement, is_valid):
         if is_interface_jax and measurement.ndim == 2:
             is_valid = is_valid.reshape((-1, 1))
         return (
-            qml.math.where(is_valid, measurement, fillin_value)
+            qml.math.where(is_valid, measurement, fill_in_value)
             if is_interface_jax
             else measurement[is_valid]
         )

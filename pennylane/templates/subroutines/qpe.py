@@ -212,7 +212,8 @@ class QuantumPhaseEstimation(ErrorOperation):
         >>> Op = CustomOP(wires=[0])
         >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
         >>> QPE.error()
-        0.075
+        SpectralNormError(0.075)
+
         """
         base_unitary = self._hyperparameters["unitary"]
         if not isinstance(base_unitary, ErrorOperation):

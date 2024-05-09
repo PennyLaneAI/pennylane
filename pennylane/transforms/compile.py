@@ -16,6 +16,7 @@
 from functools import partial
 from typing import Callable, Sequence
 
+import pennylane as qml
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
@@ -72,7 +73,7 @@ def compile(
 
     .. code-block:: python
 
-        @compile
+        @qml.compile
         @qml.qnode(device=dev)
         def circuit(x, y, z):
             qml.Hadamard(wires=0)
@@ -182,9 +183,19 @@ def compile(
         basis_set = basis_set or all_ops
 
         def stop_at(obj):
+            if not isinstance(obj, qml.operation.Operator):
+                return True
+            if not obj.has_decomposition:
+                return True
             return obj.name in basis_set and (not getattr(obj, "only_visual", False))
 
-        expanded_tape = tape.expand(depth=expand_depth, stop_at=stop_at)
+        [expanded_tape], _ = qml.devices.preprocess.decompose(
+            tape,
+            stopping_condition=stop_at,
+            max_expansion=expand_depth,
+            name="compile",
+            error=qml.operation.DecompositionUndefinedError,
+        )
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):

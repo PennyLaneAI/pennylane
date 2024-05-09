@@ -49,7 +49,7 @@ class FABLE(Operation):
 
     .. code-block:: python
 
-        input_matrix= np.array([[0.1, 0.2],[0.3, -0.2]])
+        input_matrix = np.array([[0.1, 0.2],[0.3, -0.2]])
         dev = qml.device('default.qubit', wires=3)
         @qml.qnode(dev)
         def example_circuit():
@@ -58,7 +58,7 @@ class FABLE(Operation):
 
     We can see that the input matrix has been block encoded in the matrix of the circuit:
 
-    >>> s = int(qml.math.ceil(qml.math.log2(max(len(input_matrix), len(input_matrix[0])))))
+    >>> s = int(np.ceil(np.log2(max(len(input_matrix), len(input_matrix[0])))))
     >>> expected = 2**s * qml.matrix(example_circuit)().real[0 : 2**s, 0 : 2**s]
     >>> print(f"Block-encoded matrix:\n{expected}")
     Block-encoded matrix:
@@ -70,7 +70,7 @@ class FABLE(Operation):
         When given a :math:`(N \times M)` matrix, the matrix is padded with zeroes
         until it is of :math:`(N \times N)` dimension, where :math:`N` is equal to :math:`2^n`,
         and :math:`n` is an integer. It is also assumed that the values
-        of the input matrix are within [-1, 1]. Apply a subnormalization factor if needed.
+        of the input matrix are within :math:`[-1, 1]`. Apply a subnormalization factor if needed.
     """
 
     num_wires = AnyWires
