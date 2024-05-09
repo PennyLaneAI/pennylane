@@ -14,7 +14,7 @@
 """
 Unit tests for the CaptureMeta metaclass.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access, undefined-variable
 import pytest
 
 import pennylane as qml
