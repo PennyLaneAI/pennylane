@@ -506,6 +506,7 @@ class BasisStateProjector(Projector, Operation):
          [0. 0. 0. 0.]]
         """
         if qml.math.get_interface(basis_state) == "jax":
+            basis_state += 0  # convert to int
             n = len(basis_state)
             mask = qml.math.flip(2 ** qml.math.arange(n))
             idx = qml.math.sum(mask * basis_state)
@@ -544,6 +545,7 @@ class BasisStateProjector(Projector, Operation):
         [0. 1. 0. 0.]
         """
         if qml.math.get_interface(basis_state) == "jax":
+            basis_state += 0  # convert to int
             mask = 2 ** np.arange(len(basis_state) - 1, -1, -1)
             mask = qml.math.asarray(mask, like=basis_state)
             mask = qml.math.cast_like(mask, basis_state)
@@ -702,11 +704,9 @@ class StateVectorProjector(Projector):
         >>> StateVectorProjector.compute_eigvals([0, 0, 1, 0])
         array([1, 0, 0, 0])
         """
-        w = qml.math.zeros_like(state_vector)
-        if qml.math.get_interface(state_vector) == "jax":
-            return w.at[0].set(1.0)
+        w = np.zeros(qml.math.shape(state_vector), dtype="float64")
         w[0] = 1
-        return w
+        return qml.math.convert_like(qml.math.cast_like(w, state_vector), state_vector)
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -739,10 +739,29 @@ class StateVectorProjector(Projector):
         # Adapting the approach discussed in the link below to work with arbitrary complex-valued state vectors.
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
-        phase = qml.math.exp(-1j * qml.math.angle(state_vector[0]))
+
+        if qml.math.get_interface(state_vector) == "tensorflow":
+            dtype_name = qml.math.get_dtype_name(state_vector)
+            if dtype_name == "int32":
+                state_vector = qml.math.cast(state_vector, np.complex64)
+            elif dtype_name == "int64":
+                state_vector = qml.math.cast(state_vector, np.complex128)
+
+        angle = qml.math.angle(state_vector[0])
+        if qml.math.get_interface(angle) == "tensorflow":
+            if qml.math.get_dtype_name(angle) == "float32":
+                angle = qml.math.cast(angle, np.complex64)
+            else:
+                angle = qml.math.cast(angle, np.complex128)
+
+        phase = qml.math.exp(-1.0j * angle)
         psi = phase * state_vector
         denominator = qml.math.sqrt(2 + 2 * psi[0])
-        psi = qml.math.set_index(psi, 0, psi[0] + 1)  # psi[0] += 1, but JAX-JIT compatible
+        summed_array = np.zeros(qml.math.shape(psi), dtype=qml.math.get_dtype_name(psi))
+        summed_array[0] = 1.0
+        psi = (
+            psi + summed_array
+        )  # qml.math.set_index(psi, 0, psi[0] + 1)  # psi[0] += 1, but JAX-JIT compatible
         psi /= denominator
         u = 2 * qml.math.outer(psi, qml.math.conj(psi)) - qml.math.eye(len(psi))
         return [QubitUnitary(u, wires=wires)]
