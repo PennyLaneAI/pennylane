@@ -118,6 +118,10 @@ class LinearCombination(Sum):
         _pauli_rep=None,
         id=None,
     ):
+        if isinstance(observables, Operator):
+            raise ValueError(
+                "observables must be an Iterable of Operator's, and not an Operator itself."
+            )
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid LinearCombination; "

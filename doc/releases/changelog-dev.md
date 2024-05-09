@@ -60,7 +60,23 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
+* Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
+  [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+
+* The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
+  allowing error types to be more consistent with the context the `decompose` function is used in.
+  [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
+
 <h3>Breaking changes 💔</h3>
+
+* `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
+  [(#5660)](https://github.com/PennyLaneAI/pennylane/pull/5660)
+
+* ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
+  [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
+  
+* ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
+  [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
 <h3>Deprecations 👋</h3>
 
@@ -68,8 +84,18 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
+  with circuits with non-commuting measurements.
+  [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
+
+* A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
+  [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
 Pietropaolo Frisoni,
+Soran Jahangiri,
+Christina Lee,
 David Wierichs.

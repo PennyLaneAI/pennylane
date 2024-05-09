@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import X, Y, Z
+from pennylane import I, X, Y, Z
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord, lie_closure
 
 ops1 = [
@@ -63,11 +63,16 @@ class TestPauliVSpace:
         assert vspace._rank == 2
         assert vspace._num_pw == 2
         assert len(vspace._pw_to_idx) == 2
+        assert vspace.tol == np.finfo(vspace._M.dtype).eps * 100
 
     @pytest.mark.parametrize("dtype", [float, complex])
     def test_dtype(self, dtype):
         vspace = PauliVSpace(ops1, dtype=dtype)
         assert vspace._M.dtype == dtype
+
+    def test_set_tol(self):
+        vspace = PauliVSpace(ops1, tol=1e-13)
+        assert vspace.tol == 1e-13
 
     def test_init_with_ops(self):
         """Test that initialization with PennyLane operators, PauliWord and PauliSentence works"""
@@ -90,7 +95,7 @@ class TestPauliVSpace:
             repr(PauliVSpace(ops1)) == "[1.0 * X(0) @ X(1)\n+ 1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]"
         )
 
-    @pytest.mark.parametrize("li_tol", [1e-15, 1e-14])
+    @pytest.mark.parametrize("li_tol", [None, 1e-15, 1e-14])
     @pytest.mark.parametrize("ops, op, true_new_basis", ADD_LINEAR_INDEPENDENT)
     def test_add_linear_independent(self, ops, op, true_new_basis, li_tol):
         """Test that adding new (linearly independent) operators works as expected"""
@@ -271,7 +276,7 @@ class TestPauliVSpace:
         ),
     )
 
-    @pytest.mark.parametrize("tol", [1e-15, 1e-8])
+    @pytest.mark.parametrize("tol", [None, 1e-15, 1e-8])
     @pytest.mark.parametrize("ops, op, is_independent_true", IS_INDEPENDENT_TEST)
     def test_is_independent(self, ops, op, is_independent_true, tol):
         """Test the `is_independent` method returns correct results and leaves class attributes intact"""
@@ -486,3 +491,17 @@ class TestLieClosure:
 
         res = qml.pauli.lie_closure(generators)
         assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
+
+    def test_universal_gate_set(self):
+        """Test universal gate set"""
+        n = 3
+
+        generators = [Z(i) for i in range(n)]
+        generators += [Y(i) for i in range(n)]
+        generators += [
+            (I(i) - Z(i)) @ (I(i + 1) - X(i + 1)) for i in range(n - 1)
+        ]  # generator of CNOT gate
+
+        vspace = qml.lie_closure(generators)
+
+        assert len(vspace) == 4**3
