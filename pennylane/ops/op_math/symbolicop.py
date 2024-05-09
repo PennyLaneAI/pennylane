@@ -47,6 +47,10 @@ class SymbolicOp(Operator):
 
     _name = "Symbolic"
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
         # this method needs to be overwritten because the base must be copied too.

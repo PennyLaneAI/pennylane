@@ -132,6 +132,8 @@ class Sum(CompositeOp):
         method (str): The graph coloring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
             First). This keyword argument is ignored if ``grouping_type`` is ``None``.
+        grouping_indices (Optional[List[List[int]]]): Which terms can be computed at the same time. Sets
+           the corresponding property. Takes precedence over ``grouping_type`` and ``method``.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::

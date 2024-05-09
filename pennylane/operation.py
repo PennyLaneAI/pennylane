@@ -256,6 +256,7 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, csr_matrix, eye, kron
 
 import pennylane as qml
+from pennylane.capture import CaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -405,7 +406,12 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-class Operator(abc.ABC):
+# pylint: disable=abstract-method
+class ABCCaptureMeta(CaptureMeta, abc.ABCMeta):
+    """A combination of CaptureMeta and ABCMeta that allows Operator to be an Abstract Base Class."""
+
+
+class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -697,8 +703,43 @@ class Operator(abc.ABC):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
+    _primitive = None
+    """
+    Optional[jax.core.Primitive]
+    """
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
+        cls._primitive = create_operator_primitive(cls)
+
+    @classmethod
+    def _primitive_def_impl(cls, *args, **kwargs) -> "Operator":
+        """The definition for ``cls._primitive.def_impl``.  When jax capture is enabled, this method
+        is used to turn a jaxpr bind call into a concrete operation.
+
+        If ``_primitive_bind_call`` performs any sort of processing or reording, this function
+        may need to undo such transformations to restore the original Operator call signature.
+        """
+        return type.__call__(cls, *args, **kwargs)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        """This class method should match the call signature of the class itself.
+
+        When plxpr is enabled, this method is used to bind the arguments and keyword arguments
+        to the primitive via ``cls._primitive.bind``.
+
+        """
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, *args, **kwargs)
+
+        if "wires" in kwargs:
+            wires = kwargs.pop("wires")
+            args += (Wires(wires),)
+        elif args:
+            args = args[:-1] + (Wires(args[-1]),)
+        return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self):
         cls = self.__class__

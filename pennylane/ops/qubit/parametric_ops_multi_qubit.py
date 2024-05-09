@@ -261,6 +261,14 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
+    @classmethod
+    def _primitive_bind_call(cls, theta, pauli_word, wires=None, **kwargs):
+        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires, **kwargs)
+
+    @classmethod
+    def _primitive_def_impl(cls, theta, wires, pauli_word, **kwargs):
+        return type.__call__(cls, theta, pauli_word, wires, **kwargs)
+
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)
         self.hyperparameters["pauli_word"] = pauli_word
