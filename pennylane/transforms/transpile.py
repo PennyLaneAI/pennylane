@@ -168,7 +168,10 @@ def transpile(
             return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
-            tape, stopping_condition=stop_at, name="transpile"
+            tape,
+            stopping_condition=stop_at,
+            name="transpile",
+            error=qml.operation.DecompositionUndefinedError,
         )
         # make copy of ops
         list_op_copy = expanded_tape.operations.copy()
