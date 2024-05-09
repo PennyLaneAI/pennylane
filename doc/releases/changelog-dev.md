@@ -6,6 +6,11 @@
 
 <h3>Improvements 🛠</h3>
 
+<h4>Mid-circuit measurements and dynamic circuits</h4>
+
+* The `dynamic_one_shot` transform can be compiled with `jax.jit`.
+  [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
+  
 * When using `defer_measurements` with postselecting mid-circuit measurements, operations
   that will never be active due to the postselected state are skipped in the transformed
   quantum circuit. In addition, postselected controls are skipped, as they are evaluated
@@ -103,4 +108,5 @@ This release contains contributions from (in alphabetical order):
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
+Vincent Michaud-Rioux,
 David Wierichs.
