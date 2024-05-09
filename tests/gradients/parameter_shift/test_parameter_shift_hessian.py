@@ -132,6 +132,7 @@ class TestCollectRecipes:
         qml.SingleExcitation(-1.2, wires=[1, 3])
 
     tape = qml.tape.QuantumScript.from_queue(q)
+    tape.trainable_params = [0, 1, 2]
 
     def test_with_custom_recipes(self):
         """Test that custom gradient recipes are used correctly."""
@@ -151,6 +152,7 @@ class TestCollectRecipes:
             DummyOp(0.3, wires=0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
         argnum = qml.math.ones((tape.num_params, tape.num_params), dtype=bool)
         diag, offdiag = _collect_recipes(tape, argnum, ("A", "A"), None, None)
         assert qml.math.allclose(diag[0], channel_recipe_2nd_order)
@@ -758,6 +760,7 @@ class TestParameterShiftHessian:
             qml.CRY(0.9, wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
         with pytest.raises(ValueError, match="sets of shift values for diagonal entries"):
             qml.gradients.param_shift_hessian(tape, argnum=argnum, diagonal_shifts=[])
 
@@ -772,6 +775,7 @@ class TestParameterShiftHessian:
             qml.RX(-0.4, wires=0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1, 2]
         with pytest.raises(ValueError, match="sets of shift values for off-diagonal entries"):
             qml.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
 

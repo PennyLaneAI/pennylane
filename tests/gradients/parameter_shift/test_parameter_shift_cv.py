@@ -45,6 +45,7 @@ class TestGradAnalysis:
             qml.expval(qml.QuadX(wires=[0]))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1, 2, 3, 4]
         assert _grad_method_cv(tape, 0) is None
         assert _grad_method_cv(tape, 1) == "A"
         assert _grad_method_cv(tape, 2) == "A"
@@ -70,6 +71,7 @@ class TestGradAnalysis:
             qml.expval(qml.QuadP(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
         assert _grad_method_cv(tape, 0) == "A"
         assert _grad_method_cv(tape, 1) == "0"
 
@@ -733,6 +735,7 @@ class TestExpectationQuantumGradients:
             qml.expval(qml.NumberOperator(0))  # second order
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1, 2, 3]
         spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
         grad_A2 = fn(dev.batch_execute(tapes))
@@ -1024,6 +1027,7 @@ class TestVarianceQuantumGradients:
             qml.expval(qml.QuadX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0]
 
         with pytest.raises(
             NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"
