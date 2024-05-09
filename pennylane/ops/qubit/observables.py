@@ -515,8 +515,7 @@ class BasisStateProjector(Projector, Operation):
         m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
         idx = int("".join(str(i) for i in basis_state), 2)
         m[idx, idx] = 1
-        mat[idx, idx] = 1
-        return mat
+        return m
 
     @staticmethod
     def compute_eigvals(basis_state):  # pylint: disable=arguments-differ
