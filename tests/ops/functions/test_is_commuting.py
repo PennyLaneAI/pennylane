@@ -16,13 +16,10 @@ Unittests for is_commuting
 """
 # pylint: disable=too-many-public-methods
 import pytest
-import pennylane.numpy as np
-import pennylane as qml
 
-from pennylane.ops.functions.is_commuting import (
-    _get_target_name,
-    _check_mat_commutation,
-)
+import pennylane as qml
+import pennylane.numpy as np
+from pennylane.ops.functions.is_commuting import _check_mat_commutation, _get_target_name
 
 control_base_map_data = [
     (qml.CNOT((0, 1)), "PauliX"),
@@ -778,53 +775,47 @@ class TestCommutingFunction:
         assert commutation == res
 
     @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,wire_map,commute_status",
+        "pauli_word_1,pauli_word_2,commute_status",
         [
-            (qml.Identity(0), qml.PauliZ(0), {0: 0}, True),
-            (qml.PauliY(0), qml.PauliZ(0), {0: 0}, False),
-            (qml.PauliX(0), qml.PauliX(1), {0: 0, 1: 1}, True),
-            (qml.PauliY("x"), qml.PauliX("y"), None, True),
+            (qml.Identity(0), qml.PauliZ(0), True),
+            (qml.PauliY(0), qml.PauliZ(0), False),
+            (qml.PauliX(0), qml.PauliX(1), True),
+            (qml.PauliY("x"), qml.PauliX("y"), True),
             (
                 qml.prod(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
                 qml.prod(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
                 True,
             ),
             (
                 qml.prod(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ("d")),
                 qml.prod(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
                 False,
             ),
             (
                 qml.operation.Tensor(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ("d")),
                 qml.operation.Tensor(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
                 False,
             ),
             (
                 qml.sum(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
                 qml.sum(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
                 False,
             ),
             (
                 qml.sum(qml.PauliZ("a"), qml.PauliY("a"), qml.PauliZ("b")),
                 qml.sum(qml.PauliX("c"), qml.PauliZ("c"), qml.PauliY("d")),
-                {"a": 0, "b": 0, "c": 1, "d": 1},
                 True,
             ),
             (
                 qml.sum(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
                 qml.sum(qml.PauliZ("a"), qml.PauliY("c"), qml.PauliZ("d")),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
                 True,
             ),
         ],
     )
-    def test_pauli_words(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
+    def test_pauli_words(self, pauli_word_1, pauli_word_2, commute_status):
         """Test that (non)-commuting Pauli words are correctly identified."""
-        do_they_commute = qml.is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+        do_they_commute = qml.is_commuting(pauli_word_1, pauli_word_2)
         assert do_they_commute == commute_status
 
     @pytest.mark.parametrize(

@@ -15,19 +15,20 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
-# pylint: disable=too-many-arguments, too-many-public-methods
 import itertools
 
+# pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
+
 import numpy as np
 import pytest
-
 
 import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
-from pennylane.ops.op_math import SymbolicOp, Controlled
+from pennylane.ops.functions.equal import _equal, assert_equal
+from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -314,6 +315,34 @@ equal_pauli_operators = [
     (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.2), True),
     (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.3), False),
 ]
+
+
+def test_assert_equal_types():
+    """Test that assert equal raises if the operator types are different."""
+
+    op1 = qml.S(0)
+    op2 = qml.T(0)
+    with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+        assert_equal(op1, op2)
+
+
+def test_assert_equal_unspecified():
+
+    # pylint: disable=too-few-public-methods
+    class RandomType:
+        """dummy type"""
+
+        def __init__(self):
+            pass
+
+    # pylint: disable=unused-argument
+    @_equal.register
+    def _(op1: RandomType, op2, **_):
+        """always returns false"""
+        return False
+
+    with pytest.raises(AssertionError, match=r"for an unspecified reason"):
+        assert_equal(RandomType(), RandomType())
 
 
 class TestEqual:
@@ -1456,8 +1485,8 @@ class TestSymbolicOpComparison:
     @pytest.mark.jax
     def test_kwargs_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base1 = qml.RX(torch.tensor(1.2), wires=0)
         base2 = qml.RX(jax.numpy.array(1.2), wires=0)
@@ -1710,8 +1739,8 @@ class TestProdComparisons:
     @pytest.mark.all_interfaces
     def test_prod_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
@@ -1743,6 +1772,14 @@ class TestProdComparisons:
         op1 = (0.5 * X(0)) @ (0.5 * X(1)) @ (0.5 * X(2)) @ (0.5 * X(3)) @ (0.5 * X(4))
         op2 = qml.prod(*[0.5 * X(i) for i in range(5)])
         assert qml.equal(op1, op2)
+
+    def test_prod_global_phase(self):
+        """Test that a prod with a global phase can be used with qml.equal."""
+
+        p1 = qml.GlobalPhase(np.pi) @ qml.X(0)
+        p2 = qml.X(0) @ qml.GlobalPhase(np.pi)
+
+        assert qml.equal(p1, p2)
 
 
 @pytest.mark.usefixtures("use_new_opmath")
@@ -1796,8 +1833,8 @@ class TestSumComparisons:
     @pytest.mark.all_interfaces
     def test_sum_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
@@ -1854,6 +1891,12 @@ class TestSumComparisons:
             + 0.5 * X(9)
         )
         op2 = qml.sum(*[0.5 * X(i) for i in range(10)])
+        assert qml.equal(op1, op2)
+
+    def test_sum_global_phase(self):
+        """Test that a sum containing a no-wires op can still be compared."""
+        op1 = qml.sum(qml.X(0), qml.GlobalPhase(np.pi))
+        op2 = qml.sum(qml.GlobalPhase(np.pi), qml.X(0))
         assert qml.equal(op1, op2)
 
 
@@ -2049,15 +2092,23 @@ class TestBasisRotation:
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
         assert qml.equal(op, other_op, atol=1e-5)
+        assert_equal(op, other_op, atol=1e-5)
         assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
+
+        with pytest.raises(AssertionError, match="The hyperparameter unitary_matrix is not equal"):
+            assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
     def test_non_equal_training_params_comparison(self, op, other_op):
         assert qml.equal(op, other_op)
+        assert_equal(op, other_op)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op4)])
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+            assert_equal(op, other_op)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [op1])
@@ -2072,7 +2123,11 @@ class TestBasisRotation:
         )
         other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
         assert qml.equal(op, other_op, check_interface=False)
+        assert_equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
+
+        with pytest.raises(AssertionError, match=r"has different interfaces for op1 and op2"):
+            assert_equal(op, other_op)
 
 
 class TestHilbertSchmidt:

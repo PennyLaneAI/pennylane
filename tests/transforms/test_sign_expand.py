@@ -11,12 +11,12 @@
 # limitations under the License.
 """This file contains unit tests for the ``sign_expand`` transform."""
 import functools
-import pytest
 
 import numpy as np
+import pytest
+
 import pennylane as qml
 import pennylane.tape
-
 
 # Defines the device used for all tests
 dev = qml.device("default.qubit", wires=[0, 1, 2, 3, "Hadamard", "Target"])

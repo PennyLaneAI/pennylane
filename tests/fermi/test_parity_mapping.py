@@ -3,11 +3,11 @@
 import pytest
 
 import pennylane as qml
-from pennylane.ops import SProd, Identity
-from pennylane.pauli.conversion import pauli_sentence
 from pennylane.fermi.conversion import parity_transform
-from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.fermi.fermionic import FermiWord, FermiSentence
+from pennylane.fermi.fermionic import FermiSentence, FermiWord
+from pennylane.ops import Identity, SProd
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli.conversion import pauli_sentence
 
 
 def test_error_is_raised_for_incompatible_type():

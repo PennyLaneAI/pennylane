@@ -15,6 +15,7 @@
 This module contains the functions needed for two-electron tensor factorization.
 """
 import numpy as np
+
 import pennylane as qml
 
 

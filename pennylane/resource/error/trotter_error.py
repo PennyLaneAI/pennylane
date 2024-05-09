@@ -14,7 +14,7 @@
 r""" Private functions implementing the error analysis for Trotter-Suzuki product formulas."""
 
 import math
-from functools import reduce, lru_cache
+from functools import lru_cache, reduce
 
 import pennylane as qml
 

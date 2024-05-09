@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
+import copy
+
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
-import copy
 from dataclasses import replace
-
 from functools import partial
 from typing import Callable, Tuple
 
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
-
 
 import pennylane as qml
 from pennylane import QNode

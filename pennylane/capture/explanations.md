@@ -1,4 +1,4 @@
-This documentation explains the principles behind `qml.capture.PLXPRMeta`.
+This documentation explains the principles behind `qml.capture.CaptureMeta`.
 
 
 ```python
@@ -97,20 +97,20 @@ class MetaClass2(type):
     def __call__(cls, *args, **kwargs):
         return 2.0
 
-class WeirdClass(metaclass=MetaClass2):
+class MyClass2(metaclass=MetaClass2):
 
     def __init__(self, *args, **kwargs):
         print("Am I here?")
         self.args = args
 ```
 
-You can see now that instead of actually getting an instance of `WeirdClass`, we just get `2.0`. 
+You can see now that instead of actually getting an instance of `MyClass2`, we just get `2.0`. 
 
 Using a metaclass, we can hijack what happens when a type is called.
 
 
 ```python
->>> out = WeirdClass(1.0)
+>>> out = MyClass2(1.0)
 >>> out, out == 2.0
 (2.0, True)
 ```
@@ -190,7 +190,6 @@ class AbstractPrimitiveClass(jax.core.AbstractValue):
     def __hash__(self):
         return hash("AbstractPrimitiveClass")
 
-# not quite sure what it does, but we have to do this...
 jax.core.raise_to_shaped_mappings[AbstractPrimitiveClass] = lambda aval, _: aval
 ```
 

@@ -23,28 +23,28 @@ quantum-classical programs.
 
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
-the switches ``qml.capture.enable_plxpr`` and ``qml.capture.disable_plxpr``.
+the switches ``qml.capture.enable`` and ``qml.capture.disable``.
 Whether or not the capturing mechanism is currently being used can be
-queried with ``qml.capture.plxpr_enabled``.
+queried with ``qml.capture.enabled``.
 By default, the mechanism is disabled:
 
 .. code-block:: pycon
 
     >>> import pennylane as qml
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.enabled()
     False
-    >>> qml.capture.enable_plxpr()
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.enable()
+    >>> qml.capture.enabled()
     True
-    >>> qml.capture.disable_plxpr()
-    >>> qml.capture.plxpr_enabled()
+    >>> qml.capture.disable()
+    >>> qml.capture.enabled()
     False
 
 **Custom Operator Behaviour**
 
-Any operation that inherits from :class:`~.Operator` gains a default ability to be captured
-by Jaxpr.  Any positional argument is bound as a tracer, wires are processed out into individual tracers,
-and any keyword args are passed as keyword metadata.
+Any operator that inherits from :class:`~.Operator` gains a default ability to be captured
+in a Jaxpr. Any positional argument is bound as a tracer, wires are processed out into individual tracers,
+and any keyword arguments are passed as keyword metadata.
 
 .. code-block:: python
 
@@ -56,7 +56,7 @@ and any keyword args are passed as keyword metadata.
     def qfunc(a):
         MyOp1(a, wires=(0,1), key="a")
 
-    qml.capture.enable_plxpr()
+    qml.capture.enable()
     print(jax.make_jaxpr(qfunc)(0.1))
 
 .. code-block::
@@ -65,13 +65,13 @@ and any keyword args are passed as keyword metadata.
         _:AbstractOperator() = MyOp1[key=a n_wires=2] a 0 1
     in () }
 
-But an operator developer may need to override custom behavior for calling ``cls._primitive.bind`` 
+But an operator developer may need to override custom behavior for calling ``cls._primitive.bind``
 (where ``cls`` indicates the class) if:
 
-* The operator does not accept wires like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
+* The operator does not accept wires, like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
 * The operator allows metadata to be provided positionally, like :class:`~.PauliRot`.
 
-In such cases, the operator developer can override ``cls._primitive_bind_call``.  This is what
+In such cases, the operator developer can override ``cls._primitive_bind_call``, which
 will be called when constructing a new class instance instead of ``type.__call__``.  For example,
 
 .. code-block:: python
@@ -90,20 +90,33 @@ will be called when constructing a new class instance instead of ``type.__call__
     def qfunc():
         JustMetadataOp("Y")
 
-    qml.capture.enable_plxpr()
+    qml.capture.enable()
     print(jax.make_jaxpr(qfunc)())
 
 .. code-block::
 
     { lambda ; . let _:AbstractOperator() = JustMetadataOp[metadata=Y]  in () }
 
+As you can see, the input ``"Y"``, while being passed as a positional argument, is converted to
+metadata within the custom ``_primitive_bind_call`` method.
+
+If needed, developers can also override the implementation method of the primitive like was done with ``Controlled``.
+``Controlled`` needs to do so to handle packing and unpacking the control wires.
+
+.. code-block:: python
+
+    class MyCustomOp(qml.operation.Operator):
+        pass
+
+    @MyCustomOp._primitive.def_impl
+    def _(*args, **kwargs):
+        return type.__call__(MyCustomOp, *args, **kwargs)
 """
-from .switches import enable_plxpr, disable_plxpr, plxpr_enabled
-from .meta_type import (
-    PLXPRMeta,
+from .switches import disable, enable, enabled
+from .capture_meta import CaptureMeta
+from .primitives import (
     create_operator_primitive,
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-
 from .measure import measure

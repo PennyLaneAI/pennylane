@@ -33,7 +33,7 @@ import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose, lie_closure
+from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
@@ -395,7 +395,7 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
-            if isinstance(dev, pennylane.Device):
+            if isinstance(dev, pennylane.devices.LegacyDevice):
                 custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
                     custom_decomps, dev, decomp_depth=decomp_depth
                 )

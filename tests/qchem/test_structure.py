@@ -14,18 +14,19 @@
 """
 Unit tests for the functions of the structure module.
 """
+import functools as ft
+
 # pylint: disable=too-many-arguments
 import os
 import sys
-import functools as ft
 from unittest.mock import patch
+
 import pytest
 
 import pennylane as qml
-from pennylane import qchem
 from pennylane import numpy as np
+from pennylane import qchem
 from pennylane.templates.subroutines import UCCSD
-
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 

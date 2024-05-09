@@ -180,8 +180,8 @@ PennyLane is in the process of replacing :class:`~pennylane.Hamiltonian` and :cl
 with newer, more general arithmetic operators. These consist of :class:`~pennylane.ops.op_math.Prod`,
 :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`. By default, using dunder
 methods (eg. ``+``, ``-``, ``@``, ``*``) to combine operators with scalars or other operators will
-create :class:`~pennylane.Hamiltonian`'s and :class:`~.Tensor`'s. If you would like to switch dunders to
-return newer arithmetic operators, the ``operation`` module provides the following helper functions:
+create the aforementioned newer operators. To toggle the dunders to return the older arithmetic operators,
+the ``operation`` module provides the following helper functions:
 
 .. currentmodule:: pennylane.operation
 
@@ -247,23 +247,23 @@ import copy
 import functools
 import itertools
 import warnings
-from enum import IntEnum
-from typing import List, Tuple
 from contextlib import contextmanager
+from enum import IntEnum
+from typing import List, Optional, Tuple
 
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, csr_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.capture import PLXPRMeta, create_operator_primitive
+from pennylane.capture import CaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .utils import pauli_eigs
 from .pytrees import register_pytree
+from .utils import pauli_eigs
 
 # =============================================================================
 # Errors
@@ -406,7 +406,12 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-class Operator(abc.ABC, metaclass=PLXPRMeta):
+# pylint: disable=abstract-method
+class CaptureMetaABC(CaptureMeta, abc.ABCMeta):
+    """Mixing together CaptureMeta and ABCMeta so that Operator can use both."""
+
+
+class Operator(abc.ABC, metaclass=CaptureMetaABC):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -698,7 +703,7 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
-    _primitive = None
+    _primitive: Optional["jax.core.Primitive"] = None
     """
     Optional[jax.core.Primitive]
     """
@@ -712,14 +717,18 @@ class Operator(abc.ABC, metaclass=PLXPRMeta):
         """This class method should match the call signature of the class itself.
 
         When plxpr is enabled, this method is used to bind the arguments and keyword arguments
-        the primitive via ``cls._primitive.bind``.
+        to the primitive via ``cls._primitive.bind``.
 
         """
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
 
-        iterable_wires_types = (list, tuple, qml.wires.Wires, range)
+        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
+
+        # process wires so that we can handle them either as a final argument or as a keyword argument.
+        # Stick `n_wires` as a keyword argument so we have enough information to repack them during
+        # the implementation call defined by `primitive.def_impl`.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
             wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
@@ -2987,9 +2996,12 @@ def gen_is_multi_term_hamiltonian(obj):
     return isinstance(o, (qml.ops.Hamiltonian, qml.ops.LinearCombination)) and len(o.coeffs) > 1
 
 
-def enable_new_opmath():
+def enable_new_opmath(warn=True):
     """
     Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
+
+    Args:
+        warn (bool): Whether or not to emit a warning for re-enabling new opmath. Default is ``True``.
 
     **Example**
 
@@ -3001,13 +3013,22 @@ def enable_new_opmath():
     >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
     """
+    if warn:
+        warnings.warn(
+            "Re-enabling the new Operator arithmetic system after disabling it is not advised."
+            "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
+            UserWarning,
+        )
     global __use_new_opmath
     __use_new_opmath = True
 
 
-def disable_new_opmath():
+def disable_new_opmath(warn=True):
     """
     Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
+
+    Args:
+        warn (bool): Whether or not to emit a warning for disabling new opmath. Default is ``True``.
 
     **Example**
 
@@ -3019,6 +3040,13 @@ def disable_new_opmath():
     >>> type(qml.X(0) @ qml.Z(1))
     <class 'pennylane.operation.Tensor'>
     """
+    if warn:
+        warnings.warn(
+            "Disabling the new Operator arithmetic system for legacy support."
+            "If you need help troubleshooting your code, please visit"
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
+            UserWarning,
+        )
     global __use_new_opmath
     __use_new_opmath = False
 
@@ -3056,10 +3084,14 @@ def convert_to_opmath(op):
         Operator: An operator using the new arithmetic operations, if relevant
     """
     if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(op)
         c, ops = op.terms()
         ops = tuple(convert_to_opmath(o) for o in ops)
         return qml.dot(c, ops)
     if isinstance(op, Tensor):
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(op)
         return qml.prod(*op.obs)
     return op
 
@@ -3072,15 +3104,15 @@ def disable_new_opmath_cm():
     was_active = qml.operation.active_new_opmath()
     try:
         if was_active:
-            disable_new_opmath()
+            disable_new_opmath(warn=False)
         yield
     except Exception as e:
         raise e
     finally:
         if was_active:
-            enable_new_opmath()
+            enable_new_opmath(warn=False)
         else:
-            disable_new_opmath()
+            disable_new_opmath(warn=False)
 
 
 @contextmanager
@@ -3090,12 +3122,12 @@ def enable_new_opmath_cm():
 
     was_active = qml.operation.active_new_opmath()
     if not was_active:
-        enable_new_opmath()
+        enable_new_opmath(warn=False)
     yield
     if was_active:
-        enable_new_opmath()
+        enable_new_opmath(warn=False)
     else:
-        disable_new_opmath()
+        disable_new_opmath(warn=False)
 
 
 # pylint: disable=too-many-branches

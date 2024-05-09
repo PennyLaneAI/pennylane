@@ -16,7 +16,7 @@ Function cut_circuit for cutting a quantum circuit into smaller circuit fragment
 """
 
 from functools import partial
-from typing import Callable, Optional, Union, Sequence
+from typing import Callable, Optional, Sequence, Union
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
@@ -292,13 +292,13 @@ def cut_circuit(
 
         The circuit fragments can now be visualized:
 
-        >>> print(fragment_tapes[0].draw())
-         0: ──RX(0.531)──╭●──RY(-0.4)─────┤ ⟨Z⟩
-         1: ──RY(0.9)────╰Z──MeasureNode──┤
+        >>> print(fragment_tapes[0].draw(decimals=2))
+        0: ──RX(0.53)─╭●──RY(-0.40)───┤  <Z>
+        1: ──RY(0.90)─╰Z──MeasureNode─┤
 
-        >>> print(fragment_tapes[1].draw())
-         2: ──RX(0.3)──────╭Z──╭┤ ⟨Z ⊗ Z⟩
-         1: ──PrepareNode──╰●──╰┤ ⟨Z ⊗ Z⟩
+        >>> print(fragment_tapes[1].draw(decimals=1))
+        2: ──RX(0.3)─────╭Z─┤ ╭<Z@Z>
+        1: ──PrepareNode─╰●─┤ ╰<Z@Z>
 
         Additionally, we must remap the tape wires to match those available on our device.
 
@@ -326,29 +326,30 @@ def cut_circuit(
 
         >>> for t in tapes:
         ...     print(qml.drawer.tape_text(t))
+        ...     print()
 
         .. code-block::
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ I⟩ ╭┤ ⟨Z ⊗ Z⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ I⟩ ╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@I> ╭<Z@Z>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@I> ╰<Z@Z>
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ X⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ X⟩
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@X>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@X>
 
-             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ Y⟩
-             1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ Y⟩
+            0: ──RX(0.53)─╭●──RY(-0.40)─┤ ╭<Z@Y>
+            1: ──RY(0.90)─╰Z────────────┤ ╰<Z@Y>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──I────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──I────────╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──X────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──X────────╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──H────────╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.30)─╭Z─┤ ╭<Z@Z>
+            1: ──H────────╰●─┤ ╰<Z@Z>
 
-             0: ──RX(0.3)─────╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──H────────S──╰●──╰┤ ⟨Z ⊗ Z⟩
+            0: ──RX(0.30)────╭Z─┤ ╭<Z@Z>
+            1: ──H─────────S─╰●─┤ ╰<Z@Z>
 
         The last step is to execute the tapes and postprocess the results using
         :func:`~.qcut_processing_fn`, which processes the results to the original full circuit

@@ -15,10 +15,11 @@
 # pylint: disable=protected-access
 import functools
 import pickle
-import pytest
-import numpy as np
 
-from gate_data import I, X, Y, Z, H
+import numpy as np
+import pytest
+from gate_data import H, I, X, Y, Z
+
 import pennylane as qml
 from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
 

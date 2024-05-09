@@ -20,7 +20,7 @@ from copy import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator, _UNSET_BATCH_SIZE
+from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.queuing import QueuingManager
 
 
@@ -49,6 +49,7 @@ class SymbolicOp(Operator):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        # has no wires, so doesn't need any wires processing
         return cls._primitive.bind(*args, **kwargs)
 
     # pylint: disable=attribute-defined-outside-init

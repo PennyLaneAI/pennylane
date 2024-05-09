@@ -18,8 +18,7 @@ Integration tests for the capture of pennylane operations into jaxpr.
 import pytest
 
 import pennylane as qml
-
-from pennylane.capture.meta_type import _get_abstract_operator, PLXPRMeta
+from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
 
@@ -30,47 +29,29 @@ AbstractOperator = _get_abstract_operator()
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
-    qml.capture.enable_plxpr()
+    qml.capture.enable()
     yield
-    qml.capture.disable_plxpr()
+    qml.capture.disable()
 
 
-def test_custom_PLXPRMeta():
-    """Test that we can capture custom classes with the PLXPRMeta metaclass by defining
-    the _primitive_bind_call method."""
+def test_abstract_operator():
+    """Perform unit tests on the abstract operator class."""
 
-    p = jax.core.Primitive("p")
+    ao1 = AbstractOperator()
+    ao2 = AbstractOperator()
+    assert ao1 == ao2
+    assert hash(ao1) == hash(ao2)
 
-    @p.def_abstract_eval
-    def _(a):
-        return jax.core.ShapedArray(a.shape, a.dtype)
+    with pytest.raises(NotImplementedError):
+        ao1.update()
 
-    # pylint: disable=too-few-public-methods
-    class MyObj(metaclass=PLXPRMeta):
-        """A PLXPRMeta class with a _primitive_bind_call class method."""
+    with pytest.raises(NotImplementedError):
+        ao1.join(ao2)
 
-        @classmethod
-        def _primitive_bind_call(cls, *args, **kwargs):
-            return p.bind(*args, **kwargs)
+    with pytest.raises(NotImplementedError):
+        ao1.at_least_vspace()
 
-    jaxpr = jax.make_jaxpr(MyObj)(0.5)
-
-    assert len(jaxpr.eqns) == 1
-    assert jaxpr.eqns[0].primitive == p
-
-
-def test_custom_plxprmeta_no_bind_primitive_call():
-    """Test that an NotImplementedError is raised if the type does not define _primitive_bind_call."""
-
-    # pylint: disable=too-few-public-methods
-    class MyObj(metaclass=PLXPRMeta):
-        """A class that does not define _primitive_bind_call."""
-
-        def __init__(self, a):
-            self.a = a
-
-    with pytest.raises(NotImplementedError, match="Types using PLXPRMeta must implement"):
-        MyObj(0.5)
+    # arithmetic dunders integration tested
 
 
 def test_operators_constructed_when_plxpr_enabled():
@@ -79,11 +60,31 @@ def test_operators_constructed_when_plxpr_enabled():
     with qml.queuing.AnnotatedQueue() as q:
         op = qml.adjoint(qml.X(0) + qml.Y(1))
 
+    assert len(q) == 1
     assert q.queue[0] is op
     assert isinstance(op, qml.ops.Adjoint)
     assert isinstance(op.base, qml.ops.Sum)
     assert op.base[0] == qml.X(0)
     assert op.base[1] == qml.Y(1)
+
+
+def test_fallback_if_primitive_still_None():
+    """Test that if the primitive is None (no jax or something went wrong) that the instance is simply created."""
+
+    # pylint: disable=too-few-public-methods
+    class MyOp(qml.operation.Operator):
+        """A dummy operator."""
+
+    MyOp._primitive = None
+
+    op = MyOp(wires=0)
+    assert isinstance(op, qml.operation.Operator)
+
+    def f():
+        MyOp(wires=0)
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert len(jaxpr.eqns) == 0
 
 
 def test_hybrid_capture_wires():
@@ -116,7 +117,8 @@ def test_hybrid_capture_parametrization():
     jaxpr = jax.make_jaxpr(f)(0.5)
     assert len(jaxpr.eqns) == 5
 
-    in1 = jaxpr.eqns[0].invars[1]
+    in1 = jaxpr.jaxpr.invars[0]
+    assert jaxpr.eqns[0].invars[1] == in1
     assert jaxpr.eqns[1].invars[0] == in1
     assert jaxpr.eqns[2].invars[0] == in1
     assert jaxpr.eqns[3].invars[-1] == in1  # the wire
@@ -137,8 +139,10 @@ def test_hybrid_capture_parametrization():
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
-@pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0)))
+@pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0), {0}))
 def test_different_wires(w, as_kwarg):
+    """Test that wires can be passed positionally and as a keyword in a variety of differnt types."""
+
     def qfunc():
         if as_kwarg:
             qml.X(wires=w)
@@ -202,7 +206,7 @@ def test_pauli_rot():
     assert eqn.primitive == qml.PauliRot._primitive
     assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
 
-    assert len(eqn.invars) == 3
+    assert len(eqn.invars) == 3  # The rotation parameter and the two wires
     assert jaxpr.jaxpr.invars == eqn.invars
 
     with qml.queuing.AnnotatedQueue() as q:
@@ -214,7 +218,7 @@ def test_pauli_rot():
 
 class TestTemplates:
     def test_variable_wire_non_parametrized_template(self):
-        """Test capturing a variable wire, non-parametrized template like GroverOperator."""
+        """Test capturing a variable wire count, non-parametrized template like GroverOperator."""
 
         jaxpr = jax.make_jaxpr(qml.GroverOperator)(wires=(0, 1, 2, 3, 4, 5))
 
@@ -224,9 +228,10 @@ class TestTemplates:
         assert eqn.primitive == qml.GroverOperator._primitive
         assert eqn.params == {"n_wires": 6}
         assert eqn.invars == jaxpr.jaxpr.invars
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
     def test_nested_template(self):
-        """Test capturing a template that contains a nested opeartion defined outside the qfunc."""
+        """Test capturing a template that contains a nested operation defined outside the qfunc."""
 
         coeffs = [0.25, 0.75]
         ops = [qml.X(0), qml.Z(0)]
@@ -283,11 +288,11 @@ class TestOpmath:
         assert len(q) == 1
         assert qml.equal(q.queue[0], qml.adjoint(qml.X(0)))
 
-    def test_control(self):
+    def test_Controlled(self):
         """Test a nested control operation."""
 
         def qfunc(op):
-            qml.ctrl(op, control=3, control_values=[0])
+            qml.ctrl(op, control=(3, 4), control_values=[0, 1])
 
         jaxpr = jax.make_jaxpr(qfunc)(qml.IsingXX(1.2, wires=(0, 1)))
 
@@ -298,15 +303,16 @@ class TestOpmath:
         assert eqn.primitive == qml.ops.Controlled._primitive
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # the isingxx
         assert eqn.invars[1].val == 3
+        assert eqn.invars[2].val == 4
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {"control_values": [0], "work_wires": None}
+        assert eqn.params == {"control_values": [0, 1], "work_wires": None}
 
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)
 
         assert len(q) == 1
-        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=3, control_values=[0])
+        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
         assert qml.equal(q.queue[0], expected)
 
 

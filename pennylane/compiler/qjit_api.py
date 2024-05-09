@@ -14,11 +14,11 @@
 """QJIT compatible quantum and compilation operations API"""
 
 from .compiler import (
-    _check_compiler_version,
-    CompileError,
     AvailableCompilers,
-    available,
+    CompileError,
+    _check_compiler_version,
     active_compiler,
+    available,
 )
 
 

@@ -16,10 +16,12 @@
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
+
 import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
+
 from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
 
 alphabet_array = np.array(list(alphabet))
@@ -178,6 +180,12 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
             debugger.snapshots[op.tag] = snapshot
         else:
             debugger.snapshots[len(debugger.snapshots)] = snapshot
+    return state
+
+
+@apply_operation.register
+def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None, **_):
+    """Applies a :class:`~.Identity` operation by just returning the input state."""
     return state
 
 

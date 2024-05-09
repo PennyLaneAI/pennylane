@@ -14,9 +14,11 @@
 """
 Unit tests for the ArbitraryStatePreparation template.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.arbitrary_state_preparation import (

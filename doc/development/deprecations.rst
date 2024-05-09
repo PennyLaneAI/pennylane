@@ -9,6 +9,36 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+New operator arithmetic deprecations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The v0.36 release completes the main phase of PennyLane's switchover to an updated approach for handling
+arithmetic operations between operators, check out the :ref:`Updated operators <new_opmath>` page
+for more details. The old system is still accessible via :func:`~.disable_new_opmath`. However, the
+old system will be removed in an upcoming release and should be treated as deprecated. The following
+functionality will explicitly raise a deprecation warning when used:
+
+* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
+  :meth:`~.Operator.terms` instead.
+
+  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
+
+* Accessing ``qml.ops.Hamiltonian`` is deprecated because it points to the old version of the class
+  that may not be compatible with the new approach to operator arithmetic. Instead, using
+  ``qml.Hamiltonian`` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
+  ``qml.Hamiltonian`` with existing code without needing to make any changes.
+
+  - Use of ``qml.ops.Hamiltonian`` is deprecated in v0.36
+
+* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
+  A user should use :class:`op.operands <~.CompositeOp>` instead.
+
+  - Deprecated in v0.36
+
+Other deprecations
+~~~~~~~~~~~~~~~~~~
+
 * PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
   
   - Last supported version of ``manylinux2014`` with v0.36
@@ -20,41 +50,22 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
-* ``qml.from_qasm_file`` is deprecated. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
+Completed deprecation cycles
+----------------------------
+
+* ``qml.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
 
   >>> with open("test.qasm", "r") as f:
   ...     circuit = qml.from_qasm(f.read())
 
   - Deprecated in v0.36
-  - Will be removed in v0.37
+  - Removed in v0.37
 
 * The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
-  libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
-  ``from_qasm``, etc.
+  libraries. It has been removed in favour of the more specific functions ``from_qiskit``, ``from_qasm``, etc.
 
   - Deprecated in v0.36
-  - Will be removed in v0.37
-
-* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
-
-  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
-
-* Accessing ``qml.ops.Hamiltonian`` with new operator arithmetic enabled is deprecated. Using ``qml.Hamiltonian``
-  with new operator arithmetic enabled now returns a ``LinearCombination`` instance. Some functionality
-  may not work as expected, and use of the Hamiltonian class with the new operator arithmetic will not
-  be supported in future releases of PennyLane.
-
-  You can update your code to the new operator arithmetic by using ``qml.Hamiltonian`` instead of importing
-  the Hamiltonian class directly or via ``qml.ops.Hamiltonian``. When the new operator arithmetic is enabled, 
-  ``qml.Hamiltonian`` will access the new corresponding implementation. 
-
-  Alternatively, to continue accessing the legacy functionality, you can use 
-  ``qml.operation.disable_new_opmath()``.
-
-  - Deprecated in v0.36
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.37
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
   ``gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
@@ -98,7 +109,7 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.36
 
-* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
   
   - Deprecated in v0.35

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the expval module"""
 import copy
+
 import numpy as np
 import pytest
 
@@ -112,7 +113,7 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        np.random.seed(478437894)
+        np.random.seed(0)
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)

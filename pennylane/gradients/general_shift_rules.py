@@ -21,6 +21,7 @@ import warnings
 
 import numpy as np
 from scipy.linalg import solve as linalg_solve
+
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
@@ -310,7 +311,7 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
            [ 0.5       , -3.14159265]])
 
     This corresponds to the shift rule
-    :math:`\frac{\partial^2 f}{\partial phi^2} = \frac{1}{2} \left[f(\phi) - f(\phi-\pi)\right]`.
+    :math:`\frac{\partial^2 f}{\partial \phi^2} = \frac{1}{2} \left[f(\phi) - f(\phi-\pi)\right]`.
     """
     frequencies = tuple(f for f in frequencies if f > 0)
     rule = _get_shift_rule(frequencies, shifts=shifts)
@@ -368,9 +369,12 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     .. math::
 
+        \begin{align*}
         \frac{\partial^2 f}{\partial x\partial y} &= \frac{1}{4}
-        \left[f(x+\pi/2, y+\pi/2) - f(x+\pi/2, y-\pi/2)\\
-        &~~~- f(x-\pi/2, y+\pi/2) + f(x-\pi/2, y-\pi/2) \right].
+        [f(x+\pi/2, y+\pi/2) - f(x+\pi/2, y-\pi/2)\\
+        &\phantom{\frac{1}{4}[}-f(x-\pi/2, y+\pi/2) + f(x-\pi/2, y-\pi/2) ].
+        \end{align*}
+
     """
     rules = []
     shifts = shifts or [None] * len(frequencies)
@@ -447,6 +451,9 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             with all shifts distributed over the broadcasting dimension. In this case,
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
+
+    if len(shifts) == 0:
+        return tuple()
 
     if multipliers is None:
         multipliers = np.ones_like(shifts)

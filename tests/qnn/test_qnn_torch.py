@@ -14,9 +14,9 @@
 """
 Tests for the pennylane.qnn.torch module.
 """
-from unittest import mock
 import math
 from collections import defaultdict
+from unittest import mock
 
 import numpy as np
 import pytest

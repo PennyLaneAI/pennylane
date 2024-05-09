@@ -21,8 +21,8 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
-from .sample import SampleMP
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
 def expval(
@@ -66,6 +66,7 @@ def expval(
 
     if isinstance(op, qml.Identity) and len(op.wires) == 0:
         # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+        # allow once we have testing and confidence in qml.expval(I())
         raise NotImplementedError(
             "Expectation values of qml.Identity() without wires are currently not allowed."
         )
@@ -109,6 +110,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
@@ -131,6 +134,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # arithmetic operators
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
         with qml.queuing.QueuingManager.stop_recording():
             prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
