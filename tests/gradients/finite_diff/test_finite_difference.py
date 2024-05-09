@@ -103,21 +103,23 @@ class TestFiniteDiff:
     def test_finite_diff_non_commuting_observables(self):
         """Test that finite differences work even if the measurements do not commute with each other."""
 
-        ops = (qml.RX(0.5, wires=0),)
+        ops = (qml.RX(qml.numpy.array(0.5), wires=0),)
         ms = (qml.expval(qml.X(0)), qml.expval(qml.Z(0)))
-        tape = qml.tape.QuantumScript(ops, ms, trainable_params=[0])
+        tape = qml.tape.QuantumScript(ops, ms)
 
         batch, _ = qml.gradients.finite_diff(tape)
         assert len(batch) == 2
-        tape0 = qml.tape.QuantumScript((qml.RX(0.5, 0),), ms, trainable_params=[0])
-        tape1 = qml.tape.QuantumScript((qml.RX(0.5 + 1e-7, 0),), ms, trainable_params=[0])
+        tape0 = qml.tape.QuantumScript((qml.RX(qml.numpy.array(0.5), 0),), ms)
+        tape1 = qml.tape.QuantumScript((qml.RX(qml.numpy.array(0.5 + 1e-7), 0),), ms)
         assert qml.equal(batch[0], tape0)
         assert qml.equal(batch[1], tape1)
 
     def test_trainable_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
-        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumScript(
+            [qml.RX(qml.numpy.array([0.4, 0.2]), 0)], [qml.expval(qml.PauliZ(0))]
+        )
         _match = r"Computing the gradient of broadcasted tapes .* using the finite difference"
         with pytest.raises(NotImplementedError, match=_match):
             finite_diff(tape)
@@ -148,18 +150,21 @@ class TestFiniteDiff:
         respect to a non-differentiable argument"""
         psi = qml.numpy.array([1, 0, 1, 0], requires_grad=True) / np.sqrt(2)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(psi, wires=[0, 1])
-            qml.RX(qml.numpy.array(0.543), wires=[0])
-            qml.RY(qml.numpy.array(-0.654), wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
+        tape = qml.tape.QuantumScript(
+            [
+                qml.StatePrep(psi, wires=[0, 1]),
+                qml.RX(qml.numpy.array(0.543), wires=[0]),
+                qml.RY(qml.numpy.array(-0.654), wires=[1]),
+                qml.CNOT(wires=[0, 1]),
+            ],
+            [qml.probs(wires=[0, 1])],
+        )
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
-            finite_diff(tape)
+            # if called as finite_diff, the expand_fn will decompose `StatePrep`
+            finite_diff.transform(tape)
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}

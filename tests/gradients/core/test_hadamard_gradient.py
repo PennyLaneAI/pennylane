@@ -87,7 +87,9 @@ class TestHadamardGrad:
     def test_trainable_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
-        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumScript(
+            [qml.RX(qml.numpy.array([0.4, 0.2]), 0)], [qml.expval(qml.PauliZ(0))]
+        )
         _match = r"Computing the gradient of broadcasted tapes .* using the Hadamard test gradient"
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.hadamard_grad(tape)

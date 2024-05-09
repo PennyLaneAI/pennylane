@@ -604,17 +604,16 @@ class TestMetricTensor:
 
         dev = qml.device("default.qubit.tf", wires=3)
 
-        def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(weights[2], wires=1)
-            qml.RZ(weights[3], wires=0)
-
         weights = tf.Variable([0.1, 0.2, 0.3, 0.5])
 
-        with qml.tape.QuantumTape() as tape:
-            circuit(weights)
+        ops = [
+            qml.RX(weights[0], wires=0),
+            qml.RY(weights[1], wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(weights[2], wires=1),
+            qml.RZ(weights[3], wires=0),
+        ]
+        tape = qml.tape.QuantumScript(ops, trainable_params=[0, 1, 2, 3])
 
         tapes, proc_fn = qml.metric_tensor(tape)
         res = qml.execute(tapes, dev, None)
