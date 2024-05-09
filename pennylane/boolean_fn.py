@@ -82,13 +82,20 @@ class BooleanFn:
         functools.update_wrapper(self, fn)
 
     def __and__(self, other):
-        return BooleanFn(lambda obj: self.fn(obj) and other.fn(obj))
+        res_l = lambda *args, **kwargs: self(*args, **kwargs)
+        res_r = lambda *args, **kwargs: other(*args, **kwargs)
+        return BooleanFn(res_l and res_r)
 
     def __or__(self, other):
-        return BooleanFn(lambda obj: self.fn(obj) or other.fn(obj))
+        res_l = lambda *args, **kwargs: self(*args, **kwargs)
+        res_r = lambda *args, **kwargs: other(*args, **kwargs)
+        return BooleanFn(res_l or res_r)
 
     def __invert__(self):
-        return BooleanFn(lambda obj: not self.fn(obj))
+        return BooleanFn(lambda *args, **kwargs: not self(*args, **kwargs))
 
-    def __call__(self, obj):
-        return self.fn(obj)
+    def __call__(self, *args, **kwargs):
+        return self.fn(*args, **kwargs)
+
+    def __repr__(self):
+        return f"BooleanFn({self.fn.__name__})"
