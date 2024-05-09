@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+This module contains the functionality to work with noise in PennyLane.
+"""
 
 from conditionals import NoiseConditional, AndConditional, OrConditional
 from conditionals import wire_in, wire_eq, op_in, op_eq

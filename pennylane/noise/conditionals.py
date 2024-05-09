@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains utility functions for building boolean conditionals for noise models"""
 
+from inspect import isclass
+
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
 
@@ -69,7 +71,7 @@ def _get_wires(val):
         wires = [[w] if isinstance(w, (int, str)) else getattr(w, "wires").tolist() for w in iters]
     except TypeError:
         raise ValueError(f"Wires cannot be computed for {val}") from None
-    return set([w for wire in wires for w in wire])
+    return set(w for wire in wires for w in wire)
 
 
 def wire_in(wires):
