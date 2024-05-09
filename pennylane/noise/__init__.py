@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from conditionals import NoiseConditionals, AndConditional, OrConditional
-from conditional import wire_in, wire_eq, op_in, op_eq
+from conditionals import NoiseConditional, AndConditional, OrConditional
+from conditionals import wire_in, wire_eq, op_in, op_eq

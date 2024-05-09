@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from collections.abc import Iterable
+"""Contains utility functions for building boolean conditionals for noise models"""
 
 import pennylane as qml
-from pennylane.ops import Conditional
 from pennylane.boolean_fn import BooleanFn
 
+# pylint: disable = unnecessary-lambda, too-few-public-methods
 
-class NoiseConditionals(BooleanFn):
+
+class NoiseConditional(BooleanFn):
     """Defines a BooleanFn for implementing noise"""
 
     def __init__(self, fn, repr):
@@ -36,64 +36,78 @@ class NoiseConditionals(BooleanFn):
         return self.repr
 
 
-class AndConditional(NoiseConditionals):
+class AndConditional(NoiseConditional):
     """Defines a BooleanFn for implementing AND combination of noise fns"""
 
     def __init__(self, left, right):
         self.l_op = left
         self.r_op = right
-        super(NoiseConditionals, self).__init__(super(NoiseConditionals, left).__and__(right))
+        super(NoiseConditional, self).__init__(super(NoiseConditional, left).__and__(right))
         self.repr = f"And({left.repr}, {right.repr})"
 
     def __str__(self):
         return f"And({self.l_op}, {self.r_op})"
 
 
-class OrConditional(NoiseConditionals):
+class OrConditional(NoiseConditional):
     """Defines a BooleanFn for implementing OR combination of noise fns"""
 
     def __init__(self, left, right):
         self.l_op = left
         self.r_op = right
-        super(NoiseConditionals, self).__init__(super(NoiseConditionals, left).__or__(right))
+        super(NoiseConditional, self).__init__(super(NoiseConditional, left).__or__(right))
         self.repr = f"Or({left.repr}, {right.repr})"
 
     def __str__(self):
         return f"Or({self.l_op}, {self.r_op})"
 
 
-def _get_wires(x):
+def _get_wires(val):
     """Obtain wires as a set from a Wire, Iterable or Operation"""
-    wires = getattr(x, "wires", x)
-    return set(wires if isinstance(wires, Iterable) else [wires])
+    iters = val if isinstance(val, (list, tuple, set)) else getattr(val, "wires", [val])
+    try:
+        wires = [[w] if isinstance(w, (int, str)) else getattr(w, "wires").tolist() for w in iters]
+    except TypeError:
+        raise ValueError(f"Wires cannot be computed for {val}") from None
+    return set([w for wire in wires for w in wire])
 
 
 def wire_in(wires):
     """BooleanFn for checking if a wire exist in a set of specified wires"""
-    return NoiseConditionals(
+    return NoiseConditional(
         lambda x: _get_wires(x).issubset(_get_wires(wires)), f"WiresIn({wires})"
     )
 
 
 def wire_eq(wires):
     """BooleanFn for checking if a wire is equal to the set of specified wires"""
-    return NoiseConditionals(
+    return NoiseConditional(
         lambda x: _get_wires(x).issubset(_get_wires(wires)), f"WiresEq({wires})"
     )
 
 
-def _get_ops(x):
+def _get_ops(val):
     """Help deal with arithmetic ops"""
-    pass
+    vals = val if isinstance(val, (list, tuple, set, qml.wires.Wires)) else [val]
+    return tuple(
+        (
+            getattr(qml.ops, val)
+            if isinstance(val, str)
+            else (val if isclass(val) else getattr(val, "__class__"))
+        )
+        for val in vals
+    )
 
 
 def op_eq(ops):
     """BooleanFn for checking if an op exist in a set of specified ops"""
-    return NoiseConditionals(lambda x: isinstance(x, ops), f"OpEq({ops.__name__})")
+    op_cls = _get_ops(ops)
+    op_repr = tuple(getattr(op, "__name__") for op in op_cls)[0]
+    return NoiseConditional(lambda x: isinstance(x, op_cls), f"OpEq({op_repr})")
 
 
 def op_in(ops):
     """BooleanFn for checking if an op is equal to the set of specified ops"""
-    return NoiseConditionals(
-        lambda x: isinstance(x, tuple(ops)), f"OpIn({[op.__name__ for op in ops]})"
-    )
+    op_cls = _get_ops(ops)
+    op_repr = tuple(getattr(op, "__name__") for op in op_cls)
+    return NoiseConditional(lambda x: isinstance(x, op_cls), f"OpIn{op_repr}")

@@ -19,6 +19,7 @@ of functions with boolean output.
 import functools
 
 
+# pylint: disable=unnecessary-lambda, unnecessary-lambda-assignment
 class BooleanFn:
     r"""Wrapper for simple callables with boolean output that can be
     manipulated and combined with bit-wise operators.
