@@ -262,12 +262,19 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         interface = qml.math.get_deep_interface(indices)
 
         def _count_samples_core(indices, dim, interface):
-            return qml.math.array(
-                [[qml.math.sum(idx == p) for idx in indices] for p in range(dim)], like=interface
-            )
+            if qml.math.is_abstract(indices):
+                return qml.math.array(
+                    [[qml.math.sum(idx == p) for idx in indices] for p in range(dim)],
+                    like=interface,
+                )
+            probabilities = qml.math.zeros((dim, num_bins), dtype="float64")
+            for b, idx in enumerate(indices):
+                basis_states, counts = qml.math.unique(idx, return_counts=True)
+                probabilities[basis_states, b] = counts
+            return probabilities
 
         if batch_size is None:
-            return qml.math.swapaxes(_count_samples_core(indices, dim, interface), 0, 1) / bin_size
+            return _count_samples_core(indices, dim, interface) / bin_size
 
         # count the basis state occurrences, and construct the probability vector
         # for each bin and broadcasting index
@@ -276,4 +283,4 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             [_count_samples_core(_indices, dim, interface) for _indices in indices],
             like=interface,
         )
-        return qml.math.swapaxes(probabilities, 1, 2) / bin_size
+        return probabilities / bin_size
