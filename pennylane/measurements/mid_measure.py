@@ -443,10 +443,10 @@ class MeasurementValue(Generic[T]):
         return self._transform_bin_op(lambda a, b: a >= b, other)
 
     def __and__(self, other):
-        return self._transform_bin_op(lambda a, b: a and b, other)
+        return self._transform_bin_op(qml.math.logical_and, other)
 
     def __or__(self, other):
-        return self._transform_bin_op(lambda a, b: a or b, other)
+        return self._transform_bin_op(qml.math.logical_or, other)
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
