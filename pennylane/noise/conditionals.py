@@ -37,7 +37,7 @@ class NoiseConditional(BooleanFn):
     def __repr__(self):
         return self.repr
 
-
+# pylint: disable = bad-super-call
 class AndConditional(NoiseConditional):
     """Defines a BooleanFn for implementing AND combination of noise fns"""
 
@@ -51,7 +51,7 @@ class AndConditional(NoiseConditional):
     def __str__(self):
         return f"And({self.l_op}, {self.r_op})"
 
-
+# pylint: disable = bad-super-call
 class OrConditional(NoiseConditional):
     """Defines a BooleanFn for implementing OR combination of noise fns"""
 

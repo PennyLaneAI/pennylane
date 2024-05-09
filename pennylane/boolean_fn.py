@@ -83,14 +83,10 @@ class BooleanFn:
         functools.update_wrapper(self, fn)
 
     def __and__(self, other):
-        res_l = lambda *args, **kwargs: self(*args, **kwargs)
-        res_r = lambda *args, **kwargs: other(*args, **kwargs)
-        return BooleanFn(res_l and res_r)
+        return BooleanFn(lambda *args, **kwargs: self(*args, **kwargs) and other(*args, **kwargs))
 
     def __or__(self, other):
-        res_l = lambda *args, **kwargs: self(*args, **kwargs)
-        res_r = lambda *args, **kwargs: other(*args, **kwargs)
-        return BooleanFn(res_l or res_r)
+        return BooleanFn(lambda *args, **kwargs: self(*args, **kwargs) or other(*args, **kwargs))
 
     def __invert__(self):
         return BooleanFn(lambda *args, **kwargs: not self(*args, **kwargs))
