@@ -895,15 +895,11 @@ def molecular_hamiltonian(*args, **kwargs):
     if len(args) != 0:
         return _molecular_hamiltonian_dispatch(*args, **kwargs)
 
-    if "symbols" in kwargs:
-        symbols = kwargs["symbols"]
-        kwargs.pop("symbols")
-        return _molecular_hamiltonian_dispatch(symbols, **kwargs)
-
-    if "molecule" in kwargs:
-        molecule = kwargs["molecule"]
-        kwargs.pop("molecule")
-        return _molecular_hamiltonian_dispatch(molecule, **kwargs)
+   method = kwargs.get("symbols", None) or kwargs.get("molecule", None)
+   
+   if method is not None:
+       kwargs.pop(method)
+       return _molecular_hamiltonian_dispatch(method, **kwargs)
 
     raise NotImplementedError("Unsupported type")
 
