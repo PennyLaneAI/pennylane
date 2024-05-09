@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
-from typing import List, Union
 from itertools import combinations
+from typing import List, Union
 
 import numpy as np
 
-from pennylane.typing import TensorLike
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
+
 from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
@@ -63,6 +64,8 @@ def structure_constants(
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+
     **Example**
 
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
@@ -70,13 +73,13 @@ def structure_constants(
     >>> n = 2
     >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
     >>> gens += [Z(i) for i in range(n)]
-    >>> dla = qml.pauli.lie_closure(gens)
+    >>> dla = qml.lie_closure(gens)
     >>> print(dla)
-    [X(1) @ X(0), Z(0), Z(1), -1.0 * (X(1) @ Y(0)), -1.0 * (Y(1) @ X(0)), -1.0 * (Y(1) @ Y(0))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), -1.0 * (Y(0) @ Y(1))]
 
     The dimension of the DLA is :math:`d = 6`. Hence, the structure constants have shape ``(6, 6, 6)``.
 
-    >>> adjoint_rep = qml.pauli.structure_constants(dla)
+    >>> adjoint_rep = qml.structure_constants(dla)
     >>> adjoint_rep.shape
     (6, 6, 6)
 
@@ -88,7 +91,7 @@ def structure_constants(
     we should have :math:`f^0_{1, 3} = -2`, which is indeed the case.
 
     >>> adjoint_rep[0, 1, 3]
-    -2.
+    -2.0
 
     We can also look at the overall adjoint action of the first element :math:`G_0 = X_{0} \otimes X_{1}` of the DLA on other elements.
     In particular, at :math:`\left(\text{ad}(iG_0)\right)_{\alpha, \beta} = f^0_{\alpha, \beta}`, which corresponds to the following matrix.

@@ -13,16 +13,15 @@
 # limitations under the License.
 """Unit tests for utility functions of Pauli arithmetic."""
 import warnings
-import pytest
-
 
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
-from pennylane.pauli import pauli_sentence, PauliWord, PauliSentence
+from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.conversion import _generalized_pauli_decompose
-
 
 test_hamiltonians = [
     np.array([[2.5, -0.5], [-0.5, 2.5]]),
@@ -424,8 +423,8 @@ class TestPhasedDecomposition:
         """Test builtins support in pauli_decompose"""
 
         import jax
-        import torch
         import tensorflow as tf
+        import torch
 
         libraries = [np.array, jax.numpy.array, torch.tensor, tf.Variable]
         matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
@@ -449,8 +448,8 @@ class TestPhasedDecomposition:
         """Test differentiability for pauli_decompose"""
 
         import jax
-        import torch
         import tensorflow as tf
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 

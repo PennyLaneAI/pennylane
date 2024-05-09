@@ -14,8 +14,8 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-import warnings
 import functools
+import warnings
 from copy import copy
 from functools import wraps
 from inspect import signature
@@ -25,14 +25,14 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import operation
 from pennylane import math as qmlmath
+from pennylane import operation
+from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-from pennylane.compiler import compiler
 
-from .symbolicop import SymbolicOp
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
+from .symbolicop import SymbolicOp
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -880,7 +880,9 @@ class ControlledOp(Controlled, operation.Operation):
         )
 
 
-# Program capture with controlled ops needs to unpack and pack the control wires to support dynamic wires
+# Program capture with controlled ops needs to unpack and re-pack the control wires to support dynamic wires
+# See capture module for more information on primitives
+# If None, jax isn't installed so the class never got a primitive.
 if Controlled._primitive is not None:  # pylint: disable=protected-access
 
     @Controlled._primitive.def_impl  # pylint: disable=protected-access
@@ -894,13 +896,7 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
             id=id,
         )
 
-    @ControlledOp._primitive.def_impl  # pylint: disable=protected-access
-    def _(base, *control_wires, control_values=None, work_wires=None, id=None):
-        return type.__call__(
-            ControlledOp,
-            base,
-            control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            id=id,
-        )
+
+# easier to just keep the same primitive for both versions
+# dispatch between the two types happens inside instance creation anyway
+ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-access

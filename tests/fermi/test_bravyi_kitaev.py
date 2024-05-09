@@ -3,11 +3,11 @@
 import pytest
 
 import pennylane as qml
-from pennylane.ops import SProd, Identity
-from pennylane.pauli.conversion import pauli_sentence
 from pennylane.fermi.conversion import bravyi_kitaev
-from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.fermi.fermionic import FermiWord, FermiSentence
+from pennylane.fermi.fermionic import FermiSentence, FermiWord
+from pennylane.ops import Identity, SProd
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli.conversion import pauli_sentence
 
 
 def test_error_is_raised_for_incompatible_type():
@@ -928,6 +928,7 @@ fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
+fw5 = FermiWord({(0, 3): "+", (1, 2): "-"})
 
 
 def test_empty_fermi_sentence():
@@ -992,6 +993,22 @@ FERMI_AND_PAULI_SENTENCES = [
                 PauliWord({0: "Y", 1: "Z"}): (-0.25 + 0j),
                 PauliWord({}): (-1 + 0j),
                 PauliWord({0: "Z"}): (1 + 0j),
+            }
+        ),
+    ),
+    (
+        FermiSentence({fw1: -2, fw5: 1j}),
+        4,
+        PauliSentence(
+            {
+                PauliWord({0: "X"}): -0.5,
+                PauliWord({0: "X", 1: "Z"}): 0.5,
+                PauliWord({0: "Y"}): 0.5j,
+                PauliWord({0: "Y", 1: "Z"}): -0.5j,
+                PauliWord({1: "Z", 2: "X", 3: "Z"}): -0.25j,
+                PauliWord({1: "Z", 2: "Y", 3: "Z"}): 0.25,
+                PauliWord({2: "X"}): 0.25j,
+                PauliWord({2: "Y"}): -0.25,
             }
         ),
     ),

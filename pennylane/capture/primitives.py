@@ -12,18 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines a metaclass for automatic integration of any ``Operator`` with plxpr program capture.
-
-See ``explanations.md`` for technical explanations of how this works.
+This submodule defines the abstract classes and primitives for capture.
 """
 
-import abc
 from functools import lru_cache
 from typing import Optional
 
 import pennylane as qml
-
-from .switches import plxpr_enabled
 
 has_jax = True
 try:
@@ -35,8 +30,8 @@ except ImportError:
 @lru_cache  # construct the first time lazily
 def _get_abstract_operator() -> type:
     """Create an AbstractOperator once in a way protected from lack of a jax install."""
-    if not has_jax:  # pragma: no-cover
-        raise ImportError("Jax is required for plxpr.")
+    if not has_jax:  # pragma: no cover
+        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
 
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
@@ -122,28 +117,3 @@ def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primiti
         return abstract_type()
 
     return primitive
-
-
-class PLXPRMeta(abc.ABCMeta):
-    """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
-    of normal class creation.
-
-    See ``pennylane/capture/explanations.md`` for more detailed information on how this technically
-    works.
-    """
-
-    def _primitive_bind_call(cls, *args, **kwargs):
-        raise NotImplementedError(
-            "Types using PLXPRMeta must implement cls._primitive_bind_call to"
-            " gain integration with plxpr program capture."
-        )
-
-    def __call__(cls, *args, **kwargs):
-        # this method is called everytime we want to create an instance of the class.
-        # default behavior uses __new__ then __init__
-
-        if plxpr_enabled():
-            # when tracing is enabled, we want to
-            # use bind to construct the class if we want class construction to add it to the jaxpr
-            return cls._primitive_bind_call(*args, **kwargs)
-        return type.__call__(cls, *args, **kwargs)

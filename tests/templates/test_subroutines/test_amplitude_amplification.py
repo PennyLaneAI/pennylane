@@ -15,8 +15,9 @@
 Tests for the AmplitudeAmplification template.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
 
@@ -156,7 +157,6 @@ class TestDifferentiability:
 
         params = qml.numpy.array(self.params, requires_grad=True)
         res = qml.grad(qnode)(params)
-        print(res)
         assert qml.math.shape(res) == (2,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 

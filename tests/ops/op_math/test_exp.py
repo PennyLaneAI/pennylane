@@ -20,8 +20,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import (
-    AnyWires,
     AllWires,
+    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,

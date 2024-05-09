@@ -18,9 +18,10 @@ Contains the Select template.
 
 import copy
 import itertools
+
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane import math
+from pennylane.operation import Operation
 
 
 class Select(Operation):

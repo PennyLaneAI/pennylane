@@ -13,14 +13,12 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+import numpy as np
 import pytest
 
-import numpy as np
-
-from pennylane import numpy as pnp
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
-
 from pennylane.devices.default_qubit import stopping_condition
 
 
@@ -835,7 +833,7 @@ class TestAdjointDiffTapeValidation:
         expectation value of a Hermitian operator emits a warning if the
         parameters to Hermitian are trainable."""
 
-        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        mx = qml.numpy.array(qml.matrix(qml.PauliX(0) @ qml.PauliY(2)))
         qs = qml.tape.QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
 
         qs.trainable_params = {0}
@@ -864,12 +862,12 @@ class TestAdjointDiffTapeValidation:
             ExecutionConfig(gradient_method="adjoint")
         )[0]
 
-        qs.trainable_params = {1}
+        qs.trainable_params = [1]
         qs_valid, _ = program((qs,))
         qs_valid = qs_valid[0]
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.operations, qs_valid.operations))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs_valid.trainable_params == [0, 1]
+        assert qs_valid.trainable_params == [1]  # same as input tape since no decomposition
 
     def test_valid_tape_with_expansion(self):
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors

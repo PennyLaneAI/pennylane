@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Integration tests for the capture of pennylane operations into jaxpr.
+Unit tests for the CaptureMeta metaclass.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access, undefined-variable
 import pytest
 
 import pennylane as qml
-
-from pennylane.capture.meta_type import PLXPRMeta
+from pennylane.capture.capture_meta import CaptureMeta
 
 jax = pytest.importorskip("jax")
 
@@ -28,13 +27,14 @@ pytestmark = pytest.mark.jax
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
+    """enable and disable capture around each test."""
     qml.capture.enable()
     yield
     qml.capture.disable()
 
 
-def test_custom_PLXPRMeta():
-    """Test that we can capture custom classes with the PLXPRMeta metaclass by defining
+def test_custom_capture_meta():
+    """Test that we can capture custom classes with the CaptureMeta metaclass by defining
     the _primitive_bind_call method."""
 
     p = jax.core.Primitive("p")
@@ -44,8 +44,8 @@ def test_custom_PLXPRMeta():
         return jax.core.ShapedArray(a.shape, a.dtype)
 
     # pylint: disable=too-few-public-methods
-    class MyObj(metaclass=PLXPRMeta):
-        """A PLXPRMeta class with a _primitive_bind_call class method."""
+    class MyObj(metaclass=CaptureMeta):
+        """A CaptureMeta class with a _primitive_bind_call class method."""
 
         @classmethod
         def _primitive_bind_call(cls, *args, **kwargs):
@@ -57,15 +57,21 @@ def test_custom_PLXPRMeta():
     assert jaxpr.eqns[0].primitive == p
 
 
-def test_custom_plxprmeta_no_bind_primitive_call():
+def test_custom_capture_meta_no_bind_primitive_call():
     """Test that an NotImplementedError is raised if the type does not define _primitive_bind_call."""
 
     # pylint: disable=too-few-public-methods
-    class MyObj(metaclass=PLXPRMeta):
+    class MyObj(metaclass=CaptureMeta):
         """A class that does not define _primitive_bind_call."""
 
         def __init__(self, a):
             self.a = a
 
-    with pytest.raises(NotImplementedError, match="Types using PLXPRMeta must implement"):
+    with pytest.raises(NotImplementedError, match="Types using CaptureMeta must implement"):
         MyObj(0.5)
+
+    def f():
+        MyObj(0.5)
+
+    with pytest.raises(NotImplementedError, match="Types using CaptureMeta must implement"):
+        jax.make_jaxpr(f)()

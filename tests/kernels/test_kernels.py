@@ -19,8 +19,9 @@ import math
 import sys
 from functools import partial
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 import pennylane.kernels as kern
 from pennylane import numpy as pnp
@@ -31,8 +32,8 @@ def fixture_cvxpy_support():
     """Fixture to determine whether cvxpy and cvxopt are installed."""
     # pylint: disable=unused-import
     try:
-        import cvxpy
         import cvxopt
+        import cvxpy
 
         cvxpy_support = True
     except ModuleNotFoundError:

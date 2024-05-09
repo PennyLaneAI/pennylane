@@ -1222,6 +1222,23 @@ class TestTensorSample:
 
 
 @flaky(max_runs=10)
+class TestSumExpval:
+    """Test expectation values of Sum observables."""
+
+    def test_sum_containing_identity_on_no_wires(self, device, tol):
+        """Test that the device can handle Identity on no wires."""
+        dev = device(1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            return qml.expval(qml.sum(qml.Z(0) + 3 * qml.I()))
+
+        res = circuit()
+        assert qml.math.allclose(res, 2.0, atol=tol(dev.shots))
+
+
+@flaky(max_runs=10)
 class TestVar:
     """Tests for the variance return type"""
 

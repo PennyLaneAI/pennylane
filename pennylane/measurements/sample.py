@@ -15,7 +15,7 @@
 This module contains the qml.sample measurement.
 """
 import functools
-from typing import Sequence, Tuple, Optional, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -195,7 +195,7 @@ class SampleMP(SampleMeasurement):
             # Computational basis samples
             return int
         int_eigval_obs = {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-        tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+        tensor_terms = self.obs.obs if isinstance(self.obs, qml.operation.Tensor) else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 

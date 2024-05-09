@@ -23,11 +23,10 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import math, X, Y, Z
-from pennylane.wires import Wires
+from pennylane import X, Y, Z, math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
-
+from pennylane.wires import Wires
 
 no_mat_ops = (
     qml.Barrier,
@@ -680,6 +679,16 @@ class TestProperties:
         sum_op = sum_method(*ops_lst)
         assert sum_op._queue_category is None  # pylint: disable=protected-access
 
+    def test_eigvals_Identity_no_wires(self):
+        """Test that eigenvalues can be computed for a sum containing identity with no wires."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported for legacy opmath")
+
+        op1 = qml.X(0) + 2 * qml.I()
+        op2 = qml.X(0) + 2 * qml.I(0)
+        assert qml.math.allclose(sorted(op1.eigvals()), sorted(op2.eigvals()))
+
     def test_eigendecompostion(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
@@ -1145,6 +1154,16 @@ class TestSortWires:
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
+    def test_sorting_operators_with_no_wires(self):
+        """Test that sorting can occur when an operator acts on no wires."""
+
+        op_list = [qml.GlobalPhase(0.5), qml.X(0), qml.Y(1), qml.I(), qml.CNOT((1, 2)), qml.I()]
+
+        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
+
+        expected = [qml.GlobalPhase(0.5), qml.I(), qml.I(), qml.X(0), qml.Y(1), qml.CNOT((1, 2))]
+        assert sorted_list == expected
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
@@ -1329,8 +1348,14 @@ class TestGrouping:
     def test_set_on_initialization(self):
         """Test that grouping indices can be set on initialization."""
 
-        op = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_indices=[[0, 1]])
+        op = qml.ops.Sum(qml.X(0), qml.Y(1), _grouping_indices=[[0, 1]])
         assert op.grouping_indices == [[0, 1]]
+        op_ac = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_type="anticommuting")
+        assert op_ac.grouping_indices == ((0,), (1,))
+        with pytest.raises(ValueError, match=r"cannot be specified at the same time."):
+            qml.ops.Sum(
+                qml.X(0), qml.Y(1), grouping_type="anticommuting", _grouping_indices=[[0, 1]]
+            )
 
     def test_non_pauli_error(self):
         """Test that grouping non-Pauli observables is not supported."""

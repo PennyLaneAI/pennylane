@@ -18,8 +18,7 @@ Integration tests for the capture of pennylane operations into jaxpr.
 import pytest
 
 import pennylane as qml
-
-from pennylane.capture.meta_type import _get_abstract_operator
+from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
 
@@ -69,6 +68,25 @@ def test_operators_constructed_when_plxpr_enabled():
     assert op.base[1] == qml.Y(1)
 
 
+def test_fallback_if_primitive_still_None():
+    """Test that if the primitive is None (no jax or something went wrong) that the instance is simply created."""
+
+    # pylint: disable=too-few-public-methods
+    class MyOp(qml.operation.Operator):
+        """A dummy operator."""
+
+    MyOp._primitive = None
+
+    op = MyOp(wires=0)
+    assert isinstance(op, qml.operation.Operator)
+
+    def f():
+        MyOp(wires=0)
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert len(jaxpr.eqns) == 0
+
+
 def test_hybrid_capture_wires():
     """That a hybrid quantum-classical jaxpr can be captured with wire processing."""
 
@@ -99,7 +117,8 @@ def test_hybrid_capture_parametrization():
     jaxpr = jax.make_jaxpr(f)(0.5)
     assert len(jaxpr.eqns) == 5
 
-    in1 = jaxpr.eqns[0].invars[1]
+    in1 = jaxpr.jaxpr.invars[0]
+    assert jaxpr.eqns[0].invars[1] == in1
     assert jaxpr.eqns[1].invars[0] == in1
     assert jaxpr.eqns[2].invars[0] == in1
     assert jaxpr.eqns[3].invars[-1] == in1  # the wire
@@ -120,8 +139,10 @@ def test_hybrid_capture_parametrization():
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
-@pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0)))
+@pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0), {0}))
 def test_different_wires(w, as_kwarg):
+    """Test that wires can be passed positionally and as a keyword in a variety of differnt types."""
+
     def qfunc():
         if as_kwarg:
             qml.X(wires=w)
@@ -197,7 +218,7 @@ def test_pauli_rot():
 
 class TestTemplates:
     def test_variable_wire_non_parametrized_template(self):
-        """Test capturing a variable wire, non-parametrized template like GroverOperator."""
+        """Test capturing a variable wire count, non-parametrized template like GroverOperator."""
 
         jaxpr = jax.make_jaxpr(qml.GroverOperator)(wires=(0, 1, 2, 3, 4, 5))
 
@@ -267,7 +288,7 @@ class TestOpmath:
         assert len(q) == 1
         assert qml.equal(q.queue[0], qml.adjoint(qml.X(0)))
 
-    def test_control(self):
+    def test_Controlled(self):
         """Test a nested control operation."""
 
         def qfunc(op):
@@ -291,7 +312,7 @@ class TestOpmath:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)
 
         assert len(q) == 1
-        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0])
+        expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
         assert qml.equal(q.queue[0], expected)
 
 

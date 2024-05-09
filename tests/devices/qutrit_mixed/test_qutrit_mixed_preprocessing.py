@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for qutrit mixed device preprocessing."""
-import pytest
-
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
-from pennylane.devices.default_qutrit_mixed import DefaultQutritMixed, stopping_condition
+from pennylane.devices.default_qutrit_mixed import (
+    DefaultQutritMixed,
+    observable_stopping_condition,
+    stopping_condition,
+)
 
 
 class NoMatOp(qml.operation.Operation):
@@ -124,9 +127,26 @@ class TestPreprocessing:
             (qml.TRX(1.1, 0), True),
         ],
     )
-    def test_accepted_operator(self, op, expected):  # TODO: Add channel ops once added.
-        """Test that _accepted_operator works correctly"""
+    def test_accepted_observables(self, op, expected):
+        """Test that stopping_condition works correctly"""
         res = stopping_condition(op)
+        assert res == expected
+
+    @pytest.mark.parametrize(
+        "obs, expected",
+        [
+            (qml.TShift(0), False),
+            (qml.GellMann(0, 1), True),
+            (qml.Snapshot(), False),
+            (qml.operation.Tensor(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
+            (qml.ops.op_math.SProd(1.2, qml.GellMann(0, 1)), True),
+            (qml.sum(qml.ops.op_math.SProd(1.2, qml.GellMann(0, 1)), qml.GellMann(1, 3)), True),
+            (qml.ops.op_math.Prod(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
+        ],
+    )
+    def test_accepted_operator(self, obs, expected):
+        """Test that observable_stopping_condition works correctly"""
+        res = observable_stopping_condition(obs)
         assert res == expected
 
 

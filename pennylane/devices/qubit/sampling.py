@@ -35,7 +35,7 @@ from .measure import flatten_state
 def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
     if prng_key is None:
-        return [None] * num
+        return (None,) * num
     # pylint: disable=import-outside-toplevel
     from jax.random import split
 
@@ -99,11 +99,25 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     return all_mp_groups, all_indices
 
 
-def _get_num_shots_for_expval_H(obs):
+def _get_num_executions_for_expval_H(obs):
     indices = obs.grouping_indices
     if indices:
         return len(indices)
     return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
+
+
+def _get_num_executions_for_sum(obs):
+
+    if obs.grouping_indices:
+        return len(obs.grouping_indices)
+
+    if not obs.pauli_rep:
+        return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
+
+    _, ops = obs.terms()
+    with qml.QueuingManager.stop_recording():
+        op_groups = qml.pauli.group_observables(ops)
+    return len(op_groups)
 
 
 # pylint: disable=no-member
@@ -125,14 +139,15 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
         if isinstance(group[0], ExpectationMP) and isinstance(
             group[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
         ):
-            H_executions = _get_num_shots_for_expval_H(group[0].obs)
+            H_executions = _get_num_executions_for_expval_H(group[0].obs)
             num_executions += H_executions
             if tape.shots:
                 num_shots += tape.shots.total_shots * H_executions
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, qml.ops.Sum):
-            num_executions += len(group[0].obs)
+            sum_executions = _get_num_executions_for_sum(group[0].obs)
+            num_executions += sum_executions
             if tape.shots:
-                num_shots += tape.shots.total_shots * len(group[0].obs)
+                num_shots += tape.shots.total_shots * sum_executions
         elif isinstance(group[0], (ClassicalShadowMP, ShadowExpvalMP)):
             num_executions += tape.shots.total_shots
             if tape.shots:
@@ -198,15 +213,11 @@ def measure_with_samples(
     """
     # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
     mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
-    skip_measure = any(v == -1 for v in mid_measurements.values()) if mid_measurements else False
 
     groups, indices = _group_measurements(mps)
 
     all_res = []
     for group in groups:
-        if skip_measure:
-            all_res.extend([None] * len(group))
-            continue
         if isinstance(group[0], ExpectationMP) and isinstance(
             group[0].obs, (Hamiltonian, LinearCombination)
         ):
@@ -462,11 +473,10 @@ def sample_state(
     # probabilities must be renormalized as they may not sum to one
     # see https://github.com/PennyLaneAI/pennylane/issues/5444
     norm = qml.math.sum(probs, axis=-1)
-    abs_diff = np.abs(norm - 1.0)
+    abs_diff = qml.math.abs(norm - 1.0)
     cutoff = 1e-07
 
     if is_state_batched:
-
         normalize_condition = False
 
         for s in abs_diff:
@@ -482,9 +492,9 @@ def sample_state(
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
-
-        if 0 < abs_diff < cutoff:
-            probs /= norm
+        if not 0 < abs_diff < cutoff:
+            norm = 1.0
+        probs = probs / norm
 
         samples = rng.choice(basis_states, shots, p=probs)
 

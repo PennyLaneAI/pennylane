@@ -14,10 +14,11 @@
 """
 Tests for the ApproxTimeEvolution template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
@@ -45,6 +46,17 @@ def test_flatten_unflatten():
     new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(op, new_op)
     assert new_op is not op
+
+
+def test_queuing():
+    """Test that ApproxTimeEvolution de-queues the input hamiltonian."""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        H = qml.X(0) + qml.Y(1)
+        op = qml.ApproxTimeEvolution(H, 0.1, n=20)
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is op
 
 
 class TestDecomposition:

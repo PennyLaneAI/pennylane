@@ -16,4 +16,5 @@ This subpackage defines functions and classes for dynamical Lie algebra function
 """
 
 from .structure_constants import structure_constants
+from .center import center
 from .lie_closure import PauliVSpace, lie_closure

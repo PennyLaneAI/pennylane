@@ -14,11 +14,13 @@
 """
 Tests for the DisplacementEmbedding template.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
-import numpy as np
-from pennylane import numpy as pnp
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
