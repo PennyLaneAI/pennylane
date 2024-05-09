@@ -36,7 +36,7 @@ from pennylane.measurements import (
 
 from .core import transform
 
-fillin_value = np.iinfo(np.int32).min
+fill_in_value = np.iinfo(np.int32).min
 
 
 def null_postprocessing(results):
