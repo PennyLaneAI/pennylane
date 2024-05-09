@@ -65,7 +65,7 @@ and any keyword arguments are passed as keyword metadata.
         _:AbstractOperator() = MyOp1[key=a n_wires=2] a 0 1
     in () }
 
-But an operator developer may need to override custom behavior for calling ``cls._primitive.bind`` 
+But an operator developer may need to override custom behavior for calling ``cls._primitive.bind``
 (where ``cls`` indicates the class) if:
 
 * The operator does not accept wires, like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
@@ -97,7 +97,7 @@ will be called when constructing a new class instance instead of ``type.__call__
 
     { lambda ; . let _:AbstractOperator() = JustMetadataOp[metadata=Y]  in () }
 
-As you can see, the input ``"Y"``, while being passed as a positional argument, is converted to 
+As you can see, the input ``"Y"``, while being passed as a positional argument, is converted to
 metadata within the custom ``_primitive_bind_call`` method.
 
 If needed, developers can also override the implementation method of the primitive like was done with ``Controlled``.
