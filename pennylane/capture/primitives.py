@@ -30,8 +30,8 @@ except ImportError:
 @lru_cache  # construct the first time lazily
 def _get_abstract_operator() -> type:
     """Create an AbstractOperator once in a way protected from lack of a jax install."""
-    if not has_jax:  # pragma: no-cover
-        raise ImportError("Jax is required for plxpr.")  # pragma: no-cover
+    if not has_jax:  # pragma: no cover
+        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
 
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
