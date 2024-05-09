@@ -44,7 +44,8 @@ class AndConditional(NoiseConditional):
     def __init__(self, left, right):
         self.l_op = left
         self.r_op = right
-        super(NoiseConditional, self).__init__(super(NoiseConditional, left).__and__(right))
+        self.func = super(NoiseConditional, left).__and__(right)
+        super(NoiseConditional, self).__init__(self.func)
         self.repr = f"And({left.repr}, {right.repr})"
 
     def __str__(self):
@@ -57,7 +58,8 @@ class OrConditional(NoiseConditional):
     def __init__(self, left, right):
         self.l_op = left
         self.r_op = right
-        super(NoiseConditional, self).__init__(super(NoiseConditional, left).__or__(right))
+        self.func = super(NoiseConditional, left).__or__(right)
+        super(NoiseConditional, self).__init__(self.func)
         self.repr = f"Or({left.repr}, {right.repr})"
 
     def __str__(self):
