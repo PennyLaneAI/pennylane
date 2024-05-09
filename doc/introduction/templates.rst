@@ -299,6 +299,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`FABLE <../code/api/pennylane.FABLE>`
     :figure: _static/templates/subroutines/fable.png
 
+.. gallery-item::
+    :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
+    :figure: _static/templates/qubitization/thumbnail_qubitization.png
+
 .. raw:: html
 
         <div style='clear:both'></div>

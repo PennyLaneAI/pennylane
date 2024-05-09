@@ -15,7 +15,7 @@
 An internal module for working with pytrees.
 """
 
-from typing import Callable, Tuple, Any
+from typing import Any, Callable, Tuple
 
 has_jax = True
 try:

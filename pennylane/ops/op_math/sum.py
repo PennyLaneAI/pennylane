@@ -17,8 +17,8 @@ computing the sum of operations.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
 
-import warnings
 import itertools
+import warnings
 from collections.abc import Iterable
 from copy import copy
 from typing import List
@@ -325,6 +325,8 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
+        if self.pauli_rep:
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
         gen = (
             (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix(), op.wires)
             for op in self
@@ -430,7 +432,6 @@ class Sum(CompositeOp):
 
         **Example**
 
-        >>> qml.operation.enable_new_opmath()
         >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
         >>> op.terms()
         ([0.5, 0.7, 1.5],

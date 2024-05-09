@@ -26,13 +26,13 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import (
+    _UNSET_BATCH_SIZE,
     Operation,
     Operator,
     StatePrepBase,
     Tensor,
     convert_to_legacy_H,
     operation_derivative,
-    _UNSET_BATCH_SIZE,
 )
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
@@ -2832,6 +2832,23 @@ def test_op_arithmetic_toggle():
         assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
 
+@pytest.mark.usefixtures("use_new_opmath")
+def test_disable_enable_new_opmath():
+    """Test that disabling and re-enabling new opmath works and raises the correct warning"""
+    with pytest.warns(UserWarning, match="Disabling the new Operator arithmetic"):
+        qml.operation.disable_new_opmath()
+
+    assert not qml.operation.active_new_opmath()
+
+    with pytest.warns(
+        UserWarning,
+        match="Re-enabling the new Operator arithmetic system after disabling it is not advised.",
+    ):
+        qml.operation.enable_new_opmath()
+
+    assert qml.operation.active_new_opmath()
+
+
 def test_docstring_example_of_operator_class(tol):
     """Tests an example of how to create an operator which is used in the
     Operator class docstring, as well as in the 'adding_operators'
@@ -3054,3 +3071,22 @@ def test_get_attr():
     assert (
         StatePrep is qml.operation.StatePrepBase
     )  # StatePrep imported from operation.py is an alias for StatePrepBase
+
+
+@pytest.mark.parametrize(
+    "make_op",
+    [
+        lambda: qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)]),
+        lambda: 1.2 * qml.PauliX(0),
+    ],
+)
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_convert_to_opmath_queueing(make_op):
+    """Tests that converting to opmath dequeues the original operation"""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        original_op = make_op()
+        new_op = qml.operation.convert_to_opmath(original_op)
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is new_op

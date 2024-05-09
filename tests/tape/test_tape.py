@@ -22,8 +22,8 @@ import pytest
 import pennylane as qml
 from pennylane import CircuitGraph
 from pennylane.measurements import (
-    MeasurementProcess,
     ExpectationMP,
+    MeasurementProcess,
     ProbabilityMP,
     counts,
     expval,
@@ -31,7 +31,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.tape import QuantumTape, QuantumScript, expand_tape_state_prep
+from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 
 
 def TestOperationMonkeypatching():

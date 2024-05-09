@@ -343,6 +343,36 @@ class TestProperties:
 
         assert op.has_decomposition is False
 
+    def test_no_decomposition_batching_error(self, power_method):
+        """Test that if an error occurs with a batched exponent, has_decomposition is False."""
+
+        class MyOp(qml.operation.Operator):
+
+            def pow(self, z):
+                return super().pow(z % 2)
+
+        pow_op = power_method(base=MyOp(wires=0), z=np.array([1.0, 2.0]))
+        assert not pow_op.has_decomposition
+
+        with pytest.raises(DecompositionUndefinedError):
+            pow_op.decomposition()
+
+    def test_error_raised_if_no_batching(self, power_method):
+        """Test that if Operator.pow raises an error and no batching is present, the erorr is raised."""
+
+        class MyOp(qml.operation.Operator):
+
+            def pow(self, z):
+                raise ValueError
+
+        pow_op = power_method(base=MyOp(0), z=2.5)
+
+        with pytest.raises(ValueError):
+            _ = pow_op.has_decomposition
+
+        with pytest.raises(DecompositionUndefinedError):
+            _ = pow_op.decomposition()
+
     @pytest.mark.parametrize("value", (True, False))
     def test_has_diagonalizing_gates(self, value, power_method):
         """Test that Pow defers has_diagonalizing_gates to base operator."""

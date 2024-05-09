@@ -19,13 +19,13 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian, LinearCombination
 from pennylane.measurements import (
-    StateMeasurement,
+    ExpectationMP,
     MeasurementProcess,
     MeasurementValue,
-    ExpectationMP,
+    StateMeasurement,
 )
+from pennylane.ops import Hamiltonian, LinearCombination, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires

@@ -15,14 +15,13 @@
 
 from random import shuffle
 
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane.devices.qubit import simulate
-from pennylane.devices.qubit.simulate import _FlexShots
-from pennylane.devices.qubit import sample_state, measure_with_samples
+from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
 from pennylane.devices.qubit.sampling import _sample_state_jax
+from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.measurements import Shots
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
@@ -508,6 +507,42 @@ class TestMeasureSamples:
 
         assert result.shape == ()
         assert result == -1.0
+
+    def test_identity_on_no_wires(self):
+        """Test that measure_with_samples can handle observables on no wires when no other measurements exist."""
+
+        state = np.array([0, 1])
+        mp = qml.measurements.ExpectationMP(qml.I())
+
+        [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
+        assert qml.math.allclose(result, 1.0)
+
+    def test_identity_on_no_wires_with_other_observables(self):
+        """Test that measuring an identity on no wires can be used in conjunction with other measurements."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported with legacy opmath.")
+
+        state = np.array([0, 1])
+
+        mps = [
+            qml.measurements.ExpectationMP(2 * qml.I()),
+            qml.expval(qml.Z(0)),
+            qml.probs(wires=0),
+        ]
+
+        results = measure_with_samples(mps, state, qml.measurements.Shots(1))
+        assert qml.math.allclose(results[0], 2.0)
+        assert qml.math.allclose(results[1], -1.0)
+
+    def test_measuring_sum_with_identity_on_no_wires(self):
+        """Test that we can measure a sum with an identity on no wires."""
+
+        state = np.array([0, 1])
+
+        mp = qml.expval(qml.Z(0) + 2 * qml.I())
+        [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
+        assert qml.math.allclose(result, 1)  # -1 + 2
 
 
 class TestInvalidStateSamples:

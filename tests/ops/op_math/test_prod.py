@@ -115,8 +115,6 @@ def test_obs_attribute():
     assert obs == (X(0), X(1), X(2))
 
 
-# currently failing due to has_diagonalizing_gates logic
-@pytest.mark.xfail  # TODO: fix with story 49608
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qml.PauliZ(0)
@@ -1023,6 +1021,13 @@ class TestProperties:
             return qml.prod(qml.RX(t1, 0), qml.RX(t2, 0)).eigvals()
 
         assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
+
+    def test_eigvals_no_wires_identity(self):
+        """Test that eigvals can be computed if a component is an identity on no wires."""
+        op = qml.X(0) @ qml.Y(1) @ qml.I()
+        op2 = qml.X(0) @ qml.Y(1)
+
+        assert qml.math.allclose(op.eigvals(), op2.eigvals())
 
     # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):

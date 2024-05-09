@@ -15,32 +15,29 @@
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import itertools
-import pytest
-import numpy as np
 
 import networkx as nx
-from networkx import Graph
+import numpy as np
+import pytest
 import rustworkx as rx
-
+from networkx import Graph
 from scipy.linalg import expm
 from scipy.sparse import csc_matrix, kron
 
 import pennylane as qml
 from pennylane import qaoa
-
 from pennylane.qaoa.cycle import (
-    edges_to_wires,
-    wires_to_edges,
     _inner_net_flow_constraint_hamiltonian,
-    net_flow_constraint,
-    loss_hamiltonian,
+    _inner_out_flow_constraint_hamiltonian,
+    _partial_cycle_mixer,
     _square_hamiltonian_terms,
     cycle_mixer,
-    _partial_cycle_mixer,
+    edges_to_wires,
+    loss_hamiltonian,
+    net_flow_constraint,
     out_flow_constraint,
-    _inner_out_flow_constraint_hamiltonian,
+    wires_to_edges,
 )
-
 
 #####################################################
 
