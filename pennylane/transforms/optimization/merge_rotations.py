@@ -123,7 +123,10 @@ def merge_rotations(
         return not isinstance(obj, Adjoint)
 
     [expanded_tape], _ = qml.devices.preprocess.decompose(
-        tape, stopping_condition=stop_at, name="merge_rotations"
+        tape,
+        stopping_condition=stop_at,
+        name="merge_rotations",
+        error=qml.operation.DecompositionUndefinedError,
     )
     list_copy = expanded_tape.operations
     new_operations = []
