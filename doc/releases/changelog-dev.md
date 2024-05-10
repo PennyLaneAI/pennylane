@@ -105,6 +105,7 @@ This release contains contributions from (in alphabetical order):
 
 Pietropaolo Frisoni,
 Soran Jahangiri,
+Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 David Wierichs.
