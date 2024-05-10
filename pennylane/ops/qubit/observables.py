@@ -760,9 +760,7 @@ class StateVectorProjector(Projector):
         denominator = qml.math.sqrt(2 + 2 * psi[0])
         summed_array = np.zeros(qml.math.shape(psi), dtype=qml.math.get_dtype_name(psi))
         summed_array[0] = 1.0
-        psi = (
-            psi + summed_array
-        )  # qml.math.set_index(psi, 0, psi[0] + 1)  # psi[0] += 1, but JAX-JIT compatible
+        psi = psi + summed_array
         psi /= denominator
         u = 2 * qml.math.outer(psi, qml.math.conj(psi)) - qml.math.eye(len(psi))
         return [QubitUnitary(u, wires=wires)]
