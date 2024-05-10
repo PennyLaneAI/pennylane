@@ -286,6 +286,7 @@ def simulate(
             shots=[1],
             trainable_params=circuit.trainable_params,
         )
+        keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if qml.math.get_deep_interface(circuit.data) == "jax":
             # pylint: disable=import-outside-toplevel
             import jax
@@ -295,14 +296,13 @@ def simulate(
                     aux_circ, debugger=debugger, rng=rng, prng_key=k, interface=interface
                 )
 
-            keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
             results = jax.vmap(vv, in_axes=(0,))(keys)
             results = tuple(zip(*results))
         else:
-            for _ in range(circuit.shots.total_shots):
+            for i in range(circuit.shots.total_shots):
                 results.append(
                     simulate_one_shot_native_mcm(
-                        aux_circ, debugger=debugger, rng=rng, interface=interface
+                        aux_circ, debugger=debugger, rng=rng, prng_key=keys[i], interface=interface
                     )
                 )
         return tuple(results)
