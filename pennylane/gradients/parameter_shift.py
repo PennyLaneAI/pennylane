@@ -634,7 +634,9 @@ def expval_param_shift_with_mcms(
                     p_recipe, at_least_one_unshifted, None, gradient_tapes, probs_tape
                 )
                 p_coeffs, p_multipliers, p_op_shifts = p_recipe.T
-                extra_pg_tapes = generate_shifted_tapes(probs_tape, idx, p_op_shifts, p_multipliers, broadcast)
+                extra_pg_tapes = generate_shifted_tapes(
+                    probs_tape, idx, p_op_shifts, p_multipliers, broadcast
+                )
                 num_pg_tapes = (num_pg_tapes, len(extra_pg_tapes), p_coeffs, p_unshifted_coeff)
                 probs_gradient_tapes.extend(extra_pg_tapes)
         else:
@@ -715,14 +717,18 @@ def expval_param_shift_with_mcms(
                 if batch_size is None:
                     p_res = p_results[p_start : p_start + num_pg_tapes]
                     if beta_gt_alpha:
-                        p_extra_res = p_results[p_start + num_pg_tapes: p_start + num_pg_tapes + num_extra_tapes]
+                        p_extra_res = p_results[
+                            p_start + num_pg_tapes : p_start + num_pg_tapes + num_extra_tapes
+                        ]
                     else:
                         p_extra_res = p_res
-                    p_res_mod = tuple(a_times_b_over_c(pr, r0, p0, 1.0, tape_specs) for pr in p_extra_res)
+                    p_res_mod = tuple(
+                        a_times_b_over_c(pr, r0, p0, 1.0, tape_specs) for pr in p_extra_res
+                    )
                 else:
                     # todo
                     pass
-                    #p_res = p_results[p_start]
+                    # p_res = p_results[p_start]
                     # p_res_mod = p_res * r0 / p0
 
                 g_start = g_start + num_tapes
