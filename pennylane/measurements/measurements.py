@@ -23,7 +23,6 @@ from enum import Enum
 from typing import Optional, Sequence, Tuple, Union
 
 import pennylane as qml
-from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
@@ -163,9 +162,6 @@ class MeasurementProcess(ABC):
             # Cast sequence of measurement values to list
             self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
             self.obs = None
-        elif is_abstract(obs):  # Catalyst program with qml.sample(m, wires=i)
-            self.mv = obs
-            self.obs = None
         else:
             self.obs = obs
             self.mv = None
@@ -175,7 +171,7 @@ class MeasurementProcess(ABC):
         if wires is not None:
             if len(wires) == 0:
                 raise ValueError("Cannot set an empty list of wires.")
-            if obs is not None and not is_abstract(obs):
+            if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")
 
         # _wires = None indicates broadcasting across all available wires.
@@ -310,7 +306,7 @@ class MeasurementProcess(ABC):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.mv is not None and not is_abstract(self.mv):
+        if self.mv is not None:
             if isinstance(self.mv, list):
                 return qml.wires.Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires
