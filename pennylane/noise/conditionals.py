@@ -17,9 +17,8 @@ from functools import partial
 from inspect import isclass, signature
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.boolean_fn import BooleanFn
-
+from pennylane.wires import Wires
 
 # pylint: disable = unnecessary-lambda, too-few-public-methods
 
