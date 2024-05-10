@@ -143,10 +143,11 @@ def partial_wires(operation, *args, **kwargs):
         operation = type(operation)
 
     parameters = list(signature(operation).parameters.keys())
-    if "wires" in parameters[: len(args)]:
-        parameters.pop("wires")  # Ensure we don't include wires arg
+    arg_params = {**dict(zip(parameters, args)), **kwargs}
 
-    arg_params = dict(zip(parameters, args))
+    if "wires" in arg_params: # Ensure we don't include wires arg
+        arg_params.pop("wires")
+
     op = partial(operation, **{**arg_params, **kwargs})
 
     return _partial_op

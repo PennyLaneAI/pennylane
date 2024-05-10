@@ -183,7 +183,7 @@ class TestNoiseFunctions:
         op = qml.noise.partial_wires(qml.RX(1.2, [12]))(qml.RY(1.0, ["wires"]))
         assert qml.equal(op, qml.RX(1.2, wires=["wires"]))
 
-        op = qml.noise.partial_wires(qml.RX, 3.2)(qml.RY(1.0, [0]))
+        op = qml.noise.partial_wires(qml.RX, 3.2, [20])(qml.RY(1.0, [0]))
         assert qml.equal(op, qml.RX(3.2, wires=[0]))
 
         op = qml.noise.partial_wires(qml.RX, phi=1.2)(qml.RY(1.0, [2]))
