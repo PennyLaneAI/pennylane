@@ -80,8 +80,8 @@ class Conditional(Operation):
         # TODO: Add the following optimization once MCM parameter-shit rules can
         # tackle the scenario in which auxiliary probability differentiating PSRs
         # have more terms than the PSR of the original function.
-        # if all(m.postselect is not None for m in self.meas_val.measurements):
-        # return self.then_op.parameter_frequencies
+        if all(m.postselect is not None for m in self.meas_val.measurements):
+            return self.then_op.parameter_frequencies
         if self.then_op.num_params == 1:
             try:
                 then_op_gen = qml.generator(self.then_op, format="observable")

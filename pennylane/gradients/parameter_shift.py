@@ -29,6 +29,7 @@ from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.measurements import VarianceMP, MidMeasureMP, MeasurementValue
 from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.ops.op_math import Conditional
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
@@ -610,11 +611,6 @@ def expval_param_shift_with_mcms(
 
         recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
         p_recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, probs_tape)
-        if len(recipe) < len(p_recipe) and len(recipe) != 0:
-            raise ValueError(
-                "Scenarios in which the shift rule requires more terms in the aux tape "
-                "than in the original tape are not covered yet."
-            )
         if len(recipe) > len(p_recipe) and len(p_recipe) != 0:
             warnings.warn(
                 "Scenarios in which the shift rule requires more terms in the original tape "
@@ -632,6 +628,15 @@ def expval_param_shift_with_mcms(
             pg_tapes = generate_shifted_tapes(probs_tape, idx, op_shifts, multipliers, broadcast)
             probs_gradient_tapes.extend(pg_tapes)
             num_pg_tapes = len(pg_tapes)
+            if len(recipe) < len(p_recipe) and len(recipe) != 0:
+                # This is the beta>alpha scenario
+                p_recipe, _, p_unshifted_coeff = _extract_unshifted(
+                    p_recipe, at_least_one_unshifted, None, gradient_tapes, probs_tape
+                )
+                p_coeffs, p_multipliers, p_op_shifts = p_recipe.T
+                extra_pg_tapes = generate_shifted_tapes(probs_tape, idx, p_op_shifts, p_multipliers, broadcast)
+                num_pg_tapes = (num_pg_tapes, len(extra_pg_tapes), p_coeffs, p_unshifted_coeff)
+                probs_gradient_tapes.extend(extra_pg_tapes)
         else:
             num_pg_tapes = 0
 
@@ -694,25 +699,39 @@ def expval_param_shift_with_mcms(
                 g = _evaluate_gradient(probs_tape, p_res, data, p0)
 
             else:
-                assert num_pg_tapes == num_tapes  # This should never trigger!
+                beta_gt_alpha = isinstance(num_pg_tapes, tuple)
+                assert num_pg_tapes == num_tapes or beta_gt_alpha  # This should never trigger!
                 res = (
                     results[g_start : g_start + num_tapes]
                     if batch_size is None
                     else results[g_start]
                 )
+                if beta_gt_alpha:
+                    num_pg_tapes, num_extra_tapes, extra_coeffs, extra_unshifted = num_pg_tapes
+                    second_term_data = (None, extra_coeffs, None, extra_unshifted, None, None)
+                else:
+                    second_term_data = data
+
                 if batch_size is None:
                     p_res = p_results[p_start : p_start + num_pg_tapes]
-                    p_res_mod = tuple(a_times_b_over_c(pr, r0, p0, 1.0, tape_specs) for pr in p_res)
+                    if beta_gt_alpha:
+                        p_extra_res = p_results[p_start + num_pg_tapes: p_start + num_pg_tapes + num_extra_tapes]
+                    else:
+                        p_extra_res = p_res
+                    p_res_mod = tuple(a_times_b_over_c(pr, r0, p0, 1.0, tape_specs) for pr in p_extra_res)
                 else:
-                    p_res = p_results[p_start]
+                    # todo
+                    pass
+                    #p_res = p_results[p_start]
                     # p_res_mod = p_res * r0 / p0
+
                 g_start = g_start + num_tapes
-                p_start = p_start + num_pg_tapes
+                p_start = p_start + num_pg_tapes + (num_extra_tapes if beta_gt_alpha else 0)
                 first_term_res = tuple(
                     a_times_b_over_c(f, p, p0, 1.0, tape_specs) for f, p in zip(res, p_res)
                 )
                 first_term = _evaluate_gradient(tape, first_term_res, data, r0)
-                second_term = _evaluate_gradient(probs_tape, p_res_mod, data, p0)
+                second_term = _evaluate_gradient(probs_tape, p_res_mod, second_term_data, p0)
                 g = minus(first_term, second_term, tape_specs)
 
             grads.append(g)
@@ -735,7 +754,7 @@ def mcm_wrapper(tape, psr_tapes, **psr_kwargs):
     mcms = [
         op for op in tape.operations if isinstance(op, MidMeasureMP) and op.postselect is not None
     ]
-    probs_tape, postselects, skip_probs_tapes = _structure_analysis_mcm(tape, mcms, **psr_kwargs)
+    probs_tape, postselects, skip_probs_tapes = _tape_analysis_mcm(tape, mcms, **psr_kwargs)
 
     postselect_int = np.dot(postselects, 1 << np.arange(len(postselects))[::-1])
 
@@ -776,7 +795,7 @@ def mcm_wrapper(tape, psr_tapes, **psr_kwargs):
     return all_tapes, mcm_postprocessing_function
 
 
-def _structure_analysis_mcm(tape, mcms, argnum=None, shifts=None, gradient_recipes=None):
+def _tape_analysis_mcm(tape, mcms, argnum=None, shifts=None, gradient_recipes=None):
     probs_tape, postselects = _make_probs_tape(tape)
     argnum = argnum or tape.trainable_params
     skip_probs_tapes = []
