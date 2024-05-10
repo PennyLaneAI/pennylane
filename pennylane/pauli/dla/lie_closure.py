@@ -249,10 +249,9 @@ class PauliVSpace:
             ]
 
         # Get all Pauli words that are present in at least one Pauli sentence
-        if len(generators) != 0:
-            all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
-        else:
-            all_pws = []
+        
+        all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators])) if len(generators) != 0 else []
+
         num_pw = len(all_pws)
         # Create a dictionary mapping from PauliWord to row index
         self._pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
