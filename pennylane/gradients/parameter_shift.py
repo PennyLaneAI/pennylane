@@ -780,6 +780,7 @@ def _expand_transform_param_shift(
         stopping_condition=_param_shift_stopping_condition,
         skip_initial_state_prep=False,
         name="param_shift",
+        error=qml.operation.DecompositionUndefinedError,
     )
     if new_tape is tape:
         return [tape], postprocessing
