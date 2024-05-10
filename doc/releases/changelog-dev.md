@@ -63,11 +63,16 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
+  traced quantum functions. This feature is used with Catalyst to enable the pattern
+  `m = measure(0); qml.sample(m)`.
+  [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
+
 <h3>Breaking changes 💔</h3>
 
 * ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
   [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
-  
+
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
@@ -89,6 +94,7 @@
 This release contains contributions from (in alphabetical order):
 
 Pietropaolo Frisoni,
+David Ittah,
 Soran Jahangiri,
 Christina Lee,
 David Wierichs.
