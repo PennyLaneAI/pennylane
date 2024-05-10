@@ -693,7 +693,7 @@ def test_jax_jit(diff_method, postselect, reset):
         assert "pure_callback" not in jaxpr
 
     func2 = jax.jit(func)
-    results2 = func2(*jax.numpy.array(params))
+    results2 = func2(*params)
 
     measures = [
         qml.probs,
