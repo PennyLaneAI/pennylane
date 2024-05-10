@@ -505,15 +505,15 @@ class BasisStateProjector(Projector, Operation):
          [0. 0. 0. 0.]
          [0. 0. 0. 0.]]
         """
+        shape = (2 ** len(basis_state), 2 ** len(basis_state))
         if qml.math.get_interface(basis_state) == "jax":
-            basis_state += 0  # convert to int
-            n = len(basis_state)
-            mask = qml.math.flip(2 ** qml.math.arange(n))
-            idx = qml.math.sum(mask * basis_state)
-            mat = qml.math.zeros((2**n, 2**n), like=basis_state)
+            idx = 0
+            for i, m in enumerate(basis_state):
+                idx = idx + (m << (len(basis_state) - i - 1))
+            mat = qml.math.zeros(shape, like=basis_state)
             return mat.at[idx, idx].set(1.0)
 
-        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        m = np.zeros(shape)
         idx = int("".join(str(i) for i in basis_state), 2)
         m[idx, idx] = 1
         return m
@@ -545,11 +545,9 @@ class BasisStateProjector(Projector, Operation):
         [0. 1. 0. 0.]
         """
         if qml.math.get_interface(basis_state) == "jax":
-            basis_state += 0  # convert to int
-            mask = 2 ** np.arange(len(basis_state) - 1, -1, -1)
-            mask = qml.math.asarray(mask, like=basis_state)
-            mask = qml.math.cast_like(mask, basis_state)
-            idx = qml.math.sum(mask * basis_state)
+            idx = 0
+            for i, m in enumerate(basis_state):
+                idx = idx + (m << (len(basis_state) - i - 1))
             eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
             return eigvals.at[idx].set(1.0)
         w = np.zeros(2 ** len(basis_state))
