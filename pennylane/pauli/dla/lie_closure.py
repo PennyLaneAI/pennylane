@@ -249,6 +249,7 @@ class PauliVSpace:
             ]
         
         if len(generators)==0:
+            # allow empty PauliVSpace
             self._pw_to_idx = {}
             self._basis = []
             self._M = np.zeros((0, 0), dtype=self.dtype)
@@ -257,10 +258,6 @@ class PauliVSpace:
             self.tol = np.finfo(self._M.dtype).eps * 100 if tol is None else tol
         
         else:
-
-            # Add all generators that are linearly independent
-            self.add(generators, tol=tol)
-
 
             # Get all Pauli words that are present in at least one Pauli sentence
             all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
