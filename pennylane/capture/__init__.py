@@ -69,7 +69,7 @@ But an operator developer may need to override custom behavior for calling ``cls
 (where ``cls`` indicates the class) if:
 
 * The operator does not accept wires, like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
-* The operator allows metadata to be provided positionally, like :class:`~.PauliRot`.
+* The operator needs to enfore a data/ metadata distinction, like :class:`~.PauliRot`.
 
 In such cases, the operator developer can override ``cls._primitive_bind_call``, which
 will be called when constructing a new class instance instead of ``type.__call__``.  For example,
@@ -78,7 +78,7 @@ will be called when constructing a new class instance instead of ``type.__call__
 
     class JustMetadataOp(qml.operation.Operator):
 
-        def __init__(self, metadata="X"):
+        def __init__(self, metadata):
             super().__init__(wires=[])
             self._metadata = metadata
 
