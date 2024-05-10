@@ -13,7 +13,8 @@
 # limitations under the License.
 """Contains utility functions for building boolean conditionals for noise models"""
 
-from inspect import isclass
+from functools import partial
+from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
@@ -117,3 +118,31 @@ def op_in(ops):
     op_cls = _get_ops(ops)
     op_repr = tuple(getattr(op, "__name__") for op in op_cls)
     return NoiseConditional(lambda x: isinstance(x, op_cls), f"OpIn{op_repr}")
+
+
+def partial_wires(operation, *args, **kwargs):
+    """Wrapper for calling operation with all arguments except the wires"""
+
+    def _partial_op(x):
+        wires = getattr(x, "wires", None) or ([x] if isinstance(x, (int, str)) else list(x))
+        return op(wires=wires)
+
+    if not callable(operation):
+        if args:
+            raise ValueError(
+                "Args cannot be provided when operation is an instance, "
+                f"got operation = {operation} and args = {args}."
+            )
+        args, metadata = getattr(operation, "_flatten")()
+        op_params = {} if len(metadata) < 2 else dict(metadata[1])
+        kwargs = {**op_params, **kwargs}
+        operation = type(operation)
+
+    parameters = list(signature(operation).parameters.keys())
+    if "wires" in parameters[: len(args)]:
+        parameters.pop("wires")  # Ensure we don't include wires arg
+
+    arg_params = dict(zip(parameters, args))
+    op = partial(operation, **{**arg_params, **kwargs})
+
+    return _partial_op
