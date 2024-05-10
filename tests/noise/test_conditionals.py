@@ -19,7 +19,7 @@ Unit tests for the available conditional utitlities for noise models.
 import pytest
 
 import pennylane as qml
-from pennylane.noise.conditionals import _get_ops
+from pennylane.noise.conditionals import _get_wires, _get_ops
 
 
 class TestNoiseConditionals:
@@ -124,6 +124,14 @@ class TestNoiseFunctions:
         assert isinstance(func, qml.noise.NoiseConditional)
         assert str(func) == f"WiresEq({obj})"
         assert func(wires) == result
+
+    def test_get_wires_error(self):
+        """Test for checking _get_wires method raise correct error"""
+
+        with pytest.raises(
+            ValueError, match="Wires cannot be computed for"
+        ):
+            _get_wires(qml.RX)
 
     @pytest.mark.parametrize(
         ("obj", "op", "result"),
