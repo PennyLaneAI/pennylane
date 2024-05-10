@@ -118,7 +118,7 @@ def scf(mol, n_steps=50, tol=1e-8):
         """
         if mol.n_electrons % 2 == 1 or mol.mult != 1:
             raise ValueError(
-                "Openshell systems are not supported. Change the charge or spin multiplicity of the molecule."
+                "Open-shell systems are not supported. Change the charge or spin multiplicity of the molecule."
             )
 
         basis_functions = mol.basis_set

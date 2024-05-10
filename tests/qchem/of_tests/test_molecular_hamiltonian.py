@@ -638,7 +638,7 @@ def test_diff_hamiltonian_error(symbols, geometry):
     ):
         qchem.molecular_hamiltonian(symbols, geometry, method="psi4")
 
-    with pytest.raises(ValueError, match="Openshell systems are not supported"):
+    with pytest.raises(ValueError, match="Open-shell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
 
@@ -663,7 +663,7 @@ def test_diff_hamiltonian_error_molecule_class(symbols, geometry):
     ):
         qchem.molecular_hamiltonian(molecule, method="psi4")
 
-    with pytest.raises(ValueError, match="Openshell systems are not supported"):
+    with pytest.raises(ValueError, match="Open-shell systems are not supported"):
 
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 

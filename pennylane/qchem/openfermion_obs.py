@@ -1039,7 +1039,7 @@ def _molecular_hamiltonian(
 
         if n_electrons % 2 == 1 or mult != 1:
             raise ValueError(
-                "Openshell systems are not supported for the differentiable workflow. Use "
+                "Open-shell systems are not supported for the differentiable workflow. Use "
                 "`method = 'pyscf'` or change the charge or spin multiplicity of the molecule."
             )
 

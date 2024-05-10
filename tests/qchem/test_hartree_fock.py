@@ -85,7 +85,7 @@ def test_scf_openshell_warning():
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], requires_grad=False)
     mol = qchem.Molecule(symbols, geometry)
 
-    with pytest.raises(ValueError, match="Openshell systems are not supported."):
+    with pytest.raises(ValueError, match="Open-shell systems are not supported."):
         qchem.scf(mol)()
 
 
