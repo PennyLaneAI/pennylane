@@ -56,6 +56,15 @@ class NoMatNoDecompOp(Operation):
         return False
 
 
+class InfiniteOp(qml.operation.Operation):
+    """An op with an infinite decomposition."""
+
+    num_wires = 1
+
+    def decomposition(self):
+        return [InfiniteOp(*self.parameters, self.wires)]
+
+
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
 
@@ -205,17 +214,27 @@ class TestDecomposeValidation:
     def test_infinite_decomposition_loop(self):
         """Test that a device error is raised if decomposition enters an infinite loop."""
 
-        class InfiniteOp(qml.operation.Operation):
-            """An op with an infinite decomposition."""
-
-            num_wires = 1
-
-            def decomposition(self):
-                return [InfiniteOp(*self.parameters, self.wires)]
-
         qs = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
             decompose(qs, lambda obj: obj.has_matrix)
+
+    @pytest.mark.parametrize(
+        "error_type", [RuntimeError, qml.operation.DecompositionUndefinedError]
+    )
+    def test_error_type_can_be_set(self, error_type):
+        """Test that passing a class of Error the ``decompose`` transform allows raising another type
+        of error instead of the default ``DeviceError``."""
+
+        decomp_error_tape = QuantumScript(
+            ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))]
+        )
+        recursion_error_tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
+
+        with pytest.raises(error_type, match="not supported with abc"):
+            decompose(decomp_error_tape, lambda op: op.has_matrix, name="abc", error=error_type)
+
+        with pytest.raises(error_type, match=r"Reached recursion limit trying to decompose"):
+            decompose(recursion_error_tape, lambda obj: obj.has_matrix, error=error_type)
 
 
 class TestValidateObservables:
