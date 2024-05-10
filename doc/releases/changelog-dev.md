@@ -95,6 +95,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.Projector` is now compatible with jax-jit.
+  [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
+
 * Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
   [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
   
