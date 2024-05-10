@@ -667,11 +667,12 @@ def test_jax_jit(diff_method, postselect, reset):
     def func(x, y, z):
         m0, m1 = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return (
-            # qml.probs(wires=[1]), # JAX cannot compile code calling qml.math.unique
+            qml.probs(wires=[1]),
+            qml.probs(wires=[0, 1]),
             qml.sample(wires=[1]),
             qml.sample(wires=[0, 1]),
             qml.expval(obs),
-            # qml.probs(obs), # JAX cannot compile code calling qml.math.unique
+            qml.probs(obs),
             qml.sample(obs),
             qml.var(obs),
             qml.expval(op=m0 + 2 * m1),
@@ -695,11 +696,12 @@ def test_jax_jit(diff_method, postselect, reset):
     results2 = func2(*params)
 
     measures = [
-        # qml.probs,
+        qml.probs,
+        qml.probs,
         qml.sample,
         qml.sample,
         qml.expval,
-        # qml.probs,
+        qml.probs,
         qml.sample,
         qml.var,
         qml.expval,
