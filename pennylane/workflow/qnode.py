@@ -25,9 +25,9 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
+from pennylane.debugging import PLDB
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.debugging import PLDB
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
 

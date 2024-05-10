@@ -14,11 +14,12 @@
 """
 Unit tests for the debugging module.
 """
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-
 from pennylane.debugging import PLDB
 
 
@@ -492,3 +493,38 @@ class TestPLDB:
 
         PLDB.reset_active_dev()
         assert PLDB.is_active_dev() is False
+
+
+@patch.object(PLDB, "set_trace")
+def test_breakpoint_integration(mock_method):
+    """Test that qml.breakpoint behaves as execpted"""
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def my_circ():
+        qml.Hadamard(0)
+        qml.CNOT([0, 1])
+        qml.breakpoint()
+        return qml.expval(qml.Z(1))
+
+    mock_method.assert_not_called()  # Did not hit breakpoint
+    my_circ()
+    mock_method.assert_called_once()  # Hit breakpoint once.
+
+
+@patch.object(PLDB, "set_trace")
+def test_breakpoint_integration_with_valid_context_error(mock_method):
+    """Test that the PLDB.valid_context() integrates well with qml.breakpoint"""
+    dev = qml.device("default.mixed", wires=2)
+
+    @qml.qnode(dev)
+    def my_circ():
+        qml.Hadamard(0)
+        qml.CNOT([0, 1])
+        qml.breakpoint()
+        return qml.expval(qml.Z(1))
+
+    with pytest.raises(TypeError, match="Device not supported with breakpoint"):
+        _ = my_circ()
+
+    mock_method.assert_not_called()  # Error was raised before we triggered breakpoint
