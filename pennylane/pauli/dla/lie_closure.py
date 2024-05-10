@@ -248,20 +248,11 @@ class PauliVSpace:
                 for g in generators
             ]
 
-        
-            # allow empty PauliVSpace
-            self._pw_to_idx = {}
-            self._basis = []
-            self._M = np.zeros((0, 0), dtype=self.dtype)
-            self._rank = 0
-            self._num_pw = 0
-            self.tol = np.finfo(self._M.dtype).eps * 100 if tol is None else tol
-
-        else:
-
         # Get all Pauli words that are present in at least one Pauli sentence
         if len(generators) != 0:
-        all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
+            all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
+        else:
+            all_pws = []
         num_pw = len(all_pws)
         # Create a dictionary mapping from PauliWord to row index
         self._pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
