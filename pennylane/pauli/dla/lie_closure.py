@@ -247,8 +247,8 @@ class PauliVSpace:
                 qml.pauli.pauli_sentence(g) if not isinstance(g, PauliSentence) else g
                 for g in generators
             ]
+
         
-        if len(generators)==0:
             # allow empty PauliVSpace
             self._pw_to_idx = {}
             self._basis = []
@@ -256,27 +256,28 @@ class PauliVSpace:
             self._rank = 0
             self._num_pw = 0
             self.tol = np.finfo(self._M.dtype).eps * 100 if tol is None else tol
-        
+
         else:
 
-            # Get all Pauli words that are present in at least one Pauli sentence
-            all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
-            num_pw = len(all_pws)
-            # Create a dictionary mapping from PauliWord to row index
-            self._pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
+        # Get all Pauli words that are present in at least one Pauli sentence
+        if len(generators) != 0:
+        all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
+        num_pw = len(all_pws)
+        # Create a dictionary mapping from PauliWord to row index
+        self._pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
 
-            # Initialize PauliVSpace properties trivially
-            self._basis = []
-            rank = 0
+        # Initialize PauliVSpace properties trivially
+        self._basis = []
+        rank = 0
 
-            self._M = np.zeros((num_pw, rank), dtype=self.dtype)
-            self._rank = rank
-            self._num_pw = num_pw
+        self._M = np.zeros((num_pw, rank), dtype=self.dtype)
+        self._rank = rank
+        self._num_pw = num_pw
 
-            self.tol = np.finfo(self._M.dtype).eps * 100 if tol is None else tol
+        self.tol = np.finfo(self._M.dtype).eps * 100 if tol is None else tol
 
-            # Add all generators that are linearly independent
-            self.add(generators, tol=tol)
+        # Add all generators that are linearly independent
+        self.add(generators, tol=tol)
 
     @property
     def basis(self):
