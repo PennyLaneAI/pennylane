@@ -299,7 +299,7 @@ def simulate(
             results = jax.vmap(vv, in_axes=(0,))(keys)
             results = list(zip(*results))
         else:
-            for i, _ in enumerate(circuit.shots):
+            for i in range(circuit.shots.total_shots):
                 results.append(
                     simulate_one_shot_native_mcm(
                         aux_circ, debugger=debugger, rng=rng, prng_key=keys[i], interface=interface
