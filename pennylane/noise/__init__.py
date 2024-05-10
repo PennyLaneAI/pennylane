@@ -15,5 +15,5 @@ r"""
 This module contains the functionality to work with noise in PennyLane.
 """
 
-from conditionals import NoiseConditional, AndConditional, OrConditional
-from conditionals import wire_in, wire_eq, op_in, op_eq
+from .conditionals import NoiseConditional, AndConditional, OrConditional
+from .conditionals import wire_in, wire_eq, op_in, op_eq, partial_wires

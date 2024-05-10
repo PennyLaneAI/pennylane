@@ -17,7 +17,9 @@ from functools import partial
 from inspect import isclass, signature
 
 import pennylane as qml
+from pennylane.wires import Wires
 from pennylane.boolean_fn import BooleanFn
+
 
 # pylint: disable = unnecessary-lambda, too-few-public-methods
 
@@ -25,9 +27,9 @@ from pennylane.boolean_fn import BooleanFn
 class NoiseConditional(BooleanFn):
     """Defines a BooleanFn for implementing noise"""
 
-    def __init__(self, fn, repr):
+    def __init__(self, fn, repr=None):
         super().__init__(fn)
-        self.repr = repr
+        self.repr = repr if repr else f"NoiseConditional({fn.__name__})"
 
     def __and__(self, other):
         return AndConditional(self, other)
@@ -71,7 +73,7 @@ class OrConditional(NoiseConditional):
 
 def _get_wires(val):
     """Obtain wires as a set from a Wire, Iterable or Operation"""
-    iters = val if isinstance(val, (list, tuple, set)) else getattr(val, "wires", [val])
+    iters = val if isinstance(val, (list, tuple, set, Wires)) else getattr(val, "wires", [val])
     try:
         wires = [[w] if isinstance(w, (int, str)) else getattr(w, "wires").tolist() for w in iters]
     except TypeError:
@@ -107,17 +109,20 @@ def _get_ops(val):
 
 
 def op_eq(ops):
-    """BooleanFn for checking if an op exist in a set of specified ops"""
+    """BooleanFn for checking if an op is equal to the set of specified ops"""
     op_cls = _get_ops(ops)
-    op_repr = tuple(getattr(op, "__name__") for op in op_cls)[0]
-    return NoiseConditional(lambda x: isinstance(x, op_cls), f"OpEq({op_repr})")
+    op_repr = str([getattr(op, "__name__") for op in op_cls])[1:-1]
+
+    return NoiseConditional(lambda x: _get_ops(x) == op_cls, f"OpEq({op_repr})")
 
 
 def op_in(ops):
-    """BooleanFn for checking if an op is equal to the set of specified ops"""
+    """BooleanFn for checking if an op exist in a set of specified ops"""
     op_cls = _get_ops(ops)
-    op_repr = tuple(getattr(op, "__name__") for op in op_cls)
-    return NoiseConditional(lambda x: isinstance(x, op_cls), f"OpIn{op_repr}")
+    op_repr = list(getattr(op, "__name__") for op in op_cls)
+    return NoiseConditional(
+        lambda x: x in op_cls if isclass(x) else isinstance(x, op_cls), f"OpIn({op_repr})"
+    )
 
 
 def partial_wires(operation, *args, **kwargs):
