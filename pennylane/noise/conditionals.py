@@ -128,6 +128,7 @@ def partial_wires(operation, *args, **kwargs):
     """Wrapper for calling operation with all arguments except the wires"""
 
     def _partial_op(x):
+        """Wrapper function for partial_wires"""
         wires = getattr(x, "wires", None) or ([x] if isinstance(x, (int, str)) else list(x))
         return op(wires=wires)
 
@@ -138,14 +139,15 @@ def partial_wires(operation, *args, **kwargs):
                 f"got operation = {operation} and args = {args}."
             )
         args, metadata = getattr(operation, "_flatten")()
-        op_params = {} if len(metadata) < 2 else dict(metadata[1])
-        kwargs = {**op_params, **kwargs}
+        if len(metadata) > 1:
+            kwargs = {**dict(metadata[1]), **kwargs}
+
         operation = type(operation)
 
     parameters = list(signature(operation).parameters.keys())
     arg_params = {**dict(zip(parameters, args)), **kwargs}
 
-    if "wires" in arg_params: # Ensure we don't include wires arg
+    if "wires" in arg_params:  # Ensure we don't include wires arg
         arg_params.pop("wires")
 
     op = partial(operation, **{**arg_params, **kwargs})
