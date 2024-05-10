@@ -65,8 +65,8 @@
 
 <h4>Community contributions 🥳</h4>
 
-* Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support for `_equal_pow`, `_equal_adjoint`, `_equal_exp` and `_equal_sprod`, overloads of the `qml.equal` method.
-  [(#5408)](https://github.com/PennyLaneAI/pennylane/issues/5408)
+* Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
+  [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
 
 <h3>Breaking changes 💔</h3>
 
