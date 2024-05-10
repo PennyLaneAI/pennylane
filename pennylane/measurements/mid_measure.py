@@ -258,7 +258,7 @@ class MidMeasureMP(MeasurementProcess):
         self.reset = reset
         self.postselect = postselect
 
-    # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-renamed, arguments-differ
     @classmethod
     def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
         wires = () if wires is None else wires

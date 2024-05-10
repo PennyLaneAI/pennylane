@@ -21,12 +21,6 @@ from pennylane.wires import WireError, Wires
 
 from .measurements import State, StateMeasurement
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
-
 
 def state() -> "StateMP":
     r"""Quantum state in the computational basis.
@@ -212,12 +206,9 @@ class DensityMatrixMP(StateMP):
     def _abstract_eval(
         cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
     ):
-        if not has_jax:
-            raise ImportError("jax is required for StateMP._abstract_eval")
-        dtype = jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
         n_wires = n_wires or num_device_wires
         shape = (2**n_wires, 2**n_wires)
-        return jax.core.ShapedArray(shape, dtype)
+        return shape, complex
 
     def shape(self, device, shots):
         num_shot_elements = (
