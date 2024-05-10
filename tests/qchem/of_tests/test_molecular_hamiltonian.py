@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.operation import active_new_opmath
@@ -184,21 +185,21 @@ def test_building_hamiltonian_molecule_class(
                     ]
                 ),
                 [
-                    Identity(wires=[0]),
-                    PauliZ(wires=[0]),
-                    PauliZ(wires=[1]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
-                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
-                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
-                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
-                    PauliZ(wires=[2]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[3]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                    I(0),
+                    Z(0),
+                    Z(1),
+                    Z(0) @ Z(1),
+                    Y(0) @ X(1) @ X(2) @ Y(3),
+                    Y(0) @ Y(1) @ X(2) @ X(3),
+                    X(0) @ X(1) @ Y(2) @ Y(3),
+                    X(0) @ Y(1) @ Y(2) @ X(3),
+                    Z(2),
+                    Z(0) @ Z(2),
+                    Z(3),
+                    Z(0) @ Z(3),
+                    Z(1) @ Z(2),
+                    Z(1) @ Z(3),
+                    Z(2) @ Z(3),
                 ],
             ),
         ),
@@ -231,21 +232,21 @@ def test_building_hamiltonian_molecule_class(
                     ]
                 ),
                 [
-                    Identity(wires=[0]),
-                    PauliZ(wires=[0]),
-                    PauliZ(wires=[1]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
-                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
-                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
-                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
-                    PauliZ(wires=[2]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[3]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                    I(0),
+                    Z(0),
+                    Z(1),
+                    Z(0) @ Z(1),
+                    Y(0) @ X(1) @ X(2) @ Y(3),
+                    Y(0) @ Y(1) @ X(2) @ X(3),
+                    X(0) @ X(1) @ Y(2) @ Y(3),
+                    X(0) @ Y(1) @ Y(2) @ X(3),
+                    Z(2),
+                    Z(0) @ Z(2),
+                    Z(3),
+                    Z(0) @ Z(3),
+                    Z(1) @ Z(2),
+                    Z(1) @ Z(3),
+                    Z(2) @ Z(3),
                 ],
             ),
         ),
@@ -319,21 +320,21 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
                     ]
                 ),
                 [
-                    Identity(wires=[0]),
-                    PauliZ(wires=[0]),
-                    PauliZ(wires=[1]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
-                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
-                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
-                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
-                    PauliZ(wires=[2]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[3]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                    I(0),
+                    Z(0),
+                    Z(1),
+                    Z(0) @ Z(1),
+                    Y(0) @ X(1) @ X(2) @ Y(3),
+                    Y(0) @ Y(1) @ X(2) @ X(3),
+                    X(0) @ X(1) @ Y(2) @ Y(3),
+                    X(0) @ Y(1) @ Y(2) @ X(3),
+                    Z(2),
+                    Z(0) @ Z(2),
+                    Z(3),
+                    Z(0) @ Z(3),
+                    Z(1) @ Z(2),
+                    Z(1) @ Z(3),
+                    Z(2) @ Z(3),
                 ],
             ),
         ),
@@ -366,21 +367,21 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
                     ]
                 ),
                 [
-                    Identity(wires=[0]),
-                    PauliZ(wires=[0]),
-                    PauliZ(wires=[1]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
-                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
-                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
-                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
-                    PauliZ(wires=[2]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[3]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                    I(0),
+                    Z(0),
+                    Z(1),
+                    Z(0) @ Z(1),
+                    Y(0) @ X(1) @ X(2) @ Y(3),
+                    Y(0) @ Y(1) @ X(2) @ X(3),
+                    X(0) @ X(1) @ Y(2) @ Y(3),
+                    X(0) @ Y(1) @ Y(2) @ X(3),
+                    Z(2),
+                    Z(0) @ Z(2),
+                    Z(3),
+                    Z(0) @ Z(3),
+                    Z(1) @ Z(2),
+                    Z(1) @ Z(3),
+                    Z(2) @ Z(3),
                 ],
             ),
         ),
@@ -426,25 +427,19 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, h_ref_data
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "method", "wiremap"),
+    ("wiremap"),
     [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
-            "pyscf",
-            ["a", "b", "c", "d"],
-        ),
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
-            "pyscf",
-            [0, "z", 3, "ancilla"],
-        ),
+        ["a", "b", "c", "d"],
+        [0, "z", 3, "ancilla"],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tmpdir):
+def test_custom_wiremap_hamiltonian_pyscf(wiremap, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+    method = "pyscf"
 
     hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
@@ -458,28 +453,20 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tm
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "method", "wiremap"),
+    ("wiremap"),
     [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
-            "pyscf",
-            ["a", "b", "c", "d"],
-        ),
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
-            "pyscf",
-            [0, "z", 3, "ancilla"],
-        ),
+        ["a", "b", "c", "d"],
+        [0, "z", 3, "ancilla"],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_custom_wiremap_hamiltonian_pyscf_molecule_class(
-    symbols, geometry, method, wiremap, tmpdir
+def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir
 ):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
 
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+    method = "pyscf"
     molecule = qchem.Molecule(symbols, geometry)
     hamiltonian, _ = qchem.molecular_hamiltonian(
         molecule,
@@ -493,25 +480,23 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "wiremap", "args"),
+    ("wiremap", "args"),
     [
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             [0, "z", 3, "ancilla"],
             None,
         ),
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             [0, "z", 3, "ancilla"],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
 )
-def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir):
+def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
 
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
     wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
 
     hamiltonian_ref, _ = qchem.molecular_hamiltonian(
@@ -536,25 +521,23 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "wiremap", "args"),
+    ("wiremap", "args"),
     [
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             [0, "z", 3, "ancilla"],
             None,
         ),
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             [0, "z", 3, "ancilla"],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
 )
-def test_custom_wiremap_hamiltonian_dhf_molecule_class(symbols, geometry, wiremap, args, tmpdir):
+def test_custom_wiremap_hamiltonian_dhf_molecule_class(wiremap, args, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
 
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
     wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
 
     molecule = qchem.Molecule(symbols, geometry)
@@ -616,18 +599,12 @@ def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
     assert num_qubits == 4
 
 
-@pytest.mark.parametrize(
-    ("symbols", "geometry"),
-    [
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-        ),
-    ],
-)
-def test_diff_hamiltonian_error(symbols, geometry):
+def test_diff_hamiltonian_error():
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
-
+    
+    symbols = ["H", "H"]
+    geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+    
     with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
         qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
@@ -640,17 +617,11 @@ def test_diff_hamiltonian_error(symbols, geometry):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
 
-@pytest.mark.parametrize(
-    ("symbols", "geometry"),
-    [
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-        ),
-    ],
-)
-def test_diff_hamiltonian_error_molecule_class(symbols, geometry):
+def test_diff_hamiltonian_error_molecule_class():
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
     with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
         qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
@@ -663,32 +634,29 @@ def test_diff_hamiltonian_error_molecule_class(symbols, geometry):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "method", "args"),
+    ("method", "args"),
     [
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             "pyscf",
             None,
         ),
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             "dhf",
             None,
         ),
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             "dhf",
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
-def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
+def test_real_hamiltonian(method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
 
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+    
     hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
@@ -701,31 +669,28 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "method", "args"),
+    ("method", "args"),
     [
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             "pyscf",
             None,
         ),
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             "dhf",
             None,
         ),
         (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             "dhf",
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
-def test_real_hamiltonian_molecule_class(symbols, geometry, method, args, tmpdir):
+def test_real_hamiltonian_molecule_class(method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
 
     molecule = qchem.Molecule(symbols, geometry)
     hamiltonian, _ = qchem.molecular_hamiltonian(
