@@ -89,6 +89,9 @@
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -116,4 +119,5 @@ Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
 Vincent Michaud-Rioux,
+Jay Soni,
 David Wierichs.
