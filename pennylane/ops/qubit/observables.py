@@ -443,7 +443,8 @@ class BasisStateProjector(Projector, Operation):
         wires = Wires(wires)
 
         if qml.math.get_interface(state) == "jax":
-            if qml.math.dtype(state).name[:3] not in {"int", "boo"}:
+            dtype = qml.math.dtype(state)
+            if not (np.issubdtype(dtype, np.integer) or np.issubdtype(dtype, bool)):
                 raise ValueError("Basis state must consist of integers or booleans.")
         else:
             # state is index into data, rather than data, so cast it to built-ins when
@@ -702,9 +703,11 @@ class StateVectorProjector(Projector):
         >>> StateVectorProjector.compute_eigvals([0, 0, 1, 0])
         array([1, 0, 0, 0])
         """
-        w = np.zeros(qml.math.shape(state_vector), dtype="float64")
+        precision = qml.math.get_dtype_name(state_vector)[-2:]
+        dtype = f"float{precision}" if precision in {"32", "64"} else "float64"
+        w = np.zeros(qml.math.shape(state_vector), dtype=dtype)
         w[0] = 1
-        return qml.math.convert_like(qml.math.cast_like(w, state_vector), state_vector)
+        return qml.math.convert_like(w, state_vector)
 
     @staticmethod
     def compute_diagonalizing_gates(
