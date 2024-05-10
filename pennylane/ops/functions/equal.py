@@ -417,7 +417,7 @@ def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence,
 # pylint: disable=unused-argument
 def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
-    check_interface, check_trainability= kwargs["check_interface"], kwargs["check_trainability"]
+    check_interface, check_trainability = kwargs["check_interface"], kwargs["check_trainability"]
 
     if check_interface:
         if qml.math.get_interface(op1.z) != qml.math.get_interface(op2.z):
@@ -425,10 +425,10 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     if check_trainability:
         if qml.math.requires_grad(op1.z) != qml.math.requires_grad(op2.z):
             return False
-            
+
     if op1.z != op2.z:
         return False
-    
+
     return qml.equal(op1.base, op2.base, **kwargs)
 
 
