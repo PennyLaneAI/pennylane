@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
+  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `dynamic_one_shot` transform can be compiled with `jax.jit`.
@@ -79,7 +82,7 @@
 
 * ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
   [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
-  
+
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
