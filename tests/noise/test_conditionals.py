@@ -19,7 +19,7 @@ Unit tests for the available conditional utitlities for noise models.
 import pytest
 
 import pennylane as qml
-from pennylane.noise.conditionals import _get_wires, _get_ops
+from pennylane.noise.conditionals import _get_ops, _get_wires
 
 
 class TestNoiseConditionals:
