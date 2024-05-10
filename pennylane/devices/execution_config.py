@@ -67,6 +67,9 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
+    mcm_config: Optional[dict] = None
+    """Configuration options for handling mid-circuit measurements"""
+
     def __post_init__(self):
         """
         Validate the configured execution options.
@@ -88,6 +91,12 @@ class ExecutionConfig:
 
         if self.gradient_keyword_arguments is None:
             self.gradient_keyword_arguments = {}
+
+        if self.mcm_config is None:
+            self.mcm_config = {}
+        for option in ("discard_invalid_shots", "method"):
+            if option not in self.mcm_config:
+                self.mcm_config[option] = None
 
 
 DefaultExecutionConfig = ExecutionConfig()

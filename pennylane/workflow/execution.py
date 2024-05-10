@@ -376,6 +376,7 @@ def execute(
     max_expansion=10,
     device_batch_transform=True,
     device_vjp=False,
+    mcm_config=None,
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for NumPy and does not support shot vectors.
@@ -422,6 +423,7 @@ def execute(
             constituent terms if not supported on the device.
         device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
             product if it is available.
+        mcm_config (dict): Dictionary containing configuration options for handling mid-circuit measurements.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -543,8 +545,24 @@ def execute(
 
     gradient_kwargs = gradient_kwargs or {}
     config = config or _get_execution_config(
-        gradient_fn, grad_on_execution, interface, device, device_vjp
+        gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
     )
+
+    if "jax" in interface and config.mcm_config["discard_invalid_shots"]:
+        warnings.warn(
+            "Cannot discard invalid shots with postselection when using the 'jax' interface. "
+            "Ignoring requested mid-circuit measurement configuration.",
+            UserWarning,
+        )
+        config.mcm_config["discard_invalid_shots"] = None
+
+    if any(not tape.shots for tape in tapes) and mcm_config["method"] == "one-shot":
+        warnings.warn(
+            "Cannot use the 'one-shot' method for mid-circuit measurements with "
+            "analytic mode. Using deferred measurements.",
+            UserWarning,
+        )
+        config.mcm_config["method"] = None
 
     if transform_program is None:
         if isinstance(device, qml.devices.Device):
@@ -798,7 +816,9 @@ def execute(
     return post_processing(results)
 
 
-def _get_execution_config(gradient_fn, grad_on_execution, interface, device, device_vjp):
+def _get_execution_config(
+    gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
+):
     """Helper function to get the execution config."""
     if gradient_fn is None:
         _gradient_method = None
@@ -811,6 +831,7 @@ def _get_execution_config(gradient_fn, grad_on_execution, interface, device, dev
         gradient_method=_gradient_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
+        mcm_config=mcm_config,
     )
     if isinstance(device, qml.devices.Device):
         _, config = device.preprocess(config)

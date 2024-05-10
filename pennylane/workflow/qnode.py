@@ -73,6 +73,8 @@ def _make_execution_config(
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
+    mcm_config = getattr(circuit, "execute_kwargs", {}).get("mcm_config", None)
+
     return qml.devices.ExecutionConfig(
         interface=getattr(circuit, "interface", None),
         gradient_method=_gradient_method,
@@ -80,6 +82,7 @@ def _make_execution_config(
         use_device_jacobian_product=getattr(circuit, "execute_kwargs", {"device_vjp": False})[
             "device_vjp"
         ],
+        mcm_config=mcm_config,
     )
 
 
@@ -216,6 +219,7 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
+        mcm_config (dict): Dictionary containing configuration options for handling mid-circuit measurements.
 
     Keyword Args:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
@@ -439,6 +443,7 @@ class QNode:
         cachesize=10000,
         max_diff=1,
         device_vjp=False,
+        mcm_config=None,
         **gradient_kwargs,
     ):
         if logger.isEnabledFor(logging.DEBUG):
@@ -513,6 +518,7 @@ class QNode:
             "max_diff": max_diff,
             "max_expansion": max_expansion,
             "device_vjp": device_vjp,
+            "mcm_config": mcm_config,
         }
 
         if self.expansion_strategy == "device":

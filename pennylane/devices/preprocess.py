@@ -145,7 +145,7 @@ def validate_device_wires(
 
 @transform
 def mid_circuit_measurements(
-    tape: qml.tape.QuantumTape, device
+    tape: qml.tape.QuantumTape, device, mcm_config
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Provide the transform to handle mid-circuit measurements.
 
@@ -153,8 +153,21 @@ def mid_circuit_measurements(
     and use the ``qml.defer_measurements`` transform otherwise.
     """
 
+    if (mcm_method := mcm_config.get("method", None)) is not None:
+        if mcm_method == "one-shot":
+            return qml.dynamic_one_shot(
+                tape, discard_invalid_shots=mcm_config.get("discard_invalid_shots", None)
+            )
+        if mcm_method == "deferred":
+            return qml.defer_measurements(tape, device=device)
+        warnings.warn(
+            "Invalid mid-circuit measurements method. Automatically detecting optimal method.",
+            UserWarning,
+        )
     if tape.shots:
-        return qml.dynamic_one_shot(tape)
+        return qml.dynamic_one_shot(
+            tape, discard_invalid_shots=mcm_config.get("discard_invalid_shots", None)
+        )
     return qml.defer_measurements(tape, device=device)
 
 

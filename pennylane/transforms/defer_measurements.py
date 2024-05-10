@@ -275,6 +275,7 @@ def defer_measurements(
     _check_tape_validity(tape)
 
     device = kwargs.get("device", None)
+    print("in defer_measurements")
 
     new_operations = []
 
