@@ -128,9 +128,7 @@ class TestNoiseFunctions:
     def test_get_wires_error(self):
         """Test for checking _get_wires method raise correct error"""
 
-        with pytest.raises(
-            ValueError, match="Wires cannot be computed for"
-        ):
+        with pytest.raises(ValueError, match="Wires cannot be computed for"):
             _get_wires(qml.RX)
 
     @pytest.mark.parametrize(
