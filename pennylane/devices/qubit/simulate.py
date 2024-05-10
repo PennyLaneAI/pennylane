@@ -291,12 +291,12 @@ def simulate(
             # pylint: disable=import-outside-toplevel
             import jax
 
-            def vv(k):
+            def simulate_partial(k):
                 return simulate_one_shot_native_mcm(
                     aux_circ, debugger=debugger, rng=rng, prng_key=k, interface=interface
                 )
 
-            results = jax.vmap(vv, in_axes=(0,))(keys)
+            results = jax.vmap(simulate_partial, in_axes=(0,))(keys)
             results = tuple(zip(*results))
         else:
             for i in range(circuit.shots.total_shots):
