@@ -108,9 +108,6 @@ This release contains contributions from (in alphabetical order):
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
-<<<<<<< HEAD
-Kenya Sakka,
-=======
 Vincent Michaud-Rioux,
->>>>>>> 9f7e8ba8f41580fc3efe88bf88f0cc05c04a66ab
+Kenya Sakka,
 David Wierichs.
