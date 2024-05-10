@@ -11,6 +11,9 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
+  [(#5617)](https://github.com/PennyLaneAI/pennylane/pull/5617)
+  
 * The `dynamic_one_shot` transform can be compiled with `jax.jit`.
   [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
   
@@ -95,6 +98,9 @@
 * `qml.Projector` is now compatible with jax-jit.
   [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
 
+* Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
+  [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
+  
 * `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
   with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
