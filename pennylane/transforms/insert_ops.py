@@ -18,6 +18,7 @@ from types import FunctionType
 from typing import Callable, Sequence, Type, Union
 
 import pennylane as qml
+from pennylane.devices.preprocess import decompose
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Adjoint
 from pennylane.tape import QuantumTape
@@ -89,7 +90,6 @@ def insert(
 
 
     Raises:
-        QuantumFunctionError: if some observables in the tape are not qubit-wise commuting
         ValueError: if a single operation acting on multiple wires is passed to ``op``
         ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
             ``'all'`` OR PennyLane Operation
@@ -219,12 +219,8 @@ def insert(
             return True
         return not (hasattr(qml.templates, obj.name) or isinstance(obj, Adjoint))
 
-    [tape], _ = qml.devices.preprocess.decompose(
-        tape,
-        stopping_condition=stop_at,
-        name="insert",
-        error=qml.operation.DecompositionUndefinedError,
-    )
+    error_type = (qml.operation.DecompositionUndefinedError,)
+    [tape], _ = decompose(tape, stopping_condition=stop_at, name="insert", error=error_type)
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
