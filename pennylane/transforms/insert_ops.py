@@ -18,7 +18,6 @@ from types import FunctionType
 from typing import Callable, Sequence, Type, Union
 
 import pennylane as qml
-from pennylane.devices.preprocess import decompose
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Adjoint
 from pennylane.tape import QuantumTape
@@ -220,6 +219,7 @@ def insert(
         return not (hasattr(qml.templates, obj.name) or isinstance(obj, Adjoint))
 
     error_type = (qml.operation.DecompositionUndefinedError,)
+    decompose = qml.devices.preprocess.decompose
     [tape], _ = decompose(tape, stopping_condition=stop_at, name="insert", error=error_type)
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
