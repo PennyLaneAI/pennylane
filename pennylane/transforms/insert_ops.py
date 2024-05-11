@@ -102,7 +102,7 @@ def insert(
 
         dev = qml.device("default.mixed", wires=2)
 
-        @partial(qml.transforms.insert, qml.AmplitudeDamping, 0.2, position="end")
+        @partial(qml.transforms.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
         @qml.qnode(dev)
         def f(w, x, y, z):
             qml.RX(w, wires=0)
@@ -141,7 +141,7 @@ def insert(
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            @qml.transforms.insert(op, [0.2, 0.3], position="end")
+            @partial(qml.transforms.insert, op=op, op_args=[0.2, 0.3], position="end")
             def f(w, x, y, z):
                 qml.RX(w, wires=0)
                 qml.RY(x, wires=1)
@@ -175,7 +175,7 @@ def insert(
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
         >>> from pennylane.transforms import insert
-        >>> noisy_tape = insert(tape, qml.AmplitudeDamping, 0.05, position="end")
+        >>> [noisy_tape], _ = insert(tape, qml.AmplitudeDamping, 0.05, position="end")
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
         0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>
@@ -210,17 +210,21 @@ def insert(
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
     """
-    # decompose templates and their adjoints (which fixes a bug in the tutorial_error_mitigation demo)
-    # TODO: change this to be cleaner and more robust
-    try:
-        tape = tape.expand(
-            stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
-        )
-    except qml.QuantumFunctionError as e:
-        raise qml.QuantumFunctionError(
-            "The insert transform cannot transform a circuit measuring non-commuting observables. "
-            "Consider wrapping the gates in their own function and transforming only that function."
-        ) from e
+
+    # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo
+    def stop_at(obj):
+        if not isinstance(obj, qml.operation.Operator):
+            return True
+        if not obj.has_decomposition:
+            return True
+        return not (hasattr(qml.templates, obj.name) or isinstance(obj, Adjoint))
+
+    [tape], _ = qml.devices.preprocess.decompose(
+        tape,
+        stopping_condition=stop_at,
+        name="insert",
+        error=qml.operation.DecompositionUndefinedError,
+    )
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
