@@ -8,7 +8,7 @@ autograd
 toml
 appdirs
 semantic_version
-autoray
+autoray==0.6.8
 matplotlib
 requests
 tomli # Drop once minimum Python version is 3.11
