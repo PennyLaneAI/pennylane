@@ -24,7 +24,15 @@ from pennylane.wires import Wires
 
 
 class NoiseConditional(BooleanFn):
-    """Defines a BooleanFn for implementing noise"""
+    """Wrapper for callables with boolean output that help implement noise models
+    and can be manipulated via bit-wise operations.
+
+    Args:
+        fn (callable): Function to be wrapped. It can accept any number
+            of arguments, and must return a boolean.
+        repr (str): String representation to be used by ``repr`` dunder method.
+            Default is to use function's name as ``NoiseConditional(<name>)``.
+    """
 
     def __init__(self, fn, repr=None):
         super().__init__(fn)
@@ -141,10 +149,9 @@ def partial_wires(operation, *args, **kwargs):
         args, metadata = getattr(operation, "_flatten")()
         if len(metadata) > 1:
             kwargs = {**dict(metadata[1]), **kwargs}
-
         operation = type(operation)
 
-    parameters = list(signature(operation).parameters.keys())
+    parameters = list(signature(operation.__init__).parameters.keys())[1:]
     arg_params = {**dict(zip(parameters, args)), **kwargs}
 
     if "wires" in arg_params:  # Ensure we don't include wires arg

@@ -25,8 +25,8 @@ class BooleanFn:
     manipulated and combined with bit-wise operators.
 
     Args:
-        fn (callable): Function to be wrapped. It must accept a single
-            argument, and must return a boolean.
+        fn (callable): Function to be wrapped. It can accept any number
+            of arguments, and must return a boolean.
 
     **Example**
 
