@@ -93,12 +93,16 @@ class NoiseModel:
             **dict({k: v for k, v in self._metadata.items() if k not in data._metadata}),
         )
 
+    def __eq__(self, other):
+        return self.model == other.model and self.metadata == other.metadata
+
     def __repr__(self):
         model_str = "NoiseModel({\n"
         for key, val in self._model.items():
             model_str += "    " + f"{key} = {val.__name__}" + "\n"
         model_str += "}, "
         for key, val in self._metadata.items():
-            model_str += f"{key} = {val}"
-        model_str += ")"
+            model_str += f"{key} = {val}, "
+        model_str = model_str[:-2] + ")"
+
         return model_str
