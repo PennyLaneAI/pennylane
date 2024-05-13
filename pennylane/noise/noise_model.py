@@ -18,8 +18,8 @@ class NoiseModel:
     """Build a noise model based on ``Conditional``, ``Operation`` and ``metadata``.
 
     Args:
-        model (dict[~.NoiseConditional->Union[Operation, Channel]]): Model data for
-            the noise model as a ``{Conditional: Noisy_gate}`` dictionary.
+        model (dict[Union[~.NoiseConditional, Callable]->Union[Operation, Channel]]): Model
+            data for the noise model as a ``{Conditional: Noisy_gate}`` dictionary.
         kwargs: Keyword arguments for specifying metadata related to noise model.
 
     **Example**
@@ -75,9 +75,9 @@ class NoiseModel:
 
     def __add__(self, data):
         if not isinstance(data, NoiseModel):
-            return NoiseModel(self._model + data, **self.metadata)
+            return NoiseModel({**self._model, **data}, **self.metadata)
 
-        return NoiseModel(self._model + data._model, **dict(self._metadata + data._metadata))
+        return NoiseModel({**self._model, **data._model}, **{**self._metadata, **data._metadata})
 
     def __radd__(self, data):
         return self.__add__(data)
@@ -92,3 +92,13 @@ class NoiseModel:
             {k: v for k, v in self._model.items() if k not in data._model},
             **dict({k: v for k, v in self._metadata.items() if k not in data._metadata}),
         )
+
+    def __repr__(self):
+        model_str = "NoiseModel({\n"
+        for key, val in self._model.items():
+            model_str += "    " + f"{key} = {val.__name__}" + "\n"
+        model_str += "}, "
+        for key, val in self._metadata.items():
+            model_str += f"{key} = {val}"
+        model_str += ")"
+        return model_str

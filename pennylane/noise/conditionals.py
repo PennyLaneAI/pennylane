@@ -311,6 +311,16 @@ def op_in(ops):
     )
 
 
+def _rename(newname):
+    """Decorator function for renaming ``_partial_op`` function used in partial_wires"""
+
+    def decorator(f):
+        f.__name__ = newname
+        return f
+
+    return decorator
+
+
 def partial_wires(operation, *args, **kwargs):
     """Builds a partial function based on the given operation with
     all argument frozen except ``wires``.
@@ -358,11 +368,6 @@ def partial_wires(operation, *args, **kwargs):
     qml.RX(2.3, wires=["light"])
     """
 
-    def _partial_op(x):
-        """Wrapper function for partial_wires"""
-        wires = getattr(x, "wires", None) or ([x] if isinstance(x, (int, str)) else list(x))
-        return op(wires=wires)
-
     if not callable(operation):
         if args:
             raise ValueError(
@@ -382,5 +387,16 @@ def partial_wires(operation, *args, **kwargs):
         arg_params.pop("wires")
 
     op = partial(operation, **{**arg_params, **kwargs})
+
+    op_name = f"{operation.__name__}("
+    for key, val in op.keywords.items():
+        op_name += f"{key}={val}"
+    op_name += ")"
+
+    @_rename(op_name)
+    def _partial_op(x):
+        """Wrapper function for partial_wires"""
+        wires = getattr(x, "wires", None) or ([x] if isinstance(x, (int, str)) else list(x))
+        return op(wires=wires)
 
     return _partial_op
