@@ -37,17 +37,18 @@ class QutritDepolarizingChannel(Channel):
         K_{i,j} = \sqrt{\frac{p}{8}}X^iZ^j
 
     Where:
+
     .. math::
         X = \begin{bmatrix}
                 0 & 1 & 0 \\
                 0 & 0 & 1 \\
                 1 & 0 & 0
-                \end{bmatrix},\;
+                \end{bmatrix}, \quad
         Z = \begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \omega & 0\\
                 0 & 0 & \omega^2
-                \end{bmatrix}, \text{and} \{i,j\} \neq \{0,0\}
+                \end{bmatrix}, \quad \text{and} \{i,j\} \neq \{0,0\}
 
 
     These relations create the following Kraus matrices:
