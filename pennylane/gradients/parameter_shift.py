@@ -36,9 +36,9 @@ from .general_shift_rules import (
 from .gradient_transform import (
     _all_zero_grad,
     _contract_qjac_with_cjac,
-    _swap_first_two_axes,
     _move_first_axis_to_third_pos,
     _no_trainable_grad,
+    _swap_first_two_axes,
     assert_multimeasure_not_broadcasted,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
