@@ -16,8 +16,6 @@
 This module contains the available built-in noisy qutrit
 quantum channels supported by PennyLane, as well as their conventions.
 """
-from itertools import product
-
 import numpy as np
 
 from pennylane import math
@@ -142,50 +140,50 @@ class QutritDepolarizingChannel(Channel):
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
         r"""Kraus matrices representing the qutrit depolarizing channel.
 
-        Args:
-            p (float): each qutrit Pauli gate is applied with probability :math:`\frac{p}{8}`
+         Args:
+             p (float): each qutrit Pauli gate is applied with probability :math:`\frac{p}{8}`
 
-        Returns:
-            list (array): list of Kraus matrices
+         Returns:
+             list (array): list of Kraus matrices
 
-        **Example**
+         **Example**
 
-        >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
-        array([[[ 0.707+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
+         >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
+         array([[[ 0.707+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
 
-       [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j]],
+        [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j]],
 
-       [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j]],
+        [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j]],
 
-       [[ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
-        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        [[ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
+         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-       [[ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
-        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        [[ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
+         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-       [[ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
-        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+        [[ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
+         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-       [[ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
-        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ]],
+        [[ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
+         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ]],
 
-       [[ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
-        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ]],
+        [[ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
+         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ]],
 
-       [[ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
-        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-        [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ]]])
+        [[ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
+         [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+         [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ]]])
         """
         if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
@@ -202,7 +200,7 @@ class QutritDepolarizingChannel(Channel):
             one = math.cast_like(one, p)
             z = math.cast_like(z, p)
 
-        w2 = w ** 2
+        w2 = w**2
 
         depolarizing_mats = [
             [[one, z, z], [z, w, z], [z, z, w2]],
@@ -222,5 +220,3 @@ class QutritDepolarizingChannel(Channel):
         )
 
         return [identity] + Ks
-
-
