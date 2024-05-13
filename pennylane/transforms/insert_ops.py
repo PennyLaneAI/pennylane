@@ -99,6 +99,8 @@ def insert(
 
     .. code-block:: python3
 
+        from functools import partial
+
         dev = qml.device("default.mixed", wires=2)
 
         @partial(qml.transforms.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
