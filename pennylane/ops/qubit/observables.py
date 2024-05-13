@@ -435,14 +435,23 @@ class BasisStateProjector(Projector, Operation):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a basis state."""
 
+    grad_method = None
+
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-        state = list(qml.math.toarray(state).astype(int))
 
-        if not set(state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
+        if qml.math.get_interface(state) == "jax":
+            dtype = qml.math.dtype(state)
+            if not (np.issubdtype(dtype, np.integer) or np.issubdtype(dtype, bool)):
+                raise ValueError("Basis state must consist of integers or booleans.")
+        else:
+            # state is index into data, rather than data, so cast it to built-ins when
+            # no need for tracing
+            state = tuple(qml.math.toarray(state).astype(int))
+            if not set(state).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
         super().__init__(state, wires=wires, id=id)
 
@@ -471,7 +480,7 @@ class BasisStateProjector(Projector, Operation):
 
         if base_label is not None:
             return base_label
-        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        basis_string = "".join(str(int(i)) for i in self.data[0])
         return f"|{basis_string}⟩⟨{basis_string}|"
 
     @staticmethod
@@ -497,7 +506,15 @@ class BasisStateProjector(Projector, Operation):
          [0. 0. 0. 0.]
          [0. 0. 0. 0.]]
         """
-        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        shape = (2 ** len(basis_state), 2 ** len(basis_state))
+        if qml.math.get_interface(basis_state) == "jax":
+            idx = 0
+            for i, m in enumerate(basis_state):
+                idx = idx + (m << (len(basis_state) - i - 1))
+            mat = qml.math.zeros(shape, like=basis_state)
+            return mat.at[idx, idx].set(1.0)
+
+        m = np.zeros(shape)
         idx = int("".join(str(i) for i in basis_state), 2)
         m[idx, idx] = 1
         return m
@@ -528,6 +545,12 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
+        if qml.math.get_interface(basis_state) == "jax":
+            idx = 0
+            for i, m in enumerate(basis_state):
+                idx = idx + (m << (len(basis_state) - i - 1))
+            eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
+            return eigvals.at[idx].set(1.0)
         w = np.zeros(2 ** len(basis_state))
         idx = int("".join(str(i) for i in basis_state), 2)
         w[idx] = 1
@@ -566,12 +589,12 @@ class StateVectorProjector(Projector):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a state."""
 
+    grad_method = None
+
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-        state = list(qml.math.toarray(state))
-
         super().__init__(state, wires=wires, id=id)
 
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
@@ -680,9 +703,11 @@ class StateVectorProjector(Projector):
         >>> StateVectorProjector.compute_eigvals([0, 0, 1, 0])
         array([1, 0, 0, 0])
         """
-        w = qml.math.zeros_like(state_vector)
+        precision = qml.math.get_dtype_name(state_vector)[-2:]
+        dtype = f"float{precision}" if precision in {"32", "64"} else "float64"
+        w = np.zeros(qml.math.shape(state_vector), dtype=dtype)
         w[0] = 1
-        return w
+        return qml.math.convert_like(w, state_vector)
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -715,10 +740,27 @@ class StateVectorProjector(Projector):
         # Adapting the approach discussed in the link below to work with arbitrary complex-valued state vectors.
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
-        phase = qml.math.exp(-1j * qml.math.angle(state_vector[0]))
+
+        if qml.math.get_interface(state_vector) == "tensorflow":
+            dtype_name = qml.math.get_dtype_name(state_vector)
+            if dtype_name == "int32":
+                state_vector = qml.math.cast(state_vector, np.complex64)
+            elif dtype_name == "int64":
+                state_vector = qml.math.cast(state_vector, np.complex128)
+
+        angle = qml.math.angle(state_vector[0])
+        if qml.math.get_interface(angle) == "tensorflow":
+            if qml.math.get_dtype_name(angle) == "float32":
+                angle = qml.math.cast(angle, np.complex64)
+            else:
+                angle = qml.math.cast(angle, np.complex128)
+
+        phase = qml.math.exp(-1.0j * angle)
         psi = phase * state_vector
         denominator = qml.math.sqrt(2 + 2 * psi[0])
-        psi = qml.math.set_index(psi, 0, psi[0] + 1)  # psi[0] += 1, but JAX-JIT compatible
+        summed_array = np.zeros(qml.math.shape(psi), dtype=qml.math.get_dtype_name(psi))
+        summed_array[0] = 1.0
+        psi = psi + summed_array
         psi /= denominator
         u = 2 * qml.math.outer(psi, qml.math.conj(psi)) - qml.math.eye(len(psi))
         return [QubitUnitary(u, wires=wires)]

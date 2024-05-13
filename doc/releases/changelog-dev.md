@@ -74,6 +74,10 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* PennyLane operators can now automatically be captured as instructions in JAXPR. See the experimental
+  `capture` module for more information.
+  [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
@@ -94,6 +98,9 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.Projector` is now compatible with jax-jit.
+  [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
 
 * Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
   [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
