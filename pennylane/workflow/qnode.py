@@ -62,8 +62,12 @@ def _get_device_shots(device) -> Shots:
 
 
 def _make_execution_config(
-    circuit: Optional["QNode"], diff_method=None
+    circuit: Optional["QNode"],
+    diff_method=None,
+    dynamic_config=None,
 ) -> "qml.devices.ExecutionConfig":
+    dynamic_config = dynamic_config or {}
+
     if diff_method is None or isinstance(diff_method, str):
         _gradient_method = diff_method
     else:
@@ -73,14 +77,24 @@ def _make_execution_config(
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
-    return qml.devices.ExecutionConfig(
-        interface=getattr(circuit, "interface", None),
-        gradient_method=_gradient_method,
-        grad_on_execution=grad_on_execution,
-        use_device_jacobian_product=getattr(circuit, "execute_kwargs", {"device_vjp": False})[
+
+    kwargs = {
+        "device_options": {},
+        "interface": getattr(circuit, "interface", None),
+        "gradient_method": _gradient_method,
+        "grad_on_execution": grad_on_execution,
+        "use_device_jacobian_product": getattr(circuit, "execute_kwargs", {"device_vjp": False})[
             "device_vjp"
         ],
-    )
+    }
+
+    for key, value in dynamic_config.items():
+        if key in dir(qml.devices.ExecutionConfig):
+            kwargs[key] = value
+        else:
+            kwargs["device_options"][key] = value
+
+    return qml.devices.ExecutionConfig(**kwargs)
 
 
 def _to_qfunc_output_type(
@@ -472,6 +486,16 @@ class QNode:
                 "Invalid device. Device must be a valid PennyLane device."
             )
 
+        self._protected_kwargs_used = set()
+        for kwarg in ["shots", "config"]:
+            if kwarg in inspect.signature(func).parameters:
+                warnings.warn(
+                    f"Detected '{kwarg}' as an argument to the given quantum function. "
+                    f"The '{kwarg}' argument name is reserved for overriding the runtime configuration. "
+                    "Its use outside of this context should be avoided.",
+                    UserWarning,
+                )
+                self._protected_kwargs_used.add(kwarg)
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "
@@ -917,10 +941,12 @@ class QNode:
         kwargs = copy.copy(kwargs)
         old_interface = self.interface
 
-        if self._qfunc_uses_shots_arg:
+        if "shots" in self._protected_kwargs_used:
             shots = _get_device_shots(self._original_device)
         else:
             shots = kwargs.pop("shots", _get_device_shots(self._original_device))
+        if "config" not in self._protected_kwargs_used and "config" in kwargs:
+            kwargs.pop("config")
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
@@ -1012,8 +1038,15 @@ class QNode:
             Result
 
         """
+        execute_kwargs = copy.copy(self.execute_kwargs)
+        if "config" in self._protected_kwargs_used:
+            dynamic_config = {}
+        else:
+            dynamic_config = kwargs.pop("config", {})
 
-        cache = self.execute_kwargs.get("cache", False)
+        cache = execute_kwargs.pop("cache", False)
+        if "cache" in dynamic_config:
+            cache = dynamic_config.pop("cache")
         using_custom_cache = (
             hasattr(cache, "__getitem__")
             and hasattr(cache, "__setitem__")
@@ -1023,12 +1056,13 @@ class QNode:
 
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
-            config = _make_execution_config(self, self.gradient_fn)
+            config = _make_execution_config(self, self.gradient_fn, dynamic_config)
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
             config = None
             full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+
         has_mcm_support = (
             any(isinstance(op, MidMeasureMP) for op in self._tape)
             and hasattr(self.device, "capabilities")
@@ -1058,7 +1092,8 @@ class QNode:
             config=config,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
-            **self.execute_kwargs,
+            cache=cache,
+            **execute_kwargs,
         )
         res = res[0]
 
@@ -1081,7 +1116,7 @@ class QNode:
             interface = qml.math.get_interface(*args, *list(kwargs.values()))
             self._interface = INTERFACE_MAP[interface]
 
-        if self._qfunc_uses_shots_arg:
+        if "shots" in self._protected_kwargs_used:
             override_shots = False
         else:
             if "shots" not in kwargs:
