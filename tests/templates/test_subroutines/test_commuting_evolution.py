@@ -285,7 +285,6 @@ class TestGradients:
             return qml.expval(qml.PauliZ(0))
 
         x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]
-        circuit(x_vals[0], diff_coeffs)
 
         grads_finite_diff = [
             np.hstack(qml.gradients.finite_diff(circuit)(x, diff_coeffs)) for x in x_vals
