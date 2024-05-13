@@ -32,6 +32,10 @@ class NoiseConditional(BooleanFn):
             of arguments, and must return a boolean.
         repr (str): String representation to be used by ``repr`` dunder method.
             Default is to use function's name as ``NoiseConditional(<name>)``.
+
+    .. note:: This is a *developer-facing* class for implementing conditionals for building
+        noise models. Users are encouraged to rather use :func:`~.wires_in`, :func:`~.wires_eq`,
+        :func:`~.op_in`, and :func:`~.op_eq` for this purpose.
     """
 
     def __init__(self, fn, repr=None):
@@ -50,7 +54,19 @@ class NoiseConditional(BooleanFn):
 
 # pylint: disable = bad-super-call
 class AndConditional(NoiseConditional):
-    """Defines a BooleanFn for implementing AND combination of noise fns"""
+    """Developer facing class for implemeting bit-wise ``AND`` for
+    :class:`NoiseConditional <pennylane.noise.NoiseConditional>` callables with boolean output.
+
+    Args:
+        left (~.NoiseConditional): Left operand in the bit-wise expression.
+        right (~.NoiseConditional): Right operand in the bit-wise expression.
+
+    .. note::
+
+        This is a *developer-facing* class for implementing bit-wise expression
+        for the noise model's conditionals built via
+        :class:`NoiseConditional <pennylane.noise.NoiseConditional>`.
+    """
 
     def __init__(self, left, right):
         self.l_op = left
@@ -65,7 +81,17 @@ class AndConditional(NoiseConditional):
 
 # pylint: disable = bad-super-call
 class OrConditional(NoiseConditional):
-    """Defines a BooleanFn for implementing OR combination of noise fns"""
+    """Developer facing class for implemeting bit-wise ``OR`` for
+    :class:`NoiseConditional <pennylane.noise.NoiseConditional>` callables with boolean output.
+
+    Args:
+        left (~.NoiseConditional): Left operand in the bit-wise expression.
+        right (~.NoiseConditional): Right operand in the bit-wise expression.
+
+    .. note:: This is a *developer-facing* class for implementing bit-wise expression
+        for the noise model's conditionals built via
+        :class:`NoiseConditional <pennylane.noise.NoiseConditional>`.
+    """
 
     def __init__(self, left, right):
         self.l_op = left
@@ -79,7 +105,19 @@ class OrConditional(NoiseConditional):
 
 
 def _get_wires(val):
-    """Obtain wires as a set from a Wire, Iterable or Operation"""
+    """Extract wires as a set from an integer, string, Iterable, Wires or Operation instance.
+
+    Args:
+        val (Union[int, str, Iterable, ~.wires.Wires, ~.operation.Operation]): object to be used
+            for building the wire set.
+
+    Returns:
+        set[Union[int, str]]: computed wire set
+
+    Raises:
+        ValueError: if the wire set cannot be computed for ``val``.
+
+    """
     iters = val if isinstance(val, (list, tuple, set, Wires)) else getattr(val, "wires", [val])
     try:
         wires = [[w] if isinstance(w, (int, str)) else getattr(w, "wires").tolist() for w in iters]
@@ -151,7 +189,8 @@ def partial_wires(operation, *args, **kwargs):
             kwargs = {**dict(metadata[1]), **kwargs}
         operation = type(operation)
 
-    parameters = list(signature(operation.__init__).parameters.keys())[1:]
+    fsignature = signature(getattr(operation, "__init__", operation)).parameters
+    parameters = list(fsignature)[int("self" in fsignature) :]
     arg_params = {**dict(zip(parameters, args)), **kwargs}
 
     if "wires" in arg_params:  # Ensure we don't include wires arg
