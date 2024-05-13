@@ -318,9 +318,9 @@ def partial_wires(operation, *args, **kwargs):
     Args:
         operation (Operation, class): instance of the operation or the class
             corresponding to operation.
-        *args: Positional arguments provided in the case where the keyword argument
+        args: Positional arguments provided in the case where the keyword argument
             ``operation`` is a class for building the partially evaluated instance.
-        **kwargs: Keyword arguments for the building the partially evaluated instance.
+        kwargs: Keyword arguments for the building the partially evaluated instance.
             These will override any arguments present in the operation instance or ``args``.
 
     Returns:
