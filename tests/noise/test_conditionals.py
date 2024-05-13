@@ -95,10 +95,10 @@ class TestNoiseFunctions:
             (qml.CNOT(["a", "c"]), "b", False),
         ],
     )
-    def test_wire_in(self, obj, wires, result):
-        """Test for checking WireIn work as expected for checking if a wire exist in a set of specified wires"""
+    def test_wires_in(self, obj, wires, result):
+        """Test for checking WiresIn work as expected for checking if a wire exist in a set of specified wires"""
 
-        func = qml.noise.wire_in(obj)
+        func = qml.noise.wires_in(obj)
 
         assert isinstance(func, qml.noise.NoiseConditional)
         assert str(func) == f"WiresIn({obj})"
@@ -116,10 +116,10 @@ class TestNoiseFunctions:
             (qml.CNOT(["c", "d"]), ["c", "d"], True),
         ],
     )
-    def test_wire_eq(self, obj, wires, result):
-        """Test for checking WireEq work as expected for checking if a set of wires is equal to specified wires"""
+    def test_wires_eq(self, obj, wires, result):
+        """Test for checking WiresEq work as expected for checking if a set of wires is equal to specified wires"""
 
-        func = qml.noise.wire_eq(obj)
+        func = qml.noise.wires_eq(obj)
 
         assert isinstance(func, qml.noise.NoiseConditional)
         assert str(func) == f"WiresEq({obj})"
@@ -167,7 +167,7 @@ class TestNoiseFunctions:
         ],
     )
     def test_op_eq(self, obj, op, result):
-        """Test for checking WireEq work as expected for checking if an operation is equal to specified operation"""
+        """Test for checking OpEq work as expected for checking if an operation is equal to specified operation"""
 
         func = qml.noise.op_eq(obj)
 
