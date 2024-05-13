@@ -18,6 +18,7 @@ from typing import Callable, Tuple
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
+import warnings
 
 PostprocessingFn = Callable[[ResultBatch], ResultBatch]
 QuantumTapeBatch = Tuple[qml.tape.QuantumScript]
@@ -64,7 +65,18 @@ def map_batch_transform(
     >>> dev = qml.device("default.qubit", wires=2)
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
     [array(0.99500417), array(0.8150893)]
+
+    .. warning::
+        qml.transforms.map_batch_transform is deprecated and will be removed in a future release.
+        Please ... .
     """
+
+    warnings.warn(
+        "qml.transforms.map_batch_transform is deprecated."
+        "Please ... .",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     execution_tapes = []
     batch_fns = []
     tape_counts = []

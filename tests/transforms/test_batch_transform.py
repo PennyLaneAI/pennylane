@@ -18,11 +18,25 @@ Unit tests for the batch transform.
 
 import pennylane as qml
 from pennylane import numpy as np
+import pytest
 
 
 class TestMapBatchTransform:
     """Tests for the map_batch_transform function"""
 
+    def test_map_batch_transform_is_deprecated(self):
+        """Test that map_batch_transform is deprecated."""
+        ops = [qml.RX(1.2345, wires=0)]
+        measurements = [qml.expval(qml.Z(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
+        transform = qml.transforms.compile
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="deprecated",
+        ):
+            _ = qml.transforms.map_batch_transform(transform, [tape])
+
+    @pytest.mark.filterwarnings("ignore")
     def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
         dev = qml.device("default.qubit.legacy", wires=2)
@@ -57,6 +71,7 @@ class TestMapBatchTransform:
 
         assert np.allclose(fn(res), expected)
 
+    @pytest.mark.filterwarnings("ignore")
     def test_differentiation(self):
         """Test that an execution using map_batch_transform can be differentiated"""
         dev = qml.device("default.qubit.legacy", wires=2)
