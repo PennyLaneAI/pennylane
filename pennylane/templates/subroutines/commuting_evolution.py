@@ -16,10 +16,11 @@ Contains the CommutingEvolution template.
 """
 # pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, ParameterFrequenciesUndefinedError
+from pennylane.ops.op_math import ScalarSymbolicOp
 
 
-class CommutingEvolution(Operation):
+class CommutingEvolution(ScalarSymbolicOp):
     r"""Applies the time-evolution operator for a Hamiltonian expressed as a linear combination
     of mutually commuting Pauli words.
 
@@ -105,10 +106,10 @@ class CommutingEvolution(Operation):
 
     num_wires = AnyWires
     grad_method = None
+    _name = "CommutingEvolution"
 
     def _flatten(self):
-        h = self.hyperparameters["hamiltonian"]
-        data = (self.data[0], h)
+        data = (self.data[0], self.base)
         return data, (self.hyperparameters["frequencies"], self.hyperparameters["shifts"])
 
     @classmethod
@@ -121,7 +122,7 @@ class CommutingEvolution(Operation):
 
         if getattr(hamiltonian, "pauli_rep", None) is None:
             raise TypeError(
-                f"hamiltonian must be a linear combination of pauli words. Got {hamiltonian}"
+                f"hamiltonian must be a linear combination of Pauli words. Got {hamiltonian}"
             )
 
         trainable_hamiltonian = qml.math.requires_grad(hamiltonian.data)
@@ -131,49 +132,73 @@ class CommutingEvolution(Operation):
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
 
-        self._hyperparameters = {
-            "hamiltonian": hamiltonian,
-            "frequencies": frequencies,
-            "shifts": shifts,
-        }
+        super().__init__(hamiltonian, scalar=time, id=id)
+        self.hyperparameters["frequencies"] = frequencies
+        self.hyperparameters["shifts"] = shifts
 
-        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
+    @property
+    def parameter_frequencies(self):
+        # TODO: Fix the following by exploiting the structure of CommutingEvolution
+        # Note that because of the coefficients of the Hamiltonian, we do not have
+        # parameter_frequencies even if "frequencies" are provided at initialization!
+        raise ParameterFrequenciesUndefinedError(
+            "CommutingEvolution only has no parameter frequencies defined."
+        )
 
-    def queue(self, context=qml.QueuingManager):
-        context.remove(self.hyperparameters["hamiltonian"])
-        context.append(self)
-        return self
+    @property
+    def _queue_category(self):
+        return "_ops"
 
     @staticmethod
-    def compute_decomposition(
-        time, *_, wires, hamiltonian, **__
-    ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Representation of the operator as a product of other operators.
+    def _matrix(scalar, mat):
+        return qml.math.expm(-1j * scalar * mat)
 
-        .. math:: O = O_1 O_2 \dots O_n.
+    # pylint: disable=invalid-overridden-method, arguments-renamed
+    @property
+    def has_decomposition(self):
+        return True
 
-        Args:
-            *time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
-                variable
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
-            frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
-                the spectrum of the Hamiltonian.
-            shifts (tuple[int or float]): The parameter shifts to use in obtaining the
-                generalized parameter shift rules. If unspecified, equidistant shifts are used.
-
-        .. seealso:: :meth:`~.CommutingEvolution.decomposition`.
+    def decomposition(self):
+        r"""Representation of the operator as an :class:`~.ApproxTimeEvolution`.
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[ApproxTimeEvolution]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        return [qml.ApproxTimeEvolution(hamiltonian, time, 1)]
+        return [qml.ApproxTimeEvolution(self.base, self.scalar, 1)]
 
     def adjoint(self):
-        hamiltonian = self.hyperparameters["hamiltonian"]
-        time = self.parameters[0]
         frequencies = self.hyperparameters["frequencies"]
         shifts = self.hyperparameters["shifts"]
 
-        return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
+        return CommutingEvolution(self.base, -self.scalar, frequencies, shifts)
+
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
+    def diagonalizing_gates(self):
+        return self.base.diagonalizing_gates()
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.is_hermitian and not np.real(self.coeff)
+
+    def generator(self):
+        r"""Generator of an operator that is in single-parameter-form.
+
+        For example, for operator
+
+        .. math::
+
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        we get the generator
+
+        >>> U.generator()
+          0.5 * Y(0) + Z(0) @ X(1)
+
+        """
+        return -self.base
