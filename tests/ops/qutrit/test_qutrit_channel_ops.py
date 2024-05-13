@@ -84,7 +84,6 @@ class TestQutritDepolarizingChannel:
         assert np.allclose(circuit(prob), ((prob - (1 / 9)) / (8 / 9)) * expected_errorless)
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
-        print(circuit(prob) / gradient)
         assert np.allclose(gradient, circuit(1) - circuit(0))
         assert np.allclose(gradient, -(9 / 8) * expected_errorless)
 
@@ -111,7 +110,7 @@ class TestQutritDepolarizingChannel:
         return jacs
 
     @staticmethod
-    def kraus_fn(x):
+    def kraus_fn(p):
         """Gets a matrix of the Kraus matrices to be tested."""
         return qml.math.stack(channel.QutritDepolarizingChannel(x, wires=0).kraus_matrices())
 
@@ -158,8 +157,8 @@ class TestQutritDepolarizingChannel:
             imag_out = self.kraus_fn_imag(p)
 
         real_jac = qml.math.cast(real_tape.jacobian(real_out, p), complex)
-        imaj_jac = qml.math.cast(imag_tape.jacobian(imag_out, p), complex)
-        jac = real_jac + 1j * imaj_jac
+        imag_jac = qml.math.cast(imag_tape.jacobian(imag_out, p), complex)
+        jac = real_jac + 1j * imag_jac
         assert qml.math.allclose(jac, self.expected_jac_fn(0.43))
 
     @pytest.mark.jax

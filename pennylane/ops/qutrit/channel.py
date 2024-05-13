@@ -13,7 +13,7 @@
 # limitations under the License.
 # pylint: disable=too-many-arguments
 """
-This module contains the available built-in noisy
+This module contains the available built-in noisy qutrit
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import numpy as np
@@ -102,7 +102,7 @@ class QutritDepolarizingChannel(Channel):
         \end{matrix}
 
 
-    Where :math:`\omega=\exp(\frac{2\pi}{3})`  is the phase defining the third root of identity.
+    Where :math:`\omega=\exp(\frac{2\pi}{3})`  is the third root of unity.
     where :math:`p \in [0, 1]` is the depolarization probability and is equally
     divided in the application of all qutrit Pauli operators.
 
@@ -123,7 +123,7 @@ class QutritDepolarizingChannel(Channel):
     * Number of parameters: 1
 
     Args:
-        p (float): Each gate is applied with probability :math:`\frac{p}{8}`
+        p (float): Each qutrit Pauli operator is applied with probability :math:`\frac{p}{8}`
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
@@ -138,9 +138,11 @@ class QutritDepolarizingChannel(Channel):
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
-        r"""Kraus matrices representing the depolarizing channel.
+        r"""Kraus matrices representing the qutrit depolarizing channel.
+
         Args:
-            p (float): each gate is applied with probability :math:`\frac{p}{9}`
+            p (float): each qutrit Pauli gate is applied with probability :math:`\frac{p}{8}`
+
         Returns:
             list (array): list of Kraus matrices
 
@@ -187,14 +189,17 @@ class QutritDepolarizingChannel(Channel):
             raise ValueError("p must be in the interval [0,1]")
 
         interface = math.get_interface(p)
+
         w = math.exp(2j * np.pi / 3)
         one = 1
         z = 0
+
         if interface == "tensorflow":
             p = math.cast_like(p, 1j)
             w = math.cast_like(w, p)
             one = math.cast_like(one, p)
             z = math.cast_like(z, p)
+
         w2 = w**2
 
         depolarizing_mats = [
