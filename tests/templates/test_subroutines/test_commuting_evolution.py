@@ -20,7 +20,6 @@ from scipy.linalg import expm
 
 import pennylane as qml
 from pennylane import numpy as np
-import copy
 
 from pennylane.operation import ParameterFrequenciesUndefinedError
 
