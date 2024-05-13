@@ -495,6 +495,21 @@ Qutrit State preparation
 
 :html:`</div>`
 
+.. _intro_ref_ops_qutrit_channels:
+
+Qutrit Noisy channels
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritDepolarizingChannel
+
+:html:`</div>`
+
 .. _intro_ref_ops_qutrit_obs:
 
 Qutrit Observables
