@@ -60,6 +60,11 @@ class TestQutritDepolarizingChannel:
         for kraus_matrix, expected_matrix in zip(kraus_matrices, expected_matrices):
             assert np.allclose(kraus_matrix, expected_matrix, atol=tol, rtol=0)
 
+    def test_p_invalid_parameter(self):
+        """Test that error is raised given an inappropriate p value."""
+        with pytest.raises(ValueError, match="p must be in the interval"):
+            qml.QutritDepolarizingChannel(1.5, wires=0).kraus_matrices()
+
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_depolarizing(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
@@ -86,11 +91,6 @@ class TestQutritDepolarizingChannel:
         gradient = np.squeeze(qml.grad(circuit)(prob))
         assert np.allclose(gradient, circuit(1) - circuit(0))
         assert np.allclose(gradient, -(9 / 8) * expected_errorless)
-
-    def test_p_invalid_parameter(self):
-        """Test that error is raised given an inappropriate p value."""
-        with pytest.raises(ValueError, match="p must be in the interval"):
-            qml.QutritDepolarizingChannel(1.5, wires=0).kraus_matrices()
 
     @staticmethod
     def expected_jac_fn(p):
