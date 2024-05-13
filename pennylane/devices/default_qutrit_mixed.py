@@ -17,13 +17,14 @@ import inspect
 import logging
 from dataclasses import replace
 from typing import Callable, Optional, Sequence, Tuple, Union
+
 import numpy as np
 
 import pennylane as qml
+from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
-from pennylane.ops import _qutrit__channel__ops__ as channels
 
 from . import Device
 from .default_qutrit import DefaultQutrit
@@ -37,7 +38,6 @@ from .preprocess import (
     validate_observables,
 )
 from .qutrit_mixed.simulate import simulate
-
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
