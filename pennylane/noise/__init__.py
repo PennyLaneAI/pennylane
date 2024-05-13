@@ -18,11 +18,11 @@
 .. autosummary::
     :toctree: api
 
-    op_eq
-    op_in
     partial_wires
     wires_eq
     wires_in
+    op_eq
+    op_in
 
 """
 

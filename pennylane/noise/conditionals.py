@@ -130,7 +130,7 @@ def wires_in(wires):
     if a given wire exist in a specified set of wires.
 
     Args:
-        wires (Union(list[int, str], ~.wires.Wires, ~.operation.Operation)): object to be used
+        wires (Union(list[int, str], Wires, Operation)): object to be used
             for building the wire set.
 
     Returns:
@@ -170,7 +170,7 @@ def wires_eq(wires):
     if a given wire is equal to specified set of wires.
 
     Args:
-        wires (Union(list[int, str], ~.wires.Wires, ~.operation.Operation)): object to be used
+        wires (Union(list[int, str], Wires, Operation)): object to be used
             for building the wire set.
 
     Returns:
@@ -210,7 +210,7 @@ def _get_ops(val):
     or a sequence of them.
 
     Args:
-        val (Union[str, ~.operation.Operation, Iterable]): object to be used
+        val (Union[str, Operation, Iterable]): object to be used
             for building the wire set.
 
     Returns:
@@ -233,7 +233,7 @@ def op_eq(ops):
     if a given operation is equal to the specified operation.
 
     Args:
-        ops (str, ~.operation.Operation, Union(list[str, ~.operation.Operation])): string
+        ops (str, Operation, Union(list[str, Operation])): string
             representation or instance of the operation.
 
     Returns:
@@ -273,7 +273,7 @@ def op_in(ops):
     if a given operation exist in a specified set of operation.
 
     Args:
-        ops (str, ~.operation.Operation, Union(list[str, ~.operation.Operation])): string
+        ops (str, Operation, Union(list[str, Operation])): string
             representation or instance of the operation.
 
     Returns:
@@ -316,19 +316,19 @@ def partial_wires(operation, *args, **kwargs):
     all argument frozen except ``wires``.
 
     Args:
-        operation (~.operation.Operation, class): instance of the operation or
-        the class corresponding to operation.
+        operation (Operation, class): instance of the operation or the class
+            corresponding to operation.
         *args: Positional arguments provided in the case where the keyword argument
-        ``operation`` is a class for building the partially evaluated instance.
+            ``operation`` is a class for building the partially evaluated instance.
         **kwargs: Keyword arguments for the building the partially evaluated instance.
-        These will override any arguments present in the operation instance or ``args``.
+            These will override any arguments present in the operation instance or ``args``.
 
     Returns:
         callable: a wrapper function that accepts a sequence of wires as an argument or
         any object with ``wires`` property.
 
     Raises:
-        ValueError: if ``args`` are provided when operation is an instance.
+        ValueError: if ``args`` are provided when the given ``operation`` is an instance.
 
     **Example**
 
