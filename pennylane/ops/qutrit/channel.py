@@ -68,7 +68,7 @@ class QutritDepolarizingChannel(Channel):
             K_2 = K_{0,2} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \omega^2 & 0\\
-                0 & 0 & \omega^4
+                0 & 0 & \omega
                 \end{bmatrix}\\
             K_3 = K_{1,0} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & 1 & 0 \\
