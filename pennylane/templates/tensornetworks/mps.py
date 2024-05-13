@@ -175,8 +175,7 @@ class MPS(Operation):
         id=None,
         **kwargs,
     ):
-        return type(cls)._primitive_bind_call(
-            cls,
+        return super()._primitive_bind_call(
             wires=wires,
             n_block_wires=n_block_wires,
             block=block,

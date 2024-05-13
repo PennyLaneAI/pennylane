@@ -179,8 +179,7 @@ class MERA(Operation):
     def _primitive_bind_call(
         cls, wires, n_block_wires, block, n_params_block, template_weights=None, id=None
     ):
-        return type(cls)._primitive_bind_call(
-            cls,
+        return super()._primitive_bind_call(
             wires=wires,
             n_block_wires=n_block_wires,
             block=block,
