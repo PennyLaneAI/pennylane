@@ -129,12 +129,13 @@ def transform(
     .. details::
         :title: Dispatch a transform onto a batch of tapes
 
-        We can compose multiple transforms when working in the tape paradigm.
+        We can compose multiple transforms when working in the tape paradigm and apply them to more than one tape.
+        The following example demonstrates how to apply a transform to a batch of tapes.
 
         **Example**
 
-        In this example, we first apply two transforms to a batch of tapes. The first transform expands the Hamiltonian,
-        and the second merge the rotations. We then execute the transformed tapes on a device and post-process the results.
+        In this example, we first apply a transform to a tape and another one to a batch of tapes.
+        We then execute the transformed tapes on a device and post-process the results.
 
         .. code-block:: python
 
@@ -148,26 +149,22 @@ def transform(
 
             dev = qml.device("default.qubit", wires=3)
             result = dev.execute(batch2)
-            post_processed_result = fn1(fn2(result))
 
-        The first transform returns a batch of tapes and a processing function.
-
-        >>> batch1
-        [<QuantumTape: wires=[0, 1, 2], params=3>,
-        <QuantumTape: wires=[0, 1, 2], params=2>]
-
+        The first transform splits the original tape. It returns a batch of tapes and a processing function.
         The second transform is applied to the batch of tapes returned by the first transform.
+        It returns a new batch of tapes, each of which has been transformed by the second transform, and a processing function.
 
         >>> batch2
         (<QuantumTape: wires=[0, 1, 2], params=2>,
         <QuantumTape: wires=[0, 1, 2], params=1>)
 
-        The post-processing function is applied to the results of the execution of the transformed tapes.
+        >>> type(fn2)
+        function
 
-        >>> post_processed_result
+        We can combine the processing functions to post-process the results of the execution.
+
+        >>> fn1(fn2(result))
         [array(0.5)]
-
-
 
     .. details::
         :title: Signature of a transform
