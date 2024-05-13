@@ -22,113 +22,163 @@ import pennylane as qml
 from pennylane import numpy as np
 import copy
 
-
-def test_standard_validity():
-    """Run standard tests of operation validity."""
-    H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
-    time = 0.5
-    frequencies = (2, 4)
-    shifts = (1, 0.5)
-    op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    qml.ops.functions.assert_valid(op)
+from pennylane.operation import ParameterFrequenciesUndefinedError
 
 
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Unit tests for the flatten and unflatten methods."""
-    H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
-    time = 0.5
-    frequencies = (2, 4)
-    shifts = (1, 0.5)
-    op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    data, metadata = op._flatten()
+class TestBasicProperties:
+    """Test basic methods/attributes/properties of CommutingEvolution."""
 
-    assert hash(metadata)
+    def test_standard_validity(self):
+        """Run standard tests of operation validity."""
+        H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
+        time = 0.5
+        frequencies = (2, 4)
+        shifts = (1, 0.5)
+        op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
+        qml.ops.functions.assert_valid(op)
 
-    assert len(data) == 2
-    assert data[1] is H
-    assert data[0] == time
-    assert metadata == (frequencies, shifts)
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Unit tests for the flatten and unflatten methods."""
+        H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
+        time = 0.5
+        frequencies = (2, 4)
+        shifts = (1, 0.5)
+        op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
+        data, metadata = op._flatten()
 
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
+        assert hash(metadata)
 
+        assert len(data) == 2
+        assert data[1] is H
+        assert data[0] == time
+        assert metadata == (frequencies, shifts)
 
-def test_adjoint():
-    """Tests the CommutingEvolution.adjoint method provides the correct adjoint operation."""
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+        assert op is not new_op
 
-    n_wires = 2
-    dev = qml.device("default.qubit", wires=n_wires)
+    def test_adjoint(self):
+        """Tests the CommutingEvolution.adjoint method provides the correct adjoint operation."""
 
-    obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
-    coeffs = [1, -1]
-    hamiltonian = qml.Hamiltonian(coeffs, obs)
-    frequencies = (2,)
+        n_wires = 2
+        dev = qml.device("default.qubit", wires=n_wires)
 
-    @qml.qnode(dev)
-    def adjoint_evolution_circuit(time):
-        for i in range(n_wires):
-            qml.Hadamard(i)
-        qml.adjoint(qml.CommutingEvolution)(hamiltonian, time, frequencies)
-        return qml.expval(qml.PauliZ(1)), qml.state()
+        obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
+        coeffs = [1, -1]
+        hamiltonian = qml.Hamiltonian(coeffs, obs)
+        frequencies = (2,)
 
-    @qml.qnode(dev)
-    def evolution_circuit(time):
-        for i in range(n_wires):
-            qml.Hadamard(i)
-        qml.CommutingEvolution(hamiltonian, time, frequencies)
-        return qml.expval(qml.PauliZ(1)), qml.state()
+        @qml.qnode(dev)
+        def adjoint_evolution_circuit(time):
+            for i in range(n_wires):
+                qml.Hadamard(i)
+            qml.adjoint(qml.CommutingEvolution)(hamiltonian, time, frequencies)
+            return qml.expval(qml.PauliZ(1)), qml.state()
 
-    res1, state1 = evolution_circuit(0.13)
-    res2, state2 = adjoint_evolution_circuit(-0.13)
+        @qml.qnode(dev)
+        def evolution_circuit(time):
+            for i in range(n_wires):
+                qml.Hadamard(i)
+            qml.CommutingEvolution(hamiltonian, time, frequencies)
+            return qml.expval(qml.PauliZ(1)), qml.state()
 
-    assert res1 == res2
-    assert all(np.isclose(state1, state2))
+        res1, state1 = evolution_circuit(0.13)
+        res2, state2 = adjoint_evolution_circuit(-0.13)
 
+        assert res1 == res2
+        assert all(np.isclose(state1, state2))
 
-def test_queuing():
-    """Test that CommutingEvolution de-queues the input hamiltonian."""
+    def test_queuing(self):
+        """Test that CommutingEvolution de-queues the input hamiltonian."""
 
-    with qml.queuing.AnnotatedQueue() as q:
-        H = qml.X(0) + qml.Y(1)
-        op = qml.CommutingEvolution(H, 0.1, (2,))
+        with qml.queuing.AnnotatedQueue() as q:
+            H = qml.X(0) + qml.Y(1)
+            op = qml.CommutingEvolution(H, 0.1, (2,))
 
-    assert len(q.queue) == 1
-    assert q.queue[0] is op
+        assert len(q.queue) == 1
+        assert q.queue[0] is op
+        assert op._queue_category == "_ops"
 
+    def test_decomposition_expand(self):
+        """Test that the decomposition of CommutingEvolution is an ApproxTimeEvolution with one step."""
 
-def test_decomposition_expand():
-    """Test that the decomposition of CommutingEvolution is an ApproxTimeEvolution with one step."""
+        hamiltonian = 0.5 * qml.PauliX(0) @ qml.PauliY(1)
+        time = 2.345
 
-    hamiltonian = 0.5 * qml.PauliX(0) @ qml.PauliY(1)
-    time = 2.345
+        op = qml.CommutingEvolution(hamiltonian, time)
 
-    op = qml.CommutingEvolution(hamiltonian, time)
+        assert op.has_decomposition is True
 
-    decomp = op.decomposition()[0]
+        decomp = op.decomposition()[0]
 
-    assert isinstance(decomp, qml.ApproxTimeEvolution)
-    assert qml.math.allclose(decomp.hyperparameters["hamiltonian"].data, hamiltonian.data)
-    assert decomp.hyperparameters["n"] == 1
+        assert isinstance(decomp, qml.ApproxTimeEvolution)
+        assert qml.math.allclose(decomp.hyperparameters["hamiltonian"].data, hamiltonian.data)
+        assert decomp.hyperparameters["n"] == 1
 
-    tape = op.expand()
-    assert len(tape) == 1
-    assert isinstance(tape[0], qml.ApproxTimeEvolution)
+        tape = op.expand()
+        assert len(tape) == 1
+        assert isinstance(tape[0], qml.ApproxTimeEvolution)
 
+    def test_matrix(self):
+        """Test that the matrix of commuting evolution is the same as exponentiating -1j * t the hamiltonian."""
 
-def test_matrix():
-    """Test that the matrix of commuting evolution is the same as exponentiating -1j * t the hamiltonian."""
+        h = 2.34 * qml.PauliX(0)
+        time = 0.234
+        op = qml.CommutingEvolution(h, time)
 
-    h = 2.34 * qml.PauliX(0)
-    time = 0.234
-    op = qml.CommutingEvolution(h, time)
+        assert op.has_matrix is False
 
-    mat = qml.matrix(op)
+        mat = qml.matrix(op)
+        mat2 = op._matrix(time, qml.matrix(h))
 
-    expected = expm(-1j * time * qml.matrix(h))
+        expected = expm(-1j * time * qml.matrix(h))
 
-    assert qml.math.allclose(mat, expected)
+        assert qml.math.allclose(mat, expected)
+        assert qml.math.allclose(mat2, expected)
+
+    @pytest.mark.parametrize("frequencies", [None, (2, 4)])
+    def test_parameter_frequencies(self, frequencies):
+        """Test that no parameter-frequencies are defined."""
+        h = 2.34 * qml.PauliX(0)
+        time = 0.234
+        op = qml.CommutingEvolution(h, time, frequencies=frequencies)
+        with pytest.raises(ParameterFrequenciesUndefinedError, match="CommutingEvolution has no"):
+            _ = op.parameter_frequencies
+
+    @pytest.mark.parametrize("frequencies", [None, (1,)])
+    def test_grad_method_grad_recipe(self, frequencies):
+        """Test that no parameter-frequencies are defined."""
+        h = 2.34 * qml.PauliX(0)
+        time = 0.234
+        op = qml.CommutingEvolution(h, time, frequencies=frequencies)
+
+        if frequencies is None:
+            assert op.grad_method is None
+            assert op.grad_recipe == (None,) * 2
+        else:
+            assert op.grad_method == "A"
+            assert len(op.grad_recipe) == 2
+            assert qml.math.allclose(
+                op.grad_recipe[0], [[0.5, 1.0, np.pi / 2], [-0.5, 1.0, -np.pi / 2]]
+            )
+            assert op.grad_recipe[1] is None
+
+    def test_diagonalizing_gates(self):
+        """Test the diagonalizing gates of CommutingEvolution."""
+        h = 2.34 * qml.PauliX(0)
+        time = 0.234
+        op = qml.CommutingEvolution(h, time)
+        assert op.has_diagonalizing_gates is True
+        assert op.diagonalizing_gates() == qml.PauliX(0).diagonalizing_gates()
+
+    def test_generator(self):
+        """Test the generator of CommutingEvolution."""
+        h = 2.34 * qml.PauliX(0)
+        time = 0.234
+        op = qml.CommutingEvolution(h, time)
+        assert op.has_generator is True
+        assert op.generator() == -h
 
 
 def test_forward_execution():
@@ -236,7 +286,6 @@ class TestGradients:
 
         x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]
         circuit(x_vals[0], diff_coeffs)
-        print(circuit.tape[1].grad_recipe)
 
         grads_finite_diff = [
             np.hstack(qml.gradients.finite_diff(circuit)(x, diff_coeffs)) for x in x_vals

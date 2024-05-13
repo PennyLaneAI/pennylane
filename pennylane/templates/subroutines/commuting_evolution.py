@@ -16,8 +16,9 @@ Contains the CommutingEvolution template.
 """
 # pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import pennylane as qml
-from pennylane.operation import AnyWires, ParameterFrequenciesUndefinedError
+from pennylane.operation import AnyWires, ParameterFrequenciesUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math import ScalarSymbolicOp
+from pennylane.typing import TensorLike
 
 
 class CommutingEvolution(ScalarSymbolicOp):
@@ -131,6 +132,8 @@ class CommutingEvolution(ScalarSymbolicOp):
             recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
+        else:
+            self.grad_recipe = (None,) * (1 + len(hamiltonian.data))
 
         super().__init__(hamiltonian, scalar=time, id=id)
         self.hyperparameters["frequencies"] = frequencies
@@ -142,16 +145,25 @@ class CommutingEvolution(ScalarSymbolicOp):
         # Note that because of the coefficients of the Hamiltonian, we do not have
         # parameter_frequencies even if "frequencies" are provided at initialization!
         raise ParameterFrequenciesUndefinedError(
-            "CommutingEvolution only has no parameter frequencies defined."
+            "CommutingEvolution has no parameter frequencies defined."
         )
 
     @property
     def _queue_category(self):
         return "_ops"
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return False
+
     @staticmethod
     def _matrix(scalar, mat):
         return qml.math.expm(-1j * scalar * mat)
+
+    def matrix(self, wire_order=None) -> TensorLike:
+        """Raise a MatrixUndefinedError for now to force decomposition on DefaultQubit."""
+        raise MatrixUndefinedError("CommutingEvolution does not define a matrix itself.")
 
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
@@ -170,7 +182,6 @@ class CommutingEvolution(ScalarSymbolicOp):
     def adjoint(self):
         frequencies = self.hyperparameters["frequencies"]
         shifts = self.hyperparameters["shifts"]
-
         return CommutingEvolution(self.base, -self.scalar, frequencies, shifts)
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
@@ -184,7 +195,7 @@ class CommutingEvolution(ScalarSymbolicOp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
-        return self.base.is_hermitian and not np.real(self.coeff)
+        return True
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.

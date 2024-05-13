@@ -324,11 +324,9 @@ def _equal_operators(
     atol=1e-9,
 ):
     """Default function to determine whether two Operator objects are equal."""
-    print("here")
     if not isinstance(
         op2, type(op1)
     ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
-        print("oh no")
         return False
 
     if isinstance(op1, qml.Identity):
@@ -338,26 +336,21 @@ def _equal_operators(
         return True
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
-        print("oh no2")
         return False
 
     if op1.arithmetic_depth > 0:
         # Other dispatches cover cases of operations with arithmetic depth > 0.
         # If any new operations are added with arithmetic depth > 0, a new dispatch
         # should be created for them.
-        print("oh no3")
         return False
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
-        print("oh no4")
         return False
     if op1.wires != op2.wires:
-        print("oh no5")
         return False
 
     if op1.hyperparameters != op2.hyperparameters:
-        print("oh no6")
         return False
 
     if check_trainability:
@@ -442,7 +435,7 @@ def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
 # pylint: disable=unused-argument
 def _equal_scalar_symbolic_op(op1: ScalarSymbolicOp, op2: ScalarSymbolicOp, **kwargs):
     """Determine whether two Exp objects are equal"""
-    
+
     if not qml.math.allclose(op1.scalar, op2.scalar, rtol=kwargs["rtol"], atol=kwargs["atol"]):
         return False
     if kwargs["check_trainability"]:
@@ -453,18 +446,15 @@ def _equal_scalar_symbolic_op(op1: ScalarSymbolicOp, op2: ScalarSymbolicOp, **kw
             return False
     return qml.equal(op1.base, op2.base, **kwargs)
 
+
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
-    rtol, atol = (kwargs["rtol"], kwargs["atol"])
-
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
 
-    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
-        return False
-    return qml.equal(op1.base, op2.base)
+    return _equal_scalar_symbolic_op(op1, op2, **kwargs)
 
 
 @_equal.register
