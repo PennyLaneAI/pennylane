@@ -31,7 +31,6 @@ from pennylane.ops import (
     Adjoint,
     CompositeOp,
     Controlled,
-    Exp,
     Hamiltonian,
     LinearCombination,
     Pow,

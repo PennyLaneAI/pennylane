@@ -141,6 +141,7 @@ class CommutingEvolution(ScalarSymbolicOp):
 
     @property
     def parameter_frequencies(self):
+        """Compute the parameter frequencies of CommutingEvolution."""
         # TODO: Fix the following by exploiting the structure of CommutingEvolution
         # Note that because of the coefficients of the Hamiltonian, we do not have
         # parameter_frequencies even if "frequencies" are provided at initialization!
