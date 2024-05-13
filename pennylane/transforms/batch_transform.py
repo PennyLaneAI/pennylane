@@ -14,11 +14,11 @@
 """Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
 
+import warnings
 from typing import Callable, Tuple
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
-import warnings
 
 PostprocessingFn = Callable[[ResultBatch], ResultBatch]
 QuantumTapeBatch = Tuple[qml.tape.QuantumScript]
@@ -72,8 +72,7 @@ def map_batch_transform(
     """
 
     warnings.warn(
-        "qml.transforms.map_batch_transform is deprecated."
-        "Please ... .",
+        "qml.transforms.map_batch_transform is deprecated." "Please ... .",
         qml.PennyLaneDeprecationWarning,
     )
 

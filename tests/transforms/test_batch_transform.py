@@ -16,9 +16,10 @@ Unit tests for the batch transform.
 """
 # pylint: disable=too-few-public-methods,not-callable
 
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-import pytest
 
 
 class TestMapBatchTransform:
