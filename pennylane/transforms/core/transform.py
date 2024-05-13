@@ -150,7 +150,7 @@ def transform(
             dev = qml.device("default.qubit", wires=3)
             result = dev.execute(batch2)
 
-        The first transform splits the original tape. It returns a batch of tapes and a processing function.
+        The first transform splits the original tape, returning a batch of tapes and a processing function.
         The second transform is applied to the batch of tapes returned by the first transform.
         It returns a new batch of tapes, each of which has been transformed by the second transform, and a processing function.
 

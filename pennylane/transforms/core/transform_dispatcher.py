@@ -348,7 +348,7 @@ class TransformDispatcher:
                 ResultBatch: results that have undergone classical post processing.
 
             Closure variables:
-                tape_counts: the number of tapes outputted from each application of the transform
+                tape_counts: the number of tapes outputted from each application of the transform.
                 batch_fns: the post processing functions to apply to each sub-batch.
 
             """
