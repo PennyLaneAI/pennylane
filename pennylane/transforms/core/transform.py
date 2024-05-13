@@ -127,9 +127,47 @@ def transform(
     reverse order of the transform program to obtain the final results.
 
     .. details::
-        :title: Applying a transform to a batch of tapes
+        :title: Dispatch a transform onto a batch of tapes
 
-        
+        We can compose multiple transforms when working in the tape paradigm.
+
+        **Example**
+
+        In this example, we first apply two transforms to a batch of tapes. The first transform expands the Hamiltonian,
+        and the second merge the rotations. We then execute the transformed tapes on a device and post-process the results.
+
+        .. code-block:: python
+
+            H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+            measur = [qml.expval(H)]
+            ops = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
+            tape = qml.tape.QuantumTape(ops, measur)
+
+            batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
+            batch2, fn2 = qml.transforms.merge_rotations(batch1)
+
+            dev = qml.device("default.qubit", wires=3)
+            result = dev.execute(batch2)
+            post_processed_result = fn1(fn2(result))
+
+        The first transform returns a batch of tapes and a processing function.
+
+        >>> batch1
+        [<QuantumTape: wires=[0, 1, 2], params=3>,
+        <QuantumTape: wires=[0, 1, 2], params=2>]
+
+        The second transform is applied to the batch of tapes returned by the first transform.
+
+        >>> batch2
+        (<QuantumTape: wires=[0, 1, 2], params=2>,
+        <QuantumTape: wires=[0, 1, 2], params=1>)
+
+        The post-processing function is applied to the results of the execution of the transformed tapes.
+
+        >>> post_processed_result
+        [array(0.5)]
+
+
 
     .. details::
         :title: Signature of a transform
