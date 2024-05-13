@@ -11,10 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
+"""This module contains the functionality to work with noise in PennyLane.
+
 .. currentmodule:: pennylane
 
-This module contains the functionality to work with noise in PennyLane.
+.. autosummary::
+    :toctree: api
+
+    op_eq
+    op_in
+    partial_wires
+    wires_eq
+    wires_in
+
 """
 
 from .conditionals import NoiseConditional, AndConditional, OrConditional
