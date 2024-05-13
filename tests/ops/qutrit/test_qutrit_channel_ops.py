@@ -112,20 +112,20 @@ class TestQutritDepolarizingChannel:
     @staticmethod
     def kraus_fn(p):
         """Gets a matrix of the Kraus matrices to be tested."""
-        return qml.math.stack(channel.QutritDepolarizingChannel(x, wires=0).kraus_matrices())
+        return qml.math.stack(channel.QutritDepolarizingChannel(p, wires=0).kraus_matrices())
 
     @staticmethod
-    def kraus_fn_real(x):
+    def kraus_fn_real(p):
         """Gets a matrix of the real part of the Kraus matrices to be tested."""
         return qml.math.real(
-            qml.math.stack(channel.QutritDepolarizingChannel(x, wires=0).kraus_matrices())
+            qml.math.stack(channel.QutritDepolarizingChannel(p, wires=0).kraus_matrices())
         )
 
     @staticmethod
-    def kraus_fn_imag(x):
+    def kraus_fn_imag(p):
         """Gets a matrix of the imaginary part of the Kraus matrices to be tested."""
         return qml.math.imag(
-            qml.math.stack(channel.QutritDepolarizingChannel(x, wires=0).kraus_matrices())
+            qml.math.stack(channel.QutritDepolarizingChannel(p, wires=0).kraus_matrices())
         )
 
     @pytest.mark.autograd

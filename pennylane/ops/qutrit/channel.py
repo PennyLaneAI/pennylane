@@ -16,6 +16,8 @@
 This module contains the available built-in noisy qutrit
 quantum channels supported by PennyLane, as well as their conventions.
 """
+from itertools import product
+
 import numpy as np
 
 from pennylane import math
@@ -60,42 +62,42 @@ class QutritDepolarizingChannel(Channel):
                 0 & 1 & 0\\
                 0 & 0 & 1
                 \end{bmatrix}&
-            K_{0,1} = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_1 = K_{0,1} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \omega & 0\\
                 0 & 0 & \omega^2
                 \end{bmatrix}&
-            K_{0,2} = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_2 = K_{0,2} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \omega^2 & 0\\
                 0 & 0 & \omega^4
                 \end{bmatrix}\\
-            K_{1,0} = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_3 = K_{1,0} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & 1 & 0 \\
                 0 & 0 & 1 \\
                 1 & 0 & 0
                 \end{bmatrix}&
-            K_{1,1} = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_4 = K_{1,1} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & \omega & 0 \\
                 0 & 0 & \omega^2 \\
                 1 & 0 & 0
                 \end{bmatrix}&
-            K_{1,2} = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_5 = K_{1,2} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & \omega^2 & 0 \\
                 0 & 0 & \omega \\
                 1 & 0 & 0
                 \end{bmatrix}\\
-            K_{2,0} = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_6 = K_{2,0} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & 0 & 1 \\
                 1 & 0 & 0 \\
                 0 & 1 & 0
                 \end{bmatrix}&
-            K_{2,1} = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_7 = K_{2,1} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & 0 & \omega^2 \\
                 1 & 0 & 0 \\
                 0 & \omega & 0
                 \end{bmatrix}&
-            K_{2,2} = \sqrt{\frac{p}{8}}\begin{bmatrix}
+            K_8 = K_{2,2} = \sqrt{\frac{p}{8}}\begin{bmatrix}
                 0 & 0 & \omega \\
                 1 & 0 & 0 \\
                 0 & \omega^2 & 0
@@ -150,40 +152,40 @@ class QutritDepolarizingChannel(Channel):
 
         >>> np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3)
         array([[[ 0.707+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-           [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
-           [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
+        [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
 
-          [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-           [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
-           [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j]],
+       [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j]],
 
-          [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-           [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
-           [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j]],
+       [[ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j]],
 
-          [[ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ],
-           [ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
-           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+       [[ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
+        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-          [[ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
-           [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
-           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+       [[ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
+        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-          [[ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
-           [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
-           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
+       [[ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
+        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ]],
 
-          [[ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
-           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-           [ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ]],
+       [[ 0.   +0.j   ,  0.   +0.j   ,  0.25 +0.j   ],
+        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   ,  0.25 +0.j   ,  0.   +0.j   ]],
 
-          [[ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
-           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-           [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ]],
+       [[ 0.   +0.j   ,  0.   +0.j   , -0.125-0.217j],
+        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   , -0.125+0.217j,  0.   +0.j   ]],
 
-          [[ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
-           [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-           [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ]]])
+       [[ 0.   +0.j   ,  0.   +0.j   , -0.125+0.217j],
+        [ 0.25 +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+        [ 0.   +0.j   , -0.125-0.217j,  0.   +0.j   ]]])
         """
         if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
@@ -200,7 +202,7 @@ class QutritDepolarizingChannel(Channel):
             one = math.cast_like(one, p)
             z = math.cast_like(z, p)
 
-        w2 = w**2
+        w2 = w ** 2
 
         depolarizing_mats = [
             [[one, z, z], [z, w, z], [z, z, w2]],
@@ -212,6 +214,7 @@ class QutritDepolarizingChannel(Channel):
             [[z, z, w2], [one, z, z], [z, w, z]],
             [[z, z, w], [one, z, z], [z, w2, z]],
         ]
+
         normalization = math.sqrt(p / 8 + math.eps)
         Ks = [normalization * math.array(m, like=interface) for m in depolarizing_mats]
         identity = math.sqrt(1 - p + math.eps) * math.array(
@@ -219,3 +222,5 @@ class QutritDepolarizingChannel(Channel):
         )
 
         return [identity] + Ks
+
+
