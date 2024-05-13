@@ -68,12 +68,13 @@ def map_batch_transform(
 
     .. warning::
         qml.transforms.map_batch_transform is deprecated and will be removed in a future release.
-        Please ... .
+        Instead, a transform can be applied directly to a batch of tapes. See ... for more details.
     """
 
     warnings.warn(
         "qml.transforms.map_batch_transform is deprecated."
-        "Instead, you can directly apply a transform to a batch of tapes. See ...",
+        "Instead, a transform can be applied directly to a batch of tapes."
+        "See ... for more details.",
         qml.PennyLaneDeprecationWarning,
     )
 

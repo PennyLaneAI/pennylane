@@ -330,7 +330,7 @@ class TransformDispatcher:
         tape_counts = []
 
         for t in original_batch:
-            # Preprocess the tapes by applying batch transforms
+            # Preprocess the tapes by applying transforms
             # to each tape, and storing corresponding tapes
             # for execution, processing functions, and list of tape lengths.
             new_tapes, fn = self(t, *targs, **tkwargs)

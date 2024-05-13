@@ -37,7 +37,6 @@ class TestMapBatchTransform:
         ):
             _ = qml.transforms.map_batch_transform(transform, [tape])
 
-    @pytest.mark.filterwarnings("ignore")
     def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
         dev = qml.device("default.qubit.legacy", wires=2)
@@ -60,9 +59,13 @@ class TestMapBatchTransform:
 
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
-        tapes, fn = qml.transforms.map_batch_transform(
-            qml.transforms.hamiltonian_expand, [tape1, tape2]
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="deprecated",
+        ):
+            tapes, fn = qml.transforms.map_batch_transform(
+                qml.transforms.hamiltonian_expand, [tape1, tape2]
+            )
 
         spy.assert_called()
         assert len(tapes) == 5
@@ -72,7 +75,6 @@ class TestMapBatchTransform:
 
         assert np.allclose(fn(res), expected)
 
-    @pytest.mark.filterwarnings("ignore")
     def test_differentiation(self):
         """Test that an execution using map_batch_transform can be differentiated"""
         dev = qml.device("default.qubit.legacy", wires=2)
@@ -95,9 +97,13 @@ class TestMapBatchTransform:
                 qml.expval(H + qml.Hamiltonian([0.5], [qml.PauliY(0)]))
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
-            tapes, fn = qml.transforms.map_batch_transform(
-                qml.transforms.hamiltonian_expand, [tape1, tape2]
-            )
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                tapes, fn = qml.transforms.map_batch_transform(
+                    qml.transforms.hamiltonian_expand, [tape1, tape2]
+                )
             res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
             return np.sum(fn(res))
 
