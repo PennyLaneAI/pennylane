@@ -180,8 +180,9 @@ class CompositeOp(Operator):
                         list(self.wires),
                     )
                 )
-
-        return self._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
+        framework = math.get_deep_interface(eigvals)
+        eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
+        return self._math_op(math.vstack(eigvals), axis=0)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):

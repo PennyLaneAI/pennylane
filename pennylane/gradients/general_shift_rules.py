@@ -59,6 +59,7 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
 
     - Finally, the terms are sorted according to the absolute value of ``shift``,
       This ensures that a zero-shift term, if it exists, is returned first.
+      For equal absolute values of two shifts, the positive shift is sorted to come first.
     """
     # set all small coefficients, multipliers if present, and shifts to zero.
     rule[np.abs(rule) < tol] = 0
@@ -78,8 +79,9 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
             coeffs = [np.sum(rule[slc, 0]) for slc in matches.T]
             rule = np.hstack([np.stack(coeffs)[:, np.newaxis], unique_mods])
 
-    # sort columns according to abs(shift)
-    return rule[np.argsort(np.abs(rule[:, -1]), kind="stable")]
+    # sort columns according to abs(shift), ties are resolved with the sign,
+    # positive shifts being returned before negative shifts.
+    return rule[np.lexsort((-np.sign(rule[:, -1]), np.abs(rule[:, -1])))]
 
 
 @functools.lru_cache(maxsize=None)
