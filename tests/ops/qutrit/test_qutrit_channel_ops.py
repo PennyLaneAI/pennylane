@@ -14,9 +14,10 @@
 """
 Unit tests for the available built-in qutrit quantum channels.
 """
-import pytest
 import numpy as np
+import pytest
 from numpy.linalg import matrix_power
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops.qutrit import channel
