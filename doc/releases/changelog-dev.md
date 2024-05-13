@@ -82,6 +82,8 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+* The `qml.pytrees` module now has `flatten` and `unflatten` methods for serializing pytrees.
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
