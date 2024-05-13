@@ -863,6 +863,44 @@ def molecular_hamiltonian(*args, **kwargs):
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
+    .. warning::
+        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is deprecated. Instead, please use function with ``qml.Molecule`` object``.
+    
+    .. details::
+        :title: Usage Details
+
+        Old interface used molecular_hamiltonian function with molecular information as separate arguments:  
+        molecular_hamiltonian(symbols, coordinates, name="molecule", charge=0, mult=1, basis="sto-3g", method="dhf",
+        active_electrons=None, active_orbitals=None, mapping="jordan_wigner", outpath=".", wires=None, alpha=None,
+        coeff=None, args=None, load_data=False, convert_tol=1e012)
+
+        Additional Parameters:
+          symbols (list[str]): symbols of the atomic species in the molecule
+
+          coordinates (array[float]): atomic positions in Cartesian coordinates.
+          The atomic coordinates must be in atomic units and can be given as either a 1D array of
+          size ``3*N``, or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
+          name (str): name of the molecule
+
+          charge (int): Net charge of the molecule. If not specified a neutral system is assumed.    
+
+          mult (int): Spin multiplicity :math:`\\mathrm{mult}=N_\\mathrm{unpaired} + 1` for :math:`N_\\mathrm{unpaired}`
+          unpaired electrons occupying the HF orbitals. Possible values of ``mult`` are :math:`1, 2, 3, \\ldots`.
+          If not specified, a closed-shell HF state is assumed.
+
+          basis (str): atomic basis set used to represent the molecular orbitals
+
+          .. code-block:: python
+
+              from pennylane import qchem
+
+              symbols = ["H", "H"]
+              geometry = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+
+              H, qubit = qchem.molecular_hamiltonian(symbols, geometry, charge=0)
+
+        This information can now be wrapped in Molecule object and provided to the molecular_hamiltonian function in the new interface.
+
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
         and the number of qubits
@@ -898,14 +936,20 @@ def molecular_hamiltonian(*args, **kwargs):
     method = kwargs.pop("symbols", None) or kwargs.pop("molecule", None)
     if method is not None:
         return _molecular_hamiltonian_dispatch(method, **kwargs)
-    
-    raise NotImplementedError("Unsupported type")
+
+    raise NotImplementedError(
+        "The provided arguments do not contain information about symbols in the molecule. "
+        "Please provide that information in the form of molecule object or as a list of symbols."
+    )
 
 
 @singledispatch
 def _molecular_hamiltonian_dispatch(*args, **kwargs):
     r"""Generate the qubit Hamiltonian of a molecule."""
-    raise NotImplementedError("Unsupported type")
+    raise NotImplementedError(
+        "molecular_hamiltonian supports only list or molecule object types. "
+        "Please provide one of them."
+    )
 
 
 @_molecular_hamiltonian_dispatch.register(Molecule)

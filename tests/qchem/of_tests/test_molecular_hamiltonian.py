@@ -18,7 +18,6 @@ Unit tests for molecular Hamiltonians.
 import pytest
 
 import pennylane as qml
-from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
@@ -460,8 +459,7 @@ def test_custom_wiremap_hamiltonian_pyscf(wiremap, tmpdir):
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir
-):
+def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
 
     symbols = ["H", "H"]
@@ -601,10 +599,10 @@ def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
 
 def test_diff_hamiltonian_error():
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
-    
+
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
-    
+
     with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
         qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
@@ -656,7 +654,7 @@ def test_real_hamiltonian(method, args, tmpdir):
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    
+
     hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
@@ -767,7 +765,10 @@ def test_error_raised_for_incompatible_type():
     a list or molecule object.
     """
 
-    with pytest.raises(NotImplementedError, match="Unsupported type"):
+    with pytest.raises(
+        NotImplementedError,
+        match="molecular_hamiltonian supports only list or molecule object types.",
+    ):
         qchem.molecular_hamiltonian(symbols=1, coordinates=test_coordinates, method="dhf")
 
 
@@ -776,5 +777,8 @@ def test_error_raised_for_missing_molecule_information():
     information is not provided.
     """
 
-    with pytest.raises(NotImplementedError, match="Unsupported type"):
+    with pytest.raises(
+        NotImplementedError,
+        match="The provided arguments do not contain information about symbols in the molecule.",
+    ):
         qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
