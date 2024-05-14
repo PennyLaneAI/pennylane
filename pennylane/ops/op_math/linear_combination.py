@@ -131,6 +131,13 @@ class LinearCombination(Sum):
             _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
 
         if simplify:
+
+            warnings.warn(
+                "The ``simplify`` argument in ``qml.LinearCombination`` is deprecated."
+                "Instead, you can call ``qml.simplify`` on the constructed operator.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
             # simplify upon initialization changes ops such that they wouldnt be removed in self.queue() anymore
             if qml.QueuingManager.recording():
                 for o in observables:
