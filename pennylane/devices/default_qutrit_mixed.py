@@ -234,6 +234,8 @@ class DefaultQutritMixed(Device):
         updated_values["grad_on_execution"] = False
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
 
+        if "seed" in updated_values["device_options"]:
+            updated_values["device_options"]["rng"] = updated_values["device_options"].pop("seed")
         for option in self._device_options:
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")

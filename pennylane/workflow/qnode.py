@@ -255,6 +255,45 @@ class QNode:
     >>> qnode = qml.QNode(circuit, dev)
 
     .. details::
+        :title: Dynamic Configurations
+
+        Various execution options can be set on each call to the `QNode`. `shots` can be specified on a keyword
+        argument to each call:
+
+        >>> @qml.qnode(qml.device('default.qubit', seed=5435))
+        ... def circuit():
+        ...     qml.Hadamard(0)
+        ...     return qml.expval(qml.Z(0))
+        >>> circuit(shots=50)
+        tensor(0.16, requires_grad=True)
+        >>> circuit(shots=1000)
+        tensor(-0.012, requires_grad=True)
+
+        Any device option can also be passed via the protected `config` keyword argument. For
+        example, by setting a seed, we can get the same results on each call.
+
+        >>> circuit(shots=5, config={"seed": 42})
+        tensor(-0.2, requires_grad=True)
+        >>> circuit(shots=5, config={"seed": 42})
+        tensor(-0.2, requires_grad=True)
+        >>> @qml.qnode(qml.device('default.clifford'))
+        ... def circuit():
+        ...     qml.X(0)
+        ...     qml.S(0)
+        ...     return qml.state()
+        >>> circuit(config={"tableau": False})
+        tensor([0.+0.j, 1.+0.j], dtype=complex64, requires_grad=True)
+        >>> circuit(config={"tableau": True})
+        tensor([[1, 1, 0],
+         [0, 1, 1]], requires_grad=True)
+
+        Additional runtime configuration keyword that can be passed via ``config`` are:
+
+        * ``grad_on_execution``
+        * ``device_vjp``
+        * ``cache``
+
+    .. details::
         :title: Parameter broadcasting
         :href: parameter-broadcasting
 
@@ -1060,6 +1099,10 @@ class QNode:
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
+            if dynamic_config:
+                raise qml.QuantumFunctionError(
+                    "dynamic configuration options cannot be used with the legacy device interface."
+                )
             config = None
             full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
 

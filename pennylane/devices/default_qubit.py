@@ -539,7 +539,7 @@ class DefaultQubit(Device):
         updated_values = {}
 
         for option in execution_config.device_options:
-            if option not in self._device_options:
+            if option not in self._device_options and option != "seed":
                 raise qml.DeviceError(f"device option {option} not present on {self}")
 
         gradient_method = execution_config.gradient_method
@@ -561,6 +561,8 @@ class DefaultQubit(Device):
             updated_values["grad_on_execution"] = gradient_method == "adjoint"
 
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        if "seed" in updated_values["device_options"]:
+            updated_values["device_options"]["rng"] = updated_values["device_options"].pop("seed")
         for option in self._device_options:
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")

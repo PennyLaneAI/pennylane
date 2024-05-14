@@ -439,6 +439,8 @@ class DefaultClifford(Device):
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = False
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        if "seed" in updated_values["device_options"]:
+            updated_values["device_options"]["rng"] = updated_values["device_options"].pop("seed")
         if "max_workers" not in updated_values["device_options"]:
             updated_values["device_options"]["max_workers"] = self._max_workers
         if "rng" not in updated_values["device_options"]:
@@ -502,19 +504,22 @@ class DefaultClifford(Device):
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        tableau = execution_config.device_options.get("tableau", self._tableau)
+        rng = execution_config.device_options.get("rng", self._rng)
         if max_workers is None:
-            seeds = self._rng.integers(2**31 - 1, size=len(circuits))
+            seeds = rng.integers(2**31 - 1, size=len(circuits))
             return tuple(
-                self.simulate(c, seed=s, debugger=self._debugger) for c, s in zip(circuits, seeds)
+                self.simulate(c, seed=s, debugger=self._debugger, tableau=tableau)
+                for c, s in zip(circuits, seeds)
             )
         vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-        seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-        _wrap_simulate = partial(self.simulate, debugger=None)
+        seeds = rng.integers(2**31 - 1, size=len(vanilla_circuits))
+        _wrap_simulate = partial(self.simulate, debugger=None, tableau=tableau)
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
             results = tuple(exec_map)
 
-        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+        rng = np.random.default_rng(rng.integers(2**31 - 1))
         return results
 
     # pylint:disable=no-member,too-many-branches
@@ -523,6 +528,7 @@ class DefaultClifford(Device):
         circuit: qml.tape.QuantumScript,
         seed=None,
         debugger=None,
+        tableau=None,
     ) -> Result:
         """Simulate a single quantum script.
 
@@ -542,6 +548,9 @@ class DefaultClifford(Device):
                 [1, 0, 0]]))
 
         """
+
+        if tableau is None:
+            tableau = self._tableau
 
         # Account for custom labelled wires
         circuit = circuit.map_to_standard_wires()
@@ -600,7 +609,7 @@ class DefaultClifford(Device):
             meas_results = self.measure_statistical(circuit, stim_circuit, seed=seed)
         else:
             meas_results = self.measure_analytical(
-                circuit, stim_circuit, tableau_simulator, global_phase
+                circuit, stim_circuit, tableau_simulator, global_phase, tableau=tableau
             )
 
         return meas_results[0] if len(meas_results) == 1 else tuple(meas_results)
@@ -675,9 +684,14 @@ class DefaultClifford(Device):
 
         return results
 
-    def measure_analytical(self, circuit, stim_circuit, tableau_simulator, global_phase):
+    def measure_analytical(
+        self, circuit, stim_circuit, tableau_simulator, global_phase, tableau=None
+    ):
         """Given a circuit, compute tableau and return the analytical measurement results."""
         # maps measurement type to the desired analytic measurement method
+        if tableau is None:
+            tableau = self._tableau
+
         measurement_map = {
             DensityMatrixMP: self._measure_density_matrix,
             StateMP: self._measure_state,  # kwargs -> circuit, global_phase
@@ -704,6 +718,7 @@ class DefaultClifford(Device):
                     circuit=circuit,
                     stim_circuit=stim_circuit,
                     global_phase=global_phase,
+                    tableau=tableau,
                 )
             )
 
@@ -716,11 +731,14 @@ class DefaultClifford(Device):
         state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
         return qml.math.reduce_dm(qml.math.einsum("i, j->ij", state_vector, state_vector), wires)
 
-    def _measure_state(self, _, tableau_simulator, **kwargs):
+    def _measure_state(self, _, tableau_simulator, tableau=None, **kwargs):
         """Measure the state of the simualtor device."""
+        if tableau is None:
+            tableau = self._tableau
+
         wires = kwargs.get("circuit").wires
         global_phase = kwargs.get("global_phase", qml.GlobalPhase(0.0))
-        if self._tableau:
+        if tableau:
             # Stack according to Sec. III, arXiv:0406196 (2008)
             tableau = tableau_simulator.current_inverse_tableau().inverse()
             x2x, x2z, z2x, z2z, x_signs, z_signs = tableau.to_numpy()
@@ -873,7 +891,7 @@ class DefaultClifford(Device):
         return entropy / qml.math.log(log_base)
 
     # pylint: disable=too-many-branches, too-many-statements
-    def _measure_probability(self, meas, _, **kwargs):
+    def _measure_probability(self, meas, _, tableau=None, **kwargs):
         r"""Measure the probability of each computational basis state.
 
         Computes the probability for each of the computational basis state vector iteratively
@@ -895,6 +913,8 @@ class DefaultClifford(Device):
            :math:`|0\rangle` / :math:`\rangle`1`. We identify this as a `branching` scenario. We half the
            current probability and post-select based on the `i`th index of the basis state we are iterating.
         """
+        if tableau is None:
+            tableau = self._tableau
         circuit = kwargs.get("circuit")
 
         # Set the target states
@@ -928,8 +948,8 @@ class DefaultClifford(Device):
         # Build the Tableau simulator from the diagonalized circuit
         circuit_simulator = stim.TableauSimulator()
         circuit_simulator.do_circuit(diagonalizing_cit)
-        if not self._tableau:
-            state = self._measure_state(meas, circuit_simulator, circuit=circuit)
+        if not tableau:
+            state = self._measure_state(meas, circuit_simulator, circuit=circuit, tableau=tableau)
             return meas.process_state(state, wire_order=circuit.wires)
 
         if len(meas_wires) >= tgt_states.shape[1]:
