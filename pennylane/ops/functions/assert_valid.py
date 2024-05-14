@@ -223,7 +223,8 @@ def _check_capture(op):
                 " Please see the capture module documentation for more infromation."
             )
         ) from e
-    qml.capture.disable()
+    finally:
+        qml.capture.disable()
 
 
 def _check_pickle(op):
