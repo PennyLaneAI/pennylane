@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines the measure primitive for use in performing measurements in plxpr.
+This submodule defines the measure primitive for performing measurements in plxpr.
 """
 from functools import lru_cache
 
