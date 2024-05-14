@@ -1026,6 +1026,7 @@ class PauliSentence(dict):
         return qml.ops.LinearCombination(
             list(self.values()),
             [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
+            _pauli_rep=self,
         )
 
     def hamiltonian(self, wire_order=None):
