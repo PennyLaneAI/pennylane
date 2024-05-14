@@ -298,6 +298,8 @@ def diag(values, k=0, like=None):
     if isinstance(values, (list, tuple)):
         values = np.stack(np.coerce(values, like=like), like=like)
 
+    if like in {"tensorflow"}:
+        return np.diag(values, like=like)
     return np.diag(values, k=k, like=like)
 
 
