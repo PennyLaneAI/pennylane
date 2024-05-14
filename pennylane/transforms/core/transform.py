@@ -134,36 +134,38 @@ def transform(
 
         **Example**
 
-        In this example, we first apply a transform to a tape and another one to a batch of tapes.
+        In this example, we apply sequentially a transform to a tape and another one to a batch of tapes.
         We then execute the transformed tapes on a device and post-process the results.
 
         .. code-block:: python
+
+            import pennylane as qml
 
             H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
             measur = [qml.expval(H)]
             ops = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
             tape = qml.tape.QuantumTape(ops, measur)
 
-            batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
-            batch2, fn2 = qml.transforms.merge_rotations(batch1)
+            batch1, function1 = qml.transforms.hamiltonian_expand(tape)
+            batch2, function2 = qml.transforms.merge_rotations(batch1)
 
             dev = qml.device("default.qubit", wires=3)
             result = dev.execute(batch2)
 
-        The first transform splits the original tape, returning a batch of tapes and a processing function.
-        The second transform is applied to the batch of tapes returned by the first transform.
-        It returns a new batch of tapes, each of which has been transformed by the second transform, and a processing function.
+        The first ``hamiltonian_expand`` transform splits the original tape, returning a batch of tapes ``batch1`` and a processing function ``function1``.
+        The second ``merge_rotations`` transform is applied to the batch of tapes returned by the first transform.
+        It returns a new batch of tapes ``batch2``, each of which has been transformed by the second transform, and a processing function ``function2``.
 
         >>> batch2
         (<QuantumTape: wires=[0, 1, 2], params=2>,
         <QuantumTape: wires=[0, 1, 2], params=1>)
 
-        >>> type(fn2)
+        >>> type(function2)
         function
 
         We can combine the processing functions to post-process the results of the execution.
 
-        >>> fn1(fn2(result))
+        >>> function1(function2(result))
         [array(0.5)]
 
     .. details::
