@@ -108,9 +108,10 @@
 * Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
   [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
   
-* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
-  with circuits with non-commuting measurements.
+* `param_shift`, `finite_diff`, `compile`, `insert`, `merge_rotations`, and `transpile` now
+  all work with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
+  [(#5681)](https://github.com/PennyLaneAI/pennylane/pull/5681)
 
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
