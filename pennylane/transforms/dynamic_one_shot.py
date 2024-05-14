@@ -36,7 +36,7 @@ from pennylane.measurements import (
 
 from .core import transform
 
-fillin_value = np.iinfo(np.int32).min
+fill_in_value = np.iinfo(np.int32).min
 
 
 def null_postprocessing(results):
@@ -87,8 +87,7 @@ def dynamic_one_shot(
     few-shots several-mid-circuit-measurement limit, whereas ``qml.defer_measurements`` is favorable
     in the opposite limit.
     """
-
-    if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
+    if not any(is_mcm(o) for o in tape.operations):
         return (tape,), null_postprocessing
 
     for m in tape.measurements:
@@ -103,9 +102,7 @@ def dynamic_one_shot(
         raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
-    postselect_present = any(
-        op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
-    )
+    postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
     if postselect_present and samples_present and tape.batch_size is not None:
         raise ValueError(
             "Returning qml.sample is not supported when postselecting mid-circuit "
@@ -119,28 +116,21 @@ def dynamic_one_shot(
         broadcast_fn = None
 
     aux_tapes = [init_auxiliary_tape(t) for t in tapes]
-    # Shape of output_tapes is (batch_size * total_shots,) with broadcasting,
-    # and (total_shots,) otherwise
-    output_tapes = [at for at in aux_tapes for _ in range(tape.shots.total_shots)]
 
     def processing_fn(results, has_partitioned_shots=None, batched_results=None):
         if batched_results is None and batch_size is not None:
             # If broadcasting, recursively process the results for each batch. For each batch
             # there are tape.shots.total_shots results. The length of the first axis of final_results
             # will be batch_size.
-            results = list(results)
             final_results = []
-            for _ in range(batch_size):
-                final_results.append(
-                    processing_fn(results[0 : tape.shots.total_shots], batched_results=False)
-                )
-                del results[0 : tape.shots.total_shots]
+            for result in results:
+                final_results.append(processing_fn((result,), batched_results=False))
             return broadcast_fn(final_results)
 
         if has_partitioned_shots is None and tape.shots.has_partitioned_shots:
             # If using shot vectors, recursively process the results for each shot bin. The length
             # of the first axis of final_results will be the length of the shot vector.
-            results = list(results)
+            results = list(results[0])
             final_results = []
             for s in tape.shots:
                 final_results.append(
@@ -148,9 +138,11 @@ def dynamic_one_shot(
                 )
                 del results[0:s]
             return tuple(final_results)
+        if not tape.shots.has_partitioned_shots:
+            results = results[0]
         return parse_native_mid_circuit_measurements(tape, aux_tapes, results)
 
-    return output_tapes, processing_fn
+    return aux_tapes, processing_fn
 
 
 @dynamic_one_shot.custom_qnode_transform
@@ -177,6 +169,12 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
+def is_mcm(operation):
+    """Returns True if the operation is a mid-circuit measurement and False otherwise."""
+    mcm = isinstance(operation, MidMeasureMP)
+    return mcm or "MidCircuitMeasure" in str(type(operation))
+
+
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
 
@@ -197,11 +195,14 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
             else:
                 new_measurements.append(m)
     for op in circuit:
-        if isinstance(op, MidMeasureMP):
+        if is_mcm(op):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
 
     return qml.tape.QuantumScript(
-        circuit.operations, new_measurements, shots=1, trainable_params=circuit.trainable_params
+        circuit.operations,
+        new_measurements,
+        shots=[1] * circuit.shots.total_shots,
+        trainable_params=circuit.trainable_params,
     )
 
 
@@ -228,7 +229,7 @@ def parse_native_mid_circuit_measurements(
 
     interface = qml.math.get_deep_interface(circuit.data)
 
-    all_mcms = [op for op in aux_tapes[0].operations if isinstance(op, MidMeasureMP)]
+    all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
     n_mcms = len(all_mcms)
     post_process_tape = qml.tape.QuantumScript(
         aux_tapes[0].operations,
@@ -254,12 +255,13 @@ def parse_native_mid_circuit_measurements(
     # is_valid has to be int array rather than bool array due to tf dtype rules for the
     # remainder of this function
     is_valid = qml.math.cast_like(is_valid, mcm_samples)
-    mid_meas = [op for op in circuit.operations if isinstance(op, MidMeasureMP)]
+    mid_meas = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = [mcm_samples[:, i : i + 1] for i in range(n_mcms)]
     mcm_samples = dict((k, v) for k, v in zip(mid_meas, mcm_samples))
 
     normalized_meas = []
-    for i, m in enumerate(circuit.measurements):
+    m_count = 0
+    for m in circuit.measurements:
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
@@ -270,11 +272,13 @@ def parse_native_mid_circuit_measurements(
             meas = gather_mcm(m, mcm_samples, is_valid)
         elif interface != "jax" and not has_valid:
             meas = measurement_with_no_shots(m)
+            m_count += 1
         else:
             result = qml.math.array(
                 [qml.math.array(res[i], like=interface) for res in results], like=interface
             )
             meas = gather_non_mcm(m, result, is_valid)
+            m_count += 1
         if isinstance(m, SampleMP):
             meas = qml.math.squeeze(meas)
         normalized_meas.append(meas)
@@ -310,7 +314,7 @@ def gather_non_mcm(circuit_measurement, measurement, is_valid):
         if is_interface_jax and measurement.ndim == 2:
             is_valid = is_valid.reshape((-1, 1))
         return (
-            qml.math.where(is_valid, measurement, fillin_value)
+            qml.math.where(is_valid, measurement, fill_in_value)
             if is_interface_jax
             else measurement[is_valid]
         )

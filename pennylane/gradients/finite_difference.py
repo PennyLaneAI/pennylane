@@ -203,6 +203,7 @@ def _expand_transform_finite_diff(
         stopping_condition=_finite_diff_stopping_condition,
         skip_initial_state_prep=False,
         name="finite_diff",
+        error=qml.operation.DecompositionUndefinedError,
     )
     if new_tape is tape:
         return [tape], postprocessing
