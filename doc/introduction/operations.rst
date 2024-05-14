@@ -497,7 +497,7 @@ Qutrit State preparation
 
 .. _intro_ref_ops_qutrit_channels:
 
-Qutrit Noisy channels
+Qutrit noisy channels
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 
