@@ -109,7 +109,7 @@ class TestNoiseFunctions:
         [
             (0, 0, True),
             ([1, 2], [1, 2], True),
-            (qml.wires.Wires(["street", "fighter"]), "fighter", True),
+            (qml.wires.Wires(["street", "fighter"]), "fighter", False),
             (qml.wires.Wires(1), [1], True),
             (qml.Y(2), 2, True),
             (qml.CNOT(["a", "c"]), "b", False),

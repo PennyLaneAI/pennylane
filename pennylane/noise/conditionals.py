@@ -200,9 +200,7 @@ def wires_eq(wires):
     >>> cond_func("eve")
     False
     """
-    return NoiseConditional(
-        lambda x: _get_wires(x).issubset(_get_wires(wires)), f"WiresEq({wires})"
-    )
+    return NoiseConditional(lambda x: _get_wires(x) == _get_wires(wires), f"WiresEq({wires})")
 
 
 def _get_ops(val):
@@ -226,6 +224,33 @@ def _get_ops(val):
         )
         for val in vals
     )
+
+
+def _check_with_lc_op(op1, op2):
+    """Helper method for comparing two arithmetic operators using their LinearCombination"""
+    # pylint: disable = unnecessary-lambda-assignment
+    lc_cop = lambda op: qml.ops.LinearCombination(*qml.simplify(op).terms())
+
+    coeffs, op_terms = lc_cop(op1).terms()
+    sprods = [_get_ops(getattr(op_term, "operands", op_term)) for op_term in op_terms]
+
+    def _lc_op(x):
+        coeffs2, op_terms2 = lc_cop(x).terms()
+        sprods2 = [_get_ops(getattr(op_term, "operands", op_term)) for op_term in op_terms2]
+
+        present = True
+        for coeff, sprod in zip(coeffs2, sprods2):
+            present = sprod in sprods
+            if not present:
+                break
+            if not qml.math.equal(coeff, coeffs[sprods.index(sprod)]):
+                present = False
+                break
+            sprods.remove(sprod)
+
+        return present
+
+    return _lc_op(op2)
 
 
 def op_eq(ops):
@@ -265,7 +290,31 @@ def op_eq(ops):
     op_cls = _get_ops(ops)
     op_repr = str([getattr(op, "__name__") for op in op_cls])[1:-1]
 
-    return NoiseConditional(lambda x: _get_ops(x) == op_cls, f"OpEq({op_repr})")
+    if (len(op_cls) == 1 and (isclass(ops) or not getattr(ops, "arithmetic_depth", 0))) or (
+        len(op_cls) > 1
+        and not any(not isclass(ops) and getattr(op, "arithmetic_depth", 0) for op in ops)
+    ):
+        return NoiseConditional(lambda x: _get_ops(x) == op_cls, f"OpEq({op_repr})")
+
+    try:
+        return NoiseConditional(
+            lambda x: _get_ops(x) == op_cls
+            and (
+                _check_with_lc_op(ops, x)
+                if len(op_cls) == 1
+                else all(
+                    _check_with_lc_op(ops, _x)
+                    for _x in x
+                    if not isclass(_x) and getattr(_x, "arithmetic_depth", 0)
+                )
+            ),
+            f"OpEq({op_repr})",
+        )
+    except:  # pylint: disable = bare-except
+        raise ValueError(
+            "OpEq does not operations with artihmetic operations "
+            "that cannot be converted to a linear combination"
+        ) from None
 
 
 def op_in(ops):
@@ -304,11 +353,31 @@ def op_in(ops):
     >>> cond_func([qml.RX(1.23, wires=[1]), qml.RZ(4.56, wires=[2])])
     False
     """
+    ops = [ops] if not isinstance(ops, (list, tuple, set)) else ops
     op_cls = _get_ops(ops)
     op_repr = list(getattr(op, "__name__") for op in op_cls)
-    return NoiseConditional(
-        lambda x: x in op_cls if isclass(x) else isinstance(x, op_cls), f"OpIn({op_repr})"
-    )
+
+    def _check_in_ops(x):
+        x = [x] if not isinstance(x, (list, tuple, set)) else x
+
+        return all(
+            (
+                _x in op_cls
+                if isclass(_x)
+                else (
+                    isinstance(_x, op_cls)
+                    if not getattr(_x, "arithmetic_depth", 0)
+                    else any(
+                        _check_with_lc_op(_x, ops)
+                        for op in ops
+                        if not isclass(op) and getattr(op, "arithmetic_depth", 0)
+                    )
+                )
+            )
+            for _x in x
+        )
+
+    return NoiseConditional(_check_in_ops, f"OpIn({op_repr})")
 
 
 def partial_wires(operation, *args, **kwargs):
