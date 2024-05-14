@@ -199,6 +199,23 @@ def _check_pytree(op):
         ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
 
 
+def _check_capture(op):
+    try:
+        import jax
+    except ImportError:
+        return
+
+    if not all(isinstance(w, int) for w in op.wires):
+        return
+
+    qml.capture.enable()
+    jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
+    data, _ = jax.tree_util.tree_flatten(op)
+    new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
+    assert op == new_op
+    qml.capture.disable()
+
+
 def _check_pickle(op):
     """Check that an operation can be dumped and reloaded with pickle."""
     pickled = pickle.dumps(op)
@@ -289,3 +306,4 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_eigendecomposition(op)
+    _check_capture(op)

@@ -201,6 +201,11 @@ class Snapshot(Operation):
     num_params = 0
     grad_method = None
 
+    @classmethod
+    def _primitive_bind_call(cls, tag=None, measurement=None):
+        # TODO: make measurements dynamic
+        return cls._primitive.bind(measurement=measurement, tag=tag)
+
     def __init__(self, tag=None, measurement=None):
         self.tag = tag
         if measurement:
