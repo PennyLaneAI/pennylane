@@ -119,6 +119,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
