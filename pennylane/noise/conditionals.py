@@ -237,15 +237,16 @@ def _check_with_lc_op(op1, op2):
     def _lc_op(x):
         coeffs2, op_terms2 = lc_cop(x).terms()
         sprods2 = [_get_ops(getattr(op_term, "operands", op_term)) for op_term in op_terms2]
-
         present = True
         for coeff, sprod in zip(coeffs2, sprods2):
             present = sprod in sprods
+            p_index = sprods.index(sprod)
             if not present:
                 break
-            if not qml.math.equal(coeff, coeffs[sprods.index(sprod)]):
+            if not qml.math.equal(coeff, coeffs[p_index]):
                 present = False
                 break
+            coeffs.pop(p_index)
             sprods.remove(sprod)
 
         return present
@@ -303,14 +304,14 @@ def op_eq(ops):
                 _check_with_lc_op(ops, x)
                 if len(op_cls) == 1
                 else all(
-                    _check_with_lc_op(ops, _x)
-                    for _x in x
+                    _check_with_lc_op(_op, _x)
+                    for (_x, _op) in zip(x, ops)
                     if not isclass(_x) and getattr(_x, "arithmetic_depth", 0)
                 )
             ),
             f"OpEq({op_repr})",
         )
-    except:  # pylint: disable = bare-except
+    except:  # pylint: disable = bare-except # pragma: no cover
         raise ValueError(
             "OpEq does not operations with artihmetic operations "
             "that cannot be converted to a linear combination"
@@ -360,22 +361,28 @@ def op_in(ops):
     def _check_in_ops(x):
         x = [x] if not isinstance(x, (list, tuple, set)) else x
 
-        return all(
-            (
-                _x in op_cls
-                if isclass(_x)
-                else (
-                    isinstance(_x, op_cls)
-                    if not getattr(_x, "arithmetic_depth", 0)
-                    else any(
-                        _check_with_lc_op(_x, ops)
-                        for op in ops
-                        if not isclass(op) and getattr(op, "arithmetic_depth", 0)
+        try:
+            return all(
+                (
+                    _x in op_cls
+                    if isclass(_x)
+                    else (
+                        isinstance(_x, op_cls)
+                        if not getattr(_x, "arithmetic_depth", 0)
+                        else any(
+                            _check_with_lc_op(op, _x)
+                            for op in ops
+                            if not isclass(op) and getattr(op, "arithmetic_depth", 0)
+                        )
                     )
                 )
+                for _x in x
             )
-            for _x in x
-        )
+        except:  # pylint: disable = bare-except # pragma: no cover
+            raise ValueError(
+                "OpEq does not operations with artihmetic operations "
+                "that cannot be converted to a linear combination"
+            ) from None
 
     return NoiseConditional(_check_in_ops, f"OpIn({op_repr})")
 
