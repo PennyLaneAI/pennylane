@@ -74,6 +74,10 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* PennyLane operators can now automatically be captured as instructions in JAXPR. See the experimental
+  `capture` module for more information.
+  [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
@@ -95,12 +99,19 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
+  [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
+
+* `qml.Projector` is now compatible with jax-jit.
+  [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
+
 * Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
   [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
   
-* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
-  with circuits with non-commuting measurements.
+* `param_shift`, `finite_diff`, `compile`, `insert`, `merge_rotations`, and `transpile` now
+  all work with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
+  [(#5681)](https://github.com/PennyLaneAI/pennylane/pull/5681)
 
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
