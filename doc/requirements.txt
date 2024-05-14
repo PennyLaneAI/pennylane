@@ -2,7 +2,7 @@
 pip
 appdirs
 autograd
-autoray
+git+https://github.com/jcmgray/autoray.git@main
 jax==0.4.16
 jaxlib==0.4.16
 mistune==0.8.4
