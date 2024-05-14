@@ -520,18 +520,13 @@ def _metric_tensor_cov_matrix(
         layer_tape = qml.tape.QuantumScript(queue, meas, shots=tape.shots)
         metric_tensor_tapes.append(layer_tape)
 
-    def _alt_processing_fn(results):
-
-        # create the block diagonal metric tensor
-        return qml.math.block_diag(gs)
-
     def processing_fn(results):
         gs = []
         res_idx = 0
 
         for params_in_argnum in in_argnum_list:
             if not any(params_in_argnum):
-                # there is no tape and no probs associated to this layer
+                # there is no tape and no results associated to this layer
                 dim = len(params_in_argnum)
                 gs.append(qml.math.zeros((dim, dim)))
                 continue
@@ -543,9 +538,10 @@ def _metric_tensor_cov_matrix(
             scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), res[0])
             scale = qml.math.cast_like(scale, res[0])
             if use_probs:
-                g = scale * qml.math.cov_matrix(res, obs, wires=tape.wires, diag_approx=diag_approx)
+                cov_mat = qml.math.cov_matrix(res, obs, wires=tape.wires, diag_approx=diag_approx)
             else:
-                g = scale * _list_to_mat(res, len(obs), diag_approx)
+                cov_mat = _list_to_mat(res, len(obs), diag_approx)
+            g = scale * cov_mat
             for i, in_argnum in enumerate(params_in_argnum):
                 # fill in rows and columns of zeros where a parameter was not in argnum
                 if not in_argnum:
