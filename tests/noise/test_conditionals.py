@@ -109,7 +109,7 @@ class TestNoiseFunctions:
         [
             (0, 0, True),
             ([1, 2], [1, 2], True),
-            (qml.wires.Wires(["street", "fighter"]), "fighter", True),
+            (qml.wires.Wires(["street", "fighter"]), "fighter", False),
             (qml.wires.Wires(1), [1], True),
             (qml.Y(2), 2, True),
             (qml.CNOT(["a", "c"]), "b", False),
@@ -141,6 +141,9 @@ class TestNoiseFunctions:
             (["CZ", "RY", "CNOT"], qml.CNOT([0, 1]), True),
             (qml.Y(1), qml.RY(1.0, 1), False),
             (qml.CNOT(["a", "c"]), qml.CNOT([0, 1]), True),
+            ([qml.RZ(1.9, 0), qml.Z(0) @ qml.Z(1)], qml.Z("b") @ qml.Z("a"), True),
+            ([qml.Z(0) + qml.Z(1), qml.Z(2)], qml.Z("b") + qml.Z("a"), True),
+            ([qml.Z(0), qml.Z(0) + 1.2 * qml.Z(1)], qml.Y("b") + qml.Y("a"), False),
         ],
     )
     def test_op_in(self, obj, op, result):
@@ -164,6 +167,9 @@ class TestNoiseFunctions:
             ([qml.RX, qml.RY], qml.RX, False),
             ([qml.RX, qml.RY], [qml.RX(1.0, 1), qml.RY(2.0, 2)], True),
             (["CZ", "RY"], [qml.CZ([0, 1]), qml.RY(1.0, [1])], True),
+            (qml.Z(0) @ qml.Z(1), qml.Z("b") @ qml.Z("a"), True),
+            (qml.Z(0) + qml.Z(1), qml.Z("b") + qml.Z("a"), True),
+            (qml.Z(0) + 1.2 * qml.Z(1), qml.Z("b") + qml.Z("a"), False),
         ],
     )
     def test_op_eq(self, obj, op, result):

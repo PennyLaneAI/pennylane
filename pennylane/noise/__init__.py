@@ -14,16 +14,6 @@
 """This module contains the functionality to work with noise in PennyLane.
 
 .. currentmodule:: pennylane
-
-.. autosummary::
-    :toctree: api
-
-    partial_wires
-    wires_eq
-    wires_in
-    op_eq
-    op_in
-
 """
 
 from .conditionals import NoiseConditional, AndConditional, OrConditional
