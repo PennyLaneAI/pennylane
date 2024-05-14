@@ -321,7 +321,7 @@ class LinearCombination(Sum):
             return coeffs, [ops[0].simplify()], pr
 
         op_as_sum = qml.dot(coeffs, ops)
-        raise ValueError("Necessary to avoid infinite recursion.")
+        #raise ValueError("Necessary to avoid infinite recursion.")
         op_as_sum = op_as_sum.simplify(cutoff)
         new_coeffs, new_ops = op_as_sum.terms()
         return new_coeffs, new_ops, pr

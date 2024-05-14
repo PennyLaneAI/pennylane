@@ -970,9 +970,6 @@ class TestPauliSentence:
             ],
         )
 
-        print(full_ps_op)
-        print(full_op)
-
         ps_op, op = (
             full_ps_op.operands[1],
             full_op.operands[1],
@@ -991,7 +988,7 @@ class TestPauliSentence:
         id = qml.ops.LinearCombination([0.0], [qml.Identity(wires=[0, 1])])
 
         assert op.name == id.name
-        #assert op.wires == id.wires
+        # assert op.wires == id.wires
 
     def test_operation_empty_nowires(self):
         """Test that a ValueError is raised if an empty PauliSentence is
