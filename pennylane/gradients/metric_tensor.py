@@ -16,6 +16,7 @@ Contains the metric_tensor batch_transform which wraps multiple
 methods of computing the metric tensor.
 """
 import functools
+import itertools
 import warnings
 from functools import partial
 from typing import Callable, Sequence
@@ -96,6 +97,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
+    use_probs=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
@@ -365,15 +367,18 @@ def metric_tensor(  # pylint:disable=too-many-arguments
             "as trainable."
         )
 
+    if use_probs is None:
+        use_probs = len(tape.wires) < 25
+
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
-        tapes, processing_fn = _metric_tensor_cov_matrix(tape, argnum, diag_approx)[:2]
+        tapes, processing_fn = _metric_tensor_cov_matrix(tape, argnum, diag_approx, use_probs)[:2]
         return tapes, processing_fn
 
     if approx is None:
         tapes, processing_fn = _metric_tensor_hadamard(
-            tape, argnum, allow_nonunitary, aux_wire, device_wires
+            tape, argnum, allow_nonunitary, aux_wire, device_wires, use_probs
         )
         return tapes, processing_fn
 
@@ -396,7 +401,29 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return mt_fn
 
 
-def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too-many-statements
+def _list_to_mat(l, dim, diag_approx):
+    if diag_approx:
+        var = [l[i + dim] - l[i] ** 2 for i in range(dim)]
+        return qml.math.diag(var)
+    mat = qml.math.zeros((dim, dim), like=l[0])
+    exp = l[:dim]
+    correl = l[dim:]
+    idx = 0
+    for i, j in itertools.combinations_with_replacement(range(dim), r=2):
+        elem = correl[idx] - exp[i] * exp[j]
+        mat = qml.math.scatter_element_add(mat, [i, j], elem)
+        if i != j:
+            # Don't add twice on diagonal
+            mat = qml.math.scatter_element_add(mat, [j, i], elem)
+
+        idx += 1
+
+    return mat
+
+
+def _metric_tensor_cov_matrix(
+    tape, argnum, diag_approx, use_probs
+):  # pylint: disable=too-many-statements
     r"""This is the metric tensor method for the block diagonal, using
     the covariance matrix of the generators of each layer.
 
@@ -473,16 +500,34 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
         # TODO: Maybe there are gates that do not affect the
         # generators of interest and thus need not be applied.
 
-        for o, param_in_argnum in zip(layer_obs, in_argnum_list[-1]):
-            if param_in_argnum:
-                queue.extend(o.diagonalizing_gates())
+        if use_probs:
+            for o, param_in_argnum in zip(layer_obs, in_argnum_list[-1]):
+                if param_in_argnum:
+                    queue.extend(o.diagonalizing_gates())
 
-        layer_tape = qml.tape.QuantumScript(queue, [qml.probs(wires=tape.wires)], shots=tape.shots)
+            meas = [qml.probs(wires=tape.wires)]
+        else:
+            meas = [qml.expval(ob) for ob in layer_obs]
+            if diag_approx:
+                meas.extend((qml.expval(ob @ ob) for ob in layer_obs))
+            else:
+                meas.extend(
+                    (
+                        qml.expval(o1 @ o2)
+                        for o1, o2 in itertools.combinations_with_replacement(layer_obs, r=2)
+                    )
+                )
+        layer_tape = qml.tape.QuantumScript(queue, meas, shots=tape.shots)
         metric_tensor_tapes.append(layer_tape)
 
-    def processing_fn(probs):
+    def _alt_processing_fn(results):
+
+        # create the block diagonal metric tensor
+        return qml.math.block_diag(gs)
+
+    def processing_fn(results):
         gs = []
-        probs_idx = 0
+        res_idx = 0
 
         for params_in_argnum in in_argnum_list:
             if not any(params_in_argnum):
@@ -491,13 +536,16 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
                 gs.append(qml.math.zeros((dim, dim)))
                 continue
 
-            coeffs = coeffs_list[probs_idx]
-            obs = obs_list[probs_idx]
-            p = probs[probs_idx]
+            coeffs = coeffs_list[res_idx]
+            obs = obs_list[res_idx]
+            res = results[res_idx]
 
-            scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), p)
-            scale = qml.math.cast_like(scale, p)
-            g = scale * qml.math.cov_matrix(p, obs, wires=tape.wires, diag_approx=diag_approx)
+            scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), res[0])
+            scale = qml.math.cast_like(scale, res[0])
+            if use_probs:
+                g = scale * qml.math.cov_matrix(res, obs, wires=tape.wires, diag_approx=diag_approx)
+            else:
+                g = scale * _list_to_mat(res, len(obs), diag_approx)
             for i, in_argnum in enumerate(params_in_argnum):
                 # fill in rows and columns of zeros where a parameter was not in argnum
                 if not in_argnum:
@@ -507,7 +555,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
                         (g[:, :i], qml.math.zeros((dim + 1, 1)), g[:, i:]), axis=1
                     )
             gs.append(g)
-            probs_idx += 1
+            res_idx += 1
 
         # create the block diagonal metric tensor
         return qml.math.block_diag(gs)
@@ -623,7 +671,12 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
 
 
 def _metric_tensor_hadamard(
-    tape, argnum, allow_nonunitary, aux_wire, device_wires
+    tape,
+    argnum,
+    allow_nonunitary,
+    aux_wire,
+    device_wires,
+    use_probs,
 ):  # pylint: disable=too-many-statements
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
@@ -657,7 +710,7 @@ def _metric_tensor_hadamard(
         in_argnum_list,
         layer_ids,
         obs_ids,
-    ) = _metric_tensor_cov_matrix(tape, argnum, diag_approx=False)
+    ) = _metric_tensor_cov_matrix(tape, argnum, diag_approx=False, use_probs=use_probs)
 
     # Obtain layers of parametrized operations and account for the discrepancy between trainable
     # and non-trainable parameter indices
@@ -741,12 +794,16 @@ def _metric_tensor_hadamard(
 
         for i, (layer_i, obs_i) in enumerate(zip(layer_ids, obs_ids)):
             if layer_i is not None and obs_i is not None:
-                prob = diag_res[layer_i]
-                o = obs_list[layer_i][obs_i]
-                l = qml.math.cast(o.eigvals(), dtype=np.float64)
-                w = tape.wires.indices(o.wires)
-                p = qml.math.marginal_prob(prob, w)
-                expvals = qml.math.scatter_element_add(expvals, (i,), qml.math.dot(l, p))
+                if use_probs:
+                    prob = diag_res[layer_i]
+                    o = obs_list[layer_i][obs_i]
+                    l = qml.math.cast(o.eigvals(), dtype=np.float64)
+                    w = tape.wires.indices(o.wires)
+                    p = qml.math.marginal_prob(prob, w)
+                    exp = qml.math.dot(l, p)
+                else:
+                    exp = diag_res[layer_i][obs_i]
+                expvals = qml.math.scatter_element_add(expvals, (i,), exp)
 
         # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
         second_term = qml.math.tensordot(expvals, expvals, axes=0) * mask
