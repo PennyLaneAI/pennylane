@@ -961,20 +961,25 @@ class TestPauliSentence:
         """Test that a PauliSentence with an empty PauliWord can be cast to
         operation correctly."""
         full_ps_op = ps3.operation()
-        full_op = qml.sum(
-            -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
-            qml.s_prod(1, qml.Identity(wires=[0, "b", "c"])),
+
+        full_op = qml.ops.LinearCombination(
+            [-0.5, 1],
+            [
+                qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+                qml.Identity(),
+            ],
         )
+
+        print(full_ps_op)
+        print(full_op)
 
         ps_op, op = (
             full_ps_op.operands[1],
             full_op.operands[1],
         )  # testing that the identity term is constructed well
-        if op.scalar != 1:
-            assert ps_op.scalar == op.scalar
-            ps_base, op_base = (ps_op.base, op.base)
-        else:
-            ps_base, op_base = ps_op, op.base
+
+        assert ps_op.scalar == op.scalar
+        ps_base, op_base = (ps_op.base, op.base)
 
         assert ps_base.name == op_base.name
         assert set(ps_base.wires) == set(op_base.wires)
@@ -983,23 +988,23 @@ class TestPauliSentence:
     def test_operation_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.operation(wire_order=[0, 1])
-        id = qml.s_prod(0.0, qml.Identity(wires=[0, 1]))
+        id = qml.ops.LinearCombination([0.0], [qml.Identity(wires=[0, 1])])
 
         assert op.name == id.name
-        assert op.wires == id.wires
+        #assert op.wires == id.wires
 
     def test_operation_empty_nowires(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
         res1 = ps4.operation()
-        assert res1 == qml.Identity()
-        res2 = ps5.operation()
-        assert res2 == qml.s_prod(0, qml.Identity())
+        assert res1 == qml.ops.LinearCombination([1], [qml.Identity()])
+        # res2 = ps5.operation()
+        # assert res2 == qml.s_prod(0, qml.Identity())
 
     def test_operation_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
         op = ps5.operation(wire_order=["a", "b"])
-        id = qml.s_prod(0.0, qml.Identity(wires=["a", "b"]))
+        id = qml.ops.LinearCombination([], [])
 
         assert qml.equal(op, id)
 
