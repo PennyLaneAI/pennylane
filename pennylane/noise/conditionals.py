@@ -240,14 +240,14 @@ def _check_with_lc_op(op1, op2):
         present = True
         for coeff, sprod in zip(coeffs2, sprods2):
             present = sprod in sprods
-            p_index = sprods.index(sprod)
             if not present:
                 break
+            p_index = sprods.index(sprod)
             if not qml.math.equal(coeff, coeffs[p_index]):
                 present = False
                 break
             coeffs.pop(p_index)
-            sprods.remove(sprod)
+            sprods.pop(p_index)
 
         return present
 

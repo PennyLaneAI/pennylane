@@ -143,6 +143,7 @@ class TestNoiseFunctions:
             (qml.CNOT(["a", "c"]), qml.CNOT([0, 1]), True),
             ([qml.RZ(1.9, 0), qml.Z(0) @ qml.Z(1)], qml.Z("b") @ qml.Z("a"), True),
             ([qml.Z(0) + qml.Z(1), qml.Z(2)], qml.Z("b") + qml.Z("a"), True),
+            ([qml.Z(0), qml.Z(0) + 1.2 * qml.Z(1)], qml.Y("b") + qml.Y("a"), False),
         ],
     )
     def test_op_in(self, obj, op, result):
