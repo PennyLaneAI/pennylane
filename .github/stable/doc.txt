@@ -7,7 +7,7 @@ astunparse==1.6.3
 async-timeout==4.0.3
 attrs==23.2.0
 autograd==1.6.2
-autoray==0.6.10
+autoray==0.6.11
 Babel==2.15.0
 cachetools==5.3.3
 certifi==2024.2.2
