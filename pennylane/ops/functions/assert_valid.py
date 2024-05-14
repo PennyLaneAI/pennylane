@@ -209,10 +209,20 @@ def _check_capture(op):
         return
 
     qml.capture.enable()
-    jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
-    data, _ = jax.tree_util.tree_flatten(op)
-    new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-    assert op == new_op
+    try:
+        jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
+        data, _ = jax.tree_util.tree_flatten(op)
+        new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
+        assert op == new_op
+    except Exception as e:
+        raise ValueError(
+            (
+                "The capture of the operation into jaxpr failed somehow."
+                " This capture mechanism is currently experimental and not a core"
+                " requirement, but will be necessary in the future."
+                " Please see the capture module documentation for more infromation."
+            )
+        ) from e
     qml.capture.disable()
 
 
