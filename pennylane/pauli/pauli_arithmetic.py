@@ -1012,21 +1012,15 @@ class PauliSentence(dict):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
-                raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
+                raise ValueError("Can't get the Linear Combination for an empty PauliSentence.")
             return qml.ops.LinearCombination([], [])
 
-        # summands = []
-        # wire_order = wire_order or self.wires
-        # for pw, coeff in self.items():
-        #    pw_op = pw.operation(wire_order=list(wire_order))
-        #    rep = PauliSentence({pw: coeff})
-        #    summands.append(pw_op if coeff == 1 else SProd(coeff, pw_op, _pauli_rep=rep))
-        # return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
+        wire_order = wire_order or self.wires
+        wire_order = list(wire_order)
 
         return qml.ops.LinearCombination(
             list(self.values()),
-            [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
-            _pauli_rep=self,
+            [pw.operation(wire_order=wire_order, get_as_tensor=False) for pw in self],
         )
 
     def hamiltonian(self, wire_order=None):

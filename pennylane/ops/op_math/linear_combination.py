@@ -321,6 +321,7 @@ class LinearCombination(Sum):
             return coeffs, [ops[0].simplify()], pr
 
         op_as_sum = qml.dot(coeffs, ops)
+        raise ValueError("Necessary to avoid infinite recursion.")
         op_as_sum = op_as_sum.simplify(cutoff)
         new_coeffs, new_ops = op_as_sum.terms()
         return new_coeffs, new_ops, pr
@@ -366,6 +367,7 @@ class LinearCombination(Sum):
         """
 
         if isinstance(other, (Operator)):
+
             if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
                 pr1.simplify()
                 pr2.simplify()
@@ -378,6 +380,7 @@ class LinearCombination(Sum):
                     f"Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
                     UserWarning,
                 )
+
                 op1 = self.simplify()
                 op2 = other.simplify()
 
@@ -387,6 +390,7 @@ class LinearCombination(Sum):
                 return qml.equal(op1, op2)
 
             op1 = self.simplify()
+
             op2 = other.simplify()
             return qml.equal(op1, op2)
 
