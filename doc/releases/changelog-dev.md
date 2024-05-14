@@ -97,6 +97,9 @@
 
 <h3>Documentation 📝</h3>
 
+* A small typo was fixed in the docstring for `qml.sample`.
+  [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.Projector` is now compatible with jax-jit.
