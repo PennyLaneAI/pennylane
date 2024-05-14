@@ -18,7 +18,6 @@ from functools import lru_cache
 
 import pennylane as qml  # need shots class without circular dependency issues
 
-
 has_jax = True
 try:
     import jax
@@ -83,7 +82,55 @@ def _get_measure_primitive():
 
 
 def measure(*measurements, shots=None, num_device_wires=0):
-    """Perform a measurement."""
+    """An instruction to perform a measurement.
+
+    .. warning::
+        Note that this function only has a concrete implementation for performing
+        mid circuit measurements. Otherwise, it is strictly used to capture that quantum/ classical
+        boundary into jaxpr for later interpretation by a jaxpr interpreter.
+
+    Args:
+        *measurements (.MeasurementProcess): any number of simultaneous measurements
+
+    Keyword Args:
+        shots (Optional[int, Sequence[int], Shots]): the number of shots used to perform the execution
+        num_device_wires (int): the number of device wires. Used to determine shape information when
+            measurements are broadcasted across all wires.
+
+    >>> qml.capture.enable()
+    >>> def f():
+    ...     mp1 = qml.expval(qml.Z(0))
+    ...     mp2 = qml.sample()
+    ...     return qml.capture.measure(mp1, mp2, shots=50, num_device_wires=4)
+    >>> jax.make_jaxpr(f)()
+    { lambda ; . let
+        a:AbstractOperator() = PauliZ[n_wires=1] 0
+        b:AbstractMeasurement(n_wires=None) = expval a
+        c:AbstractMeasurement(n_wires=0) = sample
+        d:f32[] e:i32[50,4] = measure[num_device_wires=4 shots=Shots(total=50)] b c
+    in (d, e) }
+
+    Here ``measure`` takes the number of device wires and number of shots, and converts the
+    measurement processes into shaped arrays. ``measure`` can also be used with shot vectors.
+    In the case of a shot vector, the results are flattened out, and will need to be repacked
+    into the pytree structure before getting returned to a user.
+
+    >>> def f():
+    ...     mp1 = qml.expval(qml.Z(0))
+    ...     mp2 = qml.sample()
+    ...     return qml.capture.measure(mp1, mp2, shots=(50, 100), num_device_wires=4)
+    >>> jax.make_jaxpr(f)()
+    { lambda ; . let
+        a:AbstractOperator() = PauliZ[n_wires=1] 0
+        b:AbstractMeasurement(n_wires=None) = expval a
+        c:AbstractMeasurement(n_wires=0) = sample
+        d:f32[] e:i32[50,4] f:f32[] g:i32[100,4] = measure[
+        num_device_wires=4
+        shots=Shots(total=150, vector=[50 shots, 100 shots])
+        ] b c
+    in (d, e, f, g) }
+
+    """
     shots = qml.measurements.Shots(shots)
     measure_prim = _get_measure_primitive()
     return measure_prim.bind(*measurements, shots=shots, num_device_wires=num_device_wires)

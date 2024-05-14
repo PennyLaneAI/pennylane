@@ -17,6 +17,7 @@ This submodule defines the abstract classes and primitives for capture.
 
 from functools import lru_cache
 from typing import Callable, Optional
+
 import pennylane as qml
 
 has_jax = True
@@ -166,7 +167,7 @@ def create_measurement_obs_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(name)
+    primitive = jax.core.Primitive(name + "_obs")
 
     @primitive.def_impl
     def _(obs, **kwargs):
@@ -189,7 +190,7 @@ def create_measurement_wires_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(name)
+    primitive = jax.core.Primitive(name + "_wires")
 
     @primitive.def_impl
     def _(*wires, **kwargs):
