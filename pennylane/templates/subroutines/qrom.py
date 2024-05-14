@@ -26,39 +26,46 @@ import copy
 class QROM(Operation):
 
     def _flatten(self):
-        return (self.ops), (self.control)
+        data = (self.hyperparameters["b"],)
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items() if key != "b")
+        return data, metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(data, metadata)
+        b = data[0]
+        hyperparams_dict = dict(metadata)
+        return cls(b, **hyperparams_dict)
 
     def __repr__(self):
-        return f"QROM(ops={self.ops}, control={self.control}, work_wires={self.work_wires})"
+        return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires}  work_wires={self.work_wires})"
 
-    def __init__(self, bitstrings, target_wires, control_wires, work_wires, clean=True, id=None):
+    def __init__(self, b, target_wires, control_wires, work_wires, clean=True, id=None):
 
         control_wires = qml.wires.Wires(control_wires)
         target_wires = qml.wires.Wires(target_wires)
-        work_wires = qml.wires.Wires(work_wires)
 
-        self.hyperparameters["bitstrings"] = bitstrings
+        if work_wires:
+            work_wires = qml.wires.Wires(work_wires)
+
+        self.hyperparameters["b"] = b
         self.hyperparameters["target_wires"] = target_wires
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["clean"] = clean
 
-        if 2 ** len(control_wires) < len(bitstrings):
+        if 2 ** len(control_wires) < len(b):
             raise ValueError(
                 f"Not enough control wires ({len(control_wires)}) for the desired number of "
-                + f"operations ({len(bitstrings)}). At least {int(math.ceil(math.log2(len(bitstrings))))} control "
+                + f"operations ({len(b)}). At least {int(math.ceil(math.log2(len(b))))} control "
                 + "wires required."
             )
 
-        if any(wire in work_wires for wire in control_wires):
-            raise ValueError("Control wires should be different from work wires.")
+        if work_wires:
+            if any(wire in work_wires for wire in control_wires):
+                raise ValueError("Control wires should be different from work wires.")
 
-        if any(wire in work_wires for wire in target_wires):
-            raise ValueError("Target wires should be different from work wires.")
+            if any(wire in work_wires for wire in target_wires):
+                raise ValueError("Target wires should be different from work wires.")
 
         if any(wire in control_wires for wire in target_wires):
             raise ValueError("Target wires should be different from control wires.")
@@ -73,10 +80,13 @@ class QROM(Operation):
         new_control_wires = [
             wire_map.get(wire, wire) for wire in self.hyperparameters["control_wires"]
         ]
-        new_work_wires = [wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]]
-        return QROM(
-            self.bitstrings, new_target_wires, new_control_wires, new_work_wires, self.clean
-        )
+        if self.hyperparameters["work_wires"]:
+            new_work_wires = [
+                wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]
+            ]
+        else:
+            new_work_wires = []
+        return QROM(self.b, new_target_wires, new_control_wires, new_work_wires, self.clean)
 
     @staticmethod
     def multi_swap(wires1, wires2):
@@ -101,7 +111,7 @@ class QROM(Operation):
     def decomposition(self):
 
         return self.compute_decomposition(
-            self.bitstrings,
+            self.b,
             control_wires=self.control_wires,
             work_wires=self.work_wires,
             target_wires=self.target_wires,
@@ -109,76 +119,92 @@ class QROM(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(bitstrings, target_wires, control_wires, work_wires, clean):
+    def compute_decomposition(b, target_wires, control_wires, work_wires, clean):
         # BasisEmbedding applied to embed the bitstrings
-        ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+        with qml.QueuingManager.stop_recording():
+            ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in b]
 
-        swap_wires = target_wires + work_wires  # wires available to apply the operators
-        depth = len(swap_wires) // len(target_wires)  # number of operators we store per column (power of 2)
-        depth = int(2 ** np.floor(np.log2(depth)))
+            if work_wires:
+                swap_wires = target_wires + work_wires  # wires available to apply the operators
+            else:
+                swap_wires = target_wires
+            depth = len(swap_wires) // len(
+                target_wires
+            )  # number of operators we store per column (power of 2)
+            depth = int(2 ** np.floor(np.log2(depth)))
 
-        c_sel_wires = control_wires[
-            : int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
-        ]  # control wires used in the Select block
-        c_swap_wires = control_wires[len(c_sel_wires) :]  # control wires used in the Swap block
+            c_sel_wires = control_wires[
+                : int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
+            ]  # control wires used in the Select block
+            c_swap_wires = control_wires[len(c_sel_wires) :]  # control wires used in the Swap block
 
-        # with qml.QueuingManager.stop_recording():
-        ops_I = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
+            ops_I = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
-        decomp_ops = []
+            decomp_ops = []
 
-        # Select block
-        sel_ops = []
-        bin_indx = list(itertools.product([0, 1], repeat=len(c_sel_wires)))
-        length = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
-        for i, bin in enumerate(bin_indx[:length]):
-            new_op = qml.prod(
-                *[
-                    qml.map_wires(
-                        ops_I[i * depth + j],
-                        {
-                            ops_I[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
-                            for l in range(len(target_wires))
-                        },
+            length = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
+
+            s_ops = []
+            for i in range(length):
+                s_ops.append(
+                    qml.prod(
+                        *[
+                            qml.map_wires(
+                                ops_I[i * depth + j],
+                                {
+                                    ops_I[i * depth + j].wires[l]: swap_wires[
+                                        j * len(target_wires) + l
+                                    ]
+                                    for l in range(len(target_wires))
+                                },
+                            )
+                            for j in range(depth)
+                        ]
                     )
-                    for j in range(depth)
-                ]
-            )
-            sel_ops.append(
-                qml.ctrl(new_op, control=control_wires[: len(c_sel_wires)], control_values=bin)
-            )
+                )
 
-        # Swap block
-        # Todo: This should be optimized
-        swap_ops = []
-        bin_indx = list(itertools.product([0, 1], repeat=len(c_swap_wires)))
-        for i, bin in enumerate(bin_indx[1:depth]):
-            new_op = qml.prod(QROM.multi_swap)(
-                target_wires, swap_wires[(i + 1) * len(target_wires) : (i + 2) * len(target_wires)]
-            )
-            swap_ops.append(qml.ctrl(new_op, control=c_swap_wires, control_values=bin))
+            sel_ops = [qml.Select(s_ops, control=control_wires[: len(c_sel_wires)])]
 
-        if not clean:
-            # Based on this paper: https://arxiv.org/pdf/1812.00954
-            decomp_ops += sel_ops + swap_ops
+            # Swap block
+            swap_ops = []
+            for ind, wire in enumerate(c_swap_wires):
+                for j in range(2**ind):
+                    new_op = qml.prod(QROM.multi_swap)(
+                        swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
+                        swap_wires[
+                            (j + 2**ind)
+                            * len(target_wires) : (j + 2 ** (ind + 1))
+                            * len(target_wires)
+                        ],
+                    )
+                    swap_ops.append(qml.ctrl(new_op, control=wire))
 
-        else:
-            # Based on this paper: https://arxiv.org/abs/1902.02134
+            adjoint_swap_ops = swap_ops[::-1]
 
-            for _ in range(2):
+            if not clean:
+                # Based on this paper: https://arxiv.org/pdf/1812.00954
+                decomp_ops += sel_ops + swap_ops
 
-                for w in target_wires:
-                    decomp_ops.append(qml.Hadamard(wires=w))
+            else:
+                # Based on this paper: https://arxiv.org/abs/1902.02134
 
-                # TODO: It should be adjoint the last one
-                decomp_ops += swap_ops + sel_ops + swap_ops
+                for _ in range(2):
+
+                    for w in target_wires:
+                        decomp_ops.append(qml.Hadamard(wires=w))
+
+                    decomp_ops += swap_ops + sel_ops + adjoint_swap_ops
+
+        if qml.QueuingManager.recording():
+            for op in decomp_ops:
+                qml.apply(op)
 
         return decomp_ops
 
     @property
-    def bitstrings(self):
+    def b(self):
         """bitstrings to be added."""
-        return self.hyperparameters["bitstrings"]
+        return self.hyperparameters["b"]
 
     @property
     def control_wires(self):
