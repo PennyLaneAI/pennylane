@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the probs module"""
+from typing import Sequence
+
 import numpy as np
 import pytest
 
@@ -225,6 +227,36 @@ class TestProbs:
         res = circuit()
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("shots", (None, 500))
+    @pytest.mark.parametrize("obs", ([0, 1], qml.PauliZ(0) @ qml.PauliZ(1)))
+    @pytest.mark.parametrize("params", ([np.pi / 2], [np.pi / 2, np.pi / 2, np.pi / 2]))
+    def test_integration_jax(self, tol_stochastic, shots, obs, params):
+        """Test the probability is correct for a known state preparation when jitted with JAX."""
+        jax = pytest.importorskip("jax")
+
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=jax.random.PRNGKey(0))
+        params = jax.numpy.array(params)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit(x):
+            qml.PhaseShift(x, wires=1)
+            qml.RX(x, wires=1)
+            qml.PhaseShift(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            if isinstance(obs, Sequence):
+                return qml.probs(wires=obs)
+            return qml.probs(op=obs)
+
+        # expected probability, using [00, 01, 10, 11]
+        # ordering, is [0.5, 0.5, 0, 0]
+
+        assert "pure_callback" not in str(jax.make_jaxpr(circuit)(params))
+
+        res = jax.jit(circuit)(params)
+        expected = np.array([0.5, 0.5, 0, 0])
+        assert np.allclose(res, expected, atol=tol_stochastic, rtol=0)
 
     @pytest.mark.parametrize("shots", [100, [1, 10, 100]])
     def test_integration_analytic_false(self, tol, shots):

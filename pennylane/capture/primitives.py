@@ -17,7 +17,6 @@ This submodule defines the abstract classes and primitives for capture.
 
 from functools import lru_cache
 from typing import Callable, Optional
-
 import pennylane as qml
 
 has_jax = True

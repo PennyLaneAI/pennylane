@@ -263,23 +263,33 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         """Count the occurrences of sampled indices and convert them to relative
         counts in order to estimate their occurrence probability."""
         num_bins, bin_size = indices.shape[-2:]
+        interface = qml.math.get_deep_interface(indices)
+
+        if qml.math.is_abstract(indices):
+
+            def _count_samples_core(indices, dim, interface):
+                return qml.math.array(
+                    [[qml.math.sum(idx == p) for idx in indices] for p in range(dim)],
+                    like=interface,
+                )
+
+        else:
+
+            def _count_samples_core(indices, dim, *_):
+                probabilities = qml.math.zeros((dim, num_bins), dtype="float64")
+                for b, idx in enumerate(indices):
+                    basis_states, counts = qml.math.unique(idx, return_counts=True)
+                    probabilities[basis_states, b] = counts
+                return probabilities
+
         if batch_size is None:
-            prob = qml.math.zeros((dim, num_bins), dtype="float64")
-            # count the basis state occurrences, and construct the probability vector for each bin
-            for b, idx in enumerate(indices):
-                basis_states, counts = qml.math.unique(idx, return_counts=True)
-                prob[basis_states, b] = counts / bin_size
-
-            return prob
-
-        prob = qml.math.zeros((batch_size, dim, num_bins), dtype="float64")
-        indices = indices.reshape((batch_size, num_bins, bin_size))
+            return _count_samples_core(indices, dim, interface) / bin_size
 
         # count the basis state occurrences, and construct the probability vector
         # for each bin and broadcasting index
-        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
-            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
-                basis_states, counts = qml.math.unique(idx, return_counts=True)
-                prob[i, basis_states, b] = counts / bin_size
-
-        return prob
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+        probabilities = qml.math.array(
+            [_count_samples_core(_indices, dim, interface) for _indices in indices],
+            like=interface,
+        )
+        return probabilities / bin_size

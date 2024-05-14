@@ -602,28 +602,32 @@ def test_insert_template():
     assert np.allclose(f1(w1, w2), f2(w1, w2))
 
 
-def test_insert_decorator_causes_custom_insert_error_non_qwc_obs():
+def test_insert_transform_works_with_non_qwc_obs():
     """Test that the insert transform catches and reports errors from the enclosed function."""
 
-    # pylint: disable=unused-argument
-
-    def noise(noise_param, wires):
+    def op(noise_param, wires):
+        # pylint: disable=unused-argument
         qml.CRX(noise_param, wires=[0, 1])
         qml.CNOT(wires=[1, 0])
 
-    dev = qml.device("default.mixed", wires=2)
+    dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev)
-    @partial(insert, op=noise, op_args=0.3, position="all")
+    @partial(insert, op=op, op_args=0.3, position="all")
     def noisy_circuit(circuit_param):
         qml.RY(circuit_param, wires=0)
         qml.Hadamard(wires=0)
         qml.T(wires=0)
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
-    # This tape's expansion fails, but shouldn't cause a downstream IndexError. See issue #3103
-    with pytest.raises(
-        qml.QuantumFunctionError,
-        match="The insert transform cannot transform a circuit measuring non-commuting observables",
-    ):
-        noisy_circuit(0.4)
+    @qml.qnode(dev)
+    def explicit_circuit(circuit_param):
+        qml.RY(circuit_param, wires=0)
+        op(0.3, None)
+        qml.Hadamard(wires=0)
+        op(0.3, None)
+        qml.T(wires=0)
+        op(0.3, None)
+        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
+
+    assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
