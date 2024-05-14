@@ -102,6 +102,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
+  [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
+
 * `qml.Projector` is now compatible with jax-jit.
   [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
 
