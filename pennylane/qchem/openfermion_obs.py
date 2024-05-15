@@ -939,7 +939,7 @@ def molecular_hamiltonian(*args, **kwargs):
 
     raise NotImplementedError(
         "The provided arguments do not contain information about symbols in the molecule. "
-        "Please provide that information in the form of molecule object or as a list of symbols."
+        "Please provide that information in the form of a molecule object or as a list of symbols."
     )
 
 
