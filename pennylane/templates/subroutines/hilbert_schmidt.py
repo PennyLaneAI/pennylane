@@ -107,6 +107,7 @@ class HilbertSchmidt(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, *params, v_function, v_wires, u_tape, id=None):
+        # pylint: disable=arguments-differ
         if qml.math.is_abstract(v_wires):
             raise NotImplementedError(
                 "HilbertSchmidt does not support dynamic wires while using qml.capture."

@@ -14,14 +14,15 @@
 """
 Integration tests for the capture of PennyLane templates into plxpr.
 """
+import inspect
+
 # pylint: disable=protected-access
 from typing import Any
-import inspect
-import pytest
 
 import numpy as np
-import pennylane as qml
+import pytest
 
+import pennylane as qml
 from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
