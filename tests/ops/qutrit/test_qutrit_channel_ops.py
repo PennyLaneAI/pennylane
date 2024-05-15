@@ -19,8 +19,8 @@ import pytest
 from numpy.linalg import matrix_power
 
 import pennylane as qml
-from pennylane import numpy as pnp
 from pennylane import math
+from pennylane import numpy as pnp
 from pennylane.ops.qutrit import channel
 
 QUDIT_DIM = 3
