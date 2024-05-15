@@ -97,6 +97,9 @@
 
 <h3>Documentation 📝</h3>
 
+* A small typo was fixed in the docstring for `qml.sample`.
+  [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
 <h3>Bug fixes 🐛</h3>
 
 * Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
@@ -120,6 +123,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
