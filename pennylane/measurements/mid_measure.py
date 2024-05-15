@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Hashable, Optional, TypeVar, Union
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -23,7 +23,9 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[int] = None):
+def measure(
+    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
+):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -263,6 +265,12 @@ class MidMeasureMP(MeasurementProcess):
     def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
         wires = () if wires is None else wires
         return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect)
+
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ) -> tuple:
+        return (), int
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.

@@ -44,7 +44,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or MeasurementValue): Observable (with a ``diagonalizing_gates``
+        op (Observable or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
@@ -103,7 +103,9 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
         return ProbabilityMP(obs=op)
 
     if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+        if not qml.math.is_abstract(op[0]) and not all(
+            isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op
+        ):
             raise qml.QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "

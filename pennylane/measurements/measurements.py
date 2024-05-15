@@ -134,23 +134,35 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     # pylint:disable=too-many-instance-attributes
 
-    _obs_primitive = None
-    _wires_primitive = None
+    _obs_primitive: Optional["jax.core.Primitive"] = None
+    _wires_primitive: Optional["jax.core.Primitive"] = None
+    _mcm_primitive: Optional["jax.core.Primitive"] = None
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         name = getattr(cls.return_type, "value", cls.__name__)
         cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
         cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
+        cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
 
     @classmethod
     def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None):
-        if cls._obs_primitive is None or cls._wires_primitive is None:
+
+        if cls._obs_primitive is None or cls._wires_primitive is None or cls._mcm_primitive is None:
             return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id)
-        if obs is not None:
+        if obs is None:
+            wires = () if wires is None else wires
+            if eigvals is None:
+                return cls._wires_primitive.bind(*wires)  # wires
+            return cls._wires_primitive.bind(*wires, eigvals, has_eigvals=True)  # wires + eigvals
+
+        if isinstance(obs, Operator) or isinstance(
+            getattr(obs, "aval", None), qml.capture.AbstractOperator
+        ):
             return cls._obs_primitive.bind(obs)
-        wires = () if wires is None else wires
-        return cls._wires_primitive.bind(*wires)
+        if isinstance(obs, (list, tuple)):
+            return cls._mcm_primitive.bind(*obs)  # iterable of mcms
+        return cls._mcm_primitive.bind(obs)  # single mcm
 
     # pylint: disable=unused-argument
     @classmethod

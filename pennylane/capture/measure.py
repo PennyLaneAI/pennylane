@@ -46,7 +46,7 @@ def _get_measure_primitive():
     measure_prim = jax.core.Primitive("measure")
     measure_prim.multiple_results = True
 
-    def trivial_processing(results):
+    def trivial_processing(*results):
         return results
 
     # pylint: disable=unused-argument

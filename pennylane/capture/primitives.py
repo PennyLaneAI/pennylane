@@ -183,6 +183,29 @@ def create_measurement_obs_primitive(
     return primitive
 
 
+def create_measurement_mcm_primitive(
+    measurement_type: type, name: str
+) -> Optional["jax.core.Primitive"]:
+    """Create a primitive corresponding to the input type where the abstract inputs are an operator."""
+    if not has_jax:
+        return None
+
+    primitive = jax.core.Primitive(name + "_mcm")
+
+    @primitive.def_impl
+    def _(*mcms, **kwargs):
+        return type.__call__(measurement_type, obs=mcms, **kwargs)
+
+    abstract_type = _get_abstract_measurement()
+
+    @primitive.def_abstract_eval
+    def _(*mcms, **__):
+        abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
+        return abstract_type(abstract_eval, n_wires=len(mcms))
+
+    return primitive
+
+
 def create_measurement_wires_primitive(
     measurement_type: type, name: str
 ) -> Optional["jax.core.Primitive"]:
@@ -193,15 +216,21 @@ def create_measurement_wires_primitive(
     primitive = jax.core.Primitive(name + "_wires")
 
     @primitive.def_impl
-    def _(*wires, **kwargs):
-        wires = qml.wires.Wires(wires)
-        return type.__call__(measurement_type, wires=wires, **kwargs)
+    def _(*args, has_eigvals=False, **kwargs):
+        if has_eigvals:
+            wires = args[:-1]
+            eigvals = args[-1]
+        else:
+            wires = qml.wires.Wires(args)
+            eigvals = None
+        return type.__call__(measurement_type, wires=wires, eigvals=eigvals**kwargs)
 
     abstract_type = _get_abstract_measurement()
 
     @primitive.def_abstract_eval
-    def _(*wires, **_):
+    def _(*args, has_eigvals=False, **_):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
-        return abstract_type(abstract_eval, n_wires=len(wires))
+        n_wires = len(args) - 1 if has_eigvals else len(args)
+        return abstract_type(abstract_eval, n_wires=n_wires)
 
     return primitive
