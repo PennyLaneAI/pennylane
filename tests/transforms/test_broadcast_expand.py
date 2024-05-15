@@ -22,8 +22,9 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 
-dev = qml.device("default.qubit", wires=2, seed=123)
-"""Defines the device used for all tests"""
+
+def get_device(name="default.qubit", wires=2, seed=123):
+    return qml.device(name, wires=wires, seed=seed)
 
 
 def make_ops(x, y, z):
@@ -64,9 +65,17 @@ def exp_fn_Y1(x, y, z):
     return out[0] if len(out) == 1 else out
 
 
-exp_fn_Z0Y1 = lambda x, y, z: exp_fn_Z0(x, y, z) * exp_fn_Y1(x, y, z)
-exp_fn_Z0_and_Y1 = lambda x, y, z: qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
-exp_fn_H0 = lambda x, y, z: exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
+def exp_fn_Z0Y1(x, y, z):
+    return exp_fn_Z0(x, y, z) * exp_fn_Y1(x, y, z)
+
+
+def exp_fn_Z0_and_Y1(x, y, z):
+    return qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
+
+
+def exp_fn_H0(x, y, z):
+    return exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
+
 
 observables_and_exp_fns = [
     ([qml.PauliZ(0)], exp_fn_Z0),
@@ -94,7 +103,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, dev, None))
+        result = fn(qml.execute(tapes, get_device(), None))
         expected = exp_fn(*params)
 
         assert qml.math.allclose(result, expected)
@@ -105,7 +114,7 @@ class TestBroadcastExpand:
         """Test that the transform integrates correctly with the transform program"""
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(dev)
+        @qml.qnode(get_device())
         def circuit(x, y, z, obs):
             qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
             _ = make_ops(x, y, z)
@@ -130,7 +139,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, dev, None))
+        result = fn(qml.execute(tapes, get_device(seed=1), None))
         expected = exp_fn(*params)
 
         assert len(result) == len(shots)
@@ -158,7 +167,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, dev, None))
+        result = fn(qml.execute(tapes, get_device(), None))
         assert len(result) == len(shots)
         for r in result:
             for i, _r in enumerate(r):
@@ -185,7 +194,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, dev, None))
+        result = fn(qml.execute(tapes, get_device(), None))
         assert len(result) == len(shots)
         for i, r in enumerate(result):
             for j, _r in enumerate(r):
@@ -216,7 +225,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, dev, None))
+        result = fn(qml.execute(tapes, get_device(), None))
         assert len(result) == len(shots)
         for r in result:
             for _r in r:
@@ -238,7 +247,7 @@ class TestBroadcastExpand:
         assert len(tapes) == 4
         assert all(t.batch_size is None for t in tapes)
 
-        result = fn(qml.execute(tapes, dev, None))
+        result = fn(qml.execute(tapes, get_device(), None))
         expected = np.array([1, -1, -1, 1])
 
         assert qml.math.allclose(result, expected)
@@ -273,7 +282,7 @@ class TestBroadcastExpand:
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qml.qnode(get_device(), interface="autograd", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
             return qml.math.stack([qml.expval(ob) for ob in obs])
@@ -302,7 +311,7 @@ class TestBroadcastExpand:
         params = tuple(jax.numpy.array(p) for p in params)
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(get_device(), interface="jax", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)
@@ -335,7 +344,7 @@ class TestBroadcastExpand:
         params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(dev, interface="tensorflow")
+        @qml.qnode(get_device(), interface="tensorflow")
         def cost(*params):
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)
@@ -368,7 +377,7 @@ class TestBroadcastExpand:
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        @qml.qnode(get_device(), interface="torch", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)
