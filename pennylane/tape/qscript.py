@@ -20,6 +20,7 @@ executed by a device.
 import contextlib
 import copy
 from collections import Counter
+from functools import cached_property
 from typing import List, Optional, Sequence, Union
 
 import pennylane as qml
@@ -190,9 +191,6 @@ class QuantumScript:
         self._specs = None
         self._output_dim = None
         self._batch_size = _UNSET_BATCH_SIZE
-
-        self.wires = _empty_wires
-        self.num_wires = 0
 
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
@@ -395,20 +393,18 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._update_circuit_info()  # Updates wires, num_wires; O(ops+obs)
         self._update_par_info()  # Updates _par_info; O(ops+obs)
-
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
 
-    def _update_circuit_info(self):
-        """Update circuit metadata
+    @cached_property
+    def wires(self) -> Wires:
+        "Wires used in the quantum script process"
+        return Wires.all_wires(dict.fromkeys(op.wires for op in self))
 
-        Sets:
-            wires (~.Wires): Wires
-            num_wires (int): Number of wires
-        """
-        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
-        self.num_wires = len(self.wires)
+    @property
+    def num_wires(self) -> int:
+        """Number of wires in the quantum script process"""
+        return len(self.wires)
 
     def _update_par_info(self):
         """Update the parameter information list. Each entry in the list with an operation and an index
@@ -835,8 +831,6 @@ class QuantumScript:
         )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
-        new_qscript.wires = copy.copy(self.wires)
-        new_qscript.num_wires = self.num_wires
         new_qscript._update_par_info()
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
