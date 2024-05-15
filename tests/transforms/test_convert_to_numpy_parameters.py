@@ -54,6 +54,10 @@ def test_convert_arrays_to_numpy(framework, shots):
     qs = qml.tape.QuantumScript(ops, m, shots=shots)
     new_qs, fn = convert_to_numpy_parameters(qs)
 
+    assert len(new_qs) == 1
+    assert isinstance(new_qs[0], qml.tape.QuantumScript)
+
+    new_qs = new_qs[0]
     # check ops that should be unaltered
     assert new_qs[3] is qs[3]
     assert new_qs[4] is qs[4]
@@ -77,7 +81,7 @@ def test_preserves_trainable_params():
     qs = qml.tape.QuantumScript(ops)
     qs.trainable_params = {0}
     output, _ = convert_to_numpy_parameters(qs)
-    assert output.trainable_params == [0]
+    assert output[0].trainable_params == [0]
 
 
 @pytest.mark.autograd

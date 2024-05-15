@@ -259,9 +259,9 @@ def _make_inner_execute(
     for the 1st order derivatives.
 
     Steps in between the ml framework execution and the device are:
-    - caching
-    - conversion to numpy
     - device expansion (old device)
+    - conversion to numpy
+    - caching
 
     For higher order derivatives, the "inner execute" will be another ml framework execute.
     """
@@ -282,14 +282,15 @@ def _make_inner_execute(
         """
         transform_program = qml.transforms.core.TransformProgram()
 
+        if numpy_only:
+            transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
+
         if cache is not None:
             transform_program.add_transform(_cache_transform, cache=cache)
 
         # TODO: Apply expand_fn() as transform.
         if expand_fn:
             tapes = tuple(expand_fn(t) for t in tapes)
-        if numpy_only:
-            transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
 
         transformed_tapes, transform_post_processing = transform_program(tapes)
 
