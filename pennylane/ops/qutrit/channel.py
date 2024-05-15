@@ -228,8 +228,7 @@ class QutritAmplitudeDamping(Channel):
     r"""
     Single-qutrit amplitude damping error channel.
     Interaction with the environment can lead to changes in the state populations of a qutrit.
-    This is the phenomenon behind scattering, dissipation, attenuation, and spontaneous emission.
-    It can be modelled by the amplitude damping channel, with the following Kraus matrices:
+    This can be modelled for qutrits by the qutrit amplitude damping channel, with the following Kraus matrices:
 
     .. math::
         K_0 = \begin{bmatrix}
