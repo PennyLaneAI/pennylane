@@ -203,6 +203,7 @@ class QutritDepolarizingChannel(Channel):
 
         w2 = w**2
 
+        # The matrices are explicitly written, not generated to ensure PyTorch differentiation.
         depolarizing_mats = [
             [[one, z, z], [z, w, z], [z, z, w2]],
             [[one, z, z], [z, w2, z], [z, z, w]],
