@@ -179,7 +179,9 @@ class QROM(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(b, target_wires, control_wires, work_wires, clean):
+    def compute_decomposition(
+        b, target_wires, control_wires, work_wires, clean
+    ):  # pylint: disable=arguments-differ
         # BasisEmbedding applied to embed the bitstrings
         with qml.QueuingManager.stop_recording():
             ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in b]
