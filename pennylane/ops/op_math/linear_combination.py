@@ -37,14 +37,9 @@ class LinearCombination(Sum):
     Args:
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
         observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
-        simplify (bool): Specifies whether the ``LinearCombination`` is simplified upon initialization
+        simplify (bool): **DEPRECATED** Specifies whether the ``LinearCombination`` is simplified upon initialization
                          (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
                          be differentiated when using the ``'torch'`` interface and ``simplify=True``.
-
-                            .. warning::
-                                The ``simplify`` argument is deprecated and will be removed in a future release.
-                                Instead, you can call ``qml.simplify`` on the constructed operator.
-
         grouping_type (str): If not ``None``, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -52,6 +47,11 @@ class LinearCombination(Sum):
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this ``LinearCombination`` instance
+
+    .. warning::
+        The ``simplify`` argument is deprecated and will be removed in a future release.
+        Instead, you can call ``qml.simplify`` on the constructed operator.
+
 
     **Example:**
 
