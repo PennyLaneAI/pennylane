@@ -183,7 +183,7 @@ class TestQutritAmplitudeDamping:
 
     @pytest.mark.parametrize("gamma1,gamma2", ((0.1, 0.2), (0.75, 0.75)))
     def test_gamma_arbitrary(self, gamma1, gamma2, tol):
-        """Test the correct correct Kraus matrices are returned, also ensures that sum of gammas can be over 1."""
+        """Test the correct correct Kraus matrices are returned, also ensures that the sum of gammas can be over 1."""
         K_0 = np.diag((1, np.sqrt(1 - gamma1), np.sqrt(1 - gamma2)))
 
         K_1 = np.zeros((3, 3))
@@ -193,7 +193,7 @@ class TestQutritAmplitudeDamping:
         K_2[0, 2] = np.sqrt(gamma2)
 
         expected = [K_0, K_1, K_2]
-        damping_channel = qml.QutritAmplitudeDamping(0.1, 0.2, wires=0)
+        damping_channel = qml.QutritAmplitudeDamping(gamma1, gamma2, wires=0)
         assert np.allclose(damping_channel.kraus_matrices(), expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("gamma1,gamma2", ((1.5, 0.0), (0.0, 1.0 + math.eps)))
