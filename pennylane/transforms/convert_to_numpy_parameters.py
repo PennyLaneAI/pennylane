@@ -55,7 +55,7 @@ def convert_to_numpy_parameters(tape: QuantumTape) -> Tuple[Sequence[QuantumTape
         circuit (QuantumScript): a circuit with parameters of any interface
 
     Returns:
-        QuantumScript: A circuit with purely numpy parameters
+        tuple[List[QuantumTape], function]: The transformed circuits along with a dummy post-processing function.
 
     .. seealso::
 
@@ -64,8 +64,8 @@ def convert_to_numpy_parameters(tape: QuantumTape) -> Tuple[Sequence[QuantumTape
 
     >>> ops = [qml.S(0), qml.RX(torch.tensor(0.1234), 0)]
     >>> measurements = [qml.state(), qml.expval(qml.Hermitian(torch.eye(2), 0))]
-    >>> circuit = qml.tape.QuantumScript(ops, measurements )
-    >>> new_circuit = convert_to_numpy_parameters(circuit)
+    >>> circuit = qml.tape.QuantumScript(ops, measurements)
+    >>> [new_circuit], _ = convert_to_numpy_parameters(circuit)
     >>> new_circuit.circuit
     [S(wires=[0]),
     RX(0.1234000027179718, wires=[0]),
