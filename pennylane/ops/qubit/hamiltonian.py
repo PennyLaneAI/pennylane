@@ -79,9 +79,9 @@ class Hamiltonian(Observable):
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
                          (like-terms are combined). The default value is `False`.
 
-                        .. warning::
-                            The ``simplify`` argument is deprecated and will be removed in a future release.
-                            Instead, you can call ``qml.simplify`` on the constructed operator.
+        .. warning::
+            The ``simplify`` argument is deprecated and will be removed in a future release.
+            Instead, you can call ``qml.simplify`` on the constructed operator.
 
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this

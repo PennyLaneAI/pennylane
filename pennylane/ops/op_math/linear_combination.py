@@ -41,9 +41,9 @@ class LinearCombination(Sum):
                          (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
                          be differentiated when using the ``'torch'`` interface and ``simplify=True``.
 
-            .. warning::
-                The ``simplify`` argument is deprecated and will be removed in a future release.
-                Instead, you can call ``qml.simplify`` on the constructed operator.
+                            .. warning::
+                                The ``simplify`` argument is deprecated and will be removed in a future release.
+                                Instead, you can call ``qml.simplify`` on the constructed operator.
 
         grouping_type (str): If not ``None``, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
