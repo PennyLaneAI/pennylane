@@ -75,7 +75,7 @@ class TestQutritDepolarizingChannel:
         dev = qml.device("default.qutrit.mixed")
         prob = pnp.array(0.5, requires_grad=True)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(p):
             qml.TRX(angle, wires=0, subspace=(0, 1))
             qml.TRX(angle, wires=0, subspace=(1, 2))
