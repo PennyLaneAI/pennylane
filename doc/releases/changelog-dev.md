@@ -103,6 +103,9 @@
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
+* ``qml.QutritAmplitudeDamping`` channel has been added, allowing for noises modeled ny amplitude damping to be simulated on the `default.qutrit.mixed` device.
+  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.transforms.map_batch_transform`` is deprecated, since a transform can be applied directly to a batch of tapes.
