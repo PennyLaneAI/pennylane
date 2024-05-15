@@ -37,7 +37,7 @@ packaging==24.0
 pathspec==0.12.1
 PennyLane_Lightning==0.37.0
 pillow==10.3.0
-platformdirs==4.2.1
+platformdirs==4.2.2
 pluggy==1.5.0
 pre-commit==3.7.1
 py==1.11.0
