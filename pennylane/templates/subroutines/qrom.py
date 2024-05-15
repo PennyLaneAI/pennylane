@@ -40,7 +40,8 @@ class QROM(Operation):
         clean (bool): if True, the work wires are not altered by operator, default is ``True``
 
     .. note::
-    The position of the bitstrings in the list determines which index store that bitstring.
+
+        The position of the bitstrings in the list determines which index store that bitstring.
 
     **Example**
 
