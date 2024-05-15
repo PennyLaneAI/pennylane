@@ -142,9 +142,9 @@ def transform(
             import pennylane as qml
 
             H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
-            measur = [qml.expval(H)]
-            ops = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
-            tape = qml.tape.QuantumTape(ops, measur)
+            measurement = [qml.expval(H)]
+            operations = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
+            tape = qml.tape.QuantumTape(operations, measurement)
 
             batch1, function1 = qml.transforms.hamiltonian_expand(tape)
             batch2, function2 = qml.transforms.merge_rotations(batch1)
