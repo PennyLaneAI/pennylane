@@ -223,40 +223,45 @@ class QutritDepolarizingChannel(Channel):
         return [identity] + Ks
 
 
-class QutritAmplitudeDampingChannel(Channel):
+class QutritAmplitudeDamping(Channel):
     r"""
     Single-qutrit amplitude damping error channel.
-    Interaction with the environment can lead to changes in the state populations of a qubit.
+    Interaction with the environment can lead to changes in the state populations of a qutrit.
     This is the phenomenon behind scattering, dissipation, attenuation, and spontaneous emission.
     It can be modelled by the amplitude damping channel, with the following Kraus matrices:
+
     .. math::
         K_0 = \begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \sqrt{1-\gamma_1} & 0 \\
                 0 & 0 & \sqrt{1-\gamma_2}
-                \end{bmatrix}
-    .. math::
+                \end{bmatrix}, \quad
         K_1 = \begin{bmatrix}
                 0 & \sqrt{\gamma_1} & 0 \\
                 0 & 0 & 0 \\
                 0 & 0 & 0
-                \end{bmatrix}
-    .. math::
+                \end{bmatrix}, \quad
         K_2 = \begin{bmatrix}
                 0 & 0 & \sqrt{\gamma_2} \\
                 0 & 0 & 0 \\
                 0 & 0 & 0
                 \end{bmatrix}
-    where :math:`\gamma \in [0, 1]` is the amplitude damping probability.
+    where :math:`\gamma_1 \in [0, 1]` and :math:`\gamma_2 \in [0, 1]` are the amplitude damping
+    probabilities for subspaces (0,1) and (0,2) respectively.
+
+    .. note::
+        The Kraus operators :math:`\{K_0, K_1, K_2\}` are adapted from [`1 <https://doi.org/10.48550/arXiv.1905.10481>`_] (Eq. 8).
+
     **Details:**
     * Number of wires: 1
-    * Number of parameters: 1
+    * Number of parameters: 2
     Args:
-        gamma (float): amplitude damping probability
+        gamma_1 (float): :math:`|1 \rangle \rightarrow |0 \rangle` amplitude damping probability.
+        gamma_2 (float): :math:`|2 \rangle \rightarrow |0 \rangle` amplitude damping probability.
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
-    num_params = 1
+    num_params = 2
     num_wires = 1
     grad_method = "F"
 
@@ -265,14 +270,14 @@ class QutritAmplitudeDampingChannel(Channel):
 
     @staticmethod
     def compute_kraus_matrices(gamma_1, gamma_2):  # pylint:disable=arguments-differ
-        """Kraus matrices representing the AmplitudeDamping channel.
+        r"""Kraus matrices representing the AmplitudeDamping channel.
         Args:
-            gamma_1 (float): amplitude damping probability #TODO
-            gamma_2 (float): amplitude damping probability
+            gamma_1 (float): :math:`|1\rangle \rightarrow |0\rangle` amplitude damping probability.
+            gamma_2 (float): :math:`|2\rangle \rightarrow |0\rangle` amplitude damping probability.
         Returns:
             list(array): list of Kraus matrices
         **Example**
-        >>> qml.QutritAmplitudeDampingChannel.compute_kraus_matrices(0.25, 0.25) #TODO
+        >>> qml.QutritAmplitudeDamping.compute_kraus_matrices(0.5, 0.25)
         [
         array([ [1.        , 0.        , 0.        ],
                 [0.        , 0.70710678, 0.        ],
@@ -285,9 +290,6 @@ class QutritAmplitudeDampingChannel(Channel):
                 [0.        , 0.        , 0.        ]])
         ]
         """
-        if type(gamma_1) != type(gamma_2):
-            raise ValueError("p1, p2, and p3 should be of the same type")
-
         if not math.is_abstract(gamma_1):
             for gamma in (gamma_1, gamma_2):
                 if not 0.0 <= gamma <= 1.0:
@@ -303,11 +305,3 @@ class QutritAmplitudeDampingChannel(Channel):
             math.cast_like(math.array([[0, 0, 1], [0, 0, 0], [0, 0, 0]]), gamma_2), gamma_2
         )
         return [K0, K1, K2]
-
-
-__qutrit_channels__ = {
-    "QutritDepolarizingChannel",
-    "QutritAmplitudeDampingChannel",
-}
-
-__all__ = list(__qutrit_channels__)
