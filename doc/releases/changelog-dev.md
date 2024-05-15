@@ -82,6 +82,11 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+<h4>Community contributions 🥳</h4>
+
+* Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
+  [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
@@ -128,4 +133,5 @@ Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
 Vincent Michaud-Rioux,
+Kenya Sakka,
 David Wierichs.
