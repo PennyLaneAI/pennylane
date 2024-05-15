@@ -312,9 +312,6 @@ ar.register_function(
         _i("tf").cast(x, "float64") if x.dtype.name in ("int64", "int32") else x
     ),
 )
-ar.register_function(
-    "tensorflow", "var", lambda tensor, **kwargs: _i("tf").math.reduce_variance(tensor, **kwargs)
-)
 
 
 def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
