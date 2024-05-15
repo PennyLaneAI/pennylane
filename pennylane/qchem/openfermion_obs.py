@@ -864,7 +864,7 @@ def molecular_hamiltonian(*args, **kwargs):
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
     .. warning::
-        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is deprecated. Instead, please use function with ``qml.Molecule`` object``.
+        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated. Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at _Usage Details_ for more details on the old interface. 
 
     .. details::
         :title: Usage Details
