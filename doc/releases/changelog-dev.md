@@ -4,6 +4,31 @@
 
 <h3>New features since last release</h3>
 
+* QROM template is added. This template allows you to enter classic data in the form of bitstrings.
+  [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
+
+  ```python
+  bitstrings = ["010", "111", "110", "000"]
+
+  dev = qml.device("default.qubit", shots = 1)
+  @qml.qnode(dev)
+  def circuit():
+
+    # third index
+    qml.BasisEmbedding(2, wires = [0,1])
+
+    qml.QROM(b = bitstrings,
+            control_wires = [0,1],
+            target_wires = [2,3,4],
+            work_wires = [5,6,7])
+
+    return qml.sample(wires = [2,3,4])
+  ```
+   ```pycon
+  >>> print(circuit())
+  [1 1 0]
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.

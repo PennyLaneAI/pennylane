@@ -65,7 +65,9 @@ class TestQROM:
             ),
         ],
     )
-    def test_operation_result(self, b, target_wires, control_wires, work_wires, clean):
+    def test_operation_result(
+        self, b, target_wires, control_wires, work_wires, clean
+    ):  # pylint: disable=arguments-differ
         """Test the correctness of the Select template output."""
         dev = qml.device("default.qubit", shots=1)
 

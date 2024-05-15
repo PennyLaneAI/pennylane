@@ -23,6 +23,65 @@ from pennylane.operation import Operation
 
 
 class QROM(Operation):
+    r"""Applies the QROM operator.
+
+    This operator encodes bitstrings associated with indexes:
+
+    .. math::
+        \text{QROM}|i\rangle|0\rangle = |i\rangle |b_i\rangle,
+
+    where :math:`b_i` is the bitstring associated with index :math:`i`.
+
+    Args:
+        b (list[str]): the bitstrings to be encoded
+        target_wires (Sequence[int]): the wires where the bitstring is loaded
+        control_wires (Sequence[int]): the wires where the indexes are specified
+        work_wires (Sequence[int]): the auxiliar wires used for the computation
+        clean (bool): if True, the work wires are not altered by operator, default is ``True``
+
+    .. note::
+    The position of the bitstrings in the list determines which index store that bitstring.
+
+    **Example**
+
+    In this example the QROM is applied and the target wires are measured to get the third bitstring.
+
+    .. code-block::
+
+        bitstrings = ["010", "111", "110", "000"]
+
+        dev = qml.device("default.qubit", shots = 1)
+
+        @qml.qnode(dev)
+        def circuit():
+
+            # third index
+            qml.BasisEmbedding(2, wires = [0,1])
+
+            qml.QROM(b = bitstrings,
+                    control_wires = [0,1],
+                    target_wires = [2,3,4],
+                    work_wires = [5,6,7])
+
+          return qml.sample(wires = [2,3,4])
+
+    .. code-block:: pycon
+
+        >>> print(circuit())
+        [1 1 0]
+
+
+    .. details::
+        :title: Usage Details
+
+        The ``work_wires`` are the auxiliary qubits used by the template. If :math:`m` is the number of target wires,
+        :math:`m \cdot 2^{\lambda-1}` work wires can be used, where :math:`\lambda` is the number of bitstrings
+        we want to store per column. In case it is not a power of two, this template uses the closest approximation.
+        See `arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__ for more information.
+
+        The version applied by setting ``clean = True`` is able to work with ``work_wires`` that are not initialized to zero.
+        In `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__ you could find more details.
+    """
 
     def _flatten(self):
         data = (self.hyperparameters["b"],)
