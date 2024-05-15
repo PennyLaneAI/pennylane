@@ -15,9 +15,10 @@
 This submodule contains the template for QROM.
 """
 
-import numpy as np
+
 import math
 import copy
+import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 
