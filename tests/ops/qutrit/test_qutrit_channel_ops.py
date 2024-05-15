@@ -119,16 +119,12 @@ class TestQutritDepolarizingChannel:
     @staticmethod
     def kraus_fn_real(p):
         """Gets a matrix of the real part of the Kraus matrices to be tested."""
-        return math.real(
-            math.stack(channel.QutritDepolarizingChannel(p, wires=0).kraus_matrices())
-        )
+        return math.real(math.stack(channel.QutritDepolarizingChannel(p, wires=0).kraus_matrices()))
 
     @staticmethod
     def kraus_fn_imag(p):
         """Gets a matrix of the imaginary part of the Kraus matrices to be tested."""
-        return math.imag(
-            math.stack(channel.QutritDepolarizingChannel(p, wires=0).kraus_matrices())
-        )
+        return math.imag(math.stack(channel.QutritDepolarizingChannel(p, wires=0).kraus_matrices()))
 
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
@@ -199,7 +195,9 @@ class TestQutritAmplitudeDamping:
         damping_channel = qml.QutritAmplitudeDamping(0.1, 0.2, wires=0)
         assert np.allclose(damping_channel.kraus_matrices(), expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("gamma1,gamma2", ((1.5, 0.), (0., 1.5), (0.75, 0.75), (1.0, math.eps)))
+    @pytest.mark.parametrize(
+        "gamma1,gamma2", ((1.5, 0.0), (0.0, 1.5), (0.75, 0.75), (1.0, math.eps))
+    )
     def test_gamma_invalid_parameter(self, gamma1, gamma2):
         """Ensures that error is thrown when gamma_1, gamma_2, or their sum are outside [0,1]"""
         with pytest.raises(ValueError, match="must be in the interval"):
