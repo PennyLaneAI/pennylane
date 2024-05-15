@@ -275,8 +275,19 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
-        if has_mcm:
-            kwargs["mid_measurements"] = {}
+        if has_mcm and "mid_measurements" not in kwargs:
+            results = []
+            aux_circ = qml.tape.QuantumScript(
+                circuit.operations,
+                circuit.measurements,
+                shots=[1],
+                trainable_params=circuit.trainable_params,
+            )
+            for _ in circuit.shots:
+                kwargs["mid_measurements"] = {}
+                self.reset()
+                results.append(self.execute(aux_circ, **kwargs))
+            return tuple(results)
         # apply all circuit operations
         self.apply(
             circuit.operations,

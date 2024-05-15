@@ -6,8 +6,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
+  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
+  [(#5617)](https://github.com/PennyLaneAI/pennylane/pull/5617)
+  
 * The `dynamic_one_shot` transform can be compiled with `jax.jit`.
   [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
   
@@ -68,6 +74,10 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* PennyLane operators can now automatically be captured as instructions in JAXPR. See the experimental
+  `capture` module for more information.
+  [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
@@ -84,7 +94,7 @@
 
 * ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
   [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
-  
+
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
@@ -92,11 +102,24 @@
 
 <h3>Documentation 📝</h3>
 
+* A small typo was fixed in the docstring for `qml.sample`.
+  [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
 <h3>Bug fixes 🐛</h3>
 
-* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
-  with circuits with non-commuting measurements.
+* Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
+  [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
+
+* `qml.Projector` is now compatible with jax-jit.
+  [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
+
+* Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
+  [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
+  
+* `param_shift`, `finite_diff`, `compile`, `insert`, `merge_rotations`, and `transpile` now
+  all work with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
+  [(#5681)](https://github.com/PennyLaneAI/pennylane/pull/5681)
 
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
@@ -105,6 +128,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
