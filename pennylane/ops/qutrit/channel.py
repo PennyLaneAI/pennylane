@@ -251,17 +251,21 @@ class QutritAmplitudeDamping(Channel):
     probabilities for subspaces (0,1) and (0,2) respectively.
 
     .. note::
+
         The Kraus operators :math:`\{K_0, K_1, K_2\}` are adapted from [`1 <https://doi.org/10.48550/arXiv.1905.10481>`_] (Eq. 8).
 
     **Details:**
+
     * Number of wires: 1
     * Number of parameters: 2
+
     Args:
         gamma_1 (float): :math:`|1 \rangle \rightarrow |0 \rangle` amplitude damping probability.
         gamma_2 (float): :math:`|2 \rangle \rightarrow |0 \rangle` amplitude damping probability.
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
@@ -272,12 +276,16 @@ class QutritAmplitudeDamping(Channel):
     @staticmethod
     def compute_kraus_matrices(gamma_1, gamma_2):  # pylint:disable=arguments-differ
         r"""Kraus matrices representing the AmplitudeDamping channel.
+
         Args:
             gamma_1 (float): :math:`|1\rangle \rightarrow |0\rangle` amplitude damping probability.
             gamma_2 (float): :math:`|2\rangle \rightarrow |0\rangle` amplitude damping probability.
+
         Returns:
             list(array): list of Kraus matrices
+
         **Example**
+
         >>> qml.QutritAmplitudeDamping.compute_kraus_matrices(0.5, 0.25)
         [
         array([ [1.        , 0.        , 0.        ],
