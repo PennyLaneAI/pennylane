@@ -40,7 +40,7 @@ class LinearCombination(Sum):
         simplify (bool): Specifies whether the ``LinearCombination`` is simplified upon initialization
                          (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
                          be differentiated when using the ``'torch'`` interface and ``simplify=True``.
-                        .. warning::
+                         .. warning::
                             The ``simplify`` argument is deprecated and will be removed in a future release.
                             Instead, you can call ``qml.simplify`` on the constructed operator.
 
