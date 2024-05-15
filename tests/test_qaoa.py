@@ -15,32 +15,29 @@
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import itertools
-import pytest
-import numpy as np
 
 import networkx as nx
-from networkx import Graph
+import numpy as np
+import pytest
 import rustworkx as rx
-
+from networkx import Graph
 from scipy.linalg import expm
 from scipy.sparse import csc_matrix, kron
 
 import pennylane as qml
 from pennylane import qaoa
-
 from pennylane.qaoa.cycle import (
-    edges_to_wires,
-    wires_to_edges,
     _inner_net_flow_constraint_hamiltonian,
-    net_flow_constraint,
-    loss_hamiltonian,
+    _inner_out_flow_constraint_hamiltonian,
+    _partial_cycle_mixer,
     _square_hamiltonian_terms,
     cycle_mixer,
-    _partial_cycle_mixer,
+    edges_to_wires,
+    loss_hamiltonian,
+    net_flow_constraint,
     out_flow_constraint,
-    _inner_out_flow_constraint_hamiltonian,
+    wires_to_edges,
 )
-
 
 #####################################################
 
@@ -1166,12 +1163,12 @@ def make_mixer_layer_test_cases():
         [
             qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
             [
-                qml.PauliRot(1.0, "XX", wires=[1, 0]),
-                qml.PauliRot(1.0, "YY", wires=[1, 0]),
-                qml.PauliRot(1.0, "XX", wires=[2, 0]),
-                qml.PauliRot(1.0, "YY", wires=[2, 0]),
-                qml.PauliRot(1.0, "XX", wires=[2, 1]),
-                qml.PauliRot(1.0, "YY", wires=[2, 1]),
+                qml.PauliRot(1.0, "XX", wires=[0, 1]),
+                qml.PauliRot(1.0, "YY", wires=[0, 1]),
+                qml.PauliRot(1.0, "XX", wires=[0, 2]),
+                qml.PauliRot(1.0, "YY", wires=[0, 2]),
+                qml.PauliRot(1.0, "XX", wires=[1, 2]),
+                qml.PauliRot(1.0, "YY", wires=[1, 2]),
             ],
         ],
     ]
@@ -1186,9 +1183,9 @@ def make_cost_layer_test_cases():
         [
             qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
             [
-                qml.PauliRot(1.0, "ZZ", wires=[1, 0]),
-                qml.PauliRot(1.0, "ZZ", wires=[2, 0]),
-                qml.PauliRot(1.0, "ZZ", wires=[2, 1]),
+                qml.PauliRot(1.0, "ZZ", wires=[0, 1]),
+                qml.PauliRot(1.0, "ZZ", wires=[0, 2]),
+                qml.PauliRot(1.0, "ZZ", wires=[1, 2]),
             ],
         ],
     ]
@@ -2018,6 +2015,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_inner_out_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with

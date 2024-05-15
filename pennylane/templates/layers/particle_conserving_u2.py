@@ -16,7 +16,7 @@ Contains the hardware-efficient ParticleConservingU2 template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 def u2_ex_gate(phi, wires=None):
@@ -93,9 +93,9 @@ class ParticleConservingU2(Operation):
         weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
             layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
             ``(N-1)`` gates per layer.
-        wires (Iterable): wires that the template acts on
+        wires (Iterable): wires that the template acts on.
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
-            used to initialize the wires.
+            used to initialize the wires. If ``None``, a tuple of zeros is selected as initial state.
 
     .. details::
         :title: Usage Details
@@ -170,6 +170,8 @@ class ParticleConservingU2(Operation):
             raise ValueError(
                 f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
             )
+
+        init_state = tuple(0 for _ in wires) if init_state is None else init_state
 
         self._hyperparameters = {"init_state": tuple(init_state)}
 

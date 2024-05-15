@@ -15,10 +15,11 @@
 Unit tests for the ``AdaptiveOptimizer``.
 """
 import copy
+
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 
 symbols = ["H", "H", "H"]
 geometry = np.array(
@@ -118,7 +119,7 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qml.AdaptiveOptimizer()
     for _ in range(4):
-        circuit, energy, __ = opt.step_and_cost(circuit, pool, drain_pool=False)
+        circuit, energy, _ = opt.step_and_cost(circuit, pool, drain_pool=False)
 
     circuit()
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]

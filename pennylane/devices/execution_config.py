@@ -38,7 +38,7 @@ class ExecutionConfig:
     use_device_gradient: Optional[bool] = None
     """Whether or not to compute the gradient on the device.
 
-    ``None`` indicates to use the device if possible, but to fall back to pennylane behavior if it isn't.
+    ``None`` indicates to use the device if possible, but to fall back to pennylane behaviour if it isn't.
 
     True indicates a request to either use the device gradient or fail.
     """

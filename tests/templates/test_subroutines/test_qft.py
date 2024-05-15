@@ -14,11 +14,10 @@
 """
 Unit tests for the qft template.
 """
-import pytest
-
 import numpy as np
-
+import pytest
 from gate_data import QFT
+
 import pennylane as qml
 
 

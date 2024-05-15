@@ -17,26 +17,25 @@ Tests for the controlled decompositions.
 
 import itertools
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
+from pennylane import math
 from pennylane.ops import ctrl_decomp_zyz
-from pennylane.wires import Wires
+from pennylane.ops.op_math.controlled import Controlled
 from pennylane.ops.op_math.controlled_decompositions import (
-    _ctrl_decomp_bisect_od,
-    _ctrl_decomp_bisect_md,
-    _ctrl_decomp_bisect_general,
-    ctrl_decomp_bisect,
-    _convert_to_su2,
     _bisect_compute_a,
     _bisect_compute_b,
-    _decompose_mcx_with_one_worker,
+    _convert_to_su2,
+    _ctrl_decomp_bisect_general,
+    _ctrl_decomp_bisect_md,
+    _ctrl_decomp_bisect_od,
     _decompose_mcx_with_many_workers,
+    _decompose_mcx_with_one_worker,
+    ctrl_decomp_bisect,
 )
-from pennylane.ops.op_math.controlled import (
-    Controlled,
-)
-from pennylane import math
+from pennylane.wires import Wires
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
 

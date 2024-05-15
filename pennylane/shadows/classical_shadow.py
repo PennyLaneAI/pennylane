@@ -18,6 +18,7 @@ from collections.abc import Iterable
 from string import ascii_letters as ABC
 
 import numpy as np
+
 import pennylane as qml
 
 
@@ -282,7 +283,7 @@ class ClassicalShadow:
             return self._convert_to_pauli_words_with_pauli_rep(pr, num_wires)
 
         raise ValueError(
-            "Observable must have a valid pauli representation. Recevied {observable} with observable.pauli_rep = {pr}"
+            f"Observable must have a valid pauli representation. Received {observable} with observable.pauli_rep = {pr}"
         )
 
     def expval(self, H, k=1):

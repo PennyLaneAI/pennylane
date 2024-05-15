@@ -26,17 +26,24 @@ from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.capture
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose
+from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
-from pennylane.fermi import FermiC, FermiA, jordan_wigner
+from pennylane.fermi import (
+    FermiC,
+    FermiA,
+    jordan_wigner,
+    parity_transform,
+    bravyi_kitaev,
+)
 from pennylane.qchem import (
     taper,
     symmetry_generators,
@@ -388,7 +395,7 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
-            if isinstance(dev, pennylane.Device):
+            if isinstance(dev, pennylane.devices.LegacyDevice):
                 custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
                     custom_decomps, dev, decomp_depth=decomp_depth
                 )

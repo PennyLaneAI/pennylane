@@ -22,24 +22,24 @@ from typing import Union
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
-from pennylane.measurements.mid_measure import MidMeasureMP, MeasurementValue
+from pennylane.measurements.counts import CountsMP
+from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.measurements.counts import CountsMP
-from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import (
+    Adjoint,
+    CompositeOp,
+    Controlled,
+    Exp,
     Hamiltonian,
     LinearCombination,
-    Controlled,
     Pow,
-    Adjoint,
-    Exp,
     SProd,
-    CompositeOp,
 )
-from pennylane.templates.subroutines import ControlledSequence
+from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumTape
+from pennylane.templates.subroutines import ControlledSequence
 
 
 def equal(
@@ -49,7 +49,7 @@ def equal(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-):
+) -> bool:
     r"""Function for determining operator or measurement equality.
 
     .. Warning::
@@ -163,7 +163,7 @@ def equal(
     if isinstance(op2, (Hamiltonian, Tensor)):
         return _equal(op2, op1)
 
-    return _equal(
+    dispatch_result = _equal(
         op1,
         op2,
         check_interface=check_interface,
@@ -171,6 +171,91 @@ def equal(
         atol=atol,
         rtol=rtol,
     )
+    if isinstance(dispatch_result, str):
+        return False
+    return dispatch_result
+
+
+def assert_equal(
+    op1: Union[Operator, MeasurementProcess, QuantumTape],
+    op2: Union[Operator, MeasurementProcess, QuantumTape],
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+) -> None:
+    """Function to assert that two operators are equal with the requested configuration.
+
+    Args:
+        op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
+        op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
+            Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
+            Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        atol (float, optional): Absolute tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+
+    Returns:
+        None
+
+    Raises:
+
+        AssertionError: An ``AssertionError`` is raised if the two operators are not equal.
+
+    .. warning::
+
+        This function is still under developement.
+
+    .. see-also::
+
+        :func:`~.equal`
+
+    >>> mat1 = qml.IsingXX.compute_matrix(0.1)
+    >>> op1 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat1)
+    >>> mat2 = qml.IsingXX.compute_matrix(0.2)
+    >>> op2 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat2)
+    >>> assert_equal(op1, op2)
+    AssertionError: The hyperparameter unitary_matrix is not equal for op1 and op2.
+    Got [[0.99875026+0.j         0.        +0.j         0.        +0.j
+    0.        -0.04997917j]
+    [0.        +0.j         0.99875026+0.j         0.        -0.04997917j
+    0.        +0.j        ]
+    [0.        +0.j         0.        -0.04997917j 0.99875026+0.j
+    0.        +0.j        ]
+    [0.        -0.04997917j 0.        +0.j         0.        +0.j
+    0.99875026+0.j        ]]
+    and [[0.99500417+0.j         0.        +0.j         0.        +0.j
+    0.        -0.09983342j]
+    [0.        +0.j         0.99500417+0.j         0.        -0.09983342j
+    0.        +0.j        ]
+    [0.        +0.j         0.        -0.09983342j 0.99500417+0.j
+    0.        +0.j        ]
+    [0.        -0.09983342j 0.        +0.j         0.        +0.j
+    0.99500417+0.j        ]].
+    >>> mat3 = qml.numpy.array(0.3)
+    >>> op3 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat3)
+    >>> assert_equal(op1, op3)
+    AssertionError: The hyperparameter unitary_matrix has different interfaces for op1 and op2. Got numpy and autograd.
+
+    """
+    if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
+        raise AssertionError(
+            f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
+        )
+
+    dispatch_result = _equal(
+        op1,
+        op2,
+        check_interface=check_interface,
+        check_trainability=check_trainability,
+        atol=atol,
+        rtol=rtol,
+    )
+    if isinstance(dispatch_result, str):
+        raise AssertionError(dispatch_result)
+    if not dispatch_result:
+        raise AssertionError(f"{op1} and {op2} are not equal for an unspecified reason.")
 
 
 @singledispatch
@@ -181,7 +266,7 @@ def _equal(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-):  # pylint: disable=unused-argument
+) -> Union[bool, str]:  # pylint: disable=unused-argument
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
@@ -531,12 +616,61 @@ def _equal_basis_rotation(
         atol=atol,
         rtol=rtol,
     ):
-        return False
+        return (
+            "The hyperparameter unitary_matrix is not equal for op1 and op2.\n"
+            f"Got {op1.hyperparameters['unitary_matrix']}\n and {op2.hyperparameters['unitary_matrix']}."
+        )
     if op1.wires != op2.wires:
-        return False
+        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
     if check_interface:
-        if qml.math.get_interface(op1.hyperparameters["unitary_matrix"]) != qml.math.get_interface(
-            op2.hyperparameters["unitary_matrix"]
-        ):
-            return False
+        interface1 = qml.math.get_interface(op1.hyperparameters["unitary_matrix"])
+        interface2 = qml.math.get_interface(op2.hyperparameters["unitary_matrix"])
+        if interface1 != interface2:
+            return (
+                "The hyperparameter unitary_matrix has different interfaces for op1 and op2."
+                f" Got {interface1} and {interface2}."
+            )
+    return True
+
+
+@_equal.register
+def _equal_hilbert_schmidt(
+    op1: qml.HilbertSchmidt,
+    op2: qml.HilbertSchmidt,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    if not all(
+        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
+    ):
+        return False
+
+    if check_trainability:
+        for params_1, params_2 in zip(op1.data, op2.data):
+            if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
+                return False
+
+    if check_interface:
+        for params_1, params_2 in zip(op1.data, op2.data):
+            if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
+                return False
+
+    equal_kwargs = {
+        "check_interface": check_interface,
+        "check_trainability": check_trainability,
+        "atol": atol,
+        "rtol": rtol,
+    }
+    # Check hyperparameters using qml.equal rather than == where necessary
+    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
+        return False
+    if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
+        return False
+    if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
+        return False
+    if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
+        return False
+
     return True

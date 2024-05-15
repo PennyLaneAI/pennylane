@@ -84,7 +84,7 @@ def pow(base, z=1, lazy=True, id=None):
     >>> qml.pow(qml.X(0), 2, lazy=False)
     I(0)
 
-    Lazy behavior can also be accessed via ``op ** z``.
+    Lazy behaviour can also be accessed via ``op ** z``.
 
     """
     if lazy:
@@ -262,6 +262,11 @@ class Pow(ScalarSymbolicOp):
             self.base.pow(self.z)
         except PowUndefinedError:
             return False
+        except Exception as e:  # pylint: disable=broad-except
+            # some pow methods cant handle a batched z
+            if qml.math.ndim(self.z) != 0:
+                return False
+            raise e
         return True
 
     def decomposition(self):
@@ -274,6 +279,8 @@ class Pow(ScalarSymbolicOp):
                 return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
+            raise DecompositionUndefinedError from e
+        except Exception as e:  # pylint: disable=broad-except
             raise DecompositionUndefinedError from e
 
     @property

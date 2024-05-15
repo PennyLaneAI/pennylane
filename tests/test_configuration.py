@@ -22,7 +22,6 @@ import toml
 import pennylane as qml
 from pennylane import Configuration
 
-
 config_filename = "default_config.toml"
 
 

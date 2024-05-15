@@ -291,7 +291,7 @@ PennyLane device capabilities.
 >>> transformed_qnode(*pars)
 tensor([0.90165331, 0.09834669], requires_grad=True)
 
-The decorator syntax applies equally well:
+``qml.defer_measurements`` can be applied as decorator equally well:
 
 .. code-block:: python
 
@@ -300,16 +300,28 @@ The decorator syntax applies equally well:
     def qnode(x, y):
         (...)
 
+    @qml.defer_measurements
+    @qml.qnode(dev)
+    def qnode(x, y):
+        (...)
+
+.. note::
+
+    The deferred measurements principle requires an additional wire, or qubit, for each mid-circuit
+    measurement, limiting the number of measurements that can be used both on classical simulators
+    and quantum hardware. The one-shot transform below does not have this limitation, but has
+    computational cost that scales with the number of shots used.
+
 The one-shot transform
 **********************
 
 Devices supporting mid-circuit measurements (defined using
 :func:`~.pennylane.measure`) and conditional operations (defined using
 :func:`~.pennylane.cond`) natively can estimate dynamic circuits by executing
-them one shot at a time. This is the default behaviour of a `~.pennylane.QNode` that has a
-device supporting mid-circuit measurements, as well as any `~.pennylane.QNode` with the
+them one shot at a time. This is the default behaviour of a :class:`~.pennylane.QNode` that has a
+device supporting mid-circuit measurements, as well as any :class:`~.pennylane.QNode` with the
 :func:`~.pennylane.dynamic_one_shot` quantum function transform.
-As the name suggests, this transform only works for a `~.pennylane.QNode` executing with finite shots
+As the name suggests, this transform only works for a :class:`~.pennylane.QNode` executing with finite shots
 and it will raise an error if the device does not support mid-circuit measurements
 natively.
 The :func:`~.pennylane.defer_measurements` transform therefore remains the default for
@@ -365,8 +377,9 @@ Conditional operators
 *********************
 
 Users can create conditional operators controlled on mid-circuit measurements using
-:func:`~.pennylane.cond`. We can also specify an outcome when defining a conditional
-operation:
+:func:`~.pennylane.cond`. The condition for a conditional operator may simply be
+the measured value returned by a ``measure()`` call, or we may construct a boolean
+condition based on such values and pass it to ``cond()``:
 
 .. code-block:: python
 
@@ -422,6 +435,8 @@ documentation.
 
     Currently, postselection support is only available on :class:`~.pennylane.devices.DefaultQubit`. Using
     postselection on other devices will raise an error.
+
+.. _mid_circuit_measurements_statistics:
 
 Mid-circuit measurement statistics
 **********************************

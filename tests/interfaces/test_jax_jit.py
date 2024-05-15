@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the JAX-JIT interface"""
+import numpy as np
+
 # pylint: disable=protected-access,too-few-public-methods
 import pytest
 
-import numpy as np
-
 import pennylane as qml
+from pennylane import execute
 from pennylane.gradients import param_shift
 from pennylane.typing import TensorLike
-from pennylane import execute
 
 pytestmark = pytest.mark.jax
 
@@ -811,7 +811,7 @@ class TestVectorValuedJIT:
                 qml.RY(a[2], wires=0)
                 qml.sample(qml.PauliZ(0))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=dev.shots)
 
             res = qml.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res

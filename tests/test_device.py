@@ -14,12 +14,13 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
-from importlib import metadata, reload
 from collections import OrderedDict
+from importlib import metadata, reload
 from sys import version_info
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import Device, DeviceError
 from pennylane.wires import Wires
@@ -28,36 +29,6 @@ mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
 
 # pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
-
-
-@pytest.fixture(scope="function")
-def mock_device_with_operations(monkeypatch):
-    """A function to create a mock device with non-empty operations"""
-    with monkeypatch.context() as m:
-        m.setattr(Device, "__abstractmethods__", frozenset())
-        m.setattr(Device, "operations", mock_device_paulis)
-        m.setattr(Device, "observables", mock_device_paulis)
-        m.setattr(Device, "short_name", "MockDevice")
-
-        def get_device(wires=1):
-            return Device(wires=wires)
-
-        yield get_device
-
-
-@pytest.fixture(scope="function")
-def mock_device_with_observables(monkeypatch):
-    """A function to create a mock device with non-empty observables"""
-    with monkeypatch.context() as m:
-        m.setattr(Device, "__abstractmethods__", frozenset())
-        m.setattr(Device, "operations", mock_device_paulis)
-        m.setattr(Device, "observables", mock_device_paulis)
-        m.setattr(Device, "short_name", "MockDevice")
-
-        def get_device(wires=1):
-            return Device(wires=wires)
-
-        yield get_device
 
 
 @pytest.fixture(scope="function")
@@ -203,19 +174,15 @@ def mock_device(monkeypatch):
 
 
 @pytest.fixture(scope="function")
-def mock_device_arbitrary_wires(monkeypatch):
+def mock_device_supporting_prod(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(Device, "__abstractmethods__", frozenset())
         m.setattr(Device, "_capabilities", mock_device_capabilities)
-        m.setattr(Device, "operations", ["PauliY", "RX", "Rot"])
-        m.setattr(Device, "observables", ["PauliZ"])
+        m.setattr(Device, "operations", ["PauliX", "PauliZ"])
+        m.setattr(Device, "observables", ["PauliX", "PauliZ", "Prod"])
         m.setattr(Device, "short_name", "MockDevice")
-        m.setattr(Device, "expval", lambda self, x, y, z: 0)
-        m.setattr(Device, "var", lambda self, x, y, z: 0)
-        m.setattr(Device, "sample", lambda self, x, y, z: 0)
-        m.setattr(Device, "apply", lambda self, x, y, z: None)
 
-        def get_device(wires):
+        def get_device(wires=1):
             return Device(wires=wires)
 
         yield get_device
@@ -245,11 +212,11 @@ class TestDeviceSupportedLogic:
 
     # pylint: disable=no-self-use, redefined-outer-name
 
-    def test_supports_operation_argument_types(self, mock_device_with_operations):
+    def test_supports_operation_argument_types(self, mock_device_supporting_paulis):
         """Checks that device.supports_operations returns the correct result
         when passed both string and Operation class arguments"""
 
-        dev = mock_device_with_operations()
+        dev = mock_device_supporting_paulis()
 
         assert dev.supports_operation("PauliX")
         assert dev.supports_operation(qml.PauliX)
@@ -257,10 +224,10 @@ class TestDeviceSupportedLogic:
         assert not dev.supports_operation("S")
         assert not dev.supports_operation(qml.CNOT)
 
-    def test_supports_observable_argument_types(self, mock_device_with_observables):
+    def test_supports_observable_argument_types(self, mock_device_supporting_paulis):
         """Checks that device.supports_observable returns the correct result
         when passed both string and Operation class arguments"""
-        dev = mock_device_with_observables()
+        dev = mock_device_supporting_paulis()
 
         assert dev.supports_observable("PauliX")
         assert dev.supports_observable(qml.PauliX)
@@ -309,14 +276,14 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
     # pylint: disable=unnecessary-dunder-call
-    def test_repr(self, mock_device_with_operations):
+    def test_repr(self, mock_device_supporting_paulis):
         """Tests the __repr__ function"""
-        dev = mock_device_with_operations()
+        dev = mock_device_supporting_paulis()
         assert "<Device device (wires=1, shots=1000) at " in dev.__repr__()
 
-    def test_str(self, mock_device_with_operations):
+    def test_str(self, mock_device_supporting_paulis):
         """Tests the __str__ function"""
-        dev = mock_device_with_operations()
+        dev = mock_device_supporting_paulis()
         string = str(dev)
         assert "Short name: MockDevice" in string
         assert "Package: pennylane" in string
@@ -340,6 +307,45 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
+    @pytest.mark.usefixtures("use_new_opmath")
+    def test_check_validity_containing_prod(self, mock_device_supporting_prod):
+        """Tests that the function Device.check_validity works with Prod"""
+
+        dev = mock_device_supporting_prod()
+
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliZ(wires=1),
+        ]
+
+        observables = [
+            qml.expval(qml.PauliX(0) @ qml.PauliZ(1)),
+            qml.expval(qml.PauliZ(0) @ (qml.PauliX(1) @ qml.PauliZ(2))),
+        ]
+
+        dev.check_validity(queue, observables)
+
+    @pytest.mark.usefixtures("use_new_opmath")
+    def test_prod_containing_unsupported_nested_observables(self, mock_device_supporting_prod):
+        """Tests that the observables nested within Prod are checked for validity"""
+
+        dev = mock_device_supporting_prod()
+
+        queue = [
+            qml.PauliX(wires=0),
+            qml.PauliZ(wires=1),
+        ]
+
+        unsupported_nested_observables = [
+            qml.expval(qml.PauliZ(0) @ (qml.PauliX(1) @ qml.PauliY(2)))
+        ]
+
+        with pytest.raises(
+            DeviceError,
+            match="Observable PauliY not supported",
+        ):
+            dev.check_validity(queue, unsupported_nested_observables)
+
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_check_validity_on_tensor_support_legacy_opmath(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with tensor support capability"""
@@ -357,6 +363,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(DeviceError, match="Tensor observables not supported"):
             dev.check_validity(queue, observables)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_check_validity_on_prod_support(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with prod support capability"""
         dev = mock_device_supporting_paulis()
@@ -429,9 +436,9 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.check_validity(queue, observables)
 
-    def test_check_validity_on_projector_as_operation(self, mock_device_with_operations):
+    def test_check_validity_on_projector_as_operation(self, mock_device_supporting_paulis):
         """Test that an error is raised if the operation queue contains qml.Projector"""
-        dev = mock_device_with_operations(wires=1)
+        dev = mock_device_supporting_paulis(wires=1)
 
         queue = [qml.PauliX(0), qml.Projector([0], wires=0), qml.PauliZ(0)]
         observables = []
@@ -592,8 +599,8 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             (Wires([0]), Wires([0]), Wires([0])),
         ],
     )
-    def test_order_wires(self, wires, subset, expected_subset, mock_device_arbitrary_wires):
-        dev = mock_device_arbitrary_wires(wires=wires)
+    def test_order_wires(self, wires, subset, expected_subset, mock_device):
+        dev = mock_device(wires=wires)
         ordered_subset = dev.order_wires(subset_wires=subset)
         assert ordered_subset == expected_subset
 
@@ -606,8 +613,8 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             (Wires([0]), Wires([2])),
         ],
     )
-    def test_order_wires_raises_value_error(self, wires, subset, mock_device_arbitrary_wires):
-        dev = mock_device_arbitrary_wires(wires=wires)
+    def test_order_wires_raises_value_error(self, wires, subset, mock_device):
+        dev = mock_device(wires=wires)
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
 
@@ -658,11 +665,11 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         assert new_tape.batch_size == tape.batch_size
         assert new_tape.output_dim == tape.output_dim
 
-    def test_default_expand_fn_with_invalid_op(self, mock_device_with_operations, recwarn):
+    def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
         """Test that default_expand_fn works with an invalid op and some measurement."""
         invalid_tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))])
         expected_tape = qml.tape.QuantumScript([qml.RZ(np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))])
-        dev = mock_device_with_operations(wires=1)
+        dev = mock_device_supporting_paulis(wires=1)
         expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
         assert qml.equal(expanded_tape, expected_tape)
         assert len(recwarn) == 0
@@ -799,33 +806,33 @@ class TestOperations:
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
 
-    def test_execute_obs_probs(self, mock_device_with_observables):
+    def test_execute_obs_probs(self, mock_device_supporting_paulis):
         """Tests that the execute function raises an error if probabilities are
         not supported by the device"""
-        dev = mock_device_with_observables()
+        dev = mock_device_supporting_paulis()
         obs = qml.probs(op=qml.PauliZ(0))
         with pytest.raises(NotImplementedError):
             dev.execute([], [obs])
 
-    def test_var(self, mock_device_with_observables):
+    def test_var(self, mock_device_supporting_paulis):
         """Tests that the variance method are not implemented by the device by
         default"""
-        dev = mock_device_with_observables()
+        dev = mock_device_supporting_paulis()
         with pytest.raises(NotImplementedError):
             dev.var(qml.PauliZ, 0, [])
 
-    def test_sample(self, mock_device_with_observables):
+    def test_sample(self, mock_device_supporting_paulis):
         """Tests that the sample method are not implemented by the device by
         default"""
-        dev = mock_device_with_observables()
+        dev = mock_device_supporting_paulis()
         with pytest.raises(NotImplementedError):
             dev.sample(qml.PauliZ, 0, [])
 
     @pytest.mark.parametrize("wires", [None, []])
-    def test_probability(self, mock_device_with_observables, wires):
+    def test_probability(self, mock_device_supporting_paulis, wires):
         """Tests that the probability method are not implemented by the device
         by default"""
-        dev = mock_device_with_observables()
+        dev = mock_device_supporting_paulis()
         with pytest.raises(NotImplementedError):
             dev.probability(wires=wires)
 
@@ -1195,6 +1202,20 @@ class TestGrouping:
     def test_batch_transform_expands_not_supported_sums(self, mocker):
         """Tests that batch_transform expand Sums if they are not supported."""
         H = qml.sum(qml.PauliX(0), qml.PauliY(0))
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        spy = mocker.spy(qml.transforms, "sum_expand")
+
+        dev = self.SomeDevice()
+        dev.supports_observable = lambda *args, **kwargs: False
+        new_qscripts, _ = dev.batch_transform(qs)
+
+        assert len(new_qscripts) == 2
+        spy.assert_called()
+
+    def test_batch_transform_expands_prod_containing_sums(self, mocker):
+        """Tests that batch_transform expands a Prod with a nested Sum"""
+
+        H = qml.prod(qml.PauliX(0), qml.sum(qml.PauliY(0), qml.PauliZ(0)))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
         spy = mocker.spy(qml.transforms, "sum_expand")
 

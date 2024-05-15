@@ -15,46 +15,46 @@
 This module contains the Clifford simulator using ``stim``.
 """
 
+import concurrent.futures
 from dataclasses import replace
 from functools import partial
-from typing import Union, Tuple, Sequence
-import concurrent.futures
+from typing import Sequence, Tuple, Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.typing import Result, ResultBatch
-from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.transforms.core import TransformProgram
 from pennylane.measurements import (
-    ExpectationMP,
-    StateMP,
-    DensityMatrixMP,
-    PurityMP,
-    VnEntropyMP,
-    MutualInfoMP,
-    VarianceMP,
-    ProbabilityMP,
-    SampleMP,
-    CountsMP,
     ClassicalShadowMP,
+    CountsMP,
+    DensityMatrixMP,
+    ExpectationMP,
+    MutualInfoMP,
+    ProbabilityMP,
+    PurityMP,
+    SampleMP,
     ShadowExpvalMP,
+    StateMP,
+    VarianceMP,
+    VnEntropyMP,
 )
 from pennylane.ops.qubit.observables import BasisStateProjector
+from pennylane.tape import QuantumTape
+from pennylane.transforms import convert_to_numpy_parameters
+from pennylane.transforms.core import TransformProgram
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
-
 from .default_qubit import accepted_sample_measurement
-from .modifiers import single_tape_support, simulator_tracking
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
-    validate_observables,
+    null_postprocessing,
+    validate_adjoint_trainable_params,
+    validate_device_wires,
     validate_measurements,
     validate_multiprocessing_workers,
-    validate_device_wires,
-    validate_adjoint_trainable_params,
-    null_postprocessing,
+    validate_observables,
 )
 
 has_stim = True
@@ -136,7 +136,7 @@ def _pl_op_to_stim(op):
         stim_tg = map(str, op.wires)
     except KeyError as e:
         raise qml.DeviceError(
-            f"Operator {op} not supported on default.clifford and does not provide a decomposition."
+            f"Operator {op} not supported with default.clifford and does not provide a decomposition."
         ) from e
 
     # Check if the operation is noisy

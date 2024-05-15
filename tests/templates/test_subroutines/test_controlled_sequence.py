@@ -14,12 +14,11 @@
 """
 Unit tests for the ControlledSequence subroutine.
 """
-import pytest
 import numpy as np
+import pytest
 
-from pennylane import numpy as pnp
 import pennylane as qml
-
+from pennylane import numpy as pnp
 from pennylane.wires import Wires
 
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop

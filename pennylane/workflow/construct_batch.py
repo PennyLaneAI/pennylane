@@ -14,16 +14,17 @@
 """Contains a function extracting the tapes at postprocessing at any stage of a transform program.
 
 """
-from functools import wraps
 import inspect
-from typing import Union, Callable, Tuple
+from functools import wraps
+from typing import Callable, Tuple, Union
 
 import pennylane as qml
-from .qnode import QNode, _make_execution_config, _get_device_shots
+
+from .qnode import QNode, _get_device_shots, _make_execution_config
 
 
 def null_postprocessing(results):
-    """A postprocessing function with null behavior."""
+    """A postprocessing function with null behaviour."""
     return results[0]
 
 
@@ -229,9 +230,8 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         >>> batch, fn = construct_batch(circuit, level="device")(1.23)
         >>> batch[0].circuit
         [RY(tensor(1., requires_grad=True), wires=[1]),
-        RX(tensor(2., requires_grad=True), wires=[0]),
-        expval(  (1) [X0]
-        + (1) [Y0])]
+         RX(tensor(2., requires_grad=True), wires=[0]),
+         expval(X(0) + Y(0))]
 
         These tapes can be natively executed by the device, though with non-backprop devices the parameters
         will need to be converted to numpy with :func:`~.convert_to_numpy_parameters`.
@@ -244,22 +244,20 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         >>> batch, fn = construct_batch(circuit, level="gradient")(1.23)
         >>> batch[0].circuit
         [RY(tensor(1., requires_grad=True), wires=[1]),
-        RX(tensor(2., requires_grad=True), wires=[0]),
-        expval(  (1) [X0]
-        + (1) [Y0])]
+         RX(tensor(2., requires_grad=True), wires=[0]),
+         expval(X(0) + Y(0))]
 
         We can inspect what was directly captured from the qfunc with ``level=0``.
 
         >>> batch, fn = construct_batch(circuit, level=0)(1.23)
         >>> batch[0].circuit
         [RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
-        RX(1.23, wires=[0]),
-        RX(-1.23, wires=[0]),
-        SWAP(wires=[0, 1]),
-        X(0),
-        X(0),
-        expval(  (1) [X0]
-        + (1) [Y0])]
+         RX(1.23, wires=[0]),
+         RX(-1.23, wires=[0]),
+         SWAP(wires=[0, 1]),
+         X(0),
+         X(0),
+         expval(X(0) + Y(0))]
 
         And iterate though stages in the transform program with different integers.
         If we request ``level=1``, the ``cancel_inverses`` transform has been applied.
@@ -267,11 +265,10 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         >>> batch, fn = construct_batch(circuit, level=1)(1.23)
         >>> batch[0].circuit
         [RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
-        RX(1.23, wires=[0]),
-        RX(-1.23, wires=[0]),
-        SWAP(wires=[0, 1]),
-        expval(  (1) [X0]
-        + (1) [Y0])]
+         RX(1.23, wires=[0]),
+         RX(-1.23, wires=[0]),
+         SWAP(wires=[0, 1]),
+         expval(X(0) + Y(0))]
 
         We can also slice into a subset of the transform program.  ``slice(1, None)`` would skip the first user
         transform ``cancel_inverses``:
@@ -279,11 +276,10 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
         >>> batch, fn = construct_batch(circuit, level=slice(1,None))(1.23)
         >>> batch[0].circuit
         [RY(tensor(1., requires_grad=True), wires=[1]),
-        RX(tensor(2., requires_grad=True), wires=[0]),
-        X(0),
-        X(0),
-        expval(  (1) [X0]
-        + (1) [Y0])]
+         RX(tensor(2., requires_grad=True), wires=[0]),
+         X(0),
+         X(0),
+         expval(X(0) + Y(0))]
 
     """
 

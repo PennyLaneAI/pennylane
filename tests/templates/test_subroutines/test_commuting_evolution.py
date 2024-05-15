@@ -17,6 +17,7 @@ Tests for the CommutingEvolution template.
 # pylint: disable=too-few-public-methods
 import pytest
 from scipy.linalg import expm
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -83,6 +84,17 @@ def test_adjoint():
 
     assert res1 == res2
     assert all(np.isclose(state1, state2))
+
+
+def test_queuing():
+    """Test that CommutingEvolution de-queues the input hamiltonian."""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        H = qml.X(0) + qml.Y(1)
+        op = qml.CommutingEvolution(H, 0.1, (2,))
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is op
 
 
 def test_decomposition_expand():

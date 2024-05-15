@@ -71,7 +71,7 @@ class CutStrategy:
     ``2`` to ``5`` fragments, with each fragment having at most ``6`` wires and
     at least ``4`` wires:
 
-    >>> cut_strategy = qml.transforms.CutStrategy(
+    >>> cut_strategy = qml.qcut.CutStrategy(
     ...     max_free_wires=6,
     ...     min_free_wires=4,
     ...     num_fragments_probed=(2, 5),
@@ -125,16 +125,16 @@ class CutStrategy:
         if devices is None and self.max_free_wires is None:
             raise ValueError("One of arguments `devices` and max_free_wires` must be provided.")
 
-        if isinstance(devices, (qml.Device, qml.devices.Device)):
+        if isinstance(devices, (qml.devices.LegacyDevice, qml.devices.Device)):
             devices = (devices,)
 
         if devices is not None:
             if not isinstance(devices, SequenceType) or any(
-                (not isinstance(d, (qml.Device, qml.devices.Device)) for d in devices)
+                (not isinstance(d, (qml.devices.LegacyDevice, qml.devices.Device)) for d in devices)
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "
-                    "`qml.Device` or `qml.devices.Device`"
+                    "`qml.devices.LegacyDevice` or `qml.devices.Device`"
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]

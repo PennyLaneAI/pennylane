@@ -16,5 +16,5 @@ The ``error`` module provides classes and functionality to track and propagate t
 algorithmic error from advanced quantum algorithms.
 """
 
-from .trotter_error import _one_norm_error, _commutator_error
-from .error import AlgorithmicError, ErrorOperation, SpectralNormError
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError, _compute_algo_error
+from .trotter_error import _commutator_error, _one_norm_error

@@ -16,8 +16,8 @@ Unit tests for the pennylane.drawer.style` module.
 """
 
 import pytest
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.drawer.style import _set_style
 
 plt = pytest.importorskip("matplotlib.pyplot")

@@ -16,21 +16,21 @@
 import math
 import warnings
 from itertools import product
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.ops import Adjoint
+from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
-from pennylane.transforms.core import transform
 from pennylane.tape import QuantumTape
+from pennylane.transforms.core import transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
     merge_rotations,
     remove_barrier,
 )
-from pennylane.transforms.optimization.optimization_utils import find_next_gate, _fuse_global_phases
-from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
+from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases, find_next_gate
 
 # Single qubits Clifford+T gates in PL
 _CLIFFORD_T_ONE_GATES = [

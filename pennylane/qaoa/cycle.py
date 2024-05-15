@@ -16,18 +16,12 @@ Functionality for finding the maximum weighted cycle of directed graphs.
 """
 # pylint: disable=unnecessary-comprehension, unnecessary-lambda-assignment
 import itertools
-from typing import (
-    Dict,
-    Tuple,
-    Iterable,
-    List,
-    Union,
-)
+from typing import Dict, Iterable, List, Tuple, Union
 
 import networkx as nx
+import numpy as np
 import rustworkx as rx
 
-import numpy as np
 import pennylane as qml
 
 
@@ -342,27 +336,31 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.op
     >>> for k, v in edge_weight_data.items():
             g[k[0]][k[1]]["weight"] = v
     >>> h = loss_hamiltonian(g)
-    >>> print(h)
-      (-0.6931471805599453) [Z0]
-    + (0.0) [Z1]
-    + (0.4054651081081644) [Z2]
-    + (0.6931471805599453) [Z3]
-    + (0.9162907318741551) [Z4]
-    + (1.0986122886681098) [Z5]
+    >>> h
+    (
+        -0.6931471805599453 * Z(0)
+      + 0.0 * Z(1)
+      + 0.4054651081081644 * Z(2)
+      + 0.6931471805599453 * Z(3)
+      + 0.9162907318741551 * Z(4)
+      + 1.0986122886681098 * Z(5)
+    )
 
     >>> import rustworkx as rx
-    >>> g = rx.generators.directed_mesh_graph(3)
+    >>> g = rx.generators.directed_mesh_graph(3, [0, 1, 2])
     >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(g.edge_list()))}
     >>> for k, v in edge_weight_data.items():
             g.update_edge(k[0], k[1], {"weight": v})
     >>> h = loss_hamiltonian(g)
     >>> print(h)
-      (-0.6931471805599453) [Z0]
-    + (0.0) [Z1]
-    + (0.4054651081081644) [Z2]
-    + (0.6931471805599453) [Z3]
-    + (0.9162907318741551) [Z4]
-    + (1.0986122886681098) [Z5]
+    (
+        -0.6931471805599453 * Z(0)
+      + 0.0 * Z(1)
+      + 0.4054651081081644 * Z(2)
+      + 0.6931471805599453 * Z(3)
+      + 0.9162907318741551 * Z(4)
+      + 1.0986122886681098 * Z(5)
+    )
 
     Args:
         graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
