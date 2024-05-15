@@ -252,9 +252,6 @@ def parse_native_mid_circuit_measurements(
     )
     is_valid = qml.math.all(mcm_samples * has_postselect == postselect, axis=1)
     has_valid = qml.math.any(is_valid)
-    # is_valid has to be int array rather than bool array due to tf dtype rules for the
-    # remainder of this function
-    is_valid = qml.math.cast_like(is_valid, mcm_samples)
     mid_meas = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = [mcm_samples[:, i : i + 1] for i in range(n_mcms)]
     mcm_samples = dict((k, v) for k, v in zip(mid_meas, mcm_samples))
@@ -274,9 +271,9 @@ def parse_native_mid_circuit_measurements(
             meas = measurement_with_no_shots(m)
             m_count += 1
         else:
-            result = qml.math.array(
-                [qml.math.array(res[i], like=interface) for res in results], like=interface
-            )
+            result = [res[m_count] for res in results]
+            if not isinstance(m, CountsMP):
+                result = qml.math.stack(result, like=interface)
             meas = gather_non_mcm(m, result, is_valid)
             m_count += 1
         if isinstance(m, SampleMP):
@@ -300,7 +297,9 @@ def gather_non_mcm(circuit_measurement, measurement, is_valid):
     if isinstance(circuit_measurement, CountsMP):
         tmp = Counter()
         for i, d in enumerate(measurement):
-            tmp.update(dict((k, v * is_valid[i]) for k, v in d.items()))
+            tmp.update(
+                dict((k if isinstance(k, str) else float(k), v * is_valid[i]) for k, v in d.items())
+            )
         tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
     if isinstance(circuit_measurement, ExpectationMP):
@@ -319,8 +318,6 @@ def gather_non_mcm(circuit_measurement, measurement, is_valid):
             else measurement[is_valid]
         )
     # VarianceMP
-    measurement = qml.math.cast(measurement, float)
-    is_valid = qml.math.cast(is_valid, float)
     expval = qml.math.sum(measurement * is_valid) / qml.math.sum(is_valid)
     return qml.math.sum((measurement - expval) ** 2 * is_valid) / qml.math.sum(is_valid)
 
@@ -351,17 +348,13 @@ def gather_mcm(measurement, samples, is_valid):
             counts = qml.math.array(counts, like=interface)
             return counts / qml.math.sum(counts)
         if isinstance(measurement, CountsMP):
-            mcm_samples = [{"".join(str(v) for v in tuple(s)): 1} for s in mcm_samples]
+            mcm_samples = [{"".join(str(int(v)) for v in tuple(s)): 1} for s in mcm_samples]
         return gather_non_mcm(measurement, mcm_samples, is_valid)
     mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=interface))
     if isinstance(measurement, ProbabilityMP):
-        counts = [
-            qml.math.sum(qml.math.cast(mcm_samples == v, int) * is_valid)
-            for v in list(mv.branches.values())
-        ]
+        counts = [qml.math.sum((mcm_samples == v) * is_valid) for v in list(mv.branches.values())]
         counts = qml.math.array(counts, like=interface)
         return counts / qml.math.sum(counts)
-    # mcm_samples = qml.math.ravel(qml.math.array([mv.concretize(samples)], like=interface))
     if isinstance(measurement, CountsMP):
-        mcm_samples = [{s: 1} for s in mcm_samples]
+        mcm_samples = [{float(s): 1} for s in mcm_samples]
     return gather_non_mcm(measurement, mcm_samples, is_valid)

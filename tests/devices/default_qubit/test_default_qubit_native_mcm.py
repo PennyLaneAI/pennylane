@@ -88,7 +88,7 @@ def validate_samples(shots, results1, results2, batch_size=None):
     assert results1.ndim == results2.ndim
     if results2.ndim > 1:
         assert results1.shape[1] == results2.shape[1]
-    np.allclose(np.sum(results1), np.sum(results2), atol=20, rtol=0.2)
+    np.allclose(qml.math.sum(results1), qml.math.sum(results2), atol=20, rtol=0.2)
 
 
 def validate_expval(shots, results1, results2, batch_size=None):
@@ -750,3 +750,85 @@ def test_counts_return_type(mcm_f):
     results2 = func2(param)
     for r1, r2 in zip(results1.keys(), results2.keys()):
         assert r1 == r2
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("shots", [4000, [4000, 4001]])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample, qml.expval, qml.var])
+@pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0], [0, 1], "composite_mcm", "mcm_list"])
+def test_torch_integration(shots, postselect, reset, measure_f, meas_obj):
+    """Test that native MCM circuits are executed correctly with Torch"""
+    if measure_f in (qml.var, qml.expval) and (
+        isinstance(meas_obj, list) or meas_obj == "mcm_list"
+    ):
+        pytest.skip("Can't use wires/mcm lists with var or expval")
+
+    import torch
+
+    dev = get_device(shots=shots)
+    param = torch.tensor(np.pi / 3)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0, reset=reset)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1, postselect=postselect)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+
+        mid_measure = 0.5 * m2 if meas_obj == "composite_mcm" else [m1, m2]
+        measurement_key = "wires" if isinstance(meas_obj, list) else "op"
+        measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
+        return measure_f(**{measurement_key: measurement_value})
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(param)
+    results2 = func2(param)
+
+    validate_measurements(measure_f, shots, results1, results2)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+@pytest.mark.parametrize("reset", [False, True])
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample, qml.expval, qml.var])
+@pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0], [0, 1], "composite_mcm", "mcm_list"])
+def test_jax_integration(shots, postselect, reset, measure_f, meas_obj):
+    """Test that native MCM circuits are executed correctly with Jax"""
+    if measure_f in (qml.var, qml.expval) and (
+        isinstance(meas_obj, list) or meas_obj == "mcm_list"
+    ):
+        pytest.skip("Can't use wires/mcm lists with var or expval")
+
+    import jax.numpy as jnp
+
+    dev = get_device(shots=shots)
+    param = jnp.array(np.pi / 3)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0, reset=reset)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1, postselect=postselect)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+
+        mid_measure = 0.5 * m2 if meas_obj == "composite_mcm" else [m1, m2]
+        measurement_key = "wires" if isinstance(meas_obj, list) else "op"
+        measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
+        return measure_f(**{measurement_key: measurement_value})
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(param)
+    results2 = func2(param)
+
+    validate_measurements(measure_f, shots, results1, results2)
