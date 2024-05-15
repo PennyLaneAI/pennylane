@@ -779,7 +779,8 @@ def execute(
     if interface in {"jax", "jax-python", "jax-jit"}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
+            indices = qml.math.get_trainable_indices(params)
+            tape.trainable_params = indices
 
     ml_boundary_execute = _get_ml_boundary_execute(
         interface,

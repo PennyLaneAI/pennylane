@@ -96,7 +96,7 @@ class TestCaching:
                     ],
                 ]
             )
-            assert torch.allclose(expected, hess1)
+            assert qml.math.allclose(expected, hess1)
 
         expected_runs = 1  # forward pass
 
@@ -117,7 +117,7 @@ class TestCaching:
 
         with qml.Tracker(dev) as tracker2:
             hess2 = torch.autograd.functional.hessian(cost_cache, params)
-        assert torch.allclose(hess1, hess2)
+        assert qml.math.allclose(hess1, hess2)
 
         expected_runs_ideal = 1  # forward pass
         expected_runs_ideal += 2 * N  # Jacobian
@@ -158,6 +158,16 @@ test_matrix = [
         {"gradient_fn": "device", "device_vjp": True},
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(None),
+        qml.device("mini.qubit"),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(100000),
+        qml.device("mini.qubit"),
     ),
 ]
 
@@ -222,19 +232,21 @@ class TestTorchExecuteIntegration:
             assert res.shape == ()  # pylint: disable=no-member
 
         # compare to standard tape jacobian
-        tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])
-        tape.trainable_params = [0]
+        tape = qml.tape.QuantumScript(
+            [qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
+        tape = qml.transforms.convert_to_numpy_parameters(tape)
         tapes, fn = param_shift(tape)
         expected = fn(device.execute(tapes))
 
         assert expected.shape == ()
         if shots.has_partitioned_shots:
             for i in range(shots.num_copies):
-                assert torch.allclose(res[i], expected, atol=atol_for_shots(shots), rtol=0)
-                assert torch.allclose(res[i], -torch.sin(a), atol=atol_for_shots(shots))
+                assert qml.math.allclose(res[i], expected, atol=atol_for_shots(shots), rtol=0)
+                assert qml.math.allclose(res[i], -torch.sin(a), atol=atol_for_shots(shots))
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
-            assert torch.allclose(res, -torch.sin(a), atol=atol_for_shots(shots))
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, -torch.sin(a), atol=atol_for_shots(shots))
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
@@ -253,10 +265,10 @@ class TestTorchExecuteIntegration:
         res = cost(a, b)
         expected = torch.tensor([torch.cos(a), -torch.cos(a) * torch.sin(b)])
         if shots.has_partitioned_shots:
-            assert torch.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
-            assert torch.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = torch.autograd.functional.jacobian(cost, (a, b))
         assert isinstance(res, tuple) and len(res) == 2
@@ -270,15 +282,15 @@ class TestTorchExecuteIntegration:
             assert res[1].shape == (4,)
 
             for _r, _e in zip(res, expected):
-                assert torch.allclose(_r[:2], _e, atol=atol_for_shots(shots))
-                assert torch.allclose(_r[2:], _e, atol=atol_for_shots(shots))
+                assert qml.math.allclose(_r[:2], _e, atol=atol_for_shots(shots))
+                assert qml.math.allclose(_r[2:], _e, atol=atol_for_shots(shots))
 
         else:
             assert res[0].shape == (2,)
             assert res[1].shape == (2,)
 
             for _r, _e in zip(res, expected):
-                assert torch.allclose(_r, _e, atol=atol_for_shots(shots))
+                assert qml.math.allclose(_r, _e, atol=atol_for_shots(shots))
 
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
@@ -320,16 +332,16 @@ class TestTorchExecuteIntegration:
         expected = 2 + np.cos(0.5) + np.cos(x) * np.cos(y)
 
         if shots.has_partitioned_shots:
-            assert torch.allclose(res, 2 * expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, 2 * expected, atol=atol_for_shots(shots), rtol=0)
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res.backward()
         expected = torch.tensor([-torch.cos(y) * torch.sin(x), -torch.cos(x) * torch.sin(y)])
         if shots.has_partitioned_shots:
-            assert torch.allclose(params.grad, 2 * expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(params.grad, 2 * expected, atol=atol_for_shots(shots), rtol=0)
         else:
-            assert torch.allclose(params.grad, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(params.grad, expected, atol=atol_for_shots(shots), rtol=0)
 
     @pytest.mark.skip("torch cannot reuse tensors in various computations")
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
@@ -366,24 +378,24 @@ class TestTorchExecuteIntegration:
         assert isinstance(res, torch.Tensor)
         assert res.shape == (4,)
 
-        assert torch.allclose(res[0], torch.cos(x) * torch.cos(y), atol=atol_for_shots(shots))
-        assert torch.allclose(res[1], torch.tensor(1.0), atol=atol_for_shots(shots))
-        assert torch.allclose(res[2], torch.cos(torch.tensor(0.5)), atol=atol_for_shots(shots))
-        assert torch.allclose(res[3], torch.cos(x) * torch.cos(y), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[0], torch.cos(x) * torch.cos(y), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[1], torch.tensor(1.0), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[2], torch.cos(torch.tensor(0.5)), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[3], torch.cos(x) * torch.cos(y), atol=atol_for_shots(shots))
 
         jac = torch.autograd.functional.jacobian(cost, params)
         assert isinstance(jac, torch.Tensor)
         assert jac.shape == (4, 2)  # pylint: disable=no-member
 
-        assert torch.allclose(jac[1:3], torch.tensor(0.0), atol=atol_for_shots(shots))
+        assert qml.math.allclose(jac[1:3], torch.tensor(0.0), atol=atol_for_shots(shots))
 
         d1 = -torch.sin(x) * torch.cos(y)
-        assert torch.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))  # fails for torch
-        assert torch.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
+        assert qml.math.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))  # fails for torch
+        assert qml.math.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
 
         d2 = -torch.cos(x) * torch.sin(y)
-        assert torch.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))  # fails for torch
-        assert torch.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
+        assert qml.math.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))  # fails for torch
+        assert qml.math.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
 
     def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
         """Test re-using a quantum tape by passing new parameters"""
@@ -409,7 +421,7 @@ class TestTorchExecuteIntegration:
         # values of the parameters for subsequent calls
         res2 = cost(2 * a, b)
         expected = torch.tensor([torch.cos(2 * a), -torch.cos(2 * a) * torch.sin(b)])
-        assert torch.allclose(res2, expected, atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res2, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac = torch.autograd.functional.jacobian(lambda a, b: cost(2 * a, b), (a, b))
         expected = (
@@ -418,7 +430,7 @@ class TestTorchExecuteIntegration:
         )
         assert isinstance(jac, tuple) and len(jac) == 2
         for _j, _e in zip(jac, expected):
-            assert torch.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, device, shots):
         """Test classical processing within the quantum tape"""
@@ -472,7 +484,7 @@ class TestTorchExecuteIntegration:
         res = loss(a, b)
         res.backward()
 
-        assert torch.allclose(torch.tensor([a.grad, b.grad]), 0)
+        assert qml.math.allclose(torch.tensor([a.grad, b.grad]), 0)
 
     def test_matrix_parameter(self, execute_kwargs, device, shots):
         """Test that the torch interface works correctly
@@ -486,11 +498,11 @@ class TestTorchExecuteIntegration:
             return execute([tape], device, **execute_kwargs)[0]
 
         res = cost(a, U)
-        assert torch.allclose(res, -torch.cos(a), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res, -torch.cos(a), atol=atol_for_shots(shots))
 
         jac = torch.autograd.functional.jacobian(lambda y: cost(y, U), a)
         assert isinstance(jac, torch.Tensor)
-        assert torch.allclose(jac, torch.sin(a), atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(jac, torch.sin(a), atol=atol_for_shots(shots), rtol=0)
 
     def test_differentiable_expand(self, execute_kwargs, device, shots):
         """Test that operation and nested tapes expansion
@@ -533,7 +545,7 @@ class TestTorchExecuteIntegration:
         expected = torch.cos(a) * torch.cos(p[1]) * torch.sin(p[0]) + torch.sin(a) * (
             torch.cos(p[2]) * torch.sin(p[1]) + torch.cos(p[0]) * torch.cos(p[1]) * torch.sin(p[2])
         )
-        assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = torch.autograd.functional.jacobian(lambda _p: cost_fn(a, _p), p)
         expected = torch.tensor(
@@ -556,7 +568,7 @@ class TestTorchExecuteIntegration:
                 ),
             ]
         )
-        assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_probability_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
@@ -582,7 +594,7 @@ class TestTorchExecuteIntegration:
                 ],
             ]
         )
-        assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = torch.autograd.functional.jacobian(cost, (x, y))
         assert isinstance(res, tuple) and len(res) == 2
@@ -607,8 +619,8 @@ class TestTorchExecuteIntegration:
             ),
         )
 
-        assert torch.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
-        assert torch.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
@@ -631,7 +643,7 @@ class TestTorchExecuteIntegration:
                 (1 - torch.cos(x) * torch.cos(y)) / 2,
             ]
         )
-        assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = torch.autograd.functional.jacobian(cost, (x, y))
         assert isinstance(res, tuple) and len(res) == 2
@@ -644,8 +656,8 @@ class TestTorchExecuteIntegration:
             ),
             torch.tensor([0, -torch.cos(x) * torch.sin(y) / 2, torch.cos(x) * torch.sin(y) / 2]),
         )
-        assert torch.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
-        assert torch.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
+        assert qml.math.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
 
 class TestHigherOrderDerivatives:
@@ -676,13 +688,13 @@ class TestHigherOrderDerivatives:
         res = cost_fn(params)
         x, y = params.clone().detach()
         expected = 0.5 * (3 + torch.cos(x) ** 2 * torch.cos(2 * y))
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
         res.backward()
         expected = torch.tensor(
             [-torch.cos(x) * torch.cos(2 * y) * torch.sin(x), -torch.cos(x) ** 2 * torch.sin(2 * y)]
         )
-        assert torch.allclose(params.grad, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(params.grad, expected, atol=tol, rtol=0)
 
         res = torch.autograd.functional.hessian(cost_fn, params)
         expected = torch.tensor(
@@ -691,7 +703,7 @@ class TestHigherOrderDerivatives:
                 [torch.sin(2 * x) * torch.sin(2 * y), -2 * torch.cos(x) ** 2 * torch.cos(2 * y)],
             ]
         )
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
@@ -712,17 +724,17 @@ class TestHigherOrderDerivatives:
         res = cost_fn(params)
         x, y = params.clone().detach()
         expected = 0.5 * (3 + torch.cos(x) ** 2 * torch.cos(2 * y))
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
         res.backward()
         expected = torch.tensor(
             [-torch.cos(x) * torch.cos(2 * y) * torch.sin(x), -torch.cos(x) ** 2 * torch.sin(2 * y)]
         )
-        assert torch.allclose(params.grad, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(params.grad, expected, atol=tol, rtol=0)
 
         res = torch.autograd.functional.hessian(cost_fn, params)
         expected = torch.zeros([2, 2])
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
@@ -807,18 +819,18 @@ class TestHamiltonianWorkflows:
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
-            assert torch.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
-            assert torch.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = torch.autograd.functional.jacobian(lambda w: cost_fn(w, coeffs1, coeffs2), weights)
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
         if shots.has_partitioned_shots:
-            assert torch.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
-            assert torch.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
@@ -834,10 +846,10 @@ class TestHamiltonianWorkflows:
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
-            assert torch.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
-            assert torch.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = torch.hstack(torch.autograd.functional.jacobian(cost_fn, (weights, coeffs1, coeffs2)))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
@@ -846,4 +858,4 @@ class TestHamiltonianWorkflows:
                 "multiple hamiltonians with shot vectors does not seem to be differentiable."
             )
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)

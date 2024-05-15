@@ -37,6 +37,7 @@ qubit_device_and_diff_method = [
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
+    [qml.device("mini.qubit"), "parameter-shift", False, False],
 ]
 
 interface_qubit_device_and_diff_method = [
@@ -60,6 +61,7 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "adjoint", False, False],
     ["auto", DefaultQubit(), "spsa", False, False],
     ["auto", DefaultQubit(), "hadamard", False, False],
+    ["auto", qml.device("mini.qubit"), "parameter-shift", False, False],
     ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
     ["auto", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
 ]
@@ -1428,6 +1430,8 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+        elif dev.name == "mini.qubit":
+            pytest.xfail("mini.qubit does not support postselection.")
 
         @qml.qnode(
             dev,
