@@ -181,26 +181,25 @@ class TestQutritAmplitudeDamping:
         assert np.allclose(kraus_mats[1], np.zeros((3, 3)), atol=tol, rtol=0)
         assert np.allclose(kraus_mats[2], np.zeros((3, 3)), atol=tol, rtol=0)
 
-    def test_gamma_arbitrary(self, tol):
-        """Test gamma_1=0.1, gamma_2=0.2 gives correct Kraus matrices"""
-        K_0 = np.diag((1, np.sqrt(0.9), np.sqrt(0.8)))
+    @pytest.mark.parametrize("gamma1,gamma2", ((0.1, 0.2), (0.75, 0.75)))
+    def test_gamma_arbitrary(self, gamma1, gamma2, tol):
+        """Test the correct correct Kraus matrices are returned, also ensures that sum of gammas can be over 1."""
+        K_0 = np.diag((1, np.sqrt(1 - gamma1), np.sqrt(1 - gamma2)))
 
         K_1 = np.zeros((3, 3))
-        K_1[0, 1] = np.sqrt(0.1)
+        K_1[0, 1] = np.sqrt(gamma1)
 
         K_2 = np.zeros((3, 3))
-        K_2[0, 2] = np.sqrt(0.2)
+        K_2[0, 2] = np.sqrt(gamma2)
 
         expected = [K_0, K_1, K_2]
         damping_channel = qml.QutritAmplitudeDamping(0.1, 0.2, wires=0)
         assert np.allclose(damping_channel.kraus_matrices(), expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "gamma1,gamma2", ((1.5, 0.0), (0.0, 1.5), (0.75, 0.75), (1.0, math.eps))
-    )
+    @pytest.mark.parametrize("gamma1,gamma2", ((1.5, 0.0), (0.0, 1.0 + math.eps)))
     def test_gamma_invalid_parameter(self, gamma1, gamma2):
-        """Ensures that error is thrown when gamma_1, gamma_2, or their sum are outside [0,1]"""
-        with pytest.raises(ValueError, match="must be in the interval"):
+        """Ensures that error is thrown when gamma_1 or gamma_2 are outside [0,1]"""
+        with pytest.raises(ValueError, match="Each probability must be in the interval"):
             channel.QutritAmplitudeDamping(gamma1, gamma2, wires=0).kraus_matrices()
 
     @staticmethod

@@ -247,7 +247,8 @@ class QutritAmplitudeDamping(Channel):
                 0 & 0 & 0 \\
                 0 & 0 & 0
                 \end{bmatrix}
-    where :math:`\gamma_1 \in [0, 1]` and :math:`\gamma_2 \in [0, 1]` are the amplitude damping
+
+    Where :math:`\gamma_1 \in [0, 1]` and :math:`\gamma_2 \in [0, 1]` are the amplitude damping
     probabilities for subspaces (0,1) and (0,2) respectively.
 
     .. note::
@@ -275,7 +276,7 @@ class QutritAmplitudeDamping(Channel):
 
     @staticmethod
     def compute_kraus_matrices(gamma_1, gamma_2):  # pylint:disable=arguments-differ
-        r"""Kraus matrices representing the AmplitudeDamping channel.
+        r"""Kraus matrices representing the QutritAmplitudeDamping channel.
 
         Args:
             gamma_1 (float): :math:`|1\rangle \rightarrow |0\rangle` amplitude damping probability.
@@ -299,12 +300,10 @@ class QutritAmplitudeDamping(Channel):
                 [0.        , 0.        , 0.        ]])
         ]
         """
-        if not math.is_abstract(gamma_1):
-            for gamma in (gamma_1, gamma_2):
+        for gamma in (gamma_1, gamma_2):
+            if not (math.is_abstract(gamma_1) or math.is_abstract(gamma_2)):
                 if not 0.0 <= gamma <= 1.0:
                     raise ValueError("Each probability must be in the interval [0,1]")
-            if not 0.0 <= gamma_1 + gamma_2 <= 1.0:
-                raise ValueError("Sum of probabilities must be in the interval [0,1]")
 
         K0 = math.diag([1, math.sqrt(1 - gamma_1 + math.eps), math.sqrt(1 - gamma_2 + math.eps)])
         K1 = math.sqrt(gamma_1 + math.eps) * math.convert_like(
