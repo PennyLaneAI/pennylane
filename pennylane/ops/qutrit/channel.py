@@ -305,3 +305,4 @@ class QutritAmplitudeDamping(Channel):
             math.cast_like(math.array([[0, 0, 1], [0, 0, 0], [0, 0, 0]]), gamma_2), gamma_2
         )
         return [K0, K1, K2]
+

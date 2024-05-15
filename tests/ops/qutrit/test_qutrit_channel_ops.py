@@ -266,3 +266,4 @@ class TestQutritAmplitudeDamping:
         gamma_2 = jax.numpy.array(0.12)
         jac = jax.jacobian(self.kraus_fn, argnums=[0, 1])(gamma_1, gamma_2)
         assert math.allclose(jac, self.expected_jac_fn(gamma_1, gamma_2))
+
