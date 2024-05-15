@@ -15,13 +15,10 @@
 Tests for the QROM template.
 """
 
-import copy
-
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.qubitization import _positive_coeffs_hamiltonian
 
 
 def test_standard_checks():
@@ -114,7 +111,7 @@ class TestQROM:
                 ["1111", "0101", "0100", "1010"],
                 [0, 1, "b", "d"],
                 [2, 3],
-                ["a", 5, 6, 7],
+                None,
             ),
         ],
     )
@@ -200,3 +197,15 @@ def test_wires_error(control_wires, target_wires, work_wires, msg_match):
     """Test an error is raised when a control wire is in one of the ops"""
     with pytest.raises(ValueError, match=msg_match):
         qml.QROM(["1"] * 8, target_wires, control_wires, work_wires)
+
+
+def test_repr():
+    """Test that the __repr__ method works as expected."""
+    op = str(
+        qml.QROM(
+            ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
+        )
+    )
+    res = op.__repr__()
+    expected = "QROM(target_wires=<Wires = [2]>, control_wires=<Wires = [0, 1]>,  work_wires=<Wires = [3]>)"
+    assert res == expected

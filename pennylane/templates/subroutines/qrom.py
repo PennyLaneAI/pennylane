@@ -15,12 +15,11 @@
 This submodule contains the template for QROM.
 """
 
-import pennylane as qml
-from pennylane.operation import Operation
 import numpy as np
-import itertools
 import math
 import copy
+import pennylane as qml
+from pennylane.operation import Operation
 
 
 class QROM(Operation):
@@ -37,7 +36,7 @@ class QROM(Operation):
         return cls(b, **hyperparams_dict)
 
     def __repr__(self):
-        return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires}  work_wires={self.work_wires})"
+        return f"QROM(target_wires={self.target_wires}, control_wires={self.control_wires},  work_wires={self.work_wires})"
 
     def __init__(self, b, target_wires, control_wires, work_wires, clean=True, id=None):
 
@@ -108,7 +107,7 @@ class QROM(Operation):
 
         return copied_op
 
-    def decomposition(self):
+    def decomposition(self):  # pylint: disable=arguments-differ
 
         return self.compute_decomposition(
             self.b,
