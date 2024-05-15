@@ -97,4 +97,4 @@ def convert_to_numpy_parameters(tape: QuantumTape) -> Tuple[Sequence[QuantumTape
         """
         return results[0]
 
-    return new_circuit, null_postprocessing
+    return [new_circuit], null_postprocessing
