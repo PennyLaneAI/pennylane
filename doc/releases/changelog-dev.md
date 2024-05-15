@@ -99,6 +99,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `dynamic_one_shot` transform now has expanded support for the `jax` and `torch` interfaces.
+  [(#5672)](https://github.com/PennyLaneAI/pennylane/pull/5672)
+
 * Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
   [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
 
