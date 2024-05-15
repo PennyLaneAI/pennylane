@@ -103,14 +103,14 @@ class QutritDepolarizingChannel(Channel):
                 \end{bmatrix}
         \end{matrix}
 
-    Where :math:`\omega=\exp(\frac{2\pi}{3})`  is the third root of unity.
-    where :math:`p \in [0, 1]` is the depolarization probability and is equally
+    Where :math:`\omega=\exp(\frac{2\pi}{3})`  is the third root of unity,
+    and :math:`p \in [0, 1]` is the depolarization probability, equally
     divided in the application of all qutrit Pauli operators.
 
     .. note::
 
         The Kraus operators :math:`\{K_0 \ldots K_8\}` used are the representations of the single qutrit Pauli group.
-        These Pauli group operators are defined in [`1 <https://arxiv.org/pdf/quant-ph/9802007>`_] (Eq. 5).
+        These Pauli group operators are defined in [`1 <https://doi.org/10.48550/arXiv.quant-ph/9802007>`_] (Eq. 5).
         The Kraus Matrices we use are adapted from [`2 <https://doi.org/10.48550/arXiv.1905.10481>`_] (Eq. 5).
         For this definition, please make a note of the following:
 
@@ -203,6 +203,7 @@ class QutritDepolarizingChannel(Channel):
 
         w2 = w**2
 
+        # The matrices are explicitly written, not generated to ensure PyTorch differentiation.
         depolarizing_mats = [
             [[one, z, z], [z, w, z], [z, z, w2]],
             [[one, z, z], [z, w2, z], [z, z, w]],
@@ -305,4 +306,3 @@ class QutritAmplitudeDamping(Channel):
             math.cast_like(math.array([[0, 0, 1], [0, 0, 0], [0, 0, 0]]), gamma_2), gamma_2
         )
         return [K0, K1, K2]
-
