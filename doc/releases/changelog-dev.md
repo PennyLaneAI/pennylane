@@ -95,10 +95,10 @@
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
   [(#5660)](https://github.com/PennyLaneAI/pennylane/pull/5660)
 
-* ``qml.from_qasm_file`` has been removed. The user can open files and load their content using `qml.from_qasm`.
+* `qml.from_qasm_file` has been removed. The user can open files and load their content using `qml.from_qasm`.
   [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
 
-* ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
+* `qml.load` has been removed in favour of more specific functions, such as `qml.from_qiskit`, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
 * `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
@@ -107,7 +107,11 @@
 
 <h3>Deprecations 👋</h3>
 
-* ``qml.transforms.map_batch_transform`` is deprecated, since a transform can be applied directly to a batch of tapes.
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated. 
+  Instead, `qml.simplify()` can be called on the constructed operator.
+  [(#5677)](https://github.com/PennyLaneAI/pennylane/pull/5677)
+
+* `qml.transforms.map_batch_transform` is deprecated, since a transform can be applied directly to a batch of tapes.
   [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
 
 <h3>Documentation 📝</h3>
