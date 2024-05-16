@@ -34,8 +34,8 @@ from pennylane.ops import (
     Hamiltonian,
     LinearCombination,
     Pow,
-    SProd,
     ScalarSymbolicOp,
+    SProd,
 )
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumTape
