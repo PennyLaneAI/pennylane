@@ -229,7 +229,7 @@ class QROM(Operation):
                 )
 
             # Select block
-            sel_ops = [qml.Select(s_ops, control=control_wires[: len(c_sel_wires)])]
+            sel_ops = [qml.Select(s_ops, control=c_sel_wires)]
 
             # Swap block
             swap_ops = []
