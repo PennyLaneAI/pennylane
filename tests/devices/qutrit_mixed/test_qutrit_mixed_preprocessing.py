@@ -125,9 +125,10 @@ class TestPreprocessing:
             (qml.GellMann(0, 1), False),
             (qml.Snapshot(), True),
             (qml.TRX(1.1, 0), True),
+            (qml.QutritDepolarizingChannel(0.4, 0), True),
         ],
     )
-    def test_accepted_observables(self, op, expected):
+    def test_accepted_operator(self, op, expected):
         """Test that stopping_condition works correctly"""
         res = stopping_condition(op)
         assert res == expected
@@ -136,6 +137,7 @@ class TestPreprocessing:
         "obs, expected",
         [
             (qml.TShift(0), False),
+            (qml.QutritDepolarizingChannel(0.4, 0), False),
             (qml.GellMann(0, 1), True),
             (qml.Snapshot(), False),
             (qml.operation.Tensor(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
@@ -144,7 +146,7 @@ class TestPreprocessing:
             (qml.ops.op_math.Prod(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
         ],
     )
-    def test_accepted_operator(self, obs, expected):
+    def test_accepted_observable(self, obs, expected):
         """Test that observable_stopping_condition works correctly"""
         res = observable_stopping_condition(obs)
         assert res == expected
