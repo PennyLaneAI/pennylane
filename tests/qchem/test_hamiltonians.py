@@ -108,7 +108,7 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
 
 
 def test_electron_integrals_openshell_warning():
-    r"""Test that electron_integrals raises the error when openshell molecule is provided."""
+    r"""Test that electron_integrals raises an error when an open-shell molecule is provided."""
     symbols = ["H", "H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], requires_grad=False)
     mol = qchem.Molecule(symbols, geometry)
