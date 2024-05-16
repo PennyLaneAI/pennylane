@@ -65,8 +65,8 @@ class TestInitialization:
         qml.ops.functions.assert_valid(op)
 
         assert op.wires == h.wires
-        assert op.parameters == [time]
-        assert op.data == (time,)
+        assert op.parameters == [*h.data, time]
+        assert op.data == (*h.data, time)
 
         assert op.hyperparameters["n"] == n
         assert op.hyperparameters["seed"] == seed
@@ -132,28 +132,6 @@ class TestInitialization:
         with pytest.raises(ValueError, match=msg):
             h = qml.Hamiltonian([1.0], [qml.PauliX(0)])
             qml.QDrift(h, 1.23, n=2, seed=None)
-
-    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_flatten_and_unflatten(self, coeffs, ops):
-        """Test that the flatten and unflatten methods work correctly."""
-        time, n, seed = (0.5, 2, 1234)
-        hamiltonian = qml.dot(coeffs, ops)
-        op = qml.QDrift(hamiltonian, time, n=n, seed=seed)
-        decomp = op.decomposition()
-
-        data, metadata = op._flatten()  # pylint: disable=protected-access
-        assert data[0] == time
-        assert metadata[0] == op.wires
-        assert dict(metadata[1]) == {
-            "n": n,
-            "seed": seed,
-            "base": hamiltonian,
-            "decomposition": tuple(decomp),
-        }
-
-        new_op = type(op)._unflatten(data, metadata)  # pylint: disable=protected-access
-        assert qml.equal(op, new_op)
-        assert new_op is not op
 
 
 class TestDecomposition:

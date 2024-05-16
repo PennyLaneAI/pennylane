@@ -27,7 +27,6 @@ def test_standard_validity():
     t = 0.1
     op = qml.ApproxTimeEvolution(H, t, n=20)
     qml.ops.functions.assert_valid(op)
-    assert False
 
 
 def test_queuing():

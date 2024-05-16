@@ -199,7 +199,7 @@ class QDrift(Operation):
             "base": hamiltonian,
             "decomposition": decomposition,
         }
-        super().__init__(time, wires=hamiltonian.wires, id=id)
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["base"])

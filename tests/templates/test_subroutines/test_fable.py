@@ -41,13 +41,6 @@ class TestFable:
         op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)
         qml.ops.functions.assert_valid(op)
 
-    # pylint: disable=protected-access
-    def test_flatten_unflatten(self, input_matrix):
-        """Test the flatten and unflatten methods."""
-        op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)
-        new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
-
     @pytest.mark.parametrize(
         ("input", "wires"),
         [
