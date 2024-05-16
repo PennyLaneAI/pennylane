@@ -363,8 +363,8 @@ class QuantumMonteCarlo(Operation):
                 "The probability distribution must have a length that is a power of two"
             )
 
-        target_wires = list(target_wires)
-        estimation_wires = list(estimation_wires)
+        target_wires = tuple(target_wires)
+        estimation_wires = tuple(estimation_wires)
         wires = target_wires + estimation_wires
 
         if num_target_wires != len(target_wires):

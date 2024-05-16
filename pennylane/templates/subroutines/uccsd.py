@@ -191,7 +191,11 @@ class UCCSD(Operation):
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
-        self._hyperparameters = {"init_state": init_state, "s_wires": s_wires, "d_wires": d_wires}
+        self._hyperparameters = {
+            "init_state": tuple(init_state),
+            "s_wires": tuple(tuple(w) for w in s_wires),
+            "d_wires": tuple(tuple(tuple(w) for w in dw) for dw in d_wires),
+        }
 
         super().__init__(weights, wires=wires, id=id)
 

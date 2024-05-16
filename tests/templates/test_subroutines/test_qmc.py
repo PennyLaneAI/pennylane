@@ -255,6 +255,14 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
+    def test_standard_validity(self):
+        """Test standard validity criteria with assert_valid."""
+        p = np.ones(4) / 4
+        target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
+
+        op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
+        qml.ops.functions.assert_valid(op)
+
     # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Test the flatten and unflatten methods."""

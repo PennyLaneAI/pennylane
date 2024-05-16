@@ -21,22 +21,10 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 
-# pylint: disable=protected-access,too-few-public-methods
-def test_flatten_unflatten():
-    """Tests the flatten and unflatten methods."""
-    op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 3])
-    data, metadata = op._flatten()
-    expected_data = qml.QubitUnitary(np.eye(4), (0, 1))
-    assert qml.equal(data[0], expected_data)
-
-    assert metadata[0] == qml.wires.Wires((2, 3))
-
-    # make sure metadata is hashable
-    assert hash(metadata)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
+def test_standard_validity():
+    """Test standard validity criteria using assert_valid."""
+    op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])
+    qml.ops.functions.assert_valid(op)
 
 
 class TestError:

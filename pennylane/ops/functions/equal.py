@@ -342,6 +342,7 @@ def _equal_operators(
         # If any new operations are added with arithmetic depth > 0, a new dispatch
         # should be created for them.
         return False
+    print(op1.data, op2.data)
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):

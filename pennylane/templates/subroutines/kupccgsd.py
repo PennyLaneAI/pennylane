@@ -205,11 +205,10 @@ class kUpCCGSD(Operation):
     grad_method = None
 
     def _flatten(self):
-        hyperparameters = (
-            ("k", self.hyperparameters["k"]),
-            ("delta_sz", self.hyperparameters["delta_sz"]),
-            # tuple version of init_state is essentially identical, but is hashable
-            ("init_state", tuple(self.hyperparameters["init_state"])),
+
+        # Do not need to flatten s_wires or d_wires because they are derived hyperparameters
+        hyperparameters = tuple(
+            (key, self.hyperparameters[key]) for key in ["k", "delta_sz", "init_state"]
         )
         return self.data, (self.wires, hyperparameters)
 
@@ -242,7 +241,7 @@ class kUpCCGSD(Operation):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
         self._hyperparameters = {
-            "init_state": init_state,
+            "init_state": tuple(init_state),
             "s_wires": s_wires,
             "d_wires": d_wires,
             "k": k,

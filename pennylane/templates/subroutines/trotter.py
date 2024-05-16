@@ -235,7 +235,7 @@ class TrotterProduct(ErrorOperation):
             "check_hermitian": check_hermitian,
         }
 
-        super().__init__(time, wires=hamiltonian.wires, id=id)
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["base"])
@@ -288,7 +288,7 @@ class TrotterProduct(ErrorOperation):
             SpectralNormError: The spectral norm error.
         """
         base_unitary = self.hyperparameters["base"]
-        t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
+        t, p, n = (self.parameters[-1], self.hyperparameters["order"], self.hyperparameters["n"])
 
         parameters = [t] + base_unitary.parameters
         if any(
@@ -343,10 +343,10 @@ class TrotterProduct(ErrorOperation):
         (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
         """
         hamiltonian = self.hyperparameters["base"]
-        time = self.parameters[0]
+        time = self.data[-1]
 
         hashable_hyperparameters = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "base"
+            item for item in self.hyperparameters.items() if item[0] != "base"
         )
         return (hamiltonian, time), hashable_hyperparameters
 
@@ -375,8 +375,7 @@ class TrotterProduct(ErrorOperation):
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
 
         """
-        hyperparameters_dict = dict(metadata)
-        return cls(*data, **hyperparameters_dict)
+        return cls(*data, **dict(metadata))
 
     @staticmethod
     def compute_decomposition(*args, **kwargs):
@@ -399,7 +398,7 @@ class TrotterProduct(ErrorOperation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        time = args[0]
+        time = args[-1]
         n = kwargs["n"]
         order = kwargs["order"]
         ops = kwargs["base"].operands

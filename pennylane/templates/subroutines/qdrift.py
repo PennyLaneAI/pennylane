@@ -144,6 +144,17 @@ class QDrift(Operation):
 
     """
 
+    def _flatten(self):
+        h = self.hyperparameters["base"]
+        hashable_hyperparameters = tuple(
+            (key, value) for key, value in self.hyperparameters.items() if key != "base"
+        )
+        return (h, self.data[-1]), hashable_hyperparameters
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, **dict(metadata))
+
     def __init__(  # pylint: disable=too-many-arguments
         self, hamiltonian, time, n=1, seed=None, decomposition=None, id=None
     ):
@@ -178,7 +189,7 @@ class QDrift(Operation):
                 "coefficients of the input Hamiltonian."
             )
 
-        if decomposition is None:  # need to do this to allow flatten and _unflatten
+        if decomposition is None:  # need to do this to allow flatten and unflatten
             unwrapped_coeffs = unwrap(coeffs)
             decomposition = _sample_decomposition(unwrapped_coeffs, ops, time, n=n, seed=seed)
 
@@ -194,35 +205,6 @@ class QDrift(Operation):
         context.remove(self.hyperparameters["base"])
         context.append(self)
         return self
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        """Recreate an operation from its serialized format.
-
-        Args:
-            data: the trainable component of the operation
-            metadata: the non-trainable component of the operation
-
-        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
-        operation with ``Operator._unflatten``.
-
-        **Example:**
-
-        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten()
-        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
-        >>> qml.Rot._unflatten(*op._flatten())
-        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
-        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> type(op)._unflatten(*op._flatten())
-        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
-
-        """
-        hyperparameters_dict = dict(metadata[1])
-        hamiltonian = hyperparameters_dict.pop("base")
-        return cls(hamiltonian, *data, **hyperparameters_dict)
 
     @staticmethod
     def compute_decomposition(*args, **kwargs):  # pylint: disable=unused-argument

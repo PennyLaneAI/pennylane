@@ -169,6 +169,8 @@ class AmplitudeAmplification(Operation):
         else:
             for _ in range(iters):
                 ops.append(O)
+                if qml.QueuingManager.recording():
+                    qml.apply(O)
                 ops.append(qml.Reflection(U, np.pi, reflection_wires=reflection_wires))
 
         return ops

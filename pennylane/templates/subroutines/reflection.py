@@ -40,7 +40,8 @@ class Reflection(Operation):
     Args:
         U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float): the angle of the operator, default is :math:`\pi`
-        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the default is ``None`` and the reflection will be applied on the ``U`` wires
+        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the
+            default is ``None`` and the reflection will be applied on the ``U`` wires.
 
     **Example**
 
@@ -123,7 +124,7 @@ class Reflection(Operation):
 
         self._hyperparameters = {
             "base": U,
-            "reflection_wires": reflection_wires,
+            "reflection_wires": tuple(reflection_wires),
         }
 
         super().__init__(alpha, wires=wires, id=id)
