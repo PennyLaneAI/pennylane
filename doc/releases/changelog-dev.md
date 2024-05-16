@@ -85,6 +85,11 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+<h4>Community contributions 🥳</h4>
+
+* Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
+  [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
@@ -96,11 +101,25 @@
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
+<h4>Community contributions 🥳</h4>
+
+* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
+
 <h3>Deprecations 👋</h3>
+
+* ``qml.transforms.map_batch_transform`` is deprecated, since a transform can be applied directly to a batch of tapes.
+  [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
 
 <h3>Documentation 📝</h3>
 
+* A small typo was fixed in the docstring for `qml.sample`.
+  [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
 <h3>Bug fixes 🐛</h3>
+
+* Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
+  [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
 
 * `qml.Projector` is now compatible with jax-jit.
   [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
@@ -108,9 +127,10 @@
 * Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
   [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
   
-* `param_shift`, `finite_diff`, `compile`, `merge_rotations`, and `transpile` now all work
-  with circuits with non-commuting measurements.
+* `param_shift`, `finite_diff`, `compile`, `insert`, `merge_rotations`, and `transpile` now
+  all work with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
+  [(#5681)](https://github.com/PennyLaneAI/pennylane/pull/5681)
 
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
@@ -119,8 +139,11 @@
 
 This release contains contributions from (in alphabetical order):
 
+Gabriel Bottrill,
+Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
 Vincent Michaud-Rioux,
+Kenya Sakka,
 David Wierichs.
