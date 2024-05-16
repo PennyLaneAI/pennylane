@@ -95,11 +95,9 @@ test_data_decomposition = [
 ]
 
 
-@pytest.mark.parametrize("s_wires, d_wires, weights, ref_gates", test_data_decomposition)
-def test_standard_validity(s_wires, d_wires, weights, ref_gates):
+@pytest.mark.parametrize("s_wires, d_wires, weights, _", test_data_decomposition)
+def test_standard_validity(s_wires, d_wires, weights, _):
     """Test standard validity criteria using assert_valid."""
-    sqg = 10 * len(s_wires) + 72 * len(d_wires)
-
     cnots = 0
     for s_wires_ in s_wires:
         cnots += 4 * (len(s_wires_) - 1)
