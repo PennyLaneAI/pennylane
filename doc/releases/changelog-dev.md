@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* A number of templates have been updated to be valid pytrees.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
+
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
@@ -120,6 +123,12 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
+
+* The decomposition of `AmplitudeAmplification` now correctly queues all operations.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
 * Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
   [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
