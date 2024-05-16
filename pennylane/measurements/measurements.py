@@ -146,23 +146,24 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
 
     @classmethod
-    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None):
-
+    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
         if cls._obs_primitive is None or cls._wires_primitive is None or cls._mcm_primitive is None:
-            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id)
+            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id, **kwargs)
         if obs is None:
             wires = () if wires is None else wires
             if eigvals is None:
-                return cls._wires_primitive.bind(*wires)  # wires
-            return cls._wires_primitive.bind(*wires, eigvals, has_eigvals=True)  # wires + eigvals
+                return cls._wires_primitive.bind(*wires, **kwargs)  # wires
+            return cls._wires_primitive.bind(
+                *wires, eigvals, has_eigvals=True, **kwargs
+            )  # wires + eigvals
 
         if isinstance(obs, Operator) or isinstance(
             getattr(obs, "aval", None), qml.capture.AbstractOperator
         ):
-            return cls._obs_primitive.bind(obs)
+            return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
-            return cls._mcm_primitive.bind(*obs)  # iterable of mcms
-        return cls._mcm_primitive.bind(obs)  # single mcm
+            return cls._mcm_primitive.bind(*obs, **kwargs)  # iterable of mcms
+        return cls._mcm_primitive.bind(obs, **kwargs)  # single mcm
 
     # pylint: disable=unused-argument
     @classmethod

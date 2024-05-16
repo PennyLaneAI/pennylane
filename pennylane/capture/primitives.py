@@ -219,11 +219,10 @@ def create_measurement_wires_primitive(
     def _(*args, has_eigvals=False, **kwargs):
         if has_eigvals:
             wires = args[:-1]
-            eigvals = args[-1]
+            kwargs["eigvals"] = args[-1]
         else:
             wires = qml.wires.Wires(args)
-            eigvals = None
-        return type.__call__(measurement_type, wires=wires, eigvals=eigvals**kwargs)
+        return type.__call__(measurement_type, wires=wires, **kwargs)
 
     abstract_type = _get_abstract_measurement()
 

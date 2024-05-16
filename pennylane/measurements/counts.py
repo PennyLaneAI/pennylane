@@ -205,6 +205,14 @@ class CountsMP(SampleMeasurement):
 
         return f"CountsMP(wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
 
+    @classmethod
+    def _abstract_eval(
+        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+    ) -> tuple:
+        raise NotImplementedError(
+            "CountsMP returns a dictionary, which is not compatible with capture."
+        )
+
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
