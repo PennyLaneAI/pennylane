@@ -183,6 +183,7 @@ def _check_pytree(op):
             f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
         )
         raise AssertionError(message) from e
+    assert qml.equal(op, new_op)
     assert op == new_op, "metadata and data must be able to reproduce the original operation"
 
     try:
@@ -193,6 +194,8 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
+    print(op.data)
+    print(leaves)
     for d1, d2 in zip(op.data, leaves):
         assert qml.math.allclose(
             d1, d2
