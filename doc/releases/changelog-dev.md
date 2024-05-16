@@ -83,6 +83,11 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+<h4>Community contributions 🥳</h4>
+
+* Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
+  [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
@@ -94,7 +99,15 @@
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
+<h4>Community contributions 🥳</h4>
+
+* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
+
 <h3>Deprecations 👋</h3>
+
+* ``qml.transforms.map_batch_transform`` is deprecated, since a transform can be applied directly to a batch of tapes.
+  [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
 
 <h3>Documentation 📝</h3>
 
@@ -124,9 +137,11 @@
 
 This release contains contributions from (in alphabetical order):
 
+Gabriel Bottrill,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
 Vincent Michaud-Rioux,
+Kenya Sakka,
 David Wierichs.

@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``qml.transforms.map_batch_transform`` is deprecated, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+
+  - Deprecated in v0.37
+
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
