@@ -18,6 +18,7 @@ This submodule contains the template for QROM.
 
 import copy
 import math
+
 import numpy as np
 
 import pennylane as qml
