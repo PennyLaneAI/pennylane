@@ -99,7 +99,9 @@ class QROM(Operation):
     def __repr__(self):
         return f"QROM(target_wires={self.target_wires}, control_wires={self.control_wires},  work_wires={self.work_wires})"
 
-    def __init__(self, b, target_wires, control_wires, work_wires, clean=True, id=None):
+    def __init__(
+        self, b, target_wires, control_wires, work_wires, clean=True, id=None
+    ):  # pylint: disable=too-many-arguments
 
         control_wires = qml.wires.Wires(control_wires)
         target_wires = qml.wires.Wires(target_wires)

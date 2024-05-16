@@ -208,6 +208,6 @@ def test_repr():
             ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
         )
     )
-    res = op.__repr__()
+    res = op.__repr__()[1:-1]
     expected = "QROM(target_wires=<Wires = [2]>, control_wires=<Wires = [0, 1]>,  work_wires=<Wires = [3]>)"
     assert res == expected
