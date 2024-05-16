@@ -124,6 +124,6 @@ class NoiseModel:
             parameters = inspect.signature(noise).parameters.values()
             if not any(p for p in reversed(parameters) if p.kind == p.VAR_KEYWORD):
                 raise ValueError(
-                    f"{noise} provided for {condition} must accept **kwargs"
+                    f"{noise} provided for {condition} must accept **kwargs "
                     "as the last argument in its signature."
                 )

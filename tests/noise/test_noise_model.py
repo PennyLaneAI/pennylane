@@ -16,6 +16,8 @@ Unit tests for the available conditional utitlities for noise models.
 """
 
 # pylint: disable = too-few-public-methods
+import pytest
+
 import pennylane as qml
 
 
@@ -82,3 +84,14 @@ class TestNoiseModels:
 
         sub_model1 = noise_model - qml.NoiseModel({fcond1: noise1}, t2=0.02)
         assert qml.NoiseModel({fcond: noise}, t1=0.04) == sub_model1
+
+    def test_build_model_errors(self):
+        """Test for checking building noise models raise correct error when signatures are not proper"""
+
+        with pytest.raises(ValueError, match="must be a boolean conditional"):
+            qml.NoiseModel({lambda x: x: qml.noise.partial_wires(qml.X)})
+
+        with pytest.raises(
+            ValueError, match=r"must accept \*\*kwargs as the last argument in its signature"
+        ):
+            qml.NoiseModel({qml.noise.op_eq(qml.X): lambda x: x})
