@@ -42,7 +42,6 @@ class Molecule:
         coordinates (array[float]): 1D array with the atomic positions in Cartesian coordinates. The
             coordinates must be given in atomic units and the size of the array should be ``3*N``
             where ``N`` is the number of atoms.
-        unit (str): Units of atomic coordinates. Possible values for ``unit`` are Bohr and Angstrom.
         charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Currently,
@@ -55,6 +54,7 @@ class Molecule:
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
         normalize (bool): if True, the basis functions get normalized
+        unit (str): Units of atomic coordinates. Possible values for ``unit`` are Bohr and Angstrom.
 
     **Example**
 
@@ -70,7 +70,6 @@ class Molecule:
         self,
         symbols,
         coordinates,
-        unit="Bohr",
         charge=0,
         mult=1,
         basis_name="sto-3g",
@@ -80,6 +79,7 @@ class Molecule:
         alpha=None,
         coeff=None,
         normalize=True,
+        unit="Bohr",
     ):
         if (
             basis_name.lower()
