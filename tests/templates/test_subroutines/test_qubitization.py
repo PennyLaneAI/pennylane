@@ -16,6 +16,7 @@ Tests for the Qubitization template.
 """
 
 import copy
+
 import pytest
 
 import pennylane as qml
