@@ -147,7 +147,7 @@ class QDrift(Operation):
     def _flatten(self):
         h = self.hyperparameters["base"]
         hashable_hyperparameters = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "base"
+            item for item in self.hyperparameters.items() if item[0] != "base"
         )
         return (h, self.data[-1]), hashable_hyperparameters
 

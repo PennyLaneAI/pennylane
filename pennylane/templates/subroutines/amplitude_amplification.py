@@ -101,16 +101,12 @@ class AmplitudeAmplification(Operation):
 
     def _flatten(self):
         data = (self.hyperparameters["U"], self.hyperparameters["O"])
-        metadata = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key not in ["O", "U"]
-        )
+        metadata = tuple(item for item in self.hyperparameters.items() if item[0] not in ["O", "U"])
         return data, metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        U, O = (data[0], data[1])
-        hyperparams_dict = dict(metadata)
-        return cls(U, O, **hyperparams_dict)
+        return cls(*data, **dict(metadata))
 
     def __init__(
         self, U, O, iters=1, fixed_point=False, work_wire=None, p_min=0.9, reflection_wires=None

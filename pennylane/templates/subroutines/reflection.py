@@ -104,12 +104,11 @@ class Reflection(Operation):
 
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
-        metadata = tuple(value for key, value in self.hyperparameters.items() if key != "base")
-        return data, metadata
+        return data, (self.hyperparameters["reflection_wires"],)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        U, alpha = (data[0], data[1])
+        U, alpha = data
         return cls(U, alpha=alpha, reflection_wires=metadata[0])
 
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):

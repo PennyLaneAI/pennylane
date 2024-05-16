@@ -103,16 +103,12 @@ class Qubitization(Operation):
 
     def _flatten(self):
         data = (self.hyperparameters["hamiltonian"],)
-        metadata = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "hamiltonian"
-        )
+        metadata = tuple(item for item in self.hyperparameters.items() if item[0] != "hamiltonian")
         return data, metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        hamiltonian = data[0]
-        hyperparams_dict = dict(metadata)
-        return cls(hamiltonian, **hyperparams_dict)
+        return cls(*data, **dict(metadata))
 
     def __copy__(self):
 
