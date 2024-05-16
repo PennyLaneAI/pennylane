@@ -863,32 +863,31 @@ def molecular_hamiltonian(*args, **kwargs):
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
-    .. warning::
-        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated. Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at _Usage Details_ for more details on the old interface. 
 
     .. details::
         :title: Usage Details
 
         Old interface used ``molecular_hamiltonian`` function with molecular information as separate arguments:
-        molecular_hamiltonian(symbols, coordinates, name="molecule", charge=0, mult=1, basis="sto-3g", method="dhf",
+        .. py:function:: molecular_hamiltonian(symbols, coordinates, name="molecule", charge=0, mult=1, basis="sto-3g", method="dhf",
         active_electrons=None, active_orbitals=None, mapping="jordan_wigner", outpath=".", wires=None, alpha=None,
         coeff=None, args=None, load_data=False, convert_tol=1e012)
 
-        Additional Parameters:
-          symbols (list[str]): symbols of the atomic species in the molecule
+        Keyword Arguments:
+          - **symbols** (list[str]): symbols of the atomic species in the molecule
+          - **coordinates** (array[float]): atomic positions in Cartesian coordinates.
+            The atomic coordinates must be in atomic units and can be given as either a 1D array of
+            size ``3*N``, or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
+            name (str): name of the molecule
+          - **charge** (int): Net charge of the molecule. If not specified a neutral system is assumed.
+          - **mult** (int): Spin multiplicity :math:`\\mathrm{mult}=N_\\mathrm{unpaired} + 1` for :math:`N_\\mathrm{unpaired}`
+            unpaired electrons occupying the HF orbitals. Possible values of ``mult`` are :math:`1, 2, 3, \\ldots`.
+            If not specified, a closed-shell HF state is assumed.
+          - **basis** (str): atomic basis set used to represent the molecular orbitals
+          - **alpha** (array[float]): exponents of the primitive Gaussian functions
+          - **coeff** (array[float]): coefficients of the contracted Gaussian functions
 
-          coordinates (array[float]): atomic positions in Cartesian coordinates.
-          The atomic coordinates must be in atomic units and can be given as either a 1D array of
-          size ``3*N``, or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
-          name (str): name of the molecule
-
-          charge (int): Net charge of the molecule. If not specified a neutral system is assumed.
-
-          mult (int): Spin multiplicity :math:`\\mathrm{mult}=N_\\mathrm{unpaired} + 1` for :math:`N_\\mathrm{unpaired}`
-          unpaired electrons occupying the HF orbitals. Possible values of ``mult`` are :math:`1, 2, 3, \\ldots`.
-          If not specified, a closed-shell HF state is assumed.
-
-          basis (str): atomic basis set used to represent the molecular orbitals
+    
+        This interface was supposed to be used as follows:
 
           .. code-block:: python
 
@@ -899,7 +898,8 @@ def molecular_hamiltonian(*args, **kwargs):
 
               H, qubit = qchem.molecular_hamiltonian(symbols, geometry, charge=0)
 
-        This information can now be wrapped in Molecule object and provided to the molecular_hamiltonian function in the new interface.
+        This information can now be wrapped in :class:`~.qchem.molecule.Molecule` object and provided to
+        the ``molecular_hamiltonian`` function in the new interface.
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
@@ -928,6 +928,10 @@ def molecular_hamiltonian(*args, **kwargs):
     + (0.1676831945771896) [Z1 Z2]
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
+
+    .. warning::
+        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated. Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at Usage Details for more details on the old interface. 
+
     """
 
     if len(args) != 0:
