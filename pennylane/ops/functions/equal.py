@@ -461,10 +461,19 @@ def _equal_scalar_symbolic_op(op1: ScalarSymbolicOp, op2: ScalarSymbolicOp, **kw
 # pylint: disable=unused-argument
 def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
+
+    if kwargs["check_interface"]:
+        if qml.math.get_interface(op1.scalar) != qml.math.get_interface(op2.scalar):
+            return False
+    if kwargs["check_trainability"]:
+        if qml.math.requires_grad(op1.scalar) != qml.math.requires_grad(op2.scalar):
+            return False
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
+    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=kwargs["rtol"], atol=kwargs["atol"]):
+        return False
 
-    return _equal_scalar_symbolic_op(op1, op2, **kwargs)
+    return qml.equal(op1.base, op2.base, **kwargs)
 
 
 @_equal.register
