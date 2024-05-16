@@ -753,7 +753,7 @@ def test_counts_return_type(mcm_f):
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
+@pytest.mark.parametrize("shots", [6000, [6000, 6001]])
 @pytest.mark.parametrize("postselect", [None, 1])
 @pytest.mark.parametrize("diff_method", [None, "best"])
 @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
@@ -794,7 +794,7 @@ def test_torch_integration(shots, postselect, diff_method, measure_f, meas_obj):
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
+@pytest.mark.parametrize("shots", [6000, [6000, 6001]])
 @pytest.mark.parametrize("postselect", [None, 1])
 @pytest.mark.parametrize("diff_method", [None, "best"])
 @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])

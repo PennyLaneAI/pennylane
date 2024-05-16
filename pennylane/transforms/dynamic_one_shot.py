@@ -246,7 +246,7 @@ def parse_native_mid_circuit_measurements(
     )
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
     has_postselect = qml.math.array(
-        [[0 if op.postselect is None else 1 for op in all_mcms]], like=interface
+        [[int(op.postselect is not None) for op in all_mcms]], like=interface
     )
     postselect = qml.math.array(
         [[0 if op.postselect is None else op.postselect for op in all_mcms]], like=interface
@@ -274,6 +274,9 @@ def parse_native_mid_circuit_measurements(
         else:
             result = [res[m_count] for res in results]
             if not isinstance(m, CountsMP):
+                # We don't need to cast to arrays when using qml.counts. qml.math.array is not viable
+                # as it assumes all elements of the input are of builtin python types and not belonging
+                # to any particular interface
                 result = qml.math.stack(result, like=interface)
             meas = gather_non_mcm(m, result, is_valid)
             m_count += 1

@@ -152,5 +152,6 @@ Pietropaolo Frisoni,
 Soran Jahangiri,
 Christina Lee,
 Vincent Michaud-Rioux,
+Mudit Pandey,
 Kenya Sakka,
 David Wierichs.
