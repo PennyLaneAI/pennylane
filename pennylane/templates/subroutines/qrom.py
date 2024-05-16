@@ -141,8 +141,7 @@ class QROM(Operation):
             new_work_wires = [
                 wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]
             ]
-        else:
-            new_work_wires = []
+
         return QROM(self.b, new_target_wires, new_control_wires, new_work_wires, self.clean)
 
     @staticmethod
