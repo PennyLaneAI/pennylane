@@ -152,6 +152,7 @@ class QROM(Operation):
 
     @staticmethod
     def multi_swap(wires1, wires2):
+        """Apply a series of SWAP gates between two sets of wires."""
         for wire1, wire2 in zip(wires1, wires2):
             qml.SWAP(wires=[wire1, wire2])
 
