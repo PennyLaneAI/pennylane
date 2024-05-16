@@ -889,14 +889,14 @@ def molecular_hamiltonian(*args, **kwargs):
 
         This interface was supposed to be used as follows:
 
-          .. code-block:: python
+        .. code-block:: python
 
-              from pennylane import qchem
+            from pennylane import qchem
 
-              symbols = ["H", "H"]
-              geometry = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+            symbols = ["H", "H"]
+            geometry = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
 
-              H, qubit = qchem.molecular_hamiltonian(symbols, geometry, charge=0)
+            H, qubit = qchem.molecular_hamiltonian(symbols, geometry, charge=0)
 
         This information can now be wrapped in :class:`~.qchem.molecule.Molecule` object and provided to
         the ``molecular_hamiltonian`` function in the new interface.
