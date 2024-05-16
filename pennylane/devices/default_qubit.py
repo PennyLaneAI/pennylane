@@ -90,6 +90,8 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
+    if op.name == "CommutingEvolution" and len(op.wires) >= 13:
+        return False
     if op.name == "Snapshot":
         return True
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
