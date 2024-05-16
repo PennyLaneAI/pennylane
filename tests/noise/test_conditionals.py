@@ -19,6 +19,7 @@ Unit tests for the available conditional utitlities for noise models.
 import pytest
 
 import pennylane as qml
+from pennylane.boolean_fn import And, Not, Or, Xor
 from pennylane.noise.conditionals import _get_ops, _get_wires
 
 
@@ -26,59 +27,92 @@ class TestNoiseConditionals:
     """Test for the Conditional classes"""
 
     def test_noise_conditional_lambda(self):
-        """Test for NoiseConditional builds correct objects"""
+        """Test for BooleanFn builds correct objects"""
 
-        func = qml.noise.NoiseConditional(lambda x: x < 10, "less_than_ten")
+        func = qml.BooleanFn(lambda x: x < 10, "less_than_ten")
 
         assert isinstance(func, qml.BooleanFn)
         assert func(2) and not func(42)
-        assert str(func) == "less_than_ten"
+        assert repr(func) == "BooleanFn(less_than_ten)"
 
     def test_noise_conditional_def(self):
-        """Test for NoiseConditional builds correct objects"""
+        """Test for BooleanFn builds correct objects"""
 
         def greater_than_five(x):
             return x > 5
 
-        func = qml.noise.NoiseConditional(greater_than_five)
+        func = qml.BooleanFn(greater_than_five)
 
         assert isinstance(func, qml.BooleanFn)
         assert not func(3) and func(7)
-        assert str(func) == "NoiseConditional(greater_than_five)"
+        assert repr(func) == "BooleanFn(greater_than_five)"
 
     def test_and_conditionals(self):
-        """Test for NoiseConditional supports bitwise AND"""
+        """Test for BooleanFn supports bitwise AND"""
 
+        @qml.BooleanFn
         def is_int(x):
             return isinstance(x, int)
 
+        @qml.BooleanFn
         def has_bit_length_3(x):
             return x.bit_length() == 3
 
-        func1 = qml.noise.NoiseConditional(is_int, "is_int")
-        func2 = qml.noise.NoiseConditional(has_bit_length_3, "has_bit_length_3")
-        func3 = func1 & func2
+        func = is_int & has_bit_length_3
 
-        assert isinstance(func3, qml.noise.AndConditional)
-        assert func3(4) and not func3(2.3)
-        assert str(func3) == "And(is_int, has_bit_length_3)"
+        assert isinstance(func, And)
+        assert func(4) and not func(2.3)
+        assert repr(func) == "And(is_int, has_bit_length_3)"
+        assert func.bitwise
 
     def test_or_conditionals(self):
-        """Test for NoiseConditional supports bitwise OR"""
+        """Test for BooleanFn supports bitwise OR"""
+
+        @qml.BooleanFn
+        def is_int(x):
+            return isinstance(x, int)
+
+        @qml.BooleanFn
+        def less_than_five(x):
+            return x < 5
+
+        func = is_int | less_than_five
+
+        assert isinstance(func, Or)
+        assert func(4) and not func(7.5)
+        assert repr(func) == "Or(is_int, less_than_five)"
+        assert func.bitwise
+
+    def test_xor_conditionals(self):
+        """Test for BooleanFn supports bitwise XOR"""
+
+        @qml.BooleanFn
+        def is_int(x):
+            return isinstance(x, int)
+
+        @qml.BooleanFn
+        def has_bit_length_3(x):
+            return x.bit_length() == 3
+
+        func = is_int ^ has_bit_length_3
+
+        assert isinstance(func, Xor)
+        assert not func(4) and func(11)
+        assert repr(func) == "Xor(is_int, has_bit_length_3)"
+        assert func.bitwise
+
+    def test_not_conditionals(self):
+        """Test for BooleanFn supports bitwise NOT"""
 
         def is_int(x):
             return isinstance(x, int)
 
-        def less_than_five(x):
-            return x < 5
+        func = ~qml.BooleanFn(is_int)
 
-        func1 = qml.noise.NoiseConditional(is_int, "is_int")
-        func2 = qml.noise.NoiseConditional(less_than_five, "less_than_five")
-        func3 = func1 | func2
-
-        assert isinstance(func3, qml.noise.OrConditional)
-        assert func3(4) and not func3(7.5)
-        assert str(func3) == "Or(is_int, less_than_five)"
+        assert isinstance(func, Not)
+        assert not func(4) and func(7.5)
+        assert repr(func) == "Not(is_int)"
+        assert func.bitwise
 
 
 class TestNoiseFunctions:
@@ -100,8 +134,8 @@ class TestNoiseFunctions:
 
         func = qml.noise.wires_in(obj)
 
-        assert isinstance(func, qml.noise.NoiseConditional)
-        assert str(func) == f"WiresIn({obj})"
+        assert isinstance(func, qml.BooleanFn)
+        assert str(func) == f"WiresIn({list(_get_wires(obj))})"
         assert func(wires) == result
 
     @pytest.mark.parametrize(
@@ -120,9 +154,9 @@ class TestNoiseFunctions:
         """Test for checking WiresEq work as expected for checking if a set of wires is equal to specified wires"""
 
         func = qml.noise.wires_eq(obj)
-
-        assert isinstance(func, qml.noise.NoiseConditional)
-        assert str(func) == f"WiresEq({obj})"
+        _wires = list(_get_wires(obj))
+        assert isinstance(func, qml.BooleanFn)
+        assert str(func) == f"WiresEq({_wires if len(_wires) > 1 else _wires[0]})"
         assert func(wires) == result
 
     def test_get_wires_error(self):
@@ -151,7 +185,7 @@ class TestNoiseFunctions:
 
         func = qml.noise.op_in(obj)
 
-        assert isinstance(func, qml.noise.NoiseConditional)
+        assert isinstance(func, qml.BooleanFn)
 
         op_repr = list(getattr(op, "__name__") for op in _get_ops(obj))
         assert str(func) == f"OpIn({op_repr})"
@@ -177,10 +211,10 @@ class TestNoiseFunctions:
 
         func = qml.noise.op_eq(obj)
 
-        assert isinstance(func, qml.noise.NoiseConditional)
+        assert isinstance(func, qml.BooleanFn)
 
-        op_repr = str([getattr(op, "__name__") for op in _get_ops(obj)])[1:-1]
-        assert str(func) == f"OpEq({op_repr})"
+        op_repr = [getattr(op, "__name__") for op in _get_ops(obj)]
+        assert str(func) == f"OpEq({op_repr if len(op_repr) > 1 else op_repr[0]})"
         assert func(op) == result
 
     def test_partial_wires(self):
