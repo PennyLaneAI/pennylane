@@ -16,7 +16,6 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
 import abc
-import copy
 import types
 import warnings
 from collections import OrderedDict
@@ -97,8 +96,6 @@ def _local_tape_expand(tape, depth, stop_at):
     new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots)
 
     # Update circuit info
-    new_tape.wires = copy.copy(tape.wires)
-    new_tape.num_wires = tape.num_wires
     new_tape._batch_size = tape._batch_size
     new_tape._output_dim = tape._output_dim
     return new_tape
