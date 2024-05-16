@@ -15,7 +15,25 @@
 Tests for the pennylane pytrees module
 """
 import pennylane as qml
-from pennylane.pytrees import Structure, flatten, leaf, register_pytree, unflatten
+from pennylane.pytrees import Leaf, Structure, flatten, leaf, register_pytree, unflatten
+
+
+def test_structure_repr():
+    """Test the repr of the structure class."""
+    op = qml.RX(0.1, wires=0)
+    _, structure = qml.pytrees.flatten(op)
+    expected = "PyTree(RX, (<Wires = [0]>, ()), [Leaf])"
+    assert repr(structure) == expected
+
+
+def test_leaf_class():
+    """Test the dunder methods of the leaf class."""
+
+    assert repr(leaf) == "Leaf"
+    assert Leaf() == Leaf()
+    assert hash(leaf) == hash(Leaf)
+
+    assert set((Leaf(), Leaf())) == set((Leaf(),))
 
 
 def test_register_new_class():
