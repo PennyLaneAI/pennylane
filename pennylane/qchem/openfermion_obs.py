@@ -930,7 +930,9 @@ def molecular_hamiltonian(*args, **kwargs):
     + (0.176276408043196) [Z2 Z3]
 
     .. warning::
-        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated. Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at Usage Details for more details on the old interface. 
+        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated.
+        Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at Usage Details
+        for more details on the old interface.
 
     """
 
