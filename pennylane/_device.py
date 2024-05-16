@@ -81,7 +81,7 @@ def _local_tape_expand(tape, depth, stop_at):
             if isinstance(obj, Operator):
                 if obj.has_decomposition:
                     with QueuingManager.stop_recording():
-                        obj = QuantumScript(obj.decomposition(), _update=False)
+                        obj = QuantumScript(obj.decomposition())
                 else:
                     new_queue.append(obj)
                     continue
@@ -94,7 +94,7 @@ def _local_tape_expand(tape, depth, stop_at):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)

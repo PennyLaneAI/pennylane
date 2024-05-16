@@ -82,8 +82,6 @@ class QuantumScript:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
         trainable_params (None, Sequence[int]): the indices for which parameters are trainable
-        _update=True (bool): Whether or not to set various properties on initialization. Setting
-            ``_update=False`` reduces computations if the script is only an intermediary step.
 
     .. seealso:: :class:`pennylane.tape.QuantumTape`
 
@@ -173,7 +171,6 @@ class QuantumScript:
         measurements=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
         trainable_params: Optional[Sequence[int]] = None,
-        _update=True,
     ):
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -187,9 +184,6 @@ class QuantumScript:
 
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
-
-        if _update:
-            self._update()
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -896,7 +890,6 @@ class QuantumScript:
         new_script = qml.tape.tape.expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
         )
-        new_script._update()
         return new_script
 
     def adjoint(self):

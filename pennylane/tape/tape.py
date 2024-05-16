@@ -216,7 +216,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if isinstance(obj, Operator):
                 if obj.has_decomposition:
                     with QueuingManager.stop_recording():
-                        obj = QuantumScript(obj.decomposition(), _update=False)
+                        obj = QuantumScript(obj.decomposition())
                 else:
                     new_queue.append(obj)
                     continue
@@ -238,7 +238,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots)
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
@@ -287,7 +287,7 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, tape.measurements, shots=tape.shots, _update=False)
+    new_tape = tape.__class__(new_ops, tape.measurements, shots=tape.shots)
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
@@ -310,9 +310,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
         trainable_params (None, Sequence[int]): the indices for which parameters are trainable
-        _update=True (bool): Whether or not to set various properties on initialization. Setting
-            ``_update=False`` reduces computations if the tape is only an intermediary step.
-
 
     **Example**
 
@@ -434,12 +431,9 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         measurements=None,
         shots=None,
         trainable_params=None,
-        _update=True,
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(
-            self, ops, measurements, shots, trainable_params=trainable_params, _update=_update
-        )
+        QuantumScript.__init__(self, ops, measurements, shots, trainable_params=trainable_params)
 
     def __enter__(self):
         QuantumTape._lock.acquire()
@@ -475,7 +469,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             _ops (list[~.Operation]): Main tape operations
             _measurements (list[~.MeasurementProcess]): Tape measurements
 
-        Also calls `_update()` which sets many attributes.
+        Also calls `_update()` which invalidates the cached properties since ops and measurements are upadted.
         """
         self._ops, self._measurements = process_queue(self)
         self._update()
