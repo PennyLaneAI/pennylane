@@ -86,7 +86,7 @@ libclang==18.1.1
 Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
-matplotlib==3.8.4
+matplotlib==3.9.0
 matplotlib-inline==0.1.7
 mdurl==0.1.2
 mistune==3.0.2
@@ -183,4 +183,4 @@ websocket-client==1.8.0
 Werkzeug==3.0.3
 widgetsnbextension==3.6.6
 wrapt==1.16.0
-zipp==3.18.1
+zipp==3.18.2
