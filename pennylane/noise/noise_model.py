@@ -19,11 +19,11 @@ import pennylane as qml
 
 
 class NoiseModel:
-    """Build a noise model based on ``Conditional``, ``Operation`` and ``metadata``.
+    """Build a noise model based on ``Conditional``, ``Operation`` and some ``metadata``.
 
     Args:
-        model (dict[Union[~.NoiseConditional, Callable]->Union[Operation, Channel]]): Model
-            data for the noise model as a ``{Conditional: Noisy_gate}`` dictionary.
+        model (dict[Union[~.BooleanFn]->Union[Operation, Channel]]): Model
+            data for the noise model as a ``{conditional: noise_op}`` dictionary.
         kwargs: Keyword arguments for specifying metadata related to noise model.
 
     **Example**
@@ -115,10 +115,10 @@ class NoiseModel:
     @classmethod
     def _check_model(cls, model):
         for condition, noise in model.items():
-            if not isinstance(condition, (qml.noise.NoiseConditional, qml.BooleanFn)):
+            if not isinstance(condition, qml.BooleanFn):
                 raise ValueError(
                     f"{condition} must be a boolean conditional, i.e., an instance of"
-                    "NoiseConditional, AndConditional, OrConditional, or BooleanFn"
+                    "BooleanFn or one of its subclasses."
                 )
 
             parameters = inspect.signature(noise).parameters.values()

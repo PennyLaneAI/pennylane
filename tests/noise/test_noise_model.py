@@ -37,7 +37,7 @@ class TestNoiseModels:
         assert list(noise_model.metadata.values()) == [0.04, 0.02]
         assert (
             repr(noise_model) == "NoiseModel({\n"
-            "    Or(OpEq('PauliX'), OpEq('PauliY')) = AmplitudeDamping(gamma=0.4)\n"
+            "    Or(OpEq(PauliX), OpEq(PauliY)) = AmplitudeDamping(gamma=0.4)\n"
             "}, t1 = 0.04, t2 = 0.02)"
         )
 
