@@ -135,6 +135,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ahmed Darwish,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
