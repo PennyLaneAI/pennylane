@@ -182,8 +182,8 @@ class QuantumScript:
         self._output_dim = None
         self._batch_size = _UNSET_BATCH_SIZE
 
-        self._obs_sharing_wires = []
-        self._obs_sharing_wires_id = []
+        self._obs_sharing_wires = None
+        self._obs_sharing_wires_id = None
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -388,18 +388,38 @@ class QuantumScript:
 
     @cached_property
     def wires(self) -> Wires:
-        "Wires used in the quantum script process"
+        """Returns the wires used in the quantum script process
+
+        Returns:
+            ~.Wires: wires in quantum script process
+        """
         return Wires.all_wires(dict.fromkeys(op.wires for op in self))
 
     @property
     def num_wires(self) -> int:
-        """Number of wires in the quantum script process"""
+        """Returns the number of wires in the quantum script process
+
+        Returns:
+            int: number of wires in quantum script process
+        """
         return len(self.wires)
 
     @cached_property
     def par_info(self):
-        """list[dict[str, Operator or int]]: Parameter information.
-        Values are dictionaries containing the corresponding operation and operation parameter index.
+        """Returns the parameter information of the operations and measurements in the quantum script.
+
+        Returns:
+            list[dict[str, Operator or int]]: list of dictionaries with parameter information.
+
+        **Example**
+
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0), qml.CNOT((0,1))]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
+        >>> qscript.par_info
+        [{'op': StatePrep(array([0, 1]), wires=[0]), 'op_idx': 0, 'p_idx': 0},
+        {'op': RX(0.432, wires=[0]), 'op_idx': 1, 'p_idx': 0}]
+
+        Note that the operations and measurements included in this list are only the ones that have parameters
         """
         par_info = []
         for idx, op in enumerate(self.operations):
@@ -416,17 +436,27 @@ class QuantumScript:
 
     @property
     def obs_sharing_wires(self):
-        """list[~.Observable]: subset of the observables that share wires with another observable,
-        i.e., that do not have their own unique set of wires."""
-        if not self._obs_sharing_wires:
+        """Returns the subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires.
+
+        Returns:
+            list[~.Observable]: list of observables with shared wires.
+
+        """
+        if self._obs_sharing_wires is None:
             self._update_observables()
         return self._obs_sharing_wires
 
     @property
     def obs_sharing_wires_id(self):
-        """list[int: indices subset of the observables that share wires with another observable,
-        i.e., that do not have their own unique set of wires."""
-        if not self._obs_sharing_wires_id:
+        """Returns the indices subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires.
+
+        Returns:
+            list[int]: list of indices from observables with shared wires.
+
+        """
+        if self._obs_sharing_wires_id is None:
             self._update_observables()
         return self._obs_sharing_wires_id
 

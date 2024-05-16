@@ -685,7 +685,6 @@ class Device(abc.ABC):
             circuit = _local_tape_expand(
                 circuit, depth=max_expansion, stop_at=self.stopping_condition
             )
-            circuit._update()
 
         return circuit
 

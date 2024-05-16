@@ -446,7 +446,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         QuantumTape._lock.release()
         self._process_queue()
         self._trainable_params = None
-        self._update()
 
     def adjoint(self):
         adjoint_tape = super().adjoint()
@@ -469,7 +468,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             _ops (list[~.Operation]): Main tape operations
             _measurements (list[~.MeasurementProcess]): Tape measurements
 
-        Also calls `_update()` which invalidates the cached properties since ops and measurements are upadted.
+        Also calls `_update()` which invalidates the cached properties since ops and measurements are updated.
         """
         self._ops, self._measurements = process_queue(self)
         self._update()
