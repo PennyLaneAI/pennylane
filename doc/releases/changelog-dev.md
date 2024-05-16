@@ -98,7 +98,7 @@
 * ``qml.load`` has been removed in favour of more specific functions, such as ``qml.from_qiskit``, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
-* ``qml.transforms.convert_to_numpy_parameters`` is now a proper transform and its output signature has changed,
+* `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
   returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
   [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
 
