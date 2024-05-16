@@ -143,7 +143,7 @@ class CommutingEvolution(ScalarSymbolicOp):
     def parameter_frequencies(self):
         """Compute the parameter frequencies of CommutingEvolution."""
         # TODO: Fix the following by exploiting the structure of CommutingEvolution
-        # Note that because of the coefficients of the Hamiltonian, we do not have
+        # Note that because of the coefficients of the Hamiltonian, we currently do not have
         # parameter_frequencies even if "frequencies" are provided at initialization!
         raise ParameterFrequenciesUndefinedError(
             "CommutingEvolution has no parameter frequencies defined."
@@ -153,18 +153,9 @@ class CommutingEvolution(ScalarSymbolicOp):
     def _queue_category(self):
         return "_ops"
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_matrix(self):
-        return False
-
     @staticmethod
     def _matrix(scalar, mat):
         return qml.math.expm(-1j * scalar * mat)
-
-    def matrix(self, wire_order=None) -> TensorLike:
-        """Raise a MatrixUndefinedError for now to force decomposition on DefaultQubit."""
-        raise MatrixUndefinedError("CommutingEvolution does not define a matrix itself.")
 
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property

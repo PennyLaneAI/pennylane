@@ -126,7 +126,7 @@ class TestBasicProperties:
         time = 0.234
         op = qml.CommutingEvolution(h, time)
 
-        assert op.has_matrix is False
+        assert op.has_matrix is True
 
         mat = qml.matrix(op)
         mat2 = op._matrix(time, qml.matrix(h))
@@ -249,6 +249,7 @@ class TestGradients:
         coeffs = [1, -1]
         obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
         hamiltonian = qml.Hamiltonian(coeffs, obs)
+        print(f"{hamiltonian.data=}")
         frequencies = (2, 4)
 
         @qml.qnode(dev)
@@ -261,8 +262,13 @@ class TestGradients:
 
         grads_finite_diff = [qml.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qml.gradients.param_shift(circuit)(x) for x in x_vals]
+        circuit(x_vals[0])
+        tapes, fn = qml.gradients.param_shift(circuit.tape)
+        for t in tapes:
+            print(t.operations)
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
+        assert False
 
     # pylint: disable=not-callable
     def test_differentiable_hamiltonian(self):
