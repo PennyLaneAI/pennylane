@@ -19,16 +19,16 @@ import itertools
 import math
 
 import numpy as np
-import pennylane as qml
 import pytest
 import quimb.tensor as qtn
 from conftest import LightningDevice  # tested device
+from pennylane_lightning.lightning_tensor import LightningTensor
+from scipy.sparse import csr_matrix
+
+import pennylane as qml
 from pennylane import QNode
 from pennylane.devices import DefaultQubit
 from pennylane.wires import Wires
-from scipy.sparse import csr_matrix
-
-from pennylane_lightning.lightning_tensor import LightningTensor
 
 if not LightningDevice._new_API:
     pytest.skip("Exclusive tests for new API. Skipping.", allow_module_level=True)

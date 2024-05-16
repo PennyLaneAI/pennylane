@@ -15,9 +15,10 @@
 Tests for the variance calculation on the LightningTensor device.
 """
 import numpy as np
-import pennylane as qml
 import pytest
 from conftest import PHI, THETA, VARPHI, LightningDevice
+
+import pennylane as qml
 from pennylane.tape import QuantumScript
 
 if not LightningDevice._new_API:

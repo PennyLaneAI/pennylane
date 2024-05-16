@@ -16,9 +16,10 @@ Tests for the expectation value calculations on the LightningTensor device.
 """
 
 import numpy as np
-import pennylane as qml
 import pytest
 from conftest import PHI, THETA, VARPHI, LightningDevice
+
+import pennylane as qml
 from pennylane.devices import DefaultQubit
 
 if not LightningDevice._new_API:

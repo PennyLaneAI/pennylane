@@ -152,12 +152,12 @@ from .default_qubit import DefaultQubit
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
-# not PennyLane core dependencies
+# not PennyLane core dependencies. DefaultTensor is not imported here
+# since it would lead to an automatic import of quimb.
 from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
 from .default_qutrit_mixed import DefaultQutritMixed
-from .default_tensor import DefaultTensor
 from .._device import Device as LegacyDevice

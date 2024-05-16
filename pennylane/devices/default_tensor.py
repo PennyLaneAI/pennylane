@@ -20,7 +20,11 @@ from numbers import Number
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import quimb.tensor as qtn
+
+try:
+    import quimb.tensor as qtn
+except ImportError as e:
+    raise ImportError("default.tensor device requires the quimb package") from e
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
@@ -194,7 +198,7 @@ class DefaultTensor(Device):
         if shots is not None:
             raise ValueError("default.tensor does not support finite shots.")
 
-        if dtype not in [np.complex64, np.complex128]:  # pragma: no cover
+        if dtype not in [np.complex64, np.complex128]:
             raise TypeError(
                 f"Unsupported type: {dtype}. Supported types are np.complex64 and np.complex128."
             )
