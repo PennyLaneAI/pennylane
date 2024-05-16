@@ -35,7 +35,7 @@ class TestInitialization:
         qs = QuantumScript(_update=False)
         assert len(qs._ops) == 0
         assert len(qs._measurements) == 0
-        assert len(qs._par_info) == 0
+        assert len(qs.par_info) == 0
         assert qs._trainable_params is None
         assert qs.trainable_params == []
         assert qs._trainable_params == []
@@ -168,7 +168,7 @@ class TestUpdate:
         m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
         qs = QuantumScript(ops, m)
 
-        p_i = qs._par_info
+        p_i = qs.par_info
 
         assert p_i[0] == {"op": ops[0], "op_idx": 0, "p_idx": 0}
         assert p_i[1] == {"op": ops[1], "op_idx": 1, "p_idx": 0}

@@ -169,7 +169,7 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
     """
 
     # pylint:disable=protected-access
-    par_info = tape._par_info[param_index]
+    par_info = tape.par_info[param_index]
 
     if use_graph:
         op_or_mp = tape[par_info["op_idx"]]

@@ -720,7 +720,7 @@ class TestParameters:
 
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape.par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters() == new_params
@@ -735,7 +735,7 @@ class TestParameters:
         new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
 
         count = 0
-        for idx, pinfo in enumerate(new_tape._par_info):
+        for idx, pinfo in enumerate(new_tape.par_info):
             if idx in tape.trainable_params:
                 assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
                 count += 1
@@ -778,7 +778,7 @@ class TestParameters:
         tape.trainable_params = [1, 3]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape.par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters(trainable_only=False) == new_params

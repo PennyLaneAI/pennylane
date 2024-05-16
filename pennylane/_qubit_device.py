@@ -1713,7 +1713,7 @@ class QubitDevice(Device):
         trainable_params = []
         for k in tape.trainable_params:
             # pylint: disable=protected-access
-            mp_or_op = tape[tape._par_info[k]["op_idx"]]
+            mp_or_op = tape[tape.par_info[k]["op_idx"]]
             if isinstance(mp_or_op, MeasurementProcess):
                 warnings.warn(
                     "Differentiating with respect to the input parameters of "

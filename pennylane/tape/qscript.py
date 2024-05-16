@@ -179,10 +179,6 @@ class QuantumScript:
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
 
-        self._par_info = []
-        """list[dict[str, Operator or int]]: Parameter information.
-        Values are dictionaries containing the corresponding operation and operation parameter index."""
-
         self._trainable_params = trainable_params
         self._graph = None
         self._specs = None
@@ -388,9 +384,13 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        # self._update_par_info()  # Updates _par_info; O(ops+obs)
 
-        # self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
+        try:
+            # Invalidate cached properties so they get recalculated
+            del self.wires
+            del self.par_info
+        except AttributeError:
+            pass
 
     @cached_property
     def wires(self) -> Wires:
@@ -402,44 +402,23 @@ class QuantumScript:
         """Number of wires in the quantum script process"""
         return len(self.wires)
 
-    def _update_par_info(self):
-        """Update the parameter information list. Each entry in the list with an operation and an index
-        into that operation's data.
-
-        Sets:
-            _par_info (list): Parameter information
+    @cached_property
+    def par_info(self):
+        """list[dict[str, Operator or int]]: Parameter information.
+        Values are dictionaries containing the corresponding operation and operation parameter index.
         """
-        self._par_info = []
+        par_info = []
         for idx, op in enumerate(self.operations):
-            self._par_info.extend(
-                {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
-            )
+            par_info.extend({"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data))
 
         n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
-                self._par_info.extend(
+                par_info.extend(
                     {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
                     for i, d in enumerate(m.obs.data)
                 )
-
-    # @cached_property
-    # def _par_info(self):
-    #     """list[dict[str, Operator or int]]: Parameter information.
-    #     Values are dictionaries containing the corresponding operation and operation parameter index.
-    #     """
-    #     _par_info = []
-    #     for idx, op in enumerate(self.operations):
-    #         _par_info.extend({"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data))
-
-    #     n_ops = len(self.operations)
-    #     for idx, m in enumerate(self.measurements):
-    #         if m.obs is not None:
-    #             _par_info.extend(
-    #                 {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
-    #                 for i, d in enumerate(m.obs.data)
-    #             )
-    #     return _par_info
+        return par_info
 
     @property
     def obs_sharing_wires(self):
@@ -567,7 +546,7 @@ class QuantumScript:
         [0.432]
         """
         if self._trainable_params is None:
-            self._trainable_params = list(range(len(self._par_info)))
+            self._trainable_params = list(range(len(self.par_info)))
         return self._trainable_params
 
     @trainable_params.setter
@@ -580,7 +559,7 @@ class QuantumScript:
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
             raise ValueError("Argument indices must be non-negative integers.")
 
-        num_params = len(self._par_info)
+        num_params = len(self.par_info)
         if any(i > num_params for i in param_indices):
             raise ValueError(f"Quantum Script only has {num_params} parameters.")
 
@@ -602,7 +581,7 @@ class QuantumScript:
         t_idx = self.trainable_params[idx]
 
         # get the info for the parameter
-        info = self._par_info[t_idx]
+        info = self.par_info[t_idx]
         return info["op"], info["op_idx"], info["p_idx"]
 
     def get_parameters(
@@ -645,7 +624,7 @@ class QuantumScript:
         if trainable_only:
             params = []
             for p_idx in self.trainable_params:
-                par_info = self._par_info[p_idx]
+                par_info = self.par_info[p_idx]
                 if operations_only and isinstance(self[par_info["op_idx"]], MeasurementProcess):
                     continue
 
@@ -655,7 +634,7 @@ class QuantumScript:
             return params
 
         # If trainable_only=False, return all parameters
-        # This is faster than the above and should be used when indexing `_par_info` is not needed
+        # This is faster than the above and should be used when indexing `par_info` is not needed
         params = [d for op in self.operations for d in op.data]
         if operations_only:
             return params
@@ -712,7 +691,7 @@ class QuantumScript:
         # determine the ops that need to be updated
         op_indices = {}
         for param_idx, idx in enumerate(sorted(indices)):
-            pinfo = self._par_info[idx]
+            pinfo = self.par_info[idx]
             op_idx, p_idx = pinfo["op_idx"], pinfo["p_idx"]
 
             if op_idx not in op_indices:
@@ -861,9 +840,6 @@ class QuantumScript:
         )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
-        # new_qscript._update_par_info()
-        # new_qscript._obs_sharing_wires = self._obs_sharing_wires
-        # new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self._batch_size
         new_qscript._output_dim = self._output_dim
 
@@ -964,7 +940,7 @@ class QuantumScript:
                 self.operations,
                 self.measurements,
                 self.wires,
-                self._par_info,
+                self.par_info,
                 self.trainable_params,
             )
 
