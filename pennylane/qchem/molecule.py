@@ -42,6 +42,7 @@ class Molecule:
         coordinates (array[float]): 1D array with the atomic positions in Cartesian coordinates. The
             coordinates must be given in atomic units and the size of the array should be ``3*N``
             where ``N`` is the number of atoms.
+        unit (str): Units of atomic coordinates. Possible values for ``unit`` are Bohr and Angstrom.
         charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Currently,

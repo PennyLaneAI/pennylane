@@ -875,9 +875,10 @@ def molecular_hamiltonian(*args, **kwargs):
         Keyword Arguments:
           - **symbols** (list[str]): symbols of the atomic species in the molecule
           - **coordinates** (array[float]): atomic positions in Cartesian coordinates.
-            The atomic coordinates must be in atomic units and can be given as either a 1D array of
+            The atomic coordinates must be given in Bohr or Angstrom units and can be given as either a 1D array of
             size ``3*N``, or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
             name (str): name of the molecule
+          - **unit** (str): Units of atomic coordinates. Possible values for ``unit`` are Bohr and Angstrom.
           - **charge** (int): Net charge of the molecule. If not specified a neutral system is assumed.
           - **mult** (int): Spin multiplicity :math:`\\mathrm{mult}=N_\\mathrm{unpaired} + 1` for :math:`N_\\mathrm{unpaired}`
             unpaired electrons occupying the HF orbitals. Possible values of ``mult`` are :math:`1, 2, 3, \\ldots`.
