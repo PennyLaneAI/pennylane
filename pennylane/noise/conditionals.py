@@ -23,85 +23,45 @@ from pennylane.wires import Wires
 # pylint: disable = unnecessary-lambda, too-few-public-methods
 
 
-class NoiseConditional(BooleanFn):
-    """Wrapper for callables with boolean output that help implement noise models
-    and can be manipulated via bit-wise operations.
+class WiresIn(BooleanFn):
+    """A ``Conditional`` for evaluating if a given wire exist in a specified set of wires
 
     Args:
-        fn (callable): Function to be wrapped. It can accept any number
-            of arguments, and must return a boolean.
-        repr (str): String representation to be used by ``repr`` dunder method.
-            Default is to use function's name as ``NoiseConditional(<name>)``.
+        wires (Union[list[int, str], Wires]): sequence of wires for building the wire set.
 
-    .. note:: This is a *developer-facing* class for implementing conditionals for building
-        noise models. Users are encouraged to rather use :func:`~.wires_in`, :func:`~.wires_eq`,
-        :func:`~.op_in`, and :func:`~.op_eq` for this purpose.
+    .. seealso:: Users are advised to use :func:`~.wires_in` for a functional construction.
     """
 
-    def __init__(self, fn, repr=None):
-        super().__init__(fn)
-        self.repr = repr if repr else f"NoiseConditional({fn.__name__})"
+    def __init__(self, wires):
+        self._cond = set(wires)
+        super().__init__(lambda x: _get_wires(x).issubset(self._cond), f"WiresIn({list(wires)})")
 
-    def __and__(self, other):
-        return AndConditional(self, other)
-
-    def __or__(self, other):
-        return OrConditional(self, other)
-
-    def __repr__(self):
-        return self.repr
+    @property
+    def condition(self):
+        """Gives the conditioned wire set"""
+        return self._cond
 
 
-# pylint: disable = bad-super-call
-class AndConditional(NoiseConditional):
-    """Developer facing class for implemeting bit-wise ``AND`` for callables
-    wrapped up with :class:`NoiseConditional <pennylane.noise.NoiseConditional>`.
+class WiresEq(BooleanFn):
+    """A ``Conditional`` for evaluating if a given wire is equal to a specified set of wires
 
     Args:
-        left (~.NoiseConditional): Left operand in the bit-wise expression.
-        right (~.NoiseConditional): Right operand in the bit-wise expression.
+        wires (Union[list[int, str], Wires]): sequence of wires for building the wire set.
 
-    .. note::
-
-        This is a *developer-facing* class for implementing bit-wise expression
-        for the noise model's conditionals built via
-        :class:`NoiseConditional <pennylane.noise.NoiseConditional>`.
+    .. seealso:: Users are advised to use :func:`~.wires_eq` for a functional construction.
     """
 
-    def __init__(self, left, right):
-        self.l_op = left
-        self.r_op = right
-        self.func = super(NoiseConditional, left).__and__(right)
-        super(NoiseConditional, self).__init__(self.func)
-        self.repr = f"And({left.repr}, {right.repr})"
+    def __init__(self, wires):
+        self._cond = set(wires)
+        super().__init__(
+            lambda x: _get_wires(x) == self._cond,
+            f"WiresEq({list(wires) if len(wires) > 1 else list(wires)[0]})",
+        )
 
-    def __str__(self):
-        return f"And({self.l_op}, {self.r_op})"
-
-
-# pylint: disable = bad-super-call
-class OrConditional(NoiseConditional):
-    """Developer facing class for implemeting bit-wise ``OR`` for callables
-    wrapped up with :class:`NoiseConditional <pennylane.noise.NoiseConditional>`.
-
-    Args:
-        left (~.NoiseConditional): Left operand in the bit-wise expression.
-        right (~.NoiseConditional): Right operand in the bit-wise expression.
-
-    .. note:: This is a *developer-facing* class for implementing bit-wise expression
-        for the noise model's conditionals built via
-        :class:`NoiseConditional <pennylane.noise.NoiseConditional>`.
-    """
-
-    def __init__(self, left, right):
-        self.l_op = left
-        self.r_op = right
-        self.func = super(NoiseConditional, left).__or__(right)
-        super(NoiseConditional, self).__init__(self.func)
-        self.repr = f"Or({left.repr}, {right.repr})"
-
-    def __str__(self):
-        return f"Or({self.l_op}, {self.r_op})"
+    @property
+    def condition(self):
+        """Gives the conditioned wire set"""
+        return self._cond
 
 
 def _get_wires(val):
@@ -134,9 +94,8 @@ def wires_in(wires):
             for building the wire set.
 
     Returns:
-        :class:`NoiseConditional <pennylane.noise.NoiseConditional>`: a boolean function
-        represented as ``WiresIn``, which evaluates to ``True`` if a given wire exist in a
-        specified set of wires.
+        :class:`WiresIn <pennylane.noise.WiresIn>`: a boolean function
+        which evaluates to ``True`` if a given wire exist in a specified set of wires.
 
     Raises:
         ValueError: if the wire set cannot be computed from ``wires``.
@@ -160,9 +119,7 @@ def wires_in(wires):
     >>> cond_func("eve")
     False
     """
-    return NoiseConditional(
-        lambda x: _get_wires(x).issubset(_get_wires(wires)), f"WiresIn({wires})"
-    )
+    return WiresIn(_get_wires(wires))
 
 
 def wires_eq(wires):
@@ -174,9 +131,8 @@ def wires_eq(wires):
             for building the wire set.
 
     Returns:
-        :class:`NoiseConditional <pennylane.noise.NoiseConditional>`: a boolean function
-        represented as ``WiresEq``, which evaluates to ``True`` if a given wire is equal to
-        specified set of wires.
+        :class:`WiresEq <pennylane.noise.WiresEq>`: a boolean function
+        which evaluates to ``True`` if a given wire is equal to specified set of wires.
 
     Raises:
         ValueError: if the wire set cannot be computed from ``wires``.
@@ -200,7 +156,100 @@ def wires_eq(wires):
     >>> cond_func("eve")
     False
     """
-    return NoiseConditional(lambda x: _get_wires(x) == _get_wires(wires), f"WiresEq({wires})")
+    return WiresEq(_get_wires(wires))
+
+
+class OpIn(BooleanFn):
+    """A ``Conditional`` for evaluating if a given operation exist in a specified set of operation
+
+    Args:
+        wires (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
+
+    .. seealso:: Users are advised to use :func:`~.op_in` for a functional construction.
+    """
+
+    def __init__(self, ops):
+        self._cond = ops
+        self._cops = _get_ops(ops)
+        super().__init__(
+            self._check_in_ops, f"OpIn({[getattr(op, '__name__') for op in self._cops]})"
+        )
+
+    @property
+    def condition(self):
+        """Gives the conditioned wire set"""
+        return self._cond
+
+    def _check_in_ops(self, x):
+        x = [x] if not isinstance(x, (list, tuple, set)) else x
+
+        try:
+            return all(
+                (
+                    _x in self._cops
+                    if isclass(_x)
+                    else (
+                        isinstance(_x, self._cops)
+                        if not getattr(_x, "arithmetic_depth", 0)
+                        else any(
+                            _check_with_lc_op(op, _x)
+                            for op in self._cond
+                            if not isclass(op) and getattr(op, "arithmetic_depth", 0)
+                        )
+                    )
+                )
+                for _x in x
+            )
+        except:  # pylint: disable = bare-except # pragma: no cover
+            raise ValueError(
+                "OpEq does not support arithmetic operations "
+                "that cannot be converted to a linear combination"
+            ) from None
+
+
+class OpEq(BooleanFn):
+    """A ``Conditional`` for evaluating if a given operation is equal to the specified operation
+
+    Args:
+        wires (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
+
+    .. seealso:: Users are advised to use :func:`~.op_eq` for a functional construction.
+    """
+
+    def __init__(self, ops):
+        self._cond = ops
+        self._cops = _get_ops(ops)
+        cops_names = list(getattr(op, "__name__") for op in self._cops)
+        super().__init__(
+            self._check_eq_ops,
+            f"OpEq({cops_names if len(cops_names) > 1 else cops_names[0]})",
+        )
+
+    @property
+    def condition(self):
+        """Gives the conditioned wire set"""
+        return self._cond
+
+    def _check_eq_ops(self, x):
+        if not any(not isclass(op) and getattr(op, "arithmetic_depth", 0) for op in self._cond):
+            return _get_ops(x) == self._cops
+
+        try:
+            return _get_ops(x) == self._cops and (
+                _check_with_lc_op(self._cond[0], x)
+                if len(self._cops) == 1
+                else len(x) == len(self._cond)
+                and all(
+                    _check_with_lc_op(_op, _x)
+                    for (_x, _op) in zip(x, self._cond)
+                    if not isclass(_x) and getattr(_x, "arithmetic_depth", 0)
+                )
+            )
+        except:  # pylint: disable = bare-except # pragma: no cover
+            raise ValueError(
+                "OpEq does not support arithmetic operations "
+                "that cannot be converted to a linear combination"
+            ) from None
 
 
 def _get_ops(val):
@@ -254,70 +303,6 @@ def _check_with_lc_op(op1, op2):
     return _lc_op(op2)
 
 
-def op_eq(ops):
-    """Builds a ``Conditional`` as a boolean function for evaluating
-    if a given operation is equal to the specified operation.
-
-    Args:
-        ops (str, Operation, Union(list[str, Operation])): string
-            representation or instance of the operation.
-
-    Returns:
-        :class:`NoiseConditional <pennylane.noise.NoiseConditional>`: a boolean function
-        represented as ``OpEq``, which evaluates to ``True`` if a given operation is
-        equal to the specified set of operation(s), irrespective of wires they act on.
-
-    **Example**
-
-    One may use ``op_eq`` with a string representation of the name of the operation:
-
-    >>> cond_func = qml.noise.op_eq("RX")
-    >>> cond_func(qml.RX(1.23, wires=[0]))
-    True
-    >>> cond_func(qml.RZ(1.23, wires=[3]))
-    False
-    >>> cond_func("CNOT")
-    False
-
-    Additionally, an instance of :class:`Operation <pennylane.operation.Operation>`
-    can also be provided:
-
-    >>> cond_func = qml.noise.op_eq(qml.RX(1.0, "dino"))
-    >>> cond_func(qml.RX(1.23, wires=["eve"]))
-    True
-    >>> cond_func(qml.RY(1.23, wires=["dino"]))
-    False
-    """
-    op_cls = _get_ops(ops)
-    op_repr = str([getattr(op, "__name__") for op in op_cls])[1:-1]
-
-    if (len(op_cls) == 1 and (isclass(ops) or not getattr(ops, "arithmetic_depth", 0))) or (
-        len(op_cls) > 1
-        and not any(not isclass(ops) and getattr(op, "arithmetic_depth", 0) for op in ops)
-    ):
-        return NoiseConditional(lambda x: _get_ops(x) == op_cls, f"OpEq({op_repr})")
-
-    try:
-        return NoiseConditional(
-            lambda x: _get_ops(x) == op_cls
-            and (
-                _check_with_lc_op(ops, x)
-                if len(op_cls) == 1
-                else all(
-                    _check_with_lc_op(_op, _x)
-                    for (_x, _op) in zip(x, ops)
-                    if not isclass(_x) and getattr(_x, "arithmetic_depth", 0)
-                )
-            ),
-            f"OpEq({op_repr})",
-        )
-    except:  # pylint: disable = bare-except # pragma: no cover
-        raise ValueError(
-            "OpEq does not operations with artihmetic operations "
-            "that cannot be converted to a linear combination"
-        ) from None
-
-
 def op_in(ops):
     """Builds a ``Conditional`` as a boolean function for evaluating
     if a given operation exist in a specified set of operation.
@@ -327,9 +312,8 @@ def op_in(ops):
             representation or instance of the operation.
 
     Returns:
-        :class:`NoiseConditional <pennylane.noise.NoiseConditional>`: a boolean function
-        represented as ``OpIn``, which evaluates to ``True`` if a given operation exist
-        in a specified set of operation(s), irrespective of wires they act on.
+        :class:`OpIn <pennylane.noise.OpIn>`: a boolean function that evaluates to ``True``, if a
+        given operation exist in a specified set of operation(s), irrespective of their wires.
 
     **Example**
 
@@ -355,36 +339,44 @@ def op_in(ops):
     False
     """
     ops = [ops] if not isinstance(ops, (list, tuple, set)) else ops
-    op_cls = _get_ops(ops)
-    op_repr = list(getattr(op, "__name__") for op in op_cls)
+    return OpIn(ops)
 
-    def _check_in_ops(x):
-        x = [x] if not isinstance(x, (list, tuple, set)) else x
 
-        try:
-            return all(
-                (
-                    _x in op_cls
-                    if isclass(_x)
-                    else (
-                        isinstance(_x, op_cls)
-                        if not getattr(_x, "arithmetic_depth", 0)
-                        else any(
-                            _check_with_lc_op(op, _x)
-                            for op in ops
-                            if not isclass(op) and getattr(op, "arithmetic_depth", 0)
-                        )
-                    )
-                )
-                for _x in x
-            )
-        except:  # pylint: disable = bare-except # pragma: no cover
-            raise ValueError(
-                "OpEq does not operations with artihmetic operations "
-                "that cannot be converted to a linear combination"
-            ) from None
+def op_eq(ops):
+    """Builds a ``Conditional`` as a boolean function for evaluating
+    if a given operation is equal to the specified operation.
 
-    return NoiseConditional(_check_in_ops, f"OpIn({op_repr})")
+    Args:
+        ops (str, Operation, Union(list[str, Operation])): string
+            representation or instance of the operation.
+
+    Returns:
+        :class:`OpEq <pennylane.noise.OpEq>`: a boolean function that evaluates to ``True``, if a
+        given operation is equal to the specified set of operation(s), irrespective of their wires.
+
+    **Example**
+
+    One may use ``op_eq`` with a string representation of the name of the operation:
+
+    >>> cond_func = qml.noise.op_eq("RX")
+    >>> cond_func(qml.RX(1.23, wires=[0]))
+    True
+    >>> cond_func(qml.RZ(1.23, wires=[3]))
+    False
+    >>> cond_func("CNOT")
+    False
+
+    Additionally, an instance of :class:`Operation <pennylane.operation.Operation>`
+    can also be provided:
+
+    >>> cond_func = qml.noise.op_eq(qml.RX(1.0, "dino"))
+    >>> cond_func(qml.RX(1.23, wires=["eve"]))
+    True
+    >>> cond_func(qml.RY(1.23, wires=["dino"]))
+    False
+    """
+    ops = [ops] if not isinstance(ops, (list, tuple, set)) else ops
+    return OpEq(ops)
 
 
 def partial_wires(operation, *args, **kwargs):

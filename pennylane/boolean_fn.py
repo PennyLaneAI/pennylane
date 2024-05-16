@@ -78,21 +78,103 @@ class BooleanFn:
 
     """
 
-    def __init__(self, fn):
+    def __init__(self, fn, name=None):
         self.fn = fn
+        self.name = name or self.fn.__name__
         functools.update_wrapper(self, fn)
 
     def __and__(self, other):
-        return BooleanFn(lambda *args, **kwargs: self(*args, **kwargs) and other(*args, **kwargs))
+        return And(self, other)
 
     def __or__(self, other):
-        return BooleanFn(lambda *args, **kwargs: self(*args, **kwargs) or other(*args, **kwargs))
+        return Or(self, other)
+
+    def __xor__(self, other):
+        return Xor(self, other)
 
     def __invert__(self):
-        return BooleanFn(lambda *args, **kwargs: not self(*args, **kwargs))
+        return Not(self)
 
     def __call__(self, *args, **kwargs):
         return self.fn(*args, **kwargs)
 
     def __repr__(self):
-        return f"BooleanFn({self.fn.__name__})"
+        return f"BooleanFn({self.name})" if not (self.bitwise or self.conditional) else self.name
+
+    @property
+    def bitwise(self):
+        """Determine whether wrapped callable is for a bitwise operation or not."""
+        return bool(getattr(self, "operands", tuple()))
+
+    @property
+    def conditional(self):
+        """Determine whether wrapped callable is for a conditional or not."""
+        return bool(getattr(self, "condition", None))
+
+
+class And(BooleanFn):
+    """Developer facing class for implemeting bit-wise ``AND`` for callables
+    wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
+
+    Args:
+        left (~.BooleanFn): Left operand in the bit-wise expression.
+        right (~.BooleanFn): Right operand in the bit-wise expression.
+    """
+
+    def __init__(self, left, right):
+        super().__init__(
+            lambda *args, **kwargs: left(*args, **kwargs) and right(*args, **kwargs),
+            f"And({left.name}, {right.name})",
+        )
+        self.operands = (left, right)
+
+
+class Or(BooleanFn):
+    """Developer facing class for implemeting bit-wise ``OR`` for callables
+    wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
+
+    Args:
+        left (~.BooleanFn): Left operand in the bit-wise expression.
+        right (~.BooleanFn): Right operand in the bit-wise expression.
+    """
+
+    def __init__(self, left, right):
+        self.operands = (left, right)
+        super().__init__(
+            lambda *args, **kwargs: left(*args, **kwargs) or right(*args, **kwargs),
+            f"Or({left.name}, {right.name})",
+        )
+
+
+class Xor(BooleanFn):
+    """Developer facing class for implemeting bit-wise ``XOR`` for callables
+    wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
+
+    Args:
+        left (~.BooleanFn): Left operand in the bit-wise expression.
+        right (~.BooleanFn): Right operand in the bit-wise expression.
+    """
+
+    def __init__(self, left, right):
+        self.operands = (left, right)
+        super().__init__(
+            lambda *args, **kwargs: left(*args, **kwargs) ^ right(*args, **kwargs),
+            f"Xor({left.name}, {right.name})",
+        )
+
+
+class Not(BooleanFn):
+    """Developer facing class for implemeting bit-wise ``OR`` for callables
+    wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
+
+    Args:
+        left (~.BooleanFn): Left operand in the bit-wise expression.
+        right (~.BooleanFn): Right operand in the bit-wise expression.
+    """
+
+    def __init__(self, left):
+        self.operands = (left,)
+        super().__init__(
+            lambda *args, **kwargs: not left(*args, **kwargs),
+            f"Not({left.name})",
+        )
