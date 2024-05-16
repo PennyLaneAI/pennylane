@@ -13,6 +13,10 @@
 # limitations under the License.
 """Contains class and methods for noise models"""
 
+import inspect
+
+import pennylane as qml
+
 
 class NoiseModel:
     """Build a noise model based on ``Conditional``, ``Operation`` and ``metadata``.
@@ -60,6 +64,7 @@ class NoiseModel:
     """
 
     def __init__(self, model, **kwargs):
+        self._check_model(model)
         self._model = model
         self._metadata = kwargs
 
@@ -106,3 +111,19 @@ class NoiseModel:
         model_str = model_str[:-2] + ")"
 
         return model_str
+
+    @classmethod
+    def _check_model(cls, model):
+        for condition, noise in model.items():
+            if not isinstance(condition, (qml.noise.NoiseConditional, qml.BooleanFn)):
+                raise ValueError(
+                    f"{condition} must be a boolean conditional, i.e., an instance of"
+                    "NoiseConditional, AndConditional, OrConditional, or BooleanFn"
+                )
+
+            parameters = inspect.signature(noise).parameters.values()
+            if not any(p for p in reversed(parameters) if p.kind == p.VAR_KEYWORD):
+                raise ValueError(
+                    f"{noise} provided for {condition} must accept **kwargs"
+                    "as the last argument in its signature."
+                )
