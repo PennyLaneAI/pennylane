@@ -167,7 +167,7 @@ class _NonPytreeWrapper:
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
     tc = t.bind_new_parameters(a, t.trainable_params)
-    return convert_to_numpy_parameters(tc) if unwrap else tc
+    return convert_to_numpy_parameters(tc)[0][0] if unwrap else tc
 
 
 def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
