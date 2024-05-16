@@ -103,7 +103,7 @@ class BasisRotation(Operation):
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
         # pylint: disable=arguments-differ
-        return type(cls)._primitive_bind_call(cls, unitary_matrix, wires=wires, check=check, id=id)
+        return super()._primitive_bind_call(unitary_matrix, wires=wires, check=check, id=id)
 
     def __init__(self, wires, unitary_matrix, check=False, id=None):
         M, N = unitary_matrix.shape

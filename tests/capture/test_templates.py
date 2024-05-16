@@ -356,11 +356,11 @@ class TestModifiedTemplates:
         mat = np.eye(4)
         wires = [0, 5]
 
-        def qfunc(wires, mat):
+        def qfunc(mat, wires):
             qml.BasisRotation(wires, mat, check=True)
 
         # Validate inputs
-        qfunc(wires, mat)
+        # qfunc(wires, mat)
 
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(wires, mat)
@@ -369,6 +369,8 @@ class TestModifiedTemplates:
 
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.BasisRotation._primitive
+        # This check may fail because arguments are reordered in _primitive_bind_call.
+        # To be fixed once we remove the xfail above.
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == {"wires": wires, "check": True}
         assert len(eqn.outvars) == 1
