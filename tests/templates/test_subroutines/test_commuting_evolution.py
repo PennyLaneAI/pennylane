@@ -75,6 +75,15 @@ class TestBasicProperties:
             return qml.expval(qml.PauliZ(1)), qml.state()
 
         @qml.qnode(dev)
+        def adjoint_evolution_circuit_alt(time):
+            for i in range(n_wires):
+                qml.Hadamard(i)
+            with qml.QueuingManager.stop_recording():
+                op = qml.CommutingEvolution(hamiltonian, time, frequencies)
+            op.adjoint()
+            return qml.expval(qml.PauliZ(1)), qml.state()
+
+        @qml.qnode(dev)
         def evolution_circuit(time):
             for i in range(n_wires):
                 qml.Hadamard(i)
@@ -83,9 +92,12 @@ class TestBasicProperties:
 
         res1, state1 = evolution_circuit(0.13)
         res2, state2 = adjoint_evolution_circuit(-0.13)
+        res3, state3 = adjoint_evolution_circuit_alt(-0.13)
 
         assert res1 == res2
-        assert all(np.isclose(state1, state2))
+        assert res1 == res3
+        assert np.allclose(state1, state2)
+        assert np.allclose(state1, state3)
 
     def test_queuing(self):
         """Test that CommutingEvolution de-queues the input hamiltonian."""

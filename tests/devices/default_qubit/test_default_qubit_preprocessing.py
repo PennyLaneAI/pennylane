@@ -236,6 +236,8 @@ class TestPreprocessing:
             (qml.GroverOperator(wires=range(14)), False),
             (qml.pow(qml.RX(1.1, 0), 3), True),
             (qml.pow(qml.RX(qml.numpy.array(1.1), 0), 3), False),
+            (qml.CommutingEvolution(wires=range(10)), True),
+            (qml.CommutingEvolution(wires=range(14)), False),
         ],
     )
     def test_accepted_operator(self, op, expected):
