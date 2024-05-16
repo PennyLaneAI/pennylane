@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, too-many-arguments
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
+
 import numpy as np
 
 import pennylane as qml
-
 from pennylane import math
 from pennylane.measurements import MidMeasureMP
 from pennylane.ops import Conditional
@@ -164,6 +164,8 @@ def apply_operation(
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
+        **execution_kwargs (Optional[dict]): Optional keyword arguments needed for applying
+            some operations
 
     Returns:
         ndarray: output state
@@ -217,7 +219,11 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 @apply_operation.register
 def apply_conditional(
-    op: Conditional, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+    op: Conditional,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **execution_kwargs,
 ):
     """Applies a conditional operation.
 
@@ -231,6 +237,28 @@ def apply_conditional(
     Returns:
         ndarray: output state
     """
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+    rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
+    interface = qml.math.get_deep_interface(state)
+    if interface == "jax":
+        # pylint: disable=import-outside-toplevel
+        from jax.lax import cond
+
+        return cond(
+            op.meas_val.concretize(mid_measurements),
+            lambda x: apply_operation(
+                op.then_op,
+                x,
+                is_state_batched=is_state_batched,
+                debugger=debugger,
+                mid_measurements=mid_measurements,
+                rng=rng,
+                prng_key=prng_key,
+            ),
+            lambda x: x,
+            state,
+        )
     if op.meas_val.concretize(mid_measurements):
         return apply_operation(
             op.then_op,
@@ -238,13 +266,15 @@ def apply_conditional(
             is_state_batched=is_state_batched,
             debugger=debugger,
             mid_measurements=mid_measurements,
+            rng=rng,
+            prng_key=prng_key,
         )
     return state
 
 
 @apply_operation.register
 def apply_mid_measure(
-    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, mid_measurements=None
+    op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
     """Applies a native mid-circuit measurement.
 
@@ -254,39 +284,58 @@ def apply_mid_measure(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be for sampling.
 
     Returns:
         ndarray: output state
     """
+    mid_measurements = execution_kwargs.get("mid_measurements", None)
+    rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
-    if not np.allclose(np.linalg.norm(state), 1.0):
-        mid_measurements[op] = 0
-        return np.zeros_like(state)
     wire = op.wires
-    probs = qml.devices.qubit.measure(qml.probs(wire), state)
-
-    try:  # pragma: no cover
-        sample = np.random.binomial(1, probs[1])
-    except ValueError as e:  # pragma: no cover
-        if probs[1] > 1:  # MachEps error, safe to catch
-            sample = np.random.binomial(1, np.round(probs[1], 15))
-        else:  # Other general error, continue to fail
-            raise e
-
-    mid_measurements[op] = sample
-    if op.postselect is not None and sample != op.postselect:
-        return np.zeros_like(state)
     axis = wire.toarray()[0]
     slices = [slice(None)] * qml.math.ndim(state)
-    slices[axis] = int(not sample)
-    state[tuple(slices)] = 0.0
-    state_norm = np.linalg.norm(state)
-    state = state / state_norm
-    if op.reset and sample == 1:
-        state = apply_operation(
-            qml.X(wire), state, is_state_batched=is_state_batched, debugger=debugger
-        )
+    slices[axis] = 0
+    prob0 = qml.math.norm(state[tuple(slices)]) ** 2
+    interface = qml.math.get_deep_interface(state)
+    if prng_key is not None:
+        # pylint: disable=import-outside-toplevel
+        from jax.random import binomial
+
+        def binomial_fn(n, p):
+            return binomial(prng_key, n, p).astype(int)
+
+    else:
+        binomial_fn = np.random.binomial if rng is None else rng.binomial
+    sample = binomial_fn(1, 1 - prob0)
+    mid_measurements[op] = sample
+
+    # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
+    # to select the sample branch enables jax.jit and prevents it from using Python callbacks
+    matrix = qml.math.array([[(sample + 1) % 2, 0.0], [0.0, (sample) % 2]], like=interface)
+    state = apply_operation(
+        qml.QubitUnitary(matrix, wire),
+        state,
+        is_state_batched=is_state_batched,
+        debugger=debugger,
+    )
+    state = state / qml.math.norm(state)
+
+    # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.X(wire), ...)
+    # to reset enables jax.jit and prevents it from using Python callbacks
+    element = op.reset and sample == 1
+    matrix = qml.math.array(
+        [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]], like=interface
+    ).astype(float)
+    state = apply_operation(
+        qml.QubitUnitary(matrix, wire), state, is_state_batched=is_state_batched, debugger=debugger
+    )
+
     return state
 
 

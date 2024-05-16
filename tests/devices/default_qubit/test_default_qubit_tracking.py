@@ -14,13 +14,12 @@
 """
 Tests for the tracking capabilities of default qubit.
 """
+import numpy as np
 import pytest
 
-import numpy as np
-
 import pennylane as qml
-from pennylane.resource import Resources
 from pennylane.devices import ExecutionConfig
+from pennylane.resource import Resources
 
 
 class TestTracking:
@@ -59,6 +58,7 @@ class TestTracking:
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
             "derivative_batches": [1],
             "derivatives": [1],
+            "errors": [{}, {}, {}],
         }
         assert tracker.totals == {
             "batches": 2,
@@ -73,6 +73,7 @@ class TestTracking:
             "simulations": 1,
             "results": 1,
             "resources": Resources(num_wires=1),
+            "errors": {},
         }
 
     def test_tracking_execute_and_derivatives(self):
@@ -103,6 +104,7 @@ class TestTracking:
             "vjp_batches": [1],
             "execute_and_vjp_batches": [1],
             "resources": [Resources(num_wires=1)] * 12,
+            "errors": [{}] * 12,
         }
 
     def test_tracking_resources(self):
@@ -208,14 +210,21 @@ shot_testing_combos = [
         20,
     ),
     # op arithmetic test cases
-    ([qml.expval(qml.sum(qml.PauliX(0), qml.PauliX(1)))], 2, 20),
+    ([qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(0)))], 2, 20),
+    ([qml.expval(qml.sum(qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)))], 1, 10),
+    ([qml.expval(qml.sum(qml.PauliX(0), qml.Hadamard(0)))], 2, 20),
+    (
+        [qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(1) @ qml.PauliX(1), grouping_type="qwc"))],
+        1,
+        10,
+    ),
     (
         [
             qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1))),
             qml.expval(qml.prod(qml.PauliX(1), qml.PauliX(2))),
         ],
-        2,
-        20,
+        1,
+        10,
     ),
     # computational basis measurements
     ([qml.probs(wires=(0, 1)), qml.sample(wires=(0, 1))], 1, 10),
@@ -252,28 +261,9 @@ def test_single_expval(mps, expected_exec, expected_shots):
         assert dev.tracker.totals["shots"] == 3 * expected_shots
 
 
-@pytest.mark.xfail  # TODO Prod instances are not automatically
-def test_multiple_expval_with_prods():
+def test_multiple_expval_with_prod():
     mps, expected_exec, expected_shots = (
-        [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0) @ qml.PauliY(1))],
-        1,
-        10,
-    )
-    dev = qml.device("default.qubit")
-    tape = qml.tape.QuantumScript([], mps, shots=10)
-
-    with dev.tracker:
-        dev.execute(tape)
-
-    assert dev.tracker.totals["executions"] == expected_exec
-    assert dev.tracker.totals["simulations"] == 1
-    assert dev.tracker.totals["shots"] == expected_shots
-
-
-@pytest.mark.usefixtures("use_legacy_opmath")
-def test_multiple_expval_with_Tensors_legacy_opmath():
-    mps, expected_exec, expected_shots = (
-        [qml.expval(qml.PauliX(0)), qml.expval(qml.operation.Tensor(qml.PauliX(0), qml.PauliY(1)))],
+        [qml.expval(qml.PauliX(0)), qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1)))],
         1,
         10,
     )

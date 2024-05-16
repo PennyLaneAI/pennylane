@@ -17,10 +17,11 @@ with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 import numpy as np
+
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, StatePrepBase
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError, Wires
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 

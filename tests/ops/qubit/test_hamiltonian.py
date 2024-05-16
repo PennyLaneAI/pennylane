@@ -14,7 +14,7 @@
 """
 Tests for the Hamiltonian class.
 """
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, superfluous-parens, unnecessary-dunder-call
 from collections.abc import Iterable
 from unittest.mock import patch
 
@@ -24,9 +24,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-
 from pennylane.wires import Wires
-
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [

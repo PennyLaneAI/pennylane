@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-
 from tests.param_shift_dev import ParamShiftDerivativesDevice
 
 pytestmark = pytest.mark.torch
@@ -39,7 +38,10 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, True],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
-    # [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
+    [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
+    [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, False],
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
@@ -218,7 +220,6 @@ class TestQNode:
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
     # TODO: fix this behavior with float: already present before return type.
-    @pytest.mark.xfail
     def test_jacobian_dtype(
         self,
         interface,
@@ -228,6 +229,8 @@ class TestQNode:
         device_vjp,
     ):
         """Test calculating the jacobian with a different datatype"""
+        if not "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("Failing unless lightning.qubit")
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
@@ -658,7 +661,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if "lightning" in getattr(dev, "short_name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = {}
         if diff_method == "spsa":
@@ -716,7 +719,7 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if "lightning" in getattr(dev, "short_name", ""):
+        if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = dict(
             diff_method=diff_method,
@@ -1068,6 +1071,8 @@ class TestQubitIntegration:
 
         if dev.name == "param_shift.qubit":
             pytest.skip("parameter shift does not support measuring the state.")
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.xfail("Lightning devices do not support state with adjoint diff.")
 
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)

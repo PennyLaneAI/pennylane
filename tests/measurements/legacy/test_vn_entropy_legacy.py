@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.workflow import INTERFACE_MAP
 from pennylane.measurements import Shots
 from pennylane.measurements.vn_entropy import VnEntropyMP
+from pennylane.workflow import INTERFACE_MAP
 
 # pylint: disable=too-many-arguments
 

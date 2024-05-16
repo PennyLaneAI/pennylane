@@ -17,12 +17,12 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 from functools import wraps
 
 import pennylane as qml
+from pennylane.compiler import compiler
+from pennylane.compiler.compiler import CompileError
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
-from pennylane.compiler import compiler
-from pennylane.compiler.compiler import CompileError
 
 from .symbolicop import SymbolicOp
 
@@ -165,6 +165,8 @@ def adjoint(fn, lazy=True):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.adjoint(fn)
+    if qml.math.is_abstract(fn):
+        return Adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):

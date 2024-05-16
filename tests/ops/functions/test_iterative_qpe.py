@@ -14,9 +14,9 @@
 """
 Unit tests for the iterative_qpe function
 """
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
 
 

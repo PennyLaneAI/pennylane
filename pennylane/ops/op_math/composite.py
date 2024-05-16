@@ -16,12 +16,12 @@ This submodule defines a base class for composite operations.
 """
 # pylint: disable=too-many-instance-attributes
 import abc
-from typing import Callable, List
 import copy
+from typing import Callable, List
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, _UNSET_BATCH_SIZE
+from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -40,6 +40,11 @@ class CompositeOp(Operator):
     during initialization and define any relevant representations, such as
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        # needs to be overwritten because it doesnt take wires
+        return cls._primitive.bind(*args, **kwargs)
 
     def _flatten(self):
         return tuple(self.operands), tuple()
@@ -175,8 +180,9 @@ class CompositeOp(Operator):
                         list(self.wires),
                     )
                 )
-
-        return self._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
+        framework = math.get_deep_interface(eigvals)
+        eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
+        return self._math_op(math.vstack(eigvals), axis=0)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):
@@ -233,6 +239,11 @@ class CompositeOp(Operator):
     @property
     def has_diagonalizing_gates(self):
         if self.has_overlapping_wires:
+            for ops in self.overlapping_ops:
+                # if any of the single ops doesn't have diagonalizing gates, the overall operator doesn't either
+                if len(ops) == 1 and not ops[0].has_diagonalizing_gates:
+                    return False
+            # the lists of ops with multiple operators can be handled if there is a matrix
             return self.has_matrix
 
         return all(op.has_diagonalizing_gates for op in self)

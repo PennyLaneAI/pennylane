@@ -18,8 +18,8 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
 import inspect
 from functools import partial
 from typing import Callable, List, Optional, Sequence, Tuple, Union
-import numpy as np
 
+import numpy as np
 from networkx import MultiDiGraph
 
 import pennylane as qml
@@ -31,12 +31,8 @@ from pennylane.wires import Wires
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
 from .processing import qcut_processing_fn_mc, qcut_processing_fn_sample
-
 from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
 from .utils import (
-    find_and_place_cuts,
-    fragment_graph,
-    replace_wire_cut_nodes,
     MeasureNode,
     PrepareNode,
     _prep_iminus_state,
@@ -45,6 +41,9 @@ from .utils import (
     _prep_one_state,
     _prep_plus_state,
     _prep_zero_state,
+    find_and_place_cuts,
+    fragment_graph,
+    replace_wire_cut_nodes,
 )
 
 

@@ -15,19 +15,18 @@
 Tests the apply_operation functions from devices/qubit
 """
 from functools import reduce
-import pytest
 
 import numpy as np
+import pytest
 from scipy.stats import unitary_group
+
 import pennylane as qml
-from pennylane.operation import _UNSET_BATCH_SIZE, Operation
-
-
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation
 
 ml_frameworks_list = [
     "numpy",
@@ -389,7 +388,8 @@ class TestApplyParametrizedEvolution:
 
         # seems like _evolve_state_vector_under_parametrized_evolution calls
         # einsum twice, and the default apply_operation only once
-        assert spy.call_count == 1
+        # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+        assert spy.call_count == 6
 
     def test_small_evolves_state(self, mocker):
         """Test that applying a ParametrizedEvolution operating on less
@@ -465,7 +465,8 @@ class TestApplyParametrizedEvolution:
 
         # seems like _evolve_state_vector_under_parametrized_evolution calls
         # einsum twice, and the default apply_operation only once
-        assert spy.call_count == 2
+        # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+        assert spy.call_count == 7
 
     def test_parametrized_evolution_raises_error(self):
         """Test applying a ParametrizedEvolution without params or t specified raises an error."""
@@ -530,9 +531,11 @@ class TestApplyParametrizedEvolution:
         assert np.allclose(new_state, new_state_expected, atol=0.002)
 
         if num_state_wires == 4:
-            assert spy_einsum.call_count == 2
+            # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+            assert spy_einsum.call_count == 7
         else:
-            assert spy_einsum.call_count == 1
+            # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+            assert spy_einsum.call_count == 6
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)

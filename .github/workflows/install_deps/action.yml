@@ -23,7 +23,7 @@ inputs:
   tensorflow_version:
     description: The version of TensorFlow to install for any job that requires TensorFlow
     required: false
-    default: 2.15.0
+    default: 2.16
   install_pytorch:
     description: Indicate if PyTorch should be installed or not
     required: false
@@ -31,7 +31,7 @@ inputs:
   pytorch_version:
     description: The version of PyTorch to install for any job that requires PyTorch
     required: false
-    default: 2.2.0
+    default: 2.3.0
   install_pennylane_lightning_master:
     description: Indicate if PennyLane-Lightning should be installed from the master branch
     required: false
@@ -70,12 +70,12 @@ runs:
         TORCH_VERSION: ${{ inputs.pytorch_version != '' && format('=={0}', inputs.pytorch_version) || '' }}
       run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
 
-    - name: Install TensorFlow
+    - name: Install TensorFlow with Keras2
       shell: bash
       if: inputs.install_tensorflow == 'true'
       env:
         TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
-      run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
+      run: pip install "tensorflow${{ env.TF_VERSION }}" "tf-keras${{ env.TF_VERSION }}"
 
     - name: Install JAX
       shell: bash

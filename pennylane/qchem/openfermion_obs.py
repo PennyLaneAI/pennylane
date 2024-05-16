@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify
 
-
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
 
@@ -32,7 +31,8 @@ def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
         # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
-        import openfermion, openfermionpyscf
+        import openfermion
+        import openfermionpyscf
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermionpyscf. "
@@ -124,13 +124,15 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     >>> t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", 0.25)
     >>> v = FermionOperator("1^ 0^ 0 1", -0.15) + FermionOperator("2^ 0^ 2 0", 0.3)
-    >>> print(observable([t, v], mapping="jordan_wigner"))
-    (0.2625) [I0]
-    + (-0.1375) [Z0]
-    + (-0.0875) [Z1]
-    + (-0.0375) [Z0 Z1]
-    + (0.075) [Z2]
-    + (-0.075) [Z0 Z2]
+    >>> observable([t, v], mapping="jordan_wigner")
+    (
+        0.2625 * I(0)
+      + -0.1375 * Z(0)
+      + -0.0875 * Z(1)
+      + -0.0375 * (Z(0) @ Z(1))
+      + 0.075 * Z(2)
+      + -0.075 * (Z(0) @ Z(2))
+    )
     """
     openfermion, _ = _import_of()
 
@@ -563,30 +565,30 @@ def dipole_of(
     >>> symbols = ["H", "H", "H"]
     >>> coordinates = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
     >>> dipole_obs = dipole_of(symbols, coordinates, charge=1)
-    >>> print(dipole_obs)
-    [<Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
-    <Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
-    <Hamiltonian: terms=1, wires=[0]>]
+    >>> print([(h.wires) for h in dipole_obs])
+    [<Wires = [0, 1, 2, 3, 4, 5]>, <Wires = [0, 1, 2, 3, 4, 5]>, <Wires = [0]>]
 
-    >>> print(dipole_obs[0]) # x-component of D
-    (0.24190977644628117) [Z4]
-    + (0.24190977644628117) [Z5]
-    + (0.4781123173263878) [Z0]
-    + (0.4781123173263878) [Z1]
-    + (0.714477906181248) [Z2]
-    + (0.714477906181248) [Z3]
-    + (-0.3913638489487808) [Y0 Z1 Y2]
-    + (-0.3913638489487808) [X0 Z1 X2]
-    + (-0.3913638489487808) [Y1 Z2 Y3]
-    + (-0.3913638489487808) [X1 Z2 X3]
-    + (-0.1173495878099553) [Y2 Z3 Y4]
-    + (-0.1173495878099553) [X2 Z3 X4]
-    + (-0.1173495878099553) [Y3 Z4 Y5]
-    + (-0.1173495878099553) [X3 Z4 X5]
-    + (0.26611147045300276) [Y0 Z1 Z2 Z3 Y4]
-    + (0.26611147045300276) [X0 Z1 Z2 Z3 X4]
-    + (0.26611147045300276) [Y1 Z2 Z3 Z4 Y5]
-    + (0.26611147045300276) [X1 Z2 Z3 Z4 X5]
+    >>> dipole_obs[0] # x-component of D
+    (
+        0.4781123173263876 * Z(0)
+      + 0.4781123173263876 * Z(1)
+      + -0.3913638489489803 * (Y(0) @ Z(1) @ Y(2))
+      + -0.3913638489489803 * (X(0) @ Z(1) @ X(2))
+      + -0.3913638489489803 * (Y(1) @ Z(2) @ Y(3))
+      + -0.3913638489489803 * (X(1) @ Z(2) @ X(3))
+      + 0.2661114704527088 * (Y(0) @ Z(1) @ Z(2) @ Z(3) @ Y(4))
+      + 0.2661114704527088 * (X(0) @ Z(1) @ Z(2) @ Z(3) @ X(4))
+      + 0.2661114704527088 * (Y(1) @ Z(2) @ Z(3) @ Z(4) @ Y(5))
+      + 0.2661114704527088 * (X(1) @ Z(2) @ Z(3) @ Z(4) @ X(5))
+      + 0.7144779061810713 * Z(2)
+      + 0.7144779061810713 * Z(3)
+      + -0.11734958781031017 * (Y(2) @ Z(3) @ Y(4))
+      + -0.11734958781031017 * (X(2) @ Z(3) @ X(4))
+      + -0.11734958781031017 * (Y(3) @ Z(4) @ Y(5))
+      + -0.11734958781031017 * (X(3) @ Z(4) @ X(5))
+      + 0.24190977644645698 * Z(4)
+      + 0.24190977644645698 * Z(5)
+    )
     """
     openfermion, _ = _import_of()
 

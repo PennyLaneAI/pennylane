@@ -25,11 +25,8 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.ops.qubit import (
-    RX as old_loc_RX,
-    MultiRZ as old_loc_MultiRZ,
-)
-
+from pennylane.ops.qubit import RX as old_loc_RX
+from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -3028,6 +3025,7 @@ class TestPauliRot:
         assert gen.operands[0].name == expected.obs[0].name
         assert gen.operands[1].wires == expected.obs[1].wires
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""

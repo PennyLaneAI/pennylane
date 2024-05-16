@@ -13,12 +13,12 @@
 # limitations under the License.
 """Unit tests for the var module"""
 
-from flaky import flaky
 import numpy as np
 import pytest
+from flaky import flaky
 
 import pennylane as qml
-from pennylane.measurements import Variance, Shots
+from pennylane.measurements import Shots, Variance, VarianceMP
 
 
 class TestVar:
@@ -48,19 +48,6 @@ class TestVar:
             assert res[1].dtype == r_dtype
         else:
             assert res.dtype == r_dtype
-
-    def test_not_an_observable(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.var(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
 
     def test_observable_return_type_is_variance(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
@@ -134,6 +121,14 @@ class TestVar:
         for func in [circuit, qml.defer_measurements(circuit)]:
             res = func(phi, shots=shots)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+    def test_eigvals_instead_of_observable(self):
+        """Tests process samples with eigvals instead of observables"""
+
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        expected = qml.var(qml.PauliZ(0)).process_samples(samples, [0, 1])
+        assert VarianceMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""

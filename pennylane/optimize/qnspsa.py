@@ -13,9 +13,11 @@
 # limitations under the License.
 """Quantum natural SPSA optimizer"""
 import warnings
+
 from scipy.linalg import sqrtm
-from pennylane import numpy as pnp
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 class QNSPSAOptimizer:
@@ -439,10 +441,16 @@ class QNSPSAOptimizer:
 
         cost.construct(params_next, kwargs)
         tape_loss_next = cost.tape.copy(copy_operations=True)
-        program, _ = cost.device.preprocess()
-        loss_curr, loss_next = qml.execute(
-            [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
-        )
+
+        if isinstance(cost.device, qml.devices.Device):
+            program, _ = cost.device.preprocess()
+
+            loss_curr, loss_next = qml.execute(
+                [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
+            )
+
+        else:
+            loss_curr, loss_next = qml.execute([tape_loss_curr, tape_loss_next], cost.device, None)
 
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size

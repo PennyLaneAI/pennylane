@@ -15,8 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional
-import numpy as np
+from typing import Generic, Optional, TypeVar
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -28,8 +27,10 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
-    Measurement outcomes can be obtained and used to conditionally apply
-    operations.
+    Computational basis measurements are performed using the 0, 1 convention
+    rather than the ±1 convention.
+    Measurement outcomes can be used to conditionally apply operations, and measurement
+    statistics can be gathered and returned by a quantum function.
 
     If a device doesn't support mid-circuit measurements natively, then the
     QNode will apply the :func:`defer_measurements` transform.
@@ -56,7 +57,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Wires can be reused after measurement. Moreover, measured wires can be reset
-    to the :math:`|0 \rangle` by setting ``reset=True``.
+    to the :math:`|0 \rangle` state by setting ``reset=True``.
 
     .. code-block:: python3
 
@@ -73,7 +74,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     >>> func()
     tensor([1., 0.], requires_grad=True)
 
-    Mid circuit measurements can be manipulated using the following arithmetic operators:
+    Mid-circuit measurements can be manipulated using the following arithmetic operators:
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
     ``>=``, ``<``, ``>`` with other mid-circuit measurements or scalars.
 
@@ -87,6 +88,11 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     result will return a binary sequence of samples.
     See :ref:`here <mid_circuit_measurements_statistics>` for more details.
 
+    .. Note ::
+
+        Computational basis measurements are performed using the 0, 1 convention rather than the ±1 convention.
+        So, for example, ``expval(qml.measure(0))`` and ``expval(qml.Z(0))`` will give different answers.
+
     .. code-block:: python3
 
         dev = qml.device("default.qubit")
@@ -97,14 +103,14 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             qml.RY(y, wires=1)
             m0 = qml.measure(1)
             return (
-                qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0), qml.sample(m0)
+                qml.sample(m0), qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0),
             )
 
-    >>> circuit(1.0, 2.0, shots=10000)
-    (0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702}, array([0, 1, 1, ..., 1, 1, 1]))
+    >>> circuit(1.0, 2.0, shots=1000)
+    (array([0, 1, 1, ..., 1, 1, 1])), 0.702, 0.20919600000000002, array([0.298, 0.702]), {0: 298, 1: 702})
 
     Args:
-        wires (Wires): The wire of the qubit the measurement process applies to.
+        wires (Wires): The wire to measure.
         reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
             state after measurement.
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
@@ -325,9 +331,33 @@ class MeasurementValue(Generic[T]):
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
-        for i in range(2 ** len(self.measurements)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
+
+    def _postselected_items(self):
+        """A generator representing all the possible outcomes of the MeasurementValue,
+        taking postselection into account."""
+        # pylint: disable=stop-iteration-return
+        ps = {i: p for i, m in enumerate(self.measurements) if (p := m.postselect) is not None}
+        num_non_ps = len(self.measurements) - len(ps)
+        if num_non_ps == 0:
+            yield (), self.processing_fn(*ps.values())
+            return
+        for i in range(2**num_non_ps):
+            # Create the branch ignoring postselected measurements
+            non_ps_branch = tuple(int(b) for b in f"{i:0{num_non_ps}b}")
+            # We want a consumable iterable and the static tuple above
+            non_ps_branch_iter = iter(non_ps_branch)
+            # Extend the branch to include postselected measurements
+            full_branch = tuple(
+                ps[j] if j in ps else next(non_ps_branch_iter)
+                for j in range(len(self.measurements))
+            )
+            # Return the reduced non-postselected branch and the procesing function
+            # evaluated on the full branch
+            yield non_ps_branch, self.processing_fn(*full_branch)
 
     @property
     def wires(self):
@@ -338,8 +368,9 @@ class MeasurementValue(Generic[T]):
     def branches(self):
         """A dictionary representing all possible outcomes of the MeasurementValue."""
         ret_dict = {}
-        for i in range(2 ** len(self.measurements)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
 
@@ -412,10 +443,10 @@ class MeasurementValue(Generic[T]):
         return self._transform_bin_op(lambda a, b: a >= b, other)
 
     def __and__(self, other):
-        return self._transform_bin_op(lambda a, b: a and b, other)
+        return self._transform_bin_op(qml.math.logical_and, other)
 
     def __or__(self, other):
-        return self._transform_bin_op(lambda a, b: a or b, other)
+        return self._transform_bin_op(qml.math.logical_or, other)
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
@@ -446,13 +477,14 @@ class MeasurementValue(Generic[T]):
         return MeasurementValue(merged_measurements, merged_fn)
 
     def __getitem__(self, i):
-        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        branch = tuple(int(b) for b in f"{i:0{len(self.measurements)}b}")
         return self.processing_fn(*branch)
 
     def __str__(self):
         lines = []
-        for i in range(2 ** (len(self.measurements))):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             id_branch_mapping = [
                 f"{self.measurements[j].id}={branch[j]}" for j in range(len(branch))
             ]

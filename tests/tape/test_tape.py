@@ -22,8 +22,8 @@ import pytest
 import pennylane as qml
 from pennylane import CircuitGraph
 from pennylane.measurements import (
-    MeasurementProcess,
     ExpectationMP,
+    MeasurementProcess,
     ProbabilityMP,
     counts,
     expval,
@@ -31,7 +31,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.tape import QuantumTape, QuantumScript, expand_tape_state_prep
+from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 
 
 def TestOperationMonkeypatching():
@@ -551,7 +551,7 @@ class TestResourceEstimation:
         assert tape.specs["num_diagonalizing_gates"] == 0
         assert tape.specs["num_trainable_params"] == 0
 
-        assert len(tape.specs) == 4
+        assert len(tape.specs) == 5
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -559,7 +559,7 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 4
+        assert len(specs) == 5
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -577,7 +577,7 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 4
+        assert len(specs1) == 5
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -599,7 +599,7 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 4
+        assert len(specs2) == 5
 
         gate_sizes = defaultdict(int, {1: 4, 2: 2})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})

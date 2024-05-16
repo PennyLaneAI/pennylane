@@ -15,8 +15,8 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-from typing import Union
 from copy import copy
+from typing import Union
 
 import pennylane as qml
 import pennylane.math as qnp

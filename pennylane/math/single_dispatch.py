@@ -243,6 +243,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.n
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "vstack"] = "tensorflow.experimental.numpy"
 
 tf_fft_functions = [
     "fft",
@@ -263,6 +264,13 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
+
+
+ar.register_function(
+    "tensorflow",
+    "finfo",
+    lambda *args, **kwargs: _i("tf").experimental.numpy.finfo(*args, **kwargs),
+)
 
 
 def _tf_convert_to_tensor(x, **kwargs):

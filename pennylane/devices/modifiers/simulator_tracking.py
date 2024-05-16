@@ -46,6 +46,7 @@ def _track_execute(untracked_execute):
                         results=r,
                         shots=shots,
                         resources=c.specs["resources"],
+                        errors=c.specs["errors"],
                     )
                 else:
                     self.tracker.update(
@@ -53,6 +54,7 @@ def _track_execute(untracked_execute):
                         executions=qpu_executions,
                         results=r,
                         resources=c.specs["resources"],
+                        errors=c.specs["errors"],
                     )
                 self.tracker.record()
         return results
@@ -85,7 +87,7 @@ def _track_execute_and_compute_derivatives(untracked_execute_and_compute_derivat
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
-                self.tracker.update(resources=c.specs["resources"])
+                self.tracker.update(resources=c.specs["resources"], errors=c.specs["errors"])
             self.tracker.update(
                 execute_and_derivative_batches=1,
                 executions=len(batch),
@@ -119,7 +121,7 @@ def _track_execute_and_compute_jvp(untracked_execute_and_compute_jvp):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
-                self.tracker.update(resources=c.specs["resources"])
+                self.tracker.update(resources=c.specs["resources"], errors=c.specs["errors"])
             self.tracker.update(execute_and_jvp_batches=1, executions=len(batch), jvps=len(batch))
             self.tracker.record()
 
@@ -153,7 +155,7 @@ def _track_execute_and_compute_vjp(untracked_execute_and_compute_vjp):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
-                self.tracker.update(resources=c.specs["resources"])
+                self.tracker.update(resources=c.specs["resources"], errors=c.specs["errors"])
             self.tracker.update(execute_and_vjp_batches=1, executions=len(batch), vjps=len(batch))
             self.tracker.record()
         return untracked_execute_and_compute_vjp(self, circuits, cotangents, execution_config)
@@ -176,6 +178,7 @@ def simulator_tracking(cls: type) -> type:
     * ``executions``: the number of unique circuits that would be required on quantum hardware
     * ``shots``: the number of shots
     * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+    * ``"errors"``: combined algorithmic errors from the quantum operations executed by the qnode.
     * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions,
       such as for non-commuting measurements and batched parameters.
     * ``batches``: The number of times :meth:`~pennylane.devices.Device.execute` is called.
@@ -218,7 +221,8 @@ def simulator_tracking(cls: type) -> type:
     'shots': [100],
     'resources': [Resources(num_wires=1, num_gates=1, gate_types=defaultdict(<class 'int'>, {'S': 1}),
     gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1, shots=Shots(total_shots=50,
-    shot_vector=(ShotCopies(50 shots x 1),)))]}
+    shot_vector=(ShotCopies(50 shots x 1),)))],
+    'errors': {}}
 
     """
     if not issubclass(cls, Device):

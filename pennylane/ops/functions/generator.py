@@ -21,8 +21,8 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import Hamiltonian, LinearCombination, SProd, Prod, Sum
 from pennylane.operation import convert_to_H
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 
 
 # pylint: disable=too-many-branches
@@ -169,8 +169,12 @@ def generator(op: qml.operation.Operator, format="prefactor"):
     >>> op = qml.RX(0.2, wires=0)
     >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
     (X(0), -0.5)
-    >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
-    (-0.5) [X0]
+    >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian/LinearCombination
+    -0.5 * X(0)
+    >>> with qml.operation.disable_new_opmath_cm():
+    ...     gen = qml.generator(op, format="hamiltonian")) # legacy Hamiltonian class
+    ...     print(gen, type(gen))
+    (-0.5) [X0] <class 'pennylane.ops.qubit.hamiltonian.Hamiltonian'>
     >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
     >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`

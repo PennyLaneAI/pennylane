@@ -17,6 +17,7 @@ This submodule contains the template for the Reflection operation.
 """
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
@@ -25,8 +26,9 @@ from pennylane.queuing import QueuingManager
 class Reflection(Operation):
     r"""Apply a reflection about a state :math:`|\Psi\rangle`.
 
-    Given an operator :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`  and a reflection angle :math:`\alpha`,
-    this template creates the operation:
+    This operator works by providing an operation, :math:`U`, that prepares the desired state, :math:`\vert \Psi \rangle`,
+    that we want to reflect about. We can also provide a reflection angle :math:`\alpha`
+    to define the operation in a more generic form:
 
     .. math::
 
@@ -46,28 +48,37 @@ class Reflection(Operation):
 
     .. code-block::
 
-        @qml.prod
-        def generator(wires):
-            qml.Hadamard(wires=wires)
+        U = qml.Hadamard(wires=0)
+        dev = qml.device(‘default.qubit’)
 
-        U = generator(wires=0)
-
-        dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit():
-
-            # Initialize to the state |1>
             qml.PauliX(wires=0)
-
-            # Apply the reflection
             qml.Reflection(U)
-
             return qml.state()
 
     >>> circuit()
     tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
 
+    For cases when :math:`U` comprises many operations, you can create a quantum
+    function containing each operation, one per line, then decorate the quantum
+    function with ``@qml.prod``:
 
+    .. code-block::
+
+        @qml.prod
+        def U(wires):
+            qml.Hadamard(wires=wires[0])
+            qml.RY(0.1, wires=wires[1])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Reflection(U([0, 1]))
+            return qml.state()
+
+    >>> circuit()
+    tensor([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
+         0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j], requires_grad=True)
 
     .. details::
         :title: Theory

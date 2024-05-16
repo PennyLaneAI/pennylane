@@ -15,15 +15,15 @@
 This module contains the ``TransformProgram`` class.
 """
 from functools import partial
-from typing import Callable, List, Tuple, Optional, Sequence, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.typing import Result, ResultBatch
 from pennylane.tape import QuantumTape
+from pennylane.typing import Result, ResultBatch
 
-from .transform_dispatcher import TransformContainer, TransformError, TransformDispatcher
+from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 
 PostProcessingFn = Callable[[ResultBatch], Result]
 BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
@@ -365,15 +365,12 @@ class TransformProgram:
         if sum(trans_type) < 2:
             return
         keep = 1 if 1 in trans_type else 2
-        index = -1
+        found = False
         for i, ttype in enumerate(reversed(trans_type)):
-            if ttype == keep:
-                index = i
-                break
-        if index == -1:
-            raise IndexError("Index not found.")
-        for i, ttype in enumerate(reversed(trans_type)):
-            if ttype in [1, 2] and i != index:
+            if not found and ttype == keep:
+                found = True
+                continue
+            if found and ttype in [1, 2]:
                 self._transform_program.pop(len(self._transform_program) - 1 - i)
 
     def _set_all_classical_jacobians(

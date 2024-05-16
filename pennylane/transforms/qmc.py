@@ -15,13 +15,13 @@
 Contains the quantum_monte_carlo transform.
 """
 from copy import copy
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 import pennylane as qml
-from pennylane import PauliX, Hadamard, MultiControlledX, CZ, adjoint
-from pennylane.wires import Wires
+from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
+from pennylane.wires import Wires
 
 
 def _apply_controlled_z(wires, control_wire, work_wires):
