@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
+  [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
+
 <h3>Improvements 🛠</h3>
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
@@ -142,6 +145,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Ahmed Darwish,
 Gabriel Bottrill,
 Isaac De Vlugt,
