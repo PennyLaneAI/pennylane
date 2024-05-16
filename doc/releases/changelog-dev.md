@@ -86,6 +86,9 @@
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
+  
+* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
 <h3>Breaking changes 💔</h3>
 
@@ -136,6 +139,7 @@
 This release contains contributions from (in alphabetical order):
 
 Ahmed Darwish,
+Gabriel Bottrill,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
