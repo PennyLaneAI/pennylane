@@ -80,7 +80,7 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
 
 
 def test_scf_openshell_warning():
-    r"""Test that scf raises the error when openshell molecule is provided."""
+    r"""Test that scf raises an error when an open-shell molecule is provided."""
     symbols = ["H", "H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], requires_grad=False)
     mol = qchem.Molecule(symbols, geometry)
