@@ -101,8 +101,11 @@ def dynamic_one_shot(
                 "measurements."
             )
     _ = kwargs.get("device", None)
-    discard_invalid_shots = kwargs.get("discard_invalid_shots", True)
-    print("in dynamic_one_shot")
+
+    discard_invalid_shots = kwargs.get("discard_invalid_shots", None)
+    if qml.compiler.active() and discard_invalid_shots:
+        raise ValueError("Can't discard invalid shots while using qml.qjit")
+    discard_invalid_shots = True if discard_invalid_shots is None else discard_invalid_shots
 
     if not tape.shots:
         raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
@@ -315,11 +318,12 @@ def gather_non_mcm(measurement, samples, is_valid, discard_invalid_shots):
         return qml.math.sum(samples * is_valid.reshape((-1, 1)), axis=0) / qml.math.sum(is_valid)
     if isinstance(measurement, SampleMP):
         is_interface_jax = qml.math.get_deep_interface(is_valid) == "jax"
-        if (is_interface_jax or not discard_invalid_shots) and samples.ndim == 2:
+        discard_invalid_shots = discard_invalid_shots and not is_interface_jax
+        if not discard_invalid_shots and samples.ndim == 2:
             is_valid = is_valid.reshape((-1, 1))
         return (
             qml.math.where(is_valid, samples, fill_in_value)
-            if is_interface_jax or not discard_invalid_shots
+            if not discard_invalid_shots
             else samples[is_valid]
         )
     # VarianceMP

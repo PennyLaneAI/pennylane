@@ -556,7 +556,7 @@ def execute(
         )
         config.mcm_config["discard_invalid_shots"] = None
 
-    if any(not tape.shots for tape in tapes) and mcm_config["method"] == "one-shot":
+    if any(not tape.shots for tape in tapes) and config.mcm_config["method"] == "one-shot":
         warnings.warn(
             "Cannot use the 'one-shot' method for mid-circuit measurements with "
             "analytic mode. Using deferred measurements.",
