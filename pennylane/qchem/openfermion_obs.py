@@ -994,6 +994,7 @@ def _(
 def _(
     symbols,
     coordinates,
+    unit="Bohr",
     name="molecule",
     charge=0,
     mult=1,
@@ -1010,6 +1011,9 @@ def _(
     load_data=False,
     convert_tol=1e012,
 ):
+    if unit == "Angstrom":
+        coordinates = coordinates / bohr_angs
+
     return _molecular_hamiltonian(
         symbols,
         coordinates=coordinates,

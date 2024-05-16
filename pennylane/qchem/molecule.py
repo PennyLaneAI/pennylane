@@ -27,6 +27,9 @@ from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
 
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+bohr_angs = 0.529177210903
+
 
 class Molecule:
     r"""Create a molecule object that stores molecular information and default basis set parameters.
@@ -66,6 +69,7 @@ class Molecule:
         self,
         symbols,
         coordinates,
+        unit="Bohr",
         charge=0,
         mult=1,
         basis_name="sto-3g",
@@ -97,6 +101,7 @@ class Molecule:
 
         self.symbols = symbols
         self.coordinates = coordinates
+        self.unit = unit
         self.charge = charge
         self.mult = mult
         self.basis_name = basis_name.lower()
@@ -112,6 +117,9 @@ class Molecule:
                 "Openshell systems are not supported. Change the charge or spin "
                 "multiplicity of the molecule."
             )
+        if unit == "Angstrom":
+            coordinates = coordinates / bohr_angs
+            self.coordinates = coordinates
 
         if l is None:
             l = [i[0] for i in self.basis_data]

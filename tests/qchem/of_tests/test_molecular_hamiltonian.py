@@ -782,3 +782,74 @@ def test_error_raised_for_missing_molecule_information():
         match="The provided arguments do not contain information about symbols in the molecule.",
     ):
         qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
+
+
+@pytest.mark.parametrize(
+    ("method"),
+    [
+        "pyscf",
+        "dhf",
+        "openfermion",
+    ],
+)
+def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
+    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units
+    based on user defined information.
+    """
+
+    symbols = ["H", "H"]
+    geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    geometry_ang = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
+    method = "pyscf"
+
+    hamiltonian_bohr, _ = qchem.molecular_hamiltonian(
+        symbols,
+        geometry_bohr,
+        unit="Bohr",
+        method=method,
+        outpath=tmpdir.strpath,
+    )
+
+    molecule_ang = qchem.Molecule(symbols, geometry_ang, unit="Angstrom")
+    hamiltonian_ang, _ = qchem.molecular_hamiltonian(
+        symbols,
+        geometry_ang,
+        unit="Angstrom",
+        method=method,
+        outpath=tmpdir.strpath,
+    )
+    assert qml.ops.functions.equal(hamiltonian_ang, hamiltonian_bohr)
+
+
+@pytest.mark.parametrize(
+    ("method"),
+    [
+        "pyscf",
+        "dhf",
+        "openfermion",
+    ],
+)
+def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdir):
+    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units
+    based on user defined information.
+    """
+
+    symbols = ["H", "H"]
+    geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    geometry_ang = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
+    method = "pyscf"
+
+    molecule_bohr = qchem.Molecule(symbols, geometry_bohr, unit="Bohr")
+    hamiltonian_bohr, _ = qchem.molecular_hamiltonian(
+        molecule_bohr,
+        method=method,
+        outpath=tmpdir.strpath,
+    )
+
+    molecule_ang = qchem.Molecule(symbols, geometry_ang, unit="Angstrom")
+    hamiltonian_ang, _ = qchem.molecular_hamiltonian(
+        molecule_ang,
+        method=method,
+        outpath=tmpdir.strpath,
+    )
+    assert qml.ops.functions.equal(hamiltonian_ang, hamiltonian_bohr)
