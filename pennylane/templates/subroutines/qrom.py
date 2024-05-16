@@ -117,13 +117,6 @@ class QROM(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["clean"] = clean
 
-        if 2 ** len(control_wires) < len(b):
-            raise ValueError(
-                f"Not enough control wires ({len(control_wires)}) for the desired number of "
-                + f"operations ({len(b)}). At least {int(math.ceil(math.log2(len(b))))} control "
-                + "wires required."
-            )
-
         if work_wires:
             if any(wire in work_wires for wire in control_wires):
                 raise ValueError("Control wires should be different from work wires.")
@@ -187,32 +180,37 @@ class QROM(Operation):
     def compute_decomposition(
         b, target_wires, control_wires, work_wires, clean
     ):  # pylint: disable=arguments-differ
-        # BasisEmbedding applied to embed the bitstrings
         with qml.QueuingManager.stop_recording():
-            ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in b]
 
             if work_wires:
                 swap_wires = target_wires + work_wires  # wires available to apply the operators
             else:
                 swap_wires = target_wires
-            depth = len(swap_wires) // len(
-                target_wires
-            )  # number of operators we store per column (power of 2)
+
+            # number of operators we store per column (power of 2)
+            depth = len(swap_wires) // len(target_wires)
             depth = int(2 ** np.floor(np.log2(depth)))
 
+            # control wires used in the Select block
             c_sel_wires = control_wires[
                 : int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
-            ]  # control wires used in the Select block
-            c_swap_wires = control_wires[len(c_sel_wires) :]  # control wires used in the Swap block
+            ]
 
+            # control wires used in the Swap block
+            c_swap_wires = control_wires[len(c_sel_wires) :]
+
+            ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in b]
             ops_I = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
-            decomp_ops = []
-
+            # number of new operators after grouping
             length = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
 
+            # operators to be included in the Select block
             s_ops = []
+
             for i in range(length):
+
+                # map the wires to put more than one bitstring per column.
                 s_ops.append(
                     qml.prod(
                         *[
@@ -230,6 +228,7 @@ class QROM(Operation):
                     )
                 )
 
+            # Select block
             sel_ops = [qml.Select(s_ops, control=control_wires[: len(c_sel_wires)])]
 
             # Swap block
@@ -246,14 +245,17 @@ class QROM(Operation):
                     )
                     swap_ops.append(qml.ctrl(new_op, control=wire))
 
-            adjoint_swap_ops = swap_ops[::-1]
-
             if not clean:
-                # Based on this paper: https://arxiv.org/pdf/1812.00954
-                decomp_ops += sel_ops + swap_ops
+                # Based on this paper: https://arxiv.org/abs/1812.00954
+                decomp_ops = sel_ops + swap_ops
 
             else:
                 # Based on this paper: https://arxiv.org/abs/1902.02134
+
+                # Adjoint Swap block
+                adjoint_swap_ops = swap_ops[::-1]
+
+                decomp_ops = []
 
                 for _ in range(2):
 
