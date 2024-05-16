@@ -76,8 +76,8 @@ class Hamiltonian(Observable):
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
-        simplify (bool): **DEPRECATED** Specifies whether the Hamiltonian is simplified upon initialization
-                         (like-terms are combined). The default value is `False`.
+        simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
+                         (like-terms are combined). The default value is `False`. Use of this argument is deprecated.
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
