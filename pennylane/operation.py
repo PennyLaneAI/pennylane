@@ -2033,7 +2033,7 @@ class Observable(Operator):
         if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other + self
         if isinstance(other, (Observable, Tensor)):
-            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
+            return qml.simplify(qml.Hamiltonian([1, 1], [self, other]))
 
         return super().__add__(other=other)
 
@@ -2045,7 +2045,7 @@ class Observable(Operator):
             return super().__mul__(other=a)
 
         if isinstance(a, (int, float)):
-            return qml.Hamiltonian([a], [self], simplify=True)
+            return qml.simplify(qml.Hamiltonian([a], [self]))
 
         return super().__mul__(other=a)
 
