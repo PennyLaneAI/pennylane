@@ -1060,8 +1060,8 @@ class QuantumScript:
         qasm_str += f"creg c[{len(wires)}];\n"
 
         # get the user applied circuit operations without interface information
-        transformed_tape, _ = qml.transforms.convert_to_numpy_parameters(self)
-        operations = transformed_tape[0].operations
+        [transformed_tape], _ = qml.transforms.convert_to_numpy_parameters(self)
+        operations = transformed_tape.operations
 
         if rotations:
             # if requested, append diagonalizing gates corresponding
