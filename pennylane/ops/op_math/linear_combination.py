@@ -138,7 +138,7 @@ class LinearCombination(Sum):
         if simplify:
 
             warnings.warn(
-                "The simplify argument in in qml.Hamiltonian and qml.LinearCombination is deprecated."
+                "The simplify argument in in qml.ops.Hamiltonian and qml.ops.LinearCombination is deprecated. "
                 "Instead, you can call qml.simplify on the constructed operator.",
                 qml.PennyLaneDeprecationWarning,
             )
