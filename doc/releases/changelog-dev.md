@@ -138,12 +138,20 @@
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
 
+* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors, 
+  multiple measurements, and parameter broadcasting.
+  [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
+
+* Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scaler.
+  [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Ahmed Darwish,
 Gabriel Bottrill,
+Astral Cai,
+Ahmed Darwish,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
