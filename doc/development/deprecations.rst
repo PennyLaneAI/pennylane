@@ -13,11 +13,13 @@ Pending deprecations
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
   - Deprecated in v0.37
+  - Will be removed in v0.39
 
 * ``qml.transforms.map_batch_transform`` is deprecated, since transforms can be applied directly to a batch of tapes.
   See :func:`~.pennylane.transform` for more information.
 
   - Deprecated in v0.37
+  - Will be removed in v0.38
 
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

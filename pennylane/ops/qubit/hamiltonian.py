@@ -286,8 +286,8 @@ class Hamiltonian(Observable):
         if simplify:
 
             warn(
-                "The ``simplify`` argument in ``qml.ops.Hamiltonian`` is deprecated."
-                "Instead, you can call ``qml.simplify`` on the constructed operator.",
+                "The simplify argument in qml.Hamiltonian and qml.LinearCombination is deprecated."
+                "Instead, you can call qml.simplify on the constructed operator.",
                 qml.PennyLaneDeprecationWarning,
             )
 
