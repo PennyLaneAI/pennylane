@@ -886,7 +886,6 @@ def molecular_hamiltonian(*args, **kwargs):
           - **alpha** (array[float]): exponents of the primitive Gaussian functions
           - **coeff** (array[float]): coefficients of the contracted Gaussian functions
 
-    
         This interface was supposed to be used as follows:
 
           .. code-block:: python
