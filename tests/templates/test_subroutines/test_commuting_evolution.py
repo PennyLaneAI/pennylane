@@ -262,13 +262,8 @@ class TestGradients:
 
         grads_finite_diff = [qml.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qml.gradients.param_shift(circuit)(x) for x in x_vals]
-        circuit(x_vals[0])
-        tapes, fn = qml.gradients.param_shift(circuit.tape)
-        for t in tapes:
-            print(t.operations)
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
-        assert False
 
     # pylint: disable=not-callable
     def test_differentiable_hamiltonian(self):

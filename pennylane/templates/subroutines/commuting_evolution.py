@@ -16,9 +16,8 @@ Contains the CommutingEvolution template.
 """
 # pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import pennylane as qml
-from pennylane.operation import AnyWires, ParameterFrequenciesUndefinedError, MatrixUndefinedError
+from pennylane.operation import AnyWires, ParameterFrequenciesUndefinedError
 from pennylane.ops.op_math import ScalarSymbolicOp
-from pennylane.typing import TensorLike
 
 
 class CommutingEvolution(ScalarSymbolicOp):
@@ -126,7 +125,7 @@ class CommutingEvolution(ScalarSymbolicOp):
                 f"hamiltonian must be a linear combination of Pauli words. Got {hamiltonian}"
             )
 
-        trainable_hamiltonian = qml.math.requires_grad(hamiltonian.data)
+        trainable_hamiltonian = any(qml.math.requires_grad(d) for d in hamiltonian.data)
         if frequencies is not None and not trainable_hamiltonian:
             c, s = generate_shift_rule(frequencies, shifts).T
             recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
@@ -134,6 +133,7 @@ class CommutingEvolution(ScalarSymbolicOp):
             self.grad_method = "A"
         else:
             self.grad_recipe = (None,) * (1 + len(hamiltonian.data))
+            self.grad_method = None
 
         super().__init__(hamiltonian, scalar=time, id=id)
         self.hyperparameters["frequencies"] = frequencies
