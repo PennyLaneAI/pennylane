@@ -29,7 +29,6 @@ from .basis_data import atomic_numbers
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
 
-
 def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
@@ -594,19 +593,6 @@ def dipole_of(
     )
     """
     openfermion, _ = _import_of()
-
-    atomic_numbers = {
-        "H": 1,
-        "He": 2,
-        "Li": 3,
-        "Be": 4,
-        "B": 5,
-        "C": 6,
-        "N": 7,
-        "O": 8,
-        "F": 9,
-        "Ne": 10,
-    }
 
     if mult != 1:
         raise ValueError(
