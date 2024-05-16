@@ -9,7 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``simplify`` argument in ``qml.ops.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
+* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
   - Deprecated in v0.37

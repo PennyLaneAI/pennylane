@@ -105,7 +105,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `simplify` argument in `qml.ops.Hamiltonian` and `qml.ops.LinearCombination` is deprecated. 
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated. 
   Instead, `qml.simplify()` can be called on the constructed operator.
   [(#5677)](https://github.com/PennyLaneAI/pennylane/pull/5677)
 
