@@ -329,11 +329,10 @@ def apply_mid_measure(
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.X(wire), ...)
     # to reset enables jax.jit and prevents it from using Python callbacks
     element = op.reset and sample == 1
-    matrix = qml.math.cast(
-        qml.math.array(
-            [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]], like=interface
-        ),
-        float,
+    matrix = qml.math.array(
+        [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]],
+        like=interface,
+        dtype=float,
     )
     state = apply_operation(
         qml.QubitUnitary(matrix, wire), state, is_state_batched=is_state_batched, debugger=debugger

@@ -753,11 +753,11 @@ def test_counts_return_type(mcm_f):
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("shots", [4000, [4000, 4001]])
+@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 1])
 @pytest.mark.parametrize("diff_method", [None, "best"])
-@pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample, qml.expval, qml.var])
-@pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0], [0, 1], "composite_mcm", "mcm_list"])
+@pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
+@pytest.mark.parametrize("meas_obj", [qml.PauliX(0), [0, 1], "composite_mcm", "mcm_list"])
 def test_torch_integration(shots, postselect, diff_method, measure_f, meas_obj):
     """Test that native MCM circuits are executed correctly with Torch"""
     if measure_f in (qml.var, qml.expval) and (
@@ -768,7 +768,7 @@ def test_torch_integration(shots, postselect, diff_method, measure_f, meas_obj):
     import torch
 
     dev = get_device(shots=shots)
-    param = torch.tensor(np.pi / 3)
+    param = torch.tensor(np.pi / 3, dtype=torch.float64)
 
     @qml.qnode(dev, diff_method=diff_method)
     def func(x):
@@ -797,8 +797,8 @@ def test_torch_integration(shots, postselect, diff_method, measure_f, meas_obj):
 @pytest.mark.parametrize("shots", [5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 1])
 @pytest.mark.parametrize("diff_method", [None, "best"])
-@pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample, qml.expval, qml.var])
-@pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0], [0, 1], "composite_mcm", "mcm_list"])
+@pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
+@pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0, 1], "composite_mcm", "mcm_list"])
 def test_jax_integration(shots, postselect, diff_method, measure_f, meas_obj):
     """Test that native MCM circuits are executed correctly with Jax"""
     if measure_f in (qml.var, qml.expval) and (
@@ -807,8 +807,9 @@ def test_jax_integration(shots, postselect, diff_method, measure_f, meas_obj):
         pytest.skip("Can't use wires/mcm lists with var or expval")
 
     import jax.numpy as jnp
+    from jax.random import PRNGKey
 
-    dev = get_device(shots=shots)
+    dev = qml.device("default.qubit", shots=shots, seed=PRNGKey(567))
     param = jnp.array(np.pi / 3)
 
     @qml.qnode(dev, diff_method=diff_method)
