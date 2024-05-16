@@ -93,6 +93,10 @@
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
+* `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
+  `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
+  [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
@@ -149,6 +153,7 @@ Ahmed Darwish,
 Gabriel Bottrill,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
+Emiliano Godinez,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,

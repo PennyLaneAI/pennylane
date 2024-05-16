@@ -30,7 +30,7 @@ class TestInitialization:
     """Test the non-update components of intialization."""
 
     def test_no_update_empty_initialization(self):
-        """Test initialization if nothing is provided and update does not occur."""
+        """Test initialization if nothing is provided"""
 
         qs = QuantumScript()
         assert len(qs._ops) == 0
