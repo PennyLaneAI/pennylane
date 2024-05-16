@@ -868,6 +868,7 @@ def molecular_hamiltonian(*args, **kwargs):
         :title: Usage Details
 
         Old interface used ``molecular_hamiltonian`` function with molecular information as separate arguments:
+
         .. py:function:: molecular_hamiltonian(symbols, coordinates, name="molecule", charge=0, mult=1, basis="sto-3g", method="dhf",
         active_electrons=None, active_orbitals=None, mapping="jordan_wigner", outpath=".", wires=None, alpha=None,
         coeff=None, args=None, load_data=False, convert_tol=1e012)
