@@ -31,9 +31,6 @@ from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-_empty_wires = Wires([])
-
-
 OPENQASM_GATES = {
     "CNOT": "cx",
     "CZ": "cz",
@@ -193,8 +190,6 @@ class QuantumScript:
         self._batch_size = _UNSET_BATCH_SIZE
 
         self._obs_sharing_wires = []
-        """list[.Observable]: subset of the observables that share wires with another observable,
-        i.e., that do not have their own unique set of wires."""
         self._obs_sharing_wires_id = []
 
         if _update:
@@ -393,8 +388,9 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._update_par_info()  # Updates _par_info; O(ops+obs)
-        self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
+        # self._update_par_info()  # Updates _par_info; O(ops+obs)
+
+        # self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
 
     @cached_property
     def wires(self) -> Wires:
@@ -426,6 +422,40 @@ class QuantumScript:
                     {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
                     for i, d in enumerate(m.obs.data)
                 )
+
+    # @cached_property
+    # def _par_info(self):
+    #     """list[dict[str, Operator or int]]: Parameter information.
+    #     Values are dictionaries containing the corresponding operation and operation parameter index.
+    #     """
+    #     _par_info = []
+    #     for idx, op in enumerate(self.operations):
+    #         _par_info.extend({"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data))
+
+    #     n_ops = len(self.operations)
+    #     for idx, m in enumerate(self.measurements):
+    #         if m.obs is not None:
+    #             _par_info.extend(
+    #                 {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
+    #                 for i, d in enumerate(m.obs.data)
+    #             )
+    #     return _par_info
+
+    @property
+    def obs_sharing_wires(self):
+        """list[~.Observable]: subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires."""
+        if not self._obs_sharing_wires:
+            self._update_observables()
+        return self._obs_sharing_wires
+
+    @property
+    def obs_sharing_wires_id(self):
+        """list[int: indices subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires."""
+        if not self._obs_sharing_wires_id:
+            self._update_observables()
+        return self._obs_sharing_wires_id
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -831,9 +861,9 @@ class QuantumScript:
         )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
-        new_qscript._update_par_info()
-        new_qscript._obs_sharing_wires = self._obs_sharing_wires
-        new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
+        # new_qscript._update_par_info()
+        # new_qscript._obs_sharing_wires = self._obs_sharing_wires
+        # new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self._batch_size
         new_qscript._output_dim = self._output_dim
 

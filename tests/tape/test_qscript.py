@@ -47,8 +47,8 @@ class TestInitialization:
         assert qs.wires == qml.wires.Wires([])
         assert qs.num_wires == 0
         assert qs.samples_computational_basis is False
-        assert len(qs._obs_sharing_wires) == 0
-        assert len(qs._obs_sharing_wires_id) == 0
+        assert len(qs.obs_sharing_wires) == 0
+        assert len(qs.obs_sharing_wires_id) == 0
 
     @pytest.mark.parametrize(
         "ops",
@@ -229,8 +229,8 @@ class TestUpdate:
             qml.PauliX(0) @ qml.PauliY(1),
         ]
         qs = QuantumScript(measurements=[qml.expval(o) for o in obs])
-        assert qs._obs_sharing_wires == [obs[1], obs[2], obs[4]]
-        assert qs._obs_sharing_wires_id == [1, 2, 4]
+        assert qs.obs_sharing_wires == [obs[1], obs[2], obs[4]]
+        assert qs.obs_sharing_wires_id == [1, 2, 4]
 
     @pytest.mark.parametrize(
         "x, rot, exp_batch_size",

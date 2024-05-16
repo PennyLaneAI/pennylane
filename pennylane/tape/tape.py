@@ -99,14 +99,14 @@ def _validate_computational_basis_sampling(tape):
 
 def rotations_and_diagonal_measurements(tape):
     """Compute the rotations for overlapping observables, and return them along with the diagonalized observables."""
-    if not tape._obs_sharing_wires:
+    if not tape.obs_sharing_wires:
         return [], tape.measurements
 
     with (
         QueuingManager.stop_recording()
     ):  # stop recording operations to active context when computing qwc groupings
         try:
-            rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
+            rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
         except (TypeError, ValueError) as e:
             if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
                 raise qml.QuantumFunctionError(
@@ -121,7 +121,7 @@ def rotations_and_diagonal_measurements(tape):
 
         measurements = copy.copy(tape.measurements)
 
-        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+        for o, i in zip(diag_obs, tape.obs_sharing_wires_id):
             new_m = tape.measurements[i].__class__(obs=o)
             measurements[i] = new_m
 
