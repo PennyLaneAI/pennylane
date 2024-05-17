@@ -27,6 +27,7 @@ _grad_log_map = {
     "parameter-shift": "gradient_fn=<transform: param_shift>",
 }
 
+
 # pylint: disable=pointless-statement
 @contextlib.contextmanager
 def set_log_level(caplog, modules, levels):
