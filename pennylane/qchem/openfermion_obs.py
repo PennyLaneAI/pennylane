@@ -864,6 +864,40 @@ def molecular_hamiltonian(*args, **kwargs):
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
 
+    Returns:
+        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
+        and the number of qubits
+
+    .. warning::
+        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated.
+        Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at the `Usage Details`
+        for more details on the old interface.
+
+    **Example**
+
+    >>> symbols = ['H', 'H']
+    >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+    >>> molecule = qml.qchem.Molecule(symbols, coordinates)
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(molecule)
+    >>> print(qubits)
+    4
+    >>> print(H)
+    (-0.04207897647782188) [I0]
+    + (0.17771287465139934) [Z0]
+    + (0.1777128746513993) [Z1]
+    + (-0.24274280513140484) [Z2]
+    + (-0.24274280513140484) [Z3]
+    + (0.17059738328801055) [Z0 Z1]
+    + (0.04475014401535161) [Y0 X1 X2 Y3]
+    + (-0.04475014401535161) [Y0 Y1 X2 X3]
+    + (-0.04475014401535161) [X0 X1 Y2 Y3]
+    + (0.04475014401535161) [X0 Y1 Y2 X3]
+    + (0.12293305056183801) [Z0 Z2]
+    + (0.1676831945771896) [Z0 Z3]
+    + (0.1676831945771896) [Z1 Z2]
+    + (0.12293305056183801) [Z1 Z3]
+    + (0.176276408043196) [Z2 Z3]
+
     .. details::
         :title: Usage Details
 
@@ -900,39 +934,6 @@ def molecular_hamiltonian(*args, **kwargs):
 
         As part of the new interface, we are shifting towards extracting all the molecular information
         from the :class:`~.qchem.molecule.Molecule` within the ``molecular_hamiltonian`` method.
-
-    Returns:
-        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
-        and the number of qubits
-
-    **Example**
-
-    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-    >>> molecule = qml.qchem.Molecule(symbols, coordinates)
-    >>> H, qubits = qml.qchem.molecular_hamiltonian(molecule)
-    >>> print(qubits)
-    4
-    >>> print(H)
-    (-0.04207897647782188) [I0]
-    + (0.17771287465139934) [Z0]
-    + (0.1777128746513993) [Z1]
-    + (-0.24274280513140484) [Z2]
-    + (-0.24274280513140484) [Z3]
-    + (0.17059738328801055) [Z0 Z1]
-    + (0.04475014401535161) [Y0 X1 X2 Y3]
-    + (-0.04475014401535161) [Y0 Y1 X2 X3]
-    + (-0.04475014401535161) [X0 X1 Y2 Y3]
-    + (0.04475014401535161) [X0 Y1 Y2 X3]
-    + (0.12293305056183801) [Z0 Z2]
-    + (0.1676831945771896) [Z0 Z3]
-    + (0.1676831945771896) [Z1 Z2]
-    + (0.12293305056183801) [Z1 Z3]
-    + (0.176276408043196) [Z2 Z3]
-
-    .. warning::
-        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated.
-        Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at the `Usage Details`
-        for more details on the old interface.
 
     """
 
