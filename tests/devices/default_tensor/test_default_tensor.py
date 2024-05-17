@@ -164,6 +164,11 @@ def test_invalid_kwarg():
         qml.device("default.tensor", fake_arg=None)
 
 
+def test_method():
+    """Test the device method."""
+    assert qml.device("default.tensor").method == "mps"
+
+
 @pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
 def test_data_type(dtype):
     """Test the data type."""

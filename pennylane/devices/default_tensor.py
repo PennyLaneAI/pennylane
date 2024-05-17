@@ -125,6 +125,8 @@ _observables = frozenset(
 _methods = frozenset({"mps"})
 # The set of supported methods.
 
+# pylint: disable=trailing-whitespace
+
 
 def accepted_methods(method: str) -> bool:
     """A function that determines whether or not a method is supported by ``default.tensor``."""
@@ -144,7 +146,8 @@ def accepted_observables(obs: qml.operation.Operator) -> bool:
 @simulator_tracking
 @single_tape_support
 class DefaultTensor(Device):
-    """A PennyLane device to perform tensor network operations on a quantum circuit.
+    """A PennyLane device to perform tensor network operations on a quantum circuit using
+    `quimb <https://github.com/jcmgray/quimb/>`_.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -191,7 +194,7 @@ class DefaultTensor(Device):
             raise ImportError(
                 "This feature requires quimb, a library for tensor network manipulations. "
                 "It can be installed with:\n\npip install quimb"
-            )
+            )  # pragma: no cover
 
         if not accepted_methods(method):
             raise ValueError(
@@ -373,7 +376,7 @@ class DefaultTensor(Device):
                 return self.measurement(circuit.measurements[0])
             return tuple(self.measurement(mp) for mp in circuit.measurements)
 
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def _apply_operation(self, op: qml.operation.Operator) -> None:
         """Apply a single operator to the circuit, keeping the state always in a MPS form.
