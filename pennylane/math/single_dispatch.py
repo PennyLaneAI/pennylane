@@ -21,7 +21,7 @@ import numpy as np
 import semantic_version
 from scipy.linalg import block_diag as _scipy_block_diag
 
-from .utils import get_deep_interface
+from .utils import get_deep_interface, is_abstract
 
 
 def _i(name):
@@ -269,6 +269,17 @@ def _coerce_tensorflow_diag(x, **kwargs):
 
 
 ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
+
+
+def _tensorflow_allclose(a, b, **kwargs):
+    if is_abstract(a):
+        a = ar.to_numpy(a)
+    if is_abstract(b):
+        b = ar.to_numpy(b)
+    return ar.autoray.allclose(a, b, **kwargs)
+
+
+ar.register_function("tensorflow", "allclose", _tensorflow_allclose)
 
 ar.register_function(
     "tensorflow",
