@@ -31,6 +31,7 @@ quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
 
+
 @pytest.fixture(params=[np.complex64, np.complex128])
 def dev(request):
     return qml.device("default.tensor", wires=3, dtype=request.param)
