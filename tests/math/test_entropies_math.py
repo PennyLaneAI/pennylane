@@ -157,6 +157,63 @@ class TestMutualInformation:
             qml.math.mutual_info(state, indices0=[0], indices1=[1], check_state=True)
 
 
+class TestEntanglementEntropy:
+    """Tests for the vn entanglement entropy function"""
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            (
+                [
+                    [0.25, 0.25, -0.25, -0.25],
+                    [0.25, 0.25, -0.25, -0.25],
+                    [-0.25, -0.25, 0.25, 0.25],
+                    [-0.25, -0.25, 0.25, 0.25],
+                ],
+                0,
+            ),
+            ([[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]], np.log(2)),
+            (
+                [
+                    [1 / 1.25, 0, 0, 0.5 / 1.25],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0.5 / 1.25, 0, 0, 0.25 / 1.25],
+                ],
+                0.500402,
+            ),
+        ],
+    )
+    def test_density_matrix(self, interface, state, expected):
+        """Test that mutual information works for density matrices"""
+        state = qml.math.asarray(state, like=interface)
+        actual = qml.math.vn_entanglement_entropy(state, indices0=[0], indices1=[1])
+        assert qml.math.allclose(actual, expected)
+
+    @pytest.mark.parametrize(
+        "state, wires0, wires1",
+        [
+            (np.diag([1, 0, 0, 0]), [0], [0]),
+            (np.diag([1, 0, 0, 0]), [0], [0, 1]),
+            (np.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1]),
+            (np.diag([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1, 2]),
+        ],
+    )
+    def test_subsystem_overlap(self, state, wires0, wires1):
+        """Test that an error is raised when the subsystems overlap"""
+        with pytest.raises(
+            ValueError, match="Subsystems for computing the entanglement entropy must not overlap"
+        ):
+            qml.math.vn_entanglement_entropy(state, indices0=wires0, indices1=wires1)
+
+    @pytest.mark.parametrize("state", [np.array([5])])
+    def test_invalid_type(self, state):
+        """Test that an error is raised when an unsupported type is passed"""
+        with pytest.raises(ValueError, match="Density matrix must be of shape"):
+            qml.math.vn_entanglement_entropy(state, indices0=[0], indices1=[1], check_state=True)
+
+
 class TestRelativeEntropy:
     """Tests for the relative entropy qml.math function"""
 

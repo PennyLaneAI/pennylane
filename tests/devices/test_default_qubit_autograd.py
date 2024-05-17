@@ -17,9 +17,9 @@ Integration tests for the ``default.qubit.autograd`` device.
 import pytest
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane import numpy as np
 from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
-from pennylane import DeviceError
 
 
 @pytest.mark.autograd

@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
+from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
 pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({0: Z, 2: Z, 4: Z})
@@ -49,6 +49,11 @@ H3 = 1.0 * X0 + 2.0 * Y0 + 3.0 * Z0
 
 class TestDotSum:
     """Unittests for the dot function when ``pauli=False``."""
+
+    def test_error_if_ops_operator(self):
+        """Test that dot raises an error if ops is an operator itself."""
+        with pytest.raises(ValueError, match=r"ops must be an Iterable of Operator's"):
+            qml.dot([1, 1], qml.X(0) @ qml.Y(1))
 
     def test_dot_returns_sum(self):
         """Test that the dot function returns a Sum operator when ``pauli=False``."""
@@ -279,6 +284,20 @@ ops0 = [
 
 class TestDotPauliSentence:
     """Unittest for the dot function when ``pauli=True``"""
+
+    def test_error_if_ops_PauliWord(self):
+        """Test that dot raises an error if ops is a PauliWord itself."""
+        _pw = qml.pauli.PauliWord({0: "X", 1: "Y"})
+        with pytest.raises(ValueError, match=r"ops must be an Iterable of PauliWord's"):
+            qml.dot([1, 2], _pw)
+
+    def test_error_if_ops_PauliSentence(self):
+        """Test that dot raises an error if ops is a PauliSentence itself."""
+        _pw1 = qml.pauli.PauliWord({0: "X", 1: "Y"})
+        _pw2 = qml.pauli.PauliWord({2: "Z"})
+        ps = 2 * _pw1 + 3 * _pw2
+        with pytest.raises(ValueError, match=r"ops must be an Iterable of PauliSentence's"):
+            qml.dot([1, 2], ps)
 
     def test_dot_returns_pauli_sentence(self):
         """Test that the dot function returns a PauliSentence class."""

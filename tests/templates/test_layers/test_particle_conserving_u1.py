@@ -14,17 +14,18 @@
 """
 Unit tests for the ParticleConservingU1 template.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 
 
-def test_standard_validity():
+@pytest.mark.parametrize("init_state", [np.array([1, 1, 0]), None])
+def test_standard_validity(init_state):
     """Check the operation using the assert_valid function."""
 
     weights = np.random.random(size=(1, 2, 2))
-    init_state = np.array([1, 1, 0])
     op = qml.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
 
     qml.ops.functions.assert_valid(op)

@@ -14,15 +14,16 @@
 """Transforms for interacting with PyZX, framework for ZX calculus."""
 # pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments
 
-from functools import partial
-from typing import Sequence, Callable
 from collections import OrderedDict
+from functools import partial
+from typing import Callable, Sequence
+
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms import TransformError
-from pennylane.transforms import transform
+from pennylane.transforms import TransformError, transform
 from pennylane.wires import Wires
 
 

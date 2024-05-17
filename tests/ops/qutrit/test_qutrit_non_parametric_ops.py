@@ -15,13 +15,13 @@
 Unit tests for the available non-parametric qutrit operations
 """
 import copy
-import pytest
-import numpy as np
 
-from gate_data import TSHIFT, TCLOCK, TADD, TSWAP, TH
+import numpy as np
+import pytest
+from gate_data import TADD, TCLOCK, TH, TSHIFT, TSWAP
+
 import pennylane as qml
 from pennylane.wires import Wires
-
 
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.TShift, TSHIFT, None),

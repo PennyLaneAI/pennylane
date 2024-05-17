@@ -15,15 +15,14 @@
 # pylint: disable=protected-access,too-few-public-methods
 import sys
 
-
 import autograd
 import pytest
-from pennylane import numpy as np
-from pennylane.operation import Observable, AnyWires
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import finite_diff, param_shift
+from pennylane.operation import AnyWires, Observable
 
 pytestmark = pytest.mark.autograd
 
@@ -183,6 +182,7 @@ class TestBatchTransformExecution:
     """Tests to ensure batch transforms can be correctly executed
     via qml.execute and map_batch_transform"""
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_no_batch_transform(self, mocker):
         """Test that batch transforms can be disabled and enabled"""
         dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
@@ -202,6 +202,36 @@ class TestBatchTransformExecution:
 
         res = qml.execute([tape], dev, None, device_batch_transform=False)
         assert np.allclose(res[0], np.cos(y), atol=0.1)
+
+        spy.assert_not_called()
+
+        res = qml.execute([tape], dev, None, device_batch_transform=True)
+        spy.assert_called()
+
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == ()
+        assert np.allclose(res[0], np.cos(y), atol=0.1)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_no_batch_transform_legacy_opmath(self, mocker):
+        """Test functionality to enable and disable"""
+        dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
+
+        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        x = 0.6
+        y = 0.2
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        spy = mocker.spy(dev, "batch_transform")
+
+        with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
+            res = qml.execute([tape], dev, None, device_batch_transform=False)
 
         spy.assert_not_called()
 

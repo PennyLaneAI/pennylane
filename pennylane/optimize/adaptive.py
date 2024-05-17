@@ -13,13 +13,13 @@
 # limitations under the License.
 """Adaptive optimizer"""
 import copy
-from typing import Sequence, Callable
+from typing import Callable, Sequence
 
 # pylint: disable= no-value-for-parameter, protected-access, not-callable
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.tape import QuantumTape
 from pennylane import transform
+from pennylane.tape import QuantumTape
 
 
 @transform

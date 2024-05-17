@@ -16,42 +16,33 @@ Defines `is_commuting`, an function for determining if two functions commute.
 """
 
 import numpy as np
+
 import pennylane as qml
-from pennylane.pauli.utils import _wire_map_from_pauli_pair
-from pennylane.ops.op_math import SProd, Prod, Sum
+from pennylane.ops.op_math import Prod, SProd, Sum
 
 
-def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
+def _pword_is_commuting(pauli_word_1, pauli_word_2):
     r"""Checks if two Pauli words commute.
 
     Args:
-        pauli_word_1 (Observable): first Pauli word in commutator
-        pauli_word_2 (Observable): second Pauli word in commutator
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
-            the Pauli word as keys, and unique integer labels as their values
+        pauli_word_1 (Operator): first Pauli word in commutator.
+        pauli_word_2 (Operator): second Pauli word in commutator.
 
     Returns:
-        bool: returns True if the input Pauli commute, False otherwise
+        bool: returns True if the input Pauli commute, False otherwise.
 
     **Example**
 
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
     >>> pauli_word_1 = qml.prod(qml.X("a"), qml.Y("b"))
     >>> pauli_word_2 = qml.prod(qml.Z("a"), qml.Z("c"))
-    >>> _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+    >>> _pword_is_commuting(pauli_word_1, pauli_word_2)
     False
 
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
     >>> pauli_word_1 = qml.sum(qml.X('a') , qml.Y('b'))
     >>> pauli_word_2 = qml.sum(qml.Z('c') , qml.X('a'))
-    >>> _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+    >>> _pword_is_commuting(pauli_word_1, pauli_word_2)
     True
     """
-
-    if wire_map is None:
-        wire_map = _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2)
-        pauli_word_1 = pauli_word_1.map_wires(wire_map)
-        pauli_word_2 = pauli_word_2.map_wires(wire_map)
 
     pr1 = pauli_word_1.pauli_rep
     pr2 = pauli_word_2.pauli_rep
@@ -145,11 +136,11 @@ def _create_commute_function():
         Relies on ``commutation_map`` from the enclosing namespace of ``_create_commute_function``.
 
         Args:
-            op_name1 (str): name of one operation
-            op_name2 (str): name of the second operation
+            op_name1 (str): name of one operation.
+            op_name2 (str): name of the second operation.
 
         Returns:
-            Bool
+            bool: True if the operations commute, False otherwise.
 
         """
         return op_name1 in commutation_map[op_name2]
@@ -182,7 +173,7 @@ def intersection(wires1, wires2):
         wires2 (pennylane.wires.Wires: Second set of wires.
 
     Returns:
-         bool: True if the two sets of wires are not disjoint and False if disjoint.
+        bool: True if the two sets of wires are not disjoint and False if disjoint.
     """
     return len(qml.wires.Wires.shared_wires([wires1, wires2])) != 0
 
@@ -195,7 +186,7 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
         operation2 (pennylane.Operation): Second operation.
 
     Returns:
-         Bool: True if commutation, False otherwise.
+        bool: True if commutation, False otherwise.
     """
     # Two non simplified CRot
     target_wires_1 = qml.wires.Wires(
@@ -233,7 +224,7 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
         operation2 (pennylane.Operation): Second operation.
 
     Returns:
-         Bool: True if commutation, False otherwise, None if not two rotations.
+        bool: True if commutation, False otherwise, None if not two rotations.
     """
 
     target_wires_1 = qml.wires.Wires(
@@ -317,7 +308,7 @@ non_commuting_operations = [
 ]
 
 
-def is_commuting(operation1, operation2, wire_map=None):
+def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting using a lookup table.
 
     A lookup table is used to check the commutation between the
@@ -338,11 +329,9 @@ def is_commuting(operation1, operation2, wire_map=None):
     Args:
         operation1 (.Operation): A first quantum operation.
         operation2 (.Operation): A second quantum operation.
-        wire_map (dict[Union[str, int], int]): dictionary for Pauli word commutation containing all
-            wire labels used in the Pauli word as keys, and unique integer labels as their values
 
     Returns:
-         bool: True if the operations commute, False otherwise.
+        bool: True if the operations commute, False otherwise.
 
     **Example**
 
@@ -363,7 +352,7 @@ def is_commuting(operation1, operation2, wire_map=None):
         raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
 
     if operation1.pauli_rep is not None and operation2.pauli_rep is not None:
-        return _pword_is_commuting(operation1, operation2, wire_map)
+        return _pword_is_commuting(operation1, operation2)
 
     # operations are disjoints
     if not intersection(operation1.wires, operation2.wires):

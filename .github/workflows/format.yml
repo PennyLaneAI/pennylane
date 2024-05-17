@@ -18,14 +18,19 @@ jobs:
           python-version: 3.9
 
       - name: Install dependencies
-        run: pip install black pylint==2.7.4
+        run: pip install black pylint==2.7.4 isort==5.13.2
 
       - uses: actions/checkout@v2
 
       - name: Run Black
         run: |
-          black -l 100 pennylane/ --check
-          black -l 100 tests/ --check
+          black -t py39 -t py310 -t py311 -l 100 pennylane/ --check
+          black -t py39 -t py310 -t py311 -l 100 tests/ --check
+
+      - name: Run isort
+        run: |
+          isort --py 311 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./pennylane --check
+          isort --py 311 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./tests --check
 
       - name: Run Pylint (source files)
         if: always()

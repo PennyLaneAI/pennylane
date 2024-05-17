@@ -23,11 +23,10 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import math, X, Y, Z
-from pennylane.wires import Wires
+from pennylane import X, Y, Z, math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
-
+from pennylane.wires import Wires
 
 no_mat_ops = (
     qml.Barrier,
@@ -212,6 +211,24 @@ class TestInitialization:
         assert coeffs == coeffs_true
         assert ops1 == ops_true
 
+    def test_terms_pauli_rep_wire_order(self):
+        """Test that the wire order of the terms is the same as the wire order of the original
+        operands when the Sum has a valid pauli_rep"""
+        w0, w1, w2, w3 = [0, 1, 2, 3]
+        coeffs = [0.5, -0.5]
+
+        obs = [
+            qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Z(w3),
+            qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Z(w3),
+        ]
+
+        H = qml.dot(coeffs, obs)
+        _, H_ops = H.terms()
+
+        assert all(o1.wires == o2.wires for o1, o2 in zip(obs, H_ops))
+        assert H_ops[0] == qml.prod(qml.X(w0), qml.Y(w1), qml.X(w2), qml.Z(w3))
+        assert H_ops[1] == qml.prod(qml.X(w0), qml.X(w1), qml.Y(w2), qml.Z(w3))
+
     coeffs_ = [1.0, 1.0, 1.0, 3.0, 4.0, 4.0, 5.0]
     h6 = qml.sum(
         qml.s_prod(2.0, qml.prod(qml.Hadamard(0), qml.PauliZ(10))),
@@ -309,7 +326,7 @@ class TestInitialization:
         ),
         (
             0.5 * (X(0) @ (0.5 * X(1))) + 0.7 * X(1) + 0.8 * (X(0) @ Y(1) @ Z(1)),
-            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * ((X(0) @ Y(1)) @ Z(1))\n)",
+            "(\n    0.5 * (X(0) @ (0.5 * X(1)))\n  + 0.7 * X(1)\n  + 0.8 * (X(0) @ Y(1) @ Z(1))\n)",
         ),
     )
 
@@ -328,6 +345,7 @@ class TestInitialization:
         # qml.sum(*[0.5 * X(i) for i in range(10)]) # multiline output needs fixing of https://github.com/PennyLaneAI/pennylane/issues/5162 before working
     )
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
@@ -661,6 +679,16 @@ class TestProperties:
         sum_op = sum_method(*ops_lst)
         assert sum_op._queue_category is None  # pylint: disable=protected-access
 
+    def test_eigvals_Identity_no_wires(self):
+        """Test that eigenvalues can be computed for a sum containing identity with no wires."""
+
+        if not qml.operation.active_new_opmath():
+            pytest.skip("Identity with no wires is not supported for legacy opmath")
+
+        op1 = qml.X(0) + 2 * qml.I()
+        op2 = qml.X(0) + 2 * qml.I(0)
+        assert qml.math.allclose(sorted(op1.eigvals()), sorted(op2.eigvals()))
+
     def test_eigendecompostion(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
@@ -870,9 +898,11 @@ class TestSimplify:
             qml.RX(1.9, wires=1),
             qml.PauliX(0),
         )
-        dunder_sum_op = sum(ops_to_sum)
+        s1 = qml.sum(ops_to_sum[0], ops_to_sum[1])
+        s2 = qml.sum(s1, ops_to_sum[2])
+        nested_sum = qml.sum(s2, ops_to_sum[3])
         class_sum_op = Sum(*ops_to_sum)
-        assert dunder_sum_op.arithmetic_depth == 3
+        assert nested_sum.arithmetic_depth == 3
         assert class_sum_op.arithmetic_depth == 1
 
     def test_simplify_method(self):
@@ -1124,6 +1154,16 @@ class TestSortWires:
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
+    def test_sorting_operators_with_no_wires(self):
+        """Test that sorting can occur when an operator acts on no wires."""
+
+        op_list = [qml.GlobalPhase(0.5), qml.X(0), qml.Y(1), qml.I(), qml.CNOT((1, 2)), qml.I()]
+
+        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
+
+        expected = [qml.GlobalPhase(0.5), qml.I(), qml.I(), qml.X(0), qml.Y(1), qml.CNOT((1, 2))]
+        assert sorted_list == expected
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
@@ -1267,20 +1307,6 @@ class TestIntegration:
         true_grad = qnp.array([-0.09347337, -0.18884787, -0.28818254])
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
-        wires = [0, 1]
-        dev = qml.device("default.qubit", wires=wires)
-        sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
-
-        @qml.qnode(dev, interface=None)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.expval(sum_op)
-
-        with pytest.warns(UserWarning, match="Sum might not be hermitian."):
-            my_circ()
-
     def test_params_can_be_considered_trainable(self):
         """Tests that the parameters of a Sum are considered trainable."""
         dev = qml.device("default.qubit", wires=2)
@@ -1318,6 +1344,18 @@ class TestArithmetic:
 
 class TestGrouping:
     """Test grouping functionality of Sum"""
+
+    def test_set_on_initialization(self):
+        """Test that grouping indices can be set on initialization."""
+
+        op = qml.ops.Sum(qml.X(0), qml.Y(1), _grouping_indices=[[0, 1]])
+        assert op.grouping_indices == [[0, 1]]
+        op_ac = qml.ops.Sum(qml.X(0), qml.Y(1), grouping_type="anticommuting")
+        assert op_ac.grouping_indices == ((0,), (1,))
+        with pytest.raises(ValueError, match=r"cannot be specified at the same time."):
+            qml.ops.Sum(
+                qml.X(0), qml.Y(1), grouping_type="anticommuting", _grouping_indices=[[0, 1]]
+            )
 
     def test_non_pauli_error(self):
         """Test that grouping non-Pauli observables is not supported."""

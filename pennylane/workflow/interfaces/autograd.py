@@ -75,7 +75,7 @@ avoided, but when normal caching is turned off, the above can lead to an explosi
 in the number of required circuit executions.
 
 To avoid this explosion in the number of executed circuits when caching is turned off, we will instead internally
-cache the full jacobian so that is is reused between different calls to the same ``grad_fn``. This behavior is toggled
+cache the full jacobian so that is is reused between different calls to the same ``grad_fn``. This behaviour is toggled
 by the ``cache_full_jacobian`` keyword argument to :class:`~.TransformJacobianProducts`.
 
 Other interfaces are capable of calculating the full jacobian in one call, so this patch is only present for autograd.
@@ -83,7 +83,7 @@ Other interfaces are capable of calculating the full jacobian in one call, so th
 """
 # pylint: disable=too-many-arguments, unused-argument
 import logging
-from typing import Tuple, Callable
+from typing import Callable, Tuple
 
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox

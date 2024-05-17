@@ -436,7 +436,7 @@ class TestExpval:
 
         res_dq = qml.QNode(circuit, qml.device("default.qubit"))()
         res = qml.QNode(circuit, dev)()
-        assert res.shape == ()
+        assert qml.math.shape(res) == ()
         assert np.isclose(res, res_dq, atol=tol(dev.shots))
 
 
@@ -1219,6 +1219,23 @@ class TestTensorSample:
         assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol(False))
         assert np.allclose(np.mean(res), expected_mean, atol=tol(False))
         assert np.allclose(np.var(res), expected_var, atol=tol(False))
+
+
+@flaky(max_runs=10)
+class TestSumExpval:
+    """Test expectation values of Sum observables."""
+
+    def test_sum_containing_identity_on_no_wires(self, device, tol):
+        """Test that the device can handle Identity on no wires."""
+        dev = device(1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            return qml.expval(qml.sum(qml.Z(0) + 3 * qml.I()))
+
+        res = circuit()
+        assert qml.math.allclose(res, 2.0, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)

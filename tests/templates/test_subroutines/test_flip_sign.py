@@ -15,8 +15,9 @@
 Tests for the FlipSign template.
 """
 import pytest
-from pennylane import numpy as np
+
 import pennylane as qml
+from pennylane import numpy as np
 
 
 def test_standarad_checks():

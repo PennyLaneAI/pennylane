@@ -15,12 +15,13 @@
 Tests for the gradients.pulse_gradient module.
 """
 
-import warnings
 import copy
-import pytest
-import numpy as np
-import pennylane as qml
+import warnings
 
+import numpy as np
+import pytest
+
+import pennylane as qml
 from pennylane.gradients.general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from pennylane.gradients.pulse_gradient import (
     _parshift_and_integrate,
@@ -752,12 +753,41 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="Expected a positive number of samples"):
             stoch_pulse_grad(tape, num_split_times=num_split_times)
 
-    def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape."""
+    def test_trainable_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the stochastic pulse"
+        _match = r"Computing the gradient of broadcasted tapes .* using the stochastic pulse"
         with pytest.raises(NotImplementedError, match=_match):
             stoch_pulse_grad(tape)
+
+    def test_nontrainable_batched_tape(self):
+        """Test that no error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is not differentiated, and that the results correspond to the stacked
+        results of the single-tape derivatives."""
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit")
+        x = [0.4, 0.2]
+        params = [jnp.array(0.14)]
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        op = qml.evolve(ham_single_q_const)(params, 0.7)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
+        )
+        batched_tapes, batched_fn = stoch_pulse_grad(tape, argnum=0, num_split_times=1)
+        batched_grad = batched_fn(dev.execute(batched_tapes))
+        separate_tapes = [
+            qml.tape.QuantumScript(
+                [qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
+            )
+            for _x in x
+        ]
+        separate_tapes_and_fns = [
+            stoch_pulse_grad(t, argnum=0, num_split_times=1) for t in separate_tapes
+        ]
+        separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
+        assert np.allclose(batched_grad, separate_grad)
 
     @pytest.mark.parametrize("num_meas", [0, 1, 2])
     def test_warning_no_trainable_params(self, num_meas):

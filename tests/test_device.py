@@ -14,12 +14,13 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
-from importlib import metadata, reload
 from collections import OrderedDict
+from importlib import metadata, reload
 from sys import version_info
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import Device, DeviceError
 from pennylane.wires import Wires
@@ -306,6 +307,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_check_validity_containing_prod(self, mock_device_supporting_prod):
         """Tests that the function Device.check_validity works with Prod"""
 
@@ -323,6 +325,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         dev.check_validity(queue, observables)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_prod_containing_unsupported_nested_observables(self, mock_device_supporting_prod):
         """Tests that the observables nested within Prod are checked for validity"""
 
@@ -360,6 +363,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(DeviceError, match="Tensor observables not supported"):
             dev.check_validity(queue, observables)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_check_validity_on_prod_support(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with prod support capability"""
         dev = mock_device_supporting_paulis()

@@ -16,14 +16,13 @@
 Differentiability tests are still in the ml-framework specific files.
 """
 import copy
-from typing import Tuple, Callable
 from functools import partial
-import pytest
+from typing import Callable, Tuple
 
 import numpy as np
+import pytest
 
 import pennylane as qml
-
 
 device_suite = (
     qml.device("default.qubit.legacy", wires=5),

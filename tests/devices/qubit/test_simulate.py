@@ -13,12 +13,11 @@
 # limitations under the License.
 """Unit tests for simulate in devices/qubit."""
 
+import numpy as np
 import pytest
 
-import numpy as np
-
 import pennylane as qml
-from pennylane.devices.qubit import simulate, get_final_state, measure_final_state
+from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 
 
 class TestCurrentlyUnsupportedCases:
@@ -65,6 +64,18 @@ class TestStatePrepBase:
 
 class TestBasicCircuit:
     """Tests a basic circuit with one rx gate and two simple expectation values."""
+
+    def test_analytic_mid_meas_raise(self):
+        """Test measure_final_state raises an error when getting a mid-measurement dictionary."""
+        phi = np.array(0.397)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+        )
+        state, is_state_batched = get_final_state(qs)
+        with pytest.raises(
+            TypeError, match="Native mid-circuit measurements are only supported with finite shots."
+        ):
+            _ = measure_final_state(qs, state, is_state_batched, mid_measurements={})
 
     def test_basic_circuit_numpy(self):
         """Test execution with a basic circuit."""
@@ -618,9 +629,7 @@ class TestSampleMeasurements:
         assert len(result) == len(mps)
 
         # check that samples are reused when possible
-        # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for
-        # Hamiltonian and Sum, and 1 group each for SProd and Prod
-        assert spy.call_count == 10
+        assert spy.call_count == 8
 
     shots_data = [
         [10000, 10000],

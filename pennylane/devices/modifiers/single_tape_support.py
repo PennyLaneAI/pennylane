@@ -16,7 +16,7 @@
 """
 from functools import wraps
 
-from pennylane.devices import Device, DefaultExecutionConfig
+from pennylane.devices import DefaultExecutionConfig, Device
 from pennylane.tape import QuantumScript
 
 

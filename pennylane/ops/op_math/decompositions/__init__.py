@@ -16,5 +16,5 @@ unitary operations into sequences of elementary operations.
 """
 
 from .single_qubit_unitary import one_qubit_decomposition
-from .two_qubit_unitary import two_qubit_decomposition
 from .solovay_kitaev import sk_decomposition
+from .two_qubit_unitary import two_qubit_decomposition

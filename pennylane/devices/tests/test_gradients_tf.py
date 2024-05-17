@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests trainable circuits using the TensorFlow interface."""
+import numpy as np
+
 # pylint:disable=no-self-use
 import pytest
-
-import numpy as np
 
 import pennylane as qml
 
@@ -152,6 +152,11 @@ class TestGradients:
         wires = 3 if diff_method == "hadamard" else 2
         dev = device(wires=wires)
         tol = tol(dev.shots)
+
+        # TODO: remove the following lines after tensorflow dtype preservation is fixed
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.skip("tf interfaces not working correctly with lightning")
+
         x = tf.Variable(0.543)
         y = tf.Variable(-0.654)
 
@@ -196,6 +201,10 @@ class TestGradients:
         wires = 3 if diff_method == "hadamard" else 1
         dev = device(wires=wires)
         tol = tol(dev.shots)
+
+        # TODO: remove the following lines after tensorflow dtype preservation is fixed
+        if "lightning" in getattr(dev, "name", "").lower():
+            pytest.skip("tf interfaces not working correctly with lightning")
 
         @qml.qnode(dev, diff_method=diff_method, max_diff=2)
         def circuit(x):
