@@ -23,7 +23,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane.devices.default_tensor import DefaultTensor
 
-# gates for which interface support is tested
+# gates for which device support is tested
 ops = {
     "Identity": qml.Identity(wires=[0]),
     "BlockEncode": qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
@@ -97,7 +97,7 @@ ops = {
 
 all_ops = ops.keys()
 
-# observables for which interface support is tested
+# observables for which device support is tested
 obs = {
     "Identity": qml.Identity(wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
@@ -190,11 +190,11 @@ def test_invalid_shots():
 
 
 class TestSupportedGatesAndObservables:
-    """Tests for the MPS method."""
+    """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
 
     @pytest.mark.parametrize("operation", all_ops)
     def test_supported_gates_can_be_implemented(self, operation):
-        """Test that the interface can implement all its supported gates."""
+        """Test that the device can implement all its supported gates."""
 
         dev = DefaultTensor(wires=qml.wires.Wires(range(4)), method="mps")
 
@@ -208,7 +208,7 @@ class TestSupportedGatesAndObservables:
 
     @pytest.mark.parametrize("observable", all_obs)
     def test_supported_observables_can_be_implemented(self, observable):
-        """Test that the interface can implement all its supported observables."""
+        """Test that the device can implement all its supported observables."""
 
         dev = DefaultTensor(wires=qml.wires.Wires(range(3)), method="mps")
 
