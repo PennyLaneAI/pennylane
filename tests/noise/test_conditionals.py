@@ -63,6 +63,7 @@ class TestNoiseConditionals:
         assert isinstance(func, And)
         assert func(4) and not func(2.3)
         assert repr(func) == "And(is_int, has_bit_length_3)"
+        assert str(func) == "is_int & has_bit_length_3"
         assert func.bitwise
 
     def test_or_conditionals(self):
@@ -81,6 +82,7 @@ class TestNoiseConditionals:
         assert isinstance(func, Or)
         assert func(4) and not func(7.5)
         assert repr(func) == "Or(is_int, less_than_five)"
+        assert str(func) == "is_int | less_than_five"
         assert func.bitwise
 
     def test_xor_conditionals(self):
@@ -99,6 +101,7 @@ class TestNoiseConditionals:
         assert isinstance(func, Xor)
         assert not func(4) and func(11)
         assert repr(func) == "Xor(is_int, has_bit_length_3)"
+        assert str(func) == "is_int ^ has_bit_length_3"
         assert func.bitwise
 
     def test_not_conditionals(self):
@@ -112,6 +115,7 @@ class TestNoiseConditionals:
         assert isinstance(func, Not)
         assert not func(4) and func(7.5)
         assert repr(func) == "Not(is_int)"
+        assert str(func) == "~is_int"
         assert func.bitwise
 
 
@@ -216,6 +220,29 @@ class TestNoiseFunctions:
         op_repr = [getattr(op, "__name__") for op in _get_ops(obj)]
         assert str(func) == f"OpEq({op_repr if len(op_repr) > 1 else op_repr[0]})"
         assert func(op) == result
+
+    def test_conditional_bitwise(self):
+        """Test that conditionals can be operated with bitwise operations"""
+
+        cond1 = qml.noise.wires_eq(0)
+        cond2 = qml.noise.op_eq(qml.X)
+        conds = (cond1.condition, cond2.condition)
+
+        and_cond = cond1 & cond2
+        assert and_cond(qml.X(0)) and not and_cond(qml.X(1))
+        assert and_cond.condition == conds
+
+        or_cond = cond1 | cond2
+        assert or_cond(qml.X(1)) and not or_cond(qml.Y(1))
+        assert or_cond.condition == conds
+
+        xor_cond = cond1 ^ cond2
+        assert xor_cond(qml.X(1)) and not xor_cond(qml.Y(1))
+        assert xor_cond.condition == conds
+
+        not_cond = ~cond1
+        assert not_cond(qml.X(1))
+        assert not_cond.condition == conds[:1]
 
     def test_partial_wires(self):
         """Test for checking partial_wires work as expected for building callables to make op with correct wires"""
