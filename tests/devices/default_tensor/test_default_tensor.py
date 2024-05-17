@@ -23,6 +23,10 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane.devices.default_tensor import DefaultTensor
 
+stim = pytest.importorskip("quimb")
+
+pytestmark = pytest.mark.external
+
 # gates for which device support is tested
 ops = {
     "Identity": qml.Identity(wires=[0]),

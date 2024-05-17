@@ -27,6 +27,9 @@ VARPHI = np.linspace(0.02, 1, 3)
 
 from pennylane.devices.default_tensor import DefaultTensor
 
+stim = pytest.importorskip("quimb")
+
+pytestmark = pytest.mark.external
 
 @pytest.fixture(params=[np.complex64, np.complex128])
 def dev(request):
