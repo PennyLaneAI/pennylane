@@ -77,7 +77,7 @@ class Hamiltonian(Observable):
         coeffs (tensor_like): coefficients of the Hamiltonian expression
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
         simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
-                         (like-terms are combined). The default value is `False`.
+                         (like-terms are combined). The default value is `False`. Use of this argument is deprecated.
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -85,6 +85,10 @@ class Hamiltonian(Observable):
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this Hamiltonian instance
+
+    .. warning::
+        The ``simplify`` argument is deprecated and will be removed in a future release.
+        Instead, you can call ``qml.simplify`` on the constructed operator.
 
     **Example:**
 
@@ -279,6 +283,13 @@ class Hamiltonian(Observable):
         self._grouping_indices = None
 
         if simplify:
+
+            warn(
+                "The simplify argument in qml.Hamiltonian and qml.ops.LinearCombination is deprecated. "
+                "Instead, you can call qml.simplify on the constructed operator.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
             # simplify upon initialization changes ops such that they wouldnt be
             # removed in self.queue() anymore, removing them here manually.
             if qml.QueuingManager.recording():
@@ -744,12 +755,12 @@ class Hamiltonian(Observable):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
-            return Hamiltonian(coeffs, terms, simplify=True)
+            return qml.simplify(Hamiltonian(coeffs, terms))
 
         if isinstance(H, (Tensor, Observable)):
             terms = [op @ copy(H) for op in ops1]
 
-            return Hamiltonian(coeffs1, terms, simplify=True)
+            return qml.simplify(Hamiltonian(coeffs1, terms))
 
         return NotImplemented
 
@@ -766,7 +777,7 @@ class Hamiltonian(Observable):
         if isinstance(H, (Tensor, Observable)):
             terms = [copy(H) @ op for op in ops1]
 
-            return Hamiltonian(coeffs1, terms, simplify=True)
+            return qml.simplify(Hamiltonian(coeffs1, terms))
 
         return NotImplemented
 
@@ -781,14 +792,14 @@ class Hamiltonian(Observable):
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
-            return Hamiltonian(coeffs, ops, simplify=True)
+            return qml.simplify(Hamiltonian(coeffs, ops))
 
         if isinstance(H, (Tensor, Observable)):
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
             ops.append(H)
-            return Hamiltonian(coeffs, ops, simplify=True)
+            return qml.simplify(Hamiltonian(coeffs, ops))
 
         return NotImplemented
 

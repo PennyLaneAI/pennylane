@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
+from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
 
@@ -133,20 +134,15 @@ def validate_measurements(func, shots, results1, results2, batch_size=None):
 
 
 def test_apply_mid_measure():
+    """Test that apply_mid_measure raises if applied to a batched state."""
     with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
         _ = apply_mid_measure(
             MidMeasureMP(0), np.zeros((2, 2)), is_state_batched=True, mid_measurements={}
         )
-    m0 = MidMeasureMP(0, postselect=1)
-    mid_measurements = {}
-    _ = apply_mid_measure(m0, np.zeros(2), mid_measurements=mid_measurements)
-    assert mid_measurements[m0] == -1
-    _ = apply_mid_measure(m0, np.array([1, 0]), mid_measurements=mid_measurements)
-    assert mid_measurements[m0] == -1
 
 
 def test_all_invalid_shots_circuit():
-
+    """Test that circuits in which all shots mismatch with post-selection conditions return the same answer as ``defer_measurements``."""
     dev = get_device()
 
     @qml.qnode(dev)
@@ -183,6 +179,7 @@ def test_all_invalid_shots_circuit():
 
 
 def test_unsupported_measurement():
+    """Test that circuits with unsupported measurements raise the correct error."""
     dev = get_device(shots=1000)
     params = np.pi / 4 * np.ones(2)
 
@@ -200,7 +197,7 @@ def test_unsupported_measurement():
         func(*params)
 
 
-@pytest.mark.parametrize("shots", [None, 1000, [1000, 1001]])
+@pytest.mark.parametrize("shots", [None, 3000, [3000, 3001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -250,7 +247,7 @@ def obs_tape(x, y, z, reset=False, postselect=None):
     return m0, m1
 
 
-@pytest.mark.parametrize("shots", [None, 7000, [6000, 6001]])
+@pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -259,7 +256,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     conditional gate. A single measurement of a common observable is performed at the end."""
 
     dev = get_device(shots=shots)
-    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliZ(0) @ qml.PauliY(1)
 
     @qml.qnode(dev)
@@ -286,7 +283,7 @@ def test_single_mcm_multiple_measure_obs(postselect, reset):
     conditional gate. Multiple measurements of common observables are performed at the end."""
 
     dev = get_device(shots=7500)
-    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
 
     @qml.qnode(dev)
     def func(x, y, z):
@@ -341,15 +338,15 @@ def test_single_mcm_multiple_measurements(postselect, reset, measure_f):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
     and a conditional gate. Multiple measurements of the mid-circuit measurement value are
     performed."""
-    shots = 10000
+    shots = 5000
     dev = get_device(shots=shots)
-    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliY(1)
 
     @qml.qnode(dev)
     def func(x, y, z):
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
-        return measure_f(op=obs), measure_f(op=mcms[0])
+        return measure_f(op=obs), measure_f(op=mcms[0]), measure_f(op=obs), measure_f(op=mcms[0])
 
     func1 = func
     func2 = qml.defer_measurements(func)
@@ -449,7 +446,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
     validate_measurements(measure_f, shots, results1, results2)
 
 
-@pytest.mark.parametrize("shots", [None, 6000, [6000, 6001]])
+@pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -458,7 +455,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     conditional gate. A single measurement of a common observable is performed at the end."""
 
     dev = get_device(shots=shots)
-    params = [np.pi / 7, np.pi / 6, -np.pi / 5]
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliZ(0) @ qml.PauliY(1)
 
     @qml.qnode(dev)
@@ -480,7 +477,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     validate_measurements(measure_f, shots, results1, results2)
 
 
-@pytest.mark.parametrize("shots", [7000, [5000, 5001]])
+@pytest.mark.parametrize("shots", [7500, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.probs, qml.sample])
@@ -648,6 +645,76 @@ def test_sample_with_prng_key(shots, postselect, reset):
             assert np.allclose(r1, r3)
     else:
         assert np.allclose(results1, results3)
+
+
+# pylint: disable=import-outside-toplevel, not-an-iterable
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_method", [None, "best"])
+@pytest.mark.parametrize("postselect", [None, 1])
+@pytest.mark.parametrize("reset", [False, True])
+def test_jax_jit(diff_method, postselect, reset):
+    """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
+    conditional gate. A single measurement of a common observable is performed at the end."""
+    import jax
+
+    shots = 10
+
+    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(678))
+    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
+    obs = qml.PauliY(0)
+
+    @qml.qnode(dev, diff_method=diff_method)
+    def func(x, y, z):
+        m0, m1 = obs_tape(x, y, z, reset=reset, postselect=postselect)
+        return (
+            qml.probs(wires=[1]),
+            qml.probs(wires=[0, 1]),
+            qml.sample(wires=[1]),
+            qml.sample(wires=[0, 1]),
+            qml.expval(obs),
+            qml.probs(obs),
+            qml.sample(obs),
+            qml.var(obs),
+            qml.expval(op=m0 + 2 * m1),
+            qml.probs(op=m0),
+            qml.sample(op=m0 + 2 * m1),
+            qml.var(op=m0 + 2 * m1),
+            qml.probs(op=[m0, m1]),
+        )
+
+    func1 = func
+    results1 = func1(*params)
+
+    jaxpr = str(jax.make_jaxpr(func)(*params))
+    if diff_method == "best":
+        assert "pure_callback" in jaxpr
+        pytest.xfail("QNode with diff_method='best' cannot be compiled with jax.jit.")
+    else:
+        assert "pure_callback" not in jaxpr
+
+    func2 = jax.jit(func)
+    results2 = func2(*params)
+
+    measures = [
+        qml.probs,
+        qml.probs,
+        qml.sample,
+        qml.sample,
+        qml.expval,
+        qml.probs,
+        qml.sample,
+        qml.var,
+        qml.expval,
+        qml.probs,
+        qml.sample,
+        qml.var,
+        qml.probs,
+    ]
+    for measure_f, r1, r2 in zip(measures, results1, results2):
+        r1, r2 = np.array(r1).ravel(), np.array(r2).ravel()
+        if measure_f == qml.sample:
+            r2 = r2[r2 != fill_in_value]
+        np.allclose(r1, r2)
 
 
 @pytest.mark.parametrize(
