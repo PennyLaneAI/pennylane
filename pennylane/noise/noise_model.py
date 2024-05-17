@@ -19,10 +19,10 @@ import pennylane as qml
 
 
 class NoiseModel:
-    """Build a noise model based on ``Conditional``, ``Operation`` and some ``metadata``.
+    """Build a noise model based on ``Conditional``, ``Callable`` and some ``metadata``.
 
     Args:
-        model (dict[Union[~.BooleanFn]->Union[Operation, Channel]]): Model
+        model_map (dict[Union[~.BooleanFn]->Union[Operation, Channel]]): Model
             data for the noise model as a ``{conditional: noise_op}`` dictionary.
         kwargs: Keyword arguments for specifying metadata related to noise model.
 
@@ -63,15 +63,15 @@ class NoiseModel:
     }, t1=0.04)
     """
 
-    def __init__(self, model, **kwargs):
-        self._check_model(model)
-        self._model = model
+    def __init__(self, model_map, **kwargs):
+        self._check_model(model_map)
+        self._model_map = model_map
         self._metadata = kwargs
 
     @property
-    def model(self):
+    def model_map(self):
         """Gives the conditional model for the noise model"""
-        return self._model
+        return self._model_map
 
     @property
     def metadata(self):
@@ -80,9 +80,11 @@ class NoiseModel:
 
     def __add__(self, data):
         if not isinstance(data, NoiseModel):
-            return NoiseModel({**self._model, **data}, **self.metadata)
+            return NoiseModel({**self.model_map, **data}, **self.metadata)
 
-        return NoiseModel({**self._model, **data._model}, **{**self._metadata, **data._metadata})
+        return NoiseModel(
+            {**self.model_map, **data.model_map}, **{**self.metadata, **data.metadata}
+        )
 
     def __radd__(self, data):
         return self.__add__(data)
@@ -90,20 +92,20 @@ class NoiseModel:
     def __sub__(self, data):
         if not isinstance(data, NoiseModel):
             return NoiseModel(
-                {k: v for k, v in self._model.items() if k not in data}, **self.metadata
+                {k: v for k, v in self.model_map.items() if k not in data}, **self.metadata
             )
 
         return NoiseModel(
-            {k: v for k, v in self._model.items() if k not in data._model},
-            **dict({k: v for k, v in self._metadata.items() if k not in data._metadata}),
+            {k: v for k, v in self.model_map.items() if k not in data.model_map},
+            **dict({k: v for k, v in self.metadata.items() if k not in data.metadata}),
         )
 
     def __eq__(self, other):
-        return self.model == other.model and self.metadata == other.metadata
+        return self.model_map == other.model_map and self.metadata == other.metadata
 
     def __repr__(self):
         model_str = "NoiseModel({\n"
-        for key, val in self._model.items():
+        for key, val in self.model_map.items():
             model_str += "    " + f"{key} = {val.__name__}" + "\n"
         model_str += "}, "
         for key, val in self._metadata.items():

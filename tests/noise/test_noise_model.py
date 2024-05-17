@@ -31,13 +31,13 @@ class TestNoiseModels:
 
         noise_model = qml.NoiseModel({fcond: noise}, t1=0.04, t2=0.02)
 
-        assert fcond in noise_model.model
-        assert noise in noise_model.model.values()
+        assert fcond in noise_model.model_map
+        assert noise in noise_model.model_map.values()
         assert all(t in noise_model.metadata for t in ["t1", "t2"])
         assert list(noise_model.metadata.values()) == [0.04, 0.02]
         assert (
             repr(noise_model) == "NoiseModel({\n"
-            "    Or(OpEq(PauliX), OpEq(PauliY)) = AmplitudeDamping(gamma=0.4)\n"
+            "    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)\n"
             "}, t1 = 0.04, t2 = 0.02)"
         )
 
@@ -55,14 +55,14 @@ class TestNoiseModels:
 
         noise1 = qml.noise.partial_wires(qml.PhaseDamping, 0.9)
         add_model = noise_model + {fcond1: noise1}
-        assert add_model.model[fcond1] == noise1
+        assert add_model.model_map[fcond1] == noise1
 
         radd_model = {fcond1: noise1} + noise_model
         assert radd_model == add_model
 
         noise_model1 = qml.NoiseModel({fcond1: noise1}, t2=0.02)
         nadd_model = noise_model + noise_model1
-        assert nadd_model.model[fcond1] == noise1
+        assert nadd_model.model_map[fcond1] == noise1
         assert nadd_model.metadata["t2"] == noise_model1.metadata["t2"]
 
     # pylint: disable=comparison-with-callable

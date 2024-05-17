@@ -18,7 +18,15 @@ condition on its attributes (e.g., type, parameters, wires, etc.) and use the co
 ``Callable`` to queue the noise operations using the user-provided metadata (e.g., hardware
 topologies or relaxation times) whenever the condition results true.
 
-.. currentmodule:: pennylane.noise
+Noise Model
+^^^^^^^^^^^
+
+.. currentmodule:: pennylane.noise.noise_model
+
+.. autosummary::
+    :toctree: api
+
+    ~NoiseModel
 
 Conditional Constructors
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -36,8 +44,6 @@ Conditional Constructors
 Callable Constructor
 ^^^^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.noise.conditionals
-
 .. autosummary::
     :toctree: api
 
@@ -45,8 +51,6 @@ Callable Constructor
 
 Conditional Classes
 ^^^^^^^^^^^^^^^^^^^
-
-.. currentmodule:: pennylane.noise.conditionals
 
 .. autosummary::
     :toctree: api

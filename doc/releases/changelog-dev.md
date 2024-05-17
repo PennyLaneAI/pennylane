@@ -8,6 +8,18 @@
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
 
+  ```python
+  fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
+  noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+  ```
+
+  ```pycon
+  >>> qml.NoiseModel({fcond: noise}, t1=0.04)
+  NoiseModel({
+    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
+  }, t1 = 0.04)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
