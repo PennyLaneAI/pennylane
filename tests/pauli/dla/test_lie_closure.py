@@ -65,6 +65,15 @@ class TestPauliVSpace:
         assert len(vspace._pw_to_idx) == 2
         assert vspace.tol == np.finfo(vspace._M.dtype).eps * 100
 
+    def test_empty_init(self):
+        """Test that a PauliVSpace can be initialized as an empty vector space"""
+        vspace = PauliVSpace([])
+        assert vspace.basis == []
+        assert vspace._rank == 0
+        assert vspace._num_pw == 0
+        assert len(vspace._pw_to_idx) == 0
+        assert vspace.tol == np.finfo(vspace._M.dtype).eps * 100
+
     @pytest.mark.parametrize("dtype", [float, complex])
     def test_dtype(self, dtype):
         vspace = PauliVSpace(ops1, dtype=dtype)
