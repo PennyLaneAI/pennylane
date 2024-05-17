@@ -137,6 +137,8 @@ class QROM(Operation):
         new_control_wires = [
             wire_map.get(wire, wire) for wire in self.hyperparameters["control_wires"]
         ]
+
+        new_work_wires = []
         if self.hyperparameters["work_wires"]:
             new_work_wires = [
                 wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]
@@ -228,7 +230,9 @@ class QROM(Operation):
                 )
 
             # Select block
-            sel_ops = [qml.Select(s_ops, control=c_sel_wires)]
+            sel_ops = []
+            if c_sel_wires:
+                sel_ops += [qml.Select(s_ops, control=c_sel_wires)]
 
             # Swap block
             swap_ops = []
