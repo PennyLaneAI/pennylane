@@ -82,10 +82,16 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+* Empty initialization of `PauliVSpace` is permitted.
+  [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
+  
+* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
 <h3>Breaking changes 💔</h3>
 
@@ -98,10 +104,9 @@
 * `qml.load` has been removed in favour of more specific functions, such as `qml.from_qiskit`, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
-<h4>Community contributions 🥳</h4>
-
-* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
-  [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
+* `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
+  returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
+  [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
 
 <h3>Deprecations 👋</h3>
 
@@ -140,10 +145,12 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ahmed Darwish,
 Gabriel Bottrill,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
+Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Kenya Sakka,
