@@ -867,11 +867,13 @@ def molecular_hamiltonian(*args, **kwargs):
     .. details::
         :title: Usage Details
 
-        Old interface used ``molecular_hamiltonian`` function with molecular information as separate arguments:
+        The old interface for this method involved passing molecular information as separate arguments:
+        
+            ``molecular_hamiltonian``\\ (`symbols, coordinates, name='molecule', charge=0, mult=1, basis='sto-3g',`
+            `method='dhf', active_electrons=None, active_orbitals=None, mapping='jordan_wigner', outpath='.',`
+            `wires=None, alpha=None, coeff=None, args=None, load_data=False, convert_tol=1e012`)
 
-        .. py:function:: molecular_hamiltonian(symbols, coordinates, name="molecule", charge=0, mult=1, basis="sto-3g", method="dhf", active_electrons=None, active_orbitals=None, mapping="jordan_wigner", outpath=".", wires=None, alpha=None, coeff=None, args=None, load_data=False, convert_tol=1e012)
-
-        Keyword Arguments:
+        Molecule-based Arguments:
           - **symbols** (list[str]): symbols of the atomic species in the molecule
           - **coordinates** (array[float]): atomic positions in Cartesian coordinates.
             The atomic coordinates must be in atomic units and can be given as either a 1D array of
@@ -885,7 +887,7 @@ def molecular_hamiltonian(*args, **kwargs):
           - **alpha** (array[float]): exponents of the primitive Gaussian functions
           - **coeff** (array[float]): coefficients of the contracted Gaussian functions
 
-        This interface was supposed to be used as follows:
+        Therefore, a molecular Hamiltonian had to be constructed in the following manner:
 
         .. code-block:: python
 
@@ -896,8 +898,8 @@ def molecular_hamiltonian(*args, **kwargs):
 
             H, qubit = qchem.molecular_hamiltonian(symbols, geometry, charge=0)
 
-        This information can now be wrapped in :class:`~.qchem.molecule.Molecule` object and provided to
-        the ``molecular_hamiltonian`` function in the new interface.
+        As part of the new interface, we are shifting towards extracting all the molecular information
+        from the :class:`~.qchem.molecule.Molecule` within the ``molecular_hamiltonian`` method.
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
