@@ -27,10 +27,12 @@ on:
       install_numpy_2:
         description: Indicate if numpy 2.0+ should be installed or not
         required: false
+        type: boolean
         default: 'false'
       numpy_2_version:
         description: The version of numpy 2.0 to use in order to run unit tests
         required: false
+        type: string
         default: '2.0.0rc2'
       pipeline_mode:
         description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
