@@ -149,6 +149,7 @@ from .primitives import (
     create_measurement_mcm_primitive,
 )
 from .measure import measure
+from .capture_qnode import qnode_call
 
 
 def __getattr__(key):

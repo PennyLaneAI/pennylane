@@ -215,8 +215,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         self.id = id
 
         if wires is not None:
-            if len(wires) == 0:
-                raise ValueError("Cannot set an empty list of wires.")
+            # if len(wires) == 0:
+            #    raise ValueError("Cannot set an empty list of wires.")
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")
 
