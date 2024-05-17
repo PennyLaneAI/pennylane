@@ -122,11 +122,18 @@ class And(BooleanFn):
     """
 
     def __init__(self, left, right):
+        self.operands = (left, right)
+
+        if any(getattr(opr, "condition", None) for opr in self.operands):
+            self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
+
         super().__init__(
             lambda *args, **kwargs: left(*args, **kwargs) and right(*args, **kwargs),
             f"And({left.name}, {right.name})",
         )
-        self.operands = (left, right)
+
+    def __str__(self):
+        return f"{self.operands[0]} & {self.operands[1]}"
 
 
 class Or(BooleanFn):
@@ -140,10 +147,17 @@ class Or(BooleanFn):
 
     def __init__(self, left, right):
         self.operands = (left, right)
+
+        if any(getattr(opr, "condition", None) for opr in self.operands):
+            self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
+
         super().__init__(
             lambda *args, **kwargs: left(*args, **kwargs) or right(*args, **kwargs),
             f"Or({left.name}, {right.name})",
         )
+
+    def __str__(self):
+        return f"{self.operands[0]} | {self.operands[1]}"
 
 
 class Xor(BooleanFn):
@@ -157,10 +171,17 @@ class Xor(BooleanFn):
 
     def __init__(self, left, right):
         self.operands = (left, right)
+
+        if any(getattr(opr, "condition", None) for opr in self.operands):
+            self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
+
         super().__init__(
             lambda *args, **kwargs: left(*args, **kwargs) ^ right(*args, **kwargs),
             f"Xor({left.name}, {right.name})",
         )
+
+    def __str__(self):
+        return f"{self.operands[0]} ^ {self.operands[1]}"
 
 
 class Not(BooleanFn):
@@ -174,7 +195,14 @@ class Not(BooleanFn):
 
     def __init__(self, left):
         self.operands = (left,)
+
+        if any(getattr(opr, "condition", None) for opr in self.operands):
+            self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
+
         super().__init__(
             lambda *args, **kwargs: not left(*args, **kwargs),
             f"Not({left.name})",
         )
+
+    def __str__(self):
+        return f"~{self.operands[0]}"

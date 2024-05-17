@@ -34,12 +34,8 @@ class WiresIn(BooleanFn):
 
     def __init__(self, wires):
         self._cond = set(wires)
+        self.condition = self._cond
         super().__init__(lambda x: _get_wires(x).issubset(self._cond), f"WiresIn({list(wires)})")
-
-    @property
-    def condition(self):
-        """Gives the conditioned wire set"""
-        return self._cond
 
 
 class WiresEq(BooleanFn):
@@ -53,15 +49,11 @@ class WiresEq(BooleanFn):
 
     def __init__(self, wires):
         self._cond = set(wires)
+        self.condition = self._cond
         super().__init__(
             lambda x: _get_wires(x) == self._cond,
             f"WiresEq({list(wires) if len(wires) > 1 else list(wires)[0]})",
         )
-
-    @property
-    def condition(self):
-        """Gives the conditioned wire set"""
-        return self._cond
 
 
 def _get_wires(val):
@@ -171,14 +163,10 @@ class OpIn(BooleanFn):
     def __init__(self, ops):
         self._cond = ops
         self._cops = _get_ops(ops)
+        self.condition = self._cops
         super().__init__(
             self._check_in_ops, f"OpIn({[getattr(op, '__name__') for op in self._cops]})"
         )
-
-    @property
-    def condition(self):
-        """Gives the conditioned wire set"""
-        return self._cond
 
     def _check_in_ops(self, x):
         x = [x] if not isinstance(x, (list, tuple, set)) else x
@@ -219,16 +207,12 @@ class OpEq(BooleanFn):
     def __init__(self, ops):
         self._cond = ops
         self._cops = _get_ops(ops)
+        self.condition = self._cops
         cops_names = list(getattr(op, "__name__") for op in self._cops)
         super().__init__(
             self._check_eq_ops,
             f"OpEq({cops_names if len(cops_names) > 1 else cops_names[0]})",
         )
-
-    @property
-    def condition(self):
-        """Gives the conditioned wire set"""
-        return self._cond
 
     def _check_eq_ops(self, x):
         if not any(not isclass(op) and getattr(op, "arithmetic_depth", 0) for op in self._cond):
