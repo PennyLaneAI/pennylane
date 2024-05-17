@@ -30,6 +30,6 @@ outputs to the default configured handler, which is directed to the standard out
    propagate = false
 
 
-Viewing the existing logging configuration file is possible by calling the :func:`pennylane.logging.edit_system_config` functionm which will open the file in an existing browser or editor window.
+Viewing the existing logging configuration file is possible by calling the :func:`pennylane.logging.edit_system_config` function which will open the file in an existing browser or editor window.
 
 For more info on the customization of the logging options, please see the logging development guide at :doc:`/development/guide/logging`, and the `Python logging documentation <https://docs.python.org/3/library/logging.html>`_.
