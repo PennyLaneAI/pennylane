@@ -512,9 +512,7 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
     ],
 )
 def test_jitting_with_sampling_on_different_observables(obs):
-    """Test case covering bug in Issue #5369. Sampling should be jit-able
-    when sampling occurs and obs is not None. The bug was occurring due mismatched
-    types on qml.sample(obs).numeric_type and obs.eigvals."""
+    """Test that jitting works when sampling observables (using their eigvals) rather than returning raw samples"""
     import jax
 
     jax.config.update("jax_enable_x64", True)

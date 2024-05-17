@@ -60,7 +60,7 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
-* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` are changed from `int` to `float`, making them 
+* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them 
   consistent with the other observables. The `dtype` of the returned values when sampling these observables 
   (e.g. `qml.sample(X(0))`) is also changed to `float`. 
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
