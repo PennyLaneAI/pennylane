@@ -950,6 +950,7 @@ def _molecular_hamiltonian_dispatch(*args, **kwargs):
         "Please provide one of them."
     )
 
+
 @_molecular_hamiltonian_dispatch.register(Molecule)
 def _(
     molecule,

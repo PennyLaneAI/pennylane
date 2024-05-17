@@ -388,7 +388,6 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
         ),
     ],
 )
-
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_hamiltonian_molecule_class(symbols, geometry, h_ref_data):
     r"""Test that molecular_hamiltonian generated using the molecule class
@@ -534,7 +533,6 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
         ),
     ],
 )
-
 def test_custom_wiremap_hamiltonian_dhf_molecule_class(wiremap, args, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
 
@@ -599,7 +597,6 @@ def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
     H, num_qubits = qchem.molecular_hamiltonian(molecule)
     assert len(H.terms()) == 2
     assert num_qubits == 4
-
 
 
 def test_diff_hamiltonian_error():
@@ -715,13 +712,12 @@ def test_real_hamiltonian(method, args, tmpdir):
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
-
 def test_real_hamiltonian_molecule_class(method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
- 
+
     molecule = qchem.Molecule(symbols, geometry)
     hamiltonian, _ = qchem.molecular_hamiltonian(
         molecule,
