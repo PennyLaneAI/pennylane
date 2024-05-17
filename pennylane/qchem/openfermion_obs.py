@@ -871,7 +871,7 @@ def molecular_hamiltonian(*args, **kwargs):
 
             ``molecular_hamiltonian``\\ (`symbols, coordinates, name='molecule', charge=0, mult=1, basis='sto-3g',`
             `method='dhf', active_electrons=None, active_orbitals=None, mapping='jordan_wigner', outpath='.',`
-            `wires=None, alpha=None, coeff=None, args=None, load_data=False, convert_tol=1e012`)
+            `wires=None, alpha=None, coeff=None, args=None, load_data=False, convert_tol=1e12`)
 
         Molecule-based Arguments:
           - **symbols** (list[str]): symbols of the atomic species in the molecule
@@ -969,7 +969,7 @@ def _(
     wires=None,
     args=None,
     load_data=False,
-    convert_tol=1e012,
+    convert_tol=1e12,
 ):
     return _molecular_hamiltonian(
         molecule.symbols,
@@ -1010,7 +1010,7 @@ def _(
     coeff=None,
     args=None,
     load_data=False,
-    convert_tol=1e012,
+    convert_tol=1e12,
 ):
     return _molecular_hamiltonian(
         symbols,
@@ -1050,7 +1050,7 @@ def _molecular_hamiltonian(
     coeff=None,
     args=None,
     load_data=False,
-    convert_tol=1e012,
+    convert_tol=1e12,
 ):  # pylint:disable=too-many-arguments, too-many-statements
     r"""Generate the qubit Hamiltonian of a molecule."""
 
