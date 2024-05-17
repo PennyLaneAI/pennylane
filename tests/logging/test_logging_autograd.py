@@ -27,7 +27,7 @@ _grad_log_map = {
     "parameter-shift": "gradient_fn=<transform: param_shift>",
 }
 
-
+# pylint: disable=pointless-statement
 @contextlib.contextmanager
 def set_log_level(caplog, modules, levels):
     pl_logging.enable_logging()
@@ -41,7 +41,7 @@ def set_log_level(caplog, modules, levels):
 
     for l, m in zip(levels, modules):
         caplog.set_level(l, logger=m)
-    yield  # pylint: disable=pointless-statement
+    yield
     modules + ["pennylane", "pennylane.workflow.qnode"]
     for m in modules:
         caplog.set_level(logging.INFO, logger=m)
