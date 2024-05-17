@@ -82,6 +82,9 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+* Empty initialization of `PauliVSpace` is permitted.
+  [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -147,6 +150,7 @@ Gabriel Bottrill,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
+Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Kenya Sakka,
