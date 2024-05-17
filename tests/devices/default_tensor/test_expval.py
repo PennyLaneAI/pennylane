@@ -25,11 +25,11 @@ THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
-from pennylane.devices.default_tensor import DefaultTensor
-
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
+
+from pennylane.devices.default_tensor import DefaultTensor
 
 
 @pytest.fixture(params=[np.complex64, np.complex128])

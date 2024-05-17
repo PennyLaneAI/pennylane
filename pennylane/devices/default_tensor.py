@@ -21,12 +21,6 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
-has_quimb = True
-try:
-    import quimb.tensor as qtn
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_quimb = False
-
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
@@ -45,6 +39,12 @@ Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
+
+has_quimb = True
+try:
+    import quimb.tensor as qtn
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_quimb = False
 
 _operations = frozenset(
     {

@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices.default_tensor import DefaultTensor
 from pennylane.tape import QuantumScript
 
 THETA = np.linspace(0.11, 1, 3)
@@ -28,6 +27,8 @@ VARPHI = np.linspace(0.02, 1, 3)
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
+
+from pennylane.devices.default_tensor import DefaultTensor
 
 
 @pytest.fixture(params=[np.complex64, np.complex128])

@@ -21,11 +21,12 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.devices.default_tensor import DefaultTensor
 
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
+
+from pennylane.devices.default_tensor import DefaultTensor
 
 # gates for which device support is tested
 ops = {
