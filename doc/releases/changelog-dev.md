@@ -151,6 +151,7 @@ This release contains contributions from (in alphabetical order):
 Ahmed Darwish,
 Gabriel Bottrill,
 Isaac De Vlugt,
+Lillian M.A. Frederiksen,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,
