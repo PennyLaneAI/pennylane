@@ -132,12 +132,12 @@ def accepted_methods(method: str) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """A function that determines if an operation is supported by ``lightning.tensor`` for this interface."""
-    return op.name in _operations  # pragma: no cover
+    return op.name in _operations
 
 
 def accepted_observables(obs: qml.operation.Operator) -> bool:
     """A function that determines if an observable is supported by ``lightning.tensor`` for this interface."""
-    return obs.name in _observables  # pragma: no cover
+    return obs.name in _observables
 
 
 @simulator_tracking
@@ -178,10 +178,8 @@ class DefaultTensor(Device):
 
     _new_API = True
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        *,
         wires=None,
         method="mps",
         shots=None,
@@ -191,7 +189,7 @@ class DefaultTensor(Device):
 
         if not accepted_methods(method):
             raise ValueError(
-                f"Unsupported method: {method}. The currently supported method is mps."
+                f"Unsupported method: {method}. The only currently supported method is mps."
             )
 
         if shots is not None:
@@ -215,9 +213,9 @@ class DefaultTensor(Device):
         device_options = self._setup_execution_config().device_options
 
         self._init_state_opts = {
-            "binary": "0" if self._wires is None else "0" * max(1, len(self._wires)),
+            "binary": "0" * (len(self._wires) if self._wires else 1),
             "dtype": self._dtype.__name__,
-            "tags": None if self._wires is None else [str(l) for l in self._wires.labels],
+            "tags": [str(l) for l in self._wires.labels] if self._wires else None,
         }
 
         self._gate_opts = {
@@ -369,7 +367,7 @@ class DefaultTensor(Device):
                 return self.measurement(circuit.measurements[0])
             return tuple(self.measurement(mp) for mp in circuit.measurements)
 
-        raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError
 
     def _apply_operation(self, op: qml.operation.Operator) -> None:
         """Apply a single operator to the circuit, keeping the state always in a MPS form.
@@ -412,7 +410,7 @@ class DefaultTensor(Device):
             if isinstance(measurementprocess, VarianceMP):
                 return self.var
 
-        raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError
 
     def expval(self, measurementprocess: MeasurementProcess) -> float:
         """Expectation value of the supplied observable contained in the MeasurementProcess.

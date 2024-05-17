@@ -28,7 +28,7 @@ VARPHI = np.linspace(0.02, 1, 3)
 
 @pytest.fixture(params=[np.complex64, np.complex128])
 def dev(request):
-    return DefaultTensor(wires=3, dtype=request.param)
+    return qml.device("default.tensor", wires=3, dtype=request.param)
 
 
 def calculate_reference(tape):

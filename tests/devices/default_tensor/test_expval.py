@@ -30,7 +30,7 @@ from pennylane.devices.default_tensor import DefaultTensor
 
 @pytest.fixture(params=[np.complex64, np.complex128])
 def dev(request):
-    return DefaultTensor(wires=3, dtype=request.param)
+    return qml.device("default.tensor", wires=3, dtype=request.param)
 
 
 def calculate_reference(tape):
