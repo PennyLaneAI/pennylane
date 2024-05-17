@@ -52,7 +52,6 @@ def test_standard_validity(k, delta_sz, init_state, wires):
     n_excit_terms = len(gen_single_terms_wires) + len(pair_double_terms_wires)
     weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
 
-    n_gates = 1 + n_excit_terms * k
     op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
 
     qml.ops.functions.assert_valid(op)

@@ -39,6 +39,7 @@ class TestError:
         """Test that QPE error is correct for a given custom operator."""
 
         class CustomOP(qml.resource.ErrorOperation):
+            # pylint: disable=too-few-public-methods
             def error(self):
                 return qml.resource.SpectralNormError(operator_error)
 
@@ -61,6 +62,7 @@ class TestError:
         u_apprx = qml.RY(0.51, wires=0)
 
         class CustomOP(qml.resource.ErrorOperation):
+            # pylint: disable=too-few-public-methods
             def error(self):
                 error_value = qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
                 return qml.resource.SpectralNormError(error_value)
@@ -86,6 +88,7 @@ class TestError:
         """Test that the error method works with all interfaces."""
 
         class CustomOP(qml.resource.ErrorOperation):
+            # pylint: disable=too-few-public-methods
             def error(self):
                 spectral_norm_error = qml.resource.SpectralNormError(
                     qml.math.array(operator_error, like=interface)
