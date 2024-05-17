@@ -21,9 +21,6 @@ from pennylane import qnode
 # pylint: disable=too-many-arguments,too-few-public-methods, use-dict-literal, use-implicit-booleaness-not-comparison
 
 
-# pylint: disable=too-many-arguments,too-few-public-methods, use-dict-literal, use-implicit-booleaness-not-comparison
-
-
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
 
