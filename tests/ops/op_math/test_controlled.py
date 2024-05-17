@@ -1930,13 +1930,14 @@ class TestTapeExpansionWithControlled:
             *qml.CRY(0.456, wires=[1, 2]).decomposition(),
             *qml.CRX(0.789, wires=[1, 0]).decomposition(),
             *qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]).decomposition(),
-            qml.CNOT(wires=[1, 2]),
+            *qml.CNOT(wires=[1, 2]).decomposition(),
             *qml.CY(wires=[1, 4]).decomposition(),
             *qml.CZ(wires=[1, 0]).decomposition(),
             qml.PauliX(wires=1),
         ]
         assert len(tape) == 9
         expanded = tape.expand(stop_at=lambda obj: not isinstance(obj, Controlled))
+        print(expanded.circuit)
         assert expanded.circuit == expected
 
     @pytest.mark.parametrize(
@@ -2183,8 +2184,8 @@ class TestTapeExpansionWithControlled:
 
         tape = QuantumScript.from_queue(q_tape)
         tape = tape.expand(depth=1, stop_at=lambda obj: not isinstance(obj, Controlled))
-        assert len(tape.operations) == 10
-        assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
+        assert len(tape.operations) == 12
+        assert all(o.name in {"ControlledPhaseShift", "CRX", "Toffoli"} for o in tape.operations)
 
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
