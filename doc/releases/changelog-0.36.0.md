@@ -4,71 +4,152 @@
 
 <h3>New features since last release</h3>
 
-* Support for entanglement entropy computation is added. `qml.math.vn_entanglement_entropy` computes the von Neumann entanglement entropy from a density matrix, and a QNode transform `qml.qinfo.vn_entanglement_entropy` is also added.
-  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
-
 <h4>Estimate errors in a quantum circuit 🧮</h4>
 
-* Added `error` method to `QuantumPhaseEstimation` template.
-  [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
-
-* Added new `SpectralNormError` class to the new error tracking functionality.
+* This version of PennyLane lays the foundation for estimating the total error
+  in a quantum circuit from the combination of individual gate errors.
   [(#5154)](https://github.com/PennyLaneAI/pennylane/pull/5154)
-
-* The `qml.TrotterProduct` operator now supports error estimation functionality. 
-  [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
-
-  ```pycon
-  >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
-  >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-  >>> op.error(method="one-norm")
-  SpectralNormError(8.039062500000003e-06)
-  >>>
-  >>> op.error(method="commutator")
-  SpectralNormError(6.166666666666668e-06)
-  ```
-
-* `qml.specs` and `qml.Tracker` now return information about algorithmic errors for the qnode as well.
   [(#5464)](https://github.com/PennyLaneAI/pennylane/pull/5464)
   [(#5465)](https://github.com/PennyLaneAI/pennylane/pull/5465)
+  [(#5278)](https://github.com/PennyLaneAI/pennylane/pull/5278)
+  [(#5384)](https://github.com/PennyLaneAI/pennylane/pull/5384)
 
+  Two new user-facing classes enable calculating and propagating 
+  gate errors in PennyLane:
+
+  * `qml.resource.SpectralNormError`: the spectral norm error is defined as the 
+    distance, in [spectral norm](https://en.wikipedia.org/wiki/Matrix_norm), between 
+    the true unitary we intend to apply and the approximate unitary that is actually applied.
+
+  * `qml.resource.ErrorOperation`: a base class that inherits from `qml.operation.Operation` 
+    and represents quantum operations which carry some form of algorithmic error.
+
+  `SpectralNormError` can be used for back-of-the-envelope type calculations like obtaining the
+  spectral norm error between two unitaries via `get_error`:
+
+  ```python
+  import pennylane as qml
+  from pennylane.resource import ErrorOperation, SpectralNormError
+
+  intended_op = qml.RY(0.40, 0)
+  actual_op = qml.RY(0.41, 0) # angle of rotation is slightly off
+  ```
+  
+  ```pycon
+  >>> SpectralNormError.get_error(intended_op, actual_op)
+  0.004999994791668309
+  ```
+  
+  `SpectralNormError` is also a key tool to specify errors in larger quantum circuits:
+
+  * For operations representing a major building block of an algorithm, we can create a custom operation
+    that inherits from `ErrorOperation`. This child class must override the `error` method and 
+    should return a `SpectralNormError` instance:
+
+    ```python
+    class MyErrorOperation(ErrorOperation):
+        def __init__(self, error_val, wires):
+            self.error_val = error_val
+            super().__init__(wires=wires)
+
+        def error(self):
+            return SpectralNormError(self.error_val)
+    ```
+
+    In this toy example, `MyErrorOperation` introduces an arbitrary `SpectralNormError`
+    when called in a QNode. It does not require a decomposition or matrix representation
+    when used with `null.qubit` (suggested for use with resource and error estimation since circuit executions are
+    not required to calculate resources or errors).
+  
+    ```python
+    dev = qml.device("null.qubit")
+
+    @qml.qnode(dev)
+    def circuit():
+        MyErrorOperation(0.1, wires=0)
+        MyErrorOperation(0.2, wires=1)
+        return qml.state()
+    ```
+
+    The total spectral norm error of the circuit can be calculated using `qml.specs`:
+
+    ```pycon
+    >>> qml.specs(circuit)()['errors']
+    {'SpectralNormError': SpectralNormError(0.30000000000000004)}
+    ```
+
+  * PennyLane already includes a number of built-in building blocks for algorithms like
+    `QuantumPhaseEstimation` and `TrotterProduct`. `TrotterProduct` now propagates errors 
+    based on the number of steps performed in the Trotter product. `QuantumPhaseEstimation` 
+    now propagates errors based on the error of its input unitary.
+
+    ```python
+    dev = qml.device('null.qubit')
+    hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.TrotterProduct(hamiltonian, time=0.1, order=2)
+        qml.QuantumPhaseEstimation(MyErrorOperation(0.01, wires=0), estimation_wires=[1, 2, 3])
+        return qml.state()
+    ```
+
+    Again, the total spectral norm error of the circuit can be calculated using `qml.specs`:
+
+    ```pycon
+    >>> qml.specs(circuit)()["errors"]
+    {'SpectralNormError': SpectralNormError(0.07616666666666666)}
+    ```
+
+  Check out our [error propagation demo](https://pennylane.ai/qml/demos/tutorial_error_prop/) to see how to use these new features in a real-world example!
 
 <h4>Access an extended arsenal of quantum algorithms 🏹</h4>
 
-* The `FABLE` template is added for efficient block encoding of matrices. Users can now call FABLE to efficiently construct circuits according to a user-set approximation level. 
+* The Fast Approximate BLock-Encodings (FABLE) algorithm for embedding
+  a matrix into a quantum circuit as outlined in
+  [arXiv:2205.00081](https://arxiv.org/abs/2205.00081) is now accessible via the `qml.FABLE` 
+  template.
   [(#5107)](https://github.com/PennyLaneAI/pennylane/pull/5107)
 
-* Create the `qml.Reflection` operator, useful for amplitude amplification and its variants.
-  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+  The usage of `qml.FABLE` is similar to `qml.BlockEncode` but provides a more
+  efficient circuit construction at the cost of a user-defined approximation 
+  level, `tol`. The number of wires that `qml.FABLE` operates on is `2*n + 1`, 
+  where `n` defines the dimension of the :math:`2^n \times 2^n` matrix that we
+  want to block-encode.
 
   ```python
-  @qml.prod
-  def generator(wires):
-        qml.Hadamard(wires=wires)
+  import numpy as np
 
-  U = generator(wires=0)
+  A = np.array([[0.1, 0.2], [0.3, 0.4]])
+  dev = qml.device('default.qubit', wires=3)
 
-  dev = qml.device('default.qubit')
   @qml.qnode(dev)
   def circuit():
-
-        # Initialize to the state |1>
-        qml.PauliX(wires=0)
-
-        # Apply the reflection
-        qml.Reflection(U)
-
-        return qml.state()
-
+      qml.FABLE(A, tol = 0.001, wires=range(3))  
+      return qml.state()
   ```
 
   ```pycon
-  >>> circuit()
-  tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
+  >>> mat = qml.matrix(circuit)()
+  >>> 2 * mat[0:2, 0:2]
+  array([[0.1+0.j, 0.2+0.j],
+         [0.3+0.j, 0.4+0.j]])
   ```
-  
-* The `qml.AmplitudeAmplification` operator is introduced, which is a high-level interface for amplitude amplification and its variants.
+
+* A high-level interface for amplitude amplification and its variants is now 
+  available via the new `qml.AmplitudeAmplification` template.
   [(#5160)](https://github.com/PennyLaneAI/pennylane/pull/5160)
+
+  Based on [arXiv:quant-ph/0005055](https://arxiv.org/abs/quant-ph/0005055), 
+  given a state :math:`\vert \Psi \rangle = \alpha \vert \phi \rangle + \beta \vert \phi^{\perp} \rangle`, 
+  `qml.AmplitudeAmplification` amplifies the amplitude of :math:`\vert \phi \rangle`.
+
+  Here's an example with a target state
+  :math:`\vert \phi \rangle = \vert 2 \rangle = \vert 010 \rangle`,
+  an input state :math:`\vert \Psi \rangle = H^{\otimes 3} \vert 000 \rangle`, as well as an
+  oracle that flips the sign of :math:`\vert \phi \rangle` and does nothing to
+  :math:`\vert \phi^{\perp} \rangle`, which can be achieved in this case through
+  `qml.FlipSign`.
 
   ```python
   @qml.prod
@@ -78,183 +159,261 @@
 
   U = generator(wires=range(3))
   O = qml.FlipSign(2, wires=range(3))
+  ```
 
+  Here, `U` is a quantum operation that is created by decorating a quantum 
+  function with `@qml.prod`. This could alternatively be done by creating a 
+  user-defined 
+  [custom operation](https://docs.pennylane.ai/en/stable/development/adding_operators.html) 
+  with a decomposition. Amplitude amplification can then be set up within a 
+  circuit: 
+  
+  ```python
   dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
   def circuit():
-
-      generator(wires=range(3))
-      qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
+      generator(wires=range(3)) # prepares |Psi> = U|0>
+      qml.AmplitudeAmplification(U, O, iters=10)
 
       return qml.probs(wires=range(3))
-
   ```
   
   ```pycon
   >>> print(np.round(circuit(), 3))
-  [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
+  [0.01  0.01  0.931 0.01  0.01  0.01  0.01  0.01 ]
+  ```
 
+  As expected, we amplify the :math:`\vert 2 \rangle` state.
+
+* Reflecting about a given quantum state is now available via `qml.Reflection`.
+  This operation is very useful in the amplitude amplification algorithm and offers a generalization
+  of `qml.FlipSign`, which operates on basis states.
+  [(#5159)](https://github.com/PennyLaneAI/pennylane/pull/5159)
+
+  `qml.Reflection` works by providing an operation, :math:`U`, that *prepares* the 
+  desired state, :math:`\vert \psi \rangle`, that we want to reflect about. In other 
+  words, :math:`U` is such that :math:`U \vert 0 \rangle = \vert \psi \rangle`. In 
+  PennyLane, :math:`U` must be an `Operator`.
+  
+  For example, if we want to reflect about 
+  :math:`\vert \psi \rangle = \vert + \rangle`, then :math:`U = H`:
+
+  ```python
+  U = qml.Hadamard(wires=0)
+
+  dev = qml.device('default.qubit')
+  @qml.qnode(dev)
+  def circuit():
+        qml.Reflection(U)
+        return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  tensor([0.-6.123234e-17j, 1.+6.123234e-17j], requires_grad=True)
+  ```
+
+* Performing qubitization is now easily accessible with the new 
+  `qml.Qubitization` operator.
+  [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
+
+  `qml.Qubitization` encodes a Hamiltonian into a suitable unitary operator. 
+  When applied in conjunction with quantum phase estimation (QPE), it allows 
+  for computing the eigenvalue of an eigenvector of the given Hamiltonian. 
+
+  ```python
+  H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      # initialize the eigenvector
+      qml.PauliX(2)
+      # apply QPE
+      measurements = qml.iterative_qpe(
+          qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
+      )
+      return qml.probs(op = measurements)
   ```
 
 <h4>Make use of more methods to map from molecules 🗺️</h4>
 
-* Added new function `qml.bravyi_kitaev` to map fermionic Hamiltonians to qubit Hamiltonians.
+* A new function called `qml.bravyi_kitaev` has been added to perform the 
+  Bravyi-Kitaev mapping of fermionic Hamiltonians to qubit Hamiltonians.
   [(#5390)](https://github.com/PennyLaneAI/pennylane/pull/5390)
 
-  ```python
-  import pennylane as qml
-  fermi_ham = qml.fermi.from_string('0+ 1-')
-
-  qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6)
-  ```
+  This function presents an alternative mapping to `qml.jordan_wigner` or
+  `qml.parity_transform` which can help us measure expectation values more
+  efficiently on hardware. Simply provide a fermionic 
+  Hamiltonian (created from `from_string`, `FermiA`, `FermiC`, `FermiSentence`, 
+  or `FermiWord`) and the number of qubits / spin orbitals in the system, `n`:
 
   ```pycon
+  >>> fermi_ham = qml.fermi.from_string('0+ 1+ 1- 0-')
+  >>> qubit_ham = qml.bravyi_kitaev(fermi_ham, n=6, tol=0.0)
   >>> print(qubit_ham)
-  -0.25j * Y(0.0) + (-0.25+0j) * X(0) @ Z(1.0) + (0.25+0j) * X(0.0) + 0.25j * Y(0) @ Z(1.0)
+  0.25 * I(0) + -0.25 * Z(0) + -0.25 * (Z(0) @ Z(1)) + 0.25 * Z(1)
   ```
 
-* The `qml.qchem.hf_state` function is upgraded to be compatible with the parity and Bravyi-Kitaev bases.
+* The `qml.qchem.hf_state` function has been upgraded to be compatible with
+  `qml.parity_transform` and the new Bravyi-Kitaev mapping 
+  (`qml.bravyi_kitaev`).
+  [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
   [(#5472)](https://github.com/PennyLaneAI/pennylane/pull/5472)
 
-
-* Added `qml.Qubitization` operator. This operator encodes a Hamiltonian into a suitable unitary operator. 
-  When applied in conjunction with QPE, allows computing the eigenvalue of an eigenvector of the Hamiltonian.
-  [(#5500)](https://github.com/PennyLaneAI/pennylane/pull/5500)
-
-  ```python
-  H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
-
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit():
-
-      # initialize the eigenvector
-      qml.PauliX(2)
-
-      # apply QPE
-      measurements = qml.iterative_qpe(
-                    qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
-                    )
-      return qml.probs(op = measurements)
-  
-  output = circuit()
-  
-  # post-processing 
-  lamb = sum([abs(c) for c in H.terms()[0]])
-  ```
-  
   ```pycon
-  >>> print("eigenvalue: ", lamb * np.cos(2 * np.pi * (np.argmax(output)) / 8))
-  eigenvalue: 0.7
+  >>> state_bk = qml.qchem.hf_state(2, 6, basis="bravyi_kitaev")
+  >>> print(state_bk)
+  [1 0 0 0 0 0]
+  >>> state_parity = qml.qchem.hf_state(2, 6, basis="parity")
+  >>> print(state_parity)
+  [1 0 0 0 0 0]
   ```
 
+<h4>Calculate dynamical Lie algebras 👾</h4>
 
-* A new `qml.lie_closure` function to compute the Lie closure of a list of operators.
-  [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
-  [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+* The dynamical Lie algebra (DLA) of a set of operators captures the range of unitary evolutions
+  that the operators can generate. In v0.36 of PennyLane, we have added support for calculating
+  important DLA concepts including:
 
-  The Lie closure, pronounced "Lee closure", is a way to compute the so-called dynamical Lie algebra (DLA) of a set of operators.
-  For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
-  All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
+  * A new `qml.lie_closure` function to compute the Lie closure of a list of operators, providing
+    one way to obtain the DLA.
+    [(#5161)](https://github.com/PennyLaneAI/pennylane/pull/5161)
+    [(#5169)](https://github.com/PennyLaneAI/pennylane/pull/5169)
+    [(#5627)](https://github.com/PennyLaneAI/pennylane/pull/5627)
 
-  Take for example the following ops
+    For a list of operators `ops = [op1, op2, op3, ..]`, one computes all nested commutators between `ops` until no new operators are generated from commutation.
+    All these operators together form the DLA, see e.g. section IIB of [arXiv:2308.01432](https://arxiv.org/abs/2308.01432).
 
-  ```python
-  ops = [X(0) @ X(1), Z(0), Z(1)]
-  ```
+    Take for example the following operators:
 
-  A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
+    ```python
+    from pennylane import X, Y, Z
+    ops = [X(0) @ X(1), Z(0), Z(1)]
+    ```
 
-  ```python
-  >>> qml.commutator(X(0) @ X(1), Z(0))
-  -2j * (X(1) @ Y(0))
-  >>> qml.commutator(X(0) @ X(1), Z(1))
-  -2j * (Y(1) @ X(0))
-  ```
+    A first round of commutators between all elements yields the new operators `Y(0) @ X(1)` and `X(0) @ Y(1)` (omitting scalar prefactors).
 
-  A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
+    ```python
+    >>> qml.commutator(X(0) @ X(1), Z(0))
+    -2j * (Y(0) @ X(1))
+    >>> qml.commutator(X(0) @ X(1), Z(1))
+    -2j * (X(0) @ Y(1))
+    ```
 
-  ```python
-  >>> qml.commutator(X(0) @ Y(1), Z(0))
-  -2j * (Y(1) @ Y(0))
-  ```
+    A next round of commutators between all elements further yields the new operator `Y(0) @ Y(1)`.
 
-  After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
-  This can now be done in short via `qml.lie_closure` as follows.
+    ```python
+    >>> qml.commutator(X(0) @ Y(1), Z(0))
+    -2j * (Y(0) @ Y(1))
+    ```
 
-  ```python
-  >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-  >>> dla = qml.lie_closure(ops)
-  >>> print(dla)
-  [1.0 * X(1) @ X(0),
-   1.0 * Z(0),
-   1.0 * Z(1),
-   -1.0 * X(1) @ Y(0),
-   -1.0 * Y(1) @ X(0),
-   -1.0 * Y(1) @ Y(0)]
-  ```
+    After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
+    This can now be done in short via `qml.lie_closure` as follows.
 
-* We can compute the structure constants (the adjoint representation) of a dynamical Lie algebra.
-  [(5406)](https://github.com/PennyLaneAI/pennylane/pull/5406)
+    ```python
+    >>> ops = [X(0) @ X(1), Z(0), Z(1)]
+    >>> dla = qml.lie_closure(ops)
+    >>> dla
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
+    ```
 
-  For example, we can compute the adjoint representation of the transverse field Ising model DLA.
+  * Computing the structure constants (the adjoint representation) of a dynamical Lie algebra.
+    [(5406)](https://github.com/PennyLaneAI/pennylane/pull/5406)
 
-  ```python
-  >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
-  >>> structure_const = qml.structure_constants(dla)
-  >>> structure_constp.shape
-  (6, 6, 6)
-  ```
+    For example, we can compute the adjoint representation of the transverse field Ising model DLA.
 
-* We can compute the center of a dynamical Lie algebra.
-  [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
+    ```pycon
+    >>> dla = [X(0) @ X(1), Z(0), Z(1), Y(0) @ X(1), X(0) @ Y(1), Y(0) @ Y(1)]
+    >>> structure_const = qml.structure_constants(dla)
+    >>> structure_const.shape
+    (6, 6, 6)
+    ```
+    Visit the [documentation of qml.structure_constants](https://docs.pennylane.ai/en/stable/code/api/pennylane.structure_constants.html)
+    to understand how structure constants are a useful way to represent a DLA.
 
-  Given a DLA `g`, we can now compute its center. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
+  * Computing the center of a dynamical Lie algebra.
+    [(#5477)](https://github.com/PennyLaneAI/pennylane/pull/5477)
 
-  ```pycon
-  >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
-  >>> qml.center(g)
-  [X(0)]
-  ```
+    Given a DLA `g`, we can now compute its centre. The `center` is the collection of operators that commute with _all_ other operators in the DLA.
 
-<h4>Simulate mixed-state qutrit systems 3️⃣</h4>
+    ```pycon
+    >>> g = [X(0), X(1) @ X(0), Y(1), Z(1) @ X(0)]
+    >>> qml.center(g)
+    [X(0)]
+    ```
 
-* Functions `measure_with_samples` and `sample_state` have been added to the new `qutrit_mixed` module found in
- `qml.devices`. These functions are used to sample device-compatible states, returning either the final measured state or value of an observable.
-  [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
-
-* Fixed differentiability for Hamiltonian measurements in new `qutrit_mixed` module. 
-  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
-
-* Added `simulate` function to the new `qutrit_mixed` module in `qml.devices`. This allows for simulation of a 
-  noisy qutrit circuit with measurement and sampling.
-  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
-
- * Created the `DefaultQutritMixed` class, which inherits from `qml.devices.Device`, with an implementation 
-  for `preprocess`.
-  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
-
- * Implemented `execute` on `qml.devices.DefaultQutritMixed` device, `execute` can be used to simulate noisy qutrit based circuits.
-  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+  To help explain these concepts, check out the
+  [dynamical Lie algebras demo](https://pennylane.ai/qml/demos/tutorial_liealgebra).
 
 <h3>Improvements 🛠</h3>
 
-* Fixed typo and string formatting in error message in `ClassicalShadow._convert_to_pauli_words` when the input is not a valid pauli.
-  [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
+<h4>Simulate mixed-state qutrit systems</h4>
 
-<h4>Community contributions 🥳</h4>
+* Mixed qutrit states can now be simulated with the `default.qutrit.mixed` device.
+  [(#5495)](https://github.com/PennyLaneAI/pennylane/pull/5495)
+  [(#5451)](https://github.com/PennyLaneAI/pennylane/pull/5451)
+  [(#5186)](https://github.com/PennyLaneAI/pennylane/pull/5186)
+  [(#5082)](https://github.com/PennyLaneAI/pennylane/pull/5082)
+  [(#5213)](https://github.com/PennyLaneAI/pennylane/pull/5213)
 
-* Implemented the method `process_counts` in `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP`
-  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
-  [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
+  Thanks to contributors from the University of British Columbia, a mixed-state
+  qutrit device is now available for simulation, providing a noise-capable
+  equivalent to `default.qutrit`.
 
-* Add type hints for unimplemented methods of the abstract class `Operator`.
-  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
+  ```python
+  dev = qml.device("default.qutrit.mixed")
 
-* Implement `Shots.bins()` method.
-  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
+  def circuit():
+      qml.TRY(0.1, wires=0)
 
-<h4>Updated operators</h4>
+  @qml.qnode(dev)
+  def shots_circuit():
+      circuit()
+      return qml.sample(), qml.expval(qml.GellMann(wires=0, index=1))
+
+  @qml.qnode(dev)
+  def density_matrix_circuit():
+      circuit()
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> shots_circuit(shots=5)
+  (array([0, 0, 0, 0, 0]), 0.19999999999999996)
+  >>> density_matrix_circuit()
+  tensor([[0.99750208+0.j, 0.04991671+0.j, 0.        +0.j],
+         [0.04991671+0.j, 0.00249792+0.j, 0.        +0.j],
+         [0.        +0.j, 0.        +0.j, 0.        +0.j]], requires_grad=True)
+  ```
+
+  However, there's one crucial ingredient that we still need to add: support for qutrit noise
+  operations. Keep your eyes peeled for this to arrive in the coming releases!
+
+<h4>Work easily and efficiently with operators</h4>
+
+* This release completes the main phase of PennyLane's switchover to an updated approach for
+  handling arithmetic operations between operators. The new approach is now enabled by default and
+  is intended to realize a few objectives:
+
+  1. To make it as easy to work with PennyLane operators as it would be with pen and paper.
+  2. To improve the efficiency of operator arithmetic.
+
+  In many cases, this update should not break code. If issues do arise, check out the
+  [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html)
+  and don't hesitate to reach out to us on the
+  [PennyLane discussion forum](https://discuss.pennylane.ai/). As a last resort the old behaviour
+  can be enabled by calling `qml.operation.disable_new_opmath()`, but this is not recommended
+  because support will not continue in future PennyLane versions (v0.36 and higher).
+  [(#5269)](https://github.com/PennyLaneAI/pennylane/pull/5269)
+
+* A new class called `qml.ops.LinearCombination` has been introduced. In essence, this class is an updated equivalent of the now-deprecated `qml.ops.Hamiltonian`
+  but for usage with the new operator arithmetic.
+  [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
 
 * `qml.ops.Sum` now supports storing grouping information. Grouping type and method can be
   specified during construction using the `grouping_type` and `method` keyword arguments of
@@ -262,8 +421,6 @@
   [(#5179)](https://github.com/PennyLaneAI/pennylane/pull/5179)
 
   ```python
-  import pennylane as qml
-
   a = qml.X(0)
   b = qml.prod(qml.X(0), qml.X(1))
   c = qml.Z(0)
@@ -278,12 +435,10 @@
   ((2,), (0, 1))
   ```
 
-  Additionally, grouping type and method can be set or changed after construction using
+  Additionally, `grouping_type` and `method` can be set or changed after construction using
   `Sum.compute_grouping()`:
 
   ```python
-  import pennylane as qml
-
   a = qml.X(0)
   b = qml.prod(qml.X(0), qml.X(1))
   c = qml.Z(0)
@@ -303,76 +458,108 @@
 
   Note that the grouping indices refer to the lists returned by `Sum.terms()`, not `Sum.operands`.
 
-* Added new function `qml.operation.convert_to_legacy_H` to convert `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances.
+* A new function called `qml.operation.convert_to_legacy_H` that converts `Sum`, `SProd`, and `Prod` to `Hamiltonian` instances has been added.
+  This function is intended for developers and will be removed in a future release without a
+  deprecation cycle.
   [(#5309)](https://github.com/PennyLaneAI/pennylane/pull/5309)
 
 * The `qml.is_commuting` function now accepts `Sum`, `SProd`, and `Prod` instances.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
-* Operators can now be left multiplied `x * op` by numpy arrays.
+* Operators can now be left-multiplied by NumPy arrays (i.e., `arr * op`).
   [(#5361)](https://github.com/PennyLaneAI/pennylane/pull/5361)
 
-* A new class `qml.ops.LinearCombination` is introduced. In essence, this class is an updated equivalent of `qml.ops.Hamiltonian`
-  but for usage with new operator arithmetic.
-  [(#5216)](https://github.com/PennyLaneAI/pennylane/pull/5216)
-
-* The generators in the source code return operators consistent with the global setting for
-  `qml.operator.active_new_opmath()` wherever possible. `Sum`, `SProd` and `Prod` instances
-  will be returned even after disabling the new operator arithmetic in cases where they offer
-  additional functionality not available using legacy operators.
+* `op.generator()`, where `op` is an `Operator` instance, now returns operators 
+  consistent with the global setting for `qml.operator.active_new_opmath()` wherever possible. 
+  `Sum`, `SProd` and `Prod` instances will be returned even after disabling the 
+  new operator arithmetic in cases where they offer additional functionality not 
+  available using legacy operators.
   [(#5253)](https://github.com/PennyLaneAI/pennylane/pull/5253)
   [(#5410)](https://github.com/PennyLaneAI/pennylane/pull/5410)
   [(#5411)](https://github.com/PennyLaneAI/pennylane/pull/5411)
   [(#5421)](https://github.com/PennyLaneAI/pennylane/pull/5421)
 
-* A new `Prod.obs` property is introduced to smoothen the transition of the new operator arithmetic system.
-  In particular, this aims at preventing breaking code that uses `Tensor.obs`. This is immediately deprecated.
-  Moving forward, we recommend using `op.operands`.
+* `Prod` instances temporarily have a new `obs` property, which helps smoothen the 
+  transition of the new operator arithmetic system. In particular, this is aimed at preventing 
+  breaking code that uses `Tensor.obs`. The property has been immediately deprecated. Moving 
+  forward, we recommend using `op.operands`.
   [(#5539)](https://github.com/PennyLaneAI/pennylane/pull/5539)
   
-* `ApproxTimeEvolution` is now compatible with any operator that defines a `pauli_rep`.
+* `qml.ApproxTimeEvolution` is now compatible with any operator that has a defined `pauli_rep`.
   [(#5362)](https://github.com/PennyLaneAI/pennylane/pull/5362)
 
-* `Hamiltonian.pauli_rep` is now defined if the hamiltonian is a linear combination of paulis.
+* `Hamiltonian.pauli_rep` is now defined if the Hamiltonian is a linear combination of Pauli operators.
   [(#5377)](https://github.com/PennyLaneAI/pennylane/pull/5377)
 
-* `Prod.eigvals()` is now compatible with Qudit operators.
+* `Prod` instances created with qutrit operators now have a defined `eigvals()` method.
   [(#5400)](https://github.com/PennyLaneAI/pennylane/pull/5400)
 
-* `qml.transforms.hamiltonian_expand` can now handle multi-term observables with a constant offset.
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now 
+  handle multi-term observables with a constant offset (i.e., terms like 
+  `qml.I()`).
   [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
+  [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
 
-* `taper_operation` method is compatible with new operator arithmetic.
+* `qml.qchem.taper_operation` is now compatible with the new operator arithmetic.
   [(#5326)](https://github.com/PennyLaneAI/pennylane/pull/5326)
 
-* Removed the warning that an observable might not be hermitian in `qnode` executions. This enables jit-compilation.
+* The warning for an observable that might not be hermitian in QNode executions has been removed. This enables jit-compilation.
   [(#5506)](https://github.com/PennyLaneAI/pennylane/pull/5506)
 
 * `qml.transforms.split_non_commuting` will now work with single-term operator arithmetic.
   [(#5314)](https://github.com/PennyLaneAI/pennylane/pull/5314)
 
-* `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization.
+* `LinearCombination` and `Sum` now accept `_grouping_indices` on initialization. This addition is relevant to developers only. 
   [(#5524)](https://github.com/PennyLaneAI/pennylane/pull/5524)
+
+* Calculating the dense, differentiable matrix for `PauliSentence` and operators with Pauli sentences
+  is now faster.
+  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
+
+<h4>Community contributions 🥳</h4>
+
+* `ExpectationMP`, `VarianceMP`, `CountsMP`, and `SampleMP` now have a 
+  `process_counts` method (similar to `process_samples`). This allows for 
+  calculating measurements given a `counts` dictionary.
+  [(#5256)](https://github.com/PennyLaneAI/pennylane/pull/5256)
+  [(#5395)](https://github.com/PennyLaneAI/pennylane/pull/5395)
+
+* Type-hinting has been added in the `Operator` class for better interpretability.
+  [(#5490)](https://github.com/PennyLaneAI/pennylane/pull/5490)
+
+* An alternate strategy for sampling with multiple different `shots` values has 
+  been implemented via the `shots.bins()` method, which samples all shots at once and 
+  then processes each separately.
+  [(#5476)](https://github.com/PennyLaneAI/pennylane/pull/5476)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
-* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided that they support `MidMeasureMP` operations natively.
-  [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
+* A new module called `qml.capture` that will contain PennyLane's own capturing mechanism for hybrid
+  quantum-classical programs has been added.
+  [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
 
-* The `dynamic_one_shot` transform is introduced enabling dynamic circuit execution on circuits with shots and devices that support `MidMeasureMP` operations natively.
+* The `dynamic_one_shot` transform has been introduced, enabling dynamic circuit 
+  execution on circuits with finite `shots` and devices that natively support 
+  mid-circuit measurements.
   [(#5266)](https://github.com/PennyLaneAI/pennylane/pull/5266)
 
-* Added a qml.capture module that will contain PennyLane's own capturing mechanism for hybrid
-  quantum-classical programs.
-  [(#5509)](https://github.com/PennyLaneAI/pennylane/pull/5509)
+* The `QubitDevice` class and children classes support the `dynamic_one_shot` transform provided 
+  that they support mid-circuit measurement operations natively.
+  [(#5317)](https://github.com/PennyLaneAI/pennylane/pull/5317)
+
+* `default.qubit` can now be provided a random seed for sampling mid-circuit 
+  measurements with finite shots. This (1) ensures that random behaviour is more 
+  consistent with `dynamic_one_shot` and `defer_measurements` and (2) makes our 
+  continuous-integration (CI) have less failures due to stochasticity.
+  [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
 
 <h4>Performance and broadcasting</h4>
 
-* Gradient transforms may now be applied to batched/broadcasted QNodes, as long as the
+* Gradient transforms may now be applied to batched/broadcasted QNodes as long as the
   broadcasting is in non-trainable parameters.
   [(#5452)](https://github.com/PennyLaneAI/pennylane/pull/5452)
 
-* Improve the performance of computing the matrix of `qml.QFT`
+* The performance of computing the matrix of `qml.QFT` has been improved.
   [(#5351)](https://github.com/PennyLaneAI/pennylane/pull/5351)
 
 * `qml.transforms.broadcast_expand` now supports shot vectors when returning `qml.sample()`.
@@ -381,18 +568,38 @@
 * `LightningVJPs` is now compatible with Lightning devices using the new device API.
   [(#5469)](https://github.com/PennyLaneAI/pennylane/pull/5469)
 
+<h4>Device capabilities</h4>
+
+* Obtaining classical shadows using the `default.clifford` device is now compatible with
+  [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
+  [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
+
+* `default.mixed` has improved support for sampling-based measurements with non-NumPy interfaces.
+  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
+  [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
+
+* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
+
+* `null.qubit` has been upgraded to the new device API and has support for all 
+  measurements and various modes of differentiation.
+  [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
+
 <h4>Other improvements</h4>
 
-* Calculating the dense, differentiable matrix for `PauliSentence` and operators with pauli sentences
-  is now faster.
-  [(#5578)](https://github.com/PennyLaneAI/pennylane/pull/5578)
-
-* `DefaultQubit` now uses the provided seed for sampling mid-circuit measurements with finite shots.
-  [(#5337)](https://github.com/PennyLaneAI/pennylane/pull/5337)
+* Entanglement entropy can now be calculated with 
+  `qml.math.vn_entanglement_entropy`, which computes the von Neumann 
+  entanglement entropy from a density matrix. A corresponding QNode transform,
+  `qml.qinfo.vn_entanglement_entropy`, has also been added.
+  [(#5306)](https://github.com/PennyLaneAI/pennylane/pull/5306)
 
 * `qml.draw` and `qml.draw_mpl` will now attempt to sort the wires if no wire order
   is provided by the user or the device.
   [(#5576)](https://github.com/PennyLaneAI/pennylane/pull/5576)
+
+* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
+  (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
+  [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
 
 * `qml.ops.Conditional` now stores the `data`, `num_params`, and `ndim_param` attributes of
   the operator it wraps.
@@ -401,70 +608,53 @@
 * The `molecular_hamiltonian` function calls `PySCF` directly when `method='pyscf'` is selected.
   [(#5118)](https://github.com/PennyLaneAI/pennylane/pull/5118)
 
-* Upgraded `null.qubit` to the new device API. Also, added support for all measurements and various modes of differentiation.
-  [(#5211)](https://github.com/PennyLaneAI/pennylane/pull/5211)
-
-* Obtaining classical shadows using the `default.clifford` device is now compatible with
-  [stim](https://github.com/quantumlib/Stim) `v1.13.0`.
-  [(#5409)](https://github.com/PennyLaneAI/pennylane/pull/5409)
-
-* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` can now handle multi-term observables with a constant offset.
-  [(#5414)](https://github.com/PennyLaneAI/pennylane/pull/5414)
-  [(#5543)](https://github.com/PennyLaneAI/pennylane/pull/5543)
-
-* `default.mixed` has improved support for sampling-based measurements with non-numpy interfaces.
-  [(#5514)](https://github.com/PennyLaneAI/pennylane/pull/5514)
-  [(#5530)](https://github.com/PennyLaneAI/pennylane/pull/5530)
-
-* `default.mixed` now supports arbitrary state-based measurements with `qml.Snapshot`.
-  [(#5552)](https://github.com/PennyLaneAI/pennylane/pull/5552)
-
-* Replaced `cache_execute` with an alternate implementation based on `@transform`.
+* `cache_execute` has been replaced with an alternate implementation based on 
+  `@transform`.
   [(#5318)](https://github.com/PennyLaneAI/pennylane/pull/5318)
 
-* The `QNode` now defers `diff_method` validation to the device under the new device api `qml.devices.Device`.
+* QNodes now defer `diff_method` validation to the device under the new device 
+  API.
   [(#5176)](https://github.com/PennyLaneAI/pennylane/pull/5176)
 
-* Extend the device test suite to cover gradient methods, templates and arithmetic observables.
+* The device test suite has been extended to cover gradient methods, templates 
+  and arithmetic observables.
   [(#5273)](https://github.com/PennyLaneAI/pennylane/pull/5273)
   [(#5518)](https://github.com/PennyLaneAI/pennylane/pull/5518)
 
-* A clear error message is added in `KerasLayer` when using the newest version of TensorFlow with Keras 3 
-  (which is not currently compatible with `KerasLayer`), linking to instructions to enable Keras 2.
-  [(#5488)](https://github.com/PennyLaneAI/pennylane/pull/5488)
+* A typo and string formatting mistake have been fixed in the error message for 
+  `ClassicalShadow._convert_to_pauli_words` when the input is not a valid 
+  `pauli_rep`.
+  [(#5572)](https://github.com/PennyLaneAI/pennylane/pull/5572)
+
+* Circuits running on `lightning.qubit` and that return `qml.state()` now preserve 
+  the `dtype` when specified.
+  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
 
 <h3>Breaking changes 💔</h3>
 
-* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
-  of whether there is classical processing in the node.
-  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
-  
-* State measurements preserve `dtype`.
-  [(#5547)](https://github.com/PennyLaneAI/pennylane/pull/5547)
-
-* Use `SampleMP`s in the `dynamic_one_shot` transform to get back the values of the mid-circuit measurements.
-  [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
-
-* Operator dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chance of `RecursionError` and makes nested
-  operators easier to work with.
-  [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
-
-* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the ``pauli`` module.
-  [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
-  
-* `DefaultQubit` uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
-  [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
-
-* `qml.matrix()` called on the following will raise an error if `wire_order` is not specified:
-  * tapes with more than one wire.
-  * quantum functions.
-  * Operator class where `num_wires` does not equal to 1
+* `qml.matrix()` called on the following will now raise an error if `wire_order` 
+  is not specified:
+  * tapes with more than one wire
+  * quantum functions
+  * `Operator` classes where `num_wires` does not equal to 1
   * QNodes if the device does not have wires specified.
-  * PauliWords and PauliSentences with more than one wire.
+  * `PauliWord`s and `PauliSentence`s with more than one wire.
   [(#5328)](https://github.com/PennyLaneAI/pennylane/pull/5328)
   [(#5359)](https://github.com/PennyLaneAI/pennylane/pull/5359)
 
-* `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now removed. Instead, you  should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
+* `single_tape_transform`, `batch_transform`, `qfunc_transform`, `op_transform`, `gradient_transform`
+  and `hessian_transform` have been removed. Instead, switch to using the new `qml.transform` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+  [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
+
+* Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
+  [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
+
+* `DefaultQubit` now uses a pre-emptive key-splitting strategy to avoid reusing JAX PRNG keys throughout a single `execute` call. 
+  [(#5515)](https://github.com/PennyLaneAI/pennylane/pull/5515)
+
+* `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` have been removed. Instead, use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
   [(#5324)](https://github.com/PennyLaneAI/pennylane/pull/5324)
 
   ```pycon
@@ -476,43 +666,47 @@
   (-1j, PauliY(wires=[0]))
   ```
 
+* The `dynamic_one_shot` transform now uses sampling (`SampleMP`) to get back the values of the mid-circuit measurements.
+  [(#5486)](https://github.com/PennyLaneAI/pennylane/pull/5486)
+
+* `Operator` dunder methods now combine like-operator arithmetic classes via `lazy=False`. This reduces the chances of getting a `RecursionError` and makes nested
+  operators easier to work with.
+  [(#5478)](https://github.com/PennyLaneAI/pennylane/pull/5478)
+
+* The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the `pauli` module have been removed. The same functionality can be achieved using newer features in the `pauli` module.
+  [(#5323)](https://github.com/PennyLaneAI/pennylane/pull/5323)
+
 * `MeasurementProcess.name` and `MeasurementProcess.data` have been removed. Use `MeasurementProcess.obs.name` and `MeasurementProcess.obs.data` instead.
   [(#5321)](https://github.com/PennyLaneAI/pennylane/pull/5321)
 
-* `Operator.validate_subspace(subspace)` has been removed. Instead, you should use `qml.ops.qutrit.validate_subspace(subspace)`.
+* `Operator.validate_subspace(subspace)` has been removed. Instead, use `qml.ops.qutrit.validate_subspace(subspace)`.
   [(#5311)](https://github.com/PennyLaneAI/pennylane/pull/5311)
 
-* The contents of `qml.interfaces` is moved inside `qml.workflow`. The old import path no longer exists.
+* The contents of `qml.interfaces` has been moved inside `qml.workflow`. The old import path no longer exists.
   [(#5329)](https://github.com/PennyLaneAI/pennylane/pull/5329)
-
-* `single_tape_transform`, `batch_transform`, `qfunc_transform`, `op_transform`, `gradient_transform`
-  and `hessian_transform` are removed. Instead, switch to using the new `qml.transform` function. Please refer to
-  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
-  to see how this can be done.
-  [(#5339)](https://github.com/PennyLaneAI/pennylane/pull/5339)
-
-* Attempting to multiply `PauliWord` and `PauliSentence` with `*` will raise an error. Instead, use `@` to conform with the PennyLane convention.
-  [(#5341)](https://github.com/PennyLaneAI/pennylane/pull/5341)
-
-* When new operator arithmetic is enabled, `qml.Hamiltonian` is now an alias for `qml.ops.LinearCombination`.
-  `Hamiltonian` will still be accessible as `qml.ops.Hamiltonian`.
-  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
 
 * Since `default.mixed` does not support snapshots with measurements, attempting to do so will result in a `DeviceError` instead of getting the density matrix.
   [(#5416)](https://github.com/PennyLaneAI/pennylane/pull/5416)
 
-* `LinearCombination._obs_data` is removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
+* `LinearCombination._obs_data` has been removed. You can still use `LinearCombination.compare` to check mathematical equivalence between a `LinearCombination` and another operator.
   [(#5504)](https://github.com/PennyLaneAI/pennylane/pull/5504)
 
 <h3>Deprecations 👋</h3>
 
-* `qml.load` is deprecated. Instead, please use the functions outlined in the *Importing workflows* quickstart guide, such as `qml.from_qiskit`.
+* Accessing `qml.ops.Hamiltonian` is deprecated because it points to the old version of the class
+  that may not be compatible with the new approach to operator arithmetic. Instead, using
+  `qml.Hamiltonian` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
+  `qml.Hamiltonian` with existing code without needing to make any changes.
+  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
+
+* `qml.load` has been deprecated. Instead, please use the functions outlined in the [Importing workflows quickstart guide](https://docs.pennylane.ai/en/latest/introduction/importing_workflows.html).
   [(#5312)](https://github.com/PennyLaneAI/pennylane/pull/5312)
 
-* Specifying `control_values` with a bit string to `qml.MultiControlledX` is deprecated. Instead, use a list of booleans or 1s and 0s.
+* Specifying `control_values` with a bit string in `qml.MultiControlledX` has been deprecated. Instead, use a list of booleans or 1s and 0s.
   [(#5352)](https://github.com/PennyLaneAI/pennylane/pull/5352)
 
-* `qml.from_qasm_file` is deprecated. Instead, please open the file and then load its content using `qml.from_qasm`.
+* `qml.from_qasm_file` has been deprecated. Instead, please open the file and then load its content using `qml.from_qasm`.
   [(#5331)](https://github.com/PennyLaneAI/pennylane/pull/5331)
 
   ```pycon
@@ -520,20 +714,16 @@
   ...     circuit = qml.from_qasm(f.read())
   ```
 
-* Accessing `qml.ops.Hamiltonian` with new operator arithmetic is deprecated. Using `qml.Hamiltonian` with new operator arithmetic enabled now
-  returns a `LinearCombination` instance. Some functionality may not work as expected. To continue using the `Hamiltonian` class, you can use
-  `qml.operation.disable_new_opmath()` to disable the new operator arithmetic.
-  [(#5393)](https://github.com/PennyLaneAI/pennylane/pull/5393)
-
 <h3>Documentation 📝</h3>
 
-* Adds a page explaining the shapes and nesting of result objects.
+* [A new page](https://docs.pennylane.ai/en/latest/code/qml_workflow.html#return-type-specification) 
+  explaining the shapes and nesting of return types has been added.
   [(#5418)](https://github.com/PennyLaneAI/pennylane/pull/5418)
 
-* Removed some redundant documentation for the `evolve` function.
+* Redundant documentation for the `evolve` function has been removed.
   [(#5347)](https://github.com/PennyLaneAI/pennylane/pull/5347)
 
-* Updated the final example in the `compile` docstring to use transforms correctly.
+* The final example in the `compile` docstring has been updated to use transforms correctly.
   [(#5348)](https://github.com/PennyLaneAI/pennylane/pull/5348)
 
 * A link to the demos for using `qml.SpecialUnitary` and `qml.QNGOptimizer` has been added to their respective docstrings.
@@ -549,16 +739,40 @@
   deprecations, and other pages focusing on recent changes.
   [(#5548)](https://github.com/PennyLaneAI/pennylane/pull/5548)
 
+* A summary of all changes has been added in the "Updated Operators" page in the new "Release news" section in the docs.
+  [(#5483)](https://github.com/PennyLaneAI/pennylane/pull/5483)
+  [(#5636)](https://github.com/PennyLaneAI/pennylane/pull/5636)
+
 <h3>Bug fixes 🐛</h3>
 
-* Cast the keys of the `CountsMP` measurements returned `dynamic_one_shot` to the type produced by `MeasurementValue.concretize`.
+* Patches the QNode so that parameter-shift will be considered best with lightning if
+  `qml.metric_tensor` is in the transform program.
+  [(#5624)](https://github.com/PennyLaneAI/pennylane/pull/5624)
+
+* Stopped printing the ID of `qcut.MeasureNode` and `qcut.PrepareNode` in tape drawing.
+  [(#5613)](https://github.com/PennyLaneAI/pennylane/pull/5613)
+ 
+* Improves the error message for setting shots on the new device interface, or trying to access a property
+  that no longer exists.
+  [(#5616)](https://github.com/PennyLaneAI/pennylane/pull/5616)
+
+* Fixed a bug where `qml.draw` and `qml.draw_mpl` incorrectly raised errors for circuits collecting statistics on mid-circuit measurements
+  while using `qml.defer_measurements`.
+  [(#5610)](https://github.com/PennyLaneAI/pennylane/pull/5610)
+
+* Using shot vectors with `param_shift(... broadcast=True)` caused a bug. This combination is no longer supported
+  and will be added again in the next release. Fixed a bug with custom gradient recipes that only consist of unshifted terms.
+  [(#5612)](https://github.com/PennyLaneAI/pennylane/pull/5612)
+  [(#5623)](https://github.com/PennyLaneAI/pennylane/pull/5623)
+
+* `qml.counts` now returns the same keys with `dynamic_one_shot` and `defer_measurements`.
   [(#5587)](https://github.com/PennyLaneAI/pennylane/pull/5587)
 
 * `null.qubit` now automatically supports any operation without a decomposition.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 * Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
-  a QNode differed, based on whether the QNode uses classical coprocessing.
+  a QNode differed based on whether the QNode uses classical coprocessing.
   [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
 
 * `ApproxTimeEvolution`, `CommutingEvolution`, `QDrift`, and `TrotterProduct` 
@@ -578,47 +792,47 @@
 * The `dynamic_one_shot` transform now works with broadcasting.
   [(#5473)](https://github.com/PennyLaneAI/pennylane/pull/5473)
 
-* Diagonalize the state around `ProbabilityMP` measurements in `statistics` when executing on a Lightning device.
+* Diagonalizing gates are now applied when measuring `qml.probs` on non-computational basis states on a Lightning device.
   [(#5529)](https://github.com/PennyLaneAI/pennylane/pull/5529)
 
-* `two_qubit_decomposition` no longer diverges at a special case of unitary matrix.
+* `two_qubit_decomposition` no longer diverges at a special case of a unitary matrix.
   [(#5448)](https://github.com/PennyLaneAI/pennylane/pull/5448)
 
-* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new API design.
+* The `qml.QNSPSAOptimizer` now correctly handles optimization for legacy devices that do not follow the new device API.
   [(#5497)](https://github.com/PennyLaneAI/pennylane/pull/5497)
 
 * Operators applied to all wires are now drawn correctly in a circuit with mid-circuit measurements.
   [(#5501)](https://github.com/PennyLaneAI/pennylane/pull/5501)
 
-* Fix a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
+* Fixed a bug where certain unary mid-circuit measurement expressions would raise an uncaught error.
   [(#5480)](https://github.com/PennyLaneAI/pennylane/pull/5480)
 
-* The probabilities now sum to one using the `torch` interface with `default_dtype` set to `torch.float32`. 
+* Probabilities now sum to 1 when using the `torch` interface with `default_dtype` set to `torch.float32`. 
   [(#5462)](https://github.com/PennyLaneAI/pennylane/pull/5462)
 
-* Tensorflow can now handle devices with float32 results but float64 input parameters.
+* Tensorflow can now handle devices with `float32` results but `float64` input parameters.
   [(#5446)](https://github.com/PennyLaneAI/pennylane/pull/5446)
 
-* Fix a bug where the `argnum` kwarg of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
+* Fixed a bug where the `argnum` keyword argument of `qml.gradients.stoch_pulse_grad` references the wrong parameters in a tape,
   creating an inconsistency with other differentiation methods and preventing some use cases.
   [(#5458)](https://github.com/PennyLaneAI/pennylane/pull/5458)
 
-* Avoid bounded value failures due to numerical noise with calls to `np.random.binomial`.
+* Bounded value failures due to numerical noise with calls to `np.random.binomial` is now avoided.
   [(#5447)](https://github.com/PennyLaneAI/pennylane/pull/5447)
 
 * Using `@` with legacy Hamiltonian instances now properly de-queues the previously existing operations.
-  [(#5454)](https://github.com/PennyLaneAI/pennylane/pull/5455)
+  [(#5455)](https://github.com/PennyLaneAI/pennylane/pull/5455)
 
 * The `QNSPSAOptimizer` now properly handles differentiable parameters, resulting in being able to use it for more than one optimization step.
   [(#5439)](https://github.com/PennyLaneAI/pennylane/pull/5439)
 
-* The `QNode` interface now resets if an error occurs during execution.
+* The QNode interface now resets if an error occurs during execution.
   [(#5449)](https://github.com/PennyLaneAI/pennylane/pull/5449)
 
-* Fix failing tests due to changes with Lightning's adjoint diff pipeline.
+* Failing tests due to changes with Lightning's adjoint diff pipeline have been fixed.
   [(#5450)](https://github.com/PennyLaneAI/pennylane/pull/5450)
 
-* Fix Torch tensor locality with autoray-registered coerce method.
+* Failures occurring when making autoray-dispatched calls to Torch with paired CPU data have been fixed.
   [(#5438)](https://github.com/PennyLaneAI/pennylane/pull/5438)
 
 * `jax.jit` now works with `qml.sample` with a multi-wire observable.
@@ -627,7 +841,7 @@
 * `qml.qinfo.quantum_fisher` now works with non-`default.qubit` devices.
   [(#5423)](https://github.com/PennyLaneAI/pennylane/pull/5423)
 
-* We no longer perform unwanted dtype promotion in the `pauli_rep` of `SProd` instances when using tensorflow.
+* We no longer perform unwanted `dtype` promotion in the `pauli_rep` of `SProd` instances when using Tensorflow.
   [(#5246)](https://github.com/PennyLaneAI/pennylane/pull/5246)
 
 * Fixed `TestQubitIntegration.test_counts` in `tests/interfaces/test_jax_qnode.py` to always produce counts for all
@@ -640,34 +854,41 @@
 * `CompositeOp.map_wires` now correctly maps the `overlapping_ops` property.
   [(#5430)](https://github.com/PennyLaneAI/pennylane/pull/5430)
 
-* Update `DefaultQubit.supports_derivatives` to correctly handle circuits containing `MidMeasureMP` with adjoint
+* `DefaultQubit.supports_derivatives` has been updated to correctly handle circuits containing mid-circuit measurements and adjoint
   differentiation.
   [(#5434)](https://github.com/PennyLaneAI/pennylane/pull/5434)
 
-* `SampleMP`, `ExpectationMP`, `CountsMP`, `VarianceMP` constructed with ``eigvals`` can now properly process samples.
+* `SampleMP`, `ExpectationMP`, `CountsMP`, and `VarianceMP` constructed with `eigvals` can now properly process samples.
   [(#5463)](https://github.com/PennyLaneAI/pennylane/pull/5463)
 
-* Fixes a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
+* Fixed a bug in `hamiltonian_expand` that produces incorrect output dimensions when shot vectors are combined with parameter broadcasting.
   [(#5494)](https://github.com/PennyLaneAI/pennylane/pull/5494)
 
-* Allows `default.qubit` to measure Identity on no wires, and observables containing Identity on
+* `default.qubit` now allows measuring `Identity` on no wires and observables containing `Identity` on
   no wires.
   [(#5570)](https://github.com/PennyLaneAI/pennylane/pull/5570/)
 
-* Fixes a bug where `TorchLayer` does not work with shot vectors.
+* Fixed a bug where `TorchLayer` does not work with shot vectors.
   [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
 
-* Fixes a bug where the output shape of a qnode returning a list containing a single measurement is incorrect when combined with shot vectors.
+* Fixed a bug where the output shape of a QNode returning a list containing a single measurement is incorrect when combined with shot vectors.
   [(#5492)](https://github.com/PennyLaneAI/pennylane/pull/5492)
 
-* Fixes a bug in `qml.math.kron` that makes torch incompatible with numpy.
+* Fixed a bug in `qml.math.kron` that makes Torch incompatible with NumPy.
   [(#5540)](https://github.com/PennyLaneAI/pennylane/pull/5540)
 
-* Fixes a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
-  [(#5512)](https://github.com/PennyLaneAI/pennylane/issues/5512)
+* Fixed a bug in `_group_measurements` that fails to group measurements with commuting observables when they are operands of `Prod`.
+  [(#5525)](https://github.com/PennyLaneAI/pennylane/pull/5525)
 
 * `qml.equal` can now be used with sums and products that contain operators on no wires like `I` and `GlobalPhase`.
   [(#5562)](https://github.com/PennyLaneAI/pennylane/pull/5562)
+
+* `CompositeOp.has_diagonalizing_gates` now does a more complete check of the base operators to ensure consistency 
+  between `op.has_diagonalzing_gates` and `op.diagonalizing_gates()`
+  [(#5603)](https://github.com/PennyLaneAI/pennylane/pull/5603)
+
+* Updated the `method` kwarg of `qml.TrotterProduct().error()` to be more clear that we are computing upper-bounds.
+  [(#5637)](https://github.com/PennyLaneAI/pennylane/pull/5637)
 
 <h3>Contributors ✍️</h3>
 
@@ -678,12 +899,14 @@ Guillermo Alonso,
 Mikhail Andrenkov,
 Utkarsh Azad,
 Gabriel Bottrill,
+Thomas Bromley,
 Astral Cai,
 Diksha Dhawan,
 Isaac De Vlugt,
 Amintor Dusko,
 Pietropaolo Frisoni,
 Lillian M. A. Frederiksen,
+Diego Guala,
 Austin Huang,
 Soran Jahangiri,
 Korbinian Kottmann,

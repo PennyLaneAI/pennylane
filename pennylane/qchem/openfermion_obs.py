@@ -863,8 +863,9 @@ def molecular_hamiltonian(*args, **kwargs):
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
+
     Returns:
-        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
+        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed  Hamiltonian
         and the number of qubits
 
     .. warning::
@@ -1013,6 +1014,7 @@ def _(
     load_data=False,
     convert_tol=1e12,
 ):
+
     if unit == "Angstrom":
         coordinates = coordinates / bohr_angs
     elif unit not in ("Angstrom", "Bohr"):
@@ -1020,6 +1022,7 @@ def _(
             f"The provided unit, '{unit}' is not supported. "
             f"Please set 'unit' to 'Bohr' or 'Angstrom'."
         )
+
 
     return _molecular_hamiltonian(
         symbols,
