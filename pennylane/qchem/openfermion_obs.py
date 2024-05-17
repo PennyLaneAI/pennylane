@@ -1014,6 +1014,11 @@ def _(
 ):
     if unit == "Angstrom":
         coordinates = coordinates / bohr_angs
+    elif unit != "Angstrom" and unit != "Bohr":
+        raise ValueError(
+            f"The provided unit, '{unit}' is not supported. "
+            f"Please set 'unit' to 'Bohr' or 'Angstrom'."
+        )
 
     return _molecular_hamiltonian(
         symbols,

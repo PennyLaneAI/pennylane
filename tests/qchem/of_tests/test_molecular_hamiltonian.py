@@ -852,3 +852,13 @@ def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdi
         outpath=tmpdir.strpath,
     )
     assert qml.ops.functions.equal(hamiltonian_ang, hamiltonian_bohr)
+
+
+def test_unit_error_molecular_hamiltonian():
+    r"""Test that an error is raised if a wrong/not-supported units for coordinates are entered."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+
+    with pytest.raises(ValueError, match="The provided unit, 'degrees' is not supported."):
+        qchem.molecular_hamiltonian(symbols, geometry, unit="degrees")

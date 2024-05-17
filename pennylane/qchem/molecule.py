@@ -118,9 +118,14 @@ class Molecule:
                 "Openshell systems are not supported. Change the charge or spin "
                 "multiplicity of the molecule."
             )
+
         if unit == "Angstrom":
-            coordinates = coordinates / bohr_angs
-            self.coordinates = coordinates
+            self.coordinates = self.coordinates / bohr_angs
+        elif unit != "Angstrom" and unit != "Bohr":
+            raise ValueError(
+                f"The provided unit, '{unit}' is not supported. "
+                f"Please set 'unit' to 'Bohr' or 'Angstrom'."
+            )
 
         if l is None:
             l = [i[0] for i in self.basis_data]
