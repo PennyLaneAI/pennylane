@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import dot
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
@@ -236,8 +237,8 @@ class TestPreprocessing:
             (qml.GroverOperator(wires=range(14)), False),
             (qml.pow(qml.RX(1.1, 0), 3), True),
             (qml.pow(qml.RX(qml.numpy.array(1.1), 0), 3), False),
-            (qml.CommutingEvolution(wires=range(10)), True),
-            (qml.CommutingEvolution(wires=range(14)), False),
+            (qml.CommutingEvolution(dot(np.ones(10), [qml.Z(w) for w in range(10)]), 0.3), True),
+            (qml.CommutingEvolution(dot(np.ones(14), [qml.Z(w) for w in range(14)]), 0.3), False),
         ],
     )
     def test_accepted_operator(self, op, expected):
