@@ -70,7 +70,7 @@ def _configure_logging(config_file: str, config_override=None):
         )
     with open(os.path.join(_path, config_file), "rb") as f:
         pl_config = tomllib.load(f)
-        if config_override:
+        if not config_override:
             logging.config.dictConfig(pl_config)
         else:
             logging.config.dictConfig({**pl_config, **config_override})
@@ -124,8 +124,10 @@ def edit_system_config(wait_on_close=False):
     Linux and MacOS, and allows use of `wait_on_close` for editor close before
     continuing execution.
 
-    Warning: As each OS configuration differs user-to-user, you may wish to
-    instead open this file manually with the `config_path()` provided path.
+    .. warning::
+
+        As each OS configuration differs user-to-user, you may wish to
+        instead open this file manually with the `config_path()` provided path.
     """
     if editor := os.getenv("EDITOR"):
         # pylint:disable = consider-using-with
