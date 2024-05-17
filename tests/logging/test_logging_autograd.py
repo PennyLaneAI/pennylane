@@ -31,7 +31,7 @@ def enable_and_configure_logging():
     pl_logging.enable_logging()
 
     pl_logger = logging.root.manager.loggerDict["pennylane"]
-    plqn_logger = logging.root.manager.loggerDict["pennylane.qnode"]
+    plqn_logger = logging.root.manager.loggerDict["pennylane.workflow.qnode"]
 
     # Ensure logs messages are propagated for pytest capture
     pl_logger.propagate = True
@@ -42,12 +42,24 @@ def enable_and_configure_logging():
 class TestLogging:
     """Tests for logging integration"""
 
+    def test_qd_dev_creation(self, caplog):
+        "Test logging of device creation"
+
+        enable_and_configure_logging()
+        caplog.set_level(logging.DEBUG, logger="pennylane.devices.default_qubit")
+
+        with caplog.at_level(logging.DEBUG):
+            dev = qml.device("default.qubit", wires=2)
+
+        assert len(caplog.records) == 1
+        assert "Calling <__init__(self=<default.qubit device" in caplog.text
+
     def test_qd_qnode_creation(self, caplog):
         "Test logging of QNode creation"
 
         enable_and_configure_logging()
-
-        dev = qml.device("default.qubit", wires=2)
+        with caplog.at_level(logging.INFO):
+            dev = qml.device("default.qubit", wires=2)
 
         # Single log entry, QNode creation
         with caplog.at_level(logging.DEBUG):
@@ -63,12 +75,15 @@ class TestLogging:
     def test_dq_qnode_execution(self, caplog):
         "Test logging of QNode forward pass"
 
+        # Set specific log-levels for validation
         enable_and_configure_logging()
+        caplog.set_level(logging.INFO, logger="pennylane")
+        caplog.set_level(logging.DEBUG, logger="pennylane.workflow.execution")
+        caplog.set_level(logging.DEBUG, logger="pennylane.workflow.qnode")
 
         dev = qml.device("default.qubit", wires=2)
 
         with caplog.at_level(logging.DEBUG):
-            dev = qml.device("default.qubit", wires=2)
             params = qml.numpy.array(0.1234)
 
             @qml.qnode(dev, diff_method=None)
@@ -77,13 +92,15 @@ class TestLogging:
                 return qml.expval(qml.PauliZ(0))
 
             circuit(params)
-
         assert len(caplog.records) == 3
-
         log_records_expected = [
             (
                 "pennylane.workflow.qnode",
                 ["Creating QNode(func=<function TestLogging.test_dq_qnode_execution"],
+            ),
+            (
+                "pennylane.workflow.qnode",
+                ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
                 "pennylane.workflow.execution",
@@ -94,25 +111,30 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:2]):
+        for expected, actual in zip(log_records_expected, caplog.records[:3]):
             assert expected[0] in actual.name
             assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 8), ("backprop", 3), ("adjoint", 6)]
+        "diff_method,num_records", [("parameter-shift", 23), ("backprop", 14), ("adjoint", 18)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parameterised gradients"
 
         enable_and_configure_logging()
 
-        dev = qml.device("default.qubit", wires=2)
+        # Set specific log-levels for validation
+        enable_and_configure_logging()
+        caplog.set_level(logging.INFO, logger="pennylane")
+        caplog.set_level(logging.DEBUG, logger="pennylane.workflow")
+        caplog.set_level(logging.DEBUG, logger="pennylane.devices")
+
+        with caplog.at_level(logging.INFO):
+            dev = qml.device("default.qubit", wires=2)
         params = qml.numpy.array(0.1234)
 
         # Single log entry, QNode creation
         with caplog.at_level(logging.DEBUG):
-            dev = qml.device("default.qubit", wires=2)
-            params = qml.numpy.array(0.1234)
 
             @qml.qnode(dev, diff_method=diff_method)
             def circuit(params):
@@ -130,6 +152,12 @@ class TestLogging:
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<default.qubit device (wires=2)",
                     f"interface=auto, diff_method={diff_method}, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best,",
+                ],
+            ),
+            (
+                "pennylane.workflow.qnode",
+                [
+                    "Calling <get_gradient_fn(device=<default.qubit device (wires=2)",
                 ],
             ),
             (

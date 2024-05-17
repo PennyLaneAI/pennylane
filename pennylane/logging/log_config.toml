@@ -107,12 +107,6 @@ handlers = ["qml_debug_stream",]
 level = "DEBUG" # Set to TRACE for highest verbosity
 propagate = false
 
-# Control logging across catalyst
-[loggers.catalyst]
-handlers = ["qml_debug_stream",]
-level = "TRACE" # Set to TRACE for highest verbosity
-propagate = false
-
 # Control logging specifically in the pennylane.qnode module
 # Note the required quotes to overcome TOML nesting issues
 [loggers."pennylane.qnode"]
