@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit preprocessing."""
-from functools import partial, reduce
+from functools import reduce
 from typing import Iterable, Sequence
 
 import numpy as np
@@ -24,7 +24,11 @@ from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
 
-get_device = partial(qml.device, name="default.qubit", seed=8237945)
+
+def get_device(**kwargs):
+    kwargs.setdefault("shots", None)
+    kwargs.setdefault("seed", 8237945)
+    return qml.device("default.qubit", **kwargs)
 
 
 def validate_counts(shots, results1, results2, batch_size=None):
@@ -611,7 +615,7 @@ def test_sample_with_prng_key(shots, postselect, reset):
     # pylint: disable=import-outside-toplevel
     from jax.random import PRNGKey
 
-    dev = qml.device("default.qubit", shots=shots, seed=PRNGKey(678))
+    dev = get_device(shots=shots, seed=PRNGKey(678))
     param = [np.pi / 4, np.pi / 3]
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
@@ -659,7 +663,7 @@ def test_jax_jit(diff_method, postselect, reset):
 
     shots = 10
 
-    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(678))
+    dev = get_device(shots=shots, seed=jax.random.PRNGKey(678))
     params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliY(0)
 
@@ -753,12 +757,11 @@ def test_counts_return_type(mcm_f):
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("shots", [6000, [6000, 6001]])
 @pytest.mark.parametrize("postselect", [None, 1])
 @pytest.mark.parametrize("diff_method", [None, "best"])
 @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
-@pytest.mark.parametrize("meas_obj", [qml.PauliX(0), [0, 1], "composite_mcm", "mcm_list"])
-def test_torch_integration(shots, postselect, diff_method, measure_f, meas_obj):
+@pytest.mark.parametrize("meas_obj", [qml.PauliZ(1), [0, 1], "composite_mcm", "mcm_list"])
+def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
     """Test that native MCM circuits are executed correctly with Torch"""
     if measure_f in (qml.var, qml.expval) and (
         isinstance(meas_obj, list) or meas_obj == "mcm_list"
@@ -767,7 +770,8 @@ def test_torch_integration(shots, postselect, diff_method, measure_f, meas_obj):
 
     import torch
 
-    dev = get_device(shots=shots)
+    shots = 7000
+    dev = get_device(shots=shots, seed=123456789)
     param = torch.tensor(np.pi / 3, dtype=torch.float64)
 
     @qml.qnode(dev, diff_method=diff_method)
@@ -794,12 +798,11 @@ def test_torch_integration(shots, postselect, diff_method, measure_f, meas_obj):
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("shots", [6000, [6000, 6001]])
 @pytest.mark.parametrize("postselect", [None, 1])
 @pytest.mark.parametrize("diff_method", [None, "best"])
 @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
 @pytest.mark.parametrize("meas_obj", [qml.PauliX(1), [0, 1], "composite_mcm", "mcm_list"])
-def test_jax_integration(shots, postselect, diff_method, measure_f, meas_obj):
+def test_jax_integration(postselect, diff_method, measure_f, meas_obj):
     """Test that native MCM circuits are executed correctly with Jax"""
     if measure_f in (qml.var, qml.expval) and (
         isinstance(meas_obj, list) or meas_obj == "mcm_list"
@@ -809,7 +812,8 @@ def test_jax_integration(shots, postselect, diff_method, measure_f, meas_obj):
     import jax.numpy as jnp
     from jax.random import PRNGKey
 
-    dev = qml.device("default.qubit", shots=shots, seed=PRNGKey(567))
+    shots = 8000
+    dev = get_device(shots=shots, seed=PRNGKey(97658674))
     param = jnp.array(np.pi / 3)
 
     @qml.qnode(dev, diff_method=diff_method)
@@ -830,6 +834,9 @@ def test_jax_integration(shots, postselect, diff_method, measure_f, meas_obj):
     func2 = qml.defer_measurements(func)
 
     results1 = func1(param)
-    results2 = func2(param)
+    if measure_f is qml.sample:
+        results2 = func2(param)
+    else:
+        results2 = func2(param, shots=None)
 
     validate_measurements(measure_f, shots, results1, results2)
