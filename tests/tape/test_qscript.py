@@ -44,6 +44,10 @@ class TestInitialization:
         assert qs._shots.total_shots is None
         assert qs._batch_size is _UNSET_BATCH_SIZE
         assert qs.batch_size is None
+        assert qs._obs_sharing_wires is None
+        assert qs._obs_sharing_wires_id is None
+        assert qs.obs_sharing_wires == []
+        assert qs.obs_sharing_wires_id == []
         assert qs.wires == qml.wires.Wires([])
         assert qs.num_wires == 0
         assert qs.samples_computational_basis is False
@@ -181,6 +185,22 @@ class TestUpdate:
 
         assert qs.trainable_params == list(range(8))
 
+    def test_cached_properties(self):
+        """Test that the @cached_property gets invalidated after update"""
+        ops = [
+            qml.RX(1.2, wires=0),
+            qml.Rot(2.3, 3.4, 5.6, wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+            qml.U2(-1, -2, wires=0),
+        ]
+        m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+        qs._ops = []
+        qs._measurements = []
+        qs._update()
+        assert qs.wires == qml.wires.Wires([])
+        assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
+
     # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
         """Tests the tape method get_operation."""
@@ -231,6 +251,22 @@ class TestUpdate:
         qs = QuantumScript(measurements=[qml.expval(o) for o in obs])
         assert qs.obs_sharing_wires == [obs[1], obs[2], obs[4]]
         assert qs.obs_sharing_wires_id == [1, 2, 4]
+
+    def test_update_no_sharing_wires(self):
+        """Tests the case where no observables share wires"""
+        obs = [
+            qml.PauliX("a"),
+            qml.PauliX(0),
+            qml.PauliY(1),
+            qml.PauliX("b"),
+            qml.PauliX(2) @ qml.PauliY(3),
+        ]
+        qs = QuantumScript(measurements=[qml.expval(o) for o in obs])
+        assert qs.obs_sharing_wires == []
+        assert qs.obs_sharing_wires_id == []
+        # Since the public attributes were accessed already, the private ones should be empty lists not None
+        assert qs._obs_sharing_wires == []
+        assert qs._obs_sharing_wires_id == []
 
     @pytest.mark.parametrize(
         "x, rot, exp_batch_size",
