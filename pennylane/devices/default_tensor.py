@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the default.tensor device to perform tensor network simulation of a quantum circuit. 
+This module contains the default.tensor device to perform tensor network simulation of a quantum circuit using ``quimb``. 
 """
 import copy
 from dataclasses import replace
@@ -21,10 +21,11 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
+has_quimb = True
 try:
     import quimb.tensor as qtn
-except ImportError as err:
-    raise ImportError("default.tensor device requires the quimb package") from err
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_quimb = False
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
@@ -185,7 +186,12 @@ class DefaultTensor(Device):
         shots=None,
         dtype=np.complex128,
         **kwargs,
-    ):
+    ) -> None:
+        if not has_quimb:
+            raise ImportError(
+                "This feature requires quimb, a library for tensor network manipulations. "
+                "It can be installed with:\n\npip install quimb"
+            )
 
         if not accepted_methods(method):
             raise ValueError(

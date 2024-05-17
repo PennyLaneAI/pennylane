@@ -23,7 +23,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane.devices.default_tensor import DefaultTensor
 
-stim = pytest.importorskip("quimb")
+quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
 

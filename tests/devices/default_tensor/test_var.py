@@ -25,7 +25,7 @@ THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
-stim = pytest.importorskip("quimb")
+quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
 
