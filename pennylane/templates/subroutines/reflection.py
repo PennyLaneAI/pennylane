@@ -15,12 +15,14 @@
 """
 This submodule contains the template for the Reflection operation.
 """
+import copy
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 
 class Reflection(Operation):
@@ -127,6 +129,16 @@ class Reflection(Operation):
         }
 
         super().__init__(alpha, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["reflection_wires"] = tuple(
+            wire_map.get(w, w) for w in new_op._hyperparameters["reflection_wires"]
+        )
+
+        return new_op
 
     @property
     def alpha(self):

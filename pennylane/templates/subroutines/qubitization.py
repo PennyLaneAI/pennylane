@@ -20,6 +20,7 @@ import copy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation
+from pennylane.wires import Wires
 
 
 def _positive_coeffs_hamiltonian(hamiltonian):
@@ -125,6 +126,17 @@ class Qubitization(Operation):
                 setattr(clone, attr, value)
 
         return clone
+
+    def map_wires(self, wire_map: dict):
+        new_op = self.__copy__()
+        new_op._wires = Wires([wire_map.get(w, w) for w in self.wires])
+        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
+            new_op._hyperparameters["hamiltonian"], wire_map
+        )
+        new_op._hyperparameters["control"] = Wires(
+            [wire_map.get(w, w) for w in self._hyperparameters["control"]]
+        )
+        return new_op
 
     @staticmethod
     def compute_decomposition(*_, **kwargs):  # pylint: disable=arguments-differ

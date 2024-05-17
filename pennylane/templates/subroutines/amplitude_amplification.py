@@ -17,10 +17,13 @@ This submodule contains the template for Amplitude Amplification.
 """
 
 # pylint: disable-msg=too-many-arguments
+import copy
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import Wires
 
 
 def _get_fixed_point_angles(iters, p_min):
@@ -170,6 +173,19 @@ class AmplitudeAmplification(Operation):
                 ops.append(qml.Reflection(U, np.pi, reflection_wires=reflection_wires))
 
         return ops
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["U"] = new_op._hyperparameters["U"].map_wires(wire_map)
+        new_op._hyperparameters["O"] = new_op._hyperparameters["O"].map_wires(wire_map)
+        new_op._hyperparameters["reflection_wires"] = Wires(
+            [wire_map.get(wire, wire) for wire in new_op._hyperparameters["reflection_wires"]]
+        )
+        new_op._hyperparameters["work_wire"] = wire_map.get(
+            w := new_op._hyperparameters["work_wire"], w
+        )
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         for op in [self.hyperparameters["U"], self.hyperparameters["O"]]:

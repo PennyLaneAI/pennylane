@@ -14,11 +14,13 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
+import copy
 
 import pennylane as qml
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.wires import Wires
 
 
 def _scalar(order):
@@ -236,6 +238,12 @@ class TrotterProduct(ErrorOperation):
         }
 
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["base"])

@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains template for QDrift subroutine."""
+import copy
 
 import pennylane as qml
 from pennylane.math import requires_grad, unwrap
 from pennylane.operation import Operation
 from pennylane.ops import Hamiltonian, LinearCombination, SProd, Sum
+from pennylane.wires import Wires
 
 
 @qml.QueuingManager.stop_recording()
@@ -166,12 +168,13 @@ class QDrift(Operation):
         elif isinstance(hamiltonian, Sum):
             coeffs, ops = [], []
             for op in hamiltonian:
-                try:
-                    coeffs.append(op.scalar)
-                    ops.append(op.base)
-                except AttributeError:  # coefficient is 1.0
+                coeff = getattr(op, "scalar", None)
+                if coeff is None:  # coefficient is 1.0
                     coeffs.append(1.0)
                     ops.append(op)
+                else:
+                    coeffs.append(coeff)
+                    ops.append(op.base)
 
         else:
             raise TypeError(
@@ -200,6 +203,16 @@ class QDrift(Operation):
             "decomposition": decomposition,
         }
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["decomposition"] = [
+            qml.map_wires(op, wire_map) for op in new_op._hyperparameters["decomposition"]
+        ]
+
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["base"])
@@ -264,7 +277,7 @@ class QDrift(Operation):
             lmbda = qml.math.sum(qml.math.abs(hamiltonian.coeffs))
 
         elif isinstance(hamiltonian, Sum):
-            lmbda = qml.math.sum(
+            lmbda = sum(
                 qml.math.abs(op.scalar) if isinstance(op, SProd) else 1.0 for op in hamiltonian
             )
 
