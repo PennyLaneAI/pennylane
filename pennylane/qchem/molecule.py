@@ -121,7 +121,7 @@ class Molecule:
 
         if unit == "Angstrom":
             self.coordinates = self.coordinates / bohr_angs
-        elif unit != "Angstrom" and unit != "Bohr":
+        elif unit not in ("Angstrom", "Bohr"):
             raise ValueError(
                 f"The provided unit, '{unit}' is not supported. "
                 f"Please set 'unit' to 'Bohr' or 'Angstrom'."
