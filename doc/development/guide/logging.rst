@@ -29,8 +29,21 @@ To add logging support to components of PennyLane, we must define a module logge
 
 which will be used within the given module, and track directories,
 filenames and function names, as we have defined the appropriate types
-within the formatter configuration (see :class:`pennylane.logging.DefaultFormatter`). With the logger defined, we can selectively add to the logger by if-else statements, which compare the given module’s log-level to any log record
-message it receives. This step is not necessary, as the message will
+within the formatter configuration (see :class:`pennylane.logging.DefaultFormatter`). With the logger defined, we can selectively add to the logger via two methods: 
+
+i) using decorators on the required functions and methods in a given module:
+
+.. code:: python
+
+   # debug_logger can be used to decorate and method or free function
+   # debug_logger_init can be used to decorate class __init__ methods.
+   from pennylane.logging import debug_logger, debug_logger_init
+
+   @debug_logger
+   def my_func(arg1, arg2):
+      return arg1 + arg2
+
+ii) explicitly by if-else statements, which compare the given module’s log-level to any log record message it receives. This step is not necessary, as the message will
 only output if the level is enabled, though if an expensive function
 call is required to build the string for the log-message, it can be
 faster to perform this check:
@@ -43,10 +56,9 @@ faster to perform this check:
            arg_name_1, arg_name_2, ..., arg_name_n,
        )
 
-The above line can be added below the function/method entry point,
-and the provided arguments can be used to populate the log message. This
-allows us a way to track the inputs and calls through the stack in the
-order they are executed, as is the basis for following a trail of
+Both versions provide similar functionality, though the explicit logger call allows more custom message-formatting, such as expanding functions as string representation, filtering of data, and other useful processing for a valid record.
+
+These logging options allow us a way to track the inputs and calls through the stack in the order they are executed, as is the basis for following a trail of
 execution as needed.
 
 All debug log-statements currently added to the PennyLane execution
@@ -81,6 +93,8 @@ adjust these through the ``[formatters]`` section. If we want to filter
 messages based on some criteria, we can add these to the respective
 handlers. As an example, we can go through the configuration file and
 explore the options.
+
+For ease-of-development, the function :func:`qml.logging.edit_system_config` opens an editor (if the ``EDITOR`` environment variable is set), or a viewer of the existing file configuration, which can be used to modify the existing options.
 
 Modifying the configuration options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
