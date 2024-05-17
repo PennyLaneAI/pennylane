@@ -1572,7 +1572,7 @@ class QubitDevice(Device):
 
             # special handling for observables with eigvals +1/-1 to enable JIT compatibility.
             if np.array_equal(eigvals, [1.0, -1.0]):
-                samples = 1.0 - 2 * sub_samples[..., device_wires[0]]   # type should be float
+                samples = 1.0 - 2 * sub_samples[..., device_wires[0]]  # type should be float
             else:
                 # Replace the basis state in the computational basis with the correct eigenvalue.
                 # Extract only the columns of the basis samples required based on ``wires``.
