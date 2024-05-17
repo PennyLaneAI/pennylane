@@ -109,6 +109,14 @@ class Molecule:
         self.name = name
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
+        if self.unit == "Angstrom":
+            self.coordinates = self.coordinates / bohr_angs
+        elif self.unit not in ("Angstrom", "Bohr"):
+            raise ValueError(
+                f"The provided unit, '{unit}' is not supported. "
+                f"Please set 'unit' to 'Bohr' or 'Angstrom'."
+            )
+
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
         self.n_electrons = sum(self.nuclear_charges) - self.charge
@@ -117,14 +125,6 @@ class Molecule:
             raise ValueError(
                 "Openshell systems are not supported. Change the charge or spin "
                 "multiplicity of the molecule."
-            )
-
-        if unit == "Angstrom":
-            self.coordinates = self.coordinates / bohr_angs
-        elif unit not in ("Angstrom", "Bohr"):
-            raise ValueError(
-                f"The provided unit, '{unit}' is not supported. "
-                f"Please set 'unit' to 'Bohr' or 'Angstrom'."
             )
 
         if l is None:
