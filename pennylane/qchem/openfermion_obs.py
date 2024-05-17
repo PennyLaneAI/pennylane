@@ -27,7 +27,6 @@ from pennylane.qchem.molecule import Molecule
 
 from .basis_data import atomic_numbers
 
-
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
 

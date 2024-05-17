@@ -616,33 +616,6 @@ def test_diff_hamiltonian_error():
     with pytest.raises(ValueError, match="Open-shell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
-
-@pytest.mark.parametrize(
-    ("symbols", "geometry"),
-    [
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-        ),
-    ],
-)
-def test_diff_hamiltonian_error_molecule_class(symbols, geometry):
-    r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
-
-    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
-
-    molecule = qchem.Molecule(symbols, geometry)
-    with pytest.raises(
-        ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
-    ):
-        qchem.molecular_hamiltonian(molecule, method="psi4")
-
-    with pytest.raises(ValueError, match="Open-shell systems are not supported"):
-
-        qchem.molecular_hamiltonian(symbols, geometry, mult=3)
-
-
 def test_diff_hamiltonian_error_molecule_class():
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
