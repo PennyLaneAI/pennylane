@@ -21,6 +21,7 @@ import platform
 import subprocess
 from importlib import import_module
 from importlib.util import find_spec
+from typing import Optional
 
 has_toml = False
 toml_libs = ["tomllib", "tomli", "tomlkit"]
@@ -55,10 +56,15 @@ def _add_trace_level():
     lc.trace = trace
 
 
-def _configure_logging(config_file: str, config_override=None):
+def _configure_logging(config_file: str, config_override: Optional[dict] = None):
     """
     This method allows custom logging configuration throughout PennyLane.
     All configurations are read through the ``log_config.toml`` file, with additional custom options provided through the ``config_override`` dictionary.
+
+    Args:
+        config_file (str): The path to a given log configuration file, parsed as TOML and adhering to the ``logging.config.dictConfig`` end-point.
+
+        config_override (Optional[dict]): A dictionary with keys-values that override the default configuration options in the given ``config_file`` TOML.
     """
     if not has_toml:
         raise ImportError(
@@ -81,6 +87,9 @@ def enable_logging(config_file: str = "log_config.toml"):
     This method allows to selectively enable logging throughout PennyLane, following the configuration options defined in the ``log_config.toml`` file.
 
     Enabling logging through this method will override any externally defined logging configurations.
+
+    Args:
+        config_file (str): The path to a given log configuration file, parsed as TOML and adhering to the ``logging.config.dictConfig`` end-point. The default argument uses the PennyLane ecosystem log-file configuration.
 
     **Example**
 
