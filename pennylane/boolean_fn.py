@@ -133,7 +133,7 @@ class And(BooleanFn):
         )
 
     def __str__(self):
-        return f"{self.operands[0]} & {self.operands[1]}"
+        return f"{self.operands[0].name} & {self.operands[1].name}"
 
 
 class Or(BooleanFn):
@@ -157,7 +157,7 @@ class Or(BooleanFn):
         )
 
     def __str__(self):
-        return f"{self.operands[0]} | {self.operands[1]}"
+        return f"{self.operands[0].name} | {self.operands[1].name}"
 
 
 class Xor(BooleanFn):
@@ -181,7 +181,7 @@ class Xor(BooleanFn):
         )
 
     def __str__(self):
-        return f"{self.operands[0]} ^ {self.operands[1]}"
+        return f"{self.operands[0].name} ^ {self.operands[1].name}"
 
 
 class Not(BooleanFn):
@@ -205,4 +205,4 @@ class Not(BooleanFn):
         )
 
     def __str__(self):
-        return f"~{self.operands[0]}"
+        return f"~{self.operands[0].name}"
