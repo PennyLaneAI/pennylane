@@ -28,18 +28,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     SampleMP,
 )
-from pennylane.transforms.dynamic_one_shot import (
-    accumulate_native_mcm,
-    parse_native_mid_circuit_measurements,
-)
-
-
-def test_accumulate_native_mcm_unsupported_error():
-    with pytest.raises(
-        TypeError,
-        match=f"Native mid-circuit measurement mode does not support {type(qml.var(qml.PauliZ(0))).__name__}",
-    ):
-        accumulate_native_mcm(qml.tape.QuantumScript([], [qml.var(qml.PauliZ(0))]), [None], [None])
+from pennylane.transforms.dynamic_one_shot import parse_native_mid_circuit_measurements
 
 
 @pytest.mark.parametrize(
@@ -54,9 +43,9 @@ def test_accumulate_native_mcm_unsupported_error():
     ],
 )
 def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
-    circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [measurement])
+    circuit = qml.tape.QuantumScript([qml.RX(1.0, 0)], [measurement])
     with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
-        parse_native_mid_circuit_measurements(circuit, None, None)
+        parse_native_mid_circuit_measurements(circuit, [circuit], [[]])
 
 
 def test_postselection_error_with_wrong_device():
@@ -99,7 +88,7 @@ def test_len_tapes(n_shots):
     """Test that the transform produces the correct number of tapes."""
     tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.expval(qml.PauliZ(0))], shots=n_shots)
     tapes, _ = qml.dynamic_one_shot(tape)
-    assert len(tapes) == n_shots
+    assert len(tapes) == 1
 
 
 @pytest.mark.parametrize("n_batch", range(1, 4))
@@ -113,7 +102,7 @@ def test_len_tape_batched(n_batch, n_shots):
         shots=n_shots,
     )
     tapes, _ = qml.dynamic_one_shot(tape)
-    assert len(tapes) == n_shots * n_batch
+    assert len(tapes) == n_batch
 
 
 @pytest.mark.parametrize(
@@ -134,7 +123,7 @@ def test_len_measurements_obs(measure, aux_measure, n_meas):
         [qml.Hadamard(0)] + [MidMeasureMP(0)] * n_mcms, [measure(op=qml.PauliZ(0))], shots=n_shots
     )
     tapes, _ = qml.dynamic_one_shot(tape)
-    assert len(tapes) == n_shots
+    assert len(tapes) == 1
     aux_tape = tapes[0]
     assert len(aux_tape.measurements) == n_meas + n_mcms
     assert isinstance(aux_tape.measurements[0], aux_measure)
@@ -161,7 +150,7 @@ def test_len_measurements_mcms(measure, aux_measure, n_meas):
         shots=n_shots,
     )
     tapes, _ = qml.dynamic_one_shot(tape)
-    assert len(tapes) == n_shots
+    assert len(tapes) == 1
     aux_tape = tapes[0]
     assert len(aux_tape.measurements) == n_meas + n_mcms
     assert isinstance(aux_tape.measurements[0], aux_measure)

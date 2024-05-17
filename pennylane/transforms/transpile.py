@@ -161,10 +161,18 @@ def transpile(
     with QueuingManager.stop_recording():
         # this unrolls everything in the current tape (in particular templates)
         def stop_at(obj):
+            if not isinstance(obj, qml.operation.Operator):
+                return True
+            if not obj.has_decomposition:
+                return True
             return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
 
-        expanded_tape = tape.expand(stop_at=stop_at)
-
+        [expanded_tape], _ = qml.devices.preprocess.decompose(
+            tape,
+            stopping_condition=stop_at,
+            name="transpile",
+            error=qml.operation.DecompositionUndefinedError,
+        )
         # make copy of ops
         list_op_copy = expanded_tape.operations.copy()
         wire_order = device_wires or tape.wires
