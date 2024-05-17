@@ -128,7 +128,8 @@ class Qubitization(Operation):
         return clone
 
     def map_wires(self, wire_map: dict):
-        new_op = self.__copy__()
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(w, w) for w in self.wires])
         new_op._hyperparameters["hamiltonian"] = qml.map_wires(
             new_op._hyperparameters["hamiltonian"], wire_map

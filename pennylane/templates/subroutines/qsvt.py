@@ -288,6 +288,7 @@ class QSVT(Operation):
         super().__init__(wires=total_wires, id=id)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["UA"] = qml.map_wires(new_op._hyperparameters["UA"], wire_map)

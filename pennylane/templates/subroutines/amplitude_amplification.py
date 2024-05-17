@@ -175,6 +175,7 @@ class AmplitudeAmplification(Operation):
         return ops
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["U"] = new_op._hyperparameters["U"].map_wires(wire_map)

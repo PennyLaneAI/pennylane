@@ -384,6 +384,7 @@ class QuantumMonteCarlo(Operation):
         super().__init__(A, R, Q, wires=wires, id=id)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         for key in ["estimation_wires", "target_wires"]:

@@ -205,6 +205,7 @@ class QDrift(Operation):
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
