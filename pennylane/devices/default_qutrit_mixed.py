@@ -13,7 +13,6 @@
 # limitations under the License.
 """The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
 computations."""
-
 import inspect
 import logging
 from dataclasses import replace
@@ -22,6 +21,7 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -49,7 +49,6 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 # always a function from a resultbatch to either a result or a result batch
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
-channels = set()
 observables = {
     "THermitian",
     "GellMann",
