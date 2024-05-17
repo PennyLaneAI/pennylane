@@ -15,7 +15,6 @@
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods, use-dict-literal, use-implicit-booleaness-not-comparison
-
 import pytest
 
 import pennylane as qml
