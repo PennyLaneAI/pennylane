@@ -49,7 +49,7 @@ class TestLogging:
         caplog.set_level(logging.DEBUG, logger="pennylane.devices.default_qubit")
 
         with caplog.at_level(logging.DEBUG):
-            dev = qml.device("default.qubit", wires=2)
+            qml.device("default.qubit", wires=2)
 
         assert len(caplog.records) == 1
         assert "Calling <__init__(self=<default.qubit device" in caplog.text
