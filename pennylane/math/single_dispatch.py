@@ -274,8 +274,6 @@ ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
 def _tensorflow_allclose(a, b, **kwargs):
     if is_abstract(a):
         a = ar.to_numpy(a)
-    if is_abstract(b):
-        b = ar.to_numpy(b)
     return ar.autoray.allclose(a, b, **kwargs)
 
 
