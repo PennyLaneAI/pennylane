@@ -141,6 +141,9 @@
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
 
+* The `CNOT` operator no longer decomposes to itself.
+  [(#5712)](https://github.com/PennyLaneAI/pennylane/pull/5712)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
