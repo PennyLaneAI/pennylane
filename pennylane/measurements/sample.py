@@ -15,8 +15,7 @@
 This module contains the qml.sample measurement.
 """
 import functools
-import warnings
-from typing import Sequence, Tuple, Optional, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -42,9 +41,9 @@ def sample(
 
     Args:
         op (Observable or MeasurementValue): a quantum observable object. To get samples
-            for mid-circuit measurements, ``op`` should be a``MeasurementValue``.
+            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
-            op is ``None``
+            op is ``None``.
 
     Returns:
         SampleMP: Measurement process instance
@@ -173,9 +172,6 @@ class SampleMP(SampleMeasurement):
             super().__init__(obs=obs)
             return
 
-        if obs is not None and not obs.is_hermitian:  # None type is also allowed for op
-            warnings.warn(f"{obs.name} might not be hermitian.")
-
         if wires is not None:
             if obs is not None:
                 raise ValueError(
@@ -199,7 +195,7 @@ class SampleMP(SampleMeasurement):
             # Computational basis samples
             return int
         int_eigval_obs = {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-        tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+        tensor_terms = self.obs.obs if isinstance(self.obs, qml.operation.Tensor) else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 

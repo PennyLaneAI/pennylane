@@ -16,16 +16,16 @@ Unit tests for the qubit matrix-based operations.
 """
 # pylint: disable=import-outside-toplevel
 from functools import reduce
+
 import numpy as np
 import pytest
-
 from gate_data import H, I, S, T, X, Z
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.wires import Wires
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane.wires import Wires
 
 
 class TestQubitUnitary:

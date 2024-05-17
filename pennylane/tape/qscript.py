@@ -20,19 +20,14 @@ executed by a device.
 import contextlib
 import copy
 from collections import Counter
-from typing import List, Union, Optional, Sequence
+from typing import List, Optional, Sequence, Union
 
 import pennylane as qml
-from pennylane.measurements import (
-    MeasurementProcess,
-    ProbabilityMP,
-    StateMP,
-    Shots,
-)
-from pennylane.typing import TensorLike
-from pennylane.operation import Observable, Operator, Operation, _UNSET_BATCH_SIZE
+from pennylane.measurements import MeasurementProcess, ProbabilityMP, Shots, StateMP
+from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 _empty_wires = Wires([])
@@ -1065,7 +1060,8 @@ class QuantumScript:
         qasm_str += f"creg c[{len(wires)}];\n"
 
         # get the user applied circuit operations without interface information
-        operations = qml.transforms.convert_to_numpy_parameters(self).operations
+        [transformed_tape], _ = qml.transforms.convert_to_numpy_parameters(self)
+        operations = transformed_tape.operations
 
         if rotations:
             # if requested, append diagonalizing gates corresponding

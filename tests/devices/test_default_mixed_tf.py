@@ -14,10 +14,11 @@
 """
 Tests for the ``default.mixed`` device for the TensorFlow interface
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
 
-import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed
@@ -780,3 +781,57 @@ class TestHighLevelIntegration:
 
         # compare results to results of non-decorated circuit
         assert np.allclose(circuit(x), res)
+
+
+class TestMeasurements:
+    """Tests for measurements with default.mixed"""
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.counts(qml.PauliZ(0)),
+            qml.counts(wires=[0]),
+            qml.sample(qml.PauliX(0)),
+            qml.sample(wires=[1]),
+        ],
+    )
+    def test_measurements_tf(self, measurement):
+        """Test sampling-based measurements work with `default.mixed` for trainable interfaces"""
+        num_shots = 1024
+        dev = qml.device("default.mixed", wires=2, shots=num_shots)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        res = circuit(tf.Variable(0.5))
+
+        assert len(res) == 2 if isinstance(measurement, qml.measurements.CountsMP) else num_shots
+
+    @pytest.mark.parametrize(
+        "meas_op",
+        [qml.PauliX(0), qml.PauliZ(0)],
+    )
+    def test_measurement_diff(self, meas_op):
+        """Test sequence of single-shot expectation values work for derivatives"""
+        num_shots = 64
+        dev = qml.device("default.mixed", shots=[(1, num_shots)], wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.expval(meas_op)
+
+        def cost(angle):
+            return qml.math.hstack(circuit(angle))
+
+        angle = tf.Variable(0.1234)
+        with tf.GradientTape(persistent=True) as tape:
+            res = cost(angle)
+
+        assert isinstance(res, tf.Tensor)
+        assert isinstance(tape.gradient(res, angle), tf.Tensor)
+        assert isinstance(tape.jacobian(res, angle), tf.Tensor)
+        assert len(res) == num_shots

@@ -24,9 +24,8 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math import SProd, s_prod, Prod, Sum
+from pennylane.ops.op_math import Prod, SProd, Sum, s_prod
 from pennylane.wires import Wires
-
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
@@ -1083,20 +1082,6 @@ class TestIntegration:
 
         true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
-
-    def test_non_hermitian_obs_not_supported(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
-        wires = [0, 1]
-        dev = qml.device("default.qubit", wires=wires)
-        sprod_op = SProd(1.0 + 2.0j, qml.RX(1.23, wires=0))
-
-        @qml.qnode(dev)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.expval(sprod_op)
-
-        with pytest.raises(NotImplementedError):
-            my_circ()
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))

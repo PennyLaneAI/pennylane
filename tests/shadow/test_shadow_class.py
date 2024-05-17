@@ -15,8 +15,8 @@
 """Unit tests for the classical shadows class"""
 # pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 
-import pytest
 import numpy as onp
+import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -364,7 +364,10 @@ class TestExpvalEstimation:
 
         H = qml.Hadamard(0) @ qml.Hadamard(2)
 
-        msg = "Observable must have a valid pauli representation."
+        legacy_msg = "Observable must be a linear combination of Pauli observables"
+        new_opmath_msg = "Observable must have a valid pauli representation."
+        msg = new_opmath_msg if qml.operation.active_new_opmath() else legacy_msg
+
         with pytest.raises(ValueError, match=msg):
             shadow.expval(H, k=10)
 

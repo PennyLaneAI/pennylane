@@ -14,12 +14,14 @@
 """
 Unit tests for the ArbitraryStatePreparation template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
+from pennylane.templates.state_preparations.mottonen import _get_alpha_y, gray_code
 
 
 def test_standard_validity():

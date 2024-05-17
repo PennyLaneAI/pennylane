@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
-# pylint: disable=too-many-arguments,too-few-public-methods,comparison-with-callable
-import pytest
 import numpy as np
+
+# pylint: disable=too-many-arguments,too-few-public-methods,comparison-with-callable, use-implicit-booleaness-not-comparison
+import pytest
 
 import pennylane as qml
 from pennylane import qnode
@@ -954,8 +955,9 @@ class TestQubitIntegration:
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    @pytest.mark.parametrize("dtype", ("int32", "int64"))
     def test_projector(
-        self, state, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+        self, state, dev, diff_method, grad_on_execution, device_vjp, tol, interface, dtype
     ):
         """Test that the variance of a projector is correctly returned"""
         kwargs = {
@@ -973,7 +975,7 @@ class TestQubitIntegration:
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
-        P = tf.constant(state)
+        P = tf.constant(state, dtype=dtype)
 
         x, y = 0.765, -0.654
         weights = tf.Variable([x, y], dtype=tf.float64)

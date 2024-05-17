@@ -22,12 +22,12 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.drawer import tape_text
 from pennylane.drawer.tape_text import (
-    _add_grouping_symbols,
     _add_cond_grouping_symbols,
-    _add_mid_measure_grouping_symbols,
-    _add_cwire_measurement_grouping_symbols,
     _add_cwire_measurement,
+    _add_cwire_measurement_grouping_symbols,
+    _add_grouping_symbols,
     _add_measurement,
+    _add_mid_measure_grouping_symbols,
     _add_op,
     _Config,
 )
@@ -584,7 +584,7 @@ single_op_tests_data = [
         qml.expval(
             0.1 * qml.PauliX(0) + 0.2 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) + 0.4 * qml.PauliZ(1)
         ),
-        "0: ───┤ ╭<(((0.10*X)+(0.20*Y))+(0.30*Z))+(0.40*Z)>\n1: ───┤ ╰<(((0.10*X)+(0.20*Y))+(0.30*Z))+(0.40*Z)>",
+        "0: ───┤ ╭<(0.10*X)+(0.20*Y)+(0.30*Z)+(0.40*Z)>\n1: ───┤ ╰<(0.10*X)+(0.20*Y)+(0.30*Z)+(0.40*Z)>",
     ),
     # Operations (both regular and controlled) and nested multi-valued controls
     (qml.ctrl(qml.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),

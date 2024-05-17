@@ -21,7 +21,7 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy",
+    "numpy<2.0",
     "scipy",
     "networkx",
     "rustworkx",
@@ -31,7 +31,7 @@ requirements = [
     "semantic-version>=2.7",
     "autoray>=0.6.1",
     "cachetools",
-    "pennylane-lightning>=0.35",
+    "pennylane-lightning>=0.36",
     "requests",
     "typing_extensions",
 ]
@@ -59,6 +59,7 @@ info = {
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
+            "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },

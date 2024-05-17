@@ -95,6 +95,11 @@ def validate_diff_method(device, diff_method, device_kwargs):
         passthru_devices = dev.capabilities().get("passthru_devices")
         if diff_method == "backprop" and passthru_devices is None:
             pytest.skip(reason="device does not support backprop")
+        return
+
+    config = qml.devices.ExecutionConfig(gradient_method=diff_method)
+    if not dev.supports_derivatives(execution_config=config):
+        pytest.skip(reason="device does not support diff_method")
 
 
 @pytest.fixture(scope="function", name="device")
@@ -221,6 +226,20 @@ def pytest_addoption(parser):
         metavar="KEY=VAL",
         help="Additional device kwargs.",
     )
+    addoption(
+        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
+    )
+
+
+# pylint: disable=eval-used
+@pytest.fixture(scope="session", autouse=True)
+def disable_opmath_if_requested(request):
+    """Check the value of the --disable-opmath option and turn off
+    if True before running the tests"""
+    disable_opmath = request.config.getoption("--disable-opmath")
+    # value from yaml file is a string, convert to boolean
+    if eval(disable_opmath):
+        qml.operation.disable_new_opmath(warn=False)
 
 
 def pytest_generate_tests(metafunc):
