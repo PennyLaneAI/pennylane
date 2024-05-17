@@ -783,6 +783,7 @@ def test_error_raised_for_missing_molecule_information():
     ):
         qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
 
+
 @pytest.mark.parametrize(
     ("method"),
     [

@@ -1023,7 +1023,6 @@ def _(
             f"Please set 'unit' to 'Bohr' or 'Angstrom'."
         )
 
-
     return _molecular_hamiltonian(
         symbols,
         coordinates=coordinates,
