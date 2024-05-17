@@ -28,7 +28,7 @@ on:
         description: Indicate if numpy 2.0+ should be installed or not
         required: false
         type: boolean
-        default: 'false'
+        default: false
       numpy_2_version:
         description: The version of numpy 2.0 to use in order to run unit tests
         required: false
