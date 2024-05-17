@@ -9,6 +9,18 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
+  Instead, ``qml.simplify()`` can be called on the constructed operator.
+
+  - Deprecated in v0.37
+  - Will be removed in v0.39
+
+* ``qml.transforms.map_batch_transform`` is deprecated, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+
+  - Deprecated in v0.37
+  - Will be removed in v0.38
+
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -50,23 +62,22 @@ Other deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
-* ``qml.from_qasm_file`` is deprecated. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
+Completed deprecation cycles
+----------------------------
+
+* ``qml.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
 
   >>> with open("test.qasm", "r") as f:
   ...     circuit = qml.from_qasm(f.read())
 
   - Deprecated in v0.36
-  - Will be removed in v0.37
+  - Removed in v0.37
 
 * The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
-  libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
-  ``from_qasm``, etc.
+  libraries. It has been removed in favour of the more specific functions ``from_qiskit``, ``from_qasm``, etc.
 
   - Deprecated in v0.36
-  - Will be removed in v0.37
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.37
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
   ``gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
