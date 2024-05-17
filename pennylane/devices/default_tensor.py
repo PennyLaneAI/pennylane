@@ -23,8 +23,8 @@ import numpy as np
 
 try:
     import quimb.tensor as qtn
-except ImportError as e:
-    raise ImportError("default.tensor device requires the quimb package") from e
+except ImportError as err:
+    raise ImportError("default.tensor device requires the quimb package") from err
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
@@ -39,7 +39,6 @@ from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMeasu
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
-from pennylane.wires import Wires
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
