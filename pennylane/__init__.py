@@ -223,9 +223,6 @@ def device(name, *args, **kwargs):
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
       simulator of Clifford circuits.
 
-    * :mod:`'default.tensor' <pennylane.devices.default_tensor>`: a simple
-      simulator of quantum circuits based on tensor networks.
-
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
     details. To list all currently installed devices, run

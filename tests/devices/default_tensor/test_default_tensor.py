@@ -26,8 +26,6 @@ quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
 
-from pennylane.devices.default_tensor import DefaultTensor
-
 # gates for which device support is tested
 ops = {
     "Identity": qml.Identity(wires=[0]),
@@ -127,17 +125,17 @@ all_obs = obs.keys()
 
 def test_name():
     """Test the name of DefaultTensor."""
-    assert DefaultTensor().name == "default.tensor"
+    assert qml.device("default.tensor").name == "default.tensor"
 
 
 def test_wires():
     """Test that a device can be created with wires."""
-    assert DefaultTensor().wires is None
-    assert DefaultTensor(wires=2).wires == qml.wires.Wires([0, 1])
-    assert DefaultTensor(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
+    assert qml.device("default.tensor").wires is None
+    assert qml.device("default.tensor", wires=2).wires == qml.wires.Wires([0, 1])
+    assert qml.device("default.tensor", wires=[0, 2]).wires == qml.wires.Wires([0, 2])
 
     with pytest.raises(AttributeError):
-        DefaultTensor().wires = [0, 1]
+        qml.device("default.tensor").wires = [0, 1]
 
 
 @pytest.mark.parametrize("max_bond_dim", [None, 10])
@@ -148,7 +146,7 @@ def test_kwargs(max_bond_dim, cutoff, contract):
 
     kwargs = {"max_bond_dim": max_bond_dim, "cutoff": cutoff, "contract": contract}
 
-    dev = DefaultTensor(**kwargs)
+    dev = qml.device("default.tensor", **kwargs)
 
     _, config = dev.preprocess()
     assert config.device_options["method"] == "mps"
@@ -161,37 +159,37 @@ def test_invalid_kwarg():
     """Test an invalid keyword argument."""
     with pytest.raises(
         TypeError,
-        match=f"Unexpected argument: fake_arg during initialization of the default.tensor device.",
+        match="Unexpected argument: fake_arg during initialization of the default.tensor device.",
     ):
-        DefaultTensor(fake_arg=None)
+        qml.device("default.tensor", fake_arg=None)
 
 
 @pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
 def test_data_type(dtype):
     """Test the data type."""
-    assert DefaultTensor(dtype=dtype).dtype == dtype
+    assert qml.device("default.tensor", dtype=dtype).dtype == dtype
 
 
 def test_ivalid_data_type():
     """Test that data type can only be np.complex64 or np.complex128."""
     with pytest.raises(TypeError):
-        DefaultTensor(dtype=float)
+        qml.device("default.tensor", dtype=float)
 
 
 def test_invalid_method():
     """Test an invalid method."""
     method = "invalid_method"
     with pytest.raises(ValueError, match=f"Unsupported method: {method}"):
-        DefaultTensor(method=method)
+        qml.device("default.tensor", method=method)
 
 
 def test_invalid_shots():
     """Test that an error is raised if finite number of shots are requestd."""
     with pytest.raises(ValueError, match="default.tensor does not support finite shots."):
-        DefaultTensor(shots=5)
+        qml.device("default.tensor", shots=5)
 
     with pytest.raises(AttributeError):
-        DefaultTensor().shots = 10
+        qml.device("default.tensor").shots = 10
 
 
 class TestSupportedGatesAndObservables:
@@ -201,7 +199,7 @@ class TestSupportedGatesAndObservables:
     def test_supported_gates_can_be_implemented(self, operation):
         """Test that the device can implement all its supported gates."""
 
-        dev = DefaultTensor(wires=qml.wires.Wires(range(4)), method="mps")
+        dev = qml.device("default.tensor", wires=4, method="mps")
 
         tape = qml.tape.QuantumScript(
             [ops[operation]],
@@ -215,7 +213,7 @@ class TestSupportedGatesAndObservables:
     def test_supported_observables_can_be_implemented(self, observable):
         """Test that the device can implement all its supported observables."""
 
-        dev = DefaultTensor(wires=qml.wires.Wires(range(3)), method="mps")
+        dev = qml.device("default.tensor", wires=3, method="mps")
 
         if observable == "Projector":
             for o in obs[observable]:
@@ -237,11 +235,11 @@ class TestSupportedGatesAndObservables:
     def test_not_implemented_meas(self):
         """Tests that support only exists for `qml.expval` and `qml.var` so far."""
 
-        ops = [qml.Identity(0)]
+        op = [qml.Identity(0)]
         measurements = [qml.probs(qml.PauliZ(0))]
-        tape = qml.tape.QuantumScript(ops, measurements)
+        tape = qml.tape.QuantumScript(op, measurements)
 
-        dev = DefaultTensor(wires=tape.wires)
+        dev = qml.device("default.tensor", wires=tape.wires)
 
         with pytest.raises(NotImplementedError):
             dev.execute(tape)
@@ -252,12 +250,12 @@ class TestSupportsDerivatives:
 
     def test_support_derivatives(self):
         """Test that the device does not support derivatives yet."""
-        dev = DefaultTensor()
+        dev = qml.device("default.tensor")
         assert not dev.supports_derivatives()
 
     def test_compute_derivatives(self):
         """Test that an error is raised if the `compute_derivatives` method is called."""
-        dev = DefaultTensor()
+        dev = qml.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of derivatives has yet to be implemented for the default.tensor device.",
@@ -266,7 +264,7 @@ class TestSupportsDerivatives:
 
     def test_execute_and_compute_derivatives(self):
         """Test that an error is raised if `execute_and_compute_derivative` method is called."""
-        dev = DefaultTensor()
+        dev = qml.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of derivatives has yet to be implemented for the default.tensor device.",
@@ -275,12 +273,12 @@ class TestSupportsDerivatives:
 
     def test_supports_vjp(self):
         """Test that the device does not support VJP yet."""
-        dev = DefaultTensor()
+        dev = qml.device("default.tensor")
         assert not dev.supports_vjp()
 
     def test_compute_vjp(self):
         """Test that an error is raised if `compute_vjp` method is called."""
-        dev = DefaultTensor()
+        dev = qml.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of vector-Jacobian product has yet to be implemented for the default.tensor device.",
@@ -289,7 +287,7 @@ class TestSupportsDerivatives:
 
     def test_execute_and_compute_vjp(self):
         """Test that an error is raised if `execute_and_compute_vjp` method is called."""
-        dev = DefaultTensor()
+        dev = qml.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of vector-Jacobian product has yet to be implemented for the default.tensor device.",

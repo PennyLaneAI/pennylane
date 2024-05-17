@@ -29,15 +29,17 @@ quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
 
-from pennylane.devices.default_tensor import DefaultTensor
+# pylint: disable=too-many-arguments, redefined-outer-name
 
 
 @pytest.fixture(params=[np.complex64, np.complex128])
 def dev(request):
+    """Device fixture."""
     return qml.device("default.tensor", wires=3, dtype=request.param)
 
 
 def calculate_reference(tape):
+    """Calculate the reference value of the tape using DefaultQubit."""
     dev = DefaultQubit(max_workers=1)
     program, _ = dev.preprocess()
     tapes, transf_fn = program([tape])
@@ -46,6 +48,7 @@ def calculate_reference(tape):
 
 
 def execute(dev, tape):
+    """Execute the tape on the device and return the result."""
     results = dev.execute(tape)
     return results
 
@@ -104,7 +107,7 @@ class TestExpval:
     )
     def test_custom_wires(self, theta, phi, tol, wires):
         """Tests custom wires."""
-        dev = DefaultTensor(wires=wires, dtype=np.complex128)
+        dev = qml.device("default.tensor", wires=wires, dtype=np.complex128)
 
         tape = qml.tape.QuantumScript(
             [
@@ -125,6 +128,7 @@ class TestExpval:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "Obs, Op, expected_fn",
         [
@@ -351,7 +355,7 @@ class TestTensorExpval:
 
 
 @pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
-def test_multi_qubit_gates(theta, phi, dev, tol):
+def test_multi_qubit_gates(theta, phi, dev):
     """Tests a simple circuit with multi-qubit gates."""
 
     ops = [
@@ -389,7 +393,7 @@ def test_multi_qubit_gates(theta, phi, dev, tol):
     tape = qml.tape.QuantumScript(ops=ops, measurements=meas)
 
     reference_val = calculate_reference(tape)
-    dev = DefaultTensor(wires=tape.wires, dtype=np.complex128)
+    dev = qml.device("default.tensor", wires=tape.wires, dtype=np.complex128)
     calculated_val = dev.execute(tape)
 
     assert np.allclose(calculated_val, reference_val)
