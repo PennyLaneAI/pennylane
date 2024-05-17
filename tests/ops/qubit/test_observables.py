@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for qubit observables."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access, use-implicit-booleaness-not-comparison
 import functools
 import pickle
 
@@ -540,6 +540,44 @@ class TestProjector:
         assert qml.equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
 
+    @pytest.mark.jax
+    def test_jit_measurement(self):
+        """Test that the measurement of a projector can be jitted."""
+
+        import jax
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(state):
+            qml.X(1)
+            return qml.expval(qml.Projector(state, wires=(0, 1)))
+
+        state00 = jax.numpy.array([0, 0])
+        out00 = circuit(state00)
+        assert qml.math.allclose(out00, 0)
+        state01 = jax.numpy.array([0, 1])
+        out01 = circuit(state01)
+        assert qml.math.allclose(out01, 1)
+        state10 = jax.numpy.array([True, False])
+        out10 = circuit(state10)
+        assert qml.math.allclose(out10, 0)
+
+        with pytest.raises(ValueError, match=r"Basis state must consist of integers or booleans."):
+            circuit(jax.numpy.array([0.5, 0.6]))
+
+    @pytest.mark.jax
+    def test_jit_matrix(self):
+        """Test that computing the matrix of a projector is jittable."""
+
+        import jax
+
+        basis_state = jax.numpy.array([0, 1])
+        f = jax.jit(BasisStateProjector.compute_matrix)
+        out = f(basis_state)
+
+        expected = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        assert qml.math.allclose(out, expected)
+
 
 class TestBasisStateProjector:
     """Tests for the basis state projector observable."""
@@ -715,6 +753,24 @@ class TestStateVectorProjector:
         assert projector.label(cache=cache) == "P(M1)"  # Does not check repetition (not needed)
         assert len(cache["matrices"]) == 2
         assert np.allclose(cache["matrices"][1], projector.parameters[0])
+
+    @pytest.mark.jax
+    def test_jit_execution(self):
+        """Test that executing a StateVectorProjector can be jitted."""
+
+        import jax
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(state):
+            return qml.expval(qml.Projector(state, wires=(0, 1)))
+
+        basis_state = jax.numpy.array([1, 1, 1, 1.0]) / 2
+        out = circuit(basis_state)
+        assert qml.math.allclose(out, 0.25)
+
+        basis_state2 = jax.numpy.array([0, 0, 0, 0])
+        assert qml.math.allclose(circuit(basis_state2), 0)
 
 
 label_data = [
