@@ -23,21 +23,26 @@ import pennylane as qml
 from pennylane.capture.measure import _get_measure_primitive
 from pennylane.capture.primitives import _get_abstract_measurement
 from pennylane.measurements import (
+    ClassicalShadowMP,
     DensityMatrixMP,
     ExpectationMP,
     MidMeasureMP,
+    MutualInfoMP,
     ProbabilityMP,
+    PurityMP,
     SampleMP,
+    ShadowExpvalMP,
     StateMP,
     VarianceMP,
+    VnEntropyMP,
 )
-
-measure_prim = _get_measure_primitive()
-AbstractMeasurement = _get_abstract_measurement()
 
 jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.jax
+
+measure_prim = _get_measure_primitive()
+AbstractMeasurement = _get_abstract_measurement()
 
 
 @pytest.fixture(autouse=True)
@@ -45,6 +50,41 @@ def enable_disable_plxpr():
     qml.capture.enable()
     yield
     qml.capture.disable()
+
+
+# pylint: disable=unnecessary-lambda
+creation_funcs = [
+    lambda: qml.state(),
+    lambda: qml.density_matrix(wires=(0, 1)),
+    lambda: qml.expval(qml.X(0)),
+    lambda: ExpectationMP(wires=qml.wires.Wires((0, 1)), eigvals=np.array([-1.0, -0.5, 0.5, 1.0])),
+    # lambda : qml.expval(qml.measure(0)+qml.measure(1)),
+    lambda: qml.var(qml.X(0)),
+    lambda: VarianceMP(wires=qml.wires.Wires((0, 1)), eigvals=np.array([-1.0, -0.5, 0.5, 1.0])),
+    # lambda : qml.var(qml.measure(0)+qml.measure(1)),
+    lambda: qml.probs(wires=(0, 1)),
+    lambda: qml.probs(op=qml.X(0)),
+    # lambda : qml.probs(op=[qml.measure(0), qml.measure(1)]),
+    lambda: ProbabilityMP(wires=qml.wires.Wires((0, 1)), eigvals=np.array([-1.0, -0.5, 0.5, 1.0])),
+    lambda: qml.sample(wires=(3, 4)),
+    lambda: qml.shadow_expval(np.array(2) * qml.X(0)),
+    lambda: qml.vn_entropy(wires=(1, 2)),
+    lambda: qml.purity(wires=(0, 1)),
+    lambda: qml.mutual_info(wires0=(1, 3), wires1=(2, 4), log_base=2),
+    lambda: qml.classical_shadow(wires=(0, 1), seed=84),
+]
+
+
+@pytest.mark.parametrize("func", creation_funcs)
+def test_capture_and_eval(func):
+    """Test that captured jaxpr can be evaluated to restore the initial measurement."""
+
+    mp = func()
+
+    jaxpr = jax.make_jaxpr(func)()
+    out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0]
+
+    assert qml.equal(mp, out)
 
 
 def test_state():
@@ -61,7 +101,7 @@ def test_state():
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)
     assert mp.n_wires == 0
-    assert mp.abstract_eval == StateMP._abstract_eval
+    assert mp._abstract_eval == StateMP._abstract_eval
 
     assert jaxpr.eqns[1].primitive == measure_prim
     assert jaxpr.eqns[1].params == {"num_device_wires": 4, "shots": qml.measurements.Shots(None)}
@@ -84,7 +124,7 @@ def test_density_matrix(wires, shape):
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)
     assert mp.n_wires == len(wires)
-    assert mp.abstract_eval == DensityMatrixMP._abstract_eval
+    assert mp._abstract_eval == DensityMatrixMP._abstract_eval
 
     assert jaxpr.eqns[1].primitive == measure_prim
     assert jaxpr.eqns[1].params == {"num_device_wires": 4, "shots": qml.measurements.Shots(None)}
@@ -92,7 +132,7 @@ def test_density_matrix(wires, shape):
 
 
 @pytest.mark.parametrize("m_type", (ExpectationMP, VarianceMP))
-class TestExpval:
+class TestExpvalVar:
     """Tests for capturing an expectation value."""
 
     def test_capture_obs(self, m_type):
@@ -113,7 +153,7 @@ class TestExpval:
         am = jaxpr.eqns[1].outvars[0].aval
         assert isinstance(am, AbstractMeasurement)
         assert am.n_wires is None
-        assert am.abstract_eval == m_type._abstract_eval
+        assert am._abstract_eval == m_type._abstract_eval
 
         assert jaxpr.eqns[2].primitive == measure_prim
         assert jaxpr.eqns[2].params == {"num_device_wires": 0, "shots": qml.measurements.Shots(50)}
@@ -140,7 +180,7 @@ class TestExpval:
         am = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(am, AbstractMeasurement)
         assert am.n_wires == 2
-        assert am.abstract_eval == m_type._abstract_eval
+        assert am._abstract_eval == m_type._abstract_eval
 
         assert jaxpr.eqns[1].primitive == measure_prim
         assert jaxpr.eqns[1].invars == jaxpr.eqns[0].outvars
@@ -165,7 +205,7 @@ class TestExpval:
         am0 = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(am0, AbstractMeasurement)
         assert am0.n_wires == 1
-        assert am0.abstract_eval == MidMeasureMP._abstract_eval
+        assert am0._abstract_eval == MidMeasureMP._abstract_eval
 
         assert jaxpr.eqns[1].primitive == measure_prim
         assert jaxpr.eqns[1].invars == jaxpr.eqns[0].outvars
@@ -177,7 +217,7 @@ class TestExpval:
         aval1 = jaxpr.eqns[2].outvars[0].aval
         assert isinstance(aval1, AbstractMeasurement)
         assert aval1.n_wires == 1
-        assert aval1.abstract_eval == m_type._abstract_eval
+        assert aval1._abstract_eval == m_type._abstract_eval
 
         assert jaxpr.eqns[3].primitive == measure_prim
         assert jaxpr.eqns[3].params == {
@@ -208,7 +248,7 @@ class TestProbs:
         mp = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
         assert mp.n_wires == len(wires)
-        assert mp.abstract_eval == ProbabilityMP._abstract_eval
+        assert mp._abstract_eval == ProbabilityMP._abstract_eval
 
         assert jaxpr.eqns[1].primitive == measure_prim
         assert jaxpr.eqns[1].params == {"num_device_wires": 4, "shots": qml.measurements.Shots(50)}
@@ -232,7 +272,7 @@ class TestProbs:
         mp = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
         assert mp.n_wires == 2
-        assert mp.abstract_eval == ProbabilityMP._abstract_eval
+        assert mp._abstract_eval == ProbabilityMP._abstract_eval
 
         assert jaxpr.eqns[1].primitive == measure_prim
         assert jaxpr.eqns[1].invars == jaxpr.eqns[0].outvars
@@ -258,7 +298,7 @@ class TestProbs:
             mp = jaxpr.eqns[i].outvars[0].aval
             assert isinstance(mp, AbstractMeasurement)
             assert mp.n_wires == 1
-            assert mp.abstract_eval == MidMeasureMP._abstract_eval
+            assert mp._abstract_eval == MidMeasureMP._abstract_eval
 
         for i in [1, 3]:
             assert jaxpr.eqns[i].primitive == measure_prim
@@ -272,7 +312,7 @@ class TestProbs:
         out = jaxpr.eqns[4].outvars[0].aval
         assert isinstance(out, AbstractMeasurement)
         assert out.n_wires == 2
-        assert out.abstract_eval == ProbabilityMP._abstract_eval
+        assert out._abstract_eval == ProbabilityMP._abstract_eval
 
         assert jaxpr.eqns[5].primitive == measure_prim
         assert jaxpr.eqns[5].invars == jaxpr.eqns[4].outvars
@@ -299,7 +339,7 @@ class TestSample:
         mp = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
         assert mp.n_wires == len(wires)
-        assert mp.abstract_eval == SampleMP._abstract_eval
+        assert mp._abstract_eval == SampleMP._abstract_eval
 
         assert jaxpr.eqns[1].primitive == measure_prim
         assert jaxpr.eqns[1].params == {"num_device_wires": 4, "shots": qml.measurements.Shots(50)}
@@ -325,7 +365,7 @@ class TestSample:
         mp = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
         assert mp.n_wires == 2
-        assert mp.abstract_eval == SampleMP._abstract_eval
+        assert mp._abstract_eval == SampleMP._abstract_eval
 
         assert jaxpr.eqns[1].primitive == measure_prim
         assert jaxpr.eqns[1].invars == jaxpr.eqns[0].outvars
@@ -351,7 +391,7 @@ class TestSample:
             mp = jaxpr.eqns[i].outvars[0].aval
             assert isinstance(mp, AbstractMeasurement)
             assert mp.n_wires == 1
-            assert mp.abstract_eval == MidMeasureMP._abstract_eval
+            assert mp._abstract_eval == MidMeasureMP._abstract_eval
 
         for i in [1, 3]:
             assert jaxpr.eqns[i].primitive == measure_prim
@@ -365,9 +405,108 @@ class TestSample:
         out = jaxpr.eqns[4].outvars[0].aval
         assert isinstance(out, AbstractMeasurement)
         assert out.n_wires == 2
-        assert out.abstract_eval == SampleMP._abstract_eval
+        assert out._abstract_eval == SampleMP._abstract_eval
 
         assert jaxpr.eqns[5].primitive == measure_prim
         assert jaxpr.eqns[5].invars == jaxpr.eqns[4].outvars
         out = jaxpr.eqns[5].outvars[0].aval
         assert out == jax.core.ShapedArray((50, 2), jax.numpy.int32)
+
+
+def test_shadow_expval():
+    """Test that the shadow expval of an observable can be captured."""
+
+    def f():
+        mp = qml.shadow_expval(qml.X(0), seed=887, k=4)
+        return qml.capture.measure(mp, shots=50)
+
+    jaxpr = jax.make_jaxpr(f)()
+
+    assert len(jaxpr.eqns) == 3
+    assert jaxpr.eqns[0].primitive == qml.X._primitive
+
+    assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
+    assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
+    assert jaxpr.eqns[1].params == {"seed": 887, "k": 4}
+
+    am = jaxpr.eqns[1].outvars[0].aval
+    assert isinstance(am, AbstractMeasurement)
+    assert am.n_wires is None
+    assert am._abstract_eval == ShadowExpvalMP._abstract_eval
+
+    assert jaxpr.eqns[2].primitive == measure_prim
+    assert jaxpr.eqns[2].params == {"num_device_wires": 0, "shots": qml.measurements.Shots(50)}
+    assert jaxpr.eqns[2].invars == jaxpr.eqns[1].outvars
+    out_aval = jaxpr.eqns[2].outvars[0].aval
+    assert out_aval == jax.core.ShapedArray((), jax.numpy.float32)
+
+
+@pytest.mark.parametrize("mtype, kwargs", [(VnEntropyMP, {"log_base": 2}), (PurityMP, {})])
+def test_qinfo_measurements(mtype, kwargs):
+    """Test the capture of a vn entropy and purity measurement."""
+
+    def f():
+        mp = mtype(wires=qml.wires.Wires([0, 1]), **kwargs)
+        return qml.capture.measure(mp, num_device_wires=4)
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert len(jaxpr.eqns) == 2
+
+    assert jaxpr.eqns[0].primitive == mtype._wires_primitive
+    assert jaxpr.eqns[0].params == kwargs
+    assert len(jaxpr.eqns[0].invars) == 2
+    mp = jaxpr.eqns[0].outvars[0].aval
+    assert isinstance(mp, AbstractMeasurement)
+    assert mp.n_wires == 2
+    assert mp._abstract_eval == mtype._abstract_eval
+
+    assert jaxpr.eqns[1].primitive == measure_prim
+    assert jaxpr.eqns[1].params == {"num_device_wires": 4, "shots": qml.measurements.Shots(None)}
+    assert jaxpr.eqns[1].outvars[0].aval == jax.core.ShapedArray((), jax.numpy.float32)
+
+
+def test_MutualInfo():
+    """Test the capture of a vn entropy and purity measurement."""
+
+    def f():
+        mp = qml.mutual_info(wires0=[0, 1], wires1=[2, 3], log_base=2)
+        return qml.capture.measure(mp, num_device_wires=4)
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert len(jaxpr.eqns) == 2
+
+    assert jaxpr.eqns[0].primitive == MutualInfoMP._wires_primitive
+    assert jaxpr.eqns[0].params == {"log_base": 2, "n_wires0": 2}
+    assert len(jaxpr.eqns[0].invars) == 4
+    mp = jaxpr.eqns[0].outvars[0].aval
+    assert isinstance(mp, AbstractMeasurement)
+    assert mp._abstract_eval == MutualInfoMP._abstract_eval
+
+    assert jaxpr.eqns[1].primitive == measure_prim
+    assert jaxpr.eqns[1].params == {"num_device_wires": 4, "shots": qml.measurements.Shots(None)}
+    assert jaxpr.eqns[1].outvars[0].aval == jax.core.ShapedArray((), jax.numpy.float32)
+
+
+def test_ClassicalShadow():
+    """Test that the classical shadow measurement can be captured."""
+
+    def f():
+        mp = qml.classical_shadow(wires=(0, 1, 2), seed=95)
+        return qml.capture.measure(mp, shots=50, num_device_wires=4)
+
+    jaxpr = jax.make_jaxpr(f)()
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert len(jaxpr.eqns) == 2
+
+    assert jaxpr.eqns[0].primitive == ClassicalShadowMP._wires_primitive
+    assert jaxpr.eqns[0].params == {"seed": 95}
+    assert len(jaxpr.eqns[0].invars) == 3
+    mp = jaxpr.eqns[0].outvars[0].aval
+    assert isinstance(mp, AbstractMeasurement)
+    assert mp.n_wires == 3
+    assert mp._abstract_eval == ClassicalShadowMP._abstract_eval
+
+    assert jaxpr.eqns[1].primitive == measure_prim
+    assert jaxpr.eqns[1].params == {"num_device_wires": 4, "shots": qml.measurements.Shots(50)}
+    assert jaxpr.eqns[1].outvars[0].aval == jax.core.ShapedArray((2, 50, 3), np.int8)

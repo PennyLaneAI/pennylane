@@ -16,7 +16,7 @@ This submodule defines the abstract classes and primitives for capture.
 """
 
 from functools import lru_cache
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 import pennylane as qml
 
@@ -88,13 +88,51 @@ def _get_abstract_measurement():
         raise ImportError("Jax is required for plxpr.")
 
     class AbstractMeasurement(jax.core.AbstractValue):
-        """An abstract measurement."""
+        """An abstract measurement.
 
-        def __init__(self, abstract_eval: Callable, n_wires: Optional[int] = None):
-            self.abstract_eval = abstract_eval
-            self.n_wires = n_wires
+        Args:
+            abstract_eval (Callable): See :meth:`~.MeasurementProcess._abstract_eval`.  A function of
+               ``n_wires``, ``has_eigvals``, ``num_device_wires`` and ``shots`` that returns a shape
+               and numeric type.
+            n_wires=None (Optional[int]): the number of wires
+
+
+        """
+
+        def __init__(
+            self, abstract_eval: Callable, n_wires: Optional[int] = None, has_eigvals: bool = False
+        ):
+            self._abstract_eval = abstract_eval
+            self._n_wires = n_wires
+            self.has_eigvals: bool = has_eigvals
+
+        def abstract_eval(self, num_device_wires: int, shots: int) -> Tuple[Tuple, type]:
+            """Calculate the shape and dtype for an evaluation with specified number of device
+            wires and shots.
+
+            """
+            return self._abstract_eval(
+                n_wires=self._n_wires,
+                has_eigvals=self.has_eigvals,
+                num_device_wires=num_device_wires,
+                shots=shots,
+            )
+
+        @property
+        def n_wires(self) -> Optional[int]:
+            """The number of wires for a wire based measurement.
+
+            Options are:
+            * ``None``:  The measurement is observable based or single mcm based
+            * ``0``: The measurement is broadcasted across all available devices wires
+            * ``int>0``: A wire or mcm based measurement with specified wires or mid circuit measurements.
+
+            """
+            return self._n_wires
 
         def __repr__(self):
+            if self.has_eigvals:
+                return f"AbstractMeasurement(n_wires={self.n_wires}, has_eigvals=True)"
             return f"AbstractMeasurement(n_wires={self.n_wires})"
 
         # pylint: disable=missing-function-docstring
@@ -230,6 +268,6 @@ def create_measurement_wires_primitive(
     def _(*args, has_eigvals=False, **_):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         n_wires = len(args) - 1 if has_eigvals else len(args)
-        return abstract_type(abstract_eval, n_wires=n_wires)
+        return abstract_type(abstract_eval, n_wires=n_wires, has_eigvals=has_eigvals)
 
     return primitive

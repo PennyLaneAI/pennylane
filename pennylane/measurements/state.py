@@ -143,7 +143,11 @@ class StateMP(StateMeasurement):
 
     @classmethod
     def _abstract_eval(
-        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
     ):
         n_wires = n_wires or num_device_wires
         shape = (2**n_wires,)
@@ -204,7 +208,11 @@ class DensityMatrixMP(StateMP):
 
     @classmethod
     def _abstract_eval(
-        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
     ):
         n_wires = n_wires or num_device_wires
         shape = (2**n_wires, 2**n_wires)

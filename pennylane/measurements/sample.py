@@ -186,20 +186,30 @@ class SampleMP(SampleMeasurement):
 
     @classmethod
     def _abstract_eval(
-        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
     ):
         if shots is None:
             raise ValueError("finite shots are required to SampleMP")
-        dtype = float if n_wires is None else int
+        print(has_eigvals, n_wires)
+        dtype = float if n_wires is None or has_eigvals else int
+
         if n_wires == 0:
-            n_wires = num_device_wires
-        n_wires = n_wires or 1  # if no wires, will have a single output dimension
+            dim = num_device_wires
+        elif has_eigvals or n_wires is None:
+            dim = 1
+        else:
+            dim = n_wires
 
         shape = []
         if shots != 1:
             shape.append(shots)
-        if n_wires != 1:
-            shape.append(n_wires)
+        if dim != 1:
+            shape.append(dim)
+        print(shape)
         return shape, dtype
 
     @property

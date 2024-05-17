@@ -168,7 +168,11 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     # pylint: disable=unused-argument
     @classmethod
     def _abstract_eval(
-        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
     ) -> tuple:
         """Calculate the shape and dtype that will be returned when a measurement is performed.
 
@@ -215,7 +219,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         self.id = id
 
         if wires is not None:
-            if len(wires) == 0:
+            if not qml.capture.enabled() and len(wires) == 0:
                 raise ValueError("Cannot set an empty list of wires.")
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")

@@ -46,8 +46,8 @@ def _get_measure_primitive():
     measure_prim = jax.core.Primitive("measure")
     measure_prim.multiple_results = True
 
-    def trivial_processing(*results):
-        return results
+    # def trivial_processing(*results):
+    #    return results
 
     # pylint: disable=unused-argument
     @measure_prim.def_impl
@@ -55,7 +55,9 @@ def _get_measure_primitive():
         # depends on the jax interpreter
         if not all(isinstance(m, qml.measurements.MidMeasureMP) for m in measurements):
             raise NotImplementedError("requires an interpreter to perform a measurement.")
-        return qml.measurements.MeasurementValue(measurements, trivial_processing)
+        raise NotImplementedError("currently causes jax to enter an infinite loop")
+        # TODO: figure out how to make this return a measurement value
+        # return qml.measurements.MeasurementValue(measurements, trivial_processing)
 
     # pylint: disable=unused-argument
     @measure_prim.def_abstract_eval
@@ -64,18 +66,14 @@ def _get_measure_primitive():
         shapes = []
         if not shots:
             for m in measurements:
-                shape, dtype = m.abstract_eval(
-                    n_wires=m.n_wires, shots=None, num_device_wires=num_device_wires
-                )
-                shapes.append(jax.core.ShapedArray(shape, dtype_map[dtype]))
+                shape, dtype = m.abstract_eval(shots=None, num_device_wires=num_device_wires)
+                shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
             return shapes
 
         for s in shots:
             for m in measurements:
-                shape, dtype = m.abstract_eval(
-                    n_wires=m.n_wires, shots=s, num_device_wires=num_device_wires
-                )
-                shapes.append(jax.core.ShapedArray(shape, dtype_map[dtype]))
+                shape, dtype = m.abstract_eval(shots=s, num_device_wires=num_device_wires)
+                shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
         return shapes
 
     return measure_prim
