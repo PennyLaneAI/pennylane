@@ -46,13 +46,17 @@ class TestInitialization:
         assert qs.batch_size is None
         assert qs._obs_sharing_wires is None
         assert qs._obs_sharing_wires_id is None
-        assert qs.obs_sharing_wires == []
-        assert qs.obs_sharing_wires_id == []
         assert qs.wires == qml.wires.Wires([])
         assert qs.num_wires == 0
         assert qs.samples_computational_basis is False
-        assert len(qs.obs_sharing_wires) == 0
-        assert len(qs.obs_sharing_wires_id) == 0
+
+    def test_empty_sharing_wires(self):
+        """Test public sharing wires and id are empty lists if nothing is provided"""
+        qs = QuantumScript()
+        assert qs.obs_sharing_wires == []
+
+        qs = QuantumScript()
+        assert qs.obs_sharing_wires_id == []
 
     @pytest.mark.parametrize(
         "ops",
