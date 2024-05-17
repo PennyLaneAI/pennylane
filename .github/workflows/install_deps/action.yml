@@ -75,10 +75,10 @@ runs:
 
     - name: Install numpy 2.0 version
       shell: bash
-      if: inputs.install_numpy_2 == "true"
+      if: inputs.install_numpy_2 == true
       env:
-        NUMPY_VERSION: ${{ inputs.numpy_2_version != '' && format('=={0}', inputs.numpy_2_version) || '' }}
-      run: pip install "numpy${{ env.NUMPY_VERSION }}"
+        NUMPY2_VERSION: ${{ inputs.numpy_2_version != '' && format('=={0}', inputs.numpy_2_version) || '' }}
+      run: pip install "numpy${{ env.NUMPY2_VERSION }}"
 
     - name: Install PyTorch
       shell: bash
