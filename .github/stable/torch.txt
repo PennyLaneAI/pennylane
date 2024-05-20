@@ -1,4 +1,5 @@
 appdirs==1.4.4
+astroid==2.6.6
 autograd==1.6.2
 autoray==0.6.9
 black==24.4.2
@@ -29,8 +30,10 @@ iniconfig==2.0.0
 isort==5.13.2
 Jinja2==3.1.4
 kiwisolver==1.4.5
+lazy-object-proxy==1.10.0
 MarkupSafe==2.1.5
 matplotlib==3.9.0
+mccabe==0.6.1
 mpmath==1.3.0
 mypy-extensions==1.0.0
 networkx==3.2.1
@@ -46,8 +49,9 @@ pluggy==1.5.0
 pre-commit==3.7.1
 py==1.11.0
 py-cpuinfo==9.0.0
+pylint==2.7.4
 pyparsing==3.1.2
-pytest==8.2.0
+pytest==8.2.1
 pytest-benchmark==4.0.0
 pytest-cov==5.0.0
 pytest-forked==1.6.0
@@ -57,7 +61,7 @@ python-dateutil==2.9.0.post0
 pytorch-triton-rocm==2.3.0
 PyYAML==6.0.1
 qdldl==0.1.7.post2
-requests==2.31.0
+requests==2.32.0
 rustworkx==0.14.2
 scipy==1.11.4
 scs==3.2.4.post1
@@ -70,4 +74,5 @@ torch==2.3.0+rocm6.0
 typing_extensions==4.11.0
 urllib3==2.2.1
 virtualenv==20.26.2
+wrapt==1.12.1
 zipp==3.18.2
