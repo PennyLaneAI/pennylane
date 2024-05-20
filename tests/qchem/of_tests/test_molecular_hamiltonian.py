@@ -200,6 +200,7 @@ def test_building_hamiltonian_molecule_class(
                     Z(1) @ Z(2),
                     Z(1) @ Z(3),
                     Z(2) @ Z(3),
+
                 ],
             ),
         ),
@@ -655,6 +656,9 @@ def test_diff_hamiltonian_error():
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
+    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
+        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
+
     with pytest.raises(
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
     ):
@@ -669,6 +673,9 @@ def test_diff_hamiltonian_error_molecule_class():
 
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+
+    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
+        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
     molecule = qchem.Molecule(symbols, geometry)
     with pytest.raises(

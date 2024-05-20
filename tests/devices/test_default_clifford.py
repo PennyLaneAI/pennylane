@@ -632,7 +632,7 @@ def test_clifford_error(check):
 
     with pytest.raises(
         qml.DeviceError,
-        match=r"Operator RX\(1.0, wires=\[0\]\) not supported on default.clifford and does not provide a decomposition",
+        match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
         circuit()
 
@@ -660,7 +660,7 @@ def test_meas_error_noisy():
 
     with pytest.raises(
         qml.DeviceError,
-        match=r"Operator AmplitudeDamping\(0.2, wires=\[0\]\) not supported on default.clifford",
+        match=r"Operator AmplitudeDamping\(0.2, wires=\[0\]\) not supported with default.clifford",
     ):
         circ_2()
 

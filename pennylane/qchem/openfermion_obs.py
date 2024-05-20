@@ -865,7 +865,7 @@ def molecular_hamiltonian(*args, **kwargs):
 
 
     Returns:
-        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
+        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed  Hamiltonian
         and the number of qubits
 
     .. warning::
