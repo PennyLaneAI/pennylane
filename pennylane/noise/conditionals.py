@@ -446,9 +446,11 @@ def partial_wires(operation, *args, **kwargs):
     op_name = op_name[:-2] + ")"
 
     @_rename(op_name)
-    def _partial_op(x, **model_kwargs):  # pylint: disable = unused-argument
+    def _partial_op(wires, **model_kwargs):  # pylint: disable = unused-argument
         """Wrapper function for partial_wires"""
-        wires = getattr(x, "wires", None) or ([x] if isinstance(x, (int, str)) else list(x))
+        wires = getattr(wires, "wires", None) or (
+            [wires] if isinstance(wires, (int, str)) else list(wires)
+        )
         return op(wires=wires)
 
     return _partial_op
