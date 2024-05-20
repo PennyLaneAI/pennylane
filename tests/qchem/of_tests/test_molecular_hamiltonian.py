@@ -616,6 +616,7 @@ def test_diff_hamiltonian_error():
     with pytest.raises(ValueError, match="Open-shell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
+
 def test_diff_hamiltonian_error_molecule_class():
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
