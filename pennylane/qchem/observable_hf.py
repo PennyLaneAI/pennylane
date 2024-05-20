@@ -132,16 +132,15 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     + ((0.775+0j)) [Y1 Y2]
     + ((0.775+0j)) [X1 X2]
     """
-    if mapping=="jordan_wigner":
-        print(o_ferm, cutoff)
+    if mapping == "jordan_wigner":
         h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
-    elif mapping=="parity":
+    elif mapping == "parity":
         qubits = len(o_ferm.wires)
         h = qml.parity_transform(o_ferm, qubits, ps=True, tol=cutoff)
-    elif mapping=="bravyi_kitaev":
+    elif mapping == "bravyi_kitaev":
         qubits = len(o_ferm.wires)
         h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
-        
+
     h.simplify(tol=cutoff)
 
     if active_new_opmath():
