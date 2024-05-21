@@ -109,13 +109,14 @@ class Molecule:
         self.name = name
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
-        if self.unit == "Angstrom":
-            self.coordinates = self.coordinates / bohr_angs
-        elif self.unit not in ("Angstrom", "Bohr"):
+        if self.unit not in ("angstrom", "bohr"):
             raise ValueError(
                 f"The provided unit, '{unit}' is not supported. "
                 f"Please set 'unit' to 'Bohr' or 'Angstrom'."
             )
+            
+        if self.unit == "angstrom":
+            self.coordinates = self.coordinates / bohr_angs
 
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
