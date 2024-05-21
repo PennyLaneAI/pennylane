@@ -13,12 +13,13 @@
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qml
 from pennylane import qnode
+
+# pylint: disable=too-many-arguments,too-few-public-methods, use-dict-literal, use-implicit-booleaness-not-comparison
+
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
@@ -1533,7 +1534,7 @@ class TestSample:
         assert isinstance(result[0], tf.Tensor)
         assert isinstance(result[1], tf.Tensor)
         assert isinstance(result[2], tf.Tensor)
-        assert result[0].dtype is tf.int64
+        assert result[0].dtype is tf.float64
         assert result[1].dtype is tf.float64
         assert result[2].dtype is tf.float64
 
@@ -1571,7 +1572,7 @@ class TestSample:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tf.Tensor)
         assert np.array_equal(result.shape, (3, n_sample))
-        assert result.dtype == tf.int64
+        assert result.dtype == tf.float64
 
     def test_counts(self):
         """Test counts works as expected for TF"""
@@ -1799,6 +1800,25 @@ class TestAutograph:
             [tf.sin(a) * tf.sin(b) - tf.cos(a) * tf.cos(b)],
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_autograph_sample(self, decorator, interface):
+        """Test that a QNode returning raw samples can be compiled
+        using @tf.function"""
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", interface=interface)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.sample()
+
+        result = circuit(x, y)
+        result = np.array(result).flatten()
+        assert np.all([r in [1, 0] for r in result])
 
     def test_autograph_state(self, decorator, interface, tol):
         """Test that a parameter-shift QNode returning a state can be compiled
