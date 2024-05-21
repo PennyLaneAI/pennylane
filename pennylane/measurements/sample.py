@@ -194,7 +194,6 @@ class SampleMP(SampleMeasurement):
     ):
         if shots is None:
             raise ValueError("finite shots are required to SampleMP")
-        print(has_eigvals, n_wires)
         dtype = float if n_wires is None or has_eigvals else int
 
         if n_wires == 0:
@@ -209,8 +208,7 @@ class SampleMP(SampleMeasurement):
             shape.append(shots)
         if dim != 1:
             shape.append(dim)
-        print(shape)
-        return shape, dtype
+        return tuple(shape), dtype
 
     @property
     @functools.lru_cache()

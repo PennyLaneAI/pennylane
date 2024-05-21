@@ -16,7 +16,7 @@ This submodule defines the abstract classes and primitives for capture.
 """
 
 from functools import lru_cache
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, Type
 
 import pennylane as qml
 
@@ -95,7 +95,8 @@ def _get_abstract_measurement():
                ``n_wires``, ``has_eigvals``, ``num_device_wires`` and ``shots`` that returns a shape
                and numeric type.
             n_wires=None (Optional[int]): the number of wires
-
+            has_eigvals=False (bool): Whether or not the measurement contains eigenvalues in a wires+eigvals
+               diagonal representation.
 
         """
 
@@ -161,7 +162,9 @@ def _get_abstract_measurement():
     return AbstractMeasurement
 
 
-def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primitive"]:
+def create_operator_primitive(
+    operator_type: Type["qml.operation.Operator"],
+) -> Optional["jax.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
     Args:
@@ -199,7 +202,7 @@ def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primiti
 
 
 def create_measurement_obs_primitive(
-    measurement_type: type, name: str
+    measurement_type: Type["qml.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are an operator."""
     if not has_jax:
@@ -222,9 +225,10 @@ def create_measurement_obs_primitive(
 
 
 def create_measurement_mcm_primitive(
-    measurement_type: type, name: str
+    measurement_type: Type["qml.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.core.Primitive"]:
-    """Create a primitive corresponding to the input type where the abstract inputs are an operator."""
+    """Create a primitive corresponding to the input type where the abstract inputs are classical
+    mid circuit measurement results."""
     if not has_jax:
         return None
 

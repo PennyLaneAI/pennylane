@@ -147,6 +147,18 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     @classmethod
     def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
+        """Called instead of ``type.__call__`` if ``qml.capture.enabled()``.
+
+        Measurements have three "modes":
+
+        1) Wires or wires + eigvals
+        2) Observable
+        3) Mid circuit measurements
+
+        Not all measurements support all three modes. For example, ``VNEntropyMP`` does not
+        allow being specified via an observable. But we handle the generic case here.
+
+        """
         if cls._obs_primitive is None or cls._wires_primitive is None or cls._mcm_primitive is None:
             return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id, **kwargs)
         if obs is None:
@@ -173,11 +185,29 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         has_eigvals=False,
         shots: Optional[int] = None,
         num_device_wires: int = 0,
-    ) -> tuple:
+    ) -> tuple[tuple, type]:
         """Calculate the shape and dtype that will be returned when a measurement is performed.
 
         This information is similar to ``numeric_type`` and ``shape``, but is provided through
         a class method and does not require the creation of an instance.
+
+        If ``n_wires is None``, then measurement process contains an observable. An integer
+        ``n_wires`` can correspond either the number of wires or the number of mid circuit
+        measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
+
+        >>> ProbabilityMP._abstract_eval(n_wires=2)
+        ((4,), float)
+        >>> ProbabilityMP._abstract_eval(n_wires=0, num_device_wires=2)
+        ((4,), float)
+        >>> SampleMP._abstract_eval(n_wires=0, shots=50, num_device_wires=2)
+        ((50, 2), int)
+        >>> SampleMP._abstract_eval(n_wires=4, has_eigvals=True, shots=50)
+        ((50,), float)
+        >>> SampleMP._abstract_eval(n_wires=None, shots=50)
+        ((50,), float)
+
+        Note that ``shots`` should strictly be ``None`` or ``int``. Shot vectors are handled higher
+        in the stack.
 
         """
         return (), float
