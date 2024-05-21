@@ -73,11 +73,6 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         t1 = ar.to_numpy(a)
         t2 = ar.to_numpy(b)
         res = np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
-    # except tf.python.framework.errors_impl.InvalidArgumentError:
-    # assert False
-    # t1 = ar.to_numpy(a)
-    # t2 = ar.to_numpy(b)
-    # res = np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
 
     return res
 
