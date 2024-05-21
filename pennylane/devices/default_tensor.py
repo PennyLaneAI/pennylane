@@ -165,6 +165,37 @@ class DefaultTensor(Device):
             ``contract`` (str): The contraction method for applying gates. It can be either ``auto-mps`` or ``nonlocal``.
                 ``nonlocal`` turns each gate into a MPO and applies it directly to the MPS, while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next
                     to each other before applying the gate, then swaps them back. Default is ``auto-mps``.
+
+    **Example:**
+
+    The following code demonstrates how to create a very simple quantum circuit using the ``default.tensor`` device:
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import numpy as np
+
+        num_qubits = 80
+
+        dev = qml.device("default.tensor", wires=num_qubits, method="mps", max_bond_dim=100)
+
+
+        @qml.qnode(dev)
+        def circuit(num_qubits):
+            for qubit in range(0, num_qubits - 1):
+                qml.CZ(wires=[qubit, qubit + 1])
+                qml.X(wires=[qubit])
+                qml.Z(wires=[qubit + 1])
+
+            observed_wire = np.random.randint(0, num_qubits)
+            return qml.expval(qml.Z(observed_wire))
+
+
+    >>> circuit(num_qubits)
+    tensor(-1., requires_grad=True)
+
+    Note that the ``default.tensor`` device should be used with a large number of qubits, as it is optimized for large-scale quantum circuits.
+    For small circuits, other devices like ``default.qubit`` are more suitable.
     """
 
     # pylint: disable=too-many-instance-attributes
