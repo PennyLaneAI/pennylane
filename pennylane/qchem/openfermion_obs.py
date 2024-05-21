@@ -1058,6 +1058,12 @@ def _molecular_hamiltonian(
     if method not in ["dhf", "pyscf", "openfermion"]:
         raise ValueError("Only 'dhf', 'pyscf' and 'openfermion' backends are supported.")
 
+    if mapping.strip().lower() not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
+        raise ValueError(
+            f"'{mapping}' is not supported."
+            f"Please set the mapping to 'jordan_wigner', 'parity' or 'bravyi_kitaev'."
+        )
+
     if len(coordinates) == len(symbols) * 3:
         geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates

@@ -200,7 +200,6 @@ def test_building_hamiltonian_molecule_class(
                     Z(1) @ Z(2),
                     Z(1) @ Z(3),
                     Z(2) @ Z(3),
-
                 ],
             ),
         ),
@@ -249,6 +248,54 @@ def test_building_hamiltonian_molecule_class(
                     Z(1) @ Z(2),
                     Z(1) @ Z(3),
                     Z(2) @ Z(3),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            "bravyi_kitaev",
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
+            (
+                np.array(
+                    [
+                        0.2981787007221673,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.20813364101195764,
+                        0.20813364101195767,
+                        0.175463287257566,
+                        0.175463287257566,
+                        0.13290292584331462,
+                        0.13290292584331462,
+                        0.17860976802544348,
+                        -0.3472487101555076,
+                        0.18470917137696227,
+                        -0.34724871015550757,
+                    ]
+                ),
+                [
+                    I(0),
+                    X(0) @ Z(1) @ X(2),
+                    X(0) @ Z(1) @ X(2) @ Z(3),
+                    Y(0) @ Z(1) @ Y(2),
+                    Y(0) @ Z(1) @ Y(2) @ Z(3),
+                    Z(0),
+                    Z(0) @ Z(1),
+                    Z(0) @ Z(1) @ Z(2),
+                    Z(0) @ Z(1) @ Z(2) @ Z(3),
+                    Z(0) @ Z(2),
+                    Z(0) @ Z(2) @ Z(3),
+                    Z(1),
+                    Z(1) @ Z(2) @ Z(3),
+                    Z(1) @ Z(3),
+                    Z(2),
                 ],
             ),
         ),
@@ -656,9 +703,6 @@ def test_diff_hamiltonian_error():
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
-    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
-
     with pytest.raises(
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
     ):
@@ -674,14 +718,14 @@ def test_diff_hamiltonian_error_molecule_class():
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
-    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
-
     molecule = qchem.Molecule(symbols, geometry)
     with pytest.raises(
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
     ):
         qchem.molecular_hamiltonian(molecule, method="psi4")
+
+    with pytest.raises(ValueError, match="'bksf' is not supported."):
+        qchem.molecular_hamiltonian(molecule, mapping="bksf")
 
 
 @pytest.mark.parametrize(
