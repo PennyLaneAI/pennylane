@@ -477,6 +477,22 @@ class TestSnapshotSupportedQNode:
 
 
 class TestSnapshotUnsupportedQNode:
+    def test_unsupported_legacy_qubit(self, mocker):
+        spy = mocker.spy(qml.debugging.snapshots, "default_qnode_transform")
+
+        qml.devices.DefaultQubitLegacy.operations.remove("Snapshot")
+
+        dev = qml.device("default.qubit.legacy", wires=2)
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            qml.Snapshot()
+            return qml.expval(qml.PauliZ(0))
+
+        qml.snapshots(circuit)()
+
+        assert spy.called
+
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_lightning_qubit(self, method):
         dev = qml.device("lightning.qubit", wires=2)
