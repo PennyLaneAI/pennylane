@@ -127,6 +127,8 @@ def ctrl(op, control, control_values=None, work_wires=None):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
+    if qml.math.is_abstract(op):
+        return Controlled(op, control, control_values=control_values, work_wires=work_wires)
     return create_controlled_op(op, control, control_values=control_values, work_wires=work_wires)
 
 
@@ -394,6 +396,16 @@ class Controlled(SymbolicOp):
         if isinstance(base, operation.Operation):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(
+        cls, base, control_wires, control_values=None, work_wires=None, id=None
+    ):
+        control_wires = Wires(control_wires)
+        return cls._primitive.bind(
+            base, *control_wires, control_values=control_values, work_wires=work_wires
+        )
 
     # pylint: disable=too-many-function-args
     def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
@@ -866,3 +878,25 @@ class ControlledOp(Controlled, operation.Operation):
             "and parameter frequencies can not be computed via generator for more than one "
             "parameter."
         )
+
+
+# Program capture with controlled ops needs to unpack and re-pack the control wires to support dynamic wires
+# See capture module for more information on primitives
+# If None, jax isn't installed so the class never got a primitive.
+if Controlled._primitive is not None:  # pylint: disable=protected-access
+
+    @Controlled._primitive.def_impl  # pylint: disable=protected-access
+    def _(base, *control_wires, control_values=None, work_wires=None, id=None):
+        return type.__call__(
+            Controlled,
+            base,
+            control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            id=id,
+        )
+
+
+# easier to just keep the same primitive for both versions
+# dispatch between the two types happens inside instance creation anyway
+ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-access
