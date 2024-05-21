@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `CommutingEvolution` now is a `ScalarSymbolicOp`
+  [(#5682)](https://github.com/PennyLaneAI/pennylane/pull/5682)
+
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 

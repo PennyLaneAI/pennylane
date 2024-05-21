@@ -31,10 +31,10 @@ from pennylane.ops import (
     Adjoint,
     CompositeOp,
     Controlled,
-    Exp,
     Hamiltonian,
     LinearCombination,
     Pow,
+    ScalarSymbolicOp,
     SProd,
 )
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
@@ -442,26 +442,17 @@ def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _equal_exp(op1: Exp, op2: Exp, **kwargs):
+def _equal_scalar_symbolic_op(op1: ScalarSymbolicOp, op2: ScalarSymbolicOp, **kwargs):
     """Determine whether two Exp objects are equal"""
-    check_interface, check_trainability, rtol, atol = (
-        kwargs["check_interface"],
-        kwargs["check_trainability"],
-        kwargs["rtol"],
-        kwargs["atol"],
-    )
 
-    if check_interface:
-        for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.get_interface(params1) != qml.math.get_interface(params2):
-                return False
-    if check_trainability:
-        for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.requires_grad(params1) != qml.math.requires_grad(params2):
-                return False
-
-    if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
+    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=kwargs["rtol"], atol=kwargs["atol"]):
         return False
+    if kwargs["check_trainability"]:
+        if qml.math.requires_grad(op1.scalar) != qml.math.requires_grad(op2.scalar):
+            return False
+    if kwargs["check_interface"]:
+        if qml.math.get_interface(op1.scalar) != qml.math.get_interface(op2.scalar):
+            return False
 
     return qml.equal(op1.base, op2.base, **kwargs)
 
@@ -470,25 +461,16 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
 # pylint: disable=unused-argument
 def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
-    check_interface, check_trainability, rtol, atol = (
-        kwargs["check_interface"],
-        kwargs["check_trainability"],
-        kwargs["rtol"],
-        kwargs["atol"],
-    )
 
-    if check_interface:
-        for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.get_interface(params1) != qml.math.get_interface(params2):
-                return False
-    if check_trainability:
-        for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.requires_grad(params1) != qml.math.requires_grad(params2):
-                return False
-
+    if kwargs["check_interface"]:
+        if qml.math.get_interface(op1.scalar) != qml.math.get_interface(op2.scalar):
+            return False
+    if kwargs["check_trainability"]:
+        if qml.math.requires_grad(op1.scalar) != qml.math.requires_grad(op2.scalar):
+            return False
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
-    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
+    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=kwargs["rtol"], atol=kwargs["atol"]):
         return False
 
     return qml.equal(op1.base, op2.base, **kwargs)
