@@ -83,8 +83,8 @@ def measure(*measurements, shots=None, num_device_wires=0):
     """An instruction to perform a measurement.
 
     .. warning::
-        Note that this function only has a concrete implementation for performing
-        mid circuit measurements. Otherwise, it is strictly used to capture that quantum/ classical
+        Note that this function does not provide concrete implementations.
+        It is strictly used to capture that quantum/ classical
         boundary into jaxpr for later interpretation by a jaxpr interpreter.
 
     Args:
