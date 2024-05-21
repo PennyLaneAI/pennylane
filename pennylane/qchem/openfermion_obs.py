@@ -1015,13 +1015,14 @@ def _(
     convert_tol=1e12,
 ):
 
-    if unit == "Angstrom":
-        coordinates = coordinates / bohr_angs
-    elif unit not in ("Angstrom", "Bohr"):
+    if unit not in ("angstrom", "bohr"):
         raise ValueError(
             f"The provided unit, '{unit}' is not supported. "
             f"Please set 'unit' to 'Bohr' or 'Angstrom'."
         )
+        
+    if unit == "angstrom":
+        coordinates = coordinates / bohr_angs
 
     return _molecular_hamiltonian(
         symbols,
