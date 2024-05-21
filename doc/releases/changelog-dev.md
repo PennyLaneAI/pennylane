@@ -82,6 +82,7 @@
 * PennyLane operators and measurements can now automatically be captured as instructions in JAXPR.
   The `qml.capture.measure` function can serve as conversion point between measurements and numeric
   arrays.
+  [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
