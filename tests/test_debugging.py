@@ -521,6 +521,18 @@ class TestSnapshotUnsupportedQNode:
         ):
             qml.snapshots(circuit)()
 
+    def test_lightning_counts(self):
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            qml.Hadamard(0)
+            qml.Snapshot(measurement=qml.counts(wires=1), shots=200)
+            return qml.expval(qml.PauliZ(0))
+
+        result = qml.snapshots(circuit)()
+        assert result[0]["0"] == 200
+
     def test_lightning_error_when_providing_both_shots_and_override(self):
         dev = qml.device("lightning.qubit", wires=2, shots=200)
 
