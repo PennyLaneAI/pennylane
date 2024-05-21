@@ -354,7 +354,7 @@ class DefaultTensor(Device):
             if not self.wires.contains_wires(circuit.wires):
                 raise AttributeError(
                     f"Circuit has wires {circuit.wires.tolist()}. "
-                    f"Tensor on device has wires: {self.wires.tolist()}"
+                    f"Tensor on device has wires {self.wires.tolist()}"
                 )
             circuit = circuit.map_to_standard_wires()
             results.append(self.simulate(circuit))
