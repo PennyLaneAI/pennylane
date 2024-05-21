@@ -186,6 +186,11 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        # accepts no wires, so bypasses the wire processing.
+        return cls._primitive.bind(*args, **kwargs)
+
     def __init__(  # pylint: disable=too-many-arguments
         self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
     ):
@@ -233,6 +238,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             "base": hamiltonian,
             "check_hermitian": check_hermitian,
         }
+
         super().__init__(time, wires=hamiltonian.wires, id=id)
 
     def queue(self, context=qml.QueuingManager):

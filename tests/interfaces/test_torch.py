@@ -974,7 +974,7 @@ class TestTorchExecuteIntegration:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
-            qml.sample(qml.PauliZ(0))
+            qml.sample()
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
