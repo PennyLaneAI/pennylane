@@ -55,8 +55,8 @@ def dynamic_one_shot(
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit to add a batch dimension to
-        discard_invalid_shots (bool): Whether or not to discard shots that don't match the
-            postselection criteria. ``True`` by default.
+        postselect_shots (bool): Whether or not to discard shots that don't match the
+            postselection criteria.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
@@ -102,10 +102,10 @@ def dynamic_one_shot(
             )
     _ = kwargs.get("device", None)
 
-    discard_invalid_shots = kwargs.get("discard_invalid_shots", None)
-    if qml.compiler.active() and discard_invalid_shots:
+    postselect_shots = kwargs.get("postselect_shots", None)
+    if qml.compiler.active() and postselect_shots:
         raise ValueError("Can't discard invalid shots while using qml.qjit")
-    discard_invalid_shots = True if discard_invalid_shots is None else discard_invalid_shots
+    postselect_shots = True if postselect_shots is None else postselect_shots
 
     if not tape.shots:
         raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
@@ -156,9 +156,7 @@ def dynamic_one_shot(
                 )
                 del results[0:s]
             return tuple(final_results)
-        return parse_native_mid_circuit_measurements(
-            tape, aux_tapes, results, discard_invalid_shots
-        )
+        return parse_native_mid_circuit_measurements(tape, aux_tapes, results, postselect_shots)
 
     return output_tapes, processing_fn
 
@@ -219,7 +217,7 @@ def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript,
     aux_tapes: qml.tape.QuantumScript,
     results: TensorLike,
-    discard_invalid_shots: bool,
+    postselect_shots: bool,
 ):
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
 
@@ -227,7 +225,7 @@ def parse_native_mid_circuit_measurements(
         circuit (QuantumTape): Initial ``QuantumScript``
         aux_tapes (List[QuantumTape]): List of auxilary ``QuantumScript`` objects
         results (TensorLike): Array of measurement results
-        discard_invalid_shots (bool): Whether or not to discard shots that don't match the
+        postselect_shots (bool): Whether or not to discard shots that don't match the
             postselection criteria.
 
     Returns:
@@ -277,13 +275,13 @@ def parse_native_mid_circuit_measurements(
         if interface != "jax" and m.mv and not has_valid:
             meas = measurement_with_no_shots(m)
         elif m.mv:
-            meas = gather_mcm(m, mcm_samples, is_valid, discard_invalid_shots)
+            meas = gather_mcm(m, mcm_samples, is_valid, postselect_shots)
         elif interface != "jax" and not has_valid:
             meas = measurement_with_no_shots(m)
             m_count += 1
         else:
             result = qml.math.array([res[m_count] for res in results], like=interface)
-            meas = gather_non_mcm(m, result, is_valid, discard_invalid_shots)
+            meas = gather_non_mcm(m, result, is_valid, postselect_shots)
             m_count += 1
         if isinstance(m, SampleMP):
             meas = qml.math.squeeze(meas)
@@ -292,7 +290,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_non_mcm(measurement, samples, is_valid, discard_invalid_shots):
+def gather_non_mcm(measurement, samples, is_valid, postselect_shots):
     """Combines, gathers and normalizes several measurements with trivial measurement values.
 
     Args:
@@ -300,7 +298,7 @@ def gather_non_mcm(measurement, samples, is_valid, discard_invalid_shots):
         samples (TensorLike): measurement samples
         is_valid (TensorLike): Boolean array with the same shape as ``samples`` where the value at
             each index specifies whether or not the respective sample is valid.
-        discard_invalid_shots (bool): Whether or not to discard shots that don't match the
+        postselect_shots (bool): Whether or not to discard shots that don't match the
             postselection criteria.
 
     Returns:
@@ -318,12 +316,12 @@ def gather_non_mcm(measurement, samples, is_valid, discard_invalid_shots):
         return qml.math.sum(samples * is_valid.reshape((-1, 1)), axis=0) / qml.math.sum(is_valid)
     if isinstance(measurement, SampleMP):
         is_interface_jax = qml.math.get_deep_interface(is_valid) == "jax"
-        discard_invalid_shots = discard_invalid_shots and not is_interface_jax
-        if not discard_invalid_shots and samples.ndim == 2:
+        postselect_shots = postselect_shots and not is_interface_jax
+        if not postselect_shots and samples.ndim == 2:
             is_valid = is_valid.reshape((-1, 1))
         return (
             qml.math.where(is_valid, samples, fill_in_value)
-            if not discard_invalid_shots
+            if not postselect_shots
             else samples[is_valid]
         )
     # VarianceMP
@@ -331,7 +329,7 @@ def gather_non_mcm(measurement, samples, is_valid, discard_invalid_shots):
     return qml.math.sum((samples - expval) ** 2 * is_valid) / qml.math.sum(is_valid)
 
 
-def gather_mcm(measurement, samples, is_valid, discard_invalid_shots):
+def gather_mcm(measurement, samples, is_valid, postselect_shots):
     """Combines, gathers and normalizes several measurements with non-trivial measurement values.
 
     Args:
@@ -339,7 +337,7 @@ def gather_mcm(measurement, samples, is_valid, discard_invalid_shots):
         samples (List[dict]): Mid-circuit measurement samples
         is_valid (TensorLike): Boolean array with the same shape as ``samples`` where the value at
             each index specifies whether or not the respective sample is valid.
-        discard_invalid_shots (bool): Whether or not to discard shots that don't match the
+        postselect_shots (bool): Whether or not to discard shots that don't match the
             postselection criteria.
 
     Returns:
@@ -362,7 +360,7 @@ def gather_mcm(measurement, samples, is_valid, discard_invalid_shots):
             return counts / qml.math.sum(counts)
         if isinstance(measurement, CountsMP):
             mcm_samples = [{"".join(str(v) for v in tuple(s)): 1} for s in mcm_samples]
-        return gather_non_mcm(measurement, mcm_samples, is_valid, discard_invalid_shots)
+        return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_shots)
     if isinstance(measurement, ProbabilityMP):
         mcm_samples = qml.math.array(mv.concretize(samples), like=interface).ravel()
         counts = [qml.math.sum((mcm_samples == v) * is_valid) for v in list(mv.branches.values())]
@@ -371,4 +369,4 @@ def gather_mcm(measurement, samples, is_valid, discard_invalid_shots):
     mcm_samples = qml.math.array([mv.concretize(samples)], like=interface).ravel()
     if isinstance(measurement, CountsMP):
         mcm_samples = [{s: 1} for s in mcm_samples]
-    return gather_non_mcm(measurement, mcm_samples, is_valid, discard_invalid_shots)
+    return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_shots)

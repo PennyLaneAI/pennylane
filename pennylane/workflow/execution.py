@@ -548,21 +548,21 @@ def execute(
         gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
     )
 
-    if "jax" in interface and config.mcm_config["discard_invalid_shots"]:
+    if "jax" in interface and config.mcm_config["postselect_shots"]:
         warnings.warn(
             "Cannot discard invalid shots with postselection when using the 'jax' interface. "
             "Ignoring requested mid-circuit measurement configuration.",
             UserWarning,
         )
-        config.mcm_config["discard_invalid_shots"] = None
+        config.mcm_config["postselect_shots"] = None
 
-    if any(not tape.shots for tape in tapes) and config.mcm_config["method"] == "one-shot":
+    if any(not tape.shots for tape in tapes) and config.mcm_config["mcm_method"] == "one-shot":
         warnings.warn(
             "Cannot use the 'one-shot' method for mid-circuit measurements with "
             "analytic mode. Using deferred measurements.",
             UserWarning,
         )
-        config.mcm_config["method"] = None
+        config.mcm_config["mcm_method"] = None
 
     if transform_program is None:
         if isinstance(device, qml.devices.Device):

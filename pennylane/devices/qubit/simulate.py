@@ -75,14 +75,14 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
-    discard_invalid_shots = execution_kwargs.get("discard_invalid_shots", None)
+    postselect_shots = execution_kwargs.get("postselect_shots", None)
 
     # The floor function is being used here so that a norm very close to zero becomes exactly
     # equal to zero so that the state can become invalid. This way, execution can continue, and
     # bad postselection gives results that are invalid rather than results that look valid but
     # are incorrect.
     norm = qml.math.norm(state)
-    discard_invalid_shots = True if discard_invalid_shots is None else discard_invalid_shots
+    postselect_shots = True if postselect_shots is None else postselect_shots
 
     if not qml.math.is_abstract(state) and qml.math.allclose(norm, 0.0):
         norm = 0.0
@@ -100,7 +100,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
         postselected_shots = (
             [int(binomial_fn(s, float(norm**2))) for s in shots]
-            if discard_invalid_shots and not qml.math.is_abstract(norm)
+            if postselect_shots and not qml.math.is_abstract(norm)
             else shots
         )
 
@@ -127,6 +127,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, a ``numpy.random.default_rng`` will be for sampling.
+        postselect_shots (bool): Whether or not to discard invalid shots when postselecting
+            mid-circuit measurements.
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -137,7 +139,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     prng_key = execution_kwargs.get("prng_key", None)
     interface = execution_kwargs.get("interface", None)
     mid_measurements = execution_kwargs.get("mid_measurements", None)
-    discard_invalid_shots = execution_kwargs.get("discard_invalid_shots", None)
+    postselect_shots = execution_kwargs.get("postselect_shots", None)
     circuit = circuit.map_to_standard_wires()
 
     prep = None
@@ -171,7 +173,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
                 circuit.shots,
                 rng=rng,
                 prng_key=key,
-                discard_invalid_shots=discard_invalid_shots,
+                postselect_shots=postselect_shots,
             )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
@@ -270,6 +272,8 @@ def simulate(
             the key to the JAX pseudo random number generator. If None, a random key will be
             generated. Only for simulation using JAX.
         interface (str): The machine learning interface to create the initial state with
+        postselect_shots (bool): Whether or not to discard invalid shots when postselecting
+            mid-circuit measurements.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -287,7 +291,7 @@ def simulate(
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
     interface = execution_kwargs.get("interface", None)
-    discard_invalid_shots = execution_kwargs.get("discard_invalid_shots", None)
+    postselect_shots = execution_kwargs.get("postselect_shots", None)
 
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
@@ -302,7 +306,7 @@ def simulate(
         rng=rng,
         prng_key=ops_key,
         interface=interface,
-        discard_invalid_shots=discard_invalid_shots,
+        postselect_shots=postselect_shots,
     )
     if state_cache is not None:
         state_cache[circuit.hash] = state

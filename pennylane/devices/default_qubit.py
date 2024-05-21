@@ -602,9 +602,7 @@ class DefaultQubit(Device):
                         "interface": interface,
                         "state_cache": self._state_cache,
                         "prng_key": _key,
-                        "discard_invalid_shots": execution_config.mcm_config[
-                            "discard_invalid_shots"
-                        ],
+                        "postselect_shots": execution_config.mcm_config["postselect_shots"],
                     },
                 )
                 for c, _key in zip(circuits, prng_keys)
@@ -616,7 +614,7 @@ class DefaultQubit(Device):
             {
                 "rng": _rng,
                 "prng_key": _key,
-                "discard_invalid_shots": execution_config.mcm_config["discard_invalid_shots"],
+                "postselect_shots": execution_config.mcm_config["postselect_shots"],
             }
             for _rng, _key in zip(seeds, prng_keys)
         ]

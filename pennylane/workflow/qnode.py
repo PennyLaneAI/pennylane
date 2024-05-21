@@ -219,7 +219,13 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
-        mcm_config (dict): Dictionary containing configuration options for handling mid-circuit measurements.
+        postselect_shots (bool): Whether or not to discard invalid shots when postselecting mid-circuit measurements.
+            If ``True``, invalid shots will be discarded and only results for valid shots will be returned. If
+            ``False``, results corresponding to the original number of shots will be returned.
+        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
+            to execute using the deferred measurements principle (applied using the
+            :func:`~pennylane.defer_measurements` transform), or ``"one-shot"`` if using finite shots to execute the
+            circuit for each shot separately.
 
     Keyword Args:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
@@ -443,7 +449,8 @@ class QNode:
         cachesize=10000,
         max_diff=1,
         device_vjp=False,
-        mcm_config=None,
+        postselect_shots=None,
+        mcm_method=None,
         **gradient_kwargs,
     ):
         if logger.isEnabledFor(logging.DEBUG):
@@ -518,7 +525,7 @@ class QNode:
             "max_diff": max_diff,
             "max_expansion": max_expansion,
             "device_vjp": device_vjp,
-            "mcm_config": mcm_config,
+            "mcm_config": {"postselect_shots": postselect_shots, "mcm_method": mcm_method},
         }
 
         if self.expansion_strategy == "device":

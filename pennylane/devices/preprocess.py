@@ -153,10 +153,10 @@ def mid_circuit_measurements(
     and use the ``qml.defer_measurements`` transform otherwise.
     """
 
-    if (mcm_method := mcm_config.get("method", None)) is not None:
+    if (mcm_method := mcm_config.get("mcm_method", None)) is not None:
         if mcm_method == "one-shot":
             return qml.dynamic_one_shot(
-                tape, discard_invalid_shots=mcm_config.get("discard_invalid_shots", None)
+                tape, postselect_shots=mcm_config.get("postselect_shots", None)
             )
         if mcm_method == "deferred":
             return qml.defer_measurements(tape, device=device)
@@ -165,9 +165,7 @@ def mid_circuit_measurements(
             UserWarning,
         )
     if tape.shots:
-        return qml.dynamic_one_shot(
-            tape, discard_invalid_shots=mcm_config.get("discard_invalid_shots", None)
-        )
+        return qml.dynamic_one_shot(tape, postselect_shots=mcm_config.get("postselect_shots", None))
     return qml.defer_measurements(tape, device=device)
 
 
