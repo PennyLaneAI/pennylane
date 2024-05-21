@@ -60,6 +60,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
     def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires, batch_dim):
         """Checks the queue for the default settings."""
+        # pylint: disable=too-many-arguments
 
         if batch_dim is not None:
             weight_shape = (batch_dim,) + weight_shape
