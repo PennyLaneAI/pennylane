@@ -138,6 +138,23 @@ def test_wires():
         qml.device("default.tensor").wires = [0, 1]
 
 
+def test_wires_execution_error():
+    """Test that this device cannot execute a tape if its wires do not match the wires on the device."""
+    dev = qml.device("default.tensor", wires=3)
+    ops = [
+        qml.Identity(0),
+        qml.Identity((0, 1)),
+        qml.RX(2, 0),
+        qml.RY(1, 5),
+        qml.RX(2, 1),
+    ]
+    measurements = [qml.expval(qml.PauliZ(15))]
+    tape = qml.tape.QuantumScript(ops, measurements)
+
+    with pytest.raises(AttributeError):
+        dev.execute(tape)
+
+
 @pytest.mark.parametrize("max_bond_dim", [None, 10])
 @pytest.mark.parametrize("cutoff", [1e-16, 1e-12])
 @pytest.mark.parametrize("contract", ["auto-mps", "nonlocal"])

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the default.tensor device to perform tensor network simulation of a quantum circuit using ``quimb``. 
+This module contains the default.tensor device to perform tensor network simulation of a quantum circuit using ``quimb``.
 """
 import copy
 from dataclasses import replace
@@ -124,8 +124,6 @@ _observables = frozenset(
 
 _methods = frozenset({"mps"})
 # The set of supported methods.
-
-# pylint: disable=trailing-whitespace
 
 
 def accepted_methods(method: str) -> bool:
@@ -351,6 +349,13 @@ class DefaultTensor(Device):
 
         results = []
         for circuit in circuits:
+            # we need to check if the wires of the circuit are compatible with the wires of the device
+            # since the initial tensor state is created with the wires of the device
+            if not self.wires.contains_wires(circuit.wires):
+                raise AttributeError(
+                    f"Circuit has wires {circuit.wires.tolist()}. "
+                    f"Tensor on device has wires: {self.wires.tolist()}"
+                )
             circuit = circuit.map_to_standard_wires()
             results.append(self.simulate(circuit))
 
