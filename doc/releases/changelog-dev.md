@@ -134,7 +134,7 @@
 
 * `qml.cond` can now be applied to `ControlledOp` operations, and `ctrl` works with tuple-valued `control_values`
   when applied to an already controlled operation.
-  [(#5__-)](https://github.com/PennyLaneAI/pennylane/pull/5__-)
+  [(#5718)](https://github.com/PennyLaneAI/pennylane/pull/5718)
 
 * Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
   returned samples of observables containing the `qml.Identity` operator.
