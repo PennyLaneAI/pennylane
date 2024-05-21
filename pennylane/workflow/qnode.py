@@ -985,20 +985,6 @@ class QNode:
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
-        # Apply the deferred measurement principle if the device doesn't
-        # support mid-circuit measurements natively.
-        # Only apply transform with old device API as postselection with
-        # broadcasting will split tapes.
-        expand_mid_measure = (
-            any(isinstance(op, MidMeasureMP) for op in self.tape.operations)
-            and not isinstance(self.device, qml.devices.Device)
-            and not self.device.capabilities().get("supports_mid_measure", False)
-        )
-        if expand_mid_measure or self.expansion_strategy == "device":
-            # Assume that tapes are not split if old device is used since postselection is not supported.
-            tapes, _ = qml.defer_measurements(self._tape, device=self.device)
-            self._tape = tapes[0]
-
         if self.expansion_strategy == "device":
             if isinstance(self.device, qml.devices.Device):
                 tape, _ = self.device.preprocess()[0]([self.tape])
@@ -1034,6 +1020,15 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        mcm_method = self.execute_kwargs["mcm_config"].get("mcm_method", None)
+        if mcm_method not in ("deferred", "one-shot", None):
+            warnings.warn(
+                f"Invalid mid-circuit measurements method '{mcm_method}'. Automatically "
+                "detecting optimal method.",
+                UserWarning,
+            )
+            mcm_method = self.execute_kwargs["mcm_config"]["mcm_method"] = None
+
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
             config = _make_execution_config(self, self.gradient_fn)
@@ -1042,14 +1037,26 @@ class QNode:
         else:
             config = None
             full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+
         has_mcm_support = (
             any(isinstance(op, MidMeasureMP) for op in self._tape)
             and hasattr(self.device, "capabilities")
             and self.device.capabilities().get("supports_mid_measure", False)
         )
         if has_mcm_support:
-            full_transform_program.add_transform(qml.dynamic_one_shot)
-            override_shots = 1
+            full_transform_program.add_transform(
+                qml.devices.preprocess.mid_circuit_measurements,
+                device=self.device,
+                mcm_config=self.execute_kwargs["mcm_config"],
+            )
+            if override_shots and mcm_method in ("one-shot", None):
+                override_shots = 1
+        elif hasattr(self.device, "capabilities"):
+            full_transform_program.add_transform(
+                qml.defer_measurements,
+                postselect_shots=self.execute_kwargs["mcm_config"]["postselect_shots"],
+                device=self.device,
+            )
 
         # Add the gradient expand to the program if necessary
         if getattr(self.gradient_fn, "expand_transform", False):

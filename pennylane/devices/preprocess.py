@@ -160,15 +160,12 @@ def mid_circuit_measurements(
             return qml.dynamic_one_shot(
                 tape, postselect_shots=mcm_config.get("postselect_shots", None)
             )
-        if mcm_method == "deferred":
-            return qml.defer_measurements(tape, device=device)
-        warnings.warn(
-            "Invalid mid-circuit measurements method. Automatically detecting optimal method.",
-            UserWarning,
-        )
+        return qml.defer_measurements(tape, device=device)
+
     if tape.shots:
-        return qml.dynamic_one_shot(tape, postselect_shots=mcm_config.get("postselect_shots", None))
-    return qml.defer_measurements(tape, device=device)
+        postselect_shots = mcm_config.get("postselect_shots", None)
+        return qml.dynamic_one_shot(tape, postselect_shots=postselect_shots)
+    return qml.defer_measurements(tape, device=device, postselect_shots=postselect_shots)
 
 
 @transform
