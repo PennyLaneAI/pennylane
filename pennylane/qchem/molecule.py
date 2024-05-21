@@ -102,7 +102,7 @@ class Molecule:
 
         self.symbols = symbols
         self.coordinates = coordinates
-        self.unit = unit
+        self.unit = unit.strip().lower()
         self.charge = charge
         self.mult = mult
         self.basis_name = basis_name.lower()
@@ -114,7 +114,7 @@ class Molecule:
                 f"The provided unit, '{unit}' is not supported. "
                 f"Please set 'unit' to 'Bohr' or 'Angstrom'."
             )
-            
+
         if self.unit == "angstrom":
             self.coordinates = self.coordinates / bohr_angs
 
