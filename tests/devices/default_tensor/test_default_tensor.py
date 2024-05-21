@@ -191,6 +191,7 @@ def test_method():
     """Test the device method."""
     assert qml.device("default.tensor", wires=0).method == "mps"
 
+
 def test_invalid_method():
     """Test an invalid method."""
     method = "invalid_method"
