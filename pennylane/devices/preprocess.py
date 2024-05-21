@@ -45,6 +45,7 @@ def _operator_decomposition_gen(
     max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
+    error: Exception = DeviceError,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     max_depth_reached = False
@@ -57,8 +58,8 @@ def _operator_decomposition_gen(
             decomp = decomposer(op)
             current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
-            raise DeviceError(
-                f"Operator {op} not supported on {name} and does not provide a decomposition."
+            raise error(
+                f"Operator {op} not supported with {name} and does not provide a decomposition."
             ) from e
 
         for sub_op in decomp:
@@ -69,6 +70,7 @@ def _operator_decomposition_gen(
                 max_expansion=max_expansion,
                 current_depth=current_depth,
                 name=name,
+                error=error,
             )
 
 
@@ -253,6 +255,7 @@ def decompose(
     ] = None,
     max_expansion: Union[int, None] = None,
     name: str = "device",
+    error: Exception = DeviceError,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
 
@@ -260,14 +263,20 @@ def decompose(
         tape (QuantumTape or QNode or Callable): a quantum circuit.
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            a ``DecompositionUndefinedError`` will be raised.
+            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg).
+
+    Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape has shots.
-        skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
+            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg). This replaces stopping_condition if and only if the tape has shots.
+        skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if it inherits
+            from :class:`~.StatePrepBase`. Defaults to ``True``.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
-        max_expansion (int): The maximum depth of the expansion.
+        max_expansion (int): The maximum depth of the expansion. Defaults to None.
+        name (str): The name of the transform, process or device using decompose. Used in the error message. Defaults to "device".
+        error (Error): An error type to raise if it is not possible to obtain a decomposition that fulfills
+            the ``stopping_condition``. Defaults to ``DeviceError``.
 
 
     Returns:
@@ -276,9 +285,9 @@ def decompose(
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        DecompositionUndefinedError: if an operator is not accepted and does not define a decomposition
-
-        DeviceError: If the decomposition enters and infinite loop and raises a ``RecursionError``.
+        Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument. Raised if
+            an operator is not accepted and does not define a decomposition, or if the decomposition
+            enters an infinite loop and raises a ``RecursionError``.
 
     **Example:**
 
@@ -325,30 +334,33 @@ def decompose(
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    if not all(stopping_condition(op) for op in tape.operations):
-        try:
-            # don't decompose initial operations if its StatePrepBase
-            prep_op = (
-                [tape[0]] if isinstance(tape[0], StatePrepBase) and skip_initial_state_prep else []
-            )
+    if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
+        prep_op = [tape[0]]
+    else:
+        prep_op = []
 
-            new_ops = [
-                final_op
-                for op in tape.operations[bool(prep_op) :]
-                for final_op in _operator_decomposition_gen(
-                    op,
-                    stopping_condition,
-                    decomposer=decomposer,
-                    max_expansion=max_expansion,
-                    name=name,
-                )
-            ]
-        except RecursionError as e:
-            raise DeviceError(
-                "Reached recursion limit trying to decompose operations. "
-                "Operator decomposition may have entered an infinite loop."
-            ) from e
-        tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
+    if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
+        return (tape,), null_postprocessing
+    try:
+
+        new_ops = [
+            final_op
+            for op in tape.operations[len(prep_op) :]
+            for final_op in _operator_decomposition_gen(
+                op,
+                stopping_condition,
+                decomposer=decomposer,
+                max_expansion=max_expansion,
+                name=name,
+                error=error,
+            )
+        ]
+    except RecursionError as e:
+        raise error(
+            "Reached recursion limit trying to decompose operations. "
+            "Operator decomposition may have entered an infinite loop."
+        ) from e
+    tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
 
     return (tape,), null_postprocessing
 
