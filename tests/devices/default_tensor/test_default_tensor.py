@@ -27,7 +27,7 @@ quimb = pytest.importorskip("quimb")
 pytestmark = pytest.mark.external
 
 # gates for which device support is tested
-ops = {
+operations_list = {
     "Identity": qml.Identity(wires=[0]),
     "BlockEncode": qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
     "CNOT": qml.CNOT(wires=[0, 1]),
@@ -98,10 +98,10 @@ ops = {
     "GlobalPhase": qml.GlobalPhase(0.123, wires=[0, 1]),
 }
 
-all_ops = ops.keys()
+all_ops = operations_list.keys()
 
 # observables for which device support is tested
-obs = {
+observables_list = {
     "Identity": qml.Identity(wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
@@ -120,7 +120,7 @@ obs = {
     "LinearCombination": qml.ops.LinearCombination([1, 1], [qml.Z(0), qml.X(0)]),
 }
 
-all_obs = obs.keys()
+all_obs = observables_list.keys()
 
 
 def test_name():
@@ -224,7 +224,7 @@ class TestSupportedGatesAndObservables:
         dev = qml.device("default.tensor", wires=4, method="mps")
 
         tape = qml.tape.QuantumScript(
-            [ops[operation]],
+            [operations_list[operation]],
             [qml.expval(qml.Identity(wires=0))],
         )
 
@@ -238,7 +238,7 @@ class TestSupportedGatesAndObservables:
         dev = qml.device("default.tensor", wires=3, method="mps")
 
         if observable == "Projector":
-            for o in obs[observable]:
+            for o in observables_list[observable]:
                 tape = qml.tape.QuantumScript(
                     [qml.PauliX(0)],
                     [qml.expval(o)],
@@ -249,7 +249,7 @@ class TestSupportedGatesAndObservables:
         else:
             tape = qml.tape.QuantumScript(
                 [qml.PauliX(0)],
-                [qml.expval(obs[observable])],
+                [qml.expval(observables_list[observable])],
             )
             result = dev.execute(circuits=tape)
             assert isinstance(result, (float, np.ndarray))
