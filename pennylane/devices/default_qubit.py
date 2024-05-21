@@ -608,7 +608,7 @@ class DefaultQubit(Device):
                 for c, _key in zip(circuits, prng_keys)
             )
 
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
         simulate_kwargs = [
             {
@@ -637,7 +637,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             return tuple(adjoint_jacobian(circuit) for circuit in circuits)
 
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
             res = tuple(exec_map)
@@ -657,7 +657,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(_adjoint_jac_wrapper(c, debugger=self._debugger) for c in circuits)
         else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -698,7 +698,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
 
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
 
@@ -721,7 +721,7 @@ class DefaultQubit(Device):
                 for c, t in zip(circuits, tangents)
             )
         else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -811,7 +811,7 @@ class DefaultQubit(Device):
                 for circuit, cots in zip(circuits, cotangents)
             )
 
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
@@ -834,7 +834,7 @@ class DefaultQubit(Device):
                 for c, t in zip(circuits, cotangents)
             )
         else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(

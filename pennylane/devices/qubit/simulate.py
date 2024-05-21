@@ -295,9 +295,33 @@ def simulate(
 
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
-        return simulate_one_shot_native_mcm(
-            circuit, debugger=debugger, rng=rng, prng_key=prng_key, interface=interface
+        results = []
+        aux_circ = qml.tape.QuantumScript(
+            circuit.operations,
+            circuit.measurements,
+            shots=[1],
+            trainable_params=circuit.trainable_params,
         )
+        keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
+        if qml.math.get_deep_interface(circuit.data) == "jax":
+            # pylint: disable=import-outside-toplevel
+            import jax
+
+            def simulate_partial(k):
+                return simulate_one_shot_native_mcm(
+                    aux_circ, debugger=debugger, rng=rng, prng_key=k, interface=interface
+                )
+
+            results = jax.vmap(simulate_partial, in_axes=(0,))(keys)
+            results = tuple(zip(*results))
+        else:
+            for i in range(circuit.shots.total_shots):
+                results.append(
+                    simulate_one_shot_native_mcm(
+                        aux_circ, debugger=debugger, rng=rng, prng_key=keys[i], interface=interface
+                    )
+                )
+        return tuple(results)
 
     ops_key, meas_key = jax_random_split(prng_key)
     state, is_state_batched = get_final_state(

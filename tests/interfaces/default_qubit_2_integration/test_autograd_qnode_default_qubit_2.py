@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
-# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg
+# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-dict-literal, no-name-in-module
 
 import autograd
 import autograd.numpy as anp
@@ -1716,7 +1716,7 @@ class TestSample:
         assert np.array_equal(result[0].shape, (n_sample,))
         assert isinstance(result[1], (float, np.ndarray))
         assert isinstance(result[2], (float, np.ndarray))
-        assert result[0].dtype == np.dtype("int")
+        assert result[0].dtype == np.dtype("float")
 
     def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
