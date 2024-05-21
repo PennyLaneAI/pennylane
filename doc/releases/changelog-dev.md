@@ -4,13 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* `qml.QNode` and `qml.qnode` now accept two new keyword  arguments: `postselect_shots` and `mcm_method`.
+  These keyword arguments can be used to configure how the device should behave when running circuits with
+  mid-circuit measurements.
+  [(#5679)](https://github.com/PennyLaneAI/pennylane/pull/5679)
+
+  * `postselect_shots=True` will indicate to devices to discard invalid shots when postselecting
+    mid-circuit measurements. Use `postselect_shots=False` to return invalid shots, which will be replaced
+    by dummy values.
+  * `mcm_method` will indicate which strategy to use for running circuits with mid-circuit measurements.
+    Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
+    to execute once for each shot.
+
 <h3>Improvements 🛠</h3>
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `dynamic_one_shot` transform can be compiled with `jax.jit`.
   [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
-  
+
 * When using `defer_measurements` with postselecting mid-circuit measurements, operations
   that will never be active due to the postselected state are skipped in the transformed
   quantum circuit. In addition, postselected controls are skipped, as they are evaluated
