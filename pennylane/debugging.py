@@ -14,8 +14,27 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
+import warnings
+from functools import partial
+from typing import Callable, Optional, Sequence, Tuple
+
 import pennylane as qml
-from pennylane import DeviceError
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
+
+
+def _is_snapshot_compatible(dev):
+    # old device API: check if Snapshot is supported
+    if isinstance(dev, qml.devices.LegacyDevice) and "Snapshot" not in dev.operations:
+        return False
+
+    # new device API: check if it's the simulator device
+    if isinstance(dev, qml.devices.Device) and not isinstance(
+        dev, (qml.devices.DefaultQubit, qml.devices.DefaultClifford)
+    ):
+        return False
+
+    return True
 
 
 class _Debugger:
@@ -29,16 +48,6 @@ class _Debugger:
     """
 
     def __init__(self, dev):
-        # old device API: check if Snapshot is supported
-        if isinstance(dev, qml.devices.LegacyDevice) and "Snapshot" not in dev.operations:
-            raise DeviceError("Device does not support snapshots.")
-
-        # new device API: check if it's the simulator device
-        if isinstance(dev, qml.devices.Device) and not isinstance(
-            dev, (qml.devices.DefaultQubit, qml.devices.DefaultClifford)
-        ):
-            raise DeviceError("Device does not support snapshots.")
-
         self.snapshots = {}
         self.active = False
         self.device = dev
@@ -53,18 +62,23 @@ class _Debugger:
         self.device._debugger = None
 
 
-def snapshots(qnode):
-    r"""Create a function that retrieves snapshot results from a QNode.
+@transform
+def snapshots(
+    tape: QuantumTape, shots: Optional[int] = None
+) -> Tuple[Sequence[QuantumTape], Callable]:
+    r"""Transforms a QNode into several tapes by aggregating all operations up to a `qml.Snapshot`
+    operation into their own execution tape.
 
+    The output is a dictionary where each key is either the tag supplied to the snapshot or its
+    index in order of appearance, in additition to an "execution_results" that returns the final output
+    of the quantum circuit.
     Args:
-        qnode (.QNode): the input QNode to be simulated
+        tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        A function that has the same argument signature as ``qnode`` and returns a dictionary.
-        When called, the function will execute the QNode on the registered device and retrieve
-        the saved snapshots obtained via the :class:`~.pennylane.Snapshot` operation. Additionally,
-        the snapshot dictionary always contains the execution results of the QNode, so the use of
-        the tag "execution_results" should be avoided to prevent conflicting key names.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
 
     **Example**
 
@@ -87,6 +101,52 @@ def snapshots(qnode):
     2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
     'execution_results': 0.0}
     """
+    new_tapes = []
+    accumulated_ops = []
+    snapshot_tags = []
+
+    for op in tape.operations:
+        if isinstance(op, qml.Snapshot):
+            snapshot_tags.append(op.tag or len(new_tapes))
+
+            if op.hyperparameters["use_device_shots"]:
+                shots = tape.shots
+            elif op.hyperparameters["shots"]:
+                shots = qml.measurements.Shots(op.hyperparameters["shots"])
+            else:
+                # Assume StateMeasurement
+                shots = None
+
+            meas_op = op.hyperparameters["measurement"]
+            tape_meas = [meas_op] if meas_op else [qml.state()]
+            new_tapes.append(QuantumTape(ops=accumulated_ops, measurements=tape_meas, shots=shots))
+        else:
+            accumulated_ops.append(op)
+
+    # Create an additional final tape if a return measurement exists
+    if tape.measurements:
+        snapshot_tags.append("execution_results")
+        new_tapes.append(QuantumTape(ops=accumulated_ops, measurements=tape.measurements))
+
+    def postprocessing_fn(results, snapshot_tags):
+        return dict(zip(snapshot_tags, results))
+
+    warnings.warn(
+        "Snapshots are not supported for the given device. Therefore, a tape will be "
+        f"created for each snapshot, resulting in a total of {len(new_tapes)} executions.",
+        UserWarning,
+    )
+
+    return new_tapes, partial(postprocessing_fn, snapshot_tags=snapshot_tags)
+
+
+@snapshots.custom_qnode_transform
+def snapshots_qnode(self, qnode, targs, tkwargs):
+    """A custom QNode wrapper for the snapshot transform :func:`~.snapshots`.
+    Depending on whether the QNode's device supports snapshots, an efficient execution
+    would be used. Otherwise, the QNode's tape would be split into several around the
+    present snapshots and execute each individually.
+    """
 
     def get_snapshots(*args, **kwargs):
         old_interface = qnode.interface
@@ -104,4 +164,7 @@ def snapshots(qnode):
         dbg.snapshots["execution_results"] = results
         return dbg.snapshots
 
-    return get_snapshots
+    if _is_snapshot_compatible(qnode.device):
+        return get_snapshots
+
+    return self.default_qnode_transform(qnode, targs, tkwargs)

@@ -201,17 +201,33 @@ class Snapshot(Operation):
     num_params = 0
     grad_method = None
 
-    def __init__(self, tag=None, measurement=None):
+    def __init__(self, tag=None, measurement=None, use_device_shots=False, shots=None):
+        if use_device_shots and shots is not None:
+            raise ValueError("shots can not be set to a value when use_device_shots is True.")
+
+        if not use_device_shots and not isinstance(shots, qml.measurements.Shots):
+            shots = qml.measurements.Shots(shots)
+
         self.tag = tag
         if measurement:
-            if isinstance(measurement, qml.measurements.StateMeasurement):
+            if any(
+                isinstance(measurement, meas_type)
+                for meas_type in (
+                    qml.measurements.StateMeasurement,
+                    qml.measurements.SampleMeasurement,
+                )
+            ):
                 qml.queuing.QueuingManager.remove(measurement)
             else:
                 raise ValueError(
                     f"The measurement {measurement.__class__.__name__} is not supported as it is not "
-                    f"an instance of {qml.measurements.StateMeasurement}"
+                    f"an instance of {qml.measurements.StateMeasurement} or {qml.measurements.SampleMeasurement}"
                 )
+
         self.hyperparameters["measurement"] = measurement
+        self.hyperparameters["use_device_shots"] = use_device_shots
+        self.hyperparameters["shots"] = shots
+
         super().__init__(wires=[])
 
     def label(self, decimals=None, base_label=None, cache=None):
