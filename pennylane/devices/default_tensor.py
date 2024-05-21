@@ -186,7 +186,7 @@ class DefaultTensor(Device):
         dtype=np.complex128,
         **kwargs,
     ) -> None:
-        print(has_quimb)
+
         if not has_quimb:
             raise ImportError(
                 "This feature requires quimb, a library for tensor network manipulations. "
