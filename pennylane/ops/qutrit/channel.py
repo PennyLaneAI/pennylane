@@ -227,8 +227,9 @@ class QutritDepolarizingChannel(Channel):
 class QutritAmplitudeDamping(Channel):
     r"""
     Single-qutrit amplitude damping error channel.
+
     Interaction with the environment can lead to changes in the state populations of a qutrit.
-    This can be modelled for qutrits by the qutrit amplitude damping channel, with the following Kraus matrices:
+    This can be modelled by the qutrit amplitude damping channel with the following Kraus matrices:
 
     .. math::
         K_0 = \begin{bmatrix}
@@ -245,9 +246,9 @@ class QutritAmplitudeDamping(Channel):
                 0 & 0 & \sqrt{\gamma_2} \\
                 0 & 0 & 0 \\
                 0 & 0 & 0
-                \end{bmatrix}
+                \end{bmatrix},
 
-    Where :math:`\gamma_1 \in [0, 1]` and :math:`\gamma_2 \in [0, 1]` are the amplitude damping
+    where :math:`\gamma_1 \in [0, 1]` and :math:`\gamma_2 \in [0, 1]` are the amplitude damping
     probabilities for subspaces (0,1) and (0,2) respectively.
 
     .. note::
@@ -275,7 +276,7 @@ class QutritAmplitudeDamping(Channel):
 
     @staticmethod
     def compute_kraus_matrices(gamma_1, gamma_2):  # pylint:disable=arguments-differ
-        r"""Kraus matrices representing the QutritAmplitudeDamping channel.
+        r"""Kraus matrices representing the ``QutritAmplitudeDamping`` channel.
 
         Args:
             gamma_1 (float): :math:`|1\rangle \rightarrow |0\rangle` amplitude damping probability.
