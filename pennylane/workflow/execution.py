@@ -554,7 +554,7 @@ def execute(
             "Ignoring requested mid-circuit measurement configuration.",
             UserWarning,
         )
-        config.mcm_config["postselect_shots"] = None
+        config.mcm_config["postselect_shots"] = False
 
     if any(not tape.shots for tape in tapes) and config.mcm_config["mcm_method"] == "one-shot":
         warnings.warn(
@@ -562,7 +562,7 @@ def execute(
             "analytic mode. Using deferred measurements.",
             UserWarning,
         )
-        config.mcm_config["mcm_method"] = None
+        config.mcm_config["mcm_method"] = "deferred"
 
     if transform_program is None:
         if isinstance(device, qml.devices.Device):
