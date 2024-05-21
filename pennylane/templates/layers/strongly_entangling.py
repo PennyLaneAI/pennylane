@@ -200,20 +200,13 @@ class StronglyEntanglingLayers(Operation):
         CNOT(wires=['a', 'a']),
         CNOT(wires=['b', 'b'])]
         """
-        n_layers = qml.math.shape(weights)[0]
+        n_layers = qml.math.shape(weights)[-3]
         wires = qml.wires.Wires(wires)
         op_list = []
 
         for l in range(n_layers):
-            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(
-                    qml.Rot(
-                        weights[..., l, i, 0],
-                        weights[..., l, i, 1],
-                        weights[..., l, i, 2],
-                        wires=wires[i],
-                    )
-                )
+            for i, w in enumerate(wires):
+                op_list.append(qml.Rot(*weights[..., l, i, :].T, w))
 
             if len(wires) > 1:
                 for i in range(len(wires)):
