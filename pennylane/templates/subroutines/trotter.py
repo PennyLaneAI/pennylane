@@ -244,7 +244,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         """The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
-            Resources: The resources for an instance of TrotterProduct.
+            Resources: The resources for an instance of ``TrotterProduct``.
         """
         with qml.QueuingManager.stop_recording():
             decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
