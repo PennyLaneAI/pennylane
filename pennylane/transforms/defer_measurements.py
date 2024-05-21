@@ -412,7 +412,7 @@ def _add_control_gate(op, control_wires, reduce_postselected):
                 ctrl(
                     lambda: qml.apply(op.then_op),  # pylint: disable=cell-var-from-loop
                     control=Wires(control),
-                    control_values=branch,
+                    control_values=list(branch),
                 )
             )()
             new_ops.extend(qscript.circuit)
