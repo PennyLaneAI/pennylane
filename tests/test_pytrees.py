@@ -15,7 +15,7 @@
 Tests for the pennylane pytrees module
 """
 import pennylane as qml
-from pennylane.pytrees import Leaf, Structure, flatten, leaf, register_pytree, unflatten
+from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 
 
 def test_structure_repr():
@@ -24,16 +24,6 @@ def test_structure_repr():
     _, structure = qml.pytrees.flatten(op)
     expected = "PyTree(RX, (<Wires = [0]>, ()), [Leaf])"
     assert repr(structure) == expected
-
-
-def test_leaf_class():
-    """Test the dunder methods of the leaf class."""
-
-    assert repr(leaf) == "Leaf"
-    assert Leaf() == Leaf()
-    assert hash(leaf) == hash(Leaf)
-
-    assert set((Leaf(), Leaf())) == set((Leaf(),))
 
 
 def test_register_new_class():
@@ -58,7 +48,7 @@ def test_register_new_class():
 
     data, structure = flatten(obj)
     assert data == [0.5]
-    assert structure == Structure(MyObj, None, [leaf])
+    assert structure == PyTreeStructure(MyObj, None, [leaf])
 
     new_obj = unflatten([1.0], structure)
     assert isinstance(new_obj, MyObj)
@@ -72,7 +62,9 @@ def test_list():
 
     data, structure = flatten(x)
     assert data == [1, 2, 3, 4]
-    assert structure == Structure(list, None, [leaf, leaf, Structure(list, None, [leaf, leaf])])
+    assert structure == PyTreeStructure(
+        list, None, [leaf, leaf, PyTreeStructure(list, None, [leaf, leaf])]
+    )
 
     new_x = unflatten([5, 6, 7, 8], structure)
     assert new_x == [5, 6, [7, 8]]
@@ -84,7 +76,9 @@ def test_tuple():
 
     data, structure = flatten(x)
     assert data == [1, 2, 3, 4]
-    assert structure == Structure(tuple, None, [leaf, leaf, Structure(tuple, None, [leaf, leaf])])
+    assert structure == PyTreeStructure(
+        tuple, None, [leaf, leaf, PyTreeStructure(tuple, None, [leaf, leaf])]
+    )
 
     new_x = unflatten([5, 6, 7, 8], structure)
     assert new_x == (5, 6, (7, 8))
@@ -97,8 +91,8 @@ def test_dict():
 
     data, structure = flatten(x)
     assert data == [1, 2, 3]
-    assert structure == Structure(
-        dict, ("a", "b"), [leaf, Structure(dict, ("c", "d"), [leaf, leaf])]
+    assert structure == PyTreeStructure(
+        dict, ("a", "b"), [leaf, PyTreeStructure(dict, ("c", "d"), [leaf, leaf])]
     )
     new_x = unflatten([5, 6, 7], structure)
     assert new_x == {"a": 5, "b": {"c": 6, "d": 7}}
@@ -118,15 +112,19 @@ def test_nested_pl_object():
     assert data == [0.1, 2, None]
 
     wires0 = qml.wires.Wires(0)
-    op_structure = Structure(tape[0].__class__, (), [Structure(qml.RX, (wires0, ()), [leaf])])
-    list_op_struct = Structure(list, None, [op_structure])
+    op_structure = PyTreeStructure(
+        tape[0].__class__, (), [PyTreeStructure(qml.RX, (wires0, ()), [leaf])]
+    )
+    list_op_struct = PyTreeStructure(list, None, [op_structure])
 
-    sprod_structure = Structure(qml.ops.SProd, (), [leaf, Structure(qml.X, (wires0, ()), [])])
-    meas_structure = Structure(
+    sprod_structure = PyTreeStructure(
+        qml.ops.SProd, (), [leaf, PyTreeStructure(qml.X, (wires0, ()), [])]
+    )
+    meas_structure = PyTreeStructure(
         qml.measurements.ExpectationMP, (("wires", None),), [sprod_structure, leaf]
     )
-    list_meas_struct = Structure(list, None, [meas_structure])
-    tape_structure = Structure(
+    list_meas_struct = PyTreeStructure(list, None, [meas_structure])
+    tape_structure = PyTreeStructure(
         qml.tape.QuantumScript,
         (tape.shots, tape.trainable_params),
         [list_op_struct, list_meas_struct],
