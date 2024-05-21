@@ -7,7 +7,7 @@ cachetools==5.3.3
 certifi==2024.2.2
 cfgv==3.4.0
 charset-normalizer==3.3.2
-clarabel==0.7.1
+clarabel==0.8.1
 click==8.1.7
 contourpy==1.2.1
 coverage==7.5.1
@@ -61,7 +61,7 @@ python-dateutil==2.9.0.post0
 pytorch-triton-rocm==2.3.0
 PyYAML==6.0.1
 qdldl==0.1.7.post2
-requests==2.32.0
+requests==2.32.1
 rustworkx==0.14.2
 scipy==1.11.4
 scs==3.2.4.post1

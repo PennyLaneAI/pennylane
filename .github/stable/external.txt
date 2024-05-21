@@ -20,7 +20,7 @@ certifi==2024.2.2
 cffi==1.16.0
 cfgv==3.4.0
 charset-normalizer==3.3.2
-clarabel==0.7.1
+clarabel==0.8.1
 click==8.1.7
 comm==0.2.2
 contourpy==1.2.1
@@ -146,7 +146,7 @@ pyzmq==26.0.3
 pyzx==0.8.0
 qdldl==0.1.7.post2
 referencing==0.35.1
-requests==2.32.0
+requests==2.32.1
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.7.1
