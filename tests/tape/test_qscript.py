@@ -1385,13 +1385,11 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, complex)
         assert qs.numeric_type is complex
 
-    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
-    def test_sample_int_eigvals(self, ret):
+    def test_sample_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for a
-        sampling measurement with a Hermitian observable with integer
-        eigenvalues."""
+        sampling measurement returning samples"""
         dev = qml.device("default.qubit", wires=3, shots=5)
-        qs = QuantumScript([qml.RY(0.4, 0)], [ret], shots=5)
+        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample()], shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
@@ -1426,20 +1424,15 @@ class TestNumericType:
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real
-        eigenvalues and another one with integer eigenvalues."""
+        eigenvalues and another sample with integer values."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
-        arr = np.array(
-            [
-                1.32,
-                2.312,
-            ]
-        )
+        arr = np.array([1.32, 2.312])
         herm = np.outer(arr, arr)
 
         a, b = 0, 3
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))]
+        m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample()]
         qs = QuantumScript(ops, m, shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
