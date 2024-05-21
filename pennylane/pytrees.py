@@ -111,9 +111,14 @@ def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: Unfl
         _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn)
 
 
-class Structure(namedtuple("Structure", ["type", "metadata", "children"])):
+@dataclass(repr=False)
+class Structure:
     """A pytree data structure, holding the type, metadata, and child pytree structures."""
-
+    
+    type: type
+    metadata: Metadata
+    children: list[Leaf, 'Structure']
+    
     def __repr__(self):
         return f"PyTree({self.type.__name__}, {self.metadata}, {self.children})"
 
@@ -148,7 +153,7 @@ def flatten(obj) -> Tuple[List[Any], Union[Structure, Leaf]]:
     >>> data
     [1.2, 2.3, 3.4]
     >>> structure
-    <Tree(AdjointOperation, (), (<Tree(Rot, (<Wires = [0]>, ()), (Leaf, Leaf, Leaf))>,))>
+    <PyTree(AdjointOperation, (), (<PyTree(Rot, (<Wires = [0]>, ()), (Leaf, Leaf, Leaf))>,))>
 
     See also :function:`~.unflatten`.
 

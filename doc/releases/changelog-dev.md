@@ -83,6 +83,7 @@
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
 * The `qml.pytrees` module now has `flatten` and `unflatten` methods for serializing pytrees.
+  [(#5701)](https://github.com/PennyLaneAI/pennylane/pull/5701)
 
 <h4>Community contributions 🥳</h4>
 
