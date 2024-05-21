@@ -154,7 +154,7 @@ class DefaultTensor(Device):
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device. Currently, it can only be ``None``, so that computation of
             statistics like expectation values and variances is performed analytically.
-        method (str): Supported method. Currently, only ``mps`` is supported.
+        method (str): Supported method. Currently, only ``"mps"`` is supported.
         dtype (type): Datatype for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
             Default is ``np.complex128``.
         **kwargs: keyword arguments. The following options are currently supported:
@@ -178,16 +178,15 @@ class DefaultTensor(Device):
         "max_bond_dim",
     )
 
-    _new_API = True
-
     def __init__(
         self,
-        wires=None,
+        wires,
         method="mps",
         shots=None,
         dtype=np.complex128,
         **kwargs,
     ) -> None:
+        print(has_quimb)
         if not has_quimb:
             raise ImportError(
                 "This feature requires quimb, a library for tensor network manipulations. "
@@ -265,7 +264,7 @@ class DefaultTensor(Device):
         """Reset the MPS."""
         self._circuitMPS = qtn.CircuitMPS(psi0=self._initial_mps())
 
-    def _initial_mps(self) -> qtn.MatrixProductState:
+    def _initial_mps(self) -> "qtn.MatrixProductState":
         r"""
         Return an initial state to :math:`\ket{0}`.
 
