@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,231 +11,422 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Contains the tape transform that splits non-commuting terms
-"""
-from functools import reduce
 
-# pylint: disable=protected-access
-from typing import Callable, Sequence
+"""
+Contains the tape transform that splits a tape into tapes measuring commuting observables.
+"""
+
+from functools import partial
+from typing import Callable, Dict, List, Sequence, Tuple
 
 import pennylane as qml
+from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.transforms import transform
-
-
-def null_postprocessing(results):
-    """A postprocesing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
-    """
-    return results[0]
+from pennylane.typing import Result, ResultBatch
 
 
 @transform
-def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""
-    Splits a qnode measuring non-commuting observables into groups of commuting observables.
+def split_non_commuting(
+    tape: qml.tape.QuantumScript,
+    group: bool = True,
+    grouping_strategy: str = None,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Splits a tape into tapes measuring groups of commuting observables."""
+
+    # Special case for a single measurement of a Sum or Hamiltonian, in which case
+    # the grouping information can be computed and cached in the observable.
+    if (
+        len(tape.measurements) == 1
+        and isinstance(tape.measurements[0], ExpectationMP)
+        and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
+        and (group or tape.measurements[0].obs.grouping_indices is not None)
+    ):
+        return _split_ham_with_grouping(tape)
+
+    single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
+
+    if not group:
+        measurements = list(single_term_obs_mps.keys())
+        tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
+        return tapes, partial(
+            _processing_fn_no_grouping,
+            single_term_obs_mps=single_term_obs_mps,
+            offsets=offsets,
+            shots=tape.shots,
+        )
+
+    if grouping_strategy == "naive" or (
+        grouping_strategy is None
+        and any(
+            isinstance(m, ExpectationMP) and isinstance(m.obs, (LinearCombination, Hamiltonian))
+            for m in tape.measurements
+        )
+    ):
+        # This is a loose check to see whether naive grouping or pauli grouping should be used,
+        # which does not necessarily make perfect sense but consistent with the old decision
+        # logic in `LegacyDevice.batch_transform`. The premise is that pauli grouping is
+        # classically expensive but produces fewer tapes, whereas naive grouping is classically
+        # faster to compute, but inefficient quantum-wise. If this transform is to be added to a
+        # device's `preprocess`, it will be performed for every circuit execution, which can get
+        # very expensive if there is a large number of observables. The reasoning here is, large
+        # Hamiltonians typically come in the form of a `LinearCombination` or `Hamiltonian`, so
+        # if we see one of those, use naive grouping to be safe. Otherwise, use pauli grouping.
+        return _split_using_naive_grouping(tape, single_term_obs_mps, offsets)
+
+    return _split_using_pauli_grouping(tape, single_term_obs_mps, offsets)
+
+
+def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
+    """Splits a tape measuring a single Hamiltonian or Sum and group commuting observables."""
+
+    obs = tape.measurements[0].obs
+    if obs.grouping_indices is None:
+        obs.compute_grouping()
+
+    coeffs, obs_list = obs.terms()
+    offset = 0
+    single_term_obs_mps = {}
+    mp_groups = []
+    group_sizes = []
+
+    for group_idx, obs_indices in enumerate(obs.grouping_indices):
+        mp_group = []
+        group_size = 0
+        for obs_idx in obs_indices:
+            if isinstance(obs_list[obs_idx], qml.Identity):
+                offset += coeffs[obs_idx]
+            else:
+                new_mp = qml.expval(obs_list[obs_idx])
+                mp_group.append(new_mp)
+                group_size += 1
+                single_term_obs_mps[new_mp] = (
+                    [0],
+                    coeffs[obs_idx],
+                    group_idx,
+                    group_size - 1,
+                )
+        mp_groups.append(mp_group)
+        group_sizes.append(group_size)
+
+    tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
+    return tapes, partial(
+        _processing_fn_with_grouping,
+        single_term_obs_mps=single_term_obs_mps,
+        offsets=[offset],
+        group_sizes=group_sizes,
+        shots=tape.shots,
+    )
+
+
+def _split_using_pauli_grouping(
+    tape: qml.tape.QuantumScript,
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], float]],
+    offsets: List[float],
+):
+    """Split tapes using group_observables in the Pauli module.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A circuit that contains a list of
-            non-commuting observables to measure.
+        tape (~qml.tape.QuantumScript): The tape to be split.
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float]]): A dictionary of
+            measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficient.
+        offsets (List[float]): Offsets associated with each original measurement in the tape.
 
-    Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in
-        :func:`qml.transform <pennylane.transform>`.
-
-    **Example**
-
-    This transform allows us to transform a QNode that measures non-commuting observables to
-    *multiple* circuit executions with qubit-wise commuting groups:
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.transforms.split_non_commuting
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x,wires=0)
-            return [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
-
-    Instead of decorating the QNode, we can also create a new function that yields the same result
-    in the following way:
-
-    .. code-block:: python3
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x,wires=0)
-            return [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
-
-        circuit = qml.transforms.split_non_commuting(circuit)
-
-    Internally, the QNode is split into groups of commuting observables when executed:
-
-    >>> print(qml.draw(circuit)(0.5))
-    0: ──RX(0.50)─┤  <X>
-    \
-    0: ──RX(0.50)─┤  <Z>
-
-    Note that while internally multiple QNodes are created, the end result has the same ordering as
-    the user provides in the return statement.
-    Here is a more involved example where we can see the different ordering at the execution level
-    but restoring the original ordering in the output:
-
-    .. code-block:: python3
-
-        @qml.transforms.split_non_commuting
-        @qml.qnode(dev)
-        def circuit0(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return [qml.expval(qml.X(0)),
-                    qml.expval(qml.Z(0)),
-                    qml.expval(qml.Y(1)),
-                    qml.expval(qml.Z(0) @ qml.Z(1)),
-                    ]
-
-    Drawing this QNode unveils the separate executions in the background
-
-    >>> print(qml.draw(circuit0)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──RX(0.79)─┤  <X>
-    1: ─────────────────────┤  <Y>
-    \
-    0: ──RY(0.79)──RX(0.79)─┤  <Z> ╭<Z@Z>
-    1: ─────────────────────┤      ╰<Z@Z>
-
-    Yet, executing it returns the original ordering of the expectation values. The outputs
-    correspond to
-    :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle,
-    \langle \sigma_z^0\sigma_z^1 \rangle)`.
-
-    >>> circuit0([np.pi/4, np.pi/4])
-    [0.7071067811865475, 0.49999999999999994, 0.0, 0.49999999999999994]
-
-
-    .. details::
-        :title: Usage Details
-
-        Internally, this function works with tapes. We can create a tape with non-commuting
-        observables:
-
-        .. code-block:: python3
-
-            measurements = [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]
-            tape = qml.tape.QuantumTape(measurements=measurements)
-
-            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
-
-        Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms:
-
-        >>> [t.observables for t in tapes]
-        [[expval(Z(0))], [expval(Y(0))]]
-
-        The processing function becomes important when creating the commuting groups as the order
-        of the inputs has been modified:
-
-        .. code-block:: python3
-
-            measurements = [
-                qml.expval(qml.Z(0) @ qml.Z(1)),
-                qml.expval(qml.X(0) @ qml.X(1)),
-                qml.expval(qml.Z(0)),
-                qml.expval(qml.X(0))
-            ]
-            tape = qml.tape.QuantumTape(measurements=measurements)
-
-            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
-
-        In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and ``processing_fn``
-        makes sure that the final output is of the same shape and ordering:
-
-        >>> processing_fn([t.measurements for t in tapes])
-        (expval(Z(0) @ Z(1)),
-        expval(X(0) @ X(1)),
-        expval(Z(0)),
-        expval(X(0)))
-
-        Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
-        ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
-        these measurements are interpreted as measuring with respect to the observable
-        ``qml.Z(wires[0])@qml.Z(wires[1])@...@qml.Z(wires[len(wires)-1])``
-
-        .. code-block:: python3
-
-            measurements = [
-                qml.expval(qml.X(0)),
-                qml.probs(wires=[1]),
-                qml.probs(wires=[0, 1])
-            ]
-            tape = qml.tape.QuantumTape(measurements=measurements)
-
-            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
-
-        This results in two tapes, each with commuting measurements:
-
-        >>> [t.measurements for t in tapes]
-        [[expval(X(0)), probs(wires=[1])], [probs(wires=[0, 1])]]
     """
 
-    # Construct a list of observables to group based on the measurements in the tape
-    obs_list = []
-    for obs in tape.observables:
-        # observable provided for a measurement
-        if isinstance(obs, qml.operation.Operator):
-            obs_list.append(obs)
-        # measurements using wires instead of observables
-        else:
-            # create the PauliZ tensor product observable when only wires are provided for the
-            # measurements
-            obs_wires = obs.wires if obs.wires else tape.wires
-            pauliz_obs = qml.prod(*(qml.Z(wire) for wire in obs_wires))
+    measurements = list(single_term_obs_mps.keys())
+    obs_list = [_mp_to_obs(m, tape) for m in measurements]
+    index_groups = []
+    if len(obs_list) > 0:
+        _, index_groups = qml.pauli.group_observables(obs_list, range(len(obs_list)))
+    single_term_obs_mps_grouped = {}
 
-            obs_list.append(pauliz_obs)
-
-    # If there is more than one group of commuting observables, split tapes
-    _, group_coeffs = qml.pauli.group_observables(obs_list, range(len(obs_list)))
-
-    if len(group_coeffs) > 1:
-        # make one tape per commuting group
-        tapes = []
-        for indices in group_coeffs:
-            new_tape = tape.__class__(
-                tape.operations, (tape.measurements[i] for i in indices), shots=tape.shots
+    mp_groups = [[] for _ in index_groups]
+    group_sizes = []
+    for group_idx, obs_indices in enumerate(index_groups):
+        group_size = 0
+        for obs_idx in obs_indices:
+            new_mp = measurements[obs_idx]
+            mp_groups[group_idx].append(new_mp)
+            group_size += 1
+            single_term_obs_mps_grouped[new_mp] = (
+                *single_term_obs_mps[new_mp],
+                group_idx,
+                group_size - 1,
             )
+        group_sizes.append(group_size)
 
-            tapes.append(new_tape)
+    tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
+    return tapes, partial(
+        _processing_fn_with_grouping,
+        single_term_obs_mps=single_term_obs_mps_grouped,
+        offsets=offsets,
+        group_sizes=group_sizes,
+        shots=tape.shots,
+    )
 
-        def reorder_fn(res):
-            """re-order the output to the original shape and order"""
-            # determine if shot vector is used
-            if len(tapes[0].measurements) == 1:
-                shot_vector_defined = isinstance(res[0], tuple)
-            else:
-                shot_vector_defined = isinstance(res[0][0], tuple)
 
-            res = list(zip(*res)) if shot_vector_defined else [res]
+def _split_using_naive_grouping(
+    tape: qml.tape.QuantumScript,
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], float]],
+    offsets: List[float],
+):
+    """Split tapes by grouping observables based on overlapping wires.
 
-            reorder_indxs = qml.math.concatenate(group_coeffs)
+    Args:
+        tape (~qml.tape.QuantumScript): The tape to be split.
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float]]): A dictionary of
+            measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficient.
+        offsets (List[float]): Offsets associated with each original measurement in the tape.
 
-            res_ordered = []
-            for shot_res in res:
-                # flatten the results
-                shot_res = reduce(
-                    lambda x, y: x + list(y) if isinstance(y, (tuple, list)) else x + [y],
-                    shot_res,
-                    [],
+    """
+
+    mp_groups = []
+    wires_for_each_group = []
+    group_sizes = []
+    single_term_obs_mps_grouped = {}
+    num_groups = 0
+
+    for smp, (mp_indices, coeff) in single_term_obs_mps.items():
+
+        if len(smp.wires) == 0:  # measurement acting on all wires
+            mp_groups.append([smp])
+            wires_for_each_group.append(smp.wires)
+
+        group_idx = 0
+        added_to_existing_group = False
+        while not added_to_existing_group and group_idx < num_groups:
+            wires = wires_for_each_group[group_idx]
+            if len(wires) != 0 and len(qml.wires.Wires.shared_wires([wires, smp.wires])) == 0:
+                mp_groups[group_idx].append(smp)
+                wires_for_each_group[group_idx] += smp.wires
+                group_sizes[group_idx] += 1
+                single_term_obs_mps_grouped[smp] = (
+                    mp_indices,
+                    coeff,
+                    group_idx,
+                    group_sizes[group_idx] - 1,
                 )
+                added_to_existing_group = True
+            group_idx += 1
 
-                # reorder the tape results to match the user-provided order
-                shot_res = list(zip(range(len(shot_res)), shot_res))
-                shot_res = sorted(shot_res, key=lambda r: reorder_indxs[r[0]])
-                shot_res = [r[1] for r in shot_res]
+        if not added_to_existing_group:
+            mp_groups.append([smp])
+            wires_for_each_group.append(smp.wires)
+            group_sizes.append(1)
+            single_term_obs_mps_grouped[smp] = (mp_indices, coeff, num_groups - 1, 0)
+            num_groups += 1
 
-                res_ordered.append(tuple(shot_res))
+    tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
+    return tapes, partial(
+        _processing_fn_with_grouping,
+        single_term_obs_mps=single_term_obs_mps_grouped,
+        offsets=offsets,
+        group_sizes=group_sizes,
+        shots=tape.shots,
+    )
 
-            return tuple(res_ordered) if shot_vector_defined else res_ordered[0]
 
-        return tapes, reorder_fn
+def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
+    """Splits all multi-term observables in a tape to measurements of single-term observables.
 
-    # if the group is already commuting, no need to do anything
-    return [tape], null_postprocessing
+    Args:
+        tape (~qml.tape.QuantumScript): The tape with measurements to split.
+
+    Returns:
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float]]): A dictionary
+            for measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficient.
+        offsets (List[float]): Offsets associated with each original measurement in the tape.
+
+    """
+
+    # The dictionary for measurements of each unique single-term observable, mapped the indices
+    # of the original measurements it belongs to, and its coefficient.
+    single_term_obs_mps = {}
+
+    # Offsets associated with each original measurement in the tape (from Identity)
+    offsets = []
+
+    for mp_idx, mp in enumerate(tape.measurements):
+        obs = mp.obs
+        offset = 0
+        if isinstance(mp, ExpectationMP) and isinstance(obs, (Hamiltonian, Sum, Prod, SProd)):
+            if isinstance(obs, SProd):
+                # This is necessary because SProd currently does not flatten into
+                # multiple terms if the base is a sum, which is needed here.
+                obs = obs.simplify()
+            # Break the observable into terms, and construct an ExpectationMP with each term.
+            for c, o in zip(*obs.terms()):
+                # If the observable is an identity, track it with a constant offset
+                if isinstance(o, qml.Identity):
+                    offset += c
+                # If the single-term measurement already exists, it can be reused by all original
+                # measurements. In this case, add the existing single-term measurement to the list
+                # corresponding to this original measurement.
+                # pylint: disable=superfluous-parens
+                elif (sm := qml.expval(o)) in single_term_obs_mps:
+                    single_term_obs_mps[sm][0].append(mp_idx)
+                # Otherwise, add this new measurement to the list of single-term measurements.
+                else:
+                    single_term_obs_mps[sm] = ([mp_idx], c)
+        else:
+            # For all other measurement types, simply add them to the list of measurements.
+            if mp not in single_term_obs_mps:
+                single_term_obs_mps[mp] = ([mp_idx], 1)
+            else:
+                single_term_obs_mps[mp][0].append(mp_idx)
+
+        offsets.append(offset)
+
+    return single_term_obs_mps, offsets
+
+
+def _processing_fn_no_grouping(
+    res: ResultBatch,
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], float]],
+    offsets: List[float],
+    shots: Shots,
+):
+    """Postprocessing function for the split_non_commuting transform without grouping.
+
+    Args:
+        res (ResultBatch): The results from executing the tapes. Assumed to have a shape
+            of (n_groups [,n_shots] [,n_mps] [,n_parameters])
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float]]): A dictionary of
+            measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficient.
+        offsets (List[float]): Offsets associated with each original measurement in the tape.
+        shots (Shots): The shots settings of the original tape.
+
+    """
+
+    res_batch_for_each_mp = [[] for _ in offsets]
+    coeffs_for_each_mp = [[] for _ in offsets]
+
+    for smp_idx, (_, (mp_indices, coeff)) in enumerate(single_term_obs_mps.items()):
+
+        for mp_idx in mp_indices:
+            res_batch_for_each_mp[mp_idx].append(res[smp_idx])
+            coeffs_for_each_mp[mp_idx].append(coeff)
+
+    # Sum up the results for each original measurement
+    res_for_each_mp = [
+        _sum_terms(_sub_res, coeffs, offset)
+        for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
+    ]
+
+    # res_for_each_mp should have shape (n_mps, [,n_shots] [,n_parameters])
+    if len(res_for_each_mp) == 1:
+        return res_for_each_mp[0]
+
+    if shots.has_partitioned_shots:
+        # If the shot vector dimension exists, it should be moved to the first axis
+        # Basically, the shape becomes (n_shots, n_mps, [,n_parameters])
+        res_for_each_mp = [
+            tuple(res_for_each_mp[j][i] for j in range(len(res_for_each_mp)))
+            for i in range(len(res_for_each_mp[0]))
+        ]
+
+    return tuple(res_for_each_mp)
+
+
+def _processing_fn_with_grouping(
+    res: ResultBatch,
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], float, int, int]],
+    offsets: List[float],
+    group_sizes: List[int],
+    shots: Shots,
+):
+    """Postprocessing function for the split_non_commuting transform with grouping.
+
+    Args:
+        res (ResultBatch): The results from executing the tapes. Assumed to have a shape
+            of (n_groups [,n_shots] [,n_mps] [,n_parameters])
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float, int, int]]):
+            A dictionary of measurements of each unique single-term observable, mapped to the
+            indices of the original measurements it belongs to, its coefficient, its group
+            index, and the index of the measurement within the group.
+        offsets (List[float]): Offsets associated with each original measurement in the tape.
+        group_sizes (List[int]): The number of tapes in each group.
+        shots (Shots): The shots setting of the original tape.
+
+    Returns:
+        The results combined into a single result for each original measurement.
+
+    """
+
+    res_batch_for_each_mp = [[] for _ in offsets]
+    coeffs_for_each_mp = [[] for _ in offsets]
+
+    for _, (mp_indices, coeff, group_idx, mp_idx_in_group) in single_term_obs_mps.items():
+
+        res_group = res[group_idx]  # ([n_shots] [,n_mps] [,n_parameters])
+        group_size = group_sizes[group_idx]
+
+        if group_size > 1 and shots.has_partitioned_shots:
+            # Each result should have shape ([n_shots] [,n_parameters])
+            sub_res = [_res[mp_idx_in_group] for _res in res_group]
+        else:
+            # If there is only one term in the group, the n_mps dimension would have
+            # been squeezed out, use the entire result directly.
+            sub_res = res_group if group_size == 1 else res_group[mp_idx_in_group]
+
+        # Add this result to the result batch for the corresponding original measurement
+        for mp_idx in mp_indices:
+            res_batch_for_each_mp[mp_idx].append(sub_res)
+            coeffs_for_each_mp[mp_idx].append(coeff)
+
+    # Sum up the results for each original measurement
+    res_for_each_mp = [
+        _sum_terms(_sub_res, coeffs, offset)
+        for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
+    ]
+
+    # res_for_each_mp should have shape (n_mps, [,n_shots] [,n_parameters])
+    if len(res_for_each_mp) == 1:
+        return res_for_each_mp[0]
+
+    if shots.has_partitioned_shots:
+        # If the shot vector dimension exists, it should be moved to the first axis
+        # Basically, the shape becomes (n_shots, n_mps, [,n_parameters])
+        res_for_each_mp = [
+            tuple(res_for_each_mp[j][i] for j in range(len(res_for_each_mp)))
+            for i in range(len(res_for_each_mp[0]))
+        ]
+
+    return tuple(res_for_each_mp)
+
+
+def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float) -> Result:
+    """Sum results from measurements of multiple terms in a multi-term observable."""
+
+    # Trivially return the original result
+    if coeffs == [1] and offset == 0:
+        return res[0]
+
+    # The shape of res at this point is (n_terms, [,n_shots] [,n_parameters])
+    dot_products = []
+    for c, r in zip(coeffs, res):
+        dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
+    if len(dot_products) == 0:
+        return offset
+    summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+    return qml.math.convert_like(summed_dot_products + offset, res[0])
+
+
+def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.operation.Operator:
+    """Extract the observable from a measurement process.
+
+    If the measurement process has an observable, return it. Otherwise, return a dummy
+    observable that is a tensor product of Z gates on every wire.
+
+    """
+
+    if mp.obs is not None:
+        return mp.obs
+
+    obs_wires = mp.wires if mp.wires else tape.wires
+    return qml.prod(*(qml.Z(wire) for wire in obs_wires))
