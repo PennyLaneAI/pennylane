@@ -318,7 +318,7 @@ def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.
 
     * If either tensor is 0-dimensional, elementwise multiplication
-      is performed and a 0-dimensional scalar or a vector with the
+      is performed and a 0-dimensional scalar or a tensor with the
       same dimensions as the other tensor is returned.
 
     * If both tensors are 1-dimensional, the dot product is returned.
@@ -352,15 +352,17 @@ def dot(tensor1, tensor2, like=None):
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
     if like in {"tensorflow", "autograd"}:
-        shape_y = len(np.shape(y))
-        shape_x = len(np.shape(x))
-        if shape_x == 0 or shape_y == 0:
+
+        ndim_y = len(np.shape(y))
+        ndim_x = len(np.shape(x))
+
+        if ndim_x == 0 or ndim_y == 0:
             return x * y
 
-        if shape_y == 1:
+        if ndim_y == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=like)
 
-        if shape_x == 2 and shape_y == 2:
+        if ndim_x == 2 and ndim_y == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)

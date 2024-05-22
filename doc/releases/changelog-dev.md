@@ -157,7 +157,7 @@
   multiple measurements, and parameter broadcasting.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
-* Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scaler.
+* Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
 <h3>Contributors ✍️</h3>

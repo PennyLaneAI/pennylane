@@ -185,6 +185,7 @@ def test_gammainc(n, t, gamma_ref):
 
 
 def test_dot_autograd():
+
     x = np.array([1.0, 2.0], requires_grad=False)
     y = np.array([2.0, 3.0], requires_grad=True)
 
@@ -194,6 +195,17 @@ def test_dot_autograd():
     assert fn.allclose(res, 8)
 
     assert fn.allclose(qml_grad(fn.dot)(x, y), x)
+
+
+def test_dot_autograd_with_scalar():
+
+    x = np.array(1.0, requires_grad=False)
+    y = np.array([2.0, 3.0], requires_grad=True)
+
+    res = fn.dot(x, y)
+    assert isinstance(res, np.tensor)
+    assert res.requires_grad
+    assert fn.allclose(res, [2.0, 3.0])
 
 
 def test_kron():
