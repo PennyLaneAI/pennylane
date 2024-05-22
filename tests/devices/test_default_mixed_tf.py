@@ -174,7 +174,7 @@ class TestOps:
         spy = mocker.spy(qml.math, "scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
-        state = np.outer(state, np.conj(state))
+        state = tf.cast(np.outer(state, np.conj(state)), dtype="complex128")
 
         assert qml.math.allclose(tf.reshape(dev._state, (-1,)), tf.reshape(state, (-1,)))
         spy.assert_not_called()
