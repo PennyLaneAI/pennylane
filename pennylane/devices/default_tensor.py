@@ -144,11 +144,11 @@ def accepted_observables(obs: qml.operation.Operator) -> bool:
 @simulator_tracking
 @single_tape_support
 class DefaultTensor(Device):
-    """A PennyLane device to perform tensor network operations on a quantum circuit using
+    """A PennyLane device to perform tensor network simulations of quantum circuits using
     `quimb <https://github.com/jcmgray/quimb/>`_.
 
-    This device is designed to simulate large-scale quantum circuits using tensor networks. For small circuits, other devices like ``default.qubit`` are more suitable.
-    Different methods can be used to simulate the quantum circuit, and the backend uses the ``quimb`` library to perform the tensor network operations.
+    This device is designed to simulate large-scale quantum circuits using tensor networks. For small circuits, other devices like ``default.qubit`` may be more suitable.
+    The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit. 
     Currently, only the Matrix Product State (MPS) method is supported, based on the ``quimb``'s ``CircuitMPS`` class.
 
     Args:
@@ -167,7 +167,7 @@ class DefaultTensor(Device):
             It corresponds to the number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
         cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is ``np.finfo(dtype).eps``.
         contract (str): The contraction method for applying gates in the MPS method. It can be either ``auto-mps`` or ``nonlocal``.
-            ``nonlocal`` turns each gate into a MPO and applies it directly to the MPS, while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next
+            ``nonlocal`` turns each gate into a matrix product operator and applies it directly to the MPS, while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next
             to each other before applying the gate, then swaps them back. Default is ``auto-mps``.
 
     **Example:**
