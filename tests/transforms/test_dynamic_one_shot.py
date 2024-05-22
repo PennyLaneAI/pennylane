@@ -81,6 +81,29 @@ def test_qjit_postselection_error():
         _ = func(1.8)
 
 
+@pytest.mark.parametrize("postselect_shots", [True, False])
+def test_postselect_shots(postselect_shots, mocker):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    dev = qml.device("default.qubit", shots=shots)
+    spy = mocker.spy(qml, "dynamic_one_shot")
+
+    @qml.qnode(dev, postselect_shots=postselect_shots)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    res = f(np.pi / 2)
+    spy.assert_called_once()
+
+    if postselect_shots:
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+        assert np.any(res == np.iinfo(np.int32).min)
+
+
 def test_unsupported_measurements():
     """Test that using unsupported measurements raises an error."""
     tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.state()])

@@ -103,7 +103,7 @@ def null_postprocessing(results):
 
 @transform
 def defer_measurements(
-    tape: QuantumTape, reduce_postselected: bool = True, postselect_shots: bool = None, **kwargs
+    tape: QuantumTape, reduce_postselected: bool = True, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
@@ -158,8 +158,6 @@ def defer_measurements(
         tape (QNode or QuantumTape or Callable): a quantum circuit.
         reduce_postselected (bool): Whether or not to use postselection information to
             reduce the number of operations and control wires in the output tape. Active by default.
-        postselect_shots (bool): Whether or not to discard shots that don't match the
-            postselection criteria.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
@@ -274,7 +272,7 @@ def defer_measurements(
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
-    if qml.compiler.active() and postselect_shots:
+    if qml.compiler.active() and kwargs.get("postselect_shots", None):
         raise ValueError("Cannot discard invalid shots while using qml.qjit")
 
     _check_tape_validity(tape)

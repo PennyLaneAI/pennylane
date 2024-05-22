@@ -55,8 +55,6 @@ def dynamic_one_shot(
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit to add a batch dimension to
-        postselect_shots (bool): Whether or not to discard shots that don't match the
-            postselection criteria.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:

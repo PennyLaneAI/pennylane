@@ -105,6 +105,50 @@ def test_postselection_error_with_wrong_device():
         _ = circ()
 
 
+def test_qjit_postselection_error(monkeypatch):
+    """Test that an error is raised if qjit is active with `postselect=True`"""
+    # TODO: Update test once defer_measurements can be used with qjit
+    # catalyst = pytest.importorskip("catalyst")
+    dev = qml.device("lightning.qubit", wires=3, shots=10)
+
+    # @qml.qjit
+    @partial(qml.defer_measurements, postselect_shots=True)
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=0)
+        # _ = catalyst.measure(0, postselect=0)
+        return qml.sample(wires=[0, 1])
+
+    # Mocking qml.compiler.active() to always return True
+    with monkeypatch.context() as m:
+        m.setattr(qml.compiler, "active", lambda: True)
+        with pytest.raises(ValueError, match="Cannot discard invalid shots while using qml.qjit"):
+            _ = func(1.8)
+
+
+@pytest.mark.parametrize("postselect_shots", [True, False])
+def test_postselect_shots(postselect_shots, mocker):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    dev = qml.device("default.qubit", shots=shots)
+    spy = mocker.spy(qml, "defer_measurements")
+
+    @qml.qnode(dev, postselect_shots=postselect_shots, mcm_method="deferred")
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    res = f(np.pi / 2)
+    spy.assert_called_once()
+
+    if postselect_shots:
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+
+
 @pytest.mark.parametrize(
     "mp, err_msg",
     [
