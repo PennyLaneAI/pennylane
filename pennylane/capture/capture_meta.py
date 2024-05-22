@@ -16,7 +16,7 @@ Defines a metaclass for automatic integration of any ``Operator`` with plxpr pro
 
 See ``explanations.md`` for technical explanations of how this works.
 """
-from inspect import signature
+from inspect import Signature, signature
 
 from .switches import enabled
 
@@ -32,7 +32,9 @@ class CaptureMeta(type):
 
     @property
     def __signature__(cls):
-        return signature(cls.__init__)
+        sig = signature(cls.__init__)
+        without_self = tuple(sig.parameters.values())[1:]
+        return Signature(without_self)
 
     def _primitive_bind_call(cls, *args, **kwargs):
         raise NotImplementedError(

@@ -53,16 +53,20 @@ def test_custom_capture_meta():
         def _primitive_bind_call(cls, *args, **kwargs):
             return p.bind(*args, **kwargs)
 
-        def __init__(self, a, b):
+        def __init__(self, a: int, b: bool):
             self.a = a
             self.b = b
+
+    def f(a: int, b: bool):
+        # similar signature to MyObj but without init
+        return a + b
 
     jaxpr = jax.make_jaxpr(MyObj)(0.5)
 
     assert len(jaxpr.eqns) == 1
     assert jaxpr.eqns[0].primitive == p
 
-    assert signature(MyObj) == signature(MyObj.__init__)
+    assert signature(MyObj) == signature(f)
 
 
 def test_custom_capture_meta_no_bind_primitive_call():
