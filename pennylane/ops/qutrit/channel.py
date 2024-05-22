@@ -272,6 +272,12 @@ class QutritAmplitudeDamping(Channel):
     grad_method = "F"
 
     def __init__(self, gamma_1, gamma_2, wires, id=None):
+        # Verify gamma_1 and gamma_2
+        for gamma in (gamma_1, gamma_2):
+            if not (math.is_abstract(gamma_1) or math.is_abstract(gamma_2)):
+                if not 0.0 <= gamma <= 1.0:
+                    raise ValueError("Each probability must be in the interval [0,1]")
+                    
         super().__init__(gamma_1, gamma_2, wires=wires, id=id)
 
     @staticmethod
@@ -300,11 +306,6 @@ class QutritAmplitudeDamping(Channel):
                 [0.        , 0.        , 0.        ]])
         ]
         """
-        for gamma in (gamma_1, gamma_2):
-            if not (math.is_abstract(gamma_1) or math.is_abstract(gamma_2)):
-                if not 0.0 <= gamma <= 1.0:
-                    raise ValueError("Each probability must be in the interval [0,1]")
-
         K0 = math.diag([1, math.sqrt(1 - gamma_1 + math.eps), math.sqrt(1 - gamma_2 + math.eps)])
         K1 = math.sqrt(gamma_1 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 1, 0], [0, 0, 0], [0, 0, 0]]), gamma_1), gamma_1
