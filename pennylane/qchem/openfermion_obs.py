@@ -1015,13 +1015,13 @@ def _(
     convert_tol=1e12,
 ):
 
-    if unit.strip().lower() not in ("angstrom", "bohr"):
+    if (coord_unit := unit.strip().lower()) not in ("angstrom", "bohr"):
         raise ValueError(
             f"The provided unit, '{unit}' is not supported. "
             f"Please set 'unit' to 'Bohr' or 'Angstrom'."
         )
 
-    if unit.strip().lower() == "angstrom":
+    if coord_unit == "angstrom":
         coordinates = coordinates / bohr_angs
 
     return _molecular_hamiltonian(
