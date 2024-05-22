@@ -150,7 +150,7 @@ class DefaultTensor(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['aux_wire', 'q1', 'q2']``). Default is ``None``.
+            (``['aux_wire', 'q1', 'q2']``).
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device. Currently, it can only be ``None``, so that computation of
             statistics like expectation values and variances is performed analytically.
