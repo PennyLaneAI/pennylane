@@ -21,7 +21,7 @@ import numpy as np
 import semantic_version
 from scipy.linalg import block_diag as _scipy_block_diag
 
-from .utils import get_deep_interface
+from .utils import get_deep_interface, is_abstract
 
 
 def _i(name):
@@ -236,7 +236,6 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "mod"] = "tensorflow.math"
-ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
@@ -263,8 +262,22 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
-ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
+
+def _coerce_tensorflow_diag(x, **kwargs):
+    return ar.autoray.tensorflow_diag(_tf_convert_to_tensor(x), **kwargs)
+
+
+ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
+
+
+def _tensorflow_allclose(a, b, **kwargs):
+    if is_abstract(a):
+        a = ar.to_numpy(a)
+    return ar.autoray.allclose(a, b, **kwargs)
+
+
+ar.register_function("tensorflow", "allclose", _tensorflow_allclose)
 
 ar.register_function(
     "tensorflow",

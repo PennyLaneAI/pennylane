@@ -2265,7 +2265,7 @@ class TestSamples:
         assert torch.is_tensor(res)
         assert res.shape == (shots,)  # pylint:disable=comparison-with-callable
         assert torch.allclose(
-            torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device)
+            torch.unique(res), torch.tensor([-1, 1], dtype=torch.float64, device=torch_device)
         )
 
     def test_estimating_marginal_probability(self, torch_device, tol):
