@@ -299,7 +299,7 @@ class TestBasicCircuit:
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
 
         dev = DefaultQubit(max_workers=max_workers)
 
@@ -783,7 +783,7 @@ class TestExecutingBatches:
 
         dev = DefaultQubit(max_workers=max_workers)
 
-        x = tf.Variable(5.2281)
+        x = tf.Variable(5.2281, dtype="float64")
         with tf.GradientTape(persistent=True) as tape:
             results = self.f(dev, x)
 
@@ -905,7 +905,7 @@ class TestSumOfTermsDifferentiability:
 
         dev = DefaultQubit()
 
-        x = tf.Variable(0.5)
+        x = tf.Variable(0.5, dtype="float64")
 
         with tf.GradientTape() as tape1:
             out = self.f(dev, x, style=style)
