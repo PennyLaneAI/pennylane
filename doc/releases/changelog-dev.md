@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
+
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
@@ -132,9 +135,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.cond` can now be applied to `ControlledOp` operations, and `ctrl` works with tuple-valued `control_values`
-  when applied to an already controlled operation.
-  [(#5718)](https://github.com/PennyLaneAI/pennylane/pull/5718)
+* `qml.cond` can now be applied to `ControlledOp` operations when deferring measurements.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
 * Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
   returned samples of observables containing the `qml.Identity` operator.
