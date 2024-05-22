@@ -40,7 +40,7 @@ libclang==18.1.1
 Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
-matplotlib==3.8.4
+matplotlib==3.9.0
 mdurl==0.1.2
 ml-dtypes==0.3.2
 mypy-extensions==1.0.0
@@ -55,7 +55,7 @@ packaging==24.0
 pathspec==0.12.1
 PennyLane_Lightning==0.37.0
 pillow==10.3.0
-platformdirs==4.2.1
+platformdirs==4.2.2
 pluggy==1.5.0
 pre-commit==3.7.1
 protobuf==4.25.3
@@ -93,4 +93,4 @@ urllib3==2.2.1
 virtualenv==20.26.2
 Werkzeug==3.0.3
 wrapt==1.16.0
-zipp==3.18.1
+zipp==3.18.2

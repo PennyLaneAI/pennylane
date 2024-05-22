@@ -7,7 +7,7 @@ astunparse==1.6.3
 async-timeout==4.0.3
 attrs==23.2.0
 autograd==1.6.2
-autoray==0.6.11
+autoray==0.6.12
 Babel==2.15.0
 cachetools==5.3.3
 certifi==2024.2.2
@@ -22,7 +22,7 @@ exceptiongroup==1.2.1
 flatbuffers==24.3.25
 fonttools==4.51.0
 frozenlist==1.4.1
-fsspec==2024.3.1
+fsspec==2024.5.0
 future==1.0.0
 gast==0.4.0
 google-auth==2.29.0
@@ -118,4 +118,4 @@ Werkzeug==3.0.3
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
 yarl==1.9.4
-zipp==3.18.1
+zipp==3.18.2
