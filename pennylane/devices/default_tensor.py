@@ -147,6 +147,10 @@ class DefaultTensor(Device):
     """A PennyLane device to perform tensor network operations on a quantum circuit using
     `quimb <https://github.com/jcmgray/quimb/>`_.
 
+    This device is designed to simulate large-scale quantum circuits using tensor networks. For small circuits, other devices like ``default.qubit`` are more suitable.
+    Different methods can be used to simulate the quantum circuit, and the backend uses the ``quimb`` library to perform the tensor network operations.
+    Currently, only the Matrix Product State (MPS) method is supported, based on the ``quimb``'s ``CircuitMPS`` class.
+
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
@@ -156,21 +160,18 @@ class DefaultTensor(Device):
             statistics like expectation values and variances is performed analytically.
         method (str): Supported method. Currently, only ``"mps"`` is supported.
         dtype (type): Datatype for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
-            Default is ``np.complex128``.
-        **kwargs: keyword arguments for the device. 
+        **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
-    Keyword Args:    
-        max_bond_dim (int): Maximum bond dimension for the MPS simulator.
+    Keyword Args:
+        max_bond_dim (int): Maximum bond dimension for the MPS method.
             It corresponds to the number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
-        cutoff (float): Truncation threshold for the Schmidt coefficients in a MPS simulator. Default is ``np.finfo(dtype).eps``.
-        contract (str): The contraction method for applying gates. It can be either ``auto-mps`` or ``nonlocal``.
-        nonlocal turns each gate into a MPO and applies it directly to the MPS, while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next
+        cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is ``np.finfo(dtype).eps``.
+        contract (str): The contraction method for applying gates in the MPS method. It can be either ``auto-mps`` or ``nonlocal``.
+            ``nonlocal`` turns each gate into a MPO and applies it directly to the MPS, while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next
             to each other before applying the gate, then swaps them back. Default is ``auto-mps``.
 
     **Example:**
 
-    Note that the ``default.tensor`` device should be used with a large number of qubits, as it is optimized for large-scale quantum circuits.
-    For small circuits, other devices like ``default.qubit`` are more suitable.
     The following code demonstrates how to create a very simple quantum circuit using the ``default.tensor`` device:
 
     .. code-block:: python
