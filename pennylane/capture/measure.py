@@ -65,10 +65,7 @@ def _get_measure_primitive():
 
         shapes = []
         if not shots:
-            for m in measurements:
-                shape, dtype = m.abstract_eval(shots=None, num_device_wires=num_device_wires)
-                shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
-            return shapes
+            shots = [None]
 
         for s in shots:
             for m in measurements:
@@ -80,11 +77,11 @@ def _get_measure_primitive():
 
 
 def measure(*measurements, shots=None, num_device_wires=0):
-    """An instruction to perform a measurement.
+    """An instruction to perform measurements.
 
     .. warning::
         Note that this function does not provide concrete implementations.
-        It is strictly used to capture that quantum/ classical
+        It is strictly used to capture the quantum/ classical
         boundary into jaxpr for later interpretation by a jaxpr interpreter.
 
     Args:
@@ -108,7 +105,7 @@ def measure(*measurements, shots=None, num_device_wires=0):
         d:f32[] e:i32[50,4] = measure[num_device_wires=4 shots=Shots(total=50)] b c
     in (d, e) }
 
-    Here ``measure`` takes the number of device wires and number of shots, and converts the
+    Here ``measure`` takes the number of shots and number of device wires, and converts the
     measurement processes into shaped arrays. ``measure`` can also be used with shot vectors.
     In the case of a shot vector, the results are flattened out, and will need to be repacked
     into the pytree structure before getting returned to a user.

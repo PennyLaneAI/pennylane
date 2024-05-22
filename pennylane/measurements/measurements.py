@@ -191,8 +191,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         This information is similar to ``numeric_type`` and ``shape``, but is provided through
         a class method and does not require the creation of an instance.
 
-        If ``n_wires is None``, then measurement process contains an observable. An integer
-        ``n_wires`` can correspond either the number of wires or the number of mid circuit
+        If ``n_wires is None``, then the measurement process contains an observable. An integer
+        ``n_wires`` can correspond either to the number of wires or to the number of mid circuit
         measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
 
         >>> ProbabilityMP._abstract_eval(n_wires=2)
