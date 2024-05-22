@@ -549,7 +549,7 @@ def execute(
         gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
     )
 
-    if "jax" in interface and config.mcm_config["postselect_shots"]:
+    if interface in {"jax", "jax-jit"} and config.mcm_config.get("postselect_shots", None):
         warnings.warn(
             "Cannot discard invalid shots with postselection when using the 'jax' interface. "
             "Ignoring requested mid-circuit measurement configuration.",
@@ -557,7 +557,10 @@ def execute(
         )
         config.mcm_config["postselect_shots"] = False
 
-    if any(not tape.shots for tape in tapes) and config.mcm_config["mcm_method"] == "one-shot":
+    if (
+        any(not tape.shots for tape in tapes)
+        and config.mcm_config.get("mcm_method", None) == "one-shot"
+    ):
         warnings.warn(
             "Cannot use the 'one-shot' method for mid-circuit measurements with "
             "analytic mode. Using deferred measurements.",
