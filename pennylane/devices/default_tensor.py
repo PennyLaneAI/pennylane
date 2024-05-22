@@ -157,17 +157,20 @@ class DefaultTensor(Device):
         method (str): Supported method. Currently, only ``"mps"`` is supported.
         dtype (type): Datatype for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
             Default is ``np.complex128``.
-        **kwargs: keyword arguments. The following options are currently supported:
+        **kwargs: keyword arguments for the device. 
 
-            ``max_bond_dim`` (int): Maximum bond dimension for the MPS simulator.
-                It corresponds to the number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
-            ``cutoff`` (float): Truncation threshold for the Schmidt coefficients in a MPS simulator. Default is ``np.finfo(dtype).eps``.
-            ``contract`` (str): The contraction method for applying gates. It can be either ``auto-mps`` or ``nonlocal``.
-                ``nonlocal`` turns each gate into a MPO and applies it directly to the MPS, while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next
-                    to each other before applying the gate, then swaps them back. Default is ``auto-mps``.
+    Keyword Args:    
+        max_bond_dim (int): Maximum bond dimension for the MPS simulator.
+            It corresponds to the number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
+        cutoff (float): Truncation threshold for the Schmidt coefficients in a MPS simulator. Default is ``np.finfo(dtype).eps``.
+        contract (str): The contraction method for applying gates. It can be either ``auto-mps`` or ``nonlocal``.
+        nonlocal turns each gate into a MPO and applies it directly to the MPS, while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next
+            to each other before applying the gate, then swaps them back. Default is ``auto-mps``.
 
     **Example:**
 
+    Note that the ``default.tensor`` device should be used with a large number of qubits, as it is optimized for large-scale quantum circuits.
+    For small circuits, other devices like ``default.qubit`` are more suitable.
     The following code demonstrates how to create a very simple quantum circuit using the ``default.tensor`` device:
 
     .. code-block:: python
@@ -193,9 +196,6 @@ class DefaultTensor(Device):
 
     >>> circuit(num_qubits)
     tensor(-1., requires_grad=True)
-
-    Note that the ``default.tensor`` device should be used with a large number of qubits, as it is optimized for large-scale quantum circuits.
-    For small circuits, other devices like ``default.qubit`` are more suitable.
     """
 
     # pylint: disable=too-many-instance-attributes
