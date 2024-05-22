@@ -34,6 +34,7 @@ def circuit():
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts. [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 * The `snapshots` function is now a transform that splits a `QuantumTape` into several depending on the `Snapshots` present in the circuit. [(#5722)](https://github.com/PennyLaneAI/pennylane/pull/5722)
+
 ```python
 ops = [
     qml.Snapshot(),

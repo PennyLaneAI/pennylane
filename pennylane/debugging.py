@@ -16,7 +16,7 @@ This module contains functionality for debugging quantum programs on simulator d
 """
 import warnings
 from functools import partial
-from typing import Callable, Optional, Sequence, Tuple
+from typing import Callable, Sequence, Tuple
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
@@ -63,9 +63,7 @@ class _Debugger:
 
 
 @transform
-def snapshots(
-    tape: QuantumTape, shots: Optional[int] = None
-) -> Tuple[Sequence[QuantumTape], Callable]:
+def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
     r"""Transforms a QNode into several tapes by aggregating all operations up to a `qml.Snapshot`
     operation into their own execution tape.
 
