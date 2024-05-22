@@ -843,6 +843,7 @@ class QuantumScript:
         Returns:
             QuantumScript : a shallow copy of the quantum script
         """
+
         if copy_operations:
             # Perform a shallow copy of all operations in the operation and measurement
             # queues. The operations will continue to share data with the original script operations
@@ -853,7 +854,9 @@ class QuantumScript:
             # Perform a shallow copy of the operation and measurement queues. The
             # operations within the queues will be references to the original script operations;
             # changing the original operations will always alter the operations on the copied script.
+
             _ops = self.operations.copy()
+
             _measurements = self.measurements.copy()
 
         new_qscript = self.__class__(
@@ -864,14 +867,10 @@ class QuantumScript:
         )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
-        EXCLUDED_ATTR = ("_ops", "_measurements", "_measurements", "_shots", "_trainable_params")
-        for attr, value in vars(self).items():
-            if attr not in EXCLUDED_ATTR:
-                if attr == "wires":
-                    setattr(new_qscript, attr, copy.copy(value))
-                else:
-                    setattr(new_qscript, attr, value)
-
+        new_qscript._batch_size = self._batch_size
+        new_qscript._output_dim = self._output_dim
+        new_qscript._obs_sharing_wires = self._obs_sharing_wires
+        new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         return new_qscript
 
     def __copy__(self):
