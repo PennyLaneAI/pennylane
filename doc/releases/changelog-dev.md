@@ -4,20 +4,41 @@
 
 <h3>New features since last release</h3>
 
-* A new `qml.noise` module which contains utililty function for building `NoiseModels`.
+* A new `qml.noise` module which contains utililty function for building `NoiseModels` 
+  and an `add_noise` tranform for addding it to quantum circuits.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
-
-  ```python
-  fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
-  noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
-  ```
+  [(#5718)](https://github.com/PennyLaneAI/pennylane/pull/5718)
 
   ```pycon
-  >>> qml.NoiseModel({fcond: noise}, t1=0.04)
+  >>> fcond1 = qml.noise.op_eq(qml.RX) & qml.noise.wires_in([0, 1])
+  >>> noise1 = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+  >>> fcond2 = qml.noise.op_in([qml.RY, qml.RZ])
+  >>> def noise2(op, **kwargs):
+  ...     qml.ThermalRelaxationError(op.parameters[0] * 0.05, kwargs["t1"], 0.2, 0.6, op.wires)
+  >>> noise_model = qml.NoiseModel({fcond1: noise1, fcond2: noise2}, t1=2.0)
+  >>> noise_model
   NoiseModel({
-    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
-  }, t1 = 0.04)
+      OpEq(RX) & WiresIn([0, 1]) = PhaseDamping(gamma=0.4)
+      OpIn(['RY', 'RZ']) = noise2
+  }, t1 = 2.0)
+  ```
+
+  ``` pycon
+  >>> @partial(qml.transforms.add_noise, noise_model=noise_model)
+  ... @qml.qnode(dev)
+  ... def circuit(w, x, y, z):
+  ...    qml.RX(w, wires=0)
+  ...    qml.RY(x, wires=1)
+  ...    qml.CNOT(wires=[0, 1])
+  ...    qml.RY(y, wires=0)
+  ...    qml.RX(z, wires=1)
+  ...    return qml.expval(qml.Z(0) @ qml.Z(1))
+  >>> print(qml.draw(circuit)(0.9, 0.4, 0.5, 0.6))
+  0: ──RX(0.90)──PhaseDamping(0.40)──────────────────────────╭●──RY(0.50)
+  1: ──RY(0.40)──ThermalRelaxationError(0.02,2.00,0.20,0.60)─╰X──RX(0.60)
+  ───ThermalRelaxationError(0.03,2.00,0.20,0.60)─┤ ╭<Z@Z>
+  ───PhaseDamping(0.40)──────────────────────────┤ ╰<Z@Z>
   ```
 
 <h3>Improvements 🛠</h3>

@@ -107,6 +107,7 @@ preprocessing, get information from a circuit and more.
     ~batch_params
     ~batch_input
     ~transforms.insert
+    ~transforms.add_noise
     ~defer_measurements
     ~transforms.split_non_commuting
     ~transforms.broadcast_expand

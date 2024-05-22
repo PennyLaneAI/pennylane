@@ -39,6 +39,45 @@ def add_noise(tape, noise_model, level=None):
 
     Raises:
         ValueError: argument ``noise_model`` is not an instance of :class:`NoiseModel`.
+        NotImplementedError: Value for the argument ``level`` is not ``None``.
+
+    **Example:**
+
+    The following QNode can be transformed to add noise to the circuit:
+
+    .. code-block:: python3
+
+        from functools import partial
+
+        dev = qml.device("default.mixed", wires=2)
+
+        fcond1 = qml.noise.op_eq(qml.RX) & qml.noise.wires_in([0, 1])
+        noise1 = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+
+        fcond2 = qml.noise.op_in([qml.RX, qml.RZ])
+        def noise2(op, **kwargs):
+            qml.ThermalRelaxationError(op.parameters[0] * 0.5, kwargs["t1"],  kwargs["t2"], 0.6, op.wires)
+
+        noise_model = qml.NoiseModel({fcond1: noise1, fcond2: noise2}, t1=2.0, t2=0.2)
+
+        @partial(qml.transforms.add_noise, noise_model=noise_model)
+        @qml.qnode(dev)
+        def circuit(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+    Executions of this circuit will differ from the noise-free value:
+
+    >>> circuit(0.9, 0.4, 0.5, 0.6)
+    tensor(0.60722291, requires_grad=True)
+    >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+    0: ──RX(0.9)──PhaseDamping(0.4)───────────────────────╭●──RY(0.5)───ThermalRelaxationError(0.2,2.0,0.2,0.6)─┤ ╭<Z@Z>
+    1: ──RY(0.4)──ThermalRelaxationError(0.2,2.0,0.2,0.6)─╰X──RX(0.6)───PhaseDamping(0.4)───────────────────────┤ ╰<Z@Z>
+
     """
     if not isinstance(noise_model, qml.NoiseModel):
         raise ValueError(
@@ -50,7 +89,7 @@ def add_noise(tape, noise_model, level=None):
 
     # decompose templates and their adjoints
     def stop_at(obj):
-        if not isinstance(obj, qml.operation.Operator):
+        if not isinstance(obj, qml.operation.Operator):  # pragma: no-cover
             return True
         if not obj.has_decomposition:
             return True
