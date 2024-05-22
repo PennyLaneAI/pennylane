@@ -155,6 +155,7 @@ class QDrift(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata):
+
         return cls(*data, **dict(metadata))
 
     def __init__(  # pylint: disable=too-many-arguments
