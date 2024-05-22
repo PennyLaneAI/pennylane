@@ -800,7 +800,6 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     symbols = ["H", "H"]
     geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     geometry_ang = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
-    method = "pyscf"
 
     hamiltonian_bohr, _ = qchem.molecular_hamiltonian(
         symbols,
@@ -817,7 +816,7 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
         method=method,
         outpath=tmpdir.strpath,
     )
-    assert qml.ops.functions.equal(hamiltonian_ang, hamiltonian_bohr)
+    assert qml.equal(hamiltonian_ang, hamiltonian_bohr)
 
 
 @pytest.mark.parametrize(
@@ -850,7 +849,7 @@ def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdi
         method=method,
         outpath=tmpdir.strpath,
     )
-    assert qml.ops.functions.equal(hamiltonian_ang, hamiltonian_bohr)
+    assert qml.equal(hamiltonian_ang, hamiltonian_bohr)
 
 
 def test_unit_error_molecular_hamiltonian():
