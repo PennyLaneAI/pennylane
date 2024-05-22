@@ -48,16 +48,17 @@ def add_noise(tape, noise_model, level=None):
     if level is not None:
         raise NotImplementedError("Support for level argument is not currently present.")
 
-    try:
-        tape = tape.expand(
-            stop_at=lambda op: not hasattr(qml.templates, op.name)
-            and not isinstance(op, qml.ops.Adjoint)
-        )
-    except qml.QuantumFunctionError as e:
-        raise qml.QuantumFunctionError(
-            "The add_noise transform cannot transform a circuit measuring non-commuting observables. "
-            "Consider wrapping the gates in their own function and transforming only that function."
-        ) from e
+    # decompose templates and their adjoints
+    def stop_at(obj):
+        if not isinstance(obj, qml.operation.Operator):
+            return True
+        if not obj.has_decomposition:
+            return True
+        return not (hasattr(qml.templates, obj.name) or isinstance(obj, qml.ops.Adjoint))
+
+    error_type = (qml.operation.DecompositionUndefinedError,)
+    decompose = qml.devices.preprocess.decompose
+    [tape], _ = decompose(tape, stopping_condition=stop_at, name="add_noise", error=error_type)
 
     conditions, noises = [], []
     metadata = noise_model.metadata
