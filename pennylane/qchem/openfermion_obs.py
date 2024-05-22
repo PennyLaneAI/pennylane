@@ -1068,9 +1068,7 @@ def _molecular_hamiltonian(
             raise ValueError(
                 "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
             )
-        nuclear_charges = [atomic_numbers[s] for s in symbols]
-
-        n_electrons = sum(nuclear_charges) - charge
+        n_electrons = sum([atomic_numbers[s] for s in symbols]) - charge
 
         if n_electrons % 2 == 1 or mult != 1:
             raise ValueError(
