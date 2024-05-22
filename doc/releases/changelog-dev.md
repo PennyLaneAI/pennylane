@@ -116,6 +116,10 @@
   returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
   [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
 
+* `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
+  Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
+  [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
+
 <h3>Deprecations 👋</h3>
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated. 
