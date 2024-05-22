@@ -447,11 +447,11 @@ class TestMidCircuitMeasurements:
     @pytest.mark.parametrize(
         "mcm_method, shots, expected_transform",
         [
-            ("deferred", 10, "defer_measurements"),
-            ("deferred", None, "defer_measurements"),
-            (None, None, "defer_measurements"),
-            (None, 10, "dynamic_one_shot"),
-            ("one-shot", 10, "dynamic_one_shot"),
+            ("deferred", 10, qml.defer_measurements),
+            ("deferred", None, qml.defer_measurements),
+            (None, None, qml.defer_measurements),
+            (None, 10, qml.dynamic_one_shot),
+            ("one-shot", 10, qml.dynamic_one_shot),
         ],
     )
     def test_mcm_method(self, mcm_method, shots, expected_transform, mocker):
@@ -459,7 +459,7 @@ class TestMidCircuitMeasurements:
         dev = qml.device("default.qubit")
         mcm_config = {"postselect_shots": None, "mcm_method": mcm_method}
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
-        spy = mocker.spy(qml, expected_transform)
+        spy = mocker.spy(expected_transform, "_transform")
 
         _, _ = mid_circuit_measurements(tape, dev, mcm_config)
         spy.assert_called_once()

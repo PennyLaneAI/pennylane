@@ -47,7 +47,7 @@ from pennylane.transforms.dynamic_one_shot import parse_native_mid_circuit_measu
 def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
     circuit = qml.tape.QuantumScript([qml.RX(1.0, 0)], [measurement])
     with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
-        parse_native_mid_circuit_measurements(circuit, [circuit], [[]])
+        parse_native_mid_circuit_measurements(circuit, [circuit], [[]], None)
 
 
 def test_postselection_error_with_wrong_device():

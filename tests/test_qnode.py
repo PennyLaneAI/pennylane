@@ -878,11 +878,8 @@ class TestIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "dev, call_count",
-        [
-            (qml.device("default.qubit", wires=3), 2),
-            (qml.device("default.qubit.legacy", wires=3), 1),
-        ],
+        "dev",
+        [qml.device("default.qubit", wires=3), qml.device("default.qubit.legacy", wires=3)],
     )
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -898,7 +895,7 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(
-        self, dev, call_count, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, dev, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
@@ -928,7 +925,7 @@ class TestIntegration:
 
         assert np.allclose(r1, r2[0])
         assert np.allclose(r2[1], mv_res(first_par))
-        assert spy.call_count == call_count  # once for each preprocessing
+        assert spy.call_count == 2
 
     @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_dynamic_one_shot_if_mcm_unsupported(self, dev_name):
@@ -1699,6 +1696,61 @@ class TestNewDeviceIntegration:
 
         results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
         assert qml.math.allclose(results, np.zeros((20, 2)))
+
+
+@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
+class TestMCMConfiguration:
+    """Tests for MCM configuration arguments"""
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [True, False])
+    @pytest.mark.parametrize("interface", ["jax", "auto"])
+    def test_jax_warning_with_postselect_shots(self, use_jit, dev_name, interface):
+        """Test that a warning is raised when postselect_shots=True with jax"""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        shots = 100
+        dev = qml.device(dev_name, wires=3, shots=shots)
+
+        @qml.qnode(dev, postselect_shots=True, interface=interface)
+        def f(x):
+            qml.RX(x, 0)
+            _ = qml.measure(0, postselect=1)
+            return qml.sample(wires=[0, 1])
+
+        if use_jit:
+            f = jax.jit(f)
+        param = jax.numpy.array(np.pi / 4)
+
+        with pytest.warns(
+            UserWarning,
+            match="Cannot discard invalid shots with postselection when using the 'jax' interface",
+        ):
+            res = f(param)
+
+        assert len(res) == shots
+
+    def test_one_shot_warning_without_shots(self, dev_name, mocker):
+        """Test that a warning is raised if mcm_method="one-shot" with no shots"""
+        dev = qml.device(dev_name, wires=3)
+        spy = mocker.spy(qml.defer_measurements, "_transform")
+        one_shot_spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+
+        @qml.qnode(dev, mcm_method="one-shot")
+        def f(x):
+            qml.RX(x, 0)
+            _ = qml.measure(0, postselect=1)
+            return qml.probs(wires=[0, 1])
+
+        param = np.pi / 4
+
+        with pytest.warns(
+            UserWarning, match="Cannot use the 'one-shot' method for mid-circuit measurements with"
+        ):
+            _ = f(param)
+
+        assert spy.call_count != 0
+        one_shot_spy.assert_not_called()
 
 
 class TestTapeExpansion:

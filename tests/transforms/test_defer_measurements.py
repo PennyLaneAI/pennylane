@@ -132,7 +132,7 @@ def test_postselect_shots(postselect_shots, mocker):
     """Test that invalid shots are discarded if requested"""
     shots = 100
     dev = qml.device("default.qubit", shots=shots)
-    spy = mocker.spy(qml, "defer_measurements")
+    spy = mocker.spy(qml.defer_measurements, "_transform")
 
     @qml.qnode(dev, postselect_shots=postselect_shots, mcm_method="deferred")
     def f(x):
@@ -140,7 +140,7 @@ def test_postselect_shots(postselect_shots, mocker):
         _ = qml.measure(0, postselect=1)
         return qml.sample(wires=[0, 1])
 
-    res = f(np.pi / 2)
+    res = f(np.pi / 4)
     spy.assert_called_once()
 
     if postselect_shots:
