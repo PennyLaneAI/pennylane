@@ -275,12 +275,11 @@ def defer_measurements(
         return (tape,), null_postprocessing
 
     if qml.compiler.active() and postselect_shots:
-        raise ValueError("Can't discard invalid shots while using qml.qjit")
+        raise ValueError("Cannot discard invalid shots while using qml.qjit")
 
     _check_tape_validity(tape)
 
     device = kwargs.get("device", None)
-    print("in defer_measurements")
 
     new_operations = []
 

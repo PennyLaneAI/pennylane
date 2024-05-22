@@ -100,11 +100,10 @@ def dynamic_one_shot(
                 "measurements."
             )
     _ = kwargs.get("device", None)
-    print("in dynamic_one_shot")
 
     postselect_shots = kwargs.get("postselect_shots", None)
     if qml.compiler.active() and postselect_shots:
-        raise ValueError("Can't discard invalid shots while using qml.qjit")
+        raise ValueError("Cannot discard invalid shots while using qml.qjit")
     postselect_shots = True if postselect_shots is None else postselect_shots
 
     if not tape.shots:
