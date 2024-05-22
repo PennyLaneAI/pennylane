@@ -85,7 +85,6 @@ class TestDecompositionErrors:
 
             @staticmethod
             def compute_decomposition(*args, **kwargs):
-                print(kwargs)
                 if kwargs["wires"][0] == 0:
                     return [qml.RX(0.2, wires=0)]
                 return [qml.RX(0.2, wires="not the ops wire")]
