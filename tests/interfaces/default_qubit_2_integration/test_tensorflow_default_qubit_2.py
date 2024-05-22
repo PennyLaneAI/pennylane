@@ -143,8 +143,8 @@ class TestTensorflowExecuteIntegration:
 
             return execute([tape1, tape2], device, **execute_kwargs)
 
-        a = tf.Variable(0.1)
-        b = tf.constant(0.2)
+        a = tf.Variable(0.1, dtype="float64")
+        b = tf.constant(0.2, dtype="float64")
         with device.tracker:
             res = cost(a, b)
 

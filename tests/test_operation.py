@@ -2061,6 +2061,20 @@ class TestTensor:
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = op @ 1.0
 
+    @pytest.mark.jax
+    def test_matrix_jax_projector(self):
+        """Test that matrix can be computed with a jax projector."""
+
+        import jax
+
+        def f(state):
+            op = qml.Projector(state, wires=0)
+            return qml.operation.Tensor(op, qml.Z(1)).matrix()
+
+        res = jax.jit(f)(jax.numpy.array([0, 1]))
+        expected = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+        assert qml.math.allclose(res, expected)
+
 
 with qml.operation.disable_new_opmath_cm():
     equal_obs = [
