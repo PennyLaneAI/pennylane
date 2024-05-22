@@ -14,6 +14,8 @@
 """
 Unit tests for the CaptureMeta metaclass.
 """
+from inspect import signature
+
 # pylint: disable=protected-access, undefined-variable
 import pytest
 
@@ -51,10 +53,16 @@ def test_custom_capture_meta():
         def _primitive_bind_call(cls, *args, **kwargs):
             return p.bind(*args, **kwargs)
 
+        def __init__(self, a, b):
+            self.a = a
+            self.b = b
+
     jaxpr = jax.make_jaxpr(MyObj)(0.5)
 
     assert len(jaxpr.eqns) == 1
     assert jaxpr.eqns[0].primitive == p
+
+    assert signature(MyObj) == signature(MyObj.__init__)
 
 
 def test_custom_capture_meta_no_bind_primitive_call():
