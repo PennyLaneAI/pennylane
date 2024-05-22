@@ -179,9 +179,9 @@ class DefaultTensor(Device):
         import pennylane as qml
         import numpy as np
 
-        num_qubits = 80
+        num_qubits = 100
 
-        dev = qml.device("default.tensor", wires=num_qubits, method="mps", max_bond_dim=100)
+        dev = qml.device("default.tensor", wires=num_qubits)
 
 
         @qml.qnode(dev)
