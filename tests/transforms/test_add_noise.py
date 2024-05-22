@@ -66,8 +66,8 @@ class TestAddNoise:
         """Mapped callable for c2"""
         qml.ThermalRelaxationError(0.4, kwargs["t1"], 0.2, 0.6, op.wires)
 
-    noise_model = qml.NoiseModel({c0: n0, c1: n1})
-    noise_model_with_prep = noise_model + qml.NoiseModel({c2: n2}, t1=0.4)
+    noise_model = qml.NoiseModel({c0: n0.__func__, c1: n1})
+    noise_model_with_prep = noise_model + qml.NoiseModel({c2: n2.__func__}, t1=0.4)
 
     def test_noise_model_error(self):
         """Tests if a ValueError is raised when noise model is not given"""
