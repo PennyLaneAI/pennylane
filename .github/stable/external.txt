@@ -10,7 +10,7 @@ astunparse==1.6.3
 async-lru==2.0.4
 attrs==23.2.0
 autograd==1.6.2
-autoray==0.6.9
+autoray==0.6.12
 Babel==2.15.0
 beautifulsoup4==4.12.3
 black==24.4.2
@@ -146,7 +146,7 @@ pyzmq==26.0.3
 pyzx==0.8.0
 qdldl==0.1.7.post2
 referencing==0.35.1
-requests==2.32.1
+requests==2.32.2
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.7.1

@@ -1,7 +1,7 @@
 appdirs==1.4.4
 astroid==2.6.6
 autograd==1.6.2
-autoray==0.6.9
+autoray==0.6.12
 black==24.4.2
 cachetools==5.3.3
 certifi==2024.2.2
@@ -61,7 +61,7 @@ python-dateutil==2.9.0.post0
 pytorch-triton-rocm==2.3.0
 PyYAML==6.0.1
 qdldl==0.1.7.post2
-requests==2.32.1
+requests==2.32.2
 rustworkx==0.14.2
 scipy==1.11.4
 scs==3.2.4.post1
