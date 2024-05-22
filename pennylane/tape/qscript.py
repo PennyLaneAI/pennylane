@@ -864,8 +864,13 @@ class QuantumScript:
         )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
-        new_qscript._batch_size = self._batch_size
-        new_qscript._output_dim = self._output_dim
+        EXCLUDED_ATTR = ("_ops", "_measurements", "_measurements", "_shots", "_trainable_params")
+        for attr, value in vars(self).items():
+            if attr not in EXCLUDED_ATTR:
+                if attr == "wires":
+                    setattr(new_qscript, attr, copy.copy(value))
+                else:
+                    setattr(new_qscript, attr, value)
 
         return new_qscript
 
