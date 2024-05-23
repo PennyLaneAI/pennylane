@@ -853,7 +853,7 @@ def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdi
 
 
 def test_unit_error_molecular_hamiltonian():
-    r"""Test that an error is raised if a wrong/not-supported units for coordinates are entered."""
+    r"""Test that an error is raised if a wrong/not-supported unit for coordinates is entered."""
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
