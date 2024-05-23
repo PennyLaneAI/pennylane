@@ -15,10 +15,13 @@ r"""
 Contains the k-UpCCGSD template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.wires import Wires
 
 
 def generalized_singles(wires, delta_sz):
@@ -248,6 +251,18 @@ class kUpCCGSD(Operation):
             "delta_sz": delta_sz,
         }
         super().__init__(weights, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["s_wires"] = [
+            [wire_map.get(w, w) for w in wires] for wires in self._hyperparameters["s_wires"]
+        ]
+        new_op._hyperparameters["d_wires"] = [
+            [[wire_map.get(w, w) for w in _wires] for _wires in wires]
+            for wires in self._hyperparameters["d_wires"]
+        ]
+        return new_op
 
     @property
     def num_params(self):

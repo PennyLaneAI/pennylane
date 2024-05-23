@@ -122,6 +122,9 @@ class TestFuncToUnitary:
 
         M = 8
 
+        def func(i):
+            return jnp.sin(i) ** 2
+
         r = func_to_unitary(jax.jit(func), M)
 
         for i in range(M):
@@ -142,7 +145,6 @@ class TestFuncToUnitary:
         wire encodes the function."""
         wires = 3
         M = 2**wires
-
         r = func_to_unitary(self.func, M)
 
         dev = qml.device("default.qubit")
@@ -266,23 +268,6 @@ class TestQuantumMonteCarlo:
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
         qml.ops.functions.assert_valid(op)
-
-    # pylint: disable=protected-access
-    def test_flatten_unflatten(self):
-        """Test the flatten and unflatten methods."""
-        p = np.ones(4) / 4
-        target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
-
-        op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-
-        data, metadata = op._flatten()
-        assert data is op.data
-        assert metadata[0] == op.wires
-        assert dict(metadata[1]) == op.hyperparameters
-
-        new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
-        assert op is not new_op
 
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""

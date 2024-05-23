@@ -153,6 +153,9 @@ class HilbertSchmidt(Operation):
 
         super().__init__(*params, wires=wires, id=id)
 
+    def map_wires(self, wire_map: dict):
+        raise NotImplementedError("Mapping the wires of HilbertSchmidt is not implemented.")
+
     @property
     def num_params(self):
         return self._num_params

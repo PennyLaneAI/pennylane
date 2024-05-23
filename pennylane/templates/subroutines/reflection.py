@@ -15,12 +15,14 @@
 """
 This submodule contains the template for the Reflection operation.
 """
+import copy
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 
 class Reflection(Operation):
@@ -104,8 +106,7 @@ class Reflection(Operation):
 
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
-        metadata = tuple(value for key, value in self.hyperparameters.items() if key != "base")
-        return data, metadata
+        return data, (self.hyperparameters["reflection_wires"],)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -113,7 +114,7 @@ class Reflection(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        U, alpha = (data[0], data[1])
+        U, alpha = data
         return cls(U, alpha=alpha, reflection_wires=metadata[0])
 
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
@@ -132,6 +133,17 @@ class Reflection(Operation):
         }
 
         super().__init__(alpha, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["reflection_wires"] = tuple(
+            wire_map.get(w, w) for w in new_op._hyperparameters["reflection_wires"]
+        )
+
+        return new_op
 
     @property
     def alpha(self):

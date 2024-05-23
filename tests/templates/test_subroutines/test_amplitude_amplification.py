@@ -264,23 +264,6 @@ def test_correct_queueing():
     assert np.allclose(circuit1(), circuit3())
 
 
-# pylint: disable=protected-access
-def test_flatten_and_unflatten():
-    """Test the _flatten and _unflatten methods for AmplitudeAmplification."""
-
-    op = qml.AmplitudeAmplification(qml.RX(0.25, wires=0), qml.PauliZ(0))
-    data, metadata = op._flatten()
-
-    assert len(data) == 2
-    assert len(metadata) == 5
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
-
-    assert hash(metadata)
-
-
 def test_amplification():
     """Test that AmplitudeAmplification amplifies a marked element."""
 
