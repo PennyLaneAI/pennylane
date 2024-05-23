@@ -205,8 +205,15 @@ class StronglyEntanglingLayers(Operation):
         op_list = []
 
         for l in range(n_layers):
-            for i, w in enumerate(wires):
-                op_list.append(qml.Rot(*qml.math.transpose(weights[..., l, i, :]), w))
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+                op_list.append(
+                    qml.Rot(
+                        weights[..., l, i, 0],
+                        weights[..., l, i, 1],
+                        weights[..., l, i, 2],
+                        wires=wires[i],
+                    )
+                )
 
             if len(wires) > 1:
                 for i in range(len(wires)):
