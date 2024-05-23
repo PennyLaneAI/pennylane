@@ -800,14 +800,11 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 
     mapping = mapping.strip().lower()
 
-    if mapping not in ("jordan_wigner", "bravyi_kitaev"):
-        raise TypeError(
-            f"The '{mapping}' transformation is not available. \n "
-            f"Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'."
-        )
-
     # fermionic-to-qubit transformation of the Hamiltonian
-    if mapping == "bravyi_kitaev":
+    if mapping == "parity":
+        binary_code = openfermion.parity_code(molecule.n_qubits)
+        return openfermion.transforms.binary_code_transform(fermionic_hamiltonian, binary_code)
+    elif mapping == "bravyi_kitaev":
         return openfermion.transforms.bravyi_kitaev(fermionic_hamiltonian)
 
     return openfermion.transforms.jordan_wigner(fermionic_hamiltonian)
@@ -1137,7 +1134,7 @@ def _molecular_hamiltonian(
                 h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
             elif mapping.strip().lower() == "parity":
                 qubits = len(hf.wires)
-                h_pl = qml.jordan_wigner(hf, qubits, wire_map=wires_map, tol=1.0e-10).simplify()
+                h_pl = qml.parity_transform(hf, qubits, wire_map=wires_map, tol=1.0e-10).simplify()
             elif mapping.strip().lower() == "bravyi_kitaev":
                 qubits = len(hf.wires)
                 h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10).simplify()
