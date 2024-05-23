@@ -40,7 +40,7 @@ networkx==3.2.1
 nodeenv==1.8.0
 numpy==1.26.4
 opt-einsum==3.3.0
-osqp==0.6.5
+osqp==0.6.7
 packaging==24.0
 pathspec==0.12.1
 PennyLane_Lightning==0.37.0
@@ -64,7 +64,7 @@ PyYAML==6.0.1
 qdldl==0.1.7.post2
 requests==2.32.2
 rustworkx==0.14.2
-scipy==1.11.4
+scipy==1.12.0
 scs==3.2.4.post1
 semantic-version==2.10.0
 six==1.16.0
