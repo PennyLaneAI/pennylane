@@ -181,11 +181,15 @@ class DefaultTensor(Device):
     def __init__(
         self,
         wires,
+        *,
         method="mps",
         shots=None,
         dtype=np.complex128,
         **kwargs,
     ) -> None:
+
+        if wires is None:
+            raise TypeError(f"Wires must be provided for the default.tensor device.")
 
         if not has_quimb:
             raise ImportError(

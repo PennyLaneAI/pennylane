@@ -143,6 +143,9 @@ def test_wires_error():
     with pytest.raises(TypeError):
         qml.device("default.tensor")
 
+    with pytest.raises(TypeError):
+        qml.device("default.tensor", wires=None)
+
 
 def test_wires_execution_error():
     """Test that this device cannot execute a tape if its wires do not match the wires on the device."""
