@@ -1432,10 +1432,9 @@ class TestSums:
         processed, _ = dev.preprocess()[0]([qscript])
         assert len(processed) == 1
         qscript = processed[0]
-        if grouping_strategy:
-            tapes, fn = split_non_commuting(qscript, grouping_strategy=grouping_strategy)
-        else:
-            tapes, fn = split_non_commuting(qscript, group=grouping_strategy)
+        tapes, fn = split_non_commuting(
+            qscript, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
+        )
         results = dev.execute(tapes)
         expval = fn(results)
 
@@ -1526,10 +1525,9 @@ class TestSums:
         def circuit():
             return qml.expval(qml.PauliZ(0) @ qml.I())
 
-        if grouping_strategy:
-            circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
-        else:
-            circuit = split_non_commuting(circuit, group=grouping_strategy)
+        circuit = split_non_commuting(
+            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
+        )
 
         assert circuit() == 1.0
 
@@ -1543,10 +1541,9 @@ class TestSums:
         def circuit():
             return qml.expval(1.5 * qml.Z(0))
 
-        if grouping_strategy:
-            circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
-        else:
-            circuit = split_non_commuting(circuit, group=grouping_strategy)
+        circuit = split_non_commuting(
+            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
+        )
 
         assert circuit() == 1.5
 
@@ -1560,10 +1557,9 @@ class TestSums:
         def circuit():
             return qml.expval(1.5 * qml.I(0))
 
-        if grouping_strategy:
-            circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
-        else:
-            circuit = split_non_commuting(circuit, group=grouping_strategy)
+        circuit = split_non_commuting(
+            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
+        )
 
         with _dev.tracker:
             res = circuit()
@@ -1581,10 +1577,9 @@ class TestSums:
         def circuit():
             return qml.expval(1.5 * qml.I()), qml.expval(2.5 * qml.I())
 
-        if grouping_strategy:
-            circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
-        else:
-            circuit = split_non_commuting(circuit, group=grouping_strategy)
+        circuit = split_non_commuting(
+            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
+        )
 
         with _dev.tracker:
             res = circuit()
@@ -1609,10 +1604,9 @@ class TestSums:
                 qml.expval(qml.PauliZ(0) + 1.5 * qml.PauliX(1)),
             )
 
-        if grouping_strategy:
-            circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
-        else:
-            circuit = split_non_commuting(circuit, group=grouping_strategy)
+        circuit = split_non_commuting(
+            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
+        )
 
         res = circuit([0, np.pi / 3, np.pi / 2, np.pi])
 
@@ -1646,10 +1640,9 @@ class TestSums:
                 qml.expval(qml.PauliZ(0) + 1.5 * qml.PauliX(1)),
             )
 
-        if grouping_strategy:
-            circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
-        else:
-            circuit = split_non_commuting(circuit, group=grouping_strategy)
+        circuit = split_non_commuting(
+            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
+        )
 
         if isinstance(theta, list):
             theta = np.array(theta)

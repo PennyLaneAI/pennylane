@@ -32,7 +32,225 @@ def split_non_commuting(
     group: bool = True,
     grouping_strategy: str = None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    """Splits a tape into tapes measuring groups of commuting observables."""
+    """Splits a tape into tapes measuring groups of commuting observables.
+
+    Args:
+        tape (~pennylane.tape.QuantumScript): The tape to be split.
+        group (bool): Whether to compute disjoint groups of commuting observables,
+            leading to fewer tapes. If ``group=False``, one tape will be generated for
+            each observable to be measured.
+        grouping_strategy (str): The grouping strategy to be used. If "naive",
+            grouping will be performed based on overlapping wires; if "pauli",
+            grouping is computed using :func:`~pennylane.pauli.group_observables`.
+            If ``group=False``, this argument is ignored.
+
+    Returns:
+        Tuple[Sequence[pennylane.tape.QuantumScript], Callable]: Returns a tuple containing
+            a list of quantum scripts to be evaluated, and a function to be applied to the
+            results of these tape executions to compute the result of the original tape.
+
+    **Examples:**
+
+    This transform allows us to transform a QNode that measures non-commuting observables to
+    *multiple* circuit executions with qubit-wise commuting groups:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return [
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Z(0)),
+                qml.expval(qml.Y(1)),
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+            ]
+
+    Instead of decorating the QNode, we can also create a new function that yields the same result
+    in the following way:
+
+    .. code-block:: python3
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return [
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Z(0)),
+                qml.expval(qml.Y(1)),
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+            ]
+
+        circuit = qml.transforms.split_non_commuting(circuit)
+
+    Internally, the QNode is split into groups of commuting observables when executed:
+
+    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    0: ──RY(0.79)──RX(0.79)─┤  <X>
+    1: ─────────────────────┤  <Y>
+    \
+    0: ──RY(0.79)──RX(0.79)─┤  <Z> ╭<Z@Z>
+    1: ─────────────────────┤      ╰<Z@Z>
+
+    Note that while internally multiple tapes are created, the end result has the same ordering as
+    the user provides in the return statement. Executing the above QNode returns the original
+    ordering of the expectation values. The outputs correspond to
+    :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle,
+    \langle \sigma_z^0\sigma_z^1 \rangle)`.
+
+    >>> circuit([np.pi/4, np.pi/4])
+    [0.7071067811865475, 0.49999999999999994, 0.0, 0.49999999999999994]
+
+    By default, commuting observables are grouped using :func:`~pennylane.pauli.group_observables`,
+    which results in the fewest number of tapes. Alternatively, naive grouping can be used by
+    setting ``grouping_strategy="naive"``. This will group observables such that no tape contains
+    two measurements on the same wire, disregarding commutativity:
+
+    .. code-block:: python3
+
+        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy="naive")
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return [
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Z(0)),
+                qml.expval(qml.Y(1)),
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+            ]
+
+    In this case, three tapes are created as follows:
+
+    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    0: ──RY(0.79)──RX(0.79)─┤  <X>
+    1: ─────────────────────┤  <Y>
+    \
+    0: ──RY(0.79)──RX(0.79)─┤  <Z>
+    \
+    0: ──RY(0.79)──RX(0.79)─┤ ╭<Z@Z>
+    1: ─────────────────────┤ ╰<Z@Z>
+
+    Finally, if you do not wish to perform any grouping, set ``group=False``:
+
+    .. code-block:: python3
+
+        @functools.partial(qml.transforms.split_non_commuting, group=False)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return [
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Z(0)),
+                qml.expval(qml.Y(1)),
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+            ]
+
+    In this case, each observable is measured in a separate circuit execution.
+
+    0: ──RY(0.79)──RX(0.79)─┤  <X>
+    \
+    0: ──RY(0.79)──RX(0.79)─┤  <Z>
+    \
+    0: ──RY(0.79)──RX(0.79)─┤
+    1: ─────────────────────┤  <Y>
+    \
+    0: ──RY(0.79)──RX(0.79)─┤ ╭<Z@Z>
+    1: ─────────────────────┤ ╰<Z@Z>
+
+    This transform also supports measurements of multi-term observables. For example:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return [
+                qml.expval(qml.Y(2) @ qml.Z(1) + 0.5 * qml.Z(2) + qml.Z(1)),
+                qml.expval(qml.Z(0)),
+                qml.expval(qml.X(1)),
+                qml.expval(qml.Z(2))
+            ]
+
+    The terms will be measured separately, and recombined in the final result.
+
+    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    0: ──RY(0.79)──RX(0.79)─┤  <Z>
+    1: ─────────────────────┤ ╭<Y@Z>  <Z>
+    2: ─────────────────────┤ ╰<Y@Z>
+    \
+    0: ──RY(0.79)──RX(0.79)─┤
+    1: ─────────────────────┤  <X>
+    2: ─────────────────────┤  <Z>
+
+    >>> circuit([np.pi/4, np.pi/4])
+    [1.5, 0.49999999999999994, 0. 0.49999999999999994]
+
+    .. details::
+        :title: Usage Details
+
+        Internally, this function works with tapes. We can create a tape with multiple
+        measurements of non-commuting observables:
+
+        .. code-block:: python3
+
+            measurements = [
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.X(1)),
+                qml.expval(qml.Z(0)),
+                qml.expval(qml.X(0))
+            ]
+            tape = qml.tape.QuantumScript(measurements=measurements)
+            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+
+        Now ``tapes`` is a list of two tapes, each contains a group of commuting observables:
+
+        >>> [t.measurements for t in tapes]
+        [[expval(Z(0) @ Z(1)), expval(Z(0))], [expval(X(0) @ X(1)), expval(X(0))]]
+
+        The processing function becomes important as the order of the inputs has been modified.
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> result_batch = [dev.execute(t) for t in tapes]
+        >>> result_batch
+        [(1.0, 1.0), (0.0, 0.0)]
+
+        The processing function can be used to reorganize the results:
+
+        >>> processing_fn(result_batch)
+        (1.0, 0.0, 1.0, 0.0)
+
+        Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
+        ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
+        these measurements are interpreted as measuring with respect to the observable
+        ``qml.Z(wires[0])@qml.Z(wires[1])@...@qml.Z(wires[len(wires)-1])``
+
+        .. code-block:: python3
+
+            measurements = [
+                qml.expval(qml.X(0)),
+                qml.probs(wires=[1]),
+                qml.probs(wires=[0, 1])
+            ]
+            tape = qml.tape.QuantumScript(measurements=measurements)
+            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+
+        This results in two tapes, each with commuting measurements:
+
+        >>> [t.measurements for t in tapes]
+        [[expval(X(0)), probs(wires=[1])], [probs(wires=[0, 1])]]
+
+    """
 
     # Special case for a single measurement of a Sum or Hamiltonian, in which case
     # the grouping information can be computed and cached in the observable.
@@ -85,35 +303,50 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
         obs.compute_grouping()
 
     coeffs, obs_list = obs.terms()
+
+    # The constant offset of the Hamiltonian, typically arising from Identity terms.
     offset = 0
+
+    # A dictionary for measurements of each unique single-term observable, mapped to the
+    # indices of the original measurements it belongs to, and its coefficient.
     single_term_obs_mps = {}
+
+    # A list of lists for each group of commuting measurement processes.
     mp_groups = []
+
+    # The number of measurements in each group
     group_sizes = []
 
+    # obs.grouping_indices is a list of lists, where each list contains the indices of
+    # observables that belong in each group.
     for group_idx, obs_indices in enumerate(obs.grouping_indices):
         mp_group = []
         group_size = 0
         for obs_idx in obs_indices:
+            # Do not measure Identity terms, but track their contribution with the offset.
             if isinstance(obs_list[obs_idx], qml.Identity):
                 offset += coeffs[obs_idx]
             else:
                 new_mp = qml.expval(obs_list[obs_idx])
-                mp_group.append(new_mp)
-                group_size += 1
                 if new_mp in single_term_obs_mps:
+                    # If the Hamiltonian contains duplicate observables, it can be reused,
+                    # and the coefficients for each duplicate should be combined.
                     single_term_obs_mps[new_mp] = (
-                        [0],
+                        single_term_obs_mps[new_mp][0],
                         single_term_obs_mps[new_mp][1] + coeffs[obs_idx],
                         single_term_obs_mps[new_mp][2],
                         single_term_obs_mps[new_mp][3],
                     )
                 else:
+                    mp_group.append(new_mp)
                     single_term_obs_mps[new_mp] = (
                         [0],
                         coeffs[obs_idx],
                         group_idx,
-                        group_size - 1,
+                        group_size,
                     )
+                    group_size += 1
+
         if group_size > 0:
             mp_groups.append(mp_group)
             group_sizes.append(group_size)
@@ -162,12 +395,12 @@ def _split_using_pauli_grouping(
         for obs_idx in obs_indices:
             new_mp = measurements[obs_idx]
             mp_groups[group_idx].append(new_mp)
-            group_size += 1
             single_term_obs_mps_grouped[new_mp] = (
                 *single_term_obs_mps[new_mp],
                 group_idx,
-                group_size - 1,
+                group_size,
             )
+            group_size += 1
         group_sizes.append(group_size)
 
     for state_mp in state_measurements:
