@@ -836,7 +836,7 @@ def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdi
     geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     geometry_ang = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
 
-    molecule_bohr = qchem.Molecule(symbols, geometry_bohr, unit="Bohr")
+    molecule_bohr = qchem.Molecule(symbols, geometry_bohr, unit="bohr")
     hamiltonian_bohr, _ = qchem.molecular_hamiltonian(
         molecule_bohr,
         method=method,
