@@ -2,6 +2,7 @@ import json
 from collections.abc import Callable
 from typing import Any, Literal, Optional, Union, overload
 
+from pennylane.measurements.shots import Shots
 from pennylane.typing import JSON
 from pennylane.wires import Wires
 
@@ -110,6 +111,7 @@ def _json_default(obj: Any) -> JSON:
     """Default function for ``json.dump()``. Adds handling for the following types:
     - ``pennylane.pytrees.PyTreeStructure``
     - ``pennylane.wires.Wires``
+    - ``pennylane.measurements.shots.Shots``
     """
     if isinstance(obj, PyTreeStructure):
         if obj.is_leaf:
@@ -119,7 +121,10 @@ def _json_default(obj: Any) -> JSON:
     if isinstance(obj, Wires):
         return obj.tolist()
 
-    raise TypeError
+    if isinstance(obj, Shots):
+        return obj.shot_vector
+
+    raise TypeError(obj)
 
 
 def _wrap_user_json_default(user_default: Callable[[Any], JSON]) -> Callable[[Any], JSON]:

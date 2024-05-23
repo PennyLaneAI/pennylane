@@ -18,6 +18,8 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+import pennylane.queuing
+
 has_jax = True
 try:
     import jax.tree_util as jax_tree_util
@@ -283,7 +285,8 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
     Adjoint(Rot(-2, -3, -4, wires=[0]))
 
     """
-    return _unflatten(iter(data), structure)
+    with pennylane.queuing.QueuingManager.stop_recording():
+        return _unflatten(iter(data), structure)
 
 
 def _unflatten(new_data, structure):
