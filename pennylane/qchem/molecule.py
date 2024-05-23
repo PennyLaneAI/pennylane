@@ -79,7 +79,7 @@ class Molecule:
         alpha=None,
         coeff=None,
         normalize=True,
-        unit="Bohr",
+        unit="bohr",
     ):
         if (
             basis_name.lower()
