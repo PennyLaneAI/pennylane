@@ -202,7 +202,10 @@ class DefaultTensor(Device):
     .. details::
             :title: Usage Details
 
-            TODO: provide explanation
+            We can provide additional keyword arguments to the device to customize the simulation.
+
+            In the following example, we consider a slightly more complex circuit. We use the ``default.tensor`` device with the MPS method,
+            setting the maximum bond dimension to 100 and the cutoff to 1e-16. We use `auto-mps` as the contraction technique to apply gates.
 
             .. code-block:: python
 
@@ -234,6 +237,12 @@ class DefaultTensor(Device):
 
             >>> circuit(theta, phi, num_qubits)
             [-0.9953099539219951, 0.0036631029671767208, 0.9999999876072984]
+
+            After the first execution, the time to run this circuit for 50 qubits is around 0.5 seconds depending on the machine.
+            Increasing the number of qubits to 500 will increase the execution time to around 15 seconds, and for 1000 qubits to around 50 seconds.
+
+            The time complexity and the accuracy of the results also depend on the chosen keyword arguments for the device, such as the maximum bond dimension.
+            The specific structure of the circuit significantly affects how the time complexity and accuracy of the simulation scale with these parameters.
     """
 
     # pylint: disable=too-many-instance-attributes
