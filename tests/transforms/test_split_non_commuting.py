@@ -944,6 +944,7 @@ with AnnotatedQueue() as q_tape1:
     qml.PauliX(0)
     H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
     qml.expval(H1)
+
 tape1 = QuantumScript.from_queue(q_tape1)
 
 with AnnotatedQueue() as q_tape2:
@@ -962,6 +963,7 @@ with AnnotatedQueue() as q_tape2:
         ],
     )
     qml.expval(H2)
+
 tape2 = QuantumScript.from_queue(q_tape2)
 
 H3 = qml.Hamiltonian([1.5, 0.3], [qml.Z(0) @ qml.Z(1), qml.X(1)])
@@ -982,17 +984,17 @@ H4 = qml.Hamiltonian(
         qml.PauliZ(2),
         qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
     ],
-).simplify()
+)
 
 with AnnotatedQueue() as q4:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
     qml.PauliX(2)
-
     qml.expval(H4)
 
 tape4 = QuantumScript.from_queue(q4)
+
 TAPES = [tape1, tape2, tape3, tape4]
 OUTPUTS = [-1.5, -6, -1.5, -8]
 
@@ -1014,6 +1016,7 @@ class TestSingleHamiltonian:
         tapes, fn = split_non_commuting(qs)
         results = dev.execute(tapes)
         expval = fn(results)
+
         assert np.isclose(output, expval)
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
@@ -1057,7 +1060,7 @@ class TestSingleHamiltonian:
         assert len(tapes) == 2
 
     def test_number_of_tapes(self):
-        """Tests that the the correct number of tapes is produced"""
+        """Tests that the correct number of tapes is produced"""
 
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
 
@@ -1294,12 +1297,13 @@ class TestSingleHamiltonian:
         processed_res = fn(dummy_res)
         assert qml.math.allclose(processed_res, 10.0)
 
-    def test_only_constant_offset(self):
+    @pytest.mark.parametrize("group", [True, False])
+    def test_only_constant_offset(self, group):
         """Tests that split_non_commuting can handle a single Identity observable"""
 
         H = qml.Hamiltonian([1.5, 2.5], [qml.I(), qml.I()])
 
-        @functools.partial(qml.transforms.split_non_commuting, group=False)
+        @functools.partial(qml.transforms.split_non_commuting, group=group)
         @qml.qnode(dev)
         def circuit():
             return qml.expval(H)

@@ -100,14 +100,23 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
                 new_mp = qml.expval(obs_list[obs_idx])
                 mp_group.append(new_mp)
                 group_size += 1
-                single_term_obs_mps[new_mp] = (
-                    [0],
-                    coeffs[obs_idx],
-                    group_idx,
-                    group_size - 1,
-                )
-        mp_groups.append(mp_group)
-        group_sizes.append(group_size)
+                if new_mp in single_term_obs_mps:
+                    single_term_obs_mps[new_mp] = (
+                        [0],
+                        single_term_obs_mps[new_mp][1] + coeffs[obs_idx],
+                        single_term_obs_mps[new_mp][2],
+                        single_term_obs_mps[new_mp][3],
+                    )
+                else:
+                    single_term_obs_mps[new_mp] = (
+                        [0],
+                        coeffs[obs_idx],
+                        group_idx,
+                        group_size - 1,
+                    )
+        if group_size > 0:
+            mp_groups.append(mp_group)
+            group_sizes.append(group_size)
 
     tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
     return tapes, partial(
