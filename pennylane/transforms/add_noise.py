@@ -28,10 +28,11 @@ def add_noise(tape, noise_model, level=None):
         tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit to be transformed.
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
         level (None, str, int, slice): An indication of a stage in the transform program.
-            - ``None``: expands the tape to have no ``Adjoint`` and ``Templates``.
-            - ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
-            - ``int``: How many transforms to include, starting from the front of the program
-            - ``slice``: a slice to select out components of the transform program.
+
+            * ``None``: expands the tape to have no ``Adjoint`` and ``Templates``.
+            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
+            * ``int``: How many transforms to include, starting from the front of the program
+            * ``slice``: a slice to select out components of the transform program.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
