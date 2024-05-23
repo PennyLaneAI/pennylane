@@ -2409,7 +2409,7 @@ class Tensor(Observable):
             # append diagonalizing unitary for specific wire to U_list
             U_list.append(mats[0])
 
-        mat_size = np.prod([np.shape(mat)[0] for mat in U_list])
+        mat_size = np.prod([qml.math.shape(mat)[0] for mat in U_list])
         wire_size = 2 ** len(self.wires)
         if mat_size != wire_size:
             if partial_overlap:
@@ -2428,7 +2428,7 @@ class Tensor(Observable):
 
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
-        return functools.reduce(np.kron, U_list)
+        return functools.reduce(qml.math.kron, U_list)
 
     def check_wires_partial_overlap(self):
         r"""Tests whether any two observables in the Tensor have partially
