@@ -54,18 +54,14 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
 
         This operator supports batched operands:
 
-        .. doctest::
-
-            >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
-            >>> op.matrix().shape
-            (3, 4, 4)
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.X(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        .. doctest::
-
-            >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
-            AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.Z(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. note::
 
