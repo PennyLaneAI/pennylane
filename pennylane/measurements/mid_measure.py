@@ -219,7 +219,7 @@ def measure(
     measurement_id = str(uuid.uuid4())[:8]
     mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
     if qml.capture.enabled():
-        return qml.capture.measure(mp, shots=1)[0]
+        raise NotImplementedError
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
