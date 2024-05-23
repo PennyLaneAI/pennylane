@@ -75,6 +75,7 @@ def _expand_metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
+    use_probs=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):  # pylint: disable=too-many-arguments
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
