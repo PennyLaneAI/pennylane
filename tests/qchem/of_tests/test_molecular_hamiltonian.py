@@ -827,8 +827,7 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     ],
 )
 def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdir):
-    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units
-    based on user defined information.
+    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units.
     """
 
     symbols = ["H", "H"]
