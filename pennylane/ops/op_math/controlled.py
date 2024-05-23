@@ -740,6 +740,9 @@ def _is_single_qubit_special_unitary(op):
 def _decompose_pauli_x_based_no_control_values(op: Controlled):
     """Decomposes a PauliX-based operation"""
 
+    if isinstance(op, qml.CNOT):
+        return None
+
     if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 1:
         return [qml.CNOT(wires=op.active_wires)]
 

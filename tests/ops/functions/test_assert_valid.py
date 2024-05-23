@@ -78,6 +78,17 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match expansion"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
+    def test_decomposition_must_not_contain_op(self):
+        """Test that decomposition op an operator doesn't include the operator itself"""
+
+        class BadDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return [BadDecomp(wires)]
+
+        with pytest.raises(AssertionError, match="should not be included in its own decomposition"):
+            assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
     def test_error_not_raised(self):
         """Test if has_decomposition is False but decomposition defined."""
 

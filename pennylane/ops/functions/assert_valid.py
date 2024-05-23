@@ -56,6 +56,9 @@ def _check_decomposition(op):
         expand = op.expand()
 
         assert isinstance(decomp, list), "decomposition must be a list"
+        assert op.__class__ not in [
+            decomp_op.__class__ for decomp_op in decomp
+        ], "an operator should not be included in its own decomposition"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
         assert isinstance(expand, qml.tape.QuantumScript), "expand must return a QuantumScript"
 
