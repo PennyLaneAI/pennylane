@@ -93,6 +93,9 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
+* The `qml.data` module can now serialize pytrees
+  [(#5732)](https://github.com/PennyLaneAI/pennylane/pull/5732)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
