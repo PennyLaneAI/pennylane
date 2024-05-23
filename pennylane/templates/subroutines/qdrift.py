@@ -21,6 +21,27 @@ from pennylane.ops import Hamiltonian, LinearCombination, SProd, Sum
 from pennylane.wires import Wires
 
 
+def _extract_hamiltonian_coeffs_and_ops(hamiltonian):
+    """Extract the coefficients and operators from a Hamiltonian that is
+    a ``Hamiltonian``, a ``LinearCombination`` or a ``Sum``."""
+    # Note that potentially_trainable_coeffs does *not* contain all coeffs
+    if isinstance(hamiltonian, (Hamiltonian, LinearCombination)):
+        coeffs, ops = hamiltonian.terms()
+
+    elif isinstance(hamiltonian, Sum):
+        coeffs, ops = [], []
+        for op in hamiltonian:
+            coeff = getattr(op, "scalar", None)
+            if coeff is None:  # coefficient is 1.0
+                coeffs.append(1.0)
+                ops.append(op)
+            else:
+                coeffs.append(coeff)
+                ops.append(op.base)
+
+    return coeffs, ops
+
+
 @qml.QueuingManager.stop_recording()
 def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
     """Generate the randomly sampled decomposition
@@ -43,7 +64,7 @@ def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
     ]
 
     choice_rng = qml.math.random.default_rng(seed)
-    return tuple(choice_rng.choice(exps, p=probs, size=n, replace=True))
+    return list(choice_rng.choice(exps, p=probs, size=n, replace=True))
 
 
 class QDrift(Operation):
@@ -75,7 +96,8 @@ class QDrift(Operation):
         hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a sum of operations
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of exponentiated terms
-        seed (int): The seed for the random number generator
+        seed (int): The seed for the random number generator. If no seed is provided, a random
+            integer is sampled to achieve reproducible behaviour.
 
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
@@ -155,36 +177,22 @@ class QDrift(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-
         return cls(*data, **dict(metadata))
 
     def __init__(  # pylint: disable=too-many-arguments
-        self, hamiltonian, time, n=1, seed=None, decomposition=None, id=None
+        self, hamiltonian, time, n=1, seed=None, id=None
     ):
         r"""Initialize the QDrift class"""
 
-        if isinstance(hamiltonian, (Hamiltonian, LinearCombination)):
-            coeffs, ops = hamiltonian.terms()
-
-        elif isinstance(hamiltonian, Sum):
-            coeffs, ops = [], []
-            for op in hamiltonian:
-                coeff = getattr(op, "scalar", None)
-                if coeff is None:  # coefficient is 1.0
-                    coeffs.append(1.0)
-                    ops.append(op)
-                else:
-                    coeffs.append(coeff)
-                    ops.append(op.base)
-
-        else:
+        if not isinstance(hamiltonian, (Hamiltonian, LinearCombination, Sum)):
             raise TypeError(
-                f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
+                f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum, got {hamiltonian}"
             )
+        coeffs, ops = _extract_hamiltonian_coeffs_and_ops(hamiltonian)
 
         if len(ops) < 2:
             raise ValueError(
-                "There should be atleast 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
             )
 
         if any(requires_grad(coeff) for coeff in coeffs):
@@ -193,16 +201,8 @@ class QDrift(Operation):
                 "coefficients of the input Hamiltonian."
             )
 
-        if decomposition is None:  # need to do this to allow flatten and unflatten
-            unwrapped_coeffs = unwrap(coeffs)
-            decomposition = _sample_decomposition(unwrapped_coeffs, ops, time, n=n, seed=seed)
-
-        self._hyperparameters = {
-            "n": n,
-            "seed": seed,
-            "base": hamiltonian,
-            "decomposition": decomposition,
-        }
+        seed = qml.math.random.randint(0, high=10000000) if seed is None else seed
+        self._hyperparameters = {"n": n, "seed": seed, "base": hamiltonian}
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
     def map_wires(self, wire_map: dict):
@@ -210,9 +210,6 @@ class QDrift(Operation):
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
-        new_op._hyperparameters["decomposition"] = [
-            qml.map_wires(op, wire_map) for op in new_op._hyperparameters["decomposition"]
-        ]
 
         return new_op
 
@@ -242,13 +239,18 @@ class QDrift(Operation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        decomp = kwargs["decomposition"]
+        time = args[-1]
+        hamiltonian = kwargs["base"]
+        seed = kwargs["seed"]
+        n = kwargs["n"]
+        coeffs, ops = _extract_hamiltonian_coeffs_and_ops(hamiltonian)
+        decomposition = _sample_decomposition(unwrap(coeffs), ops, time, n=n, seed=seed)
 
         if qml.QueuingManager.recording():
-            for op in decomp:
+            for op in decomposition:
                 qml.apply(op)
 
-        return list(decomp)
+        return decomposition
 
     @staticmethod
     def error(hamiltonian, time, n=1):

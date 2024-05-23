@@ -69,24 +69,14 @@ class TestInitialization:
         assert op.data == (*h.data, time)
 
         assert op.hyperparameters["n"] == n
-        assert op.hyperparameters["seed"] == seed
+        if seed is None:
+            internal_seed = op.hyperparameters["seed"]
+            assert internal_seed is not None and isinstance(internal_seed, int)
+            second_op = qml.QDrift(h, time, n=n, seed=seed)
+            assert second_op.hyperparameters["seed"] != internal_seed
+        else:
+            assert op.hyperparameters["seed"] == seed
         assert op.hyperparameters["base"] == h
-
-        for term in op.hyperparameters["decomposition"]:
-            # the decomposition is solely made up of exponentials of ops sampled from hamiltonian terms
-            assert term.base in ops
-
-    def test_set_decomp(self):
-        """Test that setting the decomposition works correctly."""
-        h = qml.dot([1.23, -0.45], [qml.PauliX(0), qml.PauliY(0)])
-        decomposition = [
-            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
-            qml.exp(qml.PauliY(0), -0.5j * 1.68 / 3),
-            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
-        ]
-        op = qml.QDrift(h, 0.5, n=3, decomposition=decomposition)
-
-        assert op.hyperparameters["decomposition"] == decomposition
 
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
@@ -127,8 +117,8 @@ class TestInitialization:
                 assert False  # test should fail if an error was raised when we expect it not to
 
     def test_error_hamiltonian(self):
-        """Test that a hamiltonian must have atleast 2 terms to be supported."""
-        msg = "There should be atleast 2 terms in the Hamiltonian."
+        """Test that a hamiltonian must have at least 2 terms to be supported."""
+        msg = "There should be at least 2 terms in the Hamiltonian."
         with pytest.raises(ValueError, match=msg):
             h = qml.Hamiltonian([1.0], [qml.PauliX(0)])
             qml.QDrift(h, 1.23, n=2, seed=None)
@@ -183,6 +173,13 @@ class TestDecomposition:
 
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
         assert decomp == list(expected_decomp)  # sample the same ops
+
+        # Decompositions of an instance are maintained across calls to `compute_decomposition`
+        with qml.tape.QuantumTape() as second_tape:
+            second_decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+
+        assert second_tape.operations == tape.operations
+        assert second_decomp == decomp
 
 
 class TestIntegration:
