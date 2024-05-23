@@ -117,7 +117,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if op is not None and not op.has_diagonalizing_gates:
+    if op is not None and not qml.math.is_abstract(op) and not op.has_diagonalizing_gates:
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
@@ -152,7 +152,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     return_type = Probability
 
     @classmethod
-    def _abstract_eval(cls, n_wires=None, shots=None, num_device_wires=0):
+    def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
         n_wires = num_device_wires if n_wires == 0 else n_wires
         shape = (2**n_wires,)
         return shape, float

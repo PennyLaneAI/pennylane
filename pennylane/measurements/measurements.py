@@ -147,7 +147,20 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     @classmethod
     def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
-        if cls._obs_primitive is None or cls._wires_primitive is None or cls._mcm_primitive is None:
+        """Called instead of ``type.__call__`` if ``qml.capture.enabled()``.
+
+        Measurements have three "modes":
+
+        1) Wires or wires + eigvals
+        2) Observable
+        3) Mid circuit measurements
+
+        Not all measurements support all three modes. For example, ``VNEntropyMP`` does not
+        allow being specified via an observable. But we handle the generic case here.
+
+        """
+        if cls._obs_primitive is None:
+            # safety check if primitives aren't set correctly.
             return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id, **kwargs)
         if obs is None:
             wires = () if wires is None else wires
@@ -168,12 +181,34 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     # pylint: disable=unused-argument
     @classmethod
     def _abstract_eval(
-        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
-    ) -> tuple:
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ) -> tuple[tuple, type]:
         """Calculate the shape and dtype that will be returned when a measurement is performed.
 
         This information is similar to ``numeric_type`` and ``shape``, but is provided through
         a class method and does not require the creation of an instance.
+
+        If ``n_wires is None``, then the measurement process contains an observable. An integer
+        ``n_wires`` can correspond either to the number of wires or to the number of mid circuit
+        measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
+
+        >>> ProbabilityMP._abstract_eval(n_wires=2)
+        ((4,), float)
+        >>> ProbabilityMP._abstract_eval(n_wires=0, num_device_wires=2)
+        ((4,), float)
+        >>> SampleMP._abstract_eval(n_wires=0, shots=50, num_device_wires=2)
+        ((50, 2), int)
+        >>> SampleMP._abstract_eval(n_wires=4, has_eigvals=True, shots=50)
+        ((50,), float)
+        >>> SampleMP._abstract_eval(n_wires=None, shots=50)
+        ((50,), float)
+
+        Note that ``shots`` should strictly be ``None`` or ``int``. Shot vectors are handled higher
+        in the stack.
 
         """
         return (), float
@@ -215,8 +250,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         self.id = id
 
         if wires is not None:
-            # if len(wires) == 0:
-            #    raise ValueError("Cannot set an empty list of wires.")
+            if not qml.capture.enabled() and len(wires) == 0:
+                raise ValueError("Cannot set an empty list of wires.")
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")
 
@@ -324,12 +359,13 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     def __repr__(self):
         """Representation of this class."""
+        name_str = self.return_type.value if self.return_type else type(self).__name__
         if self.mv:
-            return f"{self.return_type.value}({repr(self.mv)})"
+            return f"{name_str}({repr(self.mv)})"
         if self.obs:
-            return f"{self.return_type.value}({self.obs})"
+            return f"{name_str}({self.obs})"
         if self._eigvals is not None:
-            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
+            return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"

@@ -268,7 +268,11 @@ class MidMeasureMP(MeasurementProcess):
 
     @classmethod
     def _abstract_eval(
-        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
     ) -> tuple:
         return (), int
 

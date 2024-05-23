@@ -207,7 +207,11 @@ class CountsMP(SampleMeasurement):
 
     @classmethod
     def _abstract_eval(
-        cls, n_wires: Optional[int] = None, shots: Optional[int] = None, num_device_wires: int = 0
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
     ) -> tuple:
         raise NotImplementedError(
             "CountsMP returns a dictionary, which is not compatible with capture."
