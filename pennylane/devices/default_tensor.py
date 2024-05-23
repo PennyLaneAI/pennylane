@@ -148,8 +148,11 @@ class DefaultTensor(Device):
     `quimb <https://github.com/jcmgray/quimb/>`_.
 
     This device is designed to simulate large-scale quantum circuits using tensor networks. For small circuits, other devices like ``default.qubit`` may be more suitable.
-    The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit. 
+
+    The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
     Currently, only the Matrix Product State (MPS) method is supported, based on the ``quimb``'s ``CircuitMPS`` class.
+
+    This device does not currently support finite shots, derivatives, or vector-Jacobian products.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -194,6 +197,12 @@ class DefaultTensor(Device):
 
     >>> circuit(num_qubits)
     tensor(-1., requires_grad=True)
+
+
+    .. details::
+            :title: Usage Details
+
+            TODO: Add more examples and details about the device.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -290,7 +299,11 @@ class DefaultTensor(Device):
         return self._dtype
 
     def _reset_state(self) -> None:
-        """Reset the MPS."""
+        """
+        Reset the MPS.
+
+        This method modifies the tensor state of the device.
+        """
         self._circuitMPS = qtn.CircuitMPS(psi0=self._initial_mps())
 
     def _initial_mps(self) -> "qtn.MatrixProductState":
@@ -414,7 +427,7 @@ class DefaultTensor(Device):
     def _apply_operation(self, op: qml.operation.Operator) -> None:
         """Apply a single operator to the circuit, keeping the state always in a MPS form.
 
-        Internally it uses `quimb`'s `apply_gate` method.
+        Internally it uses `quimb`'s `apply_gate` method. This method modifies the tensor state of the device.
 
         Args:
             op (Operator): The operation to apply.
