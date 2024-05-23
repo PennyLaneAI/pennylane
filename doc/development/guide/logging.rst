@@ -35,7 +35,7 @@ i) using decorators on the required functions and methods in a given module:
 
 .. code:: python
 
-   # debug_logger can be used to decorate and method or free function
+   # debug_logger can be used to decorate any method or free function
    # debug_logger_init can be used to decorate class __init__ methods.
    from pennylane.logging import debug_logger, debug_logger_init
 
