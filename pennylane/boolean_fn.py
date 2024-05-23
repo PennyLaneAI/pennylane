@@ -185,12 +185,11 @@ class Xor(BooleanFn):
 
 
 class Not(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``OR`` for callables
+    """Developer facing class for implemeting bit-wise ``NOT`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
         left (~.BooleanFn): Left operand in the bit-wise expression.
-        right (~.BooleanFn): Right operand in the bit-wise expression.
     """
 
     def __init__(self, left):

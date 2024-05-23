@@ -71,10 +71,10 @@ def _get_wires(val):
     """
     iters = val if isinstance(val, (list, tuple, set, Wires)) else getattr(val, "wires", [val])
     try:
-        wires = [[w] if isinstance(w, (int, str)) else getattr(w, "wires").tolist() for w in iters]
+        wires = set().union(*((getattr(w, "wires", None) or Wires(w)).tolist() for w in iters))
     except TypeError:
         raise ValueError(f"Wires cannot be computed for {val}") from None
-    return set(w for wire in wires for w in wire)
+    return wires
 
 
 def wires_in(wires):
@@ -155,7 +155,7 @@ class OpIn(BooleanFn):
     """A ``Conditional`` for evaluating if a given operation exist in a specified set of operation
 
     Args:
-        wires (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
+        ops (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
 
     .. seealso:: Users are advised to use :func:`~.op_in` for a functional construction.
     """
@@ -190,7 +190,7 @@ class OpIn(BooleanFn):
             )
         except:  # pylint: disable = bare-except # pragma: no cover
             raise ValueError(
-                "OpEq does not support arithmetic operations "
+                "OpIn does not support arithmetic operations "
                 "that cannot be converted to a linear combination"
             ) from None
 
@@ -199,7 +199,7 @@ class OpEq(BooleanFn):
     """A ``Conditional`` for evaluating if a given operation is equal to the specified operation
 
     Args:
-        wires (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
+        ops (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
 
     .. seealso:: Users are advised to use :func:`~.op_eq` for a functional construction.
     """
@@ -215,7 +215,7 @@ class OpEq(BooleanFn):
         )
 
     def _check_eq_ops(self, x):
-        if not any(not isclass(op) and getattr(op, "arithmetic_depth", 0) for op in self._cond):
+        if all(isclass(op) or not getattr(op, "arithmetic_depth", 0) for op in self._cond):
             return _get_ops(x) == self._cops
 
         try:
@@ -242,13 +242,13 @@ def _get_ops(val):
 
     Args:
         val (Union[str, Operation, Iterable]): object to be used
-            for building the wire set.
+            for building the operation set.
 
     Returns:
         tuple[class]: tuple of :class:`Operation <pennylane.operation.Operation>`
         classes corresponding to val.
     """
-    vals = val if isinstance(val, (list, tuple, set, qml.wires.Wires)) else [val]
+    vals = val if isinstance(val, (list, tuple, set)) else [val]
     return tuple(
         (
             getattr(qml.ops, val)
