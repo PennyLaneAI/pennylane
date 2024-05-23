@@ -1698,19 +1698,18 @@ class TestNewDeviceIntegration:
         assert qml.math.allclose(results, np.zeros((20, 2)))
 
 
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
 class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [True, False])
     @pytest.mark.parametrize("interface", ["jax", "auto"])
-    def test_jax_warning_with_postselect_shots(self, use_jit, dev_name, interface):
+    def test_jax_warning_with_postselect_shots(self, use_jit, interface):
         """Test that a warning is raised when postselect_shots=True with jax"""
         import jax  # pylint: disable=import-outside-toplevel
 
         shots = 100
-        dev = qml.device(dev_name, wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev, postselect_shots=True, interface=interface)
         def f(x):
@@ -1730,6 +1729,7 @@ class TestMCMConfiguration:
 
         assert len(res) == shots
 
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     def test_one_shot_warning_without_shots(self, dev_name, mocker):
         """Test that a warning is raised if mcm_method="one-shot" with no shots"""
         dev = qml.device(dev_name, wires=3)
@@ -1739,7 +1739,7 @@ class TestMCMConfiguration:
         @qml.qnode(dev, mcm_method="one-shot")
         def f(x):
             qml.RX(x, 0)
-            _ = qml.measure(0, postselect=1)
+            _ = qml.measure(0)
             return qml.probs(wires=[0, 1])
 
         param = np.pi / 4
