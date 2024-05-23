@@ -14,7 +14,7 @@
 """ Tests for the transform ``qml.transform.split_non_commuting()`` """
 import functools
 
-# pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error
+# pylint: disable=no-self-use,import-outside-toplevel,no-member,import-error,redefined-outer-name
 import itertools
 
 import numpy as np
@@ -1592,6 +1592,7 @@ class TestSums:
         assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, [1.5, 2.5])
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
     def test_split_non_commuting_broadcasting(self, grouping_strategy):
         """Tests that the split_non_commuting transform works with broadcasting"""

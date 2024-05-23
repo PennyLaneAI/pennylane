@@ -771,6 +771,9 @@ class Hamiltonian(Observable):
         if isinstance(H, Hamiltonian):  # can't be accessed by '@'
             return H.__matmul__(self)
 
+        qml.QueuingManager.remove(H)
+        qml.QueuingManager.remove(self)
+
         coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
 
@@ -788,6 +791,9 @@ class Hamiltonian(Observable):
 
         if isinstance(H, numbers.Number) and H == 0:
             return self
+
+        qml.QueuingManager.remove(H)
+        qml.QueuingManager.remove(self)
 
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
