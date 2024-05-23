@@ -143,6 +143,9 @@ def test_wires_error():
     with pytest.raises(TypeError):
         qml.device("default.tensor")
 
+    with pytest.raises(TypeError):
+        qml.device("default.tensor", wires=None)
+
 
 def test_wires_execution_error():
     """Test that this device cannot execute a tape if its wires do not match the wires on the device."""
@@ -209,15 +212,6 @@ def test_ivalid_data_type():
     """Test that data type can only be np.complex64 or np.complex128."""
     with pytest.raises(TypeError):
         qml.device("default.tensor", wires=0, dtype=float)
-
-
-def test_invalid_shots():
-    """Test that an error is raised if finite number of shots are requestd."""
-    with pytest.raises(ValueError, match="default.tensor does not support finite shots."):
-        qml.device("default.tensor", wires=0, shots=5)
-
-    with pytest.raises(AttributeError):
-        qml.device("default.tensor", wires=0).shots = 10
 
 
 class TestSupportedGatesAndObservables:

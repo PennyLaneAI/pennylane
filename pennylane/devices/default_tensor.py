@@ -155,9 +155,6 @@ class DefaultTensor(Device):
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
-        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
-            to use in executions involving this device. Currently, it can only be ``None``, so that computation of
-            statistics like expectation values and variances is performed analytically.
         method (str): Supported method. Currently, only ``"mps"`` is supported.
         dtype (type): Datatype for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
@@ -213,11 +210,14 @@ class DefaultTensor(Device):
     def __init__(
         self,
         wires,
+        *,
         method="mps",
-        shots=None,
         dtype=np.complex128,
         **kwargs,
     ) -> None:
+
+        if wires is None:
+            raise TypeError("Wires must be provided for the default.tensor device.")
 
         if not has_quimb:
             raise ImportError(
@@ -230,15 +230,12 @@ class DefaultTensor(Device):
                 f"Unsupported method: {method}. The only currently supported method is mps."
             )
 
-        if shots is not None:
-            raise ValueError("default.tensor does not support finite shots.")
-
         if dtype not in [np.complex64, np.complex128]:
             raise TypeError(
                 f"Unsupported type: {dtype}. Supported types are np.complex64 and np.complex128."
             )
 
-        super().__init__(wires=wires, shots=shots)
+        super().__init__(wires=wires, shots=None)
 
         self._method = method
         self._dtype = dtype
