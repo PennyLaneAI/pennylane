@@ -1752,6 +1752,20 @@ class TestMCMConfiguration:
         assert spy.call_count != 0
         one_shot_spy.assert_not_called()
 
+    def test_invalid_mcm_method_warning(self):
+        """Test that a warning is raised if the requested mcm_method is invalid"""
+        shots = 100
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev, mcm_method="foo")
+        def f(x):
+            qml.RX(x, 0)
+            _ = qml.measure(0, postselect=1)
+            return qml.sample(wires=[0, 1])
+
+        with pytest.warns(UserWarning, match="Invalid mid-circuit measurements method 'foo'"):
+            _ = f(1.8)
+
 
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""

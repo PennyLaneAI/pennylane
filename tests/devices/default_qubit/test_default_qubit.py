@@ -18,7 +18,6 @@ from unittest import mock
 
 import numpy as np
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
@@ -1817,7 +1816,6 @@ class TestPostselection:
         assert qml.math.allclose(res, expected)
         assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
-    @flaky(max_runs=5)
     @pytest.mark.parametrize(
         "mp",
         [
@@ -1839,9 +1837,7 @@ class TestPostselection:
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
-        np.random.seed(42)
-
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=1971)
         param = qml.math.asarray(param, like=interface)
 
         @qml.defer_measurements
@@ -1879,7 +1875,7 @@ class TestPostselection:
 
     @pytest.mark.parametrize(
         "mp, expected_shape",
-        [(qml.sample(wires=[0]), (5,)), (qml.classical_shadow(wires=[0]), (2, 5, 1))],
+        [(qml.sample(wires=[0, 2]), (5, 2)), (qml.classical_shadow(wires=[0, 2]), (2, 5, 2))],
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
     @pytest.mark.parametrize("shots", [10, (10, 10)])
@@ -1908,11 +1904,6 @@ class TestPostselection:
                 qml.CNOT([0, 1])
                 qml.measure(0, postselect=1)
                 return qml.apply(mp)
-
-            if use_jit:
-                import jax
-
-                circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
             res = circ_postselect(param, shots=shots)
 

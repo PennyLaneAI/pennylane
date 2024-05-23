@@ -109,11 +109,11 @@ def test_qjit_postselection_error(monkeypatch):
     """Test that an error is raised if qjit is active with `postselect=True`"""
     # TODO: Update test once defer_measurements can be used with qjit
     # catalyst = pytest.importorskip("catalyst")
-    dev = qml.device("lightning.qubit", wires=3, shots=10)
+    # dev = qml.device("lightning.qubit", wires=3, shots=10)
+    dev = qml.device("default.qubit", wires=3, shots=10)
 
     # @qml.qjit
-    @partial(qml.defer_measurements, postselect_shots=True)
-    @qml.qnode(dev)
+    @qml.qnode(dev, postselect_shots=True, mcm_method="deferred")
     def func(x):
         qml.RX(x, 0)
         _ = qml.measure(0, postselect=0)

@@ -16,8 +16,6 @@ Tests for the transform implementing the deferred measurement principle.
 """
 # pylint: disable=too-few-public-methods, too-many-arguments
 
-from functools import partial
-
 import numpy as np
 import pytest
 
@@ -63,22 +61,26 @@ def test_postselection_error_with_wrong_device():
             return qml.probs(wires=[0])
 
 
-def test_qjit_postselection_error():
-    """Test that an error is raised if using qml.qjit and requesting `postselect_shots=True`"""
-    catalyst = pytest.importorskip("catalyst")
+def test_qjit_postselection_error(monkeypatch):
+    """Test that an error is raised if qjit is active with `postselect=True`"""
+    # TODO: Update test once defer_measurements can be used with qjit
+    # catalyst = pytest.importorskip("catalyst")
+    # dev = qml.device("lightning.qubit", wires=3, shots=10)
+    dev = qml.device("default.qubit", wires=3, shots=10)
 
-    dev = qml.device("lightning.qubit", wires=3, shots=10)
-
-    @qml.qjit
-    @partial(qml.dynamic_one_shot, postselect_shots=True)
-    @qml.qnode(dev)
+    # @qml.qjit
+    @qml.qnode(dev, postselect_shots=True, mcm_method="one-shot")
     def func(x):
         qml.RX(x, 0)
-        _ = catalyst.measure(0, postselect=0)
+        _ = qml.measure(0, postselect=0)
+        # _ = catalyst.measure(0, postselect=0)
         return qml.sample(wires=[0, 1])
 
-    with pytest.raises(ValueError, match="Cannot discard invalid shots while using qml.qjit"):
-        _ = func(1.8)
+    # Mocking qml.compiler.active() to always return True
+    with monkeypatch.context() as m:
+        m.setattr(qml.compiler, "active", lambda: True)
+        with pytest.raises(ValueError, match="Cannot discard invalid shots while using qml.qjit"):
+            _ = func(1.8)
 
 
 @pytest.mark.parametrize("postselect_shots", [True, False])
