@@ -158,4 +158,5 @@ from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
 from .default_qutrit_mixed import DefaultQutritMixed
+from .default_tensor import DefaultTensor
 from .._device import Device as LegacyDevice

@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
 <h3>Improvements 🛠</h3>
 
 * `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.

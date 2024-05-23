@@ -366,7 +366,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
-      additional_pip_packages: pyzx pennylane-catalyst matplotlib stim
+      additional_pip_packages: pyzx pennylane-catalyst matplotlib stim quimb
       requirements_file: ${{ strategy.job-index == 0 && 'external.txt' || '' }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
