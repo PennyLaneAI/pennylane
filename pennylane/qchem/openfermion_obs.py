@@ -804,10 +804,10 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     if mapping == "parity":
         binary_code = openfermion.parity_code(molecule.n_qubits)
         return openfermion.transforms.binary_code_transform(fermionic_hamiltonian, binary_code)
-    elif mapping == "bravyi_kitaev":
+    if mapping == "bravyi_kitaev":
         return openfermion.transforms.bravyi_kitaev(fermionic_hamiltonian)
-    else:
-        return openfermion.transforms.jordan_wigner(fermionic_hamiltonian)
+
+    return openfermion.transforms.jordan_wigner(fermionic_hamiltonian)
 
 
 def molecular_hamiltonian(*args, **kwargs):
