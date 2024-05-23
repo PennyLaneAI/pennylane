@@ -89,7 +89,9 @@ class QROM(Operation):
 
     def _flatten(self):
         data = (self.hyperparameters["bitstrings"],)
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items() if key != "bitstrings")
+        metadata = tuple(
+            (key, value) for key, value in self.hyperparameters.items() if key != "bitstrings"
+        )
         return data, metadata
 
     @classmethod
@@ -144,7 +146,9 @@ class QROM(Operation):
                 wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]
             ]
 
-        return QROM(self.bitstrings, new_target_wires, new_control_wires, new_work_wires, self.clean)
+        return QROM(
+            self.bitstrings, new_target_wires, new_control_wires, new_work_wires, self.clean
+        )
 
     @staticmethod
     def multi_swap(wires1, wires2):

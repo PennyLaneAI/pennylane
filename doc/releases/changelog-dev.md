@@ -17,7 +17,7 @@
     # third index
     qml.BasisEmbedding(2, wires = [0,1])
 
-    qml.QROM(b = bitstrings,
+    qml.QROM(bitstrings = bitstrings,
             control_wires = [0,1],
             target_wires = [2,3,4],
             work_wires = [5,6,7])
