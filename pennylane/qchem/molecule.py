@@ -54,7 +54,7 @@ class Molecule:
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
         normalize (bool): if True, the basis functions get normalized
-        unit (str): Units of atomic coordinates. Possible values for ``unit`` are Bohr and Angstrom.
+        unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
 
     **Example**
 
