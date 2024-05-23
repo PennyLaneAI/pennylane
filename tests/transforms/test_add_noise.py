@@ -331,3 +331,44 @@ def test_add_noise_template():
     w2 = np.random.random((1, 1, 2))
 
     assert np.allclose(f1(w1, w2), f2(w1, w2))
+
+
+# pylint: disable=unused-argument
+def test_add_noise_with_non_qwc_obs_and_mid_meas():
+    """Test that the add_noise transform catches and reports errors from the enclosed function."""
+
+    dev = qml.device("default.qubit", wires=3)
+
+    fcond = qml.noise.wires_in([0, 1])
+
+    def noise(op, **kwargs):
+        qml.CNOT(wires=[1, 0])
+        qml.CRX(kwargs["noise_param"], wires=[0, 1])
+
+    @qml.qnode(dev)
+    @partial(add_noise, noise_model=qml.NoiseModel({fcond: noise}, noise_param=0.3))
+    def noisy_circuit(circuit_param):
+        qml.RY(circuit_param, wires=0)
+        qml.Hadamard(wires=0)
+        qml.T(wires=0)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
+        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
+
+    @qml.qnode(dev)
+    def explicit_circuit(circuit_param):
+        qml.RY(circuit_param, wires=0)
+        noise(op=None, noise_param=0.3)
+        qml.Hadamard(wires=0)
+        noise(op=None, noise_param=0.3)
+        qml.T(wires=0)
+        noise(op=None, noise_param=0.3)
+        m0 = qml.measure(0)
+        noise(op=None, noise_param=0.3)
+        m1 = qml.measure(1)
+        noise(op=None, noise_param=0.3)
+        qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
+        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
+
+    assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))

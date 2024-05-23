@@ -89,7 +89,7 @@ def add_noise(tape, noise_model, level=None):
 
     # decompose templates and their adjoints
     def stop_at(obj):
-        if not isinstance(obj, qml.operation.Operator):  # pragma: no-cover
+        if not isinstance(obj, qml.operation.Operator):
             return True
         if not obj.has_decomposition:
             return True
