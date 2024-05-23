@@ -174,7 +174,7 @@ class TestBasicCircuit:
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
 
         with tf.GradientTape(persistent=True) as grad_tape:
             qs = qml.tape.QuantumScript(
@@ -516,7 +516,7 @@ class TestDebugger:
         """Tests debugger with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
         debugger = self.Debugger()
 
         ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]
