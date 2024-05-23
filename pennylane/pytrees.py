@@ -126,13 +126,13 @@ class PyTreeStructure:
     A leaf is defined as just a ``PyTreeStructure`` with ``type=None``.
     """
 
-    type: Optional[type]
+    type: Optional[type] = None
     """The type corresponding to the node. If ``None``, then the structure is a leaf."""
 
-    metadata: Metadata
+    metadata: Metadata = ()
     """Any metadata needed to reproduce the original object."""
 
-    children: list["PyTreeStructure"]
+    children: list["PyTreeStructure"] = field(default_factory=list)
     """The children of the pytree node.  Can be either other structures or terminal leaves."""
 
     def __repr__(self):
