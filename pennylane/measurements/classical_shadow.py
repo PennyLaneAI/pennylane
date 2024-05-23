@@ -515,8 +515,8 @@ class ShadowExpvalMP(MeasurementTransform):
         k: int = 1,
         **kwargs,
     ):
-        if cls._obs_primitive is None:
-            return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)
+        if cls._obs_primitive is None:  # pragma: no cover
+            return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):

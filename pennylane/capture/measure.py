@@ -30,38 +30,32 @@ def _get_measure_primitive():
     if not has_jax:
         raise ImportError("jax is required to create the measure primitive.")
 
-    if jax.config.jax_enable_x64:
-        dtype_map = {
-            float: jax.numpy.float64,
-            int: jax.numpy.int64,
-            complex: jax.numpy.complex128,
-        }
-    else:
-        dtype_map = {
-            float: jax.numpy.float32,
-            int: jax.numpy.int32,
-            complex: jax.numpy.complex64,
-        }
-
     measure_prim = jax.core.Primitive("measure")
     measure_prim.multiple_results = True
-
-    # def trivial_processing(*results):
-    #    return results
 
     # pylint: disable=unused-argument
     @measure_prim.def_impl
     def _(*measurements, shots, num_device_wires):
         # depends on the jax interpreter
-        if not all(isinstance(m, qml.measurements.MidMeasureMP) for m in measurements):
-            raise NotImplementedError("requires an interpreter to perform a measurement.")
-        raise NotImplementedError("currently causes jax to enter an infinite loop")
-        # TODO: figure out how to make this return a measurement value
-        # return qml.measurements.MeasurementValue(measurements, trivial_processing)
+        # TODO: figure out how to make this return a measurement value when measurement is an MCM
+        raise NotImplementedError("requires an interpreter to perform a measurement.")
 
     # pylint: disable=unused-argument
     @measure_prim.def_abstract_eval
     def _(*measurements, shots, num_device_wires):
+
+        if jax.config.jax_enable_x64:
+            dtype_map = {
+                float: jax.numpy.float64,
+                int: jax.numpy.int64,
+                complex: jax.numpy.complex128,
+            }
+        else:
+            dtype_map = {
+                float: jax.numpy.float32,
+                int: jax.numpy.int32,
+                complex: jax.numpy.complex64,
+            }
 
         shapes = []
         if not shots:

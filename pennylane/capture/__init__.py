@@ -26,15 +26,15 @@ quantum-classical programs.
 .. autosummary::
     :toctree: api
 
-    ~.disable
-    ~.enable
-    ~.enabled
-    ~.CaptureMeta
-    ~.create_operator_primitive
-    ~.create_measurment_obs_primitive
-    ~.create_measurement_wires_primitive
-    ~.create_measurement_mcm_primitive
-    ~.measure
+    ~disable
+    ~enable
+    ~enabled
+    ~CaptureMeta
+    ~create_operator_primitive
+    ~create_measurment_obs_primitive
+    ~create_measurement_wires_primitive
+    ~create_measurement_mcm_primitive
+    ~measure
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.

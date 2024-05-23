@@ -159,7 +159,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         allow being specified via an observable. But we handle the generic case here.
 
         """
-        if cls._obs_primitive is None or cls._wires_primitive is None or cls._mcm_primitive is None:
+        if cls._obs_primitive is None:
+            # safety check if primitives aren't set correctly.
             return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id, **kwargs)
         if obs is None:
             wires = () if wires is None else wires
@@ -358,12 +359,13 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     def __repr__(self):
         """Representation of this class."""
+        name_str = self.return_type.value if self.return_type else type(self).__name__
         if self.mv:
-            return f"{self.return_type.value}({repr(self.mv)})"
+            return f"{name_str}({repr(self.mv)})"
         if self.obs:
-            return f"{self.return_type.value}({self.obs})"
+            return f"{name_str}({self.obs})"
         if self._eigvals is not None:
-            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
+            return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
