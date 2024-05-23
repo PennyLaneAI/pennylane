@@ -33,7 +33,7 @@ class TestQROM:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
-        ("b", "target_wires", "control_wires", "work_wires", "clean"),
+        ("bitstrings", "target_wires", "control_wires", "work_wires", "clean"),
         [
             (
                 ["11", "01", "00", "10"],
@@ -66,7 +66,7 @@ class TestQROM:
         ],
     )
     def test_operation_result(
-        self, b, target_wires, control_wires, work_wires, clean
+        self, bitstrings, target_wires, control_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the Select template output."""
         dev = qml.device("default.qubit", shots=1)
@@ -75,12 +75,12 @@ class TestQROM:
         def circuit(j):
             qml.BasisEmbedding(j, wires=control_wires)
 
-            qml.QROM(b, target_wires, control_wires, work_wires, clean)
+            qml.QROM(bitstrings, target_wires, control_wires, work_wires, clean)
             return qml.sample(wires=target_wires)
 
         @qml.qnode(dev)
         def circuit_test(j):
-            for ind, bit in enumerate(b[j]):
+            for ind, bit in enumerate(bitstrings[j]):
                 if bit == "1":
                     qml.PauliX(wires=target_wires[ind])
             return qml.sample(wires=target_wires)
@@ -89,7 +89,7 @@ class TestQROM:
             assert np.allclose(circuit(j), circuit_test(j))
 
     @pytest.mark.parametrize(
-        ("b", "target_wires", "control_wires", "work_wires"),
+        ("bitstrings", "target_wires", "control_wires", "work_wires"),
         [
             (
                 ["11", "01", "00", "10"],
@@ -117,7 +117,7 @@ class TestQROM:
             ),
         ],
     )
-    def test_work_wires_output(self, b, target_wires, control_wires, work_wires):
+    def test_work_wires_output(self, bitstrings, target_wires, control_wires, work_wires):
         """Tests that the ``clean = True`` version don't modify the initial state in work_wires."""
         dev = qml.device("default.qubit", shots=1)
 
@@ -131,7 +131,7 @@ class TestQROM:
             for wire in control_wires:
                 qml.Hadamard(wires=wire)
 
-            qml.QROM(b, target_wires, control_wires, work_wires)
+            qml.QROM(bitstrings, target_wires, control_wires, work_wires)
 
             for ind, wire in enumerate(work_wires):
                 qml.RX(-ind, wires=wire)

@@ -36,7 +36,7 @@ class QROM(Operation):
     where :math:`b_i` is the bitstring associated with index :math:`i`.
 
     Args:
-        b (list[str]): the bitstrings to be encoded
+        bitstrings (list[str]): the bitstrings to be encoded
         target_wires (Sequence[int]): the wires where the bitstring is loaded
         control_wires (Sequence[int]): the wires where the indexes are specified
         work_wires (Sequence[int]): the auxiliar wires used for the computation
@@ -62,7 +62,7 @@ class QROM(Operation):
             # third index
             qml.BasisEmbedding(2, wires = [0,1])
 
-            qml.QROM(b = bitstrings,
+            qml.QROM(bitstrings = bitstrings,
                     control_wires = [0,1],
                     target_wires = [2,3,4],
                     work_wires = [5,6,7])
@@ -88,21 +88,21 @@ class QROM(Operation):
     """
 
     def _flatten(self):
-        data = (self.hyperparameters["b"],)
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items() if key != "b")
+        data = (self.hyperparameters["bitstrings"],)
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items() if key != "bitstrings")
         return data, metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        b = data[0]
+        bitstrings = data[0]
         hyperparams_dict = dict(metadata)
-        return cls(b, **hyperparams_dict)
+        return cls(bitstrings, **hyperparams_dict)
 
     def __repr__(self):
         return f"QROM(target_wires={self.target_wires}, control_wires={self.control_wires},  work_wires={self.work_wires})"
 
     def __init__(
-        self, b, target_wires, control_wires, work_wires, clean=True, id=None
+        self, bitstrings, target_wires, control_wires, work_wires, clean=True, id=None
     ):  # pylint: disable=too-many-arguments
 
         control_wires = qml.wires.Wires(control_wires)
@@ -111,7 +111,7 @@ class QROM(Operation):
         if work_wires:
             work_wires = qml.wires.Wires(work_wires)
 
-        self.hyperparameters["b"] = b
+        self.hyperparameters["bitstrings"] = bitstrings
         self.hyperparameters["target_wires"] = target_wires
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
@@ -144,7 +144,7 @@ class QROM(Operation):
                 wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]
             ]
 
-        return QROM(self.b, new_target_wires, new_control_wires, new_work_wires, self.clean)
+        return QROM(self.bitstrings, new_target_wires, new_control_wires, new_work_wires, self.clean)
 
     @staticmethod
     def multi_swap(wires1, wires2):
@@ -170,7 +170,7 @@ class QROM(Operation):
     def decomposition(self):  # pylint: disable=arguments-differ
 
         return self.compute_decomposition(
-            self.b,
+            self.bitstrings,
             control_wires=self.control_wires,
             work_wires=self.work_wires,
             target_wires=self.target_wires,
@@ -179,7 +179,7 @@ class QROM(Operation):
 
     @staticmethod
     def compute_decomposition(
-        b, target_wires, control_wires, work_wires, clean
+        bitstrings, target_wires, control_wires, work_wires, clean
     ):  # pylint: disable=arguments-differ
         with qml.QueuingManager.stop_recording():
 
@@ -200,7 +200,7 @@ class QROM(Operation):
             # control wires used in the Swap block
             c_swap_wires = control_wires[len(c_sel_wires) :]
 
-            ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in b]
+            ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
             ops_I = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
             # number of new operators after grouping
@@ -274,9 +274,9 @@ class QROM(Operation):
         return decomp_ops
 
     @property
-    def b(self):
+    def bitstrings(self):
         """bitstrings to be added."""
-        return self.hyperparameters["b"]
+        return self.hyperparameters["bitstrings"]
 
     @property
     def control_wires(self):
