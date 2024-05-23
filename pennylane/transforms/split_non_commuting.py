@@ -20,7 +20,7 @@ from functools import partial
 from typing import Callable, Dict, List, Sequence, Tuple
 
 import pennylane as qml
-from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots
+from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
@@ -135,7 +135,11 @@ def _split_using_pauli_grouping(
 
     """
 
-    measurements = list(single_term_obs_mps.keys())
+    # The legacy device does not support state measurements combined with any other
+    # measurement, so each state measurement must be in its own tape.
+    state_measurements = [m for m in single_term_obs_mps if isinstance(m, StateMP)]
+
+    measurements = [m for m in single_term_obs_mps if not isinstance(m, StateMP)]
     obs_list = [_mp_to_obs(m, tape) for m in measurements]
     index_groups = []
     if len(obs_list) > 0:
@@ -156,6 +160,15 @@ def _split_using_pauli_grouping(
                 group_size - 1,
             )
         group_sizes.append(group_size)
+
+    for state_mp in state_measurements:
+        mp_groups.append([state_mp])
+        single_term_obs_mps_grouped[state_mp] = (
+            *single_term_obs_mps[state_mp],
+            len(mp_groups) - 1,
+            0,
+        )
+        group_sizes.append(1)
 
     tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
     return tapes, partial(
@@ -193,7 +206,11 @@ def _split_using_naive_grouping(
 
         if len(smp.wires) == 0:  # measurement acting on all wires
             mp_groups.append([smp])
-            wires_for_each_group.append(smp.wires)
+            wires_for_each_group.append(tape.wires)
+            group_sizes.append(1)
+            single_term_obs_mps_grouped[smp] = (mp_indices, coeff, num_groups, 0)
+            num_groups += 1
+            continue
 
         group_idx = 0
         added_to_existing_group = False
@@ -202,13 +219,13 @@ def _split_using_naive_grouping(
             if len(wires) != 0 and len(qml.wires.Wires.shared_wires([wires, smp.wires])) == 0:
                 mp_groups[group_idx].append(smp)
                 wires_for_each_group[group_idx] += smp.wires
-                group_sizes[group_idx] += 1
                 single_term_obs_mps_grouped[smp] = (
                     mp_indices,
                     coeff,
                     group_idx,
-                    group_sizes[group_idx] - 1,
+                    group_sizes[group_idx],
                 )
+                group_sizes[group_idx] += 1
                 added_to_existing_group = True
             group_idx += 1
 
@@ -216,7 +233,7 @@ def _split_using_naive_grouping(
             mp_groups.append([smp])
             wires_for_each_group.append(smp.wires)
             group_sizes.append(1)
-            single_term_obs_mps_grouped[smp] = (mp_indices, coeff, num_groups - 1, 0)
+            single_term_obs_mps_grouped[smp] = (mp_indices, coeff, num_groups, 0)
             num_groups += 1
 
     tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
