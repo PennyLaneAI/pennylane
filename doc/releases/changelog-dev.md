@@ -29,6 +29,10 @@
   [1 1 0]
   ```
 
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
+
 <h3>Improvements 🛠</h3>
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
@@ -96,6 +100,11 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
+* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them 
+  consistent with the other observables. The `dtype` of the returned values when sampling these observables 
+  (e.g. `qml.sample(X(0))`) is also changed to `float`. 
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
@@ -107,6 +116,9 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+* Empty initialization of `PauliVSpace` is permitted.
+  [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -116,6 +128,9 @@
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
 <h3>Breaking changes 💔</h3>
+
+* Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
   [(#5660)](https://github.com/PennyLaneAI/pennylane/pull/5660)
@@ -146,6 +161,16 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
+  [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
+
+* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
+  returned samples of observables containing the `qml.Identity` operator.
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
+* The signature of `CaptureMeta` objects (like `Operator`) now match the signature of the `__init__` call.
+  [(#5727)](https://github.com/PennyLaneAI/pennylane/pull/5727)
+
 * Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
   [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
 
@@ -167,11 +192,14 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje,
+Lillian M. A. Frederiksen,
 Ahmed Darwish,
 Gabriel Bottrill,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
+Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Kenya Sakka,
