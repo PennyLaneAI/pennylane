@@ -21,6 +21,13 @@ from pennylane.ops import Hamiltonian, LinearCombination, SProd, Sum
 from pennylane.wires import Wires
 
 
+def _check_hamiltonian_type(hamiltonian):
+    if not isinstance(hamiltonian, (Hamiltonian, LinearCombination, Sum)):
+        raise TypeError(
+            f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum, got {hamiltonian}"
+        )
+
+
 def _extract_hamiltonian_coeffs_and_ops(hamiltonian):
     """Extract the coefficients and operators from a Hamiltonian that is
     a ``Hamiltonian``, a ``LinearCombination`` or a ``Sum``."""
@@ -103,6 +110,7 @@ class QDrift(Operation):
         TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
         QuantumFunctionError: If the coefficients of ``hamiltonian`` are trainable and are used
             in a differentiable workflow.
+        ValueError: If there is only one term in the Hamiltonian.
 
     **Example**
 
@@ -184,10 +192,7 @@ class QDrift(Operation):
     ):
         r"""Initialize the QDrift class"""
 
-        if not isinstance(hamiltonian, (Hamiltonian, LinearCombination, Sum)):
-            raise TypeError(
-                f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum, got {hamiltonian}"
-            )
+        _check_hamiltonian_type(hamiltonian)
         coeffs, ops = _extract_hamiltonian_coeffs_and_ops(hamiltonian)
 
         if len(ops) < 2:
@@ -277,17 +282,8 @@ class QDrift(Operation):
         Returns:
             float: upper bound on the precision achievable using the QDrift protocol
         """
-        if isinstance(hamiltonian, (Hamiltonian, LinearCombination)):
-            lmbda = qml.math.sum(qml.math.abs(hamiltonian.coeffs))
-
-        elif isinstance(hamiltonian, Sum):
-            lmbda = sum(
-                qml.math.abs(op.scalar) if isinstance(op, SProd) else 1.0 for op in hamiltonian
-            )
-
-        else:
-            raise TypeError(
-                f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
-            )
+        _check_hamiltonian_type(hamiltonian)
+        coeffs, _ = _extract_hamiltonian_coeffs_and_ops(hamiltonian)
+        lmbda = qml.math.sum(qml.math.abs(coeffs))
 
         return (2 * lmbda**2 * time**2 / n) * qml.math.exp(2 * lmbda * time / n)
