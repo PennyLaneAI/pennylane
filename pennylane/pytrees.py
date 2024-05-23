@@ -134,7 +134,9 @@ class PyTreeStructure:
 
     children: list["PyTreeStructure"] = field(default_factory=list)
     """The children of the pytree node.  Can be either other structures or terminal leaves."""
-
+    @property
+    def is_leaf(self) -> bool:
+        return self.type is None
     def __repr__(self):
         if self.type is None:
             return "Leaf"
@@ -144,7 +146,7 @@ class PyTreeStructure:
 leaf = PyTreeStructure(None, (), [])
 
 
-def flatten(obj) -> Tuple[List[Any], PyTreeStructure]:
+def flatten(obj) -> tuple[list[Any], PyTreeStructure]:
     """Flattens a pytree into leaves and a structure.
 
     Args:
