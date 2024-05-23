@@ -187,7 +187,7 @@ unmodified_templates_cases = [
     (
         qml.UCCSD,
         (jnp.ones(3), [2, 3, 0, 1]),
-        {"s_wires": [0, 1], "d_wires": [[2, 3]], "init_state": [0, 1, 1, 0]},
+        {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
 ]
 
@@ -349,18 +349,17 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.AmplitudeAmplification(U, O, **kwargs)
 
-    @pytest.mark.xfail(reason="Can't initialize BasisRotation with wires kwarg (#5521)")
     def test_basis_rotation(self):
         """Test the primitive bind call of BasisRotation."""
 
         mat = np.eye(4)
         wires = [0, 5]
 
-        def qfunc(mat, wires):
+        def qfunc(wires, mat):
             qml.BasisRotation(wires, mat, check=True)
 
         # Validate inputs
-        # qfunc(wires, mat)
+        qfunc(wires, mat)
 
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(wires, mat)
@@ -369,15 +368,13 @@ class TestModifiedTemplates:
 
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.BasisRotation._primitive
-        # This check may fail because arguments are reordered in _primitive_bind_call.
-        # To be fixed once we remove the xfail above.
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == {"wires": wires, "check": True}
+        assert eqn.params == {"check": True, "id": None}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, mat)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
 
         assert len(q) == 1
         assert q.queue[0] == qml.BasisRotation(wires=wires, unitary_matrix=mat, check=True)

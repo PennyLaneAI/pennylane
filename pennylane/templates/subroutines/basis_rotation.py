@@ -103,7 +103,13 @@ class BasisRotation(Operation):
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
         # pylint: disable=arguments-differ
-        return super()._primitive_bind_call(unitary_matrix, wires=wires, check=check, id=id)
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, wires, unitary_matrix, check=check, id=id)
+
+        if not isinstance(wires, (list, tuple, qml.wires.Wires, range, set)):
+            wires = (wires,)
+        return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
 
     def __init__(self, wires, unitary_matrix, check=False, id=None):
         M, N = unitary_matrix.shape
@@ -181,3 +187,14 @@ class BasisRotation(Operation):
                 op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list
+
+
+if BasisRotation._primitive is not None:
+
+    @BasisRotation._primitive.def_impl
+    def _(*args, **kwargs):
+        # If there are more than two args, we are calling with unpacked wires, so that
+        # we have to repack them. This replaces the n_wires logic in the general case.
+        if len(args) != 2:
+            args = (args[:-1], args[-1])
+        return type.__call__(BasisRotation, *args, **kwargs)
