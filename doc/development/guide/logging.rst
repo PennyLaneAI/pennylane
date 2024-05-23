@@ -94,7 +94,7 @@ messages based on some criteria, we can add these to the respective
 handlers. As an example, we can go through the configuration file and
 explore the options.
 
-For ease-of-development, the function :func:`qml.logging.edit_system_config` opens an editor (if the ``EDITOR`` environment variable is set), or a viewer of the existing file configuration, which can be used to modify the existing options.
+For ease-of-development, the function :func:`pennylane.logging.edit_system_config` opens an editor (if the ``EDITOR`` environment variable is set), or a viewer of the existing file configuration, which can be used to modify the existing options.
 
 Modifying the configuration options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
