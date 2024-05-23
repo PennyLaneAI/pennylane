@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from pennylane.ops import Hadamard, PauliX, Prod, Sum
+from pennylane.ops import PauliX, Prod, Sum
 from pennylane.pytrees import (
     PyTreeStructure,
     flatten,
@@ -16,6 +16,7 @@ from pennylane.wires import Wires
 
 
 class CustomNode:
+    """Example Pytree for testing."""
 
     def __init__(self, data, metadata):
         self.data = data
@@ -51,11 +52,14 @@ def test_list_pytree_types():
     ],
 )
 def test_is_pytree(cls, result):
-    """Tests for ``is_pytree()``."""
+    """Test for ``is_pytree()``."""
     assert is_pytree(cls) is result
 
 
-def test_structure_dump():
+@pytest.mark.parametrize("decode", [True, False])
+def test_pytree_structure_dump(decode):
+    """Test that ``pytree_structure_dump()`` creates JSON in the expected
+    format."""
     _, struct = flatten(
         {
             "list": ["a", 1],
@@ -65,7 +69,7 @@ def test_structure_dump():
         }
     )
 
-    assert json.loads(pytree_structure_dump(struct)) == [
+    assert json.loads(pytree_structure_dump(struct, decode=decode)) == [
         "builtins.dict",
         ["list", "dict", "tuple", "custom"],
         [
@@ -84,6 +88,7 @@ def test_structure_dump():
 
 
 def test_structure_load():
+    """Test that ``pytree_structure_load()`` can parse a JSON-serialized PyTree."""
     jsoned = json.dumps(
         [
             "builtins.dict",
