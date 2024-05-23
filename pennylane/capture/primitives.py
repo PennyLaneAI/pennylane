@@ -175,8 +175,8 @@ def create_operator_primitive(
         ``None`` is returned if jax is not available.
 
     """
-    if not has_jax:  # pragma: no cover
-        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
+    if not has_jax:
+        return None
 
     primitive = jax.core.Primitive(operator_type.__name__)
 
