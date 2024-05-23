@@ -135,9 +135,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
+  [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
+
 * Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
   returned samples of observables containing the `qml.Identity` operator.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
+* The signature of `CaptureMeta` objects (like `Operator`) now match the signature of the `__init__` call.
+  [(#5727)](https://github.com/PennyLaneAI/pennylane/pull/5727)
 
 * Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
   [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
