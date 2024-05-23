@@ -4,7 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
 <h3>Improvements 🛠</h3>
+
+* Add support for 3 new pytest markers: `unit`, `integration` and `system`.
+  [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
@@ -134,9 +140,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
+  [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
+
 * Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
   returned samples of observables containing the `qml.Identity` operator.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
+* The signature of `CaptureMeta` objects (like `Operator`) now match the signature of the `__init__` call.
+  [(#5727)](https://github.com/PennyLaneAI/pennylane/pull/5727)
 
 * Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
   [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
@@ -168,5 +180,6 @@ Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
+Lee James O'Riordan,
 Kenya Sakka,
 David Wierichs.
