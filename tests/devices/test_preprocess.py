@@ -457,7 +457,7 @@ class TestMidCircuitMeasurements:
     def test_mcm_method(self, mcm_method, shots, expected_transform, mocker):
         """Test that the transform adheres to the specified transform"""
         dev = qml.device("default.qubit")
-        mcm_config = {"postselect_shots": None, "mcm_method": mcm_method}
+        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
         spy = mocker.spy(expected_transform, "_transform")
 
@@ -468,7 +468,7 @@ class TestMidCircuitMeasurements:
         """Test that an error is raised if requesting the one-shot transform without shots"""
         dev = qml.device("default.qubit")
         shots = None
-        mcm_config = {"postselect_shots": None, "mcm_method": "one-shot"}
+        mcm_config = {"postselect_mode": None, "mcm_method": "one-shot"}
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
 
         with pytest.raises(

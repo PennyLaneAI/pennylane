@@ -602,7 +602,7 @@ class DefaultQubit(Device):
                         "interface": interface,
                         "state_cache": self._state_cache,
                         "prng_key": _key,
-                        "postselect_shots": execution_config.mcm_config["postselect_shots"],
+                        "postselect_mode": execution_config.mcm_config["postselect_mode"],
                     },
                 )
                 for c, _key in zip(circuits, prng_keys)
@@ -614,7 +614,7 @@ class DefaultQubit(Device):
             {
                 "rng": _rng,
                 "prng_key": _key,
-                "postselect_shots": execution_config.mcm_config["postselect_shots"],
+                "postselect_mode": execution_config.mcm_config["postselect_mode"],
             }
             for _rng, _key in zip(seeds, prng_keys)
         ]

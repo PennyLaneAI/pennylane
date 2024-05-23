@@ -113,7 +113,7 @@ def test_qjit_postselection_error(monkeypatch):
     dev = qml.device("default.qubit", wires=3, shots=10)
 
     # @qml.qjit
-    @qml.qnode(dev, postselect_shots=True, mcm_method="deferred")
+    @qml.qnode(dev, postselect_mode="hw-like", mcm_method="deferred")
     def func(x):
         qml.RX(x, 0)
         _ = qml.measure(0, postselect=0)
@@ -127,14 +127,14 @@ def test_qjit_postselection_error(monkeypatch):
             _ = func(1.8)
 
 
-@pytest.mark.parametrize("postselect_shots", [True, False])
-def test_postselect_shots(postselect_shots, mocker):
+@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+def test_postselect_mode(postselect_mode, mocker):
     """Test that invalid shots are discarded if requested"""
     shots = 100
     dev = qml.device("default.qubit", shots=shots)
     spy = mocker.spy(qml.defer_measurements, "_transform")
 
-    @qml.qnode(dev, postselect_shots=postselect_shots, mcm_method="deferred")
+    @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method="deferred")
     def f(x):
         qml.RX(x, 0)
         _ = qml.measure(0, postselect=1)
@@ -143,7 +143,7 @@ def test_postselect_shots(postselect_shots, mocker):
     res = f(np.pi / 4)
     spy.assert_called_once()
 
-    if postselect_shots:
+    if postselect_mode == "hw-like":
         assert len(res) < shots
     else:
         assert len(res) == shots

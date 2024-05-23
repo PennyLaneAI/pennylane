@@ -219,9 +219,9 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
-        postselect_shots (bool): Whether or not to discard invalid shots when postselecting mid-circuit measurements.
-            If ``True``, invalid shots will be discarded and only results for valid shots will be returned. If
-            ``False``, results corresponding to the original number of shots will be returned.
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. If ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned. If
+            ``"fill-shots"``, results corresponding to the original number of shots will be returned.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to execute using the deferred measurements principle (applied using the
             :func:`~pennylane.defer_measurements` transform), or ``"one-shot"`` if using finite shots to execute the
@@ -449,7 +449,7 @@ class QNode:
         cachesize=10000,
         max_diff=1,
         device_vjp=False,
-        postselect_shots=None,
+        postselect_mode=None,
         mcm_method=None,
         **gradient_kwargs,
     ):
@@ -525,7 +525,7 @@ class QNode:
             "max_diff": max_diff,
             "max_expansion": max_expansion,
             "device_vjp": device_vjp,
-            "mcm_config": {"postselect_shots": postselect_shots, "mcm_method": mcm_method},
+            "mcm_config": {"postselect_mode": postselect_mode, "mcm_method": mcm_method},
         }
 
         if self.expansion_strategy == "device":
@@ -1055,7 +1055,7 @@ class QNode:
         elif hasattr(self.device, "capabilities"):
             full_transform_program.add_transform(
                 qml.defer_measurements,
-                postselect_shots=self.execute_kwargs["mcm_config"]["postselect_shots"],
+                postselect_mode=self.execute_kwargs["mcm_config"]["postselect_mode"],
                 device=self.device,
             )
 

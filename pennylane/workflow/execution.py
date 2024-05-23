@@ -549,13 +549,13 @@ def execute(
         gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
     )
 
-    if interface in {"jax", "jax-jit"} and config.mcm_config["postselect_shots"]:
+    if interface in {"jax", "jax-jit"} and config.mcm_config["postselect_mode"] == "hw-like":
         warnings.warn(
             "Cannot discard invalid shots with postselection when using the 'jax' interface. "
             "Ignoring requested mid-circuit measurement configuration.",
             UserWarning,
         )
-        config.mcm_config["postselect_shots"] = False
+        config.mcm_config["postselect_mode"] = "fill-shots"
 
     if any(not tape.shots for tape in tapes) and config.mcm_config["mcm_method"] == "one-shot":
         warnings.warn(

@@ -154,17 +154,17 @@ def mid_circuit_measurements(
     """
 
     mcm_config = mcm_config or {}
-    postselect_shots = mcm_config.get("postselect_shots", None)
+    postselect_mode = mcm_config.get("postselect_mode", None)
     mcm_method = mcm_config.get("mcm_method", None)
 
     if mcm_method is not None:
         if mcm_method == "one-shot":
-            return qml.dynamic_one_shot(tape, postselect_shots=postselect_shots)
-        return qml.defer_measurements(tape, device=device, postselect_shots=postselect_shots)
+            return qml.dynamic_one_shot(tape, postselect_mode=postselect_mode)
+        return qml.defer_measurements(tape, device=device, postselect_mode=postselect_mode)
 
     if tape.shots:
-        return qml.dynamic_one_shot(tape, postselect_shots=postselect_shots)
-    return qml.defer_measurements(tape, device=device, postselect_shots=postselect_shots)
+        return qml.dynamic_one_shot(tape, postselect_mode=postselect_mode)
+    return qml.defer_measurements(tape, device=device, postselect_mode=postselect_mode)
 
 
 @transform

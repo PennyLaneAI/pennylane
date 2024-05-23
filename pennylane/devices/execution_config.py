@@ -94,7 +94,7 @@ class ExecutionConfig:
 
         if self.mcm_config is None:
             self.mcm_config = {}
-        for option in ("postselect_shots", "mcm_method"):
+        for option in ("postselect_mode", "mcm_method"):
             if option not in self.mcm_config:
                 self.mcm_config[option] = None
 

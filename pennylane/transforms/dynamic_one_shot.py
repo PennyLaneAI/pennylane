@@ -99,10 +99,10 @@ def dynamic_one_shot(
             )
     _ = kwargs.get("device", None)
 
-    postselect_shots = kwargs.get("postselect_shots", None)
-    if qml.compiler.active() and postselect_shots:
+    postselect_mode = kwargs.get("postselect_mode", None)
+    if qml.compiler.active() and postselect_mode == "hw-like":
         raise ValueError("Cannot discard invalid shots while using qml.qjit")
-    postselect_shots = True if postselect_shots is None else postselect_shots
+    postselect_shots = postselect_mode in (None, "hw-like")
 
     if not tape.shots:
         raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")

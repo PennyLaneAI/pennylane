@@ -272,7 +272,7 @@ def defer_measurements(
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
-    if qml.compiler.active() and kwargs.get("postselect_shots", None):
+    if qml.compiler.active() and kwargs.get("postselect_mode", None) == "hw-like":
         raise ValueError("Cannot discard invalid shots while using qml.qjit")
 
     _check_tape_validity(tape)

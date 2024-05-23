@@ -1704,14 +1704,14 @@ class TestMCMConfiguration:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [True, False])
     @pytest.mark.parametrize("interface", ["jax", "auto"])
-    def test_jax_warning_with_postselect_shots(self, use_jit, interface):
-        """Test that a warning is raised when postselect_shots=True with jax"""
+    def test_jax_warning_with_postselect_mode_hw_like(self, use_jit, interface):
+        """Test that a warning is raised when postselect_mode="hw-like" with jax"""
         import jax  # pylint: disable=import-outside-toplevel
 
         shots = 100
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
-        @qml.qnode(dev, postselect_shots=True, interface=interface)
+        @qml.qnode(dev, postselect_mode="hw-like", interface=interface)
         def f(x):
             qml.RX(x, 0)
             _ = qml.measure(0, postselect=1)

@@ -30,7 +30,7 @@ def test_default_values():
     assert config.gradient_keyword_arguments == {}
     assert config.grad_on_execution is None
     assert config.use_device_gradient is None
-    assert config.mcm_config == {"postselect_shots": None, "mcm_method": None}
+    assert config.mcm_config == {"postselect_mode": None, "mcm_method": None}
 
 
 def test_invalid_interface():
