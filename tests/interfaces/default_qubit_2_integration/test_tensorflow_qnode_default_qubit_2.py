@@ -14,7 +14,7 @@
 """Integration tests for using the TensorFlow interface with a QNode"""
 import numpy as np
 
-# pylint: disable=too-many-arguments,too-few-public-methods,comparison-with-callable
+# pylint: disable=too-many-arguments,too-few-public-methods,comparison-with-callable, use-implicit-booleaness-not-comparison
 import pytest
 
 import pennylane as qml
@@ -955,8 +955,9 @@ class TestQubitIntegration:
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    @pytest.mark.parametrize("dtype", ("int32", "int64"))
     def test_projector(
-        self, state, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+        self, state, dev, diff_method, grad_on_execution, device_vjp, tol, interface, dtype
     ):
         """Test that the variance of a projector is correctly returned"""
         kwargs = {
@@ -974,7 +975,7 @@ class TestQubitIntegration:
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
-        P = tf.constant(state)
+        P = tf.constant(state, dtype=dtype)
 
         x, y = 0.765, -0.654
         weights = tf.Variable([x, y], dtype=tf.float64)
@@ -1340,7 +1341,7 @@ class TestSample:
         assert isinstance(result[0], tf.Tensor)
         assert isinstance(result[1], tf.Tensor)
         assert isinstance(result[2], tf.Tensor)
-        assert result[0].dtype is tf.int64  # pylint:disable=no-member
+        assert result[0].dtype is tf.float64  # pylint:disable=no-member
         assert result[1].dtype is tf.float64  # pylint:disable=no-member
         assert result[2].dtype is tf.float64  # pylint:disable=no-member
 
@@ -1372,7 +1373,7 @@ class TestSample:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tf.Tensor)
         assert np.array_equal(result.shape, (3, 10))
-        assert result.dtype == tf.int64
+        assert result.dtype == tf.float64
 
     def test_counts(self):
         """Test counts works as expected for TF"""

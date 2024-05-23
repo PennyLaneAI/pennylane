@@ -507,7 +507,7 @@ class DefaultClifford(Device):
             return tuple(
                 self.simulate(c, seed=s, debugger=self._debugger) for c, s in zip(circuits, seeds)
             )
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
         _wrap_simulate = partial(self.simulate, debugger=None)
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:

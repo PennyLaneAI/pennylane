@@ -41,6 +41,11 @@ class CompositeOp(Operator):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        # needs to be overwritten because it doesnt take wires
+        return cls._primitive.bind(*args, **kwargs)
+
     def _flatten(self):
         return tuple(self.operands), tuple()
 
@@ -175,8 +180,9 @@ class CompositeOp(Operator):
                         list(self.wires),
                     )
                 )
-
-        return self._math_op(math.asarray(eigvals, like=math.get_deep_interface(eigvals)), axis=0)
+        framework = math.get_deep_interface(eigvals)
+        eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
+        return self._math_op(math.vstack(eigvals), axis=0)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):

@@ -249,13 +249,14 @@ import itertools
 import warnings
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, csr_matrix, eye, kron
 
 import pennylane as qml
+from pennylane.capture import CaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -405,7 +406,12 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-class Operator(abc.ABC):
+# pylint: disable=abstract-method
+class CaptureMetaABC(CaptureMeta, abc.ABCMeta):
+    """Mixing together CaptureMeta and ABCMeta so that Operator can use both."""
+
+
+class Operator(abc.ABC, metaclass=CaptureMetaABC):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -697,8 +703,43 @@ class Operator(abc.ABC):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
+    _primitive: Optional["jax.core.Primitive"] = None
+    """
+    Optional[jax.core.Primitive]
+    """
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
+        cls._primitive = create_operator_primitive(cls)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        """This class method should match the call signature of the class itself.
+
+        When plxpr is enabled, this method is used to bind the arguments and keyword arguments
+        to the primitive via ``cls._primitive.bind``.
+
+        """
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, *args, **kwargs)
+
+        iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
+
+        # process wires so that we can handle them either as a final argument or as a keyword argument.
+        # Stick `n_wires` as a keyword argument so we have enough information to repack them during
+        # the implementation call defined by `primitive.def_impl`.
+        if "wires" in kwargs:
+            wires = kwargs.pop("wires")
+            wires = tuple(wires) if isinstance(wires, iterable_wires_types) else (wires,)
+            kwargs["n_wires"] = len(wires)
+            args += wires
+        elif args and isinstance(args[-1], iterable_wires_types):
+            kwargs["n_wires"] = len(args[-1])
+            args = args[:-1] + tuple(args[-1])
+        else:
+            kwargs["n_wires"] = 1
+        return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self):
         cls = self.__class__
@@ -1992,7 +2033,7 @@ class Observable(Operator):
         if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other + self
         if isinstance(other, (Observable, Tensor)):
-            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
+            return qml.simplify(qml.Hamiltonian([1, 1], [self, other]))
 
         return super().__add__(other=other)
 
@@ -2004,7 +2045,7 @@ class Observable(Operator):
             return super().__mul__(other=a)
 
         if isinstance(a, (int, float)):
-            return qml.Hamiltonian([a], [self], simplify=True)
+            return qml.simplify(qml.Hamiltonian([a], [self]))
 
         return super().__mul__(other=a)
 
@@ -2368,7 +2409,7 @@ class Tensor(Observable):
             # append diagonalizing unitary for specific wire to U_list
             U_list.append(mats[0])
 
-        mat_size = np.prod([np.shape(mat)[0] for mat in U_list])
+        mat_size = np.prod([qml.math.shape(mat)[0] for mat in U_list])
         wire_size = 2 ** len(self.wires)
         if mat_size != wire_size:
             if partial_overlap:
@@ -2387,7 +2428,7 @@ class Tensor(Observable):
 
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
-        return functools.reduce(np.kron, U_list)
+        return functools.reduce(qml.math.kron, U_list)
 
     def check_wires_partial_overlap(self):
         r"""Tests whether any two observables in the Tensor have partially
