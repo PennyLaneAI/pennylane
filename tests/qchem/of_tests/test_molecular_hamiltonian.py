@@ -793,8 +793,7 @@ def test_error_raised_for_missing_molecule_information():
     ],
 )
 def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
-    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units.
-    """
+    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units."""
 
     symbols = ["H", "H"]
     geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
@@ -827,8 +826,7 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     ],
 )
 def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdir):
-    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units.
-    """
+    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units."""
 
     symbols = ["H", "H"]
     geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
