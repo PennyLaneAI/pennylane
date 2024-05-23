@@ -84,8 +84,8 @@ def _get_abstract_operator() -> type:
 
 @lru_cache
 def _get_abstract_measurement():
-    if not has_jax:
-        raise ImportError("Jax is required for plxpr.")
+    if not has_jax:  # pragma: no cover
+        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
 
     class AbstractMeasurement(jax.core.AbstractValue):
         """An abstract measurement.
