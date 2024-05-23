@@ -52,11 +52,15 @@ INTERFACE_TO_LIKE = {
 class _FlexShots(qml.measurements.Shots):
     """Shots class that allows zero shots."""
 
+    _frozen = False
+
     # pylint: disable=super-init-not-called
     def __init__(self, shots=None):
         if isinstance(shots, int):
             self.total_shots = shots
             self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
+        elif isinstance(shots, self.__class__):
+            return  # self already _is_ shots as defined by __new__
         else:
             self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
 
@@ -119,7 +123,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
-        circuit (.QuantumScript): The single circuit to simulate
+        circuit (.QuantumScript): The single circuit to simulate. This circuit is assumed to have
+            non-negative integer wire labels
         debugger (._Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
@@ -140,8 +145,6 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     interface = execution_kwargs.get("interface", None)
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     postselect_shots = execution_kwargs.get("postselect_shots", None)
-
-    # circuit = circuit.map_to_standard_wires()
 
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
@@ -168,7 +171,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             prng_key, key = jax_random_split(prng_key)
-            state, circuit._shots = _postselection_postprocess(
+            state, new_shots = _postselection_postprocess(
                 state,
                 is_state_batched,
                 circuit.shots,
@@ -176,6 +179,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
                 prng_key=key,
                 postselect_shots=postselect_shots,
             )
+            circuit._shots = circuit._shots = new_shots
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or (op.batch_size is not None)
@@ -196,7 +200,8 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
-        circuit (.QuantumScript): The single circuit to simulate
+        circuit (.QuantumScript): The single circuit to simulate. This circuit is assumed to have
+            non-negative integer wire labels
         state (TensorLike): The state to perform measurement on
         is_state_batched (bool): Whether the state has a batch dimension or not.
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
@@ -214,8 +219,6 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
     mid_measurements = execution_kwargs.get("mid_measurements", None)
-
-    # circuit = circuit.map_to_standard_wires()
 
     # analytic case
 

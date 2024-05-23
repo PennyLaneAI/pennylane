@@ -853,6 +853,7 @@ def _simulate_wrapper(circuit, kwargs):
 
 
 def _adjoint_jac_wrapper(c, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jac = adjoint_jacobian(c, state=state)
     res = measure_final_state(c, state, is_state_batched)
@@ -860,6 +861,7 @@ def _adjoint_jac_wrapper(c, debugger=None):
 
 
 def _adjoint_jvp_wrapper(c, t, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jvp = adjoint_jvp(c, t, state=state)
     res = measure_final_state(c, state, is_state_batched)
@@ -867,6 +869,7 @@ def _adjoint_jvp_wrapper(c, t, debugger=None):
 
 
 def _adjoint_vjp_wrapper(c, t, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     vjp = adjoint_vjp(c, t, state=state)
     res = measure_final_state(c, state, is_state_batched)
