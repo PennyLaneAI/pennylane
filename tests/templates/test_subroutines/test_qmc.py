@@ -117,9 +117,6 @@ class TestFuncToUnitary:
         import jax
         from jax import numpy as jnp
 
-        def func(i):
-            return jnp.sin(i) ** 2
-
         M = 8
 
         def func(i):
@@ -133,8 +130,8 @@ class TestFuncToUnitary:
             output_state = r[::2][i]
             output_0 = output_state[::2]
             output_1 = output_state[1::2]
-            assert np.allclose(output_0[i], np.sqrt(1 - self.func(i)))
-            assert np.allclose(output_1[i], np.sqrt(self.func(i)))
+            assert np.allclose(output_0[i], np.sqrt(1 - func(i)))
+            assert np.allclose(output_1[i], np.sqrt(func(i)))
 
         assert np.allclose(r @ r.T, np.eye(2 * M), atol=1e-7)
         assert np.allclose(r.T @ r, np.eye(2 * M), atol=1e-7)
