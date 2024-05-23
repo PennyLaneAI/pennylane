@@ -107,10 +107,6 @@ def electron_integrals(mol, core=None, active=None):
         Returns:
             tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
         """
-        if mol.n_electrons % 2 == 1 or mol.mult != 1:
-            raise ValueError(
-                "Open-shell systems are not supported. Change the charge or spin multiplicity of the molecule."
-            )
 
         _, coeffs, _, h_core, repulsion_tensor = scf(mol)(*args)
         one = qml.math.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)

@@ -1072,8 +1072,8 @@ def _molecular_hamiltonian(
 
         if n_electrons % 2 == 1 or mult != 1:
             raise ValueError(
-                "Open-shell systems are not supported for the differentiable workflow. Use "
-                "`method = 'pyscf'` or change the charge or spin multiplicity of the molecule."
+                "Open-shell systems are not supported for the requested backend. Use "
+                "method = 'openfermion' or change the charge or spin multiplicity of the molecule."
             )
 
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
