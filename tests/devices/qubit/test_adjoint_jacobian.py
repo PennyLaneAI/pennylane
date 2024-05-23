@@ -131,7 +131,7 @@ class TestAdjointJacobian:
 
     def test_multiple_rx_gradient(self, tol):
         """Tests that the gradient of multiple RX gates in a circuit yields the correct result."""
-        params = np.array([np.pi, np.pi / 2, np.pi / 3])
+        params = qml.numpy.array([np.pi, np.pi / 2, np.pi / 3])
 
         qs = QuantumScript(
             [qml.RX(params[0], wires=0), qml.RX(params[1], wires=1), qml.RX(params[2], wires=2)],
@@ -318,7 +318,7 @@ class TestAdjointJacobianState:
     def test_simple_state_derivative(self):
         """Test state differentiation for a single parameter."""
         x = 1.2
-        tape = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.state()])
+        tape = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.state()], trainable_params=[0])
         jac = adjoint_jacobian(tape)
         expected = [-0.5 * np.sin(x / 2), -0.5j * np.cos(x / 2)]
         assert qml.math.allclose(jac, expected)
@@ -333,7 +333,9 @@ class TestAdjointJacobianState:
 
         x = 0.5
         y = 0.6
-        tape = qml.tape.QuantumScript([qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))], [qml.state()])
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))], [qml.state()], trainable_params=[0, 1]
+        )
         x_jac, y_jac = adjoint_jacobian(tape)
 
         c_x, s_x = np.cos(x / 2), np.sin(x / 2)

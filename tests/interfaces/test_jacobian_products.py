@@ -229,7 +229,9 @@ class TestJacobianProductResults:
             pytest.xfail("Lightning devices don't have JVP method")
 
         x = 0.92
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots, trainable_params=[0]
+        )
         tangents = ((0.5,),)
         res, jvp = jpc.execute_and_compute_jvp((tape,), tangents)
 
@@ -253,7 +255,9 @@ class TestJacobianProductResults:
             pytest.skip("jpc does not work with finite shots.")
 
         x = -0.294
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots, trainable_params=[0]
+        )
 
         dy = ((1.1, 0.7),) if tape.shots.has_partitioned_shots else (1.8,)
         vjp = jpc.compute_vjp((tape,), dy)
@@ -266,7 +270,9 @@ class TestJacobianProductResults:
             pytest.skip("jpc does not work with finite shots.")
 
         x = 1.62
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots, trainable_params=[0]
+        )
         jac = jpc.compute_jacobian((tape,))
 
         assert qml.math.allclose(jac, -np.sin(x), atol=_tol_for_shots(shots))
@@ -277,7 +283,9 @@ class TestJacobianProductResults:
             pytest.skip("jpc does not work with finite shots.")
 
         x = 1.62
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots, trainable_params=[0]
+        )
         results, jacs = jpc.execute_and_compute_jacobian((tape,))
         assert qml.math.allclose(results[0], np.cos(x), atol=_tol_for_shots(shots))
         assert qml.math.allclose(jacs, -np.sin(x), atol=_tol_for_shots(shots))
@@ -295,10 +303,12 @@ class TestJacobianProductResults:
         tape1 = qml.tape.QuantumScript(
             [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
             [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
+            trainable_params=[0, 1],
         )
         tape2 = qml.tape.QuantumScript(
             [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))],
             [qml.expval(qml.PauliZ(1))],
+            trainable_params=[0],
             shots=shots,
         )
 
@@ -335,11 +345,13 @@ class TestJacobianProductResults:
         tape1 = qml.tape.QuantumScript(
             [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
             [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
+            trainable_params=[0, 1],
             shots=shots,
         )
         tape2 = qml.tape.QuantumScript(
             [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))],
             [qml.expval(qml.PauliZ(1))],
+            trainable_params=[0],
             shots=shots,
         )
 
@@ -378,11 +390,15 @@ class TestJacobianProductResults:
             [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
             [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
             shots=shots,
+            trainable_params=[0, 1],
         )
         tape2 = qml.tape.QuantumScript(
             [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))],
             [qml.expval(qml.PauliZ(1))],
             shots=shots,
+            trainable_params=[
+                0,
+            ],
         )
 
         # note reversed order of tapes in this test
@@ -428,11 +444,13 @@ class TestJacobianProductResults:
             [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
             [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
             shots=shots,
+            trainable_params=[0, 1],
         )
         tape2 = qml.tape.QuantumScript(
             [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))],
             [qml.expval(qml.PauliZ(1))],
             shots=shots,
+            trainable_params=[0],
         )
 
         # note reversed order of tapes in this test
@@ -477,7 +495,9 @@ class TestCachingDeviceDerivatives:
 
     def test_execution_caching(self, jpc):
         """Test that results and jacobians are cached on calls to execute."""
-        tape1 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         batch = (tape1,)
 
         with jpc._device.tracker:
@@ -520,7 +540,13 @@ class TestCachingDeviceDerivatives:
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
         # Test device called again if batch a new instance, even if identical
-        tape2 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        tape2 = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            trainable_params=[
+                0,
+            ],
+        )
         batch2 = (tape2,)
 
         with jpc._device.tracker:
@@ -537,7 +563,9 @@ class TestCachingDeviceDerivatives:
     def test_cached_on_execute_and_compute_jvps(self, jpc):
         """Test that execute_and_compute_jvp caches results and Jacobians if they are not precalculated."""
         tape1 = qml.tape.QuantumScript(
-            [qml.Hadamard(0), qml.IsingXX(0.8, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
+            [qml.Hadamard(0), qml.IsingXX(0.8, wires=(0, 1))],
+            [qml.expval(qml.PauliZ(1))],
+            trainable_params=[0],
         )
         batch = (tape1,)
         tangents = ((0.5,),)
@@ -563,7 +591,9 @@ class TestCachingDeviceDerivatives:
         """Test that execute_and_compute_jacobians caches results and Jacobians if they are not precalculated."""
         x = 1.5
         tape1 = qml.tape.QuantumScript(
-            [qml.Hadamard(0), qml.IsingXX(x, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
+            [qml.Hadamard(0), qml.IsingXX(x, wires=(0, 1))],
+            [qml.expval(qml.PauliZ(1))],
+            trainable_params=[0],
         )
         batch = (tape1,)
 
@@ -587,7 +617,9 @@ class TestCachingDeviceDerivatives:
     def test_cached_on_vjps(self, jpc):
         """test that only jacs are cached on calls to compute_vjp."""
 
-        tape1 = qml.tape.QuantumScript([qml.RZ(0.5, wires=0)], [qml.expval(qml.PauliX(0))])
+        tape1 = qml.tape.QuantumScript(
+            [qml.RZ(0.5, wires=0)], [qml.expval(qml.PauliX(0))], trainable_params=[0]
+        )
         batch = (tape1,)
         dy = ((0.5,),)
 
@@ -635,12 +667,12 @@ class TestProbsTransformJacobians:
         y = 2.64
         ops = [qml.RY(y, 0), qml.RX(x, 0)]
         measurements = [qml.probs(wires=0), qml.expval(qml.PauliZ(0))]
-        tape1 = qml.tape.QuantumScript(ops, measurements)
+        tape1 = qml.tape.QuantumScript(ops, measurements, trainable_params=[0, 1])
 
         phi = 0.623
         ops2 = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         measurements2 = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-        tape2 = qml.tape.QuantumScript(ops2, measurements2)
+        tape2 = qml.tape.QuantumScript(ops2, measurements2, trainable_params=[0])
 
         tangents = (1.5, 2.5)
         tangents2 = (0.6,)
@@ -672,12 +704,12 @@ class TestProbsTransformJacobians:
         y = -0.83
         ops = [qml.RY(y, 0), qml.RX(x, 0)]
         measurements = [qml.probs(wires=0), qml.expval(qml.PauliZ(0))]
-        tape1 = qml.tape.QuantumScript(ops, measurements)
+        tape1 = qml.tape.QuantumScript(ops, measurements, trainable_params=[0, 1])
 
         phi = 0.545
         ops2 = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         measurements2 = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-        tape2 = qml.tape.QuantumScript(ops2, measurements2)
+        tape2 = qml.tape.QuantumScript(ops2, measurements2, trainable_params=[0])
 
         res, jac = jpc.execute_and_compute_jacobian((tape1, tape2))
 
@@ -717,12 +749,12 @@ class TestProbsTransformJacobians:
         y = 2.64
         ops = [qml.RY(y, 0), qml.RX(x, 0)]
         measurements = [qml.probs(wires=0), qml.expval(qml.PauliZ(0))]
-        tape1 = qml.tape.QuantumScript(ops, measurements)
+        tape1 = qml.tape.QuantumScript(ops, measurements, trainable_params=[0, 1])
 
         phi = 0.623
         ops2 = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         measurements2 = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-        tape2 = qml.tape.QuantumScript(ops2, measurements2)
+        tape2 = qml.tape.QuantumScript(ops2, measurements2, trainable_params=[0])
 
         dy = (np.array([0.25, 0.5]), 1.5)
         dy2 = (0.7, 0.8)
@@ -751,12 +783,18 @@ class TestProbsTransformJacobians:
         y = 2.64
         ops = [qml.RY(y, 0), qml.RX(x, 0)]
         measurements = [qml.probs(wires=0), qml.expval(qml.PauliZ(0))]
-        tape1 = qml.tape.QuantumScript(ops, measurements)
+        tape1 = qml.tape.QuantumScript(ops, measurements, trainable_params=[0, 1])
 
         phi = 0.623
         ops2 = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         measurements2 = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-        tape2 = qml.tape.QuantumScript(ops2, measurements2)
+        tape2 = qml.tape.QuantumScript(
+            ops2,
+            measurements2,
+            trainable_params=[
+                0,
+            ],
+        )
 
         jac = jpc.compute_jacobian((tape1, tape2))
 
@@ -795,7 +833,9 @@ class TestTransformsDifferentiability:
         jpc = param_shift_jpc
 
         def f(x, tangents):
-            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            tape = qml.tape.QuantumScript(
+                [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            )
             return jpc.execute_and_compute_jvp((tape,), tangents)[1][0]
 
         x = jax.numpy.array(0.1)
@@ -820,7 +860,9 @@ class TestTransformsDifferentiability:
         jpc = param_shift_jpc
 
         def f(x, dy):
-            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            tape = qml.tape.QuantumScript(
+                [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            )
             vjp = jpc.compute_vjp((tape,), (dy,))
             return vjp[0]
 
@@ -843,7 +885,9 @@ class TestTransformsDifferentiability:
         jpc = param_shift_jpc
 
         def f(x, dy):
-            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            tape = qml.tape.QuantumScript(
+                [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            )
             vjp = jpc.compute_vjp((tape,), (dy,))
             return vjp[0]
 
@@ -866,7 +910,9 @@ class TestTransformsDifferentiability:
         jpc = param_shift_jpc
 
         def f(x, dy):
-            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            tape = qml.tape.QuantumScript(
+                [qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            )
             vjp = jpc.compute_vjp((tape,), (dy,))
             return vjp[0]
 

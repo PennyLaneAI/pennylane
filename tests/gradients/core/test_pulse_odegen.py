@@ -539,7 +539,9 @@ class TestGenerateTapesAndCoeffs:
 
     def test_raises_non_pulse_op(self):
         """Test that an error is raised for an operation that is not a pulse."""
-        tape = qml.tape.QuantumScript([qml.RX(0.4, 0)], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.4, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         cache = {"total_num_tapes": 0}
         with pytest.raises(ValueError, match="pulse_odegen does not support differentiating"):
             _generate_tapes_and_coeffs(tape, 0, 1e-6, cache)
@@ -819,7 +821,7 @@ class TestPulseOdegenEdgeCases:
 
     def test_raises_with_invalid_op(self):
         """Test that an error is raised when calling ``pulse_odegen`` on a non-pulse op."""
-        tape = qml.tape.QuantumScript([qml.RX(0.4, 0)], [qml.expval(Z(0))])
+        tape = qml.tape.QuantumScript([qml.RX(0.4, 0)], [qml.expval(Z(0))], trainable_params=[0])
         _match = "pulse_odegen does not support differentiating parameters of other"
         with pytest.raises(ValueError, match=_match):
             pulse_odegen(tape)
@@ -827,7 +829,9 @@ class TestPulseOdegenEdgeCases:
     def test_trainable_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
-        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumScript(
+            [qml.RX(qml.numpy.array([0.4, 0.2]), 0)], [qml.expval(qml.PauliZ(0))]
+        )
         _match = r"Computing the gradient of broadcasted tapes .* using the pulse generator"
         with pytest.raises(NotImplementedError, match=_match):
             pulse_odegen(tape)

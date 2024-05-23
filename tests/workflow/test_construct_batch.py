@@ -357,14 +357,15 @@ class TestConstructBatch:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(0.5)
+        batch, fn = construct_batch(circuit, level=None)(qml.numpy.array(0.5))
         assert len(batch) == 2
         expected0 = qml.tape.QuantumScript(
-            [qml.RX(1.0 + np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
+            [qml.RX(qml.numpy.array(1.0) + np.pi / 2, 0)],
+            [qml.expval(qml.PauliZ(0))],
         )
         assert qml.equal(batch[0], expected0)
         expected1 = qml.tape.QuantumScript(
-            [qml.RX(1.0 - np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
+            [qml.RX(qml.numpy.array(1.0) - np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
         )
         assert qml.equal(batch[1], expected1)
 

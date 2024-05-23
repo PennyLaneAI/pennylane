@@ -197,11 +197,9 @@ class TestAdjointJacobian:
         """Test that the gradient of the RX gate matches the known formula."""
         a = 0.7418
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(a, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(a, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         # circuit jacobians
         dev_jacobian = dev.adjoint_jacobian(tape)
         expected_jacobian = -np.sin(a)

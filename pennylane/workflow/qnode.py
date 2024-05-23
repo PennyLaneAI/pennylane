@@ -930,9 +930,6 @@ class QNode:
 
         self._tape = QuantumScript.from_queue(q, shots)
 
-        params = self.tape.get_parameters(trainable_only=False)
-        self.tape.trainable_params = qml.math.get_trainable_indices(params)
-
         if any(isinstance(m, CountsMP) for m in self.tape.measurements) and any(
             qml.math.is_abstract(a) for a in args
         ):

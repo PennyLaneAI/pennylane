@@ -166,7 +166,7 @@ class TestUpdate:
             qml.U2(-1, -2, wires=0),
         ]
         m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
-        qs = QuantumScript(ops, m)
+        qs = QuantumScript(ops, m, trainable_params=[0, 1, 2, 3, 4, 5, 6, 7])
 
         p_i = qs._par_info
 
@@ -192,7 +192,7 @@ class TestUpdate:
             qml.U2(-1, -2, wires=0),
         ]
         m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
-        qs = QuantumScript(ops, m)
+        qs = QuantumScript(ops, m, trainable_params=[0, 1, 2, 3, 4, 5, 6])
 
         op_0, op_id_0, p_id_0 = qs.get_operation(0)
         assert qml.equal(op_0, ops[0]) and op_id_0 == 0 and p_id_0 == 0
@@ -422,7 +422,7 @@ class TestInfomationProperties:
         ]
         m = [qml.expval(qml.PauliX(wires="a")), qml.probs(wires=[0, "a"])]
 
-        return QuantumScript(ops, m)
+        return QuantumScript(ops, m, trainable_params=[0, 1, 2, 3, 4])
 
     def test_graph(self, make_script):
         """Tests the graph is constructed the first time it's requested and then cached."""

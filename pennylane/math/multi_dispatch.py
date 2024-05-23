@@ -424,7 +424,7 @@ def get_trainable_indices(values, like=None):
     trainable_params = set()
 
     for idx, p in enumerate(values):
-        if requires_grad(p, interface=like):
+        if requires_grad(p, interface=like) or get_interface(p) == "jax":
             trainable_params.add(idx)
 
     return trainable_params

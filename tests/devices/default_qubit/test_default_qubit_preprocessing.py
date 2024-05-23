@@ -798,8 +798,8 @@ class TestAdjointDiffTapeValidation:
         qs = qml.tape.QuantumScript(
             [qml.U3(qml.numpy.array(0.2), qml.numpy.array(0.4), qml.numpy.array(0.6), wires=0)],
             [qml.expval(qml.PauliZ(0))],
+            trainable_params=[0, 2],
         )
-        qs.trainable_params = [0, 2]
 
         program = qml.device("default.qubit").preprocess(
             ExecutionConfig(gradient_method="adjoint")
@@ -810,7 +810,7 @@ class TestAdjointDiffTapeValidation:
 
         # U3 decomposes into 5 operators
         assert len(res.operations) == 5
-        assert res.trainable_params == [0, 1, 2, 3, 4]
+        assert res.trainable_params == [0, 1, 2, 3]
 
     @pytest.mark.usefixtures(
         "use_legacy_opmath"
@@ -854,7 +854,7 @@ class TestAdjointDiffTapeValidation:
             qml.numpy.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
         )
         qs = qml.tape.QuantumScript(
-            ops=[prep_op, G(np.pi, wires=[0])],
+            ops=[prep_op, G(qml.numpy.array(np.pi), wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
         )
 
@@ -889,7 +889,6 @@ class TestAdjointDiffTapeValidation:
             ExecutionConfig(gradient_method="adjoint")
         )[0]
 
-        qs.trainable_params = {1, 2, 3}
         qs_valid, _ = program((qs,))
         qs_valid = qs_valid[0]
 
@@ -902,7 +901,7 @@ class TestAdjointDiffTapeValidation:
 
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs_valid.trainable_params == [0, 1, 2, 3]
+        assert qs_valid.trainable_params == [1, 2, 3]
         assert qs.shots == qs_valid.shots
 
     def test_untrainable_operations(self):

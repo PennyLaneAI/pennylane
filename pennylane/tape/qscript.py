@@ -211,7 +211,7 @@ class QuantumScript:
         fingerprint = []
         fingerprint.extend(op.hash for op in self.operations)
         fingerprint.extend(m.hash for m in self.measurements)
-        fingerprint.extend(self.trainable_params)
+        # fingerprint.extend(self.trainable_params)
         fingerprint.extend(self.shots)
         return hash(tuple(fingerprint))
 
@@ -541,7 +541,8 @@ class QuantumScript:
         [0.432]
         """
         if self._trainable_params is None:
-            self._trainable_params = list(range(len(self._par_info)))
+            params = self.get_parameters(trainable_only=False)
+            self._trainable_params = sorted(set(qml.math.get_trainable_indices(params)))
         return self._trainable_params
 
     @trainable_params.setter
@@ -1114,9 +1115,11 @@ class QuantumScript:
         return qasm_str
 
     @classmethod
-    def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
+    def from_queue(
+        cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None, trainable_params=None
+    ):
         """Construct a QuantumScript from an AnnotatedQueue."""
-        return cls(*process_queue(queue), shots=shots)
+        return cls(*process_queue(queue), shots=shots, trainable_params=trainable_params)
 
     def map_to_standard_wires(self):
         """

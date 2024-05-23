@@ -81,7 +81,7 @@ class TestGetOperationRecipe:
             grad_recipe = (recipe,)
 
         with qml.queuing.AnnotatedQueue() as q:
-            DummyOp(0.2, wires=list(range(DummyOp.num_wires)))
+            DummyOp(qml.numpy.array(0.2), wires=list(range(DummyOp.num_wires)))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         out_recipe = _get_operation_recipe(tape, 0, shifts=shifts, order=1)
@@ -138,7 +138,7 @@ class TestGetOperationRecipe:
             grad_recipe = (recipe,)
 
         with qml.queuing.AnnotatedQueue() as q:
-            DummyOp(0.2, wires=list(range(DummyOp.num_wires)))
+            DummyOp(qml.numpy.array(0.2), wires=list(range(DummyOp.num_wires)))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         out_recipe = _get_operation_recipe(tape, 0, shifts=shifts, order=2)
@@ -351,8 +351,8 @@ class TestParamShift:
 
         batch, _ = qml.gradients.param_shift(tape)
         assert len(batch) == 2
-        tape0 = qml.tape.QuantumScript((qml.RX(0.5 + np.pi / 2, 0),), ms, trainable_params=[0])
-        tape1 = qml.tape.QuantumScript((qml.RX(0.5 - np.pi / 2, 0),), ms, trainable_params=[0])
+        tape0 = qml.tape.QuantumScript((qml.RX(0.5 + np.pi / 2, 0),), ms)
+        tape1 = qml.tape.QuantumScript((qml.RX(0.5 - np.pi / 2, 0),), ms)
         assert qml.equal(batch[0], tape0)
         assert qml.equal(batch[1], tape1)
 
@@ -373,13 +373,12 @@ class TestParamShift:
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.543, 0), qml.RY(-0.654, wires=1)],
+            [qml.expval(qml.Z(0))],
+            trainable_params=[0, 1],
+        )
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])  # does not have any impact on the expval
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = qml.gradients.param_shift(tape)
         assert len(tapes) == 2
@@ -599,12 +598,9 @@ class TestParamShift:
         dev = qml.device("default.qubit", wires=2)
         x = [0.543, -0.654]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x[0], wires=[0])
-            qml.RX(x[1], wires=[0])
-            qml.expval(qml.PauliZ(0))
+        ops = [qml.RX(x[0], wires=[0]), qml.RX(x[1], wires=[0])]
+        tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], trainable_params=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = tuple(
             [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None
             for i in range(2)
@@ -634,14 +630,11 @@ class TestParamShift:
         dev = qml.device("default.qubit", wires=2)
         x = [0.543, -0.654]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x[0], wires=[0])
-            qml.RX(x[1], wires=[0])
-            qml.expval(qml.PauliZ(0))
-            if multi_measure:
-                qml.expval(qml.PauliZ(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        ops = [qml.RX(x[0], wires=[0]), qml.RX(x[1], wires=[0])]
+        m = [qml.expval(qml.Z(0))]
+        if multi_measure:
+            m.append(qml.expval(qml.Z(1)))
+        tape = qml.tape.QuantumScript(ops, m, trainable_params=[0, 1])
         gradient_recipes = tuple(
             [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
         )
@@ -675,13 +668,10 @@ class TestParamShift:
         dev = qml.device("default.qubit", wires=2)
         x = [0.543, -0.654]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x[0], wires=[0])
-            qml.RX(x[1], wires=[0])
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliZ(1))
+        ops = [qml.RX(x[0], wires=[0]), qml.RX(x[1], wires=[0])]
+        m = [qml.expval(qml.Z(0)), qml.expval(qml.Z(1))]
+        tape = qml.tape.QuantumScript(ops, m, trainable_params=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = tuple(
             (
                 [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
@@ -708,12 +698,12 @@ class TestParamShift:
         values."""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=y_wire)
-            qml.expval(qml.PauliZ(0))
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.543, 0), qml.RY(-0.654, y_wire)],
+            [qml.expval(qml.Z(0))],
+            trainable_params=[0, 1],
+        )
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
         f0 = dev.execute(tape)
         tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, f0=f0, broadcast=broadcast)
@@ -772,18 +762,13 @@ class TestParamShift:
         parameters, the gradient should be evaluated to zero without executing the device."""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(1.0, wires=[0])
-            qml.RX(1.0, wires=[1])
-            qml.expval(qml.PauliZ(0))
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(1.0, 0), qml.RX(1.0, 1)], [qml.expval(qml.Z(0))], trainable_params=[0, 1]
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.RX(1.0, 0), qml.RX(1.0, 1)], [qml.expval(qml.Z(1))], trainable_params=[0, 1]
+        )
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(1.0, wires=[0])
-            qml.RX(1.0, wires=[1])
-            qml.expval(qml.PauliZ(1))
-
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tapes, fn = qml.gradients.param_shift(tape1)
         with qml.Tracker(dev) as tracker:
             j1 = fn(dev.execute(tapes))
@@ -871,7 +856,9 @@ class TestParamShiftRaisesWithBroadcasted:
     def test_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
-        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumScript(
+            [qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        )
         _match = r"Computing the gradient of broadcasted tapes .* using the parameter-shift rule"
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.param_shift(tape)
@@ -982,12 +969,9 @@ class TestParamShiftUsingBroadcasting:
         during the Jacobian computation."""
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])  # does not have any impact on the expval
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.543, 0), qml.RY(-0.654, 1)], [qml.expval(qml.Z(0))], trainable_params=[0, 1]
+        )
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         assert len(tapes) == 1
@@ -1040,12 +1024,10 @@ class TestParamShiftUsingBroadcasting:
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[0])
-            qml.expval(qml.PauliZ(0))
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.543, 0), qml.RY(-0.654, 0)], [qml.expval(qml.Z(0))], trainable_params=[0, 1]
+        )
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
         tapes, _ = qml.gradients.param_shift(
             tape, gradient_recipes=gradient_recipes, broadcast=True
@@ -1059,18 +1041,13 @@ class TestParamShiftUsingBroadcasting:
         parameters, the gradient should be evaluated to zero without executing the device."""
         dev = qml.device("default.qubit")
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(1.0, wires=[0])
-            qml.RX(1.0, wires=[1])
-            qml.expval(qml.PauliZ(0))
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(1.0, 0), qml.RX(1.0, 1)], [qml.expval(qml.Z(0))], trainable_params=[0, 1]
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.RX(1.0, 0), qml.RX(1.0, 1)], [qml.expval(qml.Z(1))], trainable_params=[0, 1]
+        )
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(1.0, wires=[0])
-            qml.RX(1.0, wires=[1])
-            qml.expval(qml.PauliZ(1))
-
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tapes, fn = qml.gradients.param_shift(tape1, broadcast=True)
         with qml.Tracker(dev) as tracker:
             j1 = fn(dev.execute(tapes))
@@ -1535,13 +1512,12 @@ class TestParameterShiftRule:
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            RX_with_F(x, wires=[0])
-            RY_with_F(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        tape = qml.tape.QuantumScript(
+            [RX_with_F(x, 0), RY_with_F(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.Z(0) @ qml.X(1))],
+            trainable_params=[0, 1],
+        )
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
         assert len(tapes) == 1 + 2
 
@@ -1565,13 +1541,12 @@ class TestParameterShiftRule:
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.Z(0) @ qml.X(1))],
+            trainable_params=[0, 1],
+        )
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = qml.gradients.param_shift(tape)
         assert len(tapes) == 4
 
@@ -1609,14 +1584,12 @@ class TestParameterShiftRule:
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliX(1))
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.Z(0)), qml.expval(qml.X(1))],
+            trainable_params=[0, 1],
+        )
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = qml.gradients.param_shift(tape)
         assert len(tapes) == 4
 
@@ -1636,14 +1609,11 @@ class TestParameterShiftRule:
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.var(qml.PauliX(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.Z(0)), qml.var(qml.X(1))],
+            trainable_params=[0, 1],
+        )
         tapes, fn = qml.gradients.param_shift(tape)
         assert len(tapes) == 5
 
@@ -1665,14 +1635,11 @@ class TestParameterShiftRule:
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.Z(0)), qml.probs((0, 1))],
+            trainable_params=[0, 1],
+        )
         tapes, fn = qml.gradients.param_shift(tape)
         assert len(tapes) == 4
 
@@ -2091,18 +2058,19 @@ class TestParameterShiftRule:
         b = -0.423
         c = 0.123
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.RX(c, wires=2)
-            qml.CNOT(wires=[0, 1])
-            qml.var(qml.PauliZ(0))
-            qml.expval(qml.PauliZ(1))
-            qml.var(qml.PauliZ(2))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape.trainable_params = {0}
+        ops = [
+            qml.RX(a, wires=0),
+            qml.RY(b, wires=1),
+            qml.CNOT(wires=[1, 2]),
+            qml.RX(c, wires=2),
+            qml.CNOT(wires=[0, 1]),
+        ]
+        m = [
+            qml.var(qml.PauliZ(0)),
+            qml.expval(qml.PauliZ(1)),
+            qml.var(qml.PauliZ(2)),
+        ]
+        tape = qml.tape.QuantumScript(ops, m, trainable_params=[0])
 
         res = dev.execute(tape)
         expected = np.array(
@@ -2151,6 +2119,7 @@ class TestParameterShiftRule:
             qml.var(qml.PauliZ(2))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1, 2]
         res = dev.execute(tape)
         expected = np.array(
             [
@@ -2201,6 +2170,7 @@ class TestParameterShiftRule:
             qml.var(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
         tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
         # 2 operations x 2 shifted positions + 1 unshifted term overall
         assert len(tapes) == 2 * 2 + 1
@@ -2746,6 +2716,7 @@ class TestParameterShiftRuleBroadcast:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
         tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff, broadcast=True)
         assert len(tapes) == 1 + 2
 
@@ -2775,6 +2746,7 @@ class TestParameterShiftRuleBroadcast:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
         tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         assert len(tapes) == 2
         assert tapes[0].batch_size == tapes[1].batch_size == 2
@@ -2910,6 +2882,7 @@ class TestParameterShiftRuleBroadcast:
             qml.var(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0]
         res = dev.execute(tape)
         expected = 1 - np.cos(a) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
