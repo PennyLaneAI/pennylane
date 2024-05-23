@@ -117,7 +117,7 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
 
             meas_op = op.hyperparameters["measurement"]
             tape_meas = [meas_op] if meas_op else [qml.state()]
-            new_tapes.append(QuantumTape(ops=accumulated_ops, measurements=tape_meas, shots=shots))
+            new_tapes.append(type(tape)(ops=accumulated_ops, measurements=tape_meas, shots=shots))
         else:
             accumulated_ops.append(op)
 
