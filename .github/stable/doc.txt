@@ -109,7 +109,7 @@ tensornetwork==0.3.0
 termcolor==2.4.0
 toml==0.10.2
 tomli==2.0.1
-torch==1.9.0
+torch==1.9.0+cpu
 tqdm==4.66.4
 typing_extensions==4.11.0
 tzdata==2024.1
