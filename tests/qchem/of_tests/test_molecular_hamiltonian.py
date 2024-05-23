@@ -858,5 +858,5 @@ def test_unit_error_molecular_hamiltonian():
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
-    with pytest.raises(ValueError, match="The provided unit, 'degrees' is not supported."):
+    with pytest.raises(ValueError, match="The provided unit 'degrees' is not supported."):
         qchem.molecular_hamiltonian(symbols, geometry, unit="degrees")
