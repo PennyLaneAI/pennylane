@@ -132,12 +132,12 @@ def accepted_methods(method: str) -> bool:
 
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
-    """A function that determines if an operation is supported by ``lightning.tensor`` for this interface."""
+    """A function that determines if an operation is supported by ``default.tensor`` for this interface."""
     return op.name in _operations
 
 
 def accepted_observables(obs: qml.operation.Operator) -> bool:
-    """A function that determines if an observable is supported by ``lightning.tensor`` for this interface."""
+    """A function that determines if an observable is supported by ``default.tensor`` for this interface."""
     return obs.name in _observables
 
 
