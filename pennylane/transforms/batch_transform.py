@@ -14,6 +14,7 @@
 """Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
 
+import warnings
 from typing import Callable, Tuple
 
 import pennylane as qml
@@ -64,7 +65,19 @@ def map_batch_transform(
     >>> dev = qml.device("default.qubit", wires=2)
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
     [array(0.99500417), array(0.8150893)]
+
+    .. warning::
+        qml.transforms.map_batch_transform is deprecated and will be removed in a future release.
+        Instead, a transform can be applied directly to a batch of tapes. See :func:`~.pennylane.transform` for more details.
     """
+
+    warnings.warn(
+        "qml.transforms.map_batch_transform is deprecated. "
+        "Instead, a transform can be applied directly to a batch of tapes. "
+        "See qml.transform for more details.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     execution_tapes = []
     batch_fns = []
     tape_counts = []
