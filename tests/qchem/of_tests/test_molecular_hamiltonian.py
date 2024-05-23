@@ -843,7 +843,7 @@ def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdi
         outpath=tmpdir.strpath,
     )
 
-    molecule_ang = qchem.Molecule(symbols, geometry_ang, unit="Angstrom")
+    molecule_ang = qchem.Molecule(symbols, geometry_ang, unit="angstrom")
     hamiltonian_ang, _ = qchem.molecular_hamiltonian(
         molecule_ang,
         method=method,
