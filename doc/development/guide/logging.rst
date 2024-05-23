@@ -31,7 +31,7 @@ which will be used within the given module, and track directories,
 filenames and function names, as we have defined the appropriate types
 within the formatter configuration (see :class:`pennylane.logging.DefaultFormatter`). With the logger defined, we can selectively add to the logger via two methods: 
 
-   #. using decorators on the required functions and methods in a given module:
+#. using decorators on the required functions and methods in a given module:
 
    .. code:: python
 
@@ -43,7 +43,7 @@ within the formatter configuration (see :class:`pennylane.logging.DefaultFormatt
       def my_func(arg1, arg2):
          return arg1 + arg2
 
-   #. explicitly by if-else statements, which compare the given module’s log-level to any log record message it receives. This step is not necessary, as the message will
+#. explicitly by if-else statements, which compare the given module’s log-level to any log record message it receives. This step is not necessary, as the message will
    only output if the level is enabled, though if an expensive function
    call is required to build the string for the log-message, it can be
    faster to perform this check:
