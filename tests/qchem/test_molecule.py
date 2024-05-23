@@ -360,5 +360,5 @@ class TestMolecule:
         symbols = ["H", "H"]
         geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
-        with pytest.raises(ValueError, match="The provided unit, 'degrees' is not supported."):
+        with pytest.raises(ValueError, match="The provided unit 'degrees' is not supported."):
             qchem.Molecule(symbols, geometry, unit="degrees")
