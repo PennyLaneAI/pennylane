@@ -167,6 +167,9 @@ def create_operator_primitive(
 ) -> Optional["jax.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
+    Called when defining any :class:`~.Operator` subclass, and is used to set the
+    ``Operator._primitive`` class property.
+
     Args:
         operator_type (type): a subclass of qml.operation.Operator
 
@@ -204,7 +207,20 @@ def create_operator_primitive(
 def create_measurement_obs_primitive(
     measurement_type: Type["qml.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.core.Primitive"]:
-    """Create a primitive corresponding to the input type where the abstract inputs are an operator."""
+    """Create a primitive corresponding to the input type where the abstract inputs are an operator.
+
+    Called by default when defining any class inheriting from :class:`~.MeasurementProcess`, and is used to
+    set the ``MeasurementProcesss._obs_primitive`` property.
+
+    Args:
+        measurement_type (type): a subclass of :class:`~.MeasurementProcess`
+        name (str): the preferred string name for the class. For example, ``"expval"``.
+            ``"_obs"`` is appended to this name for the name of the primitive.
+
+    Returns:
+        Optional[jax.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+
+    """
     if not has_jax:
         return None
 
@@ -228,7 +244,20 @@ def create_measurement_mcm_primitive(
     measurement_type: Type["qml.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are classical
-    mid circuit measurement results."""
+    mid circuit measurement results.
+
+    Called by default when defining any class inheriting from :class:`~.MeasurementProcess`, and is used to
+    set the ``MeasurementProcesss._mcm_primitive`` property.
+
+    Args:
+        measurement_type (type): a subclass of :class:`~.MeasurementProcess`
+        name (str): the preferred string name for the class. For example, ``"expval"``.
+            ``"_mcm"`` is appended to this name for the name of the primitive.
+
+    Returns:
+        Optional[jax.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+    """
+
     if not has_jax:
         return None
 
@@ -251,7 +280,19 @@ def create_measurement_mcm_primitive(
 def create_measurement_wires_primitive(
     measurement_type: type, name: str
 ) -> Optional["jax.core.Primitive"]:
-    """Create a primitive corresponding to the input type where the abstract inputs are the wires."""
+    """Create a primitive corresponding to the input type where the abstract inputs are the wires.
+
+    Called by default when defining any class inheriting from :class:`~.MeasurementProcess`, and is used to
+    set the ``MeasurementProcesss._wires_primitive`` property.
+
+    Args:
+        measurement_type (type): a subclass of :class:`~.MeasurementProcess`
+        name (str): the preferred string name for the class. For example, ``"expval"``.
+            ``"_wires"`` is appended to this name for the name of the primitive.
+
+    Returns:
+        Optional[jax.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+    """
     if not has_jax:
         return None
 

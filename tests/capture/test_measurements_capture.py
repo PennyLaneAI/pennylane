@@ -97,6 +97,7 @@ def test_primitive_none_behavior():
     be created, but it just won't be captured into jaxpr.
     """
 
+    # pylint: disable=too-few-public-methods
     class MyMeasurement(qml.measurements.MeasurementProcess):
         pass
 
@@ -150,28 +151,29 @@ def test_capture_and_eval(func):
 @pytest.mark.parametrize(
     "x64_mode, expected", [(True, jax.numpy.complex128), (False, jax.numpy.complex64)]
 )
-def test_state(x64_mode, expected):
+@pytest.mark.parametrize("state_wires, shape", [(None, 16), (qml.wires.Wires((0, 1, 2, 3, 4)), 32)])
+def test_state(x64_mode, expected, state_wires, shape):
     """Test the capture of a state measurement."""
 
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 
     def f():
-        return qml.capture.measure(qml.state(), num_device_wires=4)
+        return qml.capture.measure(StateMP(wires=state_wires), num_device_wires=4)
 
     jaxpr = jax.make_jaxpr(f)()
     assert len(jaxpr.eqns) == 2
 
     assert jaxpr.eqns[0].primitive == StateMP._wires_primitive
-    assert len(jaxpr.eqns[0].invars) == 0
+    assert len(jaxpr.eqns[0].invars) == 0 if state_wires is None else 5
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)
-    assert mp.n_wires == 0
+    assert mp.n_wires == 0 if state_wires is None else 5
     assert mp._abstract_eval == StateMP._abstract_eval
 
     assert jaxpr.eqns[1].primitive == measure_prim
     assert jaxpr.eqns[1].params == {"num_device_wires": 4, "shots": qml.measurements.Shots(None)}
-    assert jaxpr.eqns[1].outvars[0].aval == jax.core.ShapedArray((16,), expected)
+    assert jaxpr.eqns[1].outvars[0].aval == jax.core.ShapedArray((shape,), expected)
     jax.config.update("jax_enable_x64", initial_mode)
 
 
