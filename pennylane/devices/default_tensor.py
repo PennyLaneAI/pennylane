@@ -202,7 +202,38 @@ class DefaultTensor(Device):
     .. details::
             :title: Usage Details
 
-            TODO: Add more examples and details about the device.
+            TODO: provide explanation
+
+            .. code-block:: python
+
+                import pennylane as qml
+                import numpy as np
+
+                theta = 0.5
+                phi = 0.1
+                num_qubits = 50
+                kwargs = {"max_bond_dim": 100, "cutoff": 1e-16, "contract": "auto-mps"}
+
+                dev = qml.device("default.tensor", wires=num_qubits, **kwargs)
+
+                @qml.qnode(dev)
+                def circuit(theta, phi, N):
+                    for qubit in range(N - 4):
+                        qml.X(wires=qubit)
+                        qml.RX(theta, wires=qubit + 1),
+                        qml.CNOT(wires=[qubit, qubit + 1]),
+                        qml.DoubleExcitation(phi, wires=[qubit, qubit + 1, qubit + 3, qubit + 4]),
+                        qml.CSWAP(wires=[qubit + 1, qubit + 3, qubit + 4]),
+                        qml.RY(theta, wires=qubit + 1),
+                        qml.Toffoli(wires=[qubit + 1, qubit + 3, qubit + 4]),
+                    return [
+                        qml.expval(qml.Z(0)),
+                        qml.expval(qml.Hamiltonian([np.pi, np.e], [qml.Z(15) @ qml.Y(25), qml.Hadamard(40)])),
+                        qml.var(qml.Y(20)),
+                    ]
+
+            >>> circuit(theta, phi, num_qubits)
+            [-0.9953099539219951, 0.0036631029671767208, 0.9999999876072984]
     """
 
     # pylint: disable=too-many-instance-attributes
