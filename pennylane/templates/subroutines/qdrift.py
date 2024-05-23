@@ -17,7 +17,7 @@ import copy
 import pennylane as qml
 from pennylane.math import requires_grad, unwrap
 from pennylane.operation import Operation
-from pennylane.ops import Hamiltonian, LinearCombination, SProd, Sum
+from pennylane.ops import Hamiltonian, LinearCombination, Sum
 from pennylane.wires import Wires
 
 
