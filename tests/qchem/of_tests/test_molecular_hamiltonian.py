@@ -804,7 +804,7 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     hamiltonian_bohr, _ = qchem.molecular_hamiltonian(
         symbols,
         geometry_bohr,
-        unit="Bohr",
+        unit="bohr",
         method=method,
         outpath=tmpdir.strpath,
     )
