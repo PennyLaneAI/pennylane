@@ -27,7 +27,25 @@ def test_standard_validity():
     t = 0.1
     op = qml.ApproxTimeEvolution(H, t, n=20)
     qml.ops.functions.assert_valid(op)
-    assert False
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Tests the _flatten and _unflatten methods."""
+    H = 2.0 * qml.PauliX(0) + 3.0 * qml.PauliY(0)
+    t = 0.1
+    op = qml.ApproxTimeEvolution(H, t, n=20)
+    data, metadata = op._flatten()
+    assert data[0] is H
+    assert data[1] == t
+    assert metadata == (20,)
+
+    # check metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert new_op is not op
 
 
 def test_queuing():
