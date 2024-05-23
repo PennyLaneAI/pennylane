@@ -114,7 +114,7 @@ def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: Unfl
         _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn)
 
 
-@dataclass(repr=False, frozen=True)
+@dataclass(repr=False)
 class PyTreeStructure:
     """A pytree data structure, holding the type, metadata, and child pytree structures.
 
