@@ -202,10 +202,10 @@ class DefaultTensor(Device):
     .. details::
             :title: Usage Details
 
-            We can provide additional keyword arguments to the device to customize the simulation.
+            We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
             In the following example, we consider a slightly more complex circuit. We use the ``default.tensor`` device with the MPS method,
-            setting the maximum bond dimension to 100 and the cutoff to 1e-16. We use `auto-mps` as the contraction technique to apply gates.
+            setting the maximum bond dimension to 100 and the cutoff to 1e-16. We use ``"auto-mps"`` as the contraction technique to apply gates.
 
             .. code-block:: python
 
@@ -215,20 +215,20 @@ class DefaultTensor(Device):
                 theta = 0.5
                 phi = 0.1
                 num_qubits = 50
-                kwargs = {"max_bond_dim": 100, "cutoff": 1e-16, "contract": "auto-mps"}
+                device_kwargs = {"max_bond_dim": 100, "cutoff": 1e-16, "contract": "auto-mps"}
 
-                dev = qml.device("default.tensor", wires=num_qubits, **kwargs)
+                dev = qml.device("default.tensor", wires=num_qubits, **device_kwargs)
 
                 @qml.qnode(dev)
-                def circuit(theta, phi, N):
-                    for qubit in range(N - 4):
+                def circuit(theta, phi, num_qubits):
+                    for qubit in range(num_qubits - 4):
                         qml.X(wires=qubit)
-                        qml.RX(theta, wires=qubit + 1),
-                        qml.CNOT(wires=[qubit, qubit + 1]),
-                        qml.DoubleExcitation(phi, wires=[qubit, qubit + 1, qubit + 3, qubit + 4]),
-                        qml.CSWAP(wires=[qubit + 1, qubit + 3, qubit + 4]),
-                        qml.RY(theta, wires=qubit + 1),
-                        qml.Toffoli(wires=[qubit + 1, qubit + 3, qubit + 4]),
+                        qml.RX(theta, wires=qubit + 1)
+                        qml.CNOT(wires=[qubit, qubit + 1])
+                        qml.DoubleExcitation(phi, wires=[qubit, qubit + 1, qubit + 3, qubit + 4])
+                        qml.CSWAP(wires=[qubit + 1, qubit + 3, qubit + 4])
+                        qml.RY(theta, wires=qubit + 1)
+                        qml.Toffoli(wires=[qubit + 1, qubit + 3, qubit + 4])
                     return [
                         qml.expval(qml.Z(0)),
                         qml.expval(qml.Hamiltonian([np.pi, np.e], [qml.Z(15) @ qml.Y(25), qml.Hadamard(40)])),
@@ -239,7 +239,7 @@ class DefaultTensor(Device):
             [-0.9953099539219951, 0.0036631029671767208, 0.9999999876072984]
 
             After the first execution, the time to run this circuit for 50 qubits is around 0.5 seconds depending on the machine.
-            Increasing the number of qubits to 500 will increase the execution time to around 15 seconds, and for 1000 qubits to around 50 seconds.
+            Increasing the number of qubits to 500 brings the execution time to approximately 15 seconds, and for 1000 qubits to around 50 seconds.
 
             The time complexity and the accuracy of the results also depend on the chosen keyword arguments for the device, such as the maximum bond dimension.
             The specific structure of the circuit significantly affects how the time complexity and accuracy of the simulation scale with these parameters.
