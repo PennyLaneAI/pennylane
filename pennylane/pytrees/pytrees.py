@@ -15,7 +15,7 @@
 An internal module for working with pytrees.
 """
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Optional
 
 has_jax = True
 try:
@@ -26,7 +26,7 @@ except ImportError:
 Leaves = Any
 Metadata = Any
 
-FlattenFn = Callable[[Any], Tuple[Leaves, Metadata]]
+FlattenFn = Callable[[Any], tuple[Leaves, Metadata]]
 UnflattenFn = Callable[[Leaves, Metadata], Any]
 
 
@@ -73,10 +73,21 @@ unflatten_registrations: dict[type, UnflattenFn] = {
     dict: unflatten_dict,
 }
 
+type_to_typenames: dict[type, str] = {
+    list: "builtins.list",
+    dict: "builtins.dict",
+    tuple: "builtins.tuple",
+}
+
+typename_to_type: dict[str, type] = {name: type_ for type_, name in type_to_typenames.items()}
+
 
 def _register_pytree_with_pennylane(
-    pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn
+    pytree_type: type, typename: str, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn
 ):
+    type_to_typenames[pytree_type] = typename
+    typename_to_type[typename] = pytree_type
+
     flatten_registrations[pytree_type] = flatten_fn
     unflatten_registrations[pytree_type] = unflatten_fn
 
@@ -88,7 +99,13 @@ def _register_pytree_with_jax(pytree_type: type, flatten_fn: FlattenFn, unflatte
     jax_tree_util.register_pytree_node(pytree_type, flatten_fn, jax_unflatten)
 
 
-def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn):
+def register_pytree(
+    pytree_type: type,
+    flatten_fn: FlattenFn,
+    unflatten_fn: UnflattenFn,
+    *,
+    typename_prefix: str = "qml",
+):
     """Register a type with all available pytree backends.
 
     Current backends are jax and pennylane.
@@ -97,6 +114,7 @@ def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: Unfl
         pytree_type (type): the type to register, such as ``qml.RX``
         flatten_fn (Callable): a function that splits an object into trainable leaves and hashable metadata.
         unflatten_fn (Callable): a function that reconstructs an object from its leaves and metadata.
+        typename_prefix (str): A prefix for the name under which this type will be registered.
 
     Returns:
         None
@@ -108,10 +126,43 @@ def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: Unfl
 
     """
 
-    _register_pytree_with_pennylane(pytree_type, flatten_fn, unflatten_fn)
+    typename = f"{typename_prefix}.{pytree_type.__qualname__}"
+    _register_pytree_with_pennylane(pytree_type, typename, flatten_fn, unflatten_fn)
 
     if has_jax:
         _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn)
+
+
+def is_pytree(type_: type[Any]) -> bool:
+    """Returns True if ``type_`` is a registered Pytree."""
+    return type_ in type_to_typenames
+
+
+def get_typename(pytree_type: type[Any]) -> str:
+    """Return the typename under which ``pytree_type``
+    was registered.
+
+    Raises:
+        TypeError: If ``pytree_type`` is not a Pytree"""
+
+    try:
+        return type_to_typenames[pytree_type]
+    except KeyError as exc:
+        raise TypeError(f"{repr(pytree_type)} is not a Pytree type") from exc
+
+
+def get_typename_type(typename: str) -> type[Any]:
+    """Return the Pytree type with given ``typename``.
+
+    Raises:
+        ValueError: If ``typename`` is not the name of a
+            pytree type.
+    """
+
+    try:
+        return typename_to_type[typename]
+    except KeyError as exc:
+        raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
 @dataclass(repr=False, frozen=True)
@@ -126,7 +177,7 @@ class PyTreeStructure:
     A leaf is defined as just a ``PyTreeStructure`` with ``type=None``.
     """
 
-    type: Optional[type]
+    type: Optional[type[Any]]
     """The type corresponding to the node. If ``None``, then the structure is a leaf."""
 
     metadata: Metadata
@@ -134,6 +185,11 @@ class PyTreeStructure:
 
     children: list["PyTreeStructure"]
     """The children of the pytree node.  Can be either other structures or terminal leaves."""
+
+    @property
+    def is_leaf(self) -> bool:
+        """Whether or not this represents a leaf."""
+        return self.type is None
 
     def __repr__(self):
         if self.type is None:
@@ -144,7 +200,7 @@ class PyTreeStructure:
 leaf = PyTreeStructure(None, (), [])
 
 
-def flatten(obj) -> Tuple[List[Any], PyTreeStructure]:
+def flatten(obj: Any) -> tuple[list[Any], PyTreeStructure]:
     """Flattens a pytree into leaves and a structure.
 
     Args:
@@ -179,7 +235,7 @@ def flatten(obj) -> Tuple[List[Any], PyTreeStructure]:
     return flattened_leaves, structure
 
 
-def unflatten(data: List[Any], structure: PyTreeStructure) -> Any:
+def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
     """Bind data to a structure to reconstruct a pytree object.
 
     Args:

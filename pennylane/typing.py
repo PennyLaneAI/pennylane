@@ -122,3 +122,5 @@ def _is_torch(other, subclass=False):
 Result = TypeVar("Result", Tuple, TensorLike)
 
 ResultBatch = Tuple[Result]
+
+JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]
