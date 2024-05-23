@@ -189,9 +189,13 @@ class BasisRotation(Operation):
         return op_list
 
 
-if BasisRotation._primitive is not None:
+# Program capture needs to unpack and re-pack the wires to support dynamic wires. For
+# BasisRotation, the unconventional argument ordering requires custom def_impl code.
+# See capture module for more information on primitives
+# If None, jax isn't installed so the class never got a primitive.
+if BasisRotation._primitive is not None:  # pylint: disable=protected-access
 
-    @BasisRotation._primitive.def_impl
+    @BasisRotation._primitive.def_impl  # pylint: disable=protected-access
     def _(*args, **kwargs):
         # If there are more than two args, we are calling with unpacked wires, so that
         # we have to repack them. This replaces the n_wires logic in the general case.
