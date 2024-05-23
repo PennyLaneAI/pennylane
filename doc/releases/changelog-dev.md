@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* `expectation_value` was added to `math` to calculate the expectation value of a matrix for pure states.
+  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
+
+  ```pycon
+  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+  >>> qml.math.expectation_value(operator_matrix, state_vector)
+  tensor(-2.23711432e-17+0.j, requires_grad=True)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
@@ -67,16 +77,6 @@
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
- 
- * `expectation_value` was added to `math` to calculate the expectation value of a matrix for pure states.
-  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
-
-  ```pycon
-  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
-  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
-  >>> qml.math.expectation_value(operator_matrix, state_vector)
-  tensor(-2.23711432e-17+0.j, requires_grad=True)
-  ```
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
