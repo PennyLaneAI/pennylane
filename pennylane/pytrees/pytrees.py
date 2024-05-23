@@ -14,8 +14,9 @@
 """
 An internal module for working with pytrees.
 """
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 has_jax = True
 try:
@@ -73,19 +74,19 @@ unflatten_registrations: dict[type, UnflattenFn] = {
     dict: unflatten_dict,
 }
 
-type_to_typenames: dict[type, str] = {
+type_to_typename: dict[type, str] = {
     list: "builtins.list",
     dict: "builtins.dict",
     tuple: "builtins.tuple",
 }
 
-typename_to_type: dict[str, type] = {name: type_ for type_, name in type_to_typenames.items()}
+typename_to_type: dict[str, type] = {name: type_ for type_, name in type_to_typename.items()}
 
 
 def _register_pytree_with_pennylane(
     pytree_type: type, typename: str, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn
 ):
-    type_to_typenames[pytree_type] = typename
+    type_to_typename[pytree_type] = typename
     typename_to_type[typename] = pytree_type
 
     flatten_registrations[pytree_type] = flatten_fn
@@ -100,11 +101,7 @@ def _register_pytree_with_jax(pytree_type: type, flatten_fn: FlattenFn, unflatte
 
 
 def register_pytree(
-    pytree_type: type,
-    flatten_fn: FlattenFn,
-    unflatten_fn: UnflattenFn,
-    *,
-    typename_prefix: str = "qml",
+    pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn, *, namespace: str = "qml"
 ):
     """Register a type with all available pytree backends.
 
@@ -114,7 +111,7 @@ def register_pytree(
         pytree_type (type): the type to register, such as ``qml.RX``
         flatten_fn (Callable): a function that splits an object into trainable leaves and hashable metadata.
         unflatten_fn (Callable): a function that reconstructs an object from its leaves and metadata.
-        typename_prefix (str): A prefix for the name under which this type will be registered.
+        namespace (str): A prefix for the name under which this type will be registered.
 
     Returns:
         None
@@ -126,7 +123,7 @@ def register_pytree(
 
     """
 
-    typename = f"{typename_prefix}.{pytree_type.__qualname__}"
+    typename = f"{namespace}.{pytree_type.__qualname__}"
     _register_pytree_with_pennylane(pytree_type, typename, flatten_fn, unflatten_fn)
 
     if has_jax:
@@ -135,7 +132,7 @@ def register_pytree(
 
 def is_pytree(type_: type[Any]) -> bool:
     """Returns True if ``type_`` is a registered Pytree."""
-    return type_ in type_to_typenames
+    return type_ in type_to_typename
 
 
 def get_typename(pytree_type: type[Any]) -> str:
@@ -143,10 +140,17 @@ def get_typename(pytree_type: type[Any]) -> str:
     was registered.
 
     Raises:
-        TypeError: If ``pytree_type`` is not a Pytree"""
+        TypeError: If ``pytree_type`` is not a Pytree.
+
+    >>> get_typename(list)
+    'builtins.list'
+    >>> import pennylane
+    >>> get_typename(pennylane.PauliX)
+    'qml.PauliX'
+    """
 
     try:
-        return type_to_typenames[pytree_type]
+        return type_to_typename[pytree_type]
     except KeyError as exc:
         raise TypeError(f"{repr(pytree_type)} is not a Pytree type") from exc
 
@@ -157,15 +161,32 @@ def get_typename_type(typename: str) -> type[Any]:
     Raises:
         ValueError: If ``typename`` is not the name of a
             pytree type.
-    """
 
+    >>> import pennylane
+    >>> get_typename_type("builtins.list")
+    <class 'list'>
+    >>> get_typename_type("qml.PauliX")
+    <class 'pennylane.ops.qubit.non_parametric_ops.PauliX'>
+    """
     try:
         return typename_to_type[typename]
     except KeyError as exc:
         raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
-type_ = type
+def list_pytree_types(namespace: Optional[str] = "qml") -> Iterator[type]:
+    """Return an iterator listing all registered Pytree types under
+    the given ``namespace``.
+    """
+    if namespace:
+        namespace_filter = f"{namespace}."
+        return (
+            type_
+            for type_, typename in type_to_typename.items()
+            if typename.startswith(namespace_filter)
+        )
+
+    return (type_ for type_ in type_to_typename)
 
 
 @dataclass(repr=False)
@@ -180,7 +201,7 @@ class PyTreeStructure:
     A leaf is defined as just a ``PyTreeStructure`` with ``type=None``.
     """
 
-    type: Optional[type_[Any]] = None
+    type_: Optional[type[Any]] = None
     """The type corresponding to the node. If ``None``, then the structure is a leaf."""
 
     metadata: Metadata = ()
@@ -192,18 +213,18 @@ class PyTreeStructure:
     @property
     def is_leaf(self) -> bool:
         """Whether or not the structure is a leaf."""
-        return self.type is None
+        return self.type_ is None
 
     def __repr__(self):
         if self.is_leaf:
             return "PyTreeStructure()"
-        return f"PyTreeStructure({self.type.__name__}, {self.metadata}, {self.children})"
+        return f"PyTreeStructure({self.type_.__name__}, {self.metadata}, {self.children})"
 
     def __str__(self):
         if self.is_leaf:
             return "Leaf"
         children_string = ", ".join(str(c) for c in self.children)
-        return f"PyTree({self.type.__name__}, {self.metadata}, [{children_string}])"
+        return f"PyTree({self.type_.__name__}, {self.metadata}, [{children_string}])"
 
 
 leaf = PyTreeStructure(None, (), [])
@@ -269,4 +290,4 @@ def _unflatten(new_data, structure):
     if structure.is_leaf:
         return next(new_data)
     children = tuple(_unflatten(new_data, s) for s in structure.children)
-    return unflatten_registrations[structure.type](children, structure.metadata)
+    return unflatten_registrations[structure.type_](children, structure.metadata)
