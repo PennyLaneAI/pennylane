@@ -997,7 +997,7 @@ def _(
 def _(
     symbols,
     coordinates,
-    unit="Bohr",
+    unit="bohr",
     name="molecule",
     charge=0,
     mult=1,
