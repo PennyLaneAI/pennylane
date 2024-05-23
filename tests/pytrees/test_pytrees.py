@@ -18,12 +18,14 @@ import pennylane as qml
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 
 
-def test_structure_repr():
+def test_structure_repr_str():
     """Test the repr of the structure class."""
     op = qml.RX(0.1, wires=0)
     _, structure = qml.pytrees.flatten(op)
-    expected = "PyTree(RX, (<Wires = [0]>, ()), [Leaf])"
+    expected = "PyTreeStructure(RX, (<Wires = [0]>, ()), [PyTreeStructure()])"
     assert repr(structure) == expected
+    expected_str = "PyTree(RX, (<Wires = [0]>, ()), [Leaf])"
+    assert str(structure) == expected_str
 
 
 def test_register_new_class():

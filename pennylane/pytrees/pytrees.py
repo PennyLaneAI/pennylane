@@ -14,7 +14,7 @@
 """
 An internal module for working with pytrees.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
 has_jax = True
@@ -165,7 +165,10 @@ def get_typename_type(typename: str) -> type[Any]:
         raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
-@dataclass(repr=False, frozen=True)
+type_ = type
+
+
+@dataclass(repr=False)
 class PyTreeStructure:
     """A pytree data structure, holding the type, metadata, and child pytree structures.
 
@@ -177,24 +180,30 @@ class PyTreeStructure:
     A leaf is defined as just a ``PyTreeStructure`` with ``type=None``.
     """
 
-    type: Optional[type[Any]]
+    type: Optional[type_[Any]] = None
     """The type corresponding to the node. If ``None``, then the structure is a leaf."""
 
-    metadata: Metadata
+    metadata: Metadata = ()
     """Any metadata needed to reproduce the original object."""
 
-    children: list["PyTreeStructure"]
+    children: list["PyTreeStructure"] = field(default_factory=list)
     """The children of the pytree node.  Can be either other structures or terminal leaves."""
 
     @property
     def is_leaf(self) -> bool:
-        """Whether or not this represents a leaf."""
+        """Whether or not the structure is a leaf."""
         return self.type is None
 
     def __repr__(self):
-        if self.type is None:
+        if self.is_leaf:
+            return "PyTreeStructure()"
+        return f"PyTreeStructure({self.type.__name__}, {self.metadata}, {self.children})"
+
+    def __str__(self):
+        if self.is_leaf:
             return "Leaf"
-        return f"PyTree({self.type.__name__}, {self.metadata}, {self.children})"
+        children_string = ", ".join(str(c) for c in self.children)
+        return f"PyTree({self.type.__name__}, {self.metadata}, [{children_string}])"
 
 
 leaf = PyTreeStructure(None, (), [])
@@ -257,7 +266,7 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
 
 
 def _unflatten(new_data, structure):
-    if structure.type is None:  # is leaf
+    if structure.is_leaf:
         return next(new_data)
     children = tuple(_unflatten(new_data, s) for s in structure.children)
     return unflatten_registrations[structure.type](children, structure.metadata)
