@@ -73,6 +73,7 @@
 
 * `qml.qchem.Molecule` and qchem functions that take Molecule object as an argument now work with coordinates
   provided in units Angstrom along with Bohr.
+  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
