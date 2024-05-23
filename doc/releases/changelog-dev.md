@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
 <h3>Improvements 🛠</h3>
 
 * Add support for 3 new pytest markers: `unit`, `integration` and `system`.
