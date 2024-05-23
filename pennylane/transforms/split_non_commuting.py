@@ -32,7 +32,7 @@ def split_non_commuting(
     group: bool = True,
     grouping_strategy: str = None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    """Splits a tape into tapes measuring groups of commuting observables.
+    r"""Splits a tape into tapes measuring groups of commuting observables.
 
     Args:
         tape (~pennylane.tape.QuantumScript): The tape to be split.
