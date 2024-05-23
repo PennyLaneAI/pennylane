@@ -140,7 +140,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     interface = execution_kwargs.get("interface", None)
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     postselect_shots = execution_kwargs.get("postselect_shots", None)
-    circuit = circuit.map_to_standard_wires()
+
+    # circuit = circuit.map_to_standard_wires()
 
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
@@ -214,7 +215,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     prng_key = execution_kwargs.get("prng_key", None)
     mid_measurements = execution_kwargs.get("mid_measurements", None)
 
-    circuit = circuit.map_to_standard_wires()
+    # circuit = circuit.map_to_standard_wires()
 
     # analytic case
 
@@ -292,6 +293,8 @@ def simulate(
     prng_key = execution_kwargs.get("prng_key", None)
     interface = execution_kwargs.get("interface", None)
     postselect_shots = execution_kwargs.get("postselect_shots", None)
+
+    circuit = circuit.map_to_standard_wires()
 
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
