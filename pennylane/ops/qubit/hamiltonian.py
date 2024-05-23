@@ -771,15 +771,13 @@ class Hamiltonian(Observable):
         if isinstance(H, Hamiltonian):  # can't be accessed by '@'
             return H.__matmul__(self)
 
-        qml.QueuingManager.remove(H)
-        qml.QueuingManager.remove(self)
-
         coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
 
         if isinstance(H, (Tensor, Observable)):
+            qml.QueuingManager.remove(H)
+            qml.QueuingManager.remove(self)
             terms = [copy(H) @ op for op in ops1]
-
             return qml.simplify(Hamiltonian(coeffs1, terms))
 
         return NotImplemented
