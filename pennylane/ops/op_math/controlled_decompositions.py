@@ -16,7 +16,6 @@ This submodule defines functions to decompose controlled operations
 """
 
 from copy import copy
-from typing import Tuple
 
 import numpy as np
 import numpy.linalg as npl
@@ -24,10 +23,13 @@ import numpy.linalg as npl
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operation, Operator
+from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
+    _get_single_qubit_rot_angles_via_matrix,
+)
 from pennylane.wires import Wires
 
 
-def _convert_to_su2(U):
+def _convert_to_su2(U, return_global_phase=False):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
     Args:
@@ -47,7 +49,7 @@ def _convert_to_su2(U):
 
     exp_angles = math.cast_like(math.angle(dets), 1j) / 2
     U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)
-    return U_SU2
+    return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
 def _convert_to_real_diagonal(q: np.ndarray) -> np.ndarray:
@@ -187,25 +189,15 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     target_wire = target_operation.wires
 
-    def get_single_qubit_rot_angles_via_matrix() -> Tuple[float, float, float]:
-        """Returns a triplet of angles representing the single-qubit decomposition
-        of the matrix of the target operation using ZYZ rotations.
-        """
-        with qml.QueuingManager.stop_recording():
-            zyz_decomp = qml.ops.one_qubit_decomposition(
-                qml.matrix(target_operation),
-                wire=target_wire,
-                rotations="ZYZ",
-            )
-        return tuple(gate.parameters[0] for gate in zyz_decomp)  # type: ignore
-
     if isinstance(target_operation, Operation):
         try:
             phi, theta, omega = target_operation.single_qubit_rot_angles()
         except NotImplementedError:
-            phi, theta, omega = get_single_qubit_rot_angles_via_matrix()
+            phi, theta, omega = _get_single_qubit_rot_angles_via_matrix(
+                qml.matrix(target_operation)
+            )
     else:
-        phi, theta, omega = get_single_qubit_rot_angles_via_matrix()
+        phi, theta, omega = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
 
     decomp = []
 

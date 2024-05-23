@@ -15,6 +15,8 @@
 operations into elementary gates.
 """
 
+from typing import Tuple
+
 import numpy as np
 
 import pennylane as qml
@@ -158,6 +160,26 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     return operations
 
 
+def _get_single_qubit_rot_angles_via_matrix(
+    U, return_global_phase=False
+) -> Tuple[float, float, float]:
+    """Returns a triplet of angles representing the single-qubit decomposition
+    of the matrix of the target operation using ZYZ rotations.
+    """
+    # Cast to batched format for more consistent code
+    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
+
+    # Convert to SU(2) format and extract global phase
+    U_su2, global_phase = _convert_to_su2(U, return_global_phase=True)
+
+    # Compute the zyz rotation angles
+    phis, thetas, omegas = _zyz_get_rotation_angles(U_su2)
+    angles = (phis, thetas, omegas)
+    if return_global_phase:
+        angles += (global_phase,)
+    return angles
+
+
 def _zyz_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of Z and Y rotations in the form
@@ -194,15 +216,9 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-
-    # Cast to batched format for more consistent code
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-
-    # Convert to SU(2) format and extract global phase
-    U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
-
-    # Compute the zyz rotation angles
-    phis, thetas, omegas = _zyz_get_rotation_angles(U_det1)
+    phis, thetas, omegas, *alphas = _get_single_qubit_rot_angles_via_matrix(
+        U, return_global_phase=True
+    )
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
