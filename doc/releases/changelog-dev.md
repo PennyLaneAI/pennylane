@@ -16,6 +16,9 @@
     Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
     to execute once for each shot.
 
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
 <h3>Improvements 🛠</h3>
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
