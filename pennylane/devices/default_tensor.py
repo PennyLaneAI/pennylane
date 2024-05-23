@@ -189,7 +189,7 @@ class DefaultTensor(Device):
     ) -> None:
 
         if wires is None:
-            raise TypeError(f"Wires must be provided for the default.tensor device.")
+            raise TypeError("Wires must be provided for the default.tensor device.")
 
         if not has_quimb:
             raise ImportError(
