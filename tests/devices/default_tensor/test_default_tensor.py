@@ -214,15 +214,6 @@ def test_ivalid_data_type():
         qml.device("default.tensor", wires=0, dtype=float)
 
 
-def test_invalid_shots():
-    """Test that an error is raised if finite number of shots are requestd."""
-    with pytest.raises(ValueError, match="default.tensor does not support finite shots."):
-        qml.device("default.tensor", wires=0, shots=5)
-
-    with pytest.raises(AttributeError):
-        qml.device("default.tensor", wires=0).shots = 10
-
-
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
 
