@@ -124,7 +124,7 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
     # Create an additional final tape if a return measurement exists
     if tape.measurements:
         snapshot_tags.append("execution_results")
-        new_tapes.append(QuantumTape(ops=accumulated_ops, measurements=tape.measurements))
+        new_tapes.append(type(tape)(ops=accumulated_ops, measurements=tape.measurements))
 
     def postprocessing_fn(results, snapshot_tags):
         return dict(zip(snapshot_tags, results))
