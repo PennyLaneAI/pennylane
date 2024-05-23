@@ -1017,8 +1017,8 @@ def _(
 
     if (coord_unit := unit.strip().lower()) not in ("angstrom", "bohr"):
         raise ValueError(
-            f"The provided unit, '{unit}' is not supported. "
-            f"Please set 'unit' to 'Bohr' or 'Angstrom'."
+            f"The provided unit '{unit}' is not supported. "
+            f"Please set 'unit' to 'bohr' or 'angstrom'."
         )
 
     if coord_unit == "angstrom":
