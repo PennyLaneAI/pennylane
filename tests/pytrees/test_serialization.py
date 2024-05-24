@@ -168,6 +168,12 @@ H_TWO_QUBITS = np.array(
             qml.PauliX(1),
             qml.Identity("a"),
         ),
+        qml.Hamiltonian(
+            (1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))
+        ),
+        qml.Hamiltonian(
+            np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]
+        ),
     ],
 )
 def test_pennylane_pytree_roundtrip(obj_in: Any):

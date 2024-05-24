@@ -48,6 +48,8 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
     ``Hamiltonian`` and ``Tensor`` operators.
     """
 
+    type_id = "operator"
+
     @classmethod
     @lru_cache(1)
     def supported_ops(cls) -> FrozenSet[Type[Operator]]:
@@ -188,8 +190,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.CY,
             )
         )
-
-    type_id = "operator"
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Op) -> HDF5Group:
         return self._ops_to_hdf5(bind_parent, key, [value])
