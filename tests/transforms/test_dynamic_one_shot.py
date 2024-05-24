@@ -155,3 +155,162 @@ def test_len_measurements_mcms(measure, aux_measure, n_meas):
     assert len(aux_tape.measurements) == n_meas + n_mcms
     assert isinstance(aux_tape.measurements[0], aux_measure)
     assert all(isinstance(m, SampleMP) for m in aux_tape.measurements[1:])
+
+
+def assert_results(res, shots, n_mcms):
+    assert len(res) == shots
+    # One for the non-MeasurementValue MP, and the rest of the mid-circuit measurements
+    assert all(len(r) == n_mcms + 1 for r in res)
+    # Not validating distribution of results as device sampling unit tests already validate
+    # that samples are generated correctly.
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("measure_f", (qml.expval, qml.probs, qml.sample, qml.var))
+@pytest.mark.parametrize("shots", [20, [20, 21]])
+@pytest.mark.parametrize("n_mcms", [1, 3])
+def test_tape_results_jax(shots, n_mcms, measure_f):
+    """Test that the simulation results of a tape are correct with jax parameters"""
+    import jax
+
+    dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.randomPRNGKey(123))
+    param = jax.numpy.array(np.pi / 2)
+
+    mv = qml.measure(0)
+    mp = mv.measurements[0]
+
+    tape = qml.tape.QuantumScript(
+        [qml.RX(param, 0), mp] + [MidMeasureMP(0)] * (n_mcms - 1),
+        [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
+        shots=shots,
+    )
+
+    tapes, _ = qml.dynamic_one_shot(tape)
+    results = dev.execute(tapes)[0]
+
+    if isinstance(shots, list):
+        shots = sum(shots)
+
+    assert_results(results, shots, n_mcms)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    "measure_f, expected1, expected2",
+    [
+        (qml.expval, 1.0, 1.0),
+        (qml.probs, [1, 0], [0, 1]),
+        (qml.sample, 1, 1),
+        (qml.var, 0.0, 0.0),
+    ],
+)
+@pytest.mark.parametrize("shots", [20, [20, 21]])
+@pytest.mark.parametrize("n_mcms", [1, 3])
+def test_jax_results_processing(shots, n_mcms, measure_f, expected1, expected2):
+    """Test that the results of tapes are processed correctly for tapes with jax parameters"""
+    import jax
+
+    param = jax.numpy.array(np.pi / 2)
+    mv = qml.measure(0)
+    mp = mv.measurements[0]
+
+    tape = qml.tape.QuantumScript(
+        [qml.RX(param, 0), mp] + [MidMeasureMP(0)] * (n_mcms - 1),
+        [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
+        shots=shots,
+    )
+    _, fn = qml.dynamic_one_shot(tape)
+    all_shots = sum(shots) if isinstance(shots, list) else shots
+
+    first_res = jax.numpy.array([1.0, 0.0]) if measure_f == qml.probs else jax.numpy.array(1.0)
+    rest = jax.numpy.array(1, dtype=int)
+    single_shot_res = (first_res,) + (rest,) * n_mcms
+    # Raw results for each shot are (sample_for_first_measurement,) + (sample for 1st MCM, sample for 2nd MCM, ...)
+    raw_results = (single_shot_res,) * all_shots
+    raw_results = (raw_results,)
+    res = fn(raw_results)
+
+    if measure_f is qml.sample:
+        expected1 = (
+            [[expected1] * s for s in shots] if isinstance(shots, list) else [expected1] * shots
+        )
+        expected2 = (
+            [[expected2] * s for s in shots] if isinstance(shots, list) else [expected2] * shots
+        )
+    else:
+        expected1 = [expected1 for _ in shots] if isinstance(shots, list) else expected1
+        expected2 = [expected2 for _ in shots] if isinstance(shots, list) else expected2
+
+    if isinstance(shots, list):
+        assert len(res) == len(shots)
+        for r, e1, e2 in zip(res, expected1, expected2):
+            assert qml.math.allclose(r, [e1, e2])
+    else:
+        assert qml.math.allclose(res, [expected1, expected2])
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    "measure_f, expected1, expected2",
+    [
+        (qml.expval, 1.0, 1.0),
+        (qml.probs, [1, 0], [0, 1]),
+        (qml.sample, 1, 1),
+        (qml.var, 0.0, 0.0),
+    ],
+)
+@pytest.mark.parametrize("shots", [20, [20, 22]])
+def test_jax_results_postselection_processing(shots, measure_f, expected1, expected2):
+    """Test that the results of tapes are processed correctly for tapes with jax parameters
+    when postselecting"""
+    import jax
+
+    param = jax.numpy.array(np.pi / 2)
+    fill_value = np.iinfo(np.int32).min
+    mv = qml.measure(0, postselect=1)
+    mp = mv.measurements[0]
+
+    tape = qml.tape.QuantumScript(
+        [qml.RX(param, 0), mp, MidMeasureMP(0)],
+        [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
+        shots=shots,
+    )
+    _, fn = qml.dynamic_one_shot(tape)
+    all_shots = sum(shots) if isinstance(shots, list) else shots
+
+    first_res_two_shot = (
+        (jax.numpy.array([1.0, 0.0]), jax.numpy.array([0.0, 1.0]))
+        if measure_f == qml.probs
+        else (jax.numpy.array(1.0), jax.numpy.array(0.0))
+    )
+    first_res = first_res_two_shot * (all_shots // 2)
+    # Tuple of alternating 1s and 0s. Zero is invalid as postselecting on 1
+    postselect_res = (jax.numpy.array(1, dtype=int), jax.numpy.array(0, dtype=int)) * (
+        all_shots // 2
+    )
+    rest = (jax.numpy.array(1, dtype=int),) * all_shots
+    raw_results = tuple(zip(first_res, postselect_res, rest))
+    raw_results = (raw_results,)
+    res = fn(raw_results)
+
+    if measure_f is qml.sample:
+        expected1 = (
+            [[expected1, fill_value] * (s // 2) for s in shots]
+            if isinstance(shots, list)
+            else [expected1, fill_value] * (shots // 2)
+        )
+        expected2 = (
+            [[expected2, fill_value] * (s // 2) for s in shots]
+            if isinstance(shots, list)
+            else [expected2, fill_value] * (shots // 2)
+        )
+    else:
+        expected1 = [expected1 for _ in shots] if isinstance(shots, list) else expected1
+        expected2 = [expected2 for _ in shots] if isinstance(shots, list) else expected2
+
+    if isinstance(shots, list):
+        assert len(res) == len(shots)
+        for r, e1, e2 in zip(res, expected1, expected2):
+            assert qml.math.allclose(r, [e1, e2])
+    else:
+        assert qml.math.allclose(res, [expected1, expected2])
