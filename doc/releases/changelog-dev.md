@@ -71,7 +71,7 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
-* `qml.qchem.Molecule` and qchem functions that take Molecule object as an argument now work with coordinates
+* `qml.qchem.Molecule` and qchem functions that take `Molecule` object as an argument now work with coordinates
   provided in units Angstrom along with Bohr.
   [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
 
