@@ -20,11 +20,220 @@ from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
+    _evaluate_gradient,
     _get_operation_recipe,
     _make_zero_rep,
     _put_zeros_in_pdA2_involutory,
 )
+from pennylane.measurements.shots import Shots
 from pennylane.operation import AnyWires, Observable
+
+# Constants for TestEvaluateGradient
+# Coefficients and expectation values
+X = np.arange(1, 5)
+# Expected "shift rule" result
+Z = np.sum(-np.arange(1, 5) ** 2)
+# Single coefficient/expectation value that leads to the same result as X
+w = np.sqrt(30)
+# Prefactors to emulate a shot vector
+shv = np.array([0.1, 0.4, 0.7])
+# Fake probability vector (just a 1d array)
+p = np.array([0.01, 0.06, -0.2, 0.5, -0.1, 0.7, -0.09])
+# Second fake probability vector (just a 1d array)
+p2 = p[1:5]
+# shifted probability evaluations
+P = np.outer(X, p)
+# shifted probability evaluations for p2
+P2 = np.outer(X, p2)
+# Single unshifted result that lead to the same result as P
+v = w * p
+# Single unshifted result that lead to the same result as P2
+v2 = w * p2
+# Prefactors to emulate different shot values and multi measurement
+shv_m = np.outer([0.1, 0.4, 0.7], [1, 2])
+
+
+class TestEvaluateGradient:
+    """Test _evaluate_gradient."""
+
+    # pylint: disable=too-many-arguments
+
+    # We could theoretically compute the required res, r0 and expected from the parametrization of coeffs,
+    # unshifted_coeff and batch_size, but that turned out to take lots of effort and edge case logic
+
+    test_cases_single_shots_single_meas = [
+        # Expectation value
+        (X, None, None, tuple(-X), None, Z),
+        (X, None, 4, -X, None, Z),
+        (X[:-1], X[-1], None, tuple(-X[:-1]), -X[-1], Z),
+        (X[:-1], X[-1], 4, -X[:-1], -X[-1], Z),
+        (np.ones(0), w, None, (), -w, Z),
+        (np.ones(0), w, 4, (), -w, Z),
+        # Probability
+        (X, None, None, tuple(-P), None, p * Z),
+        (X, None, 4, -P, None, p * Z),
+        (X[:-1], X[-1], None, tuple(-P[:-1]), -P[-1], p * Z),
+        (X[:-1], X[-1], 4, -P[:-1], -P[-1], p * Z),
+        (np.ones(0), w, None, (), -v, p * Z),
+        (np.ones(0), w, 4, (), -v, p * Z),
+    ]
+
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff, batch_size, res, r0, expected",
+        test_cases_single_shots_single_meas,
+    )
+    def test_single_shots_single_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
+        """Test that a single shots, single measurement gradient is evaluated correctly."""
+
+        shots = Shots(100)
+        tape_specs = (None, None, 1, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, np.ndarray)
+        assert grad.shape == expected.shape
+        assert np.allclose(grad, expected)
+
+    exp_probs = (p2 * Z, 2 * p * Z)
+    test_cases_single_shots_multi_meas = [
+        # Expectation values
+        (X, None, None, tuple(zip(-X, -2 * X)), None, (Z, 2 * Z)),
+        (X, None, 4, (-X, -2 * X), None, (Z, 2 * Z)),
+        (X[:-1], X[-1], None, tuple(zip(-X[:-1], -2 * X[:-1])), (-X[-1], -2 * X[-1]), (Z, 2 * Z)),
+        (X[:-1], X[-1], 4, (-X[:-1], -2 * X[:-1]), (-X[-1], -2 * X[-1]), (Z, 2 * Z)),
+        (np.ones(0), w, None, (), (-w, -2 * w), (Z, 2 * Z)),
+        (np.ones(0), w, 4, (), (-w, -2 * w), (Z, 2 * Z)),
+        # Expval and Probability
+        (X, None, None, tuple(zip(-X, -2 * P)), None, (Z, 2 * p * Z)),
+        (X, None, 4, (-X, -2 * P), None, (Z, 2 * p * Z)),
+        (X[:-1], X[-1], None, tuple(zip(-X, -2 * P))[:-1], (-X[-1], -2 * P[-1]), (Z, 2 * p * Z)),
+        (X[:-1], X[-1], 4, (-X[:-1], -2 * P[:-1]), (-X[-1], -2 * P[-1]), (Z, 2 * p * Z)),
+        (np.ones(0), w, None, (), (-w, -2 * v), (Z, 2 * p * Z)),
+        (np.ones(0), w, 4, (), (-w, -2 * v), (Z, 2 * p * Z)),
+        # Probabilities
+        (X, None, None, tuple(zip(-P2, -2 * P)), None, exp_probs),
+        (X, None, 4, (-P2, -2 * P), None, exp_probs),
+        (X[:-1], X[-1], None, tuple(zip(-P2, -2 * P))[:-1], (-P2[-1], -2 * P[-1]), exp_probs),
+        (X[:-1], X[-1], 4, (-P2[:-1], -2 * P[:-1]), (-P2[-1], -2 * P[-1]), exp_probs),
+        (np.ones(0), w, None, (), (-v2, -2 * v), exp_probs),
+        (np.ones(0), w, 4, (), (-v2, -2 * v), exp_probs),
+    ]
+
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff, batch_size, res, r0, expected",
+        test_cases_single_shots_multi_meas,
+    )
+    def test_single_shots_multi_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
+        """Test that a single shots, multiple measurements gradient is evaluated correctly."""
+
+        shots = Shots(100)
+        tape_specs = (None, None, 2, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, tuple) and len(grad) == 2
+        for g, e in zip(grad, expected):
+            assert isinstance(g, np.ndarray) and g.shape == e.shape
+            assert np.allclose(g, e)
+
+    shot_vec_X = tuple(zip(*(-c * X for c in shv)))
+    shot_vec_P = tuple(zip(*(-c * P for c in shv)))
+    shot_vec_P_partial = tuple(-c * P[:-1] for c in shv)
+
+    exp_shot_vec_prob = np.outer(shv, p) * Z
+    test_cases_multi_shots_single_meas = [
+        # Expectation value
+        (X, None, None, shot_vec_X, None, shv * Z),
+        (X, None, 4, tuple(-c * X for c in shv), None, shv * Z),
+        (X[:-1], X[-1], None, shot_vec_X[:-1], shot_vec_X[-1], shv * Z),
+        (X[:-1], X[-1], 4, tuple(-c * X[:-1] for c in shv), tuple(-shv * X[-1]), shv * Z),
+        (np.ones(0), w, None, (), tuple(-c * w for c in shv), shv * Z),
+        (np.ones(0), w, 4, ((), (), ()), tuple(-c * w for c in shv), shv * Z),
+        # Probability
+        (X, None, None, shot_vec_P, None, exp_shot_vec_prob),
+        (X, None, 4, tuple(-c * P for c in shv), None, exp_shot_vec_prob),
+        (X[:-1], X[-1], None, shot_vec_P[:-1], shot_vec_P[-1], exp_shot_vec_prob),
+        (X[:-1], X[-1], 4, shot_vec_P_partial, tuple(np.outer(-shv, P[-1])), exp_shot_vec_prob),
+        (np.ones(0), w, None, (), tuple(-c * v for c in shv), exp_shot_vec_prob),
+        (np.ones(0), w, 4, ((), (), ()), tuple(-c * v for c in shv), exp_shot_vec_prob),
+    ]
+
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff, batch_size, res, r0, expected",
+        test_cases_multi_shots_single_meas,
+    )
+    def test_multi_shots_single_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
+        """Test that a shot vector, single measurements gradient is evaluated correctly."""
+
+        shots = Shots((100, 101, 102))
+        tape_specs = (None, None, 1, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, tuple) and len(grad) == 3
+        for g, e in zip(grad, expected):
+            assert isinstance(g, np.ndarray) and g.shape == e.shape
+            assert np.allclose(g, e)
+
+    multi_X = tuple(tuple((-c * x, -2 * c * x) for c in shv) for x in X)
+    batched_multi_X = tuple((-c * X, -2 * c * X) for c in shv)
+    partial_multi_X = tuple((-c * X[:-1], -2 * c * X[:-1]) for c in shv)
+    expvals_r0 = tuple((-c * w, -2 * c * w) for c in shv)
+
+    multi_X_P = tuple(tuple((-c * _p, -2 * c * x) for c in shv) for x, _p in zip(X, P))
+    batched_multi_X_P = tuple((-c * P, -2 * c * X) for c in shv)
+    partial_multi_X_P = tuple((-c * P[:-1], -2 * c * X[:-1]) for c in shv)
+    prob_expval_r0 = tuple((-c * v, -2 * c * w) for c in shv)
+
+    multi_P_P = tuple(tuple((-c * _p, -2 * c * _q) for c in shv) for _q, _p in zip(P2, P))
+    batched_multi_P_P = tuple((-c * P, -2 * c * P2) for c in shv)
+    partial_multi_P_P = tuple((-c * P[:-1], -2 * c * P2[:-1]) for c in shv)
+    probs_r0 = tuple((-c * v, -2 * c * v2) for c in shv)
+
+    exp_shot_vec_prob_expval = tuple((c * p * Z, 2 * c * Z) for c in shv)
+    exp_shot_vec_probs = tuple((c * p * Z, 2 * c * p2 * Z) for c in shv)
+    test_cases_multi_shots_multi_meas = [
+        # Expectation values
+        (X, None, None, multi_X, None, shv_m * Z),
+        (X, None, 4, batched_multi_X, None, shv_m * Z),
+        (X[:-1], X[-1], None, multi_X[:-1], multi_X[-1], shv_m * Z),
+        (X[:-1], X[-1], 4, partial_multi_X, multi_X[-1], shv_m * Z),
+        (np.ones(0), w, None, (), expvals_r0, shv_m * Z),
+        (np.ones(0), w, 4, ((), (), ()), expvals_r0, shv_m * Z),
+        # Probability and expectation
+        (X, None, None, multi_X_P, None, exp_shot_vec_prob_expval),
+        (X, None, 4, batched_multi_X_P, None, exp_shot_vec_prob_expval),
+        (X[:-1], X[-1], None, multi_X_P[:-1], multi_X_P[-1], exp_shot_vec_prob_expval),
+        (X[:-1], X[-1], 4, partial_multi_X_P, multi_X_P[-1], exp_shot_vec_prob_expval),
+        (np.ones(0), w, None, (), prob_expval_r0, exp_shot_vec_prob_expval),
+        (np.ones(0), w, 4, ((), (), ()), prob_expval_r0, exp_shot_vec_prob_expval),
+        # Probabilities
+        (X, None, None, multi_P_P, None, exp_shot_vec_probs),
+        (X, None, 4, batched_multi_P_P, None, exp_shot_vec_probs),
+        (X[:-1], X[-1], None, multi_P_P[:-1], multi_P_P[-1], exp_shot_vec_probs),
+        (X[:-1], X[-1], 4, partial_multi_P_P, multi_P_P[-1], exp_shot_vec_probs),
+        (np.ones(0), w, None, (), probs_r0, exp_shot_vec_probs),
+        (np.ones(0), w, 4, ((), (), ()), probs_r0, exp_shot_vec_probs),
+    ]
+
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff, batch_size, res, r0, expected",
+        test_cases_multi_shots_multi_meas,
+    )
+    def test_multi_shots_multi_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
+        """Test that a shot vector, multiple measurements gradient is evaluated correctly."""
+
+        shots = Shots((100, 101, 102))
+        tape_specs = (None, None, 2, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, tuple) and len(grad) == 3
+        for g, e in zip(grad, expected):
+            assert isinstance(g, tuple) and len(g) == 2
+            for _g, _e in zip(g, e):
+                assert isinstance(_g, np.ndarray) and _g.shape == _e.shape
+                assert np.allclose(_g, _e)
 
 
 # pylint: disable=too-few-public-methods

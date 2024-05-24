@@ -60,6 +60,7 @@ info = {
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
             "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
+            "default.tensor = pennylane.devices.default_tensor:DefaultTensor",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
