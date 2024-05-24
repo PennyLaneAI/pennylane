@@ -29,6 +29,9 @@ def circuit():
 'execution_results': tensor(-0.06, requires_grad=True)}
 ```
 
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
 <h3>Improvements 🛠</h3>
 
 * The `snapshots` function is now a transform that splits a `QuantumTape` into several depending on the `Snapshot` instances in the circuit. [(#5722)](https://github.com/PennyLaneAI/pennylane/pull/5722)
@@ -54,8 +57,6 @@ tapes, collect_results_into_dict = qml.snapshots(tape)
 [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
 ```
 
-* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
-  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
 * `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
   [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)

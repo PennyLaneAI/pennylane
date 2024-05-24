@@ -509,11 +509,7 @@ def apply_snapshot(
         if shots == -1:
             shots = debugger.device.shots
 
-        shots = (
-            qml.measurements.Shots(shots)
-            if not isinstance(shots, qml.measurements.Shots)
-            else shots
-        )
+        shots = qml.measurements.Shots(shots)
 
         if not shots:
             snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)

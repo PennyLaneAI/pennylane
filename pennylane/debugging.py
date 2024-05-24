@@ -90,26 +90,6 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
 
     .. code-block:: python3
 
-        ops = [
-            qml.Snapshot(),
-            qml.Hadamard(wires=0),
-            qml.Snapshot("very_important_state"),
-            qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(),
-        ]
-
-        measurements = [qml.expval(qml.PauliX(0))]
-
-        tape = qml.tape.QuantumTape(ops, measurements)
-
-        tapes, collect_results_into_dict = qml.snapshots(tape)
-
-    >>> print(tapes)
-    [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
-
-
-    .. code-block:: python3
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=None)
@@ -142,6 +122,25 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
 
     >>> circuit.device.tracker.totals
     {'batches': 1, 'simulations': 2, 'executions': 2}
+
+    .. code-block:: python3
+
+        ops = [
+            qml.Snapshot(),
+            qml.Hadamard(wires=0),
+            qml.Snapshot("very_important_state"),
+            qml.CNOT(wires=[0, 1]),
+            qml.Snapshot(),
+        ]
+
+        measurements = [qml.expval(qml.PauliX(0))]
+
+        tape = qml.tape.QuantumTape(ops, measurements)
+
+        tapes, collect_results_into_dict = qml.snapshots(tape)
+
+    >>> print(tapes)
+    [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
     """
     new_tapes = []
     accumulated_ops = []
