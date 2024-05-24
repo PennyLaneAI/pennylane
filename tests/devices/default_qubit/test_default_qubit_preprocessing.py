@@ -862,12 +862,12 @@ class TestAdjointDiffTapeValidation:
             ExecutionConfig(gradient_method="adjoint")
         )[0]
 
-        qs.trainable_params = {1}
+        qs.trainable_params = [1]
         qs_valid, _ = program((qs,))
         qs_valid = qs_valid[0]
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.operations, qs_valid.operations))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs_valid.trainable_params == [0, 1]
+        assert qs_valid.trainable_params == [1]  # same as input tape since no decomposition
 
     def test_valid_tape_with_expansion(self):
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
