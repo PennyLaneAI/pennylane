@@ -94,8 +94,8 @@ def pytree_structure_load(data: Union[str, bytes, bytearray]) -> PyTreeStructure
     jsoned = json.loads(data)
     root = PyTreeStructure(get_typename_type(jsoned[0]), jsoned[1], jsoned[2])
 
+    # List of serialized child structures that will be de-serialized in place
     todo: list[list[Any]] = [root.children]
-
     while todo:
         curr = todo.pop()
 
@@ -106,7 +106,6 @@ def pytree_structure_load(data: Union[str, bytes, bytearray]) -> PyTreeStructure
 
             curr[i] = PyTreeStructure(get_typename_type(child[0]), child[1], child[2])
 
-            # Child structures will be converted in place
             todo.append(child[2])
 
     return root
