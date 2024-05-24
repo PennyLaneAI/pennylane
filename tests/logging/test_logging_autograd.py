@@ -146,7 +146,6 @@ class TestLogging:
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parameterised gradients"
 
-        # enable_and_configure_logging()
 
         # Set specific log-levels for validation
         # enable_and_configure_logging()
