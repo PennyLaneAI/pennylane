@@ -158,6 +158,7 @@ def test_len_measurements_mcms(measure, aux_measure, n_meas):
 
 
 def assert_results(res, shots, n_mcms):
+    """Helper to check that expected raw results of executing the transformed tape are correct"""
     assert len(res) == shots
     # One for the non-MeasurementValue MP, and the rest of the mid-circuit measurements
     assert all(len(r) == n_mcms + 1 for r in res)
@@ -173,14 +174,14 @@ def test_tape_results_jax(shots, n_mcms, measure_f):
     """Test that the simulation results of a tape are correct with jax parameters"""
     import jax
 
-    dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.randomPRNGKey(123))
+    dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
     param = jax.numpy.array(np.pi / 2)
 
     mv = qml.measure(0)
     mp = mv.measurements[0]
 
     tape = qml.tape.QuantumScript(
-        [qml.RX(param, 0), mp] + [MidMeasureMP(0)] * (n_mcms - 1),
+        [qml.RX(param, 0), mp] + [MidMeasureMP(0, id=str(i)) for i in range(n_mcms - 1)],
         [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
         shots=shots,
     )
@@ -188,6 +189,7 @@ def test_tape_results_jax(shots, n_mcms, measure_f):
     tapes, _ = qml.dynamic_one_shot(tape)
     results = dev.execute(tapes)[0]
 
+    # The transformed tape never has a shot vector
     if isinstance(shots, list):
         shots = sum(shots)
 
@@ -208,22 +210,21 @@ def test_tape_results_jax(shots, n_mcms, measure_f):
 @pytest.mark.parametrize("n_mcms", [1, 3])
 def test_jax_results_processing(shots, n_mcms, measure_f, expected1, expected2):
     """Test that the results of tapes are processed correctly for tapes with jax parameters"""
-    import jax
+    import jax.numpy as jnp
 
-    param = jax.numpy.array(np.pi / 2)
     mv = qml.measure(0)
     mp = mv.measurements[0]
 
     tape = qml.tape.QuantumScript(
-        [qml.RX(param, 0), mp] + [MidMeasureMP(0)] * (n_mcms - 1),
+        [qml.RX(1.5, 0), mp] + [MidMeasureMP(0)] * (n_mcms - 1),
         [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
         shots=shots,
     )
     _, fn = qml.dynamic_one_shot(tape)
     all_shots = sum(shots) if isinstance(shots, list) else shots
 
-    first_res = jax.numpy.array([1.0, 0.0]) if measure_f == qml.probs else jax.numpy.array(1.0)
-    rest = jax.numpy.array(1, dtype=int)
+    first_res = jnp.array([1.0, 0.0]) if measure_f == qml.probs else jnp.array(1.0)
+    rest = jnp.array(1, dtype=int)
     single_shot_res = (first_res,) + (rest,) * n_mcms
     # Raw results for each shot are (sample_for_first_measurement,) + (sample for 1st MCM, sample for 2nd MCM, ...)
     raw_results = (single_shot_res,) * all_shots
@@ -231,6 +232,7 @@ def test_jax_results_processing(shots, n_mcms, measure_f, expected1, expected2):
     res = fn(raw_results)
 
     if measure_f is qml.sample:
+        # All samples 1
         expected1 = (
             [[expected1] * s for s in shots] if isinstance(shots, list) else [expected1] * shots
         )
@@ -244,8 +246,10 @@ def test_jax_results_processing(shots, n_mcms, measure_f, expected1, expected2):
     if isinstance(shots, list):
         assert len(res) == len(shots)
         for r, e1, e2 in zip(res, expected1, expected2):
+            # Expected result is 2-list since we have two measurements in the tape
             assert qml.math.allclose(r, [e1, e2])
     else:
+        # Expected result is 2-list since we have two measurements in the tape
         assert qml.math.allclose(res, [expected1, expected2])
 
 
@@ -263,9 +267,9 @@ def test_jax_results_processing(shots, n_mcms, measure_f, expected1, expected2):
 def test_jax_results_postselection_processing(shots, measure_f, expected1, expected2):
     """Test that the results of tapes are processed correctly for tapes with jax parameters
     when postselecting"""
-    import jax
+    import jax.numpy as jnp
 
-    param = jax.numpy.array(np.pi / 2)
+    param = jnp.array(np.pi / 2)
     fill_value = np.iinfo(np.int32).min
     mv = qml.measure(0, postselect=1)
     mp = mv.measurements[0]
@@ -278,17 +282,17 @@ def test_jax_results_postselection_processing(shots, measure_f, expected1, expec
     _, fn = qml.dynamic_one_shot(tape)
     all_shots = sum(shots) if isinstance(shots, list) else shots
 
+    # Alternating tuple. Only the values at odd indices are valid
     first_res_two_shot = (
-        (jax.numpy.array([1.0, 0.0]), jax.numpy.array([0.0, 1.0]))
+        (jnp.array([1.0, 0.0]), jnp.array([0.0, 1.0]))
         if measure_f == qml.probs
-        else (jax.numpy.array(1.0), jax.numpy.array(0.0))
+        else (jnp.array(1.0), jnp.array(0.0))
     )
     first_res = first_res_two_shot * (all_shots // 2)
     # Tuple of alternating 1s and 0s. Zero is invalid as postselecting on 1
-    postselect_res = (jax.numpy.array(1, dtype=int), jax.numpy.array(0, dtype=int)) * (
-        all_shots // 2
-    )
-    rest = (jax.numpy.array(1, dtype=int),) * all_shots
+    postselect_res = (jnp.array(1, dtype=int), jnp.array(0, dtype=int)) * (all_shots // 2)
+    rest = (jnp.array(1, dtype=int),) * all_shots
+    # Raw results for each shot are (sample_for_first_measurement, sample for 1st MCM, sample for 2nd MCM)
     raw_results = tuple(zip(first_res, postselect_res, rest))
     raw_results = (raw_results,)
     res = fn(raw_results)
@@ -311,6 +315,8 @@ def test_jax_results_postselection_processing(shots, measure_f, expected1, expec
     if isinstance(shots, list):
         assert len(res) == len(shots)
         for r, e1, e2 in zip(res, expected1, expected2):
+            # Expected result is 2-list since we have two measurements in the tape
             assert qml.math.allclose(r, [e1, e2])
     else:
+        # Expected result is 2-list since we have two measurements in the tape
         assert qml.math.allclose(res, [expected1, expected2])
