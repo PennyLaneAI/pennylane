@@ -84,6 +84,11 @@ class TestControlledDecompositionZYZ:
         ):
             _ = ctrl_decomp_zyz(qml.CNOT([0, 1]), [2])
 
+    def test_invalid_num_controls(self):
+        """Tests that an error is raised when an invalid number of control wires is passed"""
+        with pytest.raises(ValueError, match="The control_wires should be a single wire"):
+            _ = ctrl_decomp_zyz(qml.X([1]), [0, 1])
+
     su2_ops = [
         qml.RX(0.123, wires=0),
         qml.RY(0.123, wires=0),
@@ -109,7 +114,7 @@ class TestControlledDecompositionZYZ:
     ]
 
     @pytest.mark.parametrize("op", su2_ops + unitary_ops)
-    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
@@ -132,7 +137,7 @@ class TestControlledDecompositionZYZ:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
     def test_decomposition_circuit_gradient(self, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
@@ -168,7 +173,7 @@ class TestControlledDecompositionZYZ:
         assert np.allclose(jac_ad, jac_bp, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", su2_ops)
-    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
     def test_decomposition_matrix(self, op, control_wires, tol):
         """Tests that the matrix representation of the controlled ZYZ decomposition
         of a single-qubit operation is correct"""
@@ -182,16 +187,16 @@ class TestControlledDecompositionZYZ:
         """Test that the operations in the decomposition are correct."""
         phi, theta, omega = 0.123, 0.456, 0.789
         op = qml.Rot(phi, theta, omega, wires=0)
-        control_wires = [1, 2, 3]
+        control_wires = [1]
         decomps = ctrl_decomp_zyz(op, Wires(control_wires))
 
         expected_ops = [
             qml.RZ(0.123, wires=0),
             qml.RY(0.456 / 2, wires=0),
-            qml.MultiControlledX(wires=control_wires + [0]),
+            qml.CNOT(wires=control_wires + [0]),
             qml.RY(-0.456 / 2, wires=0),
             qml.RZ(-(0.123 + 0.789) / 2, wires=0),
-            qml.MultiControlledX(wires=control_wires + [0]),
+            qml.CNOT(wires=control_wires + [0]),
             qml.RZ((0.789 - 0.123) / 2, wires=0),
         ]
         assert all(
@@ -201,7 +206,7 @@ class TestControlledDecompositionZYZ:
         assert len(decomps) == 7
 
     @pytest.mark.parametrize("op", su2_ops + unitary_ops)
-    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
     def test_decomp_queues_correctly(self, op, control_wires, tol):
         """Test that any incorrect operations aren't queued when using
         ``ctrl_decomp_zyz``."""
@@ -268,6 +273,7 @@ class TestControlledDecompositionZYZ:
                     + qml.s_prod(1 / np.sqrt(2), qml.PauliX(0))
                 ),
                 [
+                    qml.ctrl(qml.GlobalPhase(phi=-np.pi / 2, wires=0), control=1),
                     qml.RZ(np.pi / 2, wires=0),
                     qml.RY(np.pi / 2, wires=0),
                     qml.CNOT(wires=[1, 0]),
