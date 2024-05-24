@@ -92,6 +92,8 @@ class TestSnapshotSupportedQNode:
         """Test that multiple snapshots are returned correctly on the state-vector simulator."""
         dev = qml.device("default.qubit.legacy", wires=2)
 
+        assert qml.debugging._is_snapshot_compatible(dev)
+
         @qml.qnode(dev, diff_method=method)
         def circuit():
             qml.Snapshot()
@@ -122,6 +124,8 @@ class TestSnapshotSupportedQNode:
         """Test that multiple snapshots are returned correctly on the new
         state-vector simulator."""
         dev = qml.device("default.qubit")
+
+        assert qml.debugging._is_snapshot_compatible(dev)
 
         # TODO: add additional QNode test once the new device supports it
 
@@ -155,6 +159,8 @@ class TestSnapshotSupportedQNode:
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
         dev = qml.device("default.mixed", wires=2)
 
+        assert qml.debugging._is_snapshot_compatible(dev)
+
         @qml.qnode(dev, diff_method=method)
         def circuit():
             qml.Snapshot()
@@ -184,6 +190,8 @@ class TestSnapshotSupportedQNode:
     def test_default_gaussian(self, method):
         """Test that multiple snapshots are returned correctly on the CV simulator."""
         dev = qml.device("default.gaussian", wires=2)
+
+        assert qml.debugging._is_snapshot_compatible(dev)
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
@@ -227,6 +235,92 @@ class TestSnapshotSupportedQNode:
             for v1, v2 in zip(result.values(), expected.values())
         )
 
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("method", [None, "parameter-shift"])
+    def test_default_qutrit_mixed(self, method):
+        """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
+        np.random.seed(1)
+
+        dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
+
+        assert qml.debugging._is_snapshot_compatible(dev)
+
+        @qml.qnode(dev, diff_method=method)
+        def circuit():
+            qml.Snapshot(shots=None)
+            qml.THadamard(wires=0)
+            qml.TSWAP(wires=[0, 1])
+            qml.Snapshot(measurement=qml.probs(), shots=None)
+            return qml.counts()
+
+        circuit()
+        assert dev._debugger is None
+
+        result = qml.snapshots(circuit)()
+        expected_first_state = np.zeros((9, 9))
+        expected_first_state[0, 0] = 1.0
+        expected = {
+            0: expected_first_state,
+            1: np.array([0.33333333, 0.33333333, 0.33333333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            "execution_results": {"00": 24, "01": 39, "02": 37},
+        }
+
+        assert result["execution_results"] == expected["execution_results"]
+
+        del result["execution_results"]
+        del expected["execution_results"]
+
+        _compare_numpy_dicts(result, expected)
+
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("method", [None, "parameter-shift"])
+    def test_default_qutrit(self, method):
+        """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
+        np.random.seed(7)
+
+        dev = qml.device("default.qutrit", wires=2, shots=100)
+
+        assert qml.debugging._is_snapshot_compatible(dev)
+
+        @qml.qnode(dev, diff_method=method)
+        def circuit():
+            qml.Snapshot(shots=None)
+            qml.THadamard(wires=0)
+            qml.Snapshot("very_important_state", shots=None)
+            qml.TSWAP(wires=[0, 1])
+            qml.Snapshot(measurement=qml.probs(), shots=None)
+            return qml.counts()
+
+        circuit()
+        assert dev._debugger is None
+
+        result = qml.snapshots(circuit)()
+        expected = {
+            0: np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            "very_important_state": np.array(
+                [
+                    0.0 - 0.57735027j,
+                    0.0 + 0.0j,
+                    0.0 + 0.0j,
+                    0.0 - 0.57735027j,
+                    0.0 + 0.0j,
+                    0.0 + 0.0j,
+                    0.0 - 0.57735027j,
+                    0.0 + 0.0j,
+                    0.0 + 0.0j,
+                ]
+            ),
+            2: np.array([0.33, 0.33, 0.34, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            "execution_results": {"00": 39, "01": 31, "02": 30},
+        }
+
+        assert result["execution_results"] == expected["execution_results"]
+
+        del result["execution_results"]
+        del expected["execution_results"]
+
+        _compare_numpy_dicts(result, expected)
+
     def test_empty_snapshots(self):
         """Test that snapshots function in the absence of any Snapshot operations."""
         dev = qml.device("default.qubit", wires=2)
@@ -242,37 +336,29 @@ class TestSnapshotSupportedQNode:
 
         assert result == expected
 
-    @pytest.mark.parametrize("shots", [None, 0, 1, 100])
-    @pytest.mark.parametrize("force_qnode_transform", [False, True])
-    def test_different_shots(self, shots, force_qnode_transform, mocker):
+    @pytest.mark.parametrize("shots,expected_expval", [(None, 0), (1, -1), (100, -0.22)])
+    def test_different_shots(self, shots, expected_expval):
         """Test that snapshots are returned correctly with different QNode shot values."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        mocker.patch(
-            "pennylane.debugging._is_snapshot_compatible", return_value=not force_qnode_transform
-        )
-        # Since we can't spy on `get_snapshots`, we do it the other way around
-        # and verify that the default transform function is(not) called
-        spy = mocker.spy(qml.debugging.snapshots, "default_qnode_transform")
-
-        @qml.qnode(dev, shots=shots)
+        @qml.qnode(dev)
         def circuit():
-            qml.Snapshot()
+            qml.Snapshot(shots=None)
             qml.Hadamard(wires=0)
-            qml.Snapshot("very_important_state")
+            qml.Snapshot("very_important_state", shots=None)
             qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
+            qml.Snapshot(shots=None)
             return qml.expval(qml.PauliX(0))
 
         result = qml.snapshots(circuit)()
+
         expected = {
             0: np.array([1, 0, 0, 0]),
             "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
             2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
-            "execution_results": np.array(0),
+            "execution_results": np.array(expected_expval),
         }
 
-        assert spy.call_count == (1 if force_qnode_transform else 0)
         _compare_numpy_dicts(result, expected)
 
     @pytest.mark.parametrize(
@@ -284,8 +370,16 @@ class TestSnapshotSupportedQNode:
             ("state", np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])),
         ],
     )
-    def test_different_measurements(self, m, expected_result):
+    @pytest.mark.parametrize("force_qnode_transform", [False, True])
+    def test_different_measurements(self, m, expected_result, force_qnode_transform, mocker):
         """Test that snapshots are returned correctly with different QNode measurements."""
+        mocker.patch(
+            "pennylane.debugging._is_snapshot_compatible", return_value=not force_qnode_transform
+        )
+        # Since we can't spy on `get_snapshots`, we do it the other way around
+        # and verify that the default transform function is(not) called
+        spy = mocker.spy(qml.debugging.snapshots, "default_qnode_transform")
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=None)
@@ -310,6 +404,8 @@ class TestSnapshotSupportedQNode:
             2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
             "execution_results": expected_result,
         }
+
+        assert spy.call_count == (1 if force_qnode_transform else 0)
 
         _compare_numpy_dicts(result, expected)
 
@@ -372,7 +468,7 @@ class TestSnapshotSupportedQNode:
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliX(wires=0)
+            qml.RX(phi=0.1, wires=0)
             # Shot-based measurements
             qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)), shots=500)
             qml.Snapshot(measurement=qml.var(qml.PauliZ(0)), shots=500)
@@ -383,16 +479,17 @@ class TestSnapshotSupportedQNode:
             return qml.expval(qml.PauliZ(0))
 
         result = qml.snapshots(circuit)()
+
         expected = {
-            0: -1,
-            1: 0.0,
-            2: np.array([0.0, 1.0]),
-            3: {"1": 500},  # Make a dummy dict() for specific testing later
-            4: np.array([1, 1, 1, 1, 1]),
-            "execution_results": np.array(-1),
+            0: 1.0,
+            1: 0.03174399999999999,
+            2: np.array([1.0, 0.0]),
+            3: {"0": 500},
+            4: np.array([0, 0, 0, 0, 0]),
+            "execution_results": np.array(0.99500417),
         }
 
-        assert result[3]["1"] == 500
+        assert result[3]["0"] == 500
         del result[3]
         del expected[3]
 
@@ -407,10 +504,24 @@ class TestSnapshotSupportedQNode:
             qml.Snapshot(measurement=qml.sample())
             return qml.expval(qml.PauliZ(0))
 
+        # Expect a NotImplemented to be raised here since no shots has
+        # been provided to the snapshot due to the analytical device
+        with pytest.raises(NotImplementedError):
+            qml.snapshots(circuit)()
+
+    def test_state_measurement_with_unexpected_shots(self):
+        dev = qml.device("default.qubit", shots=200)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.Snapshot(measurement=qml.state())
+            return qml.expval(qml.PauliZ(0))
+
+        # Expect a NotImplemented to be raised here since no shots has
+        # been provided to the snapshot due to the analytical device
         with pytest.raises(
-            ValueError,
-            match="A `SampleMeasurement` was provided to the `Snapshot` operator "
-            "without specifying the needed number of shots.",
+            AttributeError, match="'StateMP' object has no attribute 'process_samples'"
         ):
             qml.snapshots(circuit)()
 
@@ -425,25 +536,11 @@ class TestSnapshotSupportedQNode:
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
-            qml.Snapshot(measurement=qml.counts(), use_device_shots=True)
+            qml.Snapshot(measurement=qml.counts())
             return qml.expval(qml.PauliZ(0))
 
         results = qml.snapshots(circuit)()
         assert sum(results[0].values()) == 200
-
-    def test_error_when_providing_both_shots_and_override(self):
-        dev = qml.device("default.qubit", shots=200)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(0)
-            qml.Snapshot(measurement=qml.counts(), use_device_shots=True, shots=200)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(
-            ValueError, match="shots can not be set to a value when use_device_shots is True."
-        ):
-            qml.snapshots(circuit)()
 
     def test_unsupported_snapshot_measurement(self):
         """Test that an exception is raised when an unsupported measurement is provided to the snapshot."""
@@ -466,6 +563,8 @@ class TestSnapshotSupportedQNode:
     def test_default_clifford_with_arbitrary_measurement(self):
         dev = qml.device("default.clifford")
 
+        assert qml.debugging._is_snapshot_compatible(dev)
+
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
@@ -477,25 +576,12 @@ class TestSnapshotSupportedQNode:
 
 
 class TestSnapshotUnsupportedQNode:
-    def test_unsupported_legacy_qubit(self, mocker):
-        spy = mocker.spy(qml.debugging.snapshots, "default_qnode_transform")
-
-        qml.devices.DefaultQubitLegacy.operations.remove("Snapshot")
-
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        @qml.qnode(dev, interface=None)
-        def circuit():
-            qml.Snapshot()
-            return qml.expval(qml.PauliZ(0))
-
-        qml.snapshots(circuit)()
-
-        assert spy.called
-
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_lightning_qubit(self, method):
         dev = qml.device("lightning.qubit", wires=2)
+
+        assert not qml.debugging._is_snapshot_compatible(dev)
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
@@ -548,17 +634,3 @@ class TestSnapshotUnsupportedQNode:
 
         result = qml.snapshots(circuit)()
         assert result[0]["0"] == 200
-
-    def test_lightning_error_when_providing_both_shots_and_override(self):
-        dev = qml.device("lightning.qubit", wires=2, shots=200)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(0)
-            qml.Snapshot(measurement=qml.counts(), use_device_shots=True, shots=200)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(
-            ValueError, match="shots can not be set to a value when use_device_shots is True."
-        ):
-            qml.snapshots(circuit)()

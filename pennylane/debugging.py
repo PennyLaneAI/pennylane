@@ -24,17 +24,8 @@ from pennylane.transforms import transform
 
 
 def _is_snapshot_compatible(dev):
-    # old device API: check if Snapshot is supported
-    if isinstance(dev, qml.devices.LegacyDevice) and "Snapshot" not in dev.operations:
-        return False
-
-    # new device API: check if it's the simulator device
-    if isinstance(dev, qml.devices.Device) and not isinstance(
-        dev, (qml.devices.DefaultQubit, qml.devices.DefaultClifford)
-    ):
-        return False
-
-    return True
+    # The `_debugger` attribute is a good enough proxy for snapshot compatibility
+    return hasattr(dev, "_debugger")
 
 
 class _Debugger:
@@ -77,6 +68,10 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
         transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
+    .. warning::
+
+        For devices that do not support snapshots (e.g QPUs, external plug-in's simulators), be mindful of
+        additional costs that you might incur due to the 1 separate execution/snapshot behaviour.
 
     **Example**
 
@@ -106,18 +101,19 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
     for op in tape.operations:
         if isinstance(op, qml.Snapshot):
             snapshot_tags.append(op.tag or len(new_tapes))
+            shots = op.hyperparameters["shots"]
 
-            if op.hyperparameters["use_device_shots"]:
+            if shots == -1:
                 shots = tape.shots
-            elif op.hyperparameters["shots"]:
-                shots = qml.measurements.Shots(op.hyperparameters["shots"])
-            else:
-                # Assume StateMeasurement
-                shots = None
+
+            shots = (
+                qml.measurements.Shots(shots)
+                if not isinstance(shots, qml.measurements.Shots)
+                else shots
+            )
 
             meas_op = op.hyperparameters["measurement"]
-            tape_meas = [meas_op] if meas_op else [qml.state()]
-            new_tapes.append(type(tape)(ops=accumulated_ops, measurements=tape_meas, shots=shots))
+            new_tapes.append(type(tape)(ops=accumulated_ops, measurements=[meas_op], shots=shots))
         else:
             accumulated_ops.append(op)
 

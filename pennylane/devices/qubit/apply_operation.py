@@ -498,30 +498,34 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 
 
 @apply_operation.register
-def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_snapshot(
+    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
     """Take a snapshot of the state"""
     if debugger is not None and debugger.active:
         measurement = op.hyperparameters["measurement"]
+        shots = op.hyperparameters["shots"]
 
-        # Need similar `shots` and `use_device_transform` juggling here for supported devices
-        if op.hyperparameters["use_device_shots"]:
+        if shots == -1:
             shots = debugger.device.shots
-        else:
-            shots = dict.get(op.hyperparameters, "shots")
 
-        if measurement:
-            if isinstance(measurement, qml.measurements.StateMeasurement) and not shots:
-                snapshot = qml.devices.qubit.measure(measurement, state)
-            elif isinstance(measurement, qml.measurements.SampleMeasurement) and shots:
-                snapshot = qml.devices.qubit.measure_with_samples([measurement], state, shots)[0]
-            else:
-                raise ValueError(
-                    "A `SampleMeasurement` was provided to the `Snapshot` operator "
-                    "without specifying the needed number of shots."
-                )
+        shots = (
+            qml.measurements.Shots(shots)
+            if not isinstance(shots, qml.measurements.Shots)
+            else shots
+        )
+
+        if not shots:
+            snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
         else:
-            flat_shape = (math.shape(state)[0], -1) if is_state_batched else (-1,)
-            snapshot = math.cast(math.reshape(state, flat_shape), complex)
+            snapshot = qml.devices.qubit.measure_with_samples(
+                [measurement],
+                state,
+                shots,
+                is_state_batched,
+                execution_kwargs.get("rng", None),
+                execution_kwargs.get("prng_key", None),
+            )[0]
 
         if op.tag:
             debugger.snapshots[op.tag] = snapshot

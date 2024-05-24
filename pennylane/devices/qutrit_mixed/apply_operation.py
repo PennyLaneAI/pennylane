@@ -96,7 +96,11 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 
 @singledispatch
 def apply_operation(
-    op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
+    op: qml.operation.Operator,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
 ):
     """Apply an operation to a given state.
 
@@ -161,21 +165,35 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 
 @apply_operation.register
-def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
+def apply_snapshot(
+    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
     """Take a snapshot of the mixed state"""
     if debugger and debugger.active:
         measurement = op.hyperparameters["measurement"]
-        if measurement:
-            # TODO replace with: measure once added
-            raise NotImplementedError  # TODO
-        if is_state_batched:
-            dim = int(math.sqrt(math.size(state[0])))
-            flat_shape = [math.shape(state)[0], dim, dim]
-        else:
-            dim = int(math.sqrt(math.size(state)))
-            flat_shape = [dim, dim]
+        shots = op.hyperparameters["shots"]
 
-        snapshot = math.reshape(state, flat_shape)
+        if shots == -1:
+            shots = debugger.device.shots
+
+        shots = (
+            qml.measurements.Shots(shots)
+            if not isinstance(shots, qml.measurements.Shots)
+            else shots
+        )
+
+        if not shots:
+            snapshot = qml.devices.qutrit_mixed.measure(measurement, state, is_state_batched)
+        else:
+            snapshot = qml.devices.qutrit_mixed.measure_with_samples(
+                [measurement],
+                state,
+                shots,
+                is_state_batched,
+                execution_kwargs.get("rng", None),
+                execution_kwargs.get("prng_key", None),
+            )[0]
+
         if op.tag:
             debugger.snapshots[op.tag] = snapshot
         else:
