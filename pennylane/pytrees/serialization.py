@@ -22,11 +22,7 @@ def pytree_structure_dump(
 
 
 def pytree_structure_dump(
-    root: PyTreeStructure,
-    *,
-    indent: Optional[int] = None,
-    decode: bool = False,
-    json_default: Optional[Callable[[Any], JSON]] = None,
+    root: PyTreeStructure, *, indent: Optional[int] = None, decode: bool = False
 ) -> Union[bytes, str]:
     """Convert Pytree structure ``root`` into JSON.
 
@@ -36,8 +32,8 @@ def pytree_structure_dump(
 
     A leaf structure is represented by `null`.
 
-    Metadata can only contain ``pennylane.Wires`` objects, JSON-serializable
-    data or objects that can be handled by ``json_default`` if provided.
+    Metadata may contain ``pennylane.Shots`` and ``pennylane.Wires`` objects,
+    as well as any JSON-serializable data.
 
     >>> from pennylane.pytrees import PyTreeStructure, leaf, flatten
     >>> from pennylane.pytrees.serialization import pytree_structure_dump
@@ -55,21 +51,14 @@ def pytree_structure_dump(
             given indent level. Otherwise, the output will use the most compact
             possible representation
         decode: If True, return a string instead of bytes
-        json_default: Handler for objects that can't otherwise be serialized. Should
-            return a JSON-compatible value or raise a ``TypeError`` if the value
-            can't be handled
 
     Returns:
         bytes: If ``encode`` is True
         str: If ``encode`` is False
     """
     dump_args = {"indent": indent} if indent else {"separators": (",", ":")}
-    if json_default:
-        dump_args["default"] = _wrap_user_json_default(json_default)
-    else:
-        dump_args["default"] = _json_default
 
-    data = json.dumps(root, **dump_args)
+    data = json.dumps(root, default=_json_default, **dump_args)
 
     if not decode:
         return data.encode("utf-8")
@@ -107,34 +96,36 @@ def pytree_structure_load(data: str | bytes | bytearray) -> PyTreeStructure:
     return root
 
 
+def _pytree_structure_to_json(obj: PyTreeStructure) -> JSON:
+    """JSON handler for serializating ``PyTreeStructure``."""
+    if obj.is_leaf:
+        return None
+
+    return [get_typename(obj.type_), obj.metadata, obj.children]
+
+
+def _wires_to_json(obj: Wires) -> JSON:
+    """JSON handler for serializing ``Wires``."""
+    return obj.tolist()
+
+
+def _shots_to_json(obj: Shots) -> JSON:
+    """JSON handler for serializing ``Shots``."""
+    return obj.shot_vector
+
+
+_json_handlers: dict[type, Callable[[Any], JSON]] = {
+    PyTreeStructure: _pytree_structure_to_json,
+    Wires: _wires_to_json,
+    Shots: _shots_to_json,
+}
+
+
 def _json_default(obj: Any) -> JSON:
-    """Default function for ``json.dump()``. Adds handling for the following types:
-    - ``pennylane.pytrees.PyTreeStructure``
-    - ``pennylane.wires.Wires``
-    - ``pennylane.measurements.shots.Shots``
+    """Default function for ``json.dump()``. Calls the handler for the type of ``obj``
+    in ``_json_handlers``. Raises ``TypeError`` if ``obj`` cannot be handled.
     """
-    if isinstance(obj, PyTreeStructure):
-        if obj.is_leaf:
-            return None
-        return [get_typename(obj.type_), obj.metadata, obj.children]
-
-    if isinstance(obj, Wires):
-        return obj.tolist()
-
-    if isinstance(obj, Shots):
-        return obj.shot_vector
-
-    raise TypeError(obj)
-
-
-def _wrap_user_json_default(user_default: Callable[[Any], JSON]) -> Callable[[Any], JSON]:
-    """Wraps a user-provided JSON default function. If ``user_default`` raises a TypeError,
-    calls ``_json_default``."""
-
-    def _default_wrapped(obj: Any) -> JSON:
-        try:
-            return user_default(obj)
-        except TypeError:
-            return _json_default(obj)
-
-    return _default_wrapped
+    try:
+        return _json_handlers[type(obj)](obj)
+    except KeyError as exc:
+        raise TypeError(obj) from exc
