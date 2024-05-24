@@ -88,6 +88,11 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
+  traced quantum functions. This feature is used with Catalyst to enable the pattern
+  `m = measure(0); qml.sample(m)`.
+  [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
+
 * PennyLane operators can now automatically be captured as instructions in JAXPR. See the experimental
   `capture` module for more information.
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
@@ -207,6 +212,7 @@ Ahmed Darwish,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
