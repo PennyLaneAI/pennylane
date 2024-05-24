@@ -80,7 +80,6 @@
   (e.g. `qml.sample(X(0))`) is also changed to `float`. 
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
-
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
