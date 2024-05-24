@@ -39,7 +39,7 @@ class QROM(Operation):
         bitstrings (list[str]): the bitstrings to be encoded
         target_wires (Sequence[int]): the wires where the bitstring is loaded
         control_wires (Sequence[int]): the wires where the indexes are specified
-        work_wires (Sequence[int]): the auxiliar wires used for the computation
+        work_wires (Sequence[int]): the auxiliary wires used for the computation
         clean (bool): if True, the work wires are not altered by operator, default is ``True``
 
     .. note::

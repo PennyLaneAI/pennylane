@@ -141,7 +141,7 @@ class TestQROM:
         assert np.isclose(circuit()[0], 1.0)
 
     def test_decomposition(self):
-        """Unit test checking that compute_decomposition and decomposition work as expected."""
+        """Test that compute_decomposition and decomposition work as expected."""
         qrom_decomposition = qml.QROM(
             ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
         ).decomposition()
