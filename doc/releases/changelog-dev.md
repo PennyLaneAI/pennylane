@@ -102,6 +102,10 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
+* `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
+  `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
+  [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -197,6 +201,7 @@ Astral Cai,
 Ahmed Darwish,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
+Emiliano Godinez,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
