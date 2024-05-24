@@ -80,6 +80,10 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
+* `qml.qchem.Molecule` and qchem functions that take `Molecule` object as an argument now work with coordinates
+  provided in units Angstrom along with Bohr.
+  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
+
 * The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them 
   consistent with the other observables. The `dtype` of the returned values when sampling these observables 
   (e.g. `qml.sample(X(0))`) is also changed to `float`. 

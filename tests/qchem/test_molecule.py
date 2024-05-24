@@ -353,3 +353,12 @@ class TestMolecule:
         assert l == l_ref
         assert alpha == alpha_ref
         assert coeff == coeff_ref
+
+    def test_unit_error(self):
+        r"""Test that an error is raised if a wrong/not-supported unit for coordinates is entered."""
+
+        symbols = ["H", "H"]
+        geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+
+        with pytest.raises(ValueError, match="The provided unit 'degrees' is not supported."):
+            qchem.Molecule(symbols, geometry, unit="degrees")

@@ -27,6 +27,9 @@ from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
 
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+bohr_angs = 0.529177210903
+
 
 class Molecule:
     r"""Create a molecule object that stores molecular information and default basis set parameters.
@@ -51,6 +54,7 @@ class Molecule:
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
         normalize (bool): if True, the basis functions get normalized
+        unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
 
     **Example**
 
@@ -75,6 +79,7 @@ class Molecule:
         alpha=None,
         coeff=None,
         normalize=True,
+        unit="bohr",
     ):
         if (
             basis_name.lower()
@@ -97,11 +102,21 @@ class Molecule:
 
         self.symbols = symbols
         self.coordinates = coordinates
+        self.unit = unit.strip().lower()
         self.charge = charge
         self.mult = mult
         self.basis_name = basis_name.lower()
         self.name = name
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
+
+        if self.unit not in ("angstrom", "bohr"):
+            raise ValueError(
+                f"The provided unit '{unit}' is not supported. "
+                f"Please set 'unit' to 'bohr' or 'angstrom'."
+            )
+
+        if self.unit == "angstrom":
+            self.coordinates = self.coordinates / bohr_angs
 
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
