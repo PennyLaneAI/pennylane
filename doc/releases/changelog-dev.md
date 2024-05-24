@@ -96,6 +96,9 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+* The `qml.pytrees` module now has `flatten` and `unflatten` methods for serializing pytrees.
+  [(#5701)](https://github.com/PennyLaneAI/pennylane/pull/5701)
+
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
@@ -177,13 +180,21 @@
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
 
+* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors, 
+  multiple measurements, and parameter broadcasting.
+  [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
+
+* Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
+  [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Lillian M. A. Frederiksen,
-Ahmed Darwish,
 Gabriel Bottrill,
+Astral Cai,
+Ahmed Darwish,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
 Soran Jahangiri,
