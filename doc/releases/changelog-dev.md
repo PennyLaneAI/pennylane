@@ -201,6 +201,7 @@ This release contains contributions from (in alphabetical order):
 
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
+Jack Brown,
 Astral Cai,
 Ahmed Darwish,
 Isaac De Vlugt,
