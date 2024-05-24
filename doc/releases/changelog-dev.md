@@ -4,16 +4,16 @@
 
 <h3>New features since last release</h3>
 
-* One can now pass a `qml.measurements.SampleMeasurement`-based measurements into a snapshot. If the user is using exact simulation, it is possible to pass a custom number of shots to the constructor through the `shots` argument. If instead the user is using a shots-based device, it is possible to decide to take on the configuration of the device through `use_device_shots`. Of course, one can easily switch back to exact measurement for a simulator by passing `shots=None`. [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+* One can now pass a `qml.measurements.SampleMeasurement`-based measurements into a snapshot. [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 ```python
 @qml.snapshots
 @qml.qnode(qml.device("default.qubit", wires=2, shots=200))
 def circuit():
     qml.Hadamard(wires=0),
-    qml.Snapshot("device-shots counts", qml.counts(), use_device_shots=True)
+    qml.Snapshot("device-shots counts", qml.counts())
     qml.CNOT(wires=[0, 1]),
-    qml.Snapshot("custom-shots samples", qml.sam(), shots=5)
+    qml.Snapshot("custom-shots samples", qml.sample(), shots=5)
     qml.Snapshot("Exact state", qml.state(), shots=None)
     return qml.expval(qml.PauliZ(0))
 ```
@@ -33,7 +33,7 @@ def circuit():
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts. [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
-* The `snapshots` function is now a transform that splits a `QuantumTape` into several depending on the `Snapshots` present in the circuit. [(#5722)](https://github.com/PennyLaneAI/pennylane/pull/5722)
+* The `snapshots` function is now a transform that splits a `QuantumTape` into several depending on the `Snapshot` instances in the circuit. [(#5722)](https://github.com/PennyLaneAI/pennylane/pull/5722)
 
 ```python
 ops = [
@@ -54,29 +54,6 @@ tapes, collect_results_into_dict = qml.snapshots(tape)
 ```pycon
 >>> print(tapes)
 [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
-```
-
-We can notice that the transform is conservative about the wires that it includes in each tape.
-So if all operations preceding a snapshot in a 3-qubit gate has been applied to only one wire,
-the tape would only be looking at this wire. Of course, this is independent from the execution 
-on a QNode later on, as the final output shape would be dictated by the device.
-
-In addition to the new tapes, we also receive the post-processing function that collects the execution
-result of each tape into a dictionary with the corresponding tag of the snapshots.
-
-Previous usage involving a QNode remains unchanged, but given the new transform behaviour, 
-one can now apply it to previously unsupported devices, such as `lightning.qubit`:
-```python
-@qml.qnode(qml.device("lightning.qubit", wires=2), diff_method="parameter-shift")
-def circuit():
-    qml.Hadamard(wires=0),
-    qml.Snapshot("very_important_state"),
-    qml.CNOT(wires=[0, 1]),
-    return qml.expval(qml.PauliZ(0))
-```
-```pycon
->>> qml.snapshots(circuit)()
-{'very_important_state': tensor([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j], requires_grad=True), 'execution_results': tensor(0., requires_grad=True)}
 ```
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
@@ -185,6 +162,10 @@ def circuit():
 * `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
   returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
   [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
+
+* `qml.Snapshot` does not default to an exact calculation of the quantum state anymore, but rather inherits the
+  shot configuration of the quantum device. One can override this by passing `shots=None` to the `qml.Snapshot` constructor.
+  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 <h3>Deprecations 👋</h3>
 

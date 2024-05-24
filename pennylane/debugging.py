@@ -58,9 +58,22 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
     r"""Transforms a QNode into several tapes by aggregating all operations up to a `qml.Snapshot`
     operation into their own execution tape.
 
+    The transform is conservative about the wires that it includes in each tape.
+    So, if all operations preceding a snapshot in a 3-qubit circuit has been applied to only one wire,
+    the tape would only be looking at this wire. This can be overriden by the configuration of the execution device
+    and its nature. For supported simulators, measurements with no specified wires would default to all wires.
+
     The output is a dictionary where each key is either the tag supplied to the snapshot or its
     index in order of appearance, in additition to an "execution_results" that returns the final output
-    of the quantum circuit.
+    of the quantum circuit. The post-processing function is responsible for aggregating the results into
+    this dictionary.
+
+    When the transform is applied to a QNode, the `shots` configuration would be inherited by the `Snapshot`
+    instances, as long as the chosen measurement supports the provided value and is permitted by the device.
+
+    It should be noted that for unsupported devices, a separate execution would be carried out for each snapshot.
+    As illustrated in one of the examples below.
+
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
 
@@ -70,10 +83,30 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
 
     .. warning::
 
-        For devices that do not support snapshots (e.g QPUs, external plug-in's simulators), be mindful of
+        For devices that do not support snapshots (e.g QPUs, external plug-in simulators), be mindful of
         additional costs that you might incur due to the 1 separate execution/snapshot behaviour.
 
     **Example**
+
+    .. code-block:: python3
+
+        ops = [
+            qml.Snapshot(),
+            qml.Hadamard(wires=0),
+            qml.Snapshot("very_important_state"),
+            qml.CNOT(wires=[0, 1]),
+            qml.Snapshot(),
+        ]
+
+        measurements = [qml.expval(qml.PauliX(0))]
+
+        tape = qml.tape.QuantumTape(ops, measurements)
+
+        tapes, collect_results_into_dict = qml.snapshots(tape)
+
+    >>> print(tapes)
+    [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
+
 
     .. code-block:: python3
 
@@ -83,16 +116,32 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
         def circuit():
             qml.Snapshot(measurement=qml.expval(qml.Z(0))
             qml.Hadamard(wires=0)
-            qml.Snapshot("very_important_state")
+            qml.Snapshot("counts_checks", qml.counts(), shots=100)
             qml.CNOT(wires=[0, 1])
             qml.Snapshot()
             return qml.expval(qml.X(0))
 
     >>> qml.snapshots(circuit)()
     {0: 1.0,
-    'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+    'counts_check': {"00": 55, "10"},
     2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
     'execution_results': 0.0}
+
+    .. code-block:: python3
+
+        @qml.snapshots
+        @qml.qnode(qml.device("lightning.qubit", wires=2), diff_method="parameter-shift")
+        def circuit():
+            qml.Hadamard(wires=0),
+            qml.Snapshot("very_important_state"),
+            qml.CNOT(wires=[0, 1]),
+            return qml.expval(qml.PauliZ(0))
+
+        with circuit.device.tracker:
+            circuit()
+
+    >>> circuit.device.tracker.totals
+    {'batches': 1, 'simulations': 2, 'executions': 2}
     """
     new_tapes = []
     accumulated_ops = []
