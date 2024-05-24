@@ -28,48 +28,13 @@ _grad_log_map = {
 }
 
 
-# pylint: disable=pointless-statement
-@contextlib.contextmanager
-def set_log_level(caplog, modules, levels):
-    pl_logging.enable_logging()
-
-    pl_logger = logging.root.manager.loggerDict["pennylane"]
-    plqn_logger = logging.root.manager.loggerDict["pennylane.workflow.qnode"]
-
-    # Ensure logs messages are propagated for pytest capture
-    pl_logger.propagate = True
-    plqn_logger.propagate = True
-
-    for l, m in zip(levels, modules):
-        caplog.set_level(l, logger=m)
-    yield
-    modules + ["pennylane", "pennylane.workflow.qnode"]
-    for m in modules:
-        caplog.set_level(logging.INFO, logger=m)
-
-    pl_logger.propagate = False
-    plqn_logger.propagate = False
-
-
-def enable_and_configure_logging():
-    pl_logging.enable_logging()
-
-    pl_logger = logging.root.manager.loggerDict["pennylane"]
-    plqn_logger = logging.root.manager.loggerDict["pennylane.workflow.qnode"]
-
-    # Ensure logs messages are propagated for pytest capture
-    pl_logger.propagate = True
-    plqn_logger.propagate = True
-
-
 @pytest.mark.logging
 class TestLogging:
     """Tests for logging integration"""
 
-    def test_qd_dev_creation(self, caplog):
+    def test_qd_dev_creation(self, caplog, set_log_level):
         "Test logging of device creation"
 
-        # enable_and_configure_logging()
         with set_log_level(caplog, ["pennylane.devices.default_qubit"], [logging.DEBUG]):
             with caplog.at_level(logging.DEBUG):
                 qml.device("default.qubit", wires=2)
@@ -77,7 +42,7 @@ class TestLogging:
         assert len(caplog.records) == 1
         assert "Calling <__init__(self=<default.qubit device" in caplog.text
 
-    def test_qd_qnode_creation(self, caplog):
+    def test_qd_qnode_creation(self, caplog, set_log_level):
         "Test logging of QNode creation"
 
         with set_log_level(caplog, ["pennylane.workflow.qnode"], [logging.DEBUG]):
@@ -95,11 +60,10 @@ class TestLogging:
             assert len(caplog.records) == 1
             assert "Creating QNode" in caplog.text
 
-    def test_dq_qnode_execution(self, caplog):
+    def test_dq_qnode_execution(self, caplog, set_log_level):
         "Test logging of QNode forward pass"
 
         # Set specific log-levels for validation
-        # enable_and_configure_logging()
         with set_log_level(
             caplog,
             ["pennylane", "pennylane.workflow.execution", "pennylane.workflow.qnode"],
@@ -143,9 +107,8 @@ class TestLogging:
     @pytest.mark.parametrize(
         "diff_method,num_records", [("parameter-shift", 23), ("backprop", 14), ("adjoint", 18)]
     )
-    def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
+    def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records, set_log_level):
         "Test logging of QNode with parameterised gradients"
-
 
         # Set specific log-levels for validation
         caplog.set_level(logging.INFO, logger="pennylane")

@@ -225,28 +225,23 @@ class TestExecuteTracker:
 
 
 @pytest.mark.logging
-def test_execution_debugging(caplog):
+def test_execution_debugging(caplog, set_log_level):
     """Test logging of QNode forward pass from default qutrit mixed."""
 
-    qml.logging.enable_logging()
+    # Set outer log-level to ensure messages are produced from external paths
+    with set_log_level(caplog, ["pennylane.workflow.qnode"], [logging.DEBUG]):
 
-    pl_logger = logging.root.manager.loggerDict["pennylane"]
-    plqn_logger = logging.root.manager.loggerDict["pennylane.qnode"]
+        # Set inner level to log local details
+        with caplog.at_level(logging.DEBUG):
+            dev = qml.device("default.qutrit.mixed", wires=2)
+            params = qml.numpy.array(0.1234)
 
-    # Ensure logs messages are propagated for pytest capture
-    pl_logger.propagate = True
-    plqn_logger.propagate = True
+            @qml.qnode(dev, diff_method=None)
+            def circuit(params):
+                qml.TRX(params, wires=0)
+                return qml.expval(qml.GellMann(0, 3))
 
-    with caplog.at_level(logging.DEBUG):
-        dev = qml.device("default.qutrit.mixed", wires=2)
-        params = qml.numpy.array(0.1234)
-
-        @qml.qnode(dev, diff_method=None)
-        def circuit(params):
-            qml.TRX(params, wires=0)
-            return qml.expval(qml.GellMann(0, 3))
-
-        circuit(params)
+            circuit(params)
 
     assert len(caplog.records) == 3
 
@@ -254,6 +249,10 @@ def test_execution_debugging(caplog):
         (
             "pennylane.workflow.qnode",
             ["Creating QNode(func=<function test_execution_debugging"],
+        ),
+        (
+            "pennylane.workflow.qnode",
+            ["Calling <construct(self=<QNode: device='<default.qutrit.mixed device (wires=2)"],
         ),
         (
             "pennylane.workflow.execution",

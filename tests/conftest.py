@@ -15,6 +15,8 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
+import contextlib
+import logging
 import os
 import pathlib
 
@@ -22,6 +24,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.logging as pl_logging
 from pennylane.devices import DefaultGaussian
 from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
 
@@ -325,3 +328,32 @@ def pytest_runtest_setup(item):
                 pytest.skip(
                     f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                 )
+
+
+# pylint: disable=pointless-statement
+@pytest.fixture(scope="function")
+def set_log_level():
+    "Add log-level context-managing fixture to avoid log-levels propagating outside of tests"
+
+    @contextlib.contextmanager
+    def log_level_fixture(caplog, mod, levels):
+        try:
+            pl_logging.enable_logging()
+            pl_logger = logging.root.manager.loggerDict["pennylane"]
+
+            # Ensure logs messages are propagated for pytest capture
+            pl_logger.propagate = True
+
+            for l, m in zip(levels, mod):
+                caplog.set_level(l, logger=m)
+            yield
+        except Exception:  # pylint: disable=broad-except
+            raise
+        finally:
+            mod + ["pennylane"]
+            for m in mod:
+                caplog.set_level(logging.INFO, logger=m)
+
+            pl_logger.propagate = False
+
+    return log_level_fixture
