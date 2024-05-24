@@ -44,8 +44,7 @@ def split_non_commuting(
             the commutativity of the observables.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as
-            described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Examples:**
 

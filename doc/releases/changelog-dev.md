@@ -99,6 +99,9 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+* The `qml.pytrees` module now has `flatten` and `unflatten` methods for serializing pytrees.
+  [(#5701)](https://github.com/PennyLaneAI/pennylane/pull/5701)
+
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
