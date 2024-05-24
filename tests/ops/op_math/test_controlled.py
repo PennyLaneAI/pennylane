@@ -163,6 +163,17 @@ class TestControlledInit:
         op = Controlled(self.temp_op, (0, 1), control_values=[0, 1])
         assert op.control_values == [False, True]
 
+    @pytest.mark.parametrize("control_values", [True, False, 0, 1])
+    def test_scalar_control_values(self, control_values):
+        """Test assignment of provided control_values."""
+        op = Controlled(self.temp_op, 0, control_values=control_values)
+        assert op.control_values == [control_values]
+
+    def test_tuple_control_values(self):
+        """Test assignment of provided control_values."""
+        op = Controlled(self.temp_op, (0, 1), control_values=(0, 1))
+        assert op.control_values == [False, True]
+
     def test_non_boolean_control_values(self):
         """Test control values are converted to booleans."""
         op = Controlled(self.temp_op, (0, 1, 2), control_values=["", None, 5])
