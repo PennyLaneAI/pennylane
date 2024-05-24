@@ -3067,13 +3067,10 @@ class TestParameterShiftRuleBroadcast:
         assert all(isinstance(r, np.ndarray) and r.shape == (4,) for r in res[1])
 
         expected_expval = (-np.sin(x), 0)
+        sx, cx, sy, cy = np.sin(x / 2), np.cos(x / 2), np.sin(y / 2), np.cos(y / 2)
         expected_probs = (
-            np.sin(x)
-            / 2
-            * np.array([-np.cos(y / 2), -np.sin(y / 2), np.sin(y / 2), np.cos(y / 2)]) ** 2,
-            np.array([-np.cos(x / 2), np.cos(x / 2), np.sin(x / 2), -np.sin(x / 2)]) ** 2
-            * np.sin(y)
-            / 2,
+            np.sin(x) / 2 * np.array([-(cy**2), -(sy**2), sy**2, cy**2]),
+            np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * np.sin(y) / 2,
         )
 
         assert np.allclose(res[0], expected_expval, atol=tol, rtol=0)
