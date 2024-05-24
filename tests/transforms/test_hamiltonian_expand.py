@@ -749,8 +749,7 @@ class TestSumExpand:
         res = circuit(theta)
 
         if isinstance(theta, np.ndarray):
-            expected = np.stack(expected).T
-            assert qml.math.shape(res) == (5, 4, 3)
+            assert qml.math.shape(res) == (5, 3, 4)
         else:
             assert qml.math.shape(res) == (5, 3)
 

@@ -295,20 +295,22 @@ def _no_trainable_grad(tape):
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
-def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
+def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):
     """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
-    if first_axis_size == 1:
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 1)``"""
+    if first_axis_size == 1 and squeeze:
         return tuple(grads[0][i] for i in range(second_axis_size))
     return tuple(
         tuple(grads[j][i] for j in range(first_axis_size)) for i in range(second_axis_size)
     )
 
 
-def _move_first_axis_to_third_pos(grads, first_axis_size, second_axis_size, third_axis_size):
+def _move_first_axis_to_third_pos(
+    grads, first_axis_size, second_axis_size, third_axis_size, squeeze=True
+):
     """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
-    if first_axis_size == 1:
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 2)``"""
+    if first_axis_size == 1 and squeeze:
         return tuple(
             tuple(grads[0][i][j] for j in range(third_axis_size)) for i in range(second_axis_size)
         )
