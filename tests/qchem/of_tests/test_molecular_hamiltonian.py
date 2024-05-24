@@ -65,8 +65,8 @@ test_coordinates = np.array(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
-        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
-        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER"),
+        (1, 2, "openfermion", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "openfermion", 1, 2, "jordan_WIGNER"),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
@@ -116,8 +116,8 @@ def test_building_hamiltonian(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
-        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
-        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER"),
+        (1, 2, "openfermion", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "openfermion", 1, 2, "jordan_WIGNER"),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
@@ -616,6 +616,19 @@ def test_diff_hamiltonian_error():
     with pytest.raises(ValueError, match="Open-shell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
+def test_pyscf_hamiltonian_error():
+    r"""Test that molecular_hamiltonian raises an error for open-shell systems."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+
+    with pytest.raises(ValueError, match="Open-shell systems are not supported"):
+        qchem.molecular_hamiltonian(symbols, geometry, mult=3, method="pyscf")
+
+    molecule = qchem.Molecule(symbols, geometry, mult=3)
+    with pytest.raises(ValueError, match="Open-shell systems are not supported"):
+        qchem.molecular_hamiltonian(molecule, method="pyscf")
+
 
 def test_diff_hamiltonian_error_molecule_class():
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
@@ -631,7 +644,6 @@ def test_diff_hamiltonian_error_molecule_class():
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
     ):
         qchem.molecular_hamiltonian(molecule, method="psi4")
-
 
 @pytest.mark.parametrize(
     ("method", "args"),

@@ -1060,18 +1060,20 @@ def _molecular_hamiltonian(
         wires_new = qml.qchem.convert._process_wires(wires)
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
 
-    if method == "dhf":
-
-        if mapping != "jordan_wigner":
-            raise ValueError(
-                "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
-            )
+    if method in ("dhf", "pyscf"):
         n_electrons = sum([atomic_numbers[s] for s in symbols]) - charge
 
         if n_electrons % 2 == 1 or mult != 1:
             raise ValueError(
                 "Open-shell systems are not supported for the requested backend. Use "
                 "method = 'openfermion' or change the charge or spin multiplicity of the molecule."
+            )
+
+    if method == "dhf":
+
+        if mapping != "jordan_wigner":
+            raise ValueError(
+                "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
             )
 
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
