@@ -531,35 +531,35 @@ As seen above, there are multiple ways in which circuits with mid-circuit measur
 PennyLane. For ease of use, we provide the following configuration options to users when initializing a
 :class:`~pennylane.QNode`:
 
-    * ``mcm_method``: To set the method used for applying mid-circuit measurements. Use ``mcm_method="deferred"``
-      to use the deferred measurements principle or ``mcm_method="one-shot"`` to use the one-shot transform as
-      described above.
+* ``mcm_method``: To set the method used for applying mid-circuit measurements. Use ``mcm_method="deferred"``
+    to use the deferred measurements principle or ``mcm_method="one-shot"`` to use the one-shot transform as
+    described above.
 
-    .. note::
+  .. note::
 
-        If the ``mcm_method`` argument is provided, the :func:`~pennylane.defer_measurements` or
-        :func:`~pennylane.dynamic_one_shot` transforms should not be applied directly to a :class:`~pennylane.QNode`
-        as it can lead to incorrect behaviour.
+      If the ``mcm_method`` argument is provided, the :func:`~pennylane.defer_measurements` or
+      :func:`~pennylane.dynamic_one_shot` transforms should not be applied directly to a :class:`~pennylane.QNode`
+      as it can lead to incorrect behaviour.
 
-    * ``postselect_mode``: To configure how invalid shots are handled when postselecting mid-circuit measurements
-      with finite-shot circuits. Use ``postselect_mode="hw-like"`` to discard invalid shots. In this case, the number
-      of samples that are used for processing results will be less than or equal to the total number of shots. Use
-      ``postselect_mode="fill-shots"`` to keep invalid shots.
+* ``postselect_mode``: To configure how invalid shots are handled when postselecting mid-circuit measurements
+    with finite-shot circuits. Use ``postselect_mode="hw-like"`` to discard invalid shots. In this case, the number
+    of samples that are used for processing results will be less than or equal to the total number of shots. Use
+    ``postselect_mode="fill-shots"`` to keep invalid shots.
 
-    .. note::
+  .. note::
 
-        If ``postselect_mode="fill-shots"``, the specified ``mcm_method`` will impact the results due to the particular
-        features/limitations of the requested ``mcm_method``.
+      If ``postselect_mode="fill-shots"``, the specified ``mcm_method`` will impact the results due to the particular
+      features/limitations of the requested ``mcm_method``.
 
-            * If using ``mcm_method="hw-like"``, invalid samples will be replaced with ``np.iinfo(np.int32).min``,
-              and these invalid values will not be used for processing final results.
-            * If using ``mcm_method="deferred"``, all shots will be projected to the postselected value, so all
-              shots will be considered valid.
+      * If using ``mcm_method="hw-like"``, invalid samples will be replaced with ``np.iinfo(np.int32).min``,
+          and these invalid values will not be used for processing final results.
+      * If using ``mcm_method="deferred"``, all shots will be projected to the postselected value, so all
+          shots will be considered valid.
 
-    .. note::
+.. note::
 
-        When using the ``jax`` interface or while using :func:`~pennylane.qjit`, the results will reflect
-        ``postselect_mode="fill-shots"`` regardless of the specified value.
+    When using the ``jax`` interface or while using :func:`~pennylane.qjit`, the results will reflect
+    ``postselect_mode="fill-shots"`` regardless of the specified value.
 
 .. code-block:: python3
 
