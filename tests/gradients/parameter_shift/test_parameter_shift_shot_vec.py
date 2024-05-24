@@ -975,7 +975,7 @@ class TestParameterShiftRule:
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""
         if broadcast:
-            pytest.skip(msg="No need to test fallback with broadcasting")
+            pytest.skip("No need to test fallback with broadcasting")
         spy_fd = mocker.spy(qml.gradients, "finite_diff")
         spy_ps = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
@@ -1934,6 +1934,8 @@ class TestParameterShiftRule:
     def test_special_observable_qnode_differentiation(self, broadcast):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rather than a number."""
+        if broadcast:
+            pytest.skip("SpecialObject is not compatible with non-scalar objects.")
 
         class SpecialObject:
             """SpecialObject
