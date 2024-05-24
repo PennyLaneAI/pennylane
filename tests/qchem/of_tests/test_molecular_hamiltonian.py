@@ -616,6 +616,7 @@ def test_diff_hamiltonian_error():
     with pytest.raises(ValueError, match="Open-shell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
+
 def test_pyscf_hamiltonian_error():
     r"""Test that molecular_hamiltonian raises an error for open-shell systems."""
 
@@ -644,6 +645,7 @@ def test_diff_hamiltonian_error_molecule_class():
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
     ):
         qchem.molecular_hamiltonian(molecule, method="psi4")
+
 
 @pytest.mark.parametrize(
     ("method", "args"),
