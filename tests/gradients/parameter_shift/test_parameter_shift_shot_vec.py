@@ -1884,14 +1884,7 @@ class TestParameterShiftRule:
 
     costs_and_expected_expval = [
         (cost1, (3,), np.ndarray),
-        (
-            cost2,
-            (
-                1,
-                3,
-            ),
-            list,
-        ),
+        (cost2, (1, 3), list),
         (cost3, (2, 3), list),
     ]
 

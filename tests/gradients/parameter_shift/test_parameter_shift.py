@@ -317,7 +317,7 @@ class TestGetOperationRecipe:
         tape = qml.tape.QuantumScript.from_queue(q)
         # Incorrect gradient recipe, but this test only checks execution with an unshifted term.
         recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],)
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=recipes)
+        tapes, fn = param_shift(tape, gradient_recipes=recipes)
         assert len(tapes) == 2
 
         res = fn(qml.execute(tapes, dev, None))
@@ -620,7 +620,7 @@ class TestParamShift:
         tape.trainable_params = []
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.param_shift(tape, broadcast=broadcast)
+            g_tapes, post_processing = param_shift(tape, broadcast=broadcast)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -901,16 +901,14 @@ class TestParamShift:
             )
             for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(
-            tape, gradient_recipes=gradient_recipes, broadcast=broadcast
-        )
+        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
         # two tapes per parameter, independent of recipe
         # plus one global (unshifted) call if at least one uses the custom recipe
         tapes_per_param = 1 if broadcast else 2
-        assert len(tapes) == tapes_per_param * tape.num_params + int(
-            len(ops_with_custom_recipe) > 0
-        )
+        num_custom = len(ops_with_custom_recipe)
+        assert len(tapes) == tapes_per_param * tape.num_params + num_custom > 0
+
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)
