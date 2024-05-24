@@ -25,6 +25,12 @@ import pennylane as qml
 from pennylane.operation import Operation
 
 
+def _multi_swap(wires1, wires2):
+    """Apply a series of SWAP gates between two sets of wires."""
+    for wire1, wire2 in zip(wires1, wires2):
+        qml.SWAP(wires=[wire1, wire2])
+
+
 class QROM(Operation):
     r"""Applies the QROM operator.
 
@@ -87,24 +93,8 @@ class QROM(Operation):
         In `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__ you could find more details.
     """
 
-    def _flatten(self):
-        data = (self.hyperparameters["bitstrings"],)
-        metadata = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "bitstrings"
-        )
-        return data, metadata
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        bitstrings = data[0]
-        hyperparams_dict = dict(metadata)
-        return cls(bitstrings, **hyperparams_dict)
-
-    def __repr__(self):
-        return f"QROM(target_wires={self.target_wires}, control_wires={self.control_wires},  work_wires={self.work_wires})"
-
     def __init__(
-        self, bitstrings, target_wires, control_wires, work_wires, clean=True, id=None
+        self, bitstrings, control_wires, target_wires, work_wires, clean=True, id=None
     ):  # pylint: disable=too-many-arguments
 
         control_wires = qml.wires.Wires(control_wires)
@@ -114,8 +104,8 @@ class QROM(Operation):
             work_wires = qml.wires.Wires(work_wires)
 
         self.hyperparameters["bitstrings"] = bitstrings
-        self.hyperparameters["target_wires"] = target_wires
         self.hyperparameters["control_wires"] = control_wires
+        self.hyperparameters["target_wires"] = target_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["clean"] = clean
 
@@ -132,6 +122,22 @@ class QROM(Operation):
         all_wires = target_wires + control_wires + work_wires
         super().__init__(wires=all_wires, id=id)
 
+    def _flatten(self):
+        data = (self.hyperparameters["bitstrings"],)
+        metadata = tuple(
+            (key, value) for key, value in self.hyperparameters.items() if key != "bitstrings"
+        )
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        bitstrings = data[0]
+        hyperparams_dict = dict(metadata)
+        return cls(bitstrings, **hyperparams_dict)
+
+    def __repr__(self):
+        return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires})"
+
     def map_wires(self, wire_map: dict):
         new_target_wires = [
             wire_map.get(wire, wire) for wire in self.hyperparameters["target_wires"]
@@ -147,14 +153,8 @@ class QROM(Operation):
             ]
 
         return QROM(
-            self.bitstrings, new_target_wires, new_control_wires, new_work_wires, self.clean
+            self.bitstrings, new_control_wires, new_target_wires, new_work_wires, self.clean
         )
-
-    @staticmethod
-    def multi_swap(wires1, wires2):
-        """Apply a series of SWAP gates between two sets of wires."""
-        for wire1, wire2 in zip(wires1, wires2):
-            qml.SWAP(wires=[wire1, wire2])
 
     def __copy__(self):
         """Copy this op"""
@@ -176,19 +176,19 @@ class QROM(Operation):
         return self.compute_decomposition(
             self.bitstrings,
             control_wires=self.control_wires,
-            work_wires=self.work_wires,
             target_wires=self.target_wires,
+            work_wires=self.work_wires,
             clean=self.clean,
         )
 
     @staticmethod
     def compute_decomposition(
-        bitstrings, target_wires, control_wires, work_wires, clean
+        bitstrings, control_wires, target_wires, work_wires, clean
     ):  # pylint: disable=arguments-differ
         with qml.QueuingManager.stop_recording():
 
             if work_wires:
-                swap_wires = target_wires + work_wires  # wires available to apply the operators
+                swap_wires = target_wires + work_wires
             else:
                 swap_wires = target_wires
 
@@ -196,53 +196,35 @@ class QROM(Operation):
             depth = len(swap_wires) // len(target_wires)
             depth = int(2 ** np.floor(np.log2(depth)))
 
-            # control wires used in the Select block
-            c_sel_wires = control_wires[
-                : int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
-            ]
-
-            # control wires used in the Swap block
-            c_swap_wires = control_wires[len(c_sel_wires) :]
-
             ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
-            ops_I = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
+            ops_identity = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
-            # number of new operators after grouping
-            length = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
-
-            # operators to be included in the Select block
-            s_ops = []
-
-            for i in range(length):
-
-                # map the wires to put more than one bitstring per column.
-                s_ops.append(
-                    qml.prod(
-                        *[
-                            qml.map_wires(
-                                ops_I[i * depth + j],
-                                {
-                                    ops_I[i * depth + j].wires[l]: swap_wires[
-                                        j * len(target_wires) + l
-                                    ]
-                                    for l in range(len(target_wires))
-                                },
-                            )
-                            for j in range(depth)
-                        ]
-                    )
-                )
+            n_columns = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
+            new_ops = []
+            for i in range(n_columns):
+                column_ops = []
+                for j in range(depth):
+                    dic_map = {
+                        ops_identity[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
+                        for l in range(len(target_wires))
+                    }
+                    column_ops.append(qml.map_wires(ops_identity[i * depth + j], dic_map))
+                new_ops.append(qml.prod(*column_ops))
 
             # Select block
-            sel_ops = []
-            if c_sel_wires:
-                sel_ops += [qml.Select(s_ops, control=c_sel_wires)]
+            n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
+            control_select_wires = control_wires[:n_control_select_wires]
+
+            select_ops = []
+            if control_select_wires:
+                select_ops += [qml.Select(new_ops, control=control_select_wires)]
 
             # Swap block
+            control_swap_wires = control_wires[n_control_select_wires:]
             swap_ops = []
-            for ind, wire in enumerate(c_swap_wires):
+            for ind, wire in enumerate(control_swap_wires):
                 for j in range(2**ind):
-                    new_op = qml.prod(QROM.multi_swap)(
+                    new_op = qml.prod(_multi_swap)(
                         swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
                         swap_wires[
                             (j + 2**ind)
@@ -254,22 +236,15 @@ class QROM(Operation):
 
             if not clean:
                 # Based on this paper: https://arxiv.org/abs/1812.00954
-                decomp_ops = sel_ops + swap_ops
+                decomp_ops = select_ops + swap_ops
 
             else:
                 # Based on this paper: https://arxiv.org/abs/1902.02134
 
-                # Adjoint Swap block
                 adjoint_swap_ops = swap_ops[::-1]
+                hadamard_ops = [qml.Hadamard(wires=w) for w in target_wires]
 
-                decomp_ops = []
-
-                for _ in range(2):
-
-                    for w in target_wires:
-                        decomp_ops.append(qml.Hadamard(wires=w))
-
-                    decomp_ops += swap_ops + sel_ops + adjoint_swap_ops
+                decomp_ops = 2 * (hadamard_ops + swap_ops + select_ops + adjoint_swap_ops)
 
         if qml.QueuingManager.recording():
             for op in decomp_ops:

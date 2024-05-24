@@ -68,14 +68,14 @@ class TestQROM:
     def test_operation_result(
         self, bitstrings, target_wires, control_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the Select template output."""
+        """Test the correctness of the QROM template output."""
         dev = qml.device("default.qubit", shots=1)
 
         @qml.qnode(dev)
         def circuit(j):
             qml.BasisEmbedding(j, wires=control_wires)
 
-            qml.QROM(bitstrings, target_wires, control_wires, work_wires, clean)
+            qml.QROM(bitstrings, control_wires, target_wires, work_wires, clean)
             return qml.sample(wires=target_wires)
 
         @qml.qnode(dev)
@@ -131,7 +131,7 @@ class TestQROM:
             for wire in control_wires:
                 qml.Hadamard(wires=wire)
 
-            qml.QROM(bitstrings, target_wires, control_wires, work_wires)
+            qml.QROM(bitstrings, control_wires, target_wires, work_wires)
 
             for ind, wire in enumerate(work_wires):
                 qml.RX(-ind, wires=wire)
@@ -198,16 +198,15 @@ class TestQROM:
 def test_wires_error(control_wires, target_wires, work_wires, msg_match):
     """Test an error is raised when a control wire is in one of the ops"""
     with pytest.raises(ValueError, match=msg_match):
-        qml.QROM(["1"] * 8, target_wires, control_wires, work_wires)
+        qml.QROM(["1"] * 8, control_wires, target_wires, work_wires)
 
 
 def test_repr():
     """Test that the __repr__ method works as expected."""
-    op = str(
-        qml.QROM(
-            ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
-        )
+
+    op = qml.QROM(
+        ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
     )
-    res = op.__repr__()[1:-1]
-    expected = "QROM(target_wires=<Wires = [2]>, control_wires=<Wires = [0, 1]>,  work_wires=<Wires = [3]>)"
+    res = op.__repr__()
+    expected = "QROM(control_wires=<Wires = [0, 1]>, target_wires=<Wires = [2]>,  work_wires=<Wires = [3]>)"
     assert res == expected
