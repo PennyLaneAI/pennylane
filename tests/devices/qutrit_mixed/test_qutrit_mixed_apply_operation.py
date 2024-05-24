@@ -88,6 +88,11 @@ class TestSnapshot:
         """A dummy debugger class"""
 
         def __init__(self):
+            # Create a dummy object to act as the device
+            # and add a dummy shots attribute to it
+            self.device = type("", (), {})()
+            self.device.shots = None
+
             self.active = True
             self.snapshots = {}
 
@@ -142,14 +147,29 @@ class TestSnapshot:
         """Test a snapshot with measurement throws NotImplementedError"""
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
+        tag = "expected_value"
 
         debugger = self.Debugger()
-        with pytest.raises(NotImplementedError):
-            _ = apply_operation(
-                qml.Snapshot(measurement=qml.expval(qml.GellMann(0, 1))),
-                initial_state,
-                debugger=debugger,
-                is_state_batched=len(shape) != 2,
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=qml.expval(qml.GellMann(0, 1))),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=len(shape) != 2,
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        if len(shape) == 2:
+            assert debugger.snapshots[tag].shape == ()
+            assert math.allclose(debugger.snapshots[tag], 0.018699118213231336)
+        else:
+            assert debugger.snapshots[tag].shape == (2,)
+            assert math.allclose(
+                debugger.snapshots[tag], [0.018699118213231336, 0.018699118213231336]
             )
 
 
