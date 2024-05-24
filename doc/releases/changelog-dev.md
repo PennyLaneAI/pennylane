@@ -101,9 +101,14 @@
 
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
-
-* The `qml.data` module can now serialize pytrees
+  
+* `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
+  `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
+  [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
+  
+* The `qml.data` module now supports PyTree types as dataset attributes
   [(#5732)](https://github.com/PennyLaneAI/pennylane/pull/5732)
+
 
 <h4>Community contributions 🥳</h4>
 
@@ -200,6 +205,7 @@ Astral Cai,
 Ahmed Darwish,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
+Emiliano Godinez,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,

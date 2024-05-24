@@ -720,7 +720,7 @@ class TestParameters:
 
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape.par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters() == new_params
@@ -735,7 +735,7 @@ class TestParameters:
         new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
 
         count = 0
-        for idx, pinfo in enumerate(new_tape._par_info):
+        for idx, pinfo in enumerate(new_tape.par_info):
             if idx in tape.trainable_params:
                 assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
                 count += 1
@@ -778,7 +778,7 @@ class TestParameters:
         tape.trainable_params = [1, 3]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape.par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters(trainable_only=False) == new_params
@@ -1207,8 +1207,8 @@ class TestExpand:
 
         assert len(tape.operations) == 1
         assert qml.equal(tape.operations[0], ops[0])
-        assert len(tape._obs_sharing_wires) == 2
-        assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape._obs_sharing_wires)
+        assert len(tape.obs_sharing_wires) == 2
+        assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape.obs_sharing_wires)
         assert qml.equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
         assert qml.equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
         assert tape.shots == qml.measurements.Shots(None)
@@ -1216,8 +1216,8 @@ class TestExpand:
         assert len(expanded.operations) == 2
         assert qml.equal(expanded.operations[0], ops[0])
         assert qml.equal(expanded.operations[1], qml.RY(-np.pi / 2, 0))  # new rotation
-        assert len(expanded._obs_sharing_wires) == 2
-        assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded._obs_sharing_wires)
+        assert len(expanded.obs_sharing_wires) == 2
+        assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded.obs_sharing_wires)
         assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
         assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
         assert expanded.shots is tape.shots
