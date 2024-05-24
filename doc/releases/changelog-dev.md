@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
+
 * Add support for 3 new pytest markers: `unit`, `integration` and `system`.
   [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
 
@@ -140,6 +143,9 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.cond` can now be applied to `ControlledOp` operations when deferring measurements.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
 * The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
   [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
