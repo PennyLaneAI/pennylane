@@ -48,6 +48,8 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
         bind["treedef"] = np.void(serialization.pytree_structure_dump(treedef, decode=False))
 
         try:
+            # Attempt to store leaves as an array, which will be more efficient
+            # but will fail if the leaves are not homogenous
             DatasetArray(leaves, parent_and_key=(bind, "leaves"))
         except (ValueError, TypeError):
             DatasetList(leaves, parent_and_key=(bind, "leaves"))
