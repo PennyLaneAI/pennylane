@@ -69,7 +69,6 @@ class TestLogging:
             ["pennylane", "pennylane.workflow.execution", "pennylane.workflow.qnode"],
             [logging.INFO, logging.DEBUG, logging.DEBUG],
         ):
-
             dev = qml.device("default.qubit", wires=2)
 
             with caplog.at_level(logging.DEBUG):
@@ -120,7 +119,6 @@ class TestLogging:
             ["pennylane", "pennylane.workflow", "pennylane.devices"],
             [logging.INFO, logging.DEBUG, logging.DEBUG],
         ):
-
             with caplog.at_level(logging.INFO):
                 dev = qml.device("default.qubit", wires=2)
             params = qml.numpy.array(0.1234)

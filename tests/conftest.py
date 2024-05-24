@@ -354,7 +354,7 @@ def set_log_level():
         finally:
             mod + ["pennylane", "pennylane.qnode", "catalyst"]
             for m in mod:
-                caplog.set_level(logging.INFO, logger=m)
+                caplog.set_level(logging.NOTSET, logger=m)
 
             pl_logger.propagate = False
 
