@@ -29,9 +29,8 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
-    ~CaptureMeta
     ~create_operator_primitive
-    ~create_measurment_obs_primitive
+    ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
 

@@ -265,7 +265,12 @@ def create_measurement_mcm_primitive(
 
     @primitive.def_impl
     def _(*mcms, **kwargs):
-        return type.__call__(measurement_type, obs=mcms, **kwargs)
+        raise NotImplementedError(
+            "mcm measurements do not currently have a concrete implementation"
+        )
+        # need to figure out how to convert a jaxpr int into a measurement value, and pass
+        # that measurment value here.
+        # return type.__call__(measurement_type, obs=mcms, **kwargs)
 
     abstract_type = _get_abstract_measurement()
 

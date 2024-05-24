@@ -116,8 +116,9 @@ class MutualInfoMP(StateMeasurement):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, wires: Sequence, **kwargs):
-        if cls._wires_primitive is None:
-            return type.__call__(cls, wires=wires, **kwargs)
+        if cls._wires_primitive is None:  # pragma: no cover
+            # just a safety check
+            return type.__call__(cls, wires=wires, **kwargs)  # pragma: no cover
         return cls._wires_primitive.bind(*wires[0], *wires[1], n_wires0=len(wires[0]), **kwargs)
 
     def __repr__(self):

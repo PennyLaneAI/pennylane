@@ -112,6 +112,7 @@ def test_counts_no_measure():
 
 
 def test_mid_measure_not_implemented():
+    """Test that measure raises a NotImplementedError if capture is enabled."""
     with pytest.raises(NotImplementedError):
         qml.measure(0)
 
@@ -157,6 +158,7 @@ creation_funcs = [
     lambda: qml.purity(wires=(0, 1)),
     lambda: qml.mutual_info(wires0=(1, 3), wires1=(2, 4), log_base=2),
     lambda: qml.classical_shadow(wires=(0, 1), seed=84),
+    lambda: MidMeasureMP(qml.wires.Wires((0, 1))),
 ]
 
 
@@ -170,6 +172,34 @@ def test_capture_and_eval(func):
     out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0]
 
     assert qml.equal(mp, out)
+
+
+@pytest.mark.parametrize("x64_mode", [True, False])
+def test_mid_measure(x64_mode):
+    """Test that mid circuit measurements can be captured and executed.x"""
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+
+    def f(w):
+        return MidMeasureMP(qml.wires.Wires((w,)), reset=True, postselect=1)
+
+    jaxpr = jax.make_jaxpr(f)(2)
+
+    assert len(jaxpr.eqns) == 1
+    assert jaxpr.eqns[0].primitive == MidMeasureMP._wires_primitive
+    assert jaxpr.eqns[0].params == {"reset": True, "postselect": 1}
+    mp = jaxpr.eqns[0].outvars[0].aval
+    assert isinstance(mp, AbstractMeasurement)
+    assert mp.n_wires == 1
+    assert mp._abstract_eval == MidMeasureMP._abstract_eval
+
+    shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(1))
+    assert shapes[0] == jax.core.ShapedArray((), jax.numpy.int64 if x64_mode else jax.numpy.int32)
+
+    mp = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)[0]
+    assert mp == f(1)
+
+    jax.config.update("jax_enable_x64", initial_mode)
 
 
 @pytest.mark.parametrize(
@@ -296,7 +326,6 @@ class TestExpvalVar:
         assert shapes == jax.core.ShapedArray((), expected)
         jax.config.update("jax_enable_x64", initial_mode)
 
-    @pytest.mark.xfail
     def test_simple_single_mcm(self, m_type, x64_mode, expected):
         """Test that we can take the expectation value of a mid circuit measurement."""
 
@@ -304,40 +333,27 @@ class TestExpvalVar:
         jax.config.update("jax_enable_x64", x64_mode)
 
         def f():
-            m0 = qml.measure(0)
-            mp = m_type(obs=m0)
-            return qml.capture.measure(mp)
+            # using integer to represent classical mcm value
+            return m_type(obs=1)
 
         jaxpr = jax.make_jaxpr(f)()
 
-        assert len(jaxpr.eqns) == 4
+        assert len(jaxpr.eqns) == 1
 
-        assert jaxpr.eqns[0].primitive == MidMeasureMP._wires_primitive
-        assert jaxpr.eqns[0].params == {"postselect": None, "reset": False}
-        assert jaxpr.eqns[0].invars[0].val == 0  # the wire
-        am0 = jaxpr.eqns[0].outvars[0].aval
-        assert isinstance(am0, AbstractMeasurement)
-        assert am0.n_wires == 1
-        assert am0._abstract_eval == MidMeasureMP._abstract_eval
-
-        assert jaxpr.eqns[1].invars == jaxpr.eqns[0].outvars
-        aval0 = jaxpr.eqns[1].outvars[0].aval
-        assert aval0 == jax.core.ShapedArray((), jax.numpy.int64 if x64_mode else jax.numpy.int32)
-
-        assert jaxpr.eqns[2].primitive == m_type._mcm_primitive
-        assert jaxpr.eqns[2].invars == jaxpr.eqns[1].outvars
-        aval1 = jaxpr.eqns[2].outvars[0].aval
+        assert jaxpr.eqns[0].primitive == m_type._mcm_primitive
+        aval1 = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(aval1, AbstractMeasurement)
         assert aval1.n_wires == 1
         assert aval1._abstract_eval == m_type._abstract_eval
 
-        assert jaxpr.eqns[3].params == {
-            "num_device_wires": 0,
-            "shots": qml.measurements.Shots(None),
-        }
-        assert jaxpr.eqns[3].invars == jaxpr.eqns[2].outvars
-        aval2 = jaxpr.eqns[3].outvars[0].aval
-        assert aval2 == jax.core.ShapedArray((), expected)
+        shapes = _get_shapes_for(
+            *jaxpr.out_avals, num_device_wires=0, shots=qml.measurements.Shots(50)
+        )[0]
+        assert shapes == jax.core.ShapedArray((), expected)
+
+        with pytest.raises(NotImplementedError):
+            f()
+
         jax.config.update("jax_enable_x64", initial_mode)
 
 
@@ -402,50 +418,34 @@ class TestProbs:
 
         jax.config.update("jax_enable_x64", initial_mode)
 
-    @pytest.mark.xfail
     def test_multiple_mcms(self, x64_mode):
         """Test measuring multiple mcms."""
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
 
-        def f():
-            m0 = qml.measure(0)
-            m1 = qml.measure(0)
-            mp = qml.probs(op=[m0, m1])
-            return qml.capture.measure(mp, num_device_wires=4, shots=50)
+        def f(c1, c2):
+            return qml.probs(op=[c1, c2])
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(f)(1, 2)
 
-        assert len(jaxpr.eqns) == 6
+        assert len(jaxpr.eqns) == 1
 
-        for i in [0, 2]:
-            assert jaxpr.eqns[i].primitive == MidMeasureMP._wires_primitive
-            assert jaxpr.eqns[i].params == {"postselect": None, "reset": False}
-            assert jaxpr.eqns[i].invars[0].val == 0
-            mp = jaxpr.eqns[i].outvars[0].aval
-            assert isinstance(mp, AbstractMeasurement)
-            assert mp.n_wires == 1
-            assert mp._abstract_eval == MidMeasureMP._abstract_eval
-
-        for i in [1, 3]:
-            assert jaxpr.eqns[i].invars == jaxpr.eqns[i - 1].outvars
-            out = jaxpr.eqns[i].outvars[0].aval
-            assert out == jax.core.ShapedArray((), jax.numpy.int64 if x64_mode else jax.numpy.int32)
-
-        assert jaxpr.eqns[4].primitive == ProbabilityMP._mcm_primitive
-        assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[1].outvars[0]
-        assert jaxpr.eqns[4].invars[1] == jaxpr.eqns[3].outvars[0]
-        out = jaxpr.eqns[4].outvars[0].aval
+        assert jaxpr.eqns[0].primitive == ProbabilityMP._mcm_primitive
+        out = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(out, AbstractMeasurement)
         assert out.n_wires == 2
         assert out._abstract_eval == ProbabilityMP._abstract_eval
 
-        assert jaxpr.eqns[5].invars == jaxpr.eqns[4].outvars
-        out = jaxpr.eqns[5].outvars[0].aval
-        assert out == jax.core.ShapedArray(
+        shapes = _get_shapes_for(
+            *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=6
+        )
+        assert shapes[0] == jax.core.ShapedArray(
             (4,), jax.numpy.float64 if x64_mode else jax.numpy.float32
         )
+
+        with pytest.raises(NotImplementedError):
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
 
         jax.config.update("jax_enable_x64", initial_mode)
 
@@ -481,6 +481,9 @@ class TestSample:
             (50, dim1_len), jax.numpy.int64 if x64_mode else jax.numpy.int32
         )
 
+        with pytest.raises(ValueError, match="finite shots are required"):
+            jaxpr.out_avals[0].abstract_eval(shots=None, num_device_wires=4)
+
         jax.config.update("jax_enable_x64", initial_mode)
 
     def test_eigvals(self, x64_mode):
@@ -511,7 +514,6 @@ class TestSample:
 
         jax.config.update("jax_enable_x64", initial_mode)
 
-    @pytest.mark.xfail
     def test_multiple_mcms(self, x64_mode):
         """Test measuring multiple mcms."""
 
@@ -519,42 +521,25 @@ class TestSample:
         jax.config.update("jax_enable_x64", x64_mode)
 
         def f():
-            m0 = qml.measure(0)
-            m1 = qml.measure(0)
-            mp = qml.sample(op=[m0, m1])
-            return qml.capture.measure(mp, num_device_wires=4, shots=50)
+            return qml.sample(op=[1, 2])
 
         jaxpr = jax.make_jaxpr(f)()
 
-        assert len(jaxpr.eqns) == 6
+        assert len(jaxpr.eqns) == 1
 
-        for i in [0, 2]:
-            assert jaxpr.eqns[i].primitive == MidMeasureMP._wires_primitive
-            assert jaxpr.eqns[i].params == {"postselect": None, "reset": False}
-            assert jaxpr.eqns[i].invars[0].val == 0
-            mp = jaxpr.eqns[i].outvars[0].aval
-            assert isinstance(mp, AbstractMeasurement)
-            assert mp.n_wires == 1
-            assert mp._abstract_eval == MidMeasureMP._abstract_eval
-
-        for i in [1, 3]:
-            assert jaxpr.eqns[i].invars == jaxpr.eqns[i - 1].outvars
-            out = jaxpr.eqns[i].outvars[0].aval
-            assert out == jax.core.ShapedArray((), jax.numpy.int64 if x64_mode else jax.numpy.int32)
-
-        assert jaxpr.eqns[4].primitive == SampleMP._mcm_primitive
-        assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[1].outvars[0]
-        assert jaxpr.eqns[4].invars[1] == jaxpr.eqns[3].outvars[0]
-        out = jaxpr.eqns[4].outvars[0].aval
+        assert jaxpr.eqns[0].primitive == SampleMP._mcm_primitive
+        out = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(out, AbstractMeasurement)
         assert out.n_wires == 2
         assert out._abstract_eval == SampleMP._abstract_eval
 
-        assert jaxpr.eqns[5].invars == jaxpr.eqns[4].outvars
-        out = jaxpr.eqns[5].outvars[0].aval
-        assert out == jax.core.ShapedArray(
+        shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(50))
+        assert shapes[0] == jax.core.ShapedArray(
             (50, 2), jax.numpy.int64 if x64_mode else jax.numpy.int32
         )
+
+        with pytest.raises(NotImplementedError):
+            f()
 
         jax.config.update("jax_enable_x64", initial_mode)
 

@@ -192,6 +192,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         This information is similar to ``numeric_type`` and ``shape``, but is provided through
         a class method and does not require the creation of an instance.
 
+        Note that ``shots`` should strictly be ``None`` or ``int``. Shot vectors are handled higher
+        in the stack.
+
         If ``n_wires is None``, then the measurement process contains an observable. An integer
         ``n_wires`` can correspond either to the number of wires or to the number of mid circuit
         measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
@@ -206,9 +209,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         ((50,), float)
         >>> SampleMP._abstract_eval(n_wires=None, shots=50)
         ((50,), float)
-
-        Note that ``shots`` should strictly be ``None`` or ``int``. Shot vectors are handled higher
-        in the stack.
 
         """
         return (), float
