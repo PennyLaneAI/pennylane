@@ -200,7 +200,7 @@ class PyTreeStructure:
     >>> structure
     PyTree(AdjointOperation, (), [PyTree(RX, (<Wires = [0]>, ()), [Leaf])])
 
-    A leaf is defined as just a ``PyTreeStructure`` with ``type=None``.
+    A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """
 
     type_: Optional[type[Any]] = None
