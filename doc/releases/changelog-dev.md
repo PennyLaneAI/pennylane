@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
+
 * Add support for 3 new pytest markers: `unit`, `integration` and `system`.
   [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
 
@@ -122,6 +125,9 @@
   returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
   [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
 
+* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
+  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
+
 <h3>Deprecations 👋</h3>
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated. 
@@ -137,6 +143,12 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* The decomposition of `StronglyEntanglingLayers` is now compatible with broadcasting.
+  [(#5716)](https://github.com/PennyLaneAI/pennylane/pull/5716)
+
+* `qml.cond` can now be applied to `ControlledOp` operations when deferring measurements.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
 * The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
   [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
