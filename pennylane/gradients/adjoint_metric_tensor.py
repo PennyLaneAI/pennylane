@@ -40,7 +40,7 @@ def _group_operations(tape):
     ops = tape.operations
     # Find the indices of trainable operations in the tape operations list
     # pylint: disable=protected-access
-    trainable_par_info = [tape._par_info[i] for i in tape.trainable_params]
+    trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainables = [info["op_idx"] for info in trainable_par_info]
     # Add the indices incremented by one to the trainable indices
     split_ids = list(chain.from_iterable([idx, idx + 1] for idx in trainables))
