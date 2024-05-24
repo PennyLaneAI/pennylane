@@ -83,7 +83,7 @@ def pytree_structure_dump(
     return data
 
 
-def pytree_structure_load(data: str | bytes | bytearray) -> PyTreeStructure:
+def pytree_structure_load(data: Union[str, bytes, bytearray]) -> PyTreeStructure:
     """Load a previously serialized Pytree structure.
 
     >>> from pennylane.pytrees.serialization import pytree_structure_dump
