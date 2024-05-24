@@ -70,7 +70,7 @@ semantic-version==2.10.0
 six==1.16.0
 toml==0.10.2
 tomli==2.0.1
-typing_extensions==4.11.0
+typing_extensions==4.12.0
 urllib3==2.2.1
 virtualenv==20.26.2
 wrapt==1.12.1

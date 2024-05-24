@@ -71,7 +71,7 @@ sympy==1.12
 toml==0.10.2
 tomli==2.0.1
 torch==2.3.0+rocm6.0
-typing_extensions==4.11.0
+typing_extensions==4.12.0
 urllib3==2.2.1
 virtualenv==20.26.2
 wrapt==1.12.1
