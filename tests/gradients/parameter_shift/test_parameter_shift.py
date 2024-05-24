@@ -907,7 +907,7 @@ class TestParamShift:
         # plus one global (unshifted) call if at least one uses the custom recipe
         tapes_per_param = 1 if broadcast else 2
         num_custom = len(ops_with_custom_recipe)
-        assert len(tapes) == tapes_per_param * tape.num_params + num_custom > 0
+        assert len(tapes) == tapes_per_param * tape.num_params + (num_custom > 0)
 
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
@@ -3068,23 +3068,11 @@ class TestParameterShiftRuleBroadcast:
 
         expected_expval = (-np.sin(x), 0)
         expected_probs = (
-            np.array(
-                [
-                    -(np.cos(y / 2) ** 2 * np.sin(x)),
-                    -(np.sin(x) * np.sin(y / 2) ** 2),
-                    (np.sin(x) * np.sin(y / 2) ** 2),
-                    (np.cos(y / 2) ** 2 * np.sin(x)),
-                ]
-            )
-            / 2,
-            np.array(
-                [
-                    -(np.cos(x / 2) ** 2 * np.sin(y)),
-                    (np.cos(x / 2) ** 2 * np.sin(y)),
-                    (np.sin(x / 2) ** 2 * np.sin(y)),
-                    -(np.sin(x / 2) ** 2 * np.sin(y)),
-                ]
-            )
+            np.sin(x)
+            / 2
+            * np.array([-np.cos(y / 2), -np.sin(y / 2), np.sin(y / 2), np.cos(y / 2)]) ** 2,
+            np.array([-np.cos(x / 2), np.cos(x / 2), np.sin(x / 2), -np.sin(x / 2)]) ** 2
+            * np.sin(y)
             / 2,
         )
 
