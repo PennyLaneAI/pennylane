@@ -101,7 +101,7 @@
 
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
-  
+
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)

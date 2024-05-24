@@ -115,7 +115,15 @@ def test_pytree_structure_dump(decode):
     ]
 
 
-def test_structure_load():
+def test_pytree_structure_dump_unserializable_metadata():
+    """Test that a ``TypeError`` is raised if a Pytree has unserializable metadata."""
+    _, struct = flatten(CustomNode([1, 2, 4], {"operator": qml.PauliX(0)}))
+
+    with pytest.raises(TypeError, match=r"Could not serialize metadata object: X\(0\)"):
+        pytree_structure_dump(struct)
+
+
+def test_pytree_structure_load():
     """Test that ``pytree_structure_load()`` can parse a JSON-serialized PyTree."""
     jsoned = json.dumps(
         [

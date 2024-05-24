@@ -143,4 +143,4 @@ def _json_default(obj: Any) -> JSON:
     try:
         return _json_handlers[type(obj)](obj)
     except KeyError as exc:
-        raise TypeError(obj) from exc
+        raise TypeError(f"Could not serialize metadata object: {repr(obj)}") from exc
