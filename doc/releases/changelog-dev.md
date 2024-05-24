@@ -144,6 +144,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The decomposition of `StronglyEntanglingLayers` is now compatible with broadcasting.
+  [(#5716)](https://github.com/PennyLaneAI/pennylane/pull/5716)
+
 * `qml.cond` can now be applied to `ControlledOp` operations when deferring measurements.
   [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
