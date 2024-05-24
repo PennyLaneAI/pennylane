@@ -229,6 +229,7 @@ def test_execution_debugging(caplog, set_log_level):
     """Test logging of QNode forward pass from default qutrit mixed."""
 
     # Set outer log-level to ensure messages are produced from external paths
+    # and appropriately disabled upon exit
     with set_log_level(caplog, ["pennylane.workflow.qnode"], [logging.DEBUG]):
 
         # Set inner level to log local details

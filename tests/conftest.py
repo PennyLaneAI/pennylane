@@ -347,10 +347,12 @@ def set_log_level():
             for l, m in zip(levels, mod):
                 caplog.set_level(l, logger=m)
             yield
+
         except Exception:  # pylint: disable=broad-except
             raise
+
         finally:
-            mod + ["pennylane"]
+            mod + ["pennylane", "pennylane.qnode", "catalyst"]
             for m in mod:
                 caplog.set_level(logging.INFO, logger=m)
 

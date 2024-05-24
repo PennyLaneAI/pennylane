@@ -81,28 +81,28 @@ class TestLogging:
                     return qml.expval(qml.PauliZ(0))
 
                 circuit(params)
-        assert len(caplog.records) == 3
-        log_records_expected = [
-            (
-                "pennylane.workflow.qnode",
-                ["Creating QNode(func=<function TestLogging.test_dq_qnode_execution"],
-            ),
-            (
-                "pennylane.workflow.qnode",
-                ["Calling <construct(self=<QNode: device='<default.qubit device"],
-            ),
-            (
-                "pennylane.workflow.execution",
-                [
-                    "device=<default.qubit device (wires=2)",
-                    "gradient_fn=None, interface=None",
-                ],
-            ),
-        ]
+            assert len(caplog.records) == 3
+            log_records_expected = [
+                (
+                    "pennylane.workflow.qnode",
+                    ["Creating QNode(func=<function TestLogging.test_dq_qnode_execution"],
+                ),
+                (
+                    "pennylane.workflow.qnode",
+                    ["Calling <construct(self=<QNode: device='<default.qubit device"],
+                ),
+                (
+                    "pennylane.workflow.execution",
+                    [
+                        "device=<default.qubit device (wires=2)",
+                        "gradient_fn=None, interface=None",
+                    ],
+                ),
+            ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:3]):
-            assert expected[0] in actual.name
-            assert all(msg in actual.getMessage() for msg in expected[1])
+            for expected, actual in zip(log_records_expected, caplog.records[:3]):
+                assert expected[0] in actual.name
+                assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
         "diff_method,num_records", [("parameter-shift", 23), ("backprop", 14), ("adjoint", 18)]
