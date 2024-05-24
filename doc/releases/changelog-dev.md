@@ -4,7 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
 <h3>Improvements 🛠</h3>
+
+* `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
+
+* Add support for 3 new pytest markers: `unit`, `integration` and `system`.
+  [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
@@ -79,6 +88,11 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
+  traced quantum functions. This feature is used with Catalyst to enable the pattern
+  `m = measure(0); qml.sample(m)`.
+  [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
+
 * PennyLane operators can now automatically be captured as instructions in JAXPR. See the experimental
   `capture` module for more information.
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
@@ -87,8 +101,15 @@
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
+* The `qml.pytrees` module now has `flatten` and `unflatten` methods for serializing pytrees.
+  [(#5701)](https://github.com/PennyLaneAI/pennylane/pull/5701)
+
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
+
+* `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
+  `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
+  [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
 
 <h4>Community contributions 🥳</h4>
 
@@ -119,6 +140,9 @@
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
   Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
   [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
+  
+* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
+  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
 
 <h3>Deprecations 👋</h3>
 
@@ -136,9 +160,21 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The decomposition of `StronglyEntanglingLayers` is now compatible with broadcasting.
+  [(#5716)](https://github.com/PennyLaneAI/pennylane/pull/5716)
+
+* `qml.cond` can now be applied to `ControlledOp` operations when deferring measurements.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
+
+* The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
+  [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
+
 * Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
   returned samples of observables containing the `qml.Identity` operator.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
+* The signature of `CaptureMeta` objects (like `Operator`) now match the signature of the `__init__` call.
+  [(#5727)](https://github.com/PennyLaneAI/pennylane/pull/5727)
 
 * Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
   [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
@@ -157,18 +193,29 @@
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
 
+* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors, 
+  multiple measurements, and parameter broadcasting.
+  [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
+
+* Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
+  [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Lillian M. A. Frederiksen,
-Ahmed Darwish,
 Gabriel Bottrill,
+Astral Cai,
+Ahmed Darwish,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
+Emiliano Godinez,
+David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
+Lee James O'Riordan,
 Kenya Sakka,
 David Wierichs.

@@ -140,6 +140,8 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
         control_values = [control_values]
     elif control_values is None:
         control_values = [True] * len(control)
+    elif isinstance(control_values, tuple):
+        control_values = list(control_values)
 
     ctrl_op = _try_wrap_in_custom_ctrl_op(
         op, control, control_values=control_values, work_wires=work_wires
