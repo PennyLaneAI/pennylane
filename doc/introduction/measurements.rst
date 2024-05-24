@@ -535,7 +535,7 @@ PennyLane. For ease of use, we provide the following configuration options to us
   to use the deferred measurements principle or ``mcm_method="one-shot"`` to use the one-shot transform as
   described above.
 
-  .. note::
+  .. warning::
 
       If the ``mcm_method`` argument is provided, the :func:`~pennylane.defer_measurements` or
       :func:`~pennylane.dynamic_one_shot` transforms should not be applied directly to a :class:`~pennylane.QNode`
@@ -552,9 +552,9 @@ PennyLane. For ease of use, we provide the following configuration options to us
       features/limitations of the requested ``mcm_method``.
 
       * If using ``mcm_method="hw-like"``, invalid samples will be replaced with ``np.iinfo(np.int32).min``,
-          and these invalid values will not be used for processing final results.
+        and these invalid values will not be used for processing final results.
       * If using ``mcm_method="deferred"``, all shots will be projected to the postselected value, so all
-          shots will be considered valid.
+        shots will be considered valid.
 
   .. note::
 
