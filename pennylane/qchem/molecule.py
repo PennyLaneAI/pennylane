@@ -44,8 +44,7 @@ class Molecule:
             where ``N`` is the number of atoms.
         charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
-            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Currently,
-            openshell systems are not supported; ``mult`` must be equal to :math:`1`.
+            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
             only supported basis sets are 'STO-3G', '6-31G', '6-311G' and 'CC-PVDZ'.
         load_data (bool): flag to load data from the basis-set-exchange library
@@ -121,12 +120,6 @@ class Molecule:
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
         self.n_electrons = sum(self.nuclear_charges) - self.charge
-
-        if self.n_electrons % 2 == 1 or self.mult != 1:
-            raise ValueError(
-                "Openshell systems are not supported. Change the charge or spin "
-                "multiplicity of the molecule."
-            )
 
         if l is None:
             l = [i[0] for i in self.basis_data]

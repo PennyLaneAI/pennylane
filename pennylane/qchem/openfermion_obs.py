@@ -25,6 +25,8 @@ from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify
 from pennylane.qchem.molecule import Molecule
 
+from .basis_data import atomic_numbers
+
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
 
@@ -594,19 +596,6 @@ def dipole_of(
     """
     openfermion, _ = _import_of()
 
-    atomic_numbers = {
-        "H": 1,
-        "He": 2,
-        "Li": 3,
-        "Be": 4,
-        "B": 5,
-        "C": 6,
-        "N": 7,
-        "O": 8,
-        "F": 9,
-        "Ne": 10,
-    }
-
     if mult != 1:
         raise ValueError(
             f"Currently, this functionality is constrained to Hartree-Fock states with spin multiplicity = 1;"
@@ -1082,17 +1071,22 @@ def _molecular_hamiltonian(
         wires_new = qml.qchem.convert._process_wires(wires)
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
 
+    if method in ("dhf", "pyscf"):
+        n_electrons = sum([atomic_numbers[s] for s in symbols]) - charge
+
+        if n_electrons % 2 == 1 or mult != 1:
+            raise ValueError(
+                "Open-shell systems are not supported for the requested backend. Use "
+                "method = 'openfermion' or change the charge or spin multiplicity of the molecule."
+            )
+
     if method == "dhf":
 
         if mapping != "jordan_wigner":
             raise ValueError(
                 "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
             )
-        if mult != 1:
-            raise ValueError(
-                "Openshell systems are not supported for the differentiable workflow. Use "
-                "`method = 'pyscf'` or change the charge or spin multiplicity of the molecule."
-            )
+
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
