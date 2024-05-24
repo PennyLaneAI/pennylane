@@ -151,7 +151,7 @@ def pauli_eigs(n):
         list: the eigenvalues of the specified observable
     """
     if n == 1:
-        return np.array([1, -1])
+        return np.array([1.0, -1.0])
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
@@ -205,4 +205,4 @@ def expand_vector(vector, original_wires, expanded_wires):
         expanded_tensor, tuple(original_indices), tuple(wire_indices)
     )
 
-    return qml.math.reshape(expanded_tensor, qudit_order**M)
+    return qml.math.reshape(expanded_tensor, (qudit_order**M,))

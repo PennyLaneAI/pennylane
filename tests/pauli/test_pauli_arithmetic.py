@@ -1262,7 +1262,8 @@ class TestPauliSentenceMatrix:
         assert qml.math.allclose(gy, pw2_mat)
 
     @pytest.mark.jax
-    def test_dense_matrix_jax(self):
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_dense_matrix_jax(self, use_jit):
         """Test calculating and differentiating the matrix with jax."""
 
         import jax
@@ -1272,6 +1273,9 @@ class TestPauliSentenceMatrix:
             _pw2 = qml.pauli.PauliWord({0: "Y", 1: "X"})
             H = x * _pw1 + y * _pw2
             return H.to_mat()
+
+        if use_jit:
+            f = jax.jit(f)
 
         x = jax.numpy.array(0.1 + 0j)
         y = jax.numpy.array(0.2 + 0j)

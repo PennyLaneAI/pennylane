@@ -426,7 +426,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.execute_and_gradients(numpy_tapes, **self._gradient_kwargs)
@@ -437,7 +437,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.execute(numpy_tapes, self._execution_config)
         return self._device.batch_execute(numpy_tapes)
@@ -448,7 +448,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
@@ -669,14 +669,14 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     ) -> Tuple[ResultBatch, Tuple]:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         tangents = qml.math.unwrap(tangents)
         return self._device.execute_and_compute_jvp(numpy_tapes, tangents, self._execution_config)
 
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         dy = qml.math.unwrap(dy)
         vjps = self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
         res = []
@@ -690,13 +690,13 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         return self._device.compute_derivatives(numpy_tapes, self._execution_config)
 
     def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jacobian called with %s", tapes)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
 
 
@@ -739,8 +739,8 @@ class LightningVJPs(DeviceDerivatives):
         ):
             raise NotImplementedError("Lightning device VJPs only support expectation values.")
         results = []
-        for dyi, tape in zip(dy, tapes):
-            numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
+        for dyi, tape in zip(dy, numpy_tapes):
             if len(tape.measurements) == 1:
                 dyi = (dyi,)
             dyi = np.array(qml.math.unwrap(dyi))
@@ -748,10 +748,8 @@ class LightningVJPs(DeviceDerivatives):
                 raise NotImplementedError(
                     "Lightning device VJPs are not supported with jax jacobians."
                 )
-            vjp_f = self._device.vjp(
-                numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
-            )
-            out = vjp_f(numpy_tape)
+            vjp_f = self._device.vjp(tape.measurements, dyi, **self._processed_gradient_kwargs)
+            out = vjp_f(tape)
             if len(tape.trainable_params) == 1:
                 out = (out,)
             results.append(out)

@@ -127,6 +127,48 @@ def transform(
     reverse order of the transform program to obtain the final results.
 
     .. details::
+        :title: Dispatch a transform onto a batch of tapes
+
+        We can compose multiple transforms when working in the tape paradigm and apply them to more than one tape.
+        The following example demonstrates how to apply a transform to a batch of tapes.
+
+        **Example**
+
+        In this example, we apply sequentially a transform to a tape and another one to a batch of tapes.
+        We then execute the transformed tapes on a device and post-process the results.
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+            measurement = [qml.expval(H)]
+            operations = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
+            tape = qml.tape.QuantumTape(operations, measurement)
+
+            batch1, function1 = qml.transforms.hamiltonian_expand(tape)
+            batch2, function2 = qml.transforms.merge_rotations(batch1)
+
+            dev = qml.device("default.qubit", wires=3)
+            result = dev.execute(batch2)
+
+        The first ``hamiltonian_expand`` transform splits the original tape, returning a batch of tapes ``batch1`` and a processing function ``function1``.
+        The second ``merge_rotations`` transform is applied to the batch of tapes returned by the first transform.
+        It returns a new batch of tapes ``batch2``, each of which has been transformed by the second transform, and a processing function ``function2``.
+
+        >>> batch2
+        (<QuantumTape: wires=[0, 1, 2], params=2>,
+        <QuantumTape: wires=[0, 1, 2], params=1>)
+
+        >>> type(function2)
+        function
+
+        We can combine the processing functions to post-process the results of the execution.
+
+        >>> function1(function2(result))
+        [array(0.5)]
+
+    .. details::
         :title: Signature of a transform
 
         A dispatched transform is able to handle several PennyLane circuit-like objects:
@@ -134,6 +176,7 @@ def transform(
         - :class:`pennylane.QNode`
         - a quantum function (callable)
         - :class:`pennylane.tape.QuantumTape`
+        - a batch of :class:`pennylane.tape.QuantumTape`
         - :class:`pennylane.devices.Device`.
 
         For each object, the transform will be applied in a different way, but it always preserves the underlying
@@ -156,6 +199,10 @@ def transform(
         - For a :class:`~.QuantumTape`, the underlying quantum transform is directly applied on the
           :class:`~.QuantumTape`. It returns a sequence of :class:`~.QuantumTape` and a processing
           function to be applied after execution.
+
+        - For a batch of :class:`pennylane.tape.QuantumTape`, the quantum transform is mapped across all the tapes.
+          It returns a sequence of :class:`~.QuantumTape` and a processing function to be applied after execution.
+          Each tape in the sequence is transformed by the transform.
 
         - For a :class:`~.devices.Device`, the transform is added to the device's transform program
           and a transformed :class:`pennylane.devices.Device` is returned. The transform is added
