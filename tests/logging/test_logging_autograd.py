@@ -148,7 +148,6 @@ class TestLogging:
 
 
         # Set specific log-levels for validation
-        # enable_and_configure_logging()
         caplog.set_level(logging.INFO, logger="pennylane")
         caplog.set_level(logging.DEBUG, logger="pennylane.workflow")
         caplog.set_level(logging.DEBUG, logger="pennylane.devices")
