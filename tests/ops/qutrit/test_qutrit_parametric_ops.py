@@ -275,8 +275,8 @@ class TestMatrix:
         """Test that compute_matrix works with tensorflow variables"""
         import tensorflow as tf
 
-        theta = tf.Variable(theta)
-        expected = tf.convert_to_tensor(expected)
+        theta = tf.Variable(theta, dtype="float64")
+        expected = tf.convert_to_tensor(expected, dtype="complex128")
         assert qml.math.allclose(
             op.compute_matrix(theta, subspace=subspace), expected, atol=tol, rtol=0
         )
