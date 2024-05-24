@@ -267,7 +267,7 @@ def test_density_matrix(wires, shape, x64_mode, expected):
 )
 @pytest.mark.parametrize("m_type", (ExpectationMP, VarianceMP))
 class TestExpvalVar:
-    """Tests for capturing an expectation value."""
+    """Tests for capturing an expectation value or variance."""
 
     def test_capture_obs(self, m_type, x64_mode, expected):
         """Test that the expectation value of an observable can be captured."""
@@ -391,7 +391,7 @@ class TestProbs:
         jax.config.update("jax_enable_x64", initial_mode)
 
     def test_eigvals(self, x64_mode):
-        """Test capturing probabilities eith eigenvalues."""
+        """Test capturing probabilities with eigenvalues."""
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
@@ -419,7 +419,7 @@ class TestProbs:
         jax.config.update("jax_enable_x64", initial_mode)
 
     def test_multiple_mcms(self, x64_mode):
-        """Test measuring multiple mcms."""
+        """Test measuring probabilities of multiple mcms."""
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
@@ -455,7 +455,7 @@ class TestSample:
 
     @pytest.mark.parametrize("wires, dim1_len", [([0, 1, 2], 3), ([], 4)])
     def test_wires(self, wires, dim1_len, x64_mode):
-        """Tests capturing probabilities on wires."""
+        """Tests capturing samples on wires."""
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
@@ -487,7 +487,7 @@ class TestSample:
         jax.config.update("jax_enable_x64", initial_mode)
 
     def test_eigvals(self, x64_mode):
-        """Test capturing probabilities eith eigenvalues."""
+        """Test capturing samples with eigenvalues."""
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
@@ -515,7 +515,7 @@ class TestSample:
         jax.config.update("jax_enable_x64", initial_mode)
 
     def test_multiple_mcms(self, x64_mode):
-        """Test measuring multiple mcms."""
+        """Test sampling from multiple mcms."""
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
