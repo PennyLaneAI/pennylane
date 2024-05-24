@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the default.tensor device to perform tensor network simulation of a quantum circuit using ``quimb``.
+This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
 import copy
 from dataclasses import replace
@@ -167,8 +167,9 @@ class DefaultTensor(Device):
             It corresponds to the number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
         cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is ``np.finfo(dtype).eps``.
         contract (str): The contraction method for applying gates in the MPS method. It can be either ``auto-mps`` or ``nonlocal``.
-            ``nonlocal`` turns each gate into a matrix product operator and applies it directly to the MPS, while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next
-            to each other before applying the gate, then swaps them back. Default is ``auto-mps``.
+            ``nonlocal`` turns each gate into a Matrix Product Operator (MPO) and applies it directly to the MPS,
+            while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next to each other before applying the gate,
+            then swaps them back. Default is ``auto-mps``.
 
     **Example:**
 
@@ -205,7 +206,7 @@ class DefaultTensor(Device):
             We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
             In the following example, we consider a slightly more complex circuit. We use the ``default.tensor`` device with the MPS method,
-            setting the maximum bond dimension to 100 and the cutoff to 1e-16. We use ``"auto-mps"`` as the contraction technique to apply gates.
+            setting the maximum bond dimension to 100 and the cutoff to 1e-16. We set ``"auto-mps"`` as the contraction technique to apply gates.
 
             .. code-block:: python
 
