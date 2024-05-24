@@ -507,6 +507,7 @@ Qutrit noisy channels
     :nosignatures:
 
     ~pennylane.QutritDepolarizingChannel
+    ~pennylane.QutritAmplitudeDamping
 
 :html:`</div>`
 

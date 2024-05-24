@@ -82,7 +82,7 @@ runs:
       if: inputs.install_jax == 'true'
       env:
         JAX_VERSION: ${{ inputs.jax_version != '' && format('=={0}', inputs.jax_version) || '' }}
-      run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}"
+      run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}" scipy~=1.12.0
 
     - name: Install additional PIP packages
       shell: bash
