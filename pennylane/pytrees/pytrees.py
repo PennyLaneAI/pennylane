@@ -176,21 +176,6 @@ def get_typename_type(typename: str) -> type[Any]:
         raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
-def list_pytree_types(namespace: Optional[str] = "qml") -> Iterator[type]:
-    """Return an iterator listing all registered Pytree types under
-    the given ``namespace``.
-    """
-    if namespace:
-        namespace_filter = f"{namespace}."
-        return (
-            type_
-            for type_, typename in type_to_typename.items()
-            if typename.startswith(namespace_filter)
-        )
-
-    return (type_ for type_ in type_to_typename)
-
-
 @dataclass(repr=False)
 class PyTreeStructure:
     """A pytree data structure, holding the type, metadata, and child pytree structures.

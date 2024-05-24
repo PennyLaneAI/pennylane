@@ -1,12 +1,27 @@
-from functools import lru_cache
-from typing import Any, TypeVar
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Contains DatasetAttribute definition for PyTree types."""
+
+
+from typing import TypeVar
 
 import numpy as np
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.data.base.mapper import AttributeTypeMapper
-from pennylane.pytrees import flatten, list_pytree_types, serialization, unflatten
+from pennylane.pytrees import flatten, serialization, unflatten
 
 T = TypeVar("T")
 

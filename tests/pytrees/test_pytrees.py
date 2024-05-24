@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the pennylane pytrees module
+Tests for the pennylane pytrees module.
 """
 import pennylane as qml
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten

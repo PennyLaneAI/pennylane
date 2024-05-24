@@ -1,19 +1,29 @@
-import json
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Tests for the pytrees serialization module.
+"""
+
+import json
+from typing import Any
+
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements.shots import Shots
 from pennylane.ops import PauliX, Prod, Sum
-from pennylane.pytrees import (
-    PyTreeStructure,
-    flatten,
-    is_pytree,
-    leaf,
-    list_pytree_types,
-    register_pytree,
-    unflatten,
-)
+from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, register_pytree, unflatten
 from pennylane.pytrees.pytrees import (
     flatten_registrations,
     type_to_typename,
@@ -54,11 +64,6 @@ def register_test_node():
     del type_to_typename[CustomNode]
 
 
-def test_list_pytree_types():
-    """Test for ``list_pytree_types()``."""
-    assert list(list_pytree_types("test")) == [CustomNode]
-
-
 @pytest.mark.parametrize(
     "cls, result",
     [
@@ -69,6 +74,7 @@ def test_list_pytree_types():
         (Prod, True),
         (PauliX, True),
         (int, False),
+        (set, False),
     ],
 )
 def test_is_pytree(cls, result):
@@ -140,17 +146,34 @@ def test_structure_load():
     )
 
 
-def test_nested_pl_object_roundtrip():
-    tape_in = qml.tape.QuantumScript(
-        [qml.adjoint(qml.RX(0.1, wires=0))],
-        [qml.expval(2 * qml.X(0))],
-        shots=50,
-        trainable_params=(0, 1),
-    )
+H_ONE_QUBIT = np.array([[1.0, 0.5j], [-0.5j, 2.5]])
+H_TWO_QUBITS = np.array(
+    [[0.5, 1.0j, 0.0, -3j], [-1.0j, -1.1, 0.0, -0.1], [0.0, 0.0, -0.9, 12.0], [3j, -0.1, 12.0, 0.0]]
+)
 
-    data, struct = flatten(tape_in)
-    tape_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
 
-    assert type(tape_out) == type(tape_in)
-    assert repr(tape_out) == repr(tape_in)
-    assert list(tape_out) == list(tape_in)
+@pytest.mark.parametrize(
+    "obj_in",
+    [
+        qml.tape.QuantumScript(
+            [qml.adjoint(qml.RX(0.1, wires=0))],
+            [qml.expval(2 * qml.X(0))],
+            shots=50,
+            trainable_params=[0, 1],
+        ),
+        Prod(qml.X(0), qml.RX(0.1, wires=0), qml.X(1), id="id"),
+        Sum(
+            qml.Hermitian(H_ONE_QUBIT, 2),
+            qml.Hermitian(H_TWO_QUBITS, [0, 1]),
+            qml.PauliX(1),
+            qml.Identity("a"),
+        ),
+    ],
+)
+def test_pennylane_pytree_roundtrip(obj_in: Any):
+    """Test that Pennylane Pytree objects are requal to themselves after
+    a serialization roundtrip."""
+    data, struct = flatten(obj_in)
+    obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
+
+    assert qml.equal(obj_in, obj_out)
