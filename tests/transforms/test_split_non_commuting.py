@@ -357,11 +357,11 @@ required_shot_meas_fn = [qml.sample, qml.counts]
 optional_shot_meas_fn = [qml.probs, qml.expval, qml.var]
 
 
-@pytest.mark.parametrize("grouping_strategy", ["naive", "pauli"])
+@pytest.mark.parametrize("grouping", [True, False, "naive"])
 class TestIntegration:
     """Integration tests for ``qml.transforms.split_non_commuting()``"""
 
-    def test_expval_non_commuting_observables(self, grouping_strategy):
+    def test_expval_non_commuting_observables(self, grouping):
         """Test expval with multiple non-commuting operators"""
 
         dev = qml.device("default.qubit", wires=6)
@@ -383,7 +383,7 @@ class TestIntegration:
                 qml.expval(qml.PauliY(5)),
             )
 
-        res = split_non_commuting(circuit, grouping_strategy=grouping_strategy)()
+        res = split_non_commuting(circuit, grouping=grouping)()
 
         assert isinstance(res, tuple)
         assert len(res) == 6
@@ -394,7 +394,7 @@ class TestIntegration:
 
         assert all(np.isclose(res, np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
 
-    def test_expval_non_commuting_observables_qnode(self, grouping_strategy):
+    def test_expval_non_commuting_observables_qnode(self, grouping):
         """Test expval with multiple non-commuting operators as a transform program on the qnode."""
 
         dev = qml.device("default.qubit", wires=6)
@@ -416,7 +416,7 @@ class TestIntegration:
                 qml.expval(qml.PauliY(5)),
             )
 
-        res = split_non_commuting(circuit, grouping_strategy=grouping_strategy)()
+        res = split_non_commuting(circuit, grouping=grouping)()
 
         assert isinstance(res, tuple)
         assert len(res) == 6
@@ -427,7 +427,7 @@ class TestIntegration:
 
         assert all(np.isclose(res, np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
 
-    def test_expval_probs_non_commuting_observables_qnode(self, grouping_strategy):
+    def test_expval_probs_non_commuting_observables_qnode(self, grouping):
         """Test expval with multiple non-commuting operators and probs with non-commuting wires as a
         transform program on the qnode."""
 
@@ -450,7 +450,7 @@ class TestIntegration:
                 qml.expval(qml.PauliY(5)),
             )
 
-        res = split_non_commuting(circuit, grouping_strategy=grouping_strategy)()
+        res = split_non_commuting(circuit, grouping=grouping)()
 
         assert isinstance(res, tuple)
         assert len(res) == 6
@@ -463,7 +463,7 @@ class TestIntegration:
 
         assert all(np.isclose(res_expval, np.array([0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
 
-    def test_shot_vector_support(self, grouping_strategy):
+    def test_shot_vector_support(self, grouping):
         """Test output is correct when using shot vectors"""
 
         dev = qml.device("default.qubit", wires=6, shots=(10000, (20000, 2), 30000))
@@ -486,7 +486,7 @@ class TestIntegration:
                 qml.expval(qml.PauliY(5)),
             )
 
-        res = split_non_commuting(circuit, grouping_strategy=grouping_strategy)()
+        res = split_non_commuting(circuit, grouping=grouping)()
         assert isinstance(res, tuple)
         assert len(res) == 4
         assert all(isinstance(shot_res, tuple) for shot_res in res)
@@ -503,7 +503,7 @@ class TestIntegration:
             res, np.array([0.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)]), atol=0.05
         )
 
-    def test_shot_vector_support_sample(self, grouping_strategy):
+    def test_shot_vector_support_sample(self, grouping):
         """Test output is correct when using shots and sample and expval measurements"""
 
         dev = qml.device("default.qubit", wires=2, shots=(10, 20))
@@ -513,7 +513,7 @@ class TestIntegration:
             qml.PauliZ(0)
             return (qml.sample(wires=[0, 1]), qml.expval(qml.PauliZ(0)))
 
-        res = split_non_commuting(circuit, grouping_strategy=grouping_strategy)()
+        res = split_non_commuting(circuit, grouping=grouping)()
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert all(isinstance(shot_res, tuple) for shot_res in res)
@@ -534,7 +534,7 @@ class TestIntegration:
         expval_res = qml.math.stack([shot_res[1] for shot_res in res])
         assert np.allclose(expval_res, np.array([1.0, 1.0]), atol=0.05)
 
-    def test_shot_vector_support_counts(self, grouping_strategy):
+    def test_shot_vector_support_counts(self, grouping):
         """Test output is correct when using shots, counts and expval measurements"""
 
         dev = qml.device("default.qubit", wires=2, shots=(10, 20))
@@ -544,7 +544,7 @@ class TestIntegration:
             qml.PauliZ(0)
             return (qml.counts(wires=[0, 1]), qml.expval(qml.PauliZ(0)))
 
-        res = split_non_commuting(circuit, grouping_strategy=grouping_strategy)()
+        res = split_non_commuting(circuit, grouping=grouping)()
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert all(isinstance(shot_res, tuple) for shot_res in res)
@@ -582,17 +582,17 @@ exp_grad_probs = np.array(
 )
 
 
-@pytest.mark.parametrize("grouping_strategy", ["naive", "pauli"])
+@pytest.mark.parametrize("grouping", [True, False, "naive"])
 class TestAutodiffSplitNonCommuting:
     """Autodiff tests for all frameworks"""
 
     @pytest.mark.autograd
-    def test_split_with_autograd(self, grouping_strategy):
+    def test_split_with_autograd(self, grouping):
         """Test that results after splitting are still differentiable with autograd"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
@@ -614,13 +614,13 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad, exp_grad).flatten())
 
     @pytest.mark.autograd
-    def test_split_with_autograd_probs(self, grouping_strategy):
+    def test_split_with_autograd_probs(self, grouping):
         """Test resulting after splitting non-commuting tapes with expval and probs measurements
         are still differentiable with autograd"""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
@@ -638,7 +638,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad, exp_grad_probs).flatten())
 
     @pytest.mark.jax
-    def test_split_with_jax(self, grouping_strategy):
+    def test_split_with_jax(self, grouping):
         """Test that results after splitting are still differentiable with jax"""
 
         import jax
@@ -646,7 +646,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit.jax", wires=3)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
@@ -664,7 +664,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad, exp_grad, atol=0.05).flatten())
 
     @pytest.mark.jax
-    def test_split_with_jax_probs(self, grouping_strategy):
+    def test_split_with_jax_probs(self, grouping):
         """Test resulting after splitting non-commuting tapes with expval and probs measurements
         are still differentiable with jax"""
 
@@ -673,7 +673,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit.jax", wires=2)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
@@ -691,7 +691,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad, exp_grad_probs, atol=0.05).flatten())
 
     @pytest.mark.jax
-    def test_split_with_jax_multi_params(self, grouping_strategy):
+    def test_split_with_jax_multi_params(self, grouping):
         """Test that results after splitting are still differentiable with jax
         with multiple parameters"""
 
@@ -700,7 +700,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit.jax", wires=3)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -730,7 +730,7 @@ class TestAutodiffSplitNonCommuting:
             assert np.allclose(meas_grad, exp_grad[i], atol=1e-5)
 
     @pytest.mark.jax
-    def test_split_with_jax_multi_params_probs(self, grouping_strategy):
+    def test_split_with_jax_multi_params_probs(self, grouping):
         """Test that results after splitting are still differentiable with jax
         with multiple parameters"""
 
@@ -739,7 +739,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit.jax", wires=2)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -774,7 +774,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad, exp_grad_probs, atol=0.05).flatten())
 
     @pytest.mark.jax
-    def test_split_with_jax_jit(self, grouping_strategy):
+    def test_split_with_jax_jit(self, grouping):
         """Test that results after splitting are still differentiable with jax-jit"""
 
         import jax
@@ -783,7 +783,7 @@ class TestAutodiffSplitNonCommuting:
         dev = qml.device("default.qubit", wires=3)
 
         @jax.jit
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
@@ -801,7 +801,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
 
     @pytest.mark.jax
-    def test_split_with_jax_jit_probs(self, grouping_strategy):
+    def test_split_with_jax_jit_probs(self, grouping):
         """Test resulting after splitting non-commuting tapes with expval and probs measurements
         are still differentiable with jax"""
 
@@ -810,7 +810,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
@@ -828,7 +828,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad, exp_grad_probs, atol=0.05).flatten())
 
     @pytest.mark.torch
-    def test_split_with_torch(self, grouping_strategy):
+    def test_split_with_torch(self, grouping):
         """Test that results after splitting are still differentiable with torch"""
 
         import torch
@@ -836,7 +836,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit.torch", wires=3)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
@@ -858,7 +858,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad.detach().numpy(), exp_grad, atol=1e-5).flatten())
 
     @pytest.mark.torch
-    def test_split_with_torch_probs(self, grouping_strategy):
+    def test_split_with_torch_probs(self, grouping):
         """Test resulting after splitting non-commuting tapes with expval and probs measurements
         are still differentiable with torch"""
 
@@ -867,7 +867,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @functools.partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @functools.partial(split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
@@ -885,7 +885,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad.detach().numpy(), exp_grad_probs, atol=1e-5).flatten())
 
     @pytest.mark.tf
-    def test_split_with_tf(self, grouping_strategy):
+    def test_split_with_tf(self, grouping):
         """Test that results after splitting are still differentiable with tf"""
 
         import tensorflow as tf
@@ -905,7 +905,7 @@ class TestAutodiffSplitNonCommuting:
         params = tf.Variable([0.5, 0.5])
         res = circuit(params)
         with tf.GradientTape() as tape:
-            loss = split_non_commuting(circuit, grouping_strategy=grouping_strategy)(params)
+            loss = split_non_commuting(circuit, grouping=grouping)(params)
             loss = tf.stack(loss)
 
         grad = tape.jacobian(loss, params)
@@ -913,7 +913,7 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
 
     @pytest.mark.tf
-    def test_split_with_tf_probs(self, grouping_strategy):
+    def test_split_with_tf_probs(self, grouping):
         """Test that results after splitting are still differentiable with tf"""
 
         import tensorflow as tf
@@ -928,7 +928,7 @@ class TestAutodiffSplitNonCommuting:
 
         params = tf.Variable([0.5, 0.5])
         with tf.GradientTape() as tape:
-            res = split_non_commuting(circuit, grouping_strategy=grouping_strategy)(params)
+            res = split_non_commuting(circuit, grouping=grouping)(params)
             res = tf.concat([res[0]] + [tf.stack(res[1:])], axis=0)
 
         grad = tape.jacobian(res, params)
@@ -1024,14 +1024,14 @@ class TestSingleHamiltonian:
         """Tests that the split_non_commuting transform returns the correct value
         if we switch grouping off"""
 
-        tapes, fn = split_non_commuting(tape, group=False)
+        tapes, fn = split_non_commuting(tape, grouping=False)
         results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
 
         qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = split_non_commuting(qs, group=False)
+        tapes, fn = split_non_commuting(qs, grouping=False)
         results = dev.execute(tapes)
         expval = fn(results)
 
@@ -1052,11 +1052,11 @@ class TestSingleHamiltonian:
             qml.expval(H)
 
         tape = QuantumScript.from_queue(q)
-        tapes, _ = split_non_commuting(tape, group=False)
+        tapes, _ = split_non_commuting(tape, grouping=False)
         assert len(tapes) == 2
 
         qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, _ = split_non_commuting(qs, group=False)
+        tapes, _ = split_non_commuting(qs, grouping=False)
         assert len(tapes) == 2
 
     def test_number_of_tapes(self):
@@ -1071,10 +1071,10 @@ class TestSingleHamiltonian:
             qml.expval(H)
 
         tape = QuantumScript.from_queue(q)
-        tapes, _ = split_non_commuting(tape, group=False)
+        tapes, _ = split_non_commuting(tape, grouping=False)
         assert len(tapes) == 3
 
-        tapes, _ = split_non_commuting(tape, group=True)
+        tapes, _ = split_non_commuting(tape, grouping=True)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
@@ -1083,15 +1083,15 @@ class TestSingleHamiltonian:
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
         qs = QuantumScript(measurements=[qml.expval(H)])
 
-        tapes, _ = split_non_commuting(qs, group=False)
+        tapes, _ = split_non_commuting(qs, grouping=False)
         assert len(tapes) == 3
 
-        tapes, _ = split_non_commuting(qs, group=True)
+        tapes, _ = split_non_commuting(qs, grouping=True)
         assert len(tapes) == 2
 
     @pytest.mark.parametrize("shots", [None, 100])
-    @pytest.mark.parametrize("group", [True, False])
-    def test_shots_attribute(self, shots, group):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_shots_attribute(self, shots, grouping):
         """Tests that the shots attribute is copied to the new tapes"""
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
 
@@ -1102,12 +1102,13 @@ class TestSingleHamiltonian:
             qml.expval(H)
 
         tape = QuantumScript.from_queue(q, shots=shots)
-        new_tapes, _ = split_non_commuting(tape, group=group)
+        new_tapes, _ = split_non_commuting(tape, grouping=grouping)
 
         assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
 
     @pytest.mark.autograd
-    def test_hamiltonian_dif_autograd(self, tol):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_hamiltonian_dif_autograd(self, tol, grouping):
         """Tests that the split_non_commuting tape transform is differentiable with the Autograd interface"""
 
         H = qml.Hamiltonian(
@@ -1143,7 +1144,7 @@ class TestSingleHamiltonian:
 
         def cost(x):
             new_tape = tape.bind_new_parameters(x, list(range(9)))
-            tapes, fn = split_non_commuting(new_tape)
+            tapes, fn = split_non_commuting(new_tape, grouping=grouping)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -1155,7 +1156,8 @@ class TestSingleHamiltonian:
             assert np.allclose(g, o, atol=tol)
 
     @pytest.mark.tf
-    def test_hamiltonian_dif_tensorflow(self):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_hamiltonian_dif_tensorflow(self, grouping):
         """Tests that the split_non_commuting tape transform is differentiable with the Tensorflow interface"""
 
         import tensorflow as tf
@@ -1188,7 +1190,7 @@ class TestSingleHamiltonian:
                 qml.expval(H)
 
             tape = QuantumScript.from_queue(q)
-            tapes, fn = split_non_commuting(tape)
+            tapes, fn = split_non_commuting(tape, grouping=grouping)
             res = fn(qml.execute(tapes, inner_dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
@@ -1205,7 +1207,7 @@ class TestSingleHamiltonian:
             (qml.Hamiltonian([1.0, 2.0, 3.0], [qml.X(0), qml.X(0) @ qml.X(1), qml.Z(0)]), -3),
         ],
     )
-    @pytest.mark.parametrize("grouping", [True, False])
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
     def test_processing_function_shot_vectors(self, H, expected, grouping):
         """Tests that the processing function works with shot vectors
         and grouping with different number of coefficients in each group"""
@@ -1214,7 +1216,7 @@ class TestSingleHamiltonian:
         if grouping:
             H.compute_grouping()
 
-        @functools.partial(qml.transforms.split_non_commuting, group=grouping)
+        @functools.partial(qml.transforms.split_non_commuting, grouping=grouping)
         @qml.qnode(dev_with_shot_vector)
         def circuit(inputs):
             qml.RX(inputs, wires=0)
@@ -1236,7 +1238,7 @@ class TestSingleHamiltonian:
             ),
         ],
     )
-    @pytest.mark.parametrize("grouping", [True, False])
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
     def test_processing_function_shot_vectors_broadcasting(self, H, expected, grouping):
         """Tests that the processing function works with shot vectors, parameter broadcasting,
         and grouping with different number of coefficients in each group"""
@@ -1245,7 +1247,7 @@ class TestSingleHamiltonian:
         if grouping:
             H.compute_grouping()
 
-        @functools.partial(qml.transforms.split_non_commuting, group=grouping)
+        @functools.partial(qml.transforms.split_non_commuting, grouping=grouping)
         @qml.qnode(dev_with_shot_vector)
         def circuit(inputs):
             qml.RX(inputs, wires=0)
@@ -1260,7 +1262,7 @@ class TestSingleHamiltonian:
 
         H = 2.0 * qml.I() + 3 * qml.X(0) + 4 * qml.X(0) @ qml.Y(1) + qml.Z(0)
         tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
-        batch, fn = qml.transforms.split_non_commuting(tape, group=True)
+        batch, fn = qml.transforms.split_non_commuting(tape, grouping=True)
 
         assert len(batch) == 2
 
@@ -1281,7 +1283,7 @@ class TestSingleHamiltonian:
 
         H = 2.0 * qml.I() + 3 * qml.X(0) + 4 * qml.X(0) @ qml.Y(1) + qml.Z(0)
         tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
-        batch, fn = qml.transforms.split_non_commuting(tape, group=False)
+        batch, fn = qml.transforms.split_non_commuting(tape, grouping=False)
 
         assert len(batch) == 3
 
@@ -1297,13 +1299,13 @@ class TestSingleHamiltonian:
         processed_res = fn(dummy_res)
         assert qml.math.allclose(processed_res, 10.0)
 
-    @pytest.mark.parametrize("group", [True, False])
-    def test_only_constant_offset(self, group):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_only_constant_offset(self, grouping):
         """Tests that split_non_commuting can handle a single Identity observable"""
 
         H = qml.Hamiltonian([1.5, 2.5], [qml.I(), qml.I()])
 
-        @functools.partial(qml.transforms.split_non_commuting, group=group)
+        @functools.partial(qml.transforms.split_non_commuting, grouping=grouping)
         @qml.qnode(dev)
         def circuit():
             return qml.expval(H)
@@ -1425,34 +1427,33 @@ class TestSums:
         assert qml.equal(batch[1][0], qml.expval(obs2))
 
     @pytest.mark.parametrize("qscript,output", zip(SUM_QSCRIPTS, SUM_OUTPUTS))
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_sums(self, qscript, output, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [False, True, "naive"])
+    def test_sums(self, qscript, output, grouping):
         """Tests that the split_non_commuting transform returns the correct value"""
 
         processed, _ = dev.preprocess()[0]([qscript])
         assert len(processed) == 1
         qscript = processed[0]
-        tapes, fn = split_non_commuting(
-            qscript, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-        )
+        tapes, fn = split_non_commuting(qscript, grouping=grouping)
         results = dev.execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
-    @pytest.mark.parametrize("grouping", [True, False])
+    @pytest.mark.parametrize("grouping", [False, "naive"])
     @pytest.mark.parametrize("qscript,output", zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums_legacy_device(self, qscript, output, grouping):
         """Tests that the split_non_commuting transform returns the correct value"""
 
         dev_old = qml.device("default.qubit.legacy", wires=4)
-        tapes, fn = split_non_commuting(qscript, group=grouping, grouping_strategy="naive")
+        tapes, fn = split_non_commuting(qscript, grouping=grouping)
         results = dev_old.batch_execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
-    def test_grouping(self):
+    @pytest.mark.parametrize("grouping", [True, "naive"])
+    def test_grouping(self, grouping):
         """Test the grouping functionality"""
 
         S = qml.Z(0) + 2 * qml.X(1) + 3 * qml.X(0)
@@ -1464,7 +1465,7 @@ class TestSums:
             qml.expval(S)
 
         tape = QuantumScript.from_queue(q)
-        tapes, _ = split_non_commuting(tape, group=True)
+        tapes, _ = split_non_commuting(tape, grouping=grouping)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
@@ -1473,15 +1474,15 @@ class TestSums:
         S = qml.Z(0) + 2 * qml.X(1) + 3 * qml.X(0)
         qs = QuantumScript(measurements=[qml.expval(S)])
 
-        tapes, _ = split_non_commuting(qs, group=False)
+        tapes, _ = split_non_commuting(qs, grouping=False)
         assert len(tapes) == 3
 
-        tapes, _ = split_non_commuting(qs, group=True)
+        tapes, _ = split_non_commuting(qs, grouping=True)
         assert len(tapes) == 2
 
     @pytest.mark.parametrize("shots", [None, 100])
-    @pytest.mark.parametrize("group", [True, False])
-    def test_shots_attribute(self, shots, group):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_shots_attribute(self, shots, grouping):
         """Tests that the shots attribute is copied to the new tapes"""
 
         H = qml.Z(0) + 2 * qml.X(1) + 3 * qml.X(0)
@@ -1493,11 +1494,12 @@ class TestSums:
             qml.expval(H)
 
         tape = QuantumScript.from_queue(q, shots=shots)
-        new_tapes, _ = split_non_commuting(tape, group=group)
+        new_tapes, _ = split_non_commuting(tape, grouping=grouping)
 
         assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
 
-    def test_non_sum_tape(self):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_non_sum_tape(self, grouping):
         """Test that the ``split_non_commuting`` function returns the input tape if it does not
         contain a single measurement with the expectation value of a Sum."""
 
@@ -1506,7 +1508,7 @@ class TestSums:
 
         tape = QuantumScript.from_queue(q)
 
-        tapes, fn = split_non_commuting(tape)
+        tapes, fn = split_non_commuting(tape, grouping=grouping)
 
         assert len(tapes) == 1
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
@@ -1515,8 +1517,8 @@ class TestSums:
         res = [1.23]
         assert fn(res) == 1.23
 
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_prod_tape(self, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_prod_tape(self, grouping):
         """Tests that ``split_non_commuting`` works with a single Prod measurement"""
 
         _dev = qml.device("default.qubit", wires=1)
@@ -1525,14 +1527,12 @@ class TestSums:
         def circuit():
             return qml.expval(qml.PauliZ(0) @ qml.I())
 
-        circuit = split_non_commuting(
-            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-        )
+        circuit = split_non_commuting(circuit, grouping=grouping)
 
         assert circuit() == 1.0
 
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_sprod_tape(self, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_sprod_tape(self, grouping):
         """Tests that ``split_non_commuting`` works with a single SProd measurement"""
 
         _dev = qml.device("default.qubit", wires=1)
@@ -1541,14 +1541,12 @@ class TestSums:
         def circuit():
             return qml.expval(1.5 * qml.Z(0))
 
-        circuit = split_non_commuting(
-            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-        )
+        circuit = split_non_commuting(circuit, grouping=grouping)
 
         assert circuit() == 1.5
 
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_no_obs_tape(self, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_no_obs_tape(self, grouping):
         """Tests tapes with only constant offsets (only measurements on Identity)"""
 
         _dev = qml.device("default.qubit", wires=1)
@@ -1557,9 +1555,7 @@ class TestSums:
         def circuit():
             return qml.expval(1.5 * qml.I(0))
 
-        circuit = split_non_commuting(
-            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-        )
+        circuit = split_non_commuting(circuit, grouping=grouping)
 
         with _dev.tracker:
             res = circuit()
@@ -1567,8 +1563,8 @@ class TestSums:
         assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, 1.5)
 
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_no_obs_tape_multi_measurement(self, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_no_obs_tape_multi_measurement(self, grouping):
         """Tests tapes with only constant offsets (only measurements on Identity)"""
 
         _dev = qml.device("default.qubit", wires=1)
@@ -1577,9 +1573,7 @@ class TestSums:
         def circuit():
             return qml.expval(1.5 * qml.I()), qml.expval(2.5 * qml.I())
 
-        circuit = split_non_commuting(
-            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-        )
+        circuit = split_non_commuting(circuit, grouping=grouping)
 
         with _dev.tracker:
             res = circuit()
@@ -1587,8 +1581,8 @@ class TestSums:
         assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, [1.5, 2.5])
 
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_split_non_commuting_broadcasting(self, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_split_non_commuting_broadcasting(self, grouping):
         """Tests that the split_non_commuting transform works with broadcasting"""
 
         _dev = qml.device("default.qubit", wires=3)
@@ -1604,9 +1598,7 @@ class TestSums:
                 qml.expval(qml.PauliZ(0) + 1.5 * qml.PauliX(1)),
             )
 
-        circuit = split_non_commuting(
-            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-        )
+        circuit = split_non_commuting(circuit, grouping=grouping)
 
         res = circuit([0, np.pi / 3, np.pi / 2, np.pi])
 
@@ -1623,8 +1615,8 @@ class TestSums:
     @pytest.mark.parametrize(
         "theta", [0, np.pi / 3, np.pi / 2, np.pi, [0, np.pi / 3, np.pi / 2, np.pi]]
     )
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_split_non_commuting_shot_vector(self, grouping_strategy, theta):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_split_non_commuting_shot_vector(self, grouping, theta):
         """Tests that the split_non_commuting transform works with shot vectors"""
 
         _dev = qml.device("default.qubit", wires=3, shots=[(20000, 5)])
@@ -1640,9 +1632,7 @@ class TestSums:
                 qml.expval(qml.PauliZ(0) + 1.5 * qml.PauliX(1)),
             )
 
-        circuit = split_non_commuting(
-            circuit, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-        )
+        circuit = split_non_commuting(circuit, grouping=grouping)
 
         if isinstance(theta, list):
             theta = np.array(theta)
@@ -1664,8 +1654,8 @@ class TestSums:
             assert qml.math.allclose(r, expected, atol=0.05)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_sum_dif_autograd(self, tol, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_sum_dif_autograd(self, tol, grouping):
         """Tests that the split_non_commuting tape transform is differentiable with the Autograd interface"""
 
         S = -0.2 * qml.PauliX(1) + 0.5 * (qml.PauliZ(1) @ qml.PauliY(2)) + 1 * qml.PauliZ(0)
@@ -1699,9 +1689,7 @@ class TestSums:
 
         def cost(x):
             new_qscript = qscript.bind_new_parameters(x, list(range(9)))
-            tapes, fn = split_non_commuting(
-                new_qscript, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-            )
+            tapes, fn = split_non_commuting(new_qscript, grouping=grouping)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -1713,8 +1701,8 @@ class TestSums:
             assert np.allclose(g, o, atol=tol)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_sum_dif_tensorflow(self, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_sum_dif_tensorflow(self, grouping):
         """Tests that the split_non_commuting tape transform is differentiable with the Tensorflow interface"""
 
         import tensorflow as tf
@@ -1743,9 +1731,7 @@ class TestSums:
                 qml.expval(S)
 
             qscript = QuantumScript.from_queue(q)
-            tapes, fn = split_non_commuting(
-                qscript, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-            )
+            tapes, fn = split_non_commuting(qscript, grouping=grouping)
             res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
@@ -1754,8 +1740,8 @@ class TestSums:
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("grouping_strategy", [False, "naive", "pauli"])
-    def test_sum_dif_jax(self, tol, grouping_strategy):
+    @pytest.mark.parametrize("grouping", [True, False, "naive"])
+    def test_sum_dif_jax(self, tol, grouping):
         """Tests that the split_non_commuting tape transform is differentiable with the Jax interface"""
 
         import jax
@@ -1792,9 +1778,7 @@ class TestSums:
 
         def cost(x):
             new_qscript = qscript.bind_new_parameters(x, list(range(9)))
-            tapes, fn = split_non_commuting(
-                new_qscript, group=bool(grouping_strategy), grouping_strategy=grouping_strategy
-            )
+            tapes, fn = split_non_commuting(new_qscript, grouping=grouping)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 

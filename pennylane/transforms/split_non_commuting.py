@@ -17,7 +17,7 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 """
 
 from functools import partial
-from typing import Callable, Dict, List, Sequence, Tuple
+from typing import Callable, Dict, List, Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
@@ -29,25 +29,23 @@ from pennylane.typing import Result, ResultBatch
 @transform
 def split_non_commuting(
     tape: qml.tape.QuantumScript,
-    group: bool = True,
-    grouping_strategy: str = None,
+    grouping: Union[bool, str] = True,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Splits a tape into tapes measuring groups of commuting observables.
+    r"""Splits a circuit into tapes measuring groups of commuting observables.
 
     Args:
-        tape (~pennylane.tape.QuantumScript): The tape to be split.
-        group (bool): Whether to compute disjoint groups of commuting observables,
-            leading to fewer tapes. If ``group=False``, one tape will be generated for
-            each observable to be measured.
-        grouping_strategy (str): The grouping strategy to be used. If "naive",
-            grouping will be performed based on overlapping wires; if "pauli",
-            grouping is computed using :func:`~pennylane.pauli.group_observables`.
-            If ``group=False``, this argument is ignored.
+        tape (QNode or QuantumScript or Callable): The quantum circuit to be split.
+        grouping (bool or str): Whether to compute disjoint groups of commuting observables,
+            or the grouping strategy to use. If ``group=False`` one tape will be generated
+            for each observable to be measured. By default, grouping is computed using
+            :func:`~pennylane.pauli.group_observables`, which produces the fewest number of
+            circuit executions. Alternatively, if ``group="naive"``, grouping will be
+            computed such that no tape contains measurements on overlapping wires, disregarding
+            the commutativity of the observables.
 
     Returns:
-        Tuple[Sequence[pennylane.tape.QuantumScript], Callable]: Returns a tuple containing
-            a list of quantum scripts to be evaluated, and a function to be applied to the
-            results of these tape executions to compute the result of the original tape.
+        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as
+            described in :func:`qml.transform <pennylane.transform>`.
 
     **Examples:**
 
@@ -93,7 +91,7 @@ def split_non_commuting(
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)──RX(0.79)─┤  <X>
     1: ─────────────────────┤  <Y>
-    \
+    <BLANKLINE>
     0: ──RY(0.79)──RX(0.79)─┤  <Z> ╭<Z@Z>
     1: ─────────────────────┤      ╰<Z@Z>
 
@@ -107,13 +105,13 @@ def split_non_commuting(
     [0.7071067811865475, 0.49999999999999994, 0.0, 0.49999999999999994]
 
     By default, commuting observables are grouped using :func:`~pennylane.pauli.group_observables`,
-    which results in the fewest number of tapes. Alternatively, naive grouping can be used by
-    setting ``grouping_strategy="naive"``. This will group observables such that no tape contains
-    two measurements on the same wire, disregarding commutativity:
+    which results in the fewest number of tapes, but can be slow to compute. Alternatively, naive
+    grouping can be used by setting ``grouping="naive"``. This will group observables such that no
+    tape contains two measurements on the same wire, disregarding commutativity:
 
     .. code-block:: python3
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy="naive")
+        @functools.partial(qml.transforms.split_non_commuting, grouping="naive")
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -130,17 +128,17 @@ def split_non_commuting(
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)──RX(0.79)─┤  <X>
     1: ─────────────────────┤  <Y>
-    \
+    <BLANKLINE>
     0: ──RY(0.79)──RX(0.79)─┤  <Z>
-    \
+    <BLANKLINE>
     0: ──RY(0.79)──RX(0.79)─┤ ╭<Z@Z>
     1: ─────────────────────┤ ╰<Z@Z>
 
-    Finally, if you do not wish to perform any grouping, set ``group=False``:
+    Finally, if you do not wish to perform any grouping, set ``grouping=False``:
 
     .. code-block:: python3
 
-        @functools.partial(qml.transforms.split_non_commuting, group=False)
+        @functools.partial(qml.transforms.split_non_commuting, grouping=False)
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -154,13 +152,14 @@ def split_non_commuting(
 
     In this case, each observable is measured in a separate circuit execution.
 
+    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)──RX(0.79)─┤  <X>
-    \
+    <BLANKLINE>
     0: ──RY(0.79)──RX(0.79)─┤  <Z>
-    \
+    <BLANKLINE>
     0: ──RY(0.79)──RX(0.79)─┤
     1: ─────────────────────┤  <Y>
-    \
+    <BLANKLINE>
     0: ──RY(0.79)──RX(0.79)─┤ ╭<Z@Z>
     1: ─────────────────────┤ ╰<Z@Z>
 
@@ -188,7 +187,7 @@ def split_non_commuting(
     0: ──RY(0.79)──RX(0.79)─┤  <Z>
     1: ─────────────────────┤ ╭<Y@Z>  <Z>
     2: ─────────────────────┤ ╰<Y@Z>
-    \
+    <BLANKLINE>
     0: ──RY(0.79)──RX(0.79)─┤
     1: ─────────────────────┤  <X>
     2: ─────────────────────┤  <Z>
@@ -258,13 +257,13 @@ def split_non_commuting(
         len(tape.measurements) == 1
         and isinstance(tape.measurements[0], ExpectationMP)
         and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
-        and (group or tape.measurements[0].obs.grouping_indices is not None)
+        and (grouping is True or tape.measurements[0].obs.grouping_indices is not None)
     ):
         return _split_ham_with_grouping(tape)
 
     single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
 
-    if not group:
+    if not grouping:
         measurements = list(single_term_obs_mps.keys())
         tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
         return tapes, partial(
@@ -274,12 +273,9 @@ def split_non_commuting(
             shots=tape.shots,
         )
 
-    if grouping_strategy == "naive" or (
-        grouping_strategy is None
-        and any(
-            isinstance(m, ExpectationMP) and isinstance(m.obs, (LinearCombination, Hamiltonian))
-            for m in tape.measurements
-        )
+    if grouping == "naive" or any(
+        isinstance(m, ExpectationMP) and isinstance(m.obs, (LinearCombination, Hamiltonian))
+        for m in tape.measurements
     ):
         # This is a loose check to see whether naive grouping or pauli grouping should be used,
         # which does not necessarily make perfect sense but consistent with the old decision
