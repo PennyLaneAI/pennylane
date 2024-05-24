@@ -460,15 +460,15 @@ class TestSample:
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
 
-        def f():
-            return qml.sample(wires=wires)
+        def f(*inner_wires):
+            return qml.sample(wires=inner_wires)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(f)(*wires)
 
         assert len(jaxpr.eqns) == 1
 
         assert jaxpr.eqns[0].primitive == SampleMP._wires_primitive
-        assert [x.val for x in jaxpr.eqns[0].invars] == wires
+        assert [x.aval for x in jaxpr.eqns[0].invars] == jaxpr.in_avals
         mp = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
         assert mp.n_wires == len(wires)
@@ -584,10 +584,10 @@ def test_qinfo_measurements(mtype, kwargs, x64_mode):
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 
-    def f():
-        return mtype(wires=qml.wires.Wires([0, 1]), **kwargs)
+    def f(w1, w2):
+        return mtype(wires=qml.wires.Wires([w1, w2]), **kwargs)
 
-    jaxpr = jax.make_jaxpr(f)()
+    jaxpr = jax.make_jaxpr(f)(1, 2)
     assert len(jaxpr.eqns) == 1
 
     assert jaxpr.eqns[0].primitive == mtype._wires_primitive
@@ -615,10 +615,10 @@ def test_MutualInfo(x64_mode):
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 
-    def f():
-        return qml.mutual_info(wires0=[0, 1], wires1=[2, 3], log_base=2)
+    def f(w1, w2):
+        return qml.mutual_info(wires0=[w1, 1], wires1=[w2, 3], log_base=2)
 
-    jaxpr = jax.make_jaxpr(f)()
+    jaxpr = jax.make_jaxpr(f)(0, 2)
     assert len(jaxpr.eqns) == 1
 
     assert jaxpr.eqns[0].primitive == MutualInfoMP._wires_primitive
