@@ -186,13 +186,13 @@ def apply_snapshot(
             snapshot = qml.devices.qutrit_mixed.measure(measurement, state, is_state_batched)
         else:
             snapshot = qml.devices.qutrit_mixed.measure_with_samples(
-                [measurement],
+                measurement,
                 state,
                 shots,
                 is_state_batched,
                 execution_kwargs.get("rng", None),
                 execution_kwargs.get("prng_key", None),
-            )[0]
+            )
 
         if op.tag:
             debugger.snapshots[op.tag] = snapshot

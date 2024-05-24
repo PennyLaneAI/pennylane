@@ -249,6 +249,7 @@ class TestSnapshotSupportedQNode:
         def circuit():
             qml.Snapshot(shots=None)
             qml.THadamard(wires=0)
+            qml.Snapshot(measurement=qml.counts())
             qml.TSWAP(wires=[0, 1])
             qml.Snapshot(measurement=qml.probs(), shots=None)
             return qml.counts()
@@ -261,7 +262,8 @@ class TestSnapshotSupportedQNode:
         expected_first_state[0, 0] = 1.0
         expected = {
             0: expected_first_state,
-            1: np.array([0.33333333, 0.33333333, 0.33333333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            1: {"00": 31, "10": 34, "20": 35},
+            2: np.array([0.33333333, 0.33333333, 0.33333333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
             "execution_results": {"00": 24, "01": 39, "02": 37},
         }
 
@@ -269,6 +271,8 @@ class TestSnapshotSupportedQNode:
 
         del result["execution_results"]
         del expected["execution_results"]
+        del result[1]
+        del expected[1]
 
         _compare_numpy_dicts(result, expected)
 

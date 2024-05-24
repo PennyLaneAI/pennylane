@@ -123,7 +123,7 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
 
     >>> qml.snapshots(circuit)()
     {0: 1.0,
-    'counts_check': {"00": 55, "10"},
+    'counts_check': {"00": 55, "10": 45},
     2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
     'execution_results': 0.0}
 
