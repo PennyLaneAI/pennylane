@@ -1370,14 +1370,16 @@ def test_error_raised_for_missing_molecule_information():
 )
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_mapped_hamiltonian_pyscf_openfermion(
-    symbols, geometry, charge, mapping, method, h_ref_data
+    symbols, geometry, charge, mapping, method, h_ref_data, tmpdir
 ):
     r"""Test that molecular_hamiltonian returns the correct qubit Hamiltonian with the pyscf and openfermion
     backend."""
 
     geometry.requires_grad = False
     molecule = qchem.Molecule(symbols, geometry, charge=charge)
-    h = qchem.molecular_hamiltonian(molecule, method=method, mapping=mapping)[0]
+    h = qchem.molecular_hamiltonian(
+        molecule, method=method, mapping=mapping, outpath=tmpdir.strpath
+    )[0]
 
     ops = [
         qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
