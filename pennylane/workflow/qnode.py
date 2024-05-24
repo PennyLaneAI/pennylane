@@ -222,12 +222,12 @@ class QNode:
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. If ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned. If
             ``"fill-shots"``, results corresponding to the original number of shots will be returned. For usage details,
-            please refer to the :doc:`main measurements page </introduction/measurements>.
+            please refer to the :doc:`main measurements page </introduction/measurements>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to execute using the deferred measurements principle (applied using the
             :func:`~pennylane.defer_measurements` transform), or ``"one-shot"`` if using finite shots to execute the
             circuit for each shot separately. For usage details, please refer to the
-            :doc:`main measurements page </introduction/measurements>.
+            :doc:`main measurements page </introduction/measurements>`.
 
     Keyword Args:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
