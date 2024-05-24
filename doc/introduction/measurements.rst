@@ -532,8 +532,8 @@ PennyLane. For ease of use, we provide the following configuration options to us
 :class:`~pennylane.QNode`:
 
 * ``mcm_method``: To set the method used for applying mid-circuit measurements. Use ``mcm_method="deferred"``
-    to use the deferred measurements principle or ``mcm_method="one-shot"`` to use the one-shot transform as
-    described above.
+  to use the deferred measurements principle or ``mcm_method="one-shot"`` to use the one-shot transform as
+  described above.
 
   .. note::
 
@@ -542,9 +542,9 @@ PennyLane. For ease of use, we provide the following configuration options to us
       as it can lead to incorrect behaviour.
 
 * ``postselect_mode``: To configure how invalid shots are handled when postselecting mid-circuit measurements
-    with finite-shot circuits. Use ``postselect_mode="hw-like"`` to discard invalid shots. In this case, the number
-    of samples that are used for processing results will be less than or equal to the total number of shots. Use
-    ``postselect_mode="fill-shots"`` to keep invalid shots.
+  with finite-shot circuits. Use ``postselect_mode="hw-like"`` to discard invalid shots. In this case, the number
+  of samples that are used for processing results will be less than or equal to the total number of shots. Use
+  ``postselect_mode="fill-shots"`` to keep invalid shots.
 
   .. note::
 
@@ -556,10 +556,10 @@ PennyLane. For ease of use, we provide the following configuration options to us
       * If using ``mcm_method="deferred"``, all shots will be projected to the postselected value, so all
           shots will be considered valid.
 
-.. note::
+  .. note::
 
-    When using the ``jax`` interface or while using :func:`~pennylane.qjit`, the results will reflect
-    ``postselect_mode="fill-shots"`` regardless of the specified value.
+      When using the ``jax`` interface or while using :func:`~pennylane.qjit`, the results will reflect
+      ``postselect_mode="fill-shots"`` regardless of the specified value.
 
 .. code-block:: python3
 
