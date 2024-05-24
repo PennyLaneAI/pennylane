@@ -48,8 +48,8 @@ def split_non_commuting(
 
     **Examples:**
 
-    This transform allows us to transform a QNode that measures non-commuting observables to
-    *multiple* circuit executions with qubit-wise commuting groups:
+    This transform allows us to transform a QNode that measures non-commuting observables
+    to *multiple* circuit executions with qubit-wise commuting groups:
 
     .. code-block:: python3
 
@@ -59,28 +59,28 @@ def split_non_commuting(
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
+            qml.RX(x[1], wires=1)
             return [
                 qml.expval(qml.X(0)),
-                qml.expval(qml.Z(0)),
                 qml.expval(qml.Y(1)),
                 qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
             ]
 
-    Instead of decorating the QNode, we can also create a new function that yields the same result
-    in the following way:
+    Instead of decorating the QNode, we can also create a new function that yields the
+    same result in the following way:
 
     .. code-block:: python3
 
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
+            qml.RX(x[1], wires=1)
             return [
                 qml.expval(qml.X(0)),
-                qml.expval(qml.Z(0)),
                 qml.expval(qml.Y(1)),
                 qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
             ]
 
         circuit = qml.transforms.split_non_commuting(circuit)
@@ -88,20 +88,25 @@ def split_non_commuting(
     Internally, the QNode is split into groups of commuting observables when executed:
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──RX(0.79)─┤  <X>
-    1: ─────────────────────┤  <Y>
+    0: ──RY(0.79)─┤ ╭<Z@Z>  <Z>
+    1: ──RX(0.79)─┤ ╰<Z@Z>
     <BLANKLINE>
-    0: ──RY(0.79)──RX(0.79)─┤  <Z> ╭<Z@Z>
-    1: ─────────────────────┤      ╰<Z@Z>
+    0: ──RY(0.79)─┤  <X>
+    1: ──RX(0.79)─┤  <Y>
+    <BLANKLINE>
+    0: ──RY(0.79)─┤ ╭<X@Z>
+    1: ──RX(0.79)─┤ ╰<X@Z>
+
+    Additionally, the observable Y(1) occurs twice in the original circuit, but only once in the
+    transformed circuits. When there are measurements of the same observable in the circuit,
+    the measurement is performed once and the outcome is copied when obtaining the final result.
 
     Note that while internally multiple tapes are created, the end result has the same ordering as
     the user provides in the return statement. Executing the above QNode returns the original
-    ordering of the expectation values. The outputs correspond to
-    :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle,
-    \langle \sigma_z^0\sigma_z^1 \rangle)`.
+    ordering of the expectation values.
 
     >>> circuit([np.pi/4, np.pi/4])
-    [0.7071067811865475, 0.49999999999999994, 0.0, 0.49999999999999994]
+    [0.7071067811865475, -0.7071067811865475, 0.5, 0.5]
 
     By default, commuting observables are grouped using :func:`~pennylane.pauli.group_observables`,
     which results in the fewest number of tapes, but can be slow to compute. Alternatively, naive
@@ -114,24 +119,28 @@ def split_non_commuting(
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
+            qml.RX(x[1], wires=1)
             return [
                 qml.expval(qml.X(0)),
-                qml.expval(qml.Z(0)),
                 qml.expval(qml.Y(1)),
                 qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
             ]
 
-    In this case, three tapes are created as follows:
+    In this case, four tapes are created as follows:
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──RX(0.79)─┤  <X>
-    1: ─────────────────────┤  <Y>
+    0: ──RY(0.79)─┤  <X>
+    1: ──RX(0.79)─┤  <Y>
     <BLANKLINE>
-    0: ──RY(0.79)──RX(0.79)─┤  <Z>
+    0: ──RY(0.79)─┤ ╭<Z@Z>
+    1: ──RX(0.79)─┤ ╰<Z@Z>
     <BLANKLINE>
-    0: ──RY(0.79)──RX(0.79)─┤ ╭<Z@Z>
-    1: ─────────────────────┤ ╰<Z@Z>
+    0: ──RY(0.79)─┤ ╭<X@Z>
+    1: ──RX(0.79)─┤ ╰<X@Z>
+    <BLANKLINE>
+    0: ──RY(0.79)─┤  <Z>
+    1: ──RX(0.79)─┤
 
     Finally, if you do not wish to perform any grouping, set ``grouping=False``:
 
@@ -141,58 +150,31 @@ def split_non_commuting(
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
+            qml.RX(x[1], wires=1)
             return [
                 qml.expval(qml.X(0)),
-                qml.expval(qml.Z(0)),
                 qml.expval(qml.Y(1)),
                 qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
             ]
 
     In this case, each observable is measured in a separate circuit execution.
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──RX(0.79)─┤  <X>
+    0: ──RY(0.79)─┤  <X>
+    1: ──RX(0.79)─┤
     <BLANKLINE>
-    0: ──RY(0.79)──RX(0.79)─┤  <Z>
+    0: ──RY(0.79)─┤
+    1: ──RX(0.79)─┤  <Y>
     <BLANKLINE>
-    0: ──RY(0.79)──RX(0.79)─┤
-    1: ─────────────────────┤  <Y>
+    0: ──RY(0.79)─┤ ╭<Z@Z>
+    1: ──RX(0.79)─┤ ╰<Z@Z>
     <BLANKLINE>
-    0: ──RY(0.79)──RX(0.79)─┤ ╭<Z@Z>
-    1: ─────────────────────┤ ╰<Z@Z>
-
-    This transform also supports measurements of multi-term observables. For example:
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.transforms.split_non_commuting
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return [
-                qml.expval(qml.Y(2) @ qml.Z(1) + 0.5 * qml.Z(2) + qml.Z(1)),
-                qml.expval(qml.Z(0)),
-                qml.expval(qml.X(1)),
-                qml.expval(qml.Z(2))
-            ]
-
-    The terms will be measured separately, and recombined in the final result.
-
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──RX(0.79)─┤  <Z>
-    1: ─────────────────────┤ ╭<Y@Z>  <Z>
-    2: ─────────────────────┤ ╰<Y@Z>
+    0: ──RY(0.79)─┤ ╭<X@Z>
+    1: ──RX(0.79)─┤ ╰<X@Z>
     <BLANKLINE>
-    0: ──RY(0.79)──RX(0.79)─┤
-    1: ─────────────────────┤  <X>
-    2: ─────────────────────┤  <Z>
-
-    >>> circuit([np.pi/4, np.pi/4])
-    [1.5, 0.49999999999999994, 0. 0.49999999999999994]
+    0: ──RY(0.79)─┤  <Z>
+    1: ──RX(0.79)─┤
 
     .. details::
         :title: Usage Details
