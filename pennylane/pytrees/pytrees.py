@@ -14,7 +14,7 @@
 """
 An internal module for working with pytrees.
 """
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Optional
 

@@ -99,8 +99,7 @@ def pytree_structure_load(data: str | bytes | bytearray) -> PyTreeStructure:
     while todo:
         curr = todo.pop()
 
-        for i in range(len(curr)):
-            child = curr[i]
+        for i, child in enumerate(curr):
             if child is None:
                 curr[i] = leaf
                 continue

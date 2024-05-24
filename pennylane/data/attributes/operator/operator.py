@@ -51,6 +51,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
     @classmethod
     @lru_cache(1)
     def supported_ops(cls) -> FrozenSet[Type[Operator]]:
+        """Set of supported operators."""
         return frozenset(
             (
                 # pennylane/operation/Tensor
