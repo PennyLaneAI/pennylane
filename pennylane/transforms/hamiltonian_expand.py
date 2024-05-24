@@ -111,10 +111,7 @@ def naive_processing_fn(res, coeffs, offset):
     """
     dot_products = []
     for c, r in zip(coeffs, res):
-        if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
-            dot_products.append(qml.math.squeeze(r) * c)
-        else:
-            dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
+        dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
         return offset
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
@@ -344,8 +341,7 @@ def _sum_expand_processing_fn_grouping(
             coeffs.append(coeff)
         res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
     if shots.has_partitioned_shots:
-        res_for_each_mp = qml.math.stack(res_for_each_mp, axis=0)
-        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, -1)
+        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, 1)
     return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
 
 
@@ -368,9 +364,7 @@ def _sum_expand_processing_fn(
             coeffs.append(coeff)
         res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
     if shots.has_partitioned_shots:
-        res_for_each_mp = qml.math.stack(res_for_each_mp, axis=0)
-        # Move dimensions around to make things work.
-        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, -1)
+        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, 1)
     return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
 
 
