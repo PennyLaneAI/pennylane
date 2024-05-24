@@ -317,8 +317,9 @@ def matmul(tensor1, tensor2, like=None):
 def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.
 
-    * If both tensors are 0-dimensional, elementwise multiplication
-      is performed and a 0-dimensional scalar returned.
+    * If either tensor is 0-dimensional, elementwise multiplication
+      is performed and a 0-dimensional scalar or a tensor with the
+      same dimensions as the other tensor is returned.
 
     * If both tensors are 1-dimensional, the dot product is returned.
 
@@ -327,7 +328,7 @@ def dot(tensor1, tensor2, like=None):
 
     * If both tensors are 2-dimensional, the matrix product is returned.
 
-    * Finally, if the the first array is N-dimensional and the second array
+    * Finally, if the first array is N-dimensional and the second array
       M-dimensional, a sum product over the last dimension of the first array,
       and the second-to-last dimension of the second array is returned.
 
@@ -342,7 +343,7 @@ def dot(tensor1, tensor2, like=None):
 
     if like == "torch":
 
-        if x.ndim == 0 and y.ndim == 0:
+        if x.ndim == 0 or y.ndim == 0:
             return x * y
 
         if x.ndim <= 2 and y.ndim <= 2:
@@ -351,15 +352,17 @@ def dot(tensor1, tensor2, like=None):
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
     if like in {"tensorflow", "autograd"}:
-        shape_y = len(np.shape(y))
-        shape_x = len(np.shape(x))
-        if shape_x == 0 and shape_y == 0:
+
+        ndim_y = len(np.shape(y))
+        ndim_x = len(np.shape(x))
+
+        if ndim_x == 0 or ndim_y == 0:
             return x * y
 
-        if shape_y == 1:
+        if ndim_y == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=like)
 
-        if shape_x == 2 and shape_y == 2:
+        if ndim_x == 2 and ndim_y == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)

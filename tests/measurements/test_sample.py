@@ -500,6 +500,24 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
 
 
 @pytest.mark.jax
+def test_sample_with_boolean_tracer():
+    """Test that qml.sample can be used with Catalyst measurement values (Boolean tracer)."""
+    import jax
+
+    def fun(b):
+        mp = qml.sample(b)
+
+        assert mp.obs is None
+        assert isinstance(mp.mv, jax.interpreters.partial_eval.DynamicJaxprTracer)
+        assert mp.mv.dtype == bool
+        assert mp.mv.shape == ()
+        assert isinstance(mp.wires, qml.wires.Wires)
+        assert mp.wires == ()
+
+    jax.make_jaxpr(fun)(True)
+
+
+@pytest.mark.jax
 @pytest.mark.parametrize(
     "obs",
     [

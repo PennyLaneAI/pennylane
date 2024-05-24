@@ -26,7 +26,7 @@ from .non_parametric_ops import *
 from .observables import *
 from .parametric_ops import *
 from .state_preparation import *
-from .channel import QutritDepolarizingChannel
+from .channel import *
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
 __ops__ = {
@@ -50,6 +50,7 @@ __obs__ = {
 }
 __channels__ = {
     "QutritDepolarizingChannel",
+    "QutritAmplitudeDamping",
 }
 
 __all__ = list(__ops__ | __obs__ | __channels__)
