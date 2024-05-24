@@ -18,6 +18,7 @@ from typing import TypeVar
 
 import numpy as np
 
+from pennylane.data.attributes import DatasetArray, DatasetList
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.data.base.mapper import AttributeTypeMapper
@@ -35,22 +36,20 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
     type_id = "pytree"
 
     def hdf5_to_value(self, bind: HDF5Group) -> T:
-        mapper = AttributeTypeMapper(bind)
-
         return unflatten(
-            [mapper[str(i)].get_value() for i in range(bind["num_leaves"][()])],
+            AttributeTypeMapper(bind)["leaves"].get_value(),
             serialization.pytree_structure_load(bind["treedef"][()].tobytes()),
         )
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: T) -> HDF5Group:
         bind = bind_parent.create_group(key)
-        mapper = AttributeTypeMapper(bind)
-
         leaves, treedef = flatten(value)
 
         bind["treedef"] = np.void(serialization.pytree_structure_dump(treedef, decode=False))
-        bind["num_leaves"] = len(leaves)
-        for i, leaf in enumerate(leaves):
-            mapper[str(i)] = leaf
+
+        try:
+            DatasetArray(leaves, parent_and_key=(bind, "leaves"))
+        except (ValueError, TypeError):
+            DatasetList(leaves, parent_and_key=(bind, "leaves"))
 
         return bind
