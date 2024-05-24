@@ -352,7 +352,12 @@ def set_log_level():
             raise
 
         finally:
-            mod + ["pennylane", "pennylane.qnode", "catalyst"]
+            filter_loggers = ["pennylane", "catalyst"]
+            mod += [
+                lgr
+                for (lgr, _) in logging.root.manager.loggerDict.items()
+                if any(filt_lgr in lgr for filt_lgr in filter_loggers)
+            ]
             for m in mod:
                 caplog.set_level(logging.NOTSET, logger=m)
 
