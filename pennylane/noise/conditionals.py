@@ -169,24 +169,21 @@ class OpIn(BooleanFn):
         )
 
     def _check_in_ops(self, x):
-        x = [x] if not isinstance(x, (list, tuple, set)) else x
+        xs = x if isinstance(x, (list, tuple, set)) else [x]
+        cs = _get_ops(xs)
 
         try:
             return all(
                 (
-                    _x in self._cops
-                    if isclass(_x)
-                    else (
-                        isinstance(_x, self._cops)
-                        if not getattr(_x, "arithmetic_depth", 0)
-                        else any(
-                            _check_with_lc_op(op, _x)
-                            for op in self._cond
-                            if not isclass(op) and getattr(op, "arithmetic_depth", 0)
-                        )
+                    c in self._cops
+                    if isclass(x) or not getattr(x, "arithmetic_depth", 0)
+                    else any(
+                        _check_with_lc_op(op, x)
+                        for op in self._cond
+                        if getattr(op, "arithmetic_depth", 0)
                     )
                 )
-                for _x in x
+                for x, c in zip(xs, cs)
             )
         except:  # pylint: disable = bare-except # pragma: no cover
             raise ValueError(
@@ -219,14 +216,14 @@ class OpEq(BooleanFn):
             return _get_ops(x) == self._cops
 
         try:
-            return _get_ops(x) == self._cops and (
-                _check_with_lc_op(self._cond[0], x)
-                if len(self._cops) == 1
-                else len(x) == len(self._cond)
+            xs = x if isinstance(x, (list, tuple, set)) else [x]
+            return (
+                len(xs) == len(self._cond)
+                and _get_ops(xs) == self._cops
                 and all(
-                    _check_with_lc_op(_op, _x)
-                    for (_x, _op) in zip(x, self._cond)
-                    if not isclass(_x) and getattr(_x, "arithmetic_depth", 0)
+                    _check_with_lc_op(op, x)
+                    for (op, x) in zip(self._cond, xs)
+                    if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
             )
         except:  # pylint: disable = bare-except # pragma: no cover
@@ -270,17 +267,18 @@ def _check_with_lc_op(op1, op2):
     def _lc_op(x):
         coeffs2, op_terms2 = lc_cop(x).terms()
         sprods2 = [_get_ops(getattr(op_term, "operands", op_term)) for op_term in op_terms2]
-        present = True
         for coeff, sprod in zip(coeffs2, sprods2):
-            present = sprod in sprods
+            present, p_index = False, -1
+            while sprod in sprods[p_index + 1 :]:
+                p_index = sprods[p_index + 1 :].index(sprod) + (p_index + 1)
+                if qml.math.allclose(coeff, coeffs[p_index]):
+                    coeffs.pop(p_index)
+                    sprods.pop(p_index)
+                    present = True
+                    break
+
             if not present:
                 break
-            p_index = sprods.index(sprod)
-            if not qml.math.equal(coeff, coeffs[p_index]):
-                present = False
-                break
-            coeffs.pop(p_index)
-            sprods.pop(p_index)
 
         return present
 
@@ -292,12 +290,13 @@ def op_in(ops):
     if a given operation exist in a specified set of operation.
 
     Args:
-        ops (str, Operation, Union(list[str, Operation])): string
-            representation or instance of the operation.
+        ops (str, Operation, Union(list[str, Operation])): sequence of string
+            representations, instances or classes of the operation(s).
 
     Returns:
         :class:`OpIn <pennylane.noise.OpIn>`: a boolean function that evaluates to ``True``, if a
-        given operation exist in a specified set of operation(s), irrespective of their wires.
+        given operation exist in a specified set of operation(s) based on a comparison of the type,
+        irrespective of their wires.
 
     **Example**
 
@@ -332,11 +331,12 @@ def op_eq(ops):
 
     Args:
         ops (str, Operation, Union(list[str, Operation])): string
-            representation or instance of the operation.
+            representation, an instance or the class of the operation.
 
     Returns:
         :class:`OpEq <pennylane.noise.OpEq>`: a boolean function that evaluates to ``True``, if a
-        given operation is equal to the specified set of operation(s), irrespective of their wires.
+        given operation is equal to the specified set of operation(s) based on a comparison of the type,
+        irrespective of their wires.
 
     **Example**
 
