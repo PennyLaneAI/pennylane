@@ -28,6 +28,8 @@ from pennylane.operation import StatePrepBase, Tensor
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import WireError
 
+from .execution_config import MCMConfig
+
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
 
 
@@ -145,7 +147,7 @@ def validate_device_wires(
 
 @transform
 def mid_circuit_measurements(
-    tape: qml.tape.QuantumTape, device, mcm_config=None
+    tape: qml.tape.QuantumTape, device, mcm_config=MCMConfig
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Provide the transform to handle mid-circuit measurements.
 
@@ -153,9 +155,10 @@ def mid_circuit_measurements(
     and use the ``qml.defer_measurements`` transform otherwise.
     """
 
-    mcm_config = mcm_config or {}
-    postselect_mode = mcm_config.get("postselect_mode", None)
-    mcm_method = mcm_config.get("mcm_method", None)
+    if isinstance(mcm_config, dict):
+        mcm_config = MCMConfig(**mcm_config)
+    postselect_mode = mcm_config.postselect_mode
+    mcm_method = mcm_config.mcm_method
 
     if mcm_method is not None:
         if mcm_method == "one-shot":

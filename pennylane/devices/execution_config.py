@@ -20,6 +20,22 @@ from typing import Optional
 from pennylane.workflow import SUPPORTED_INTERFACES
 
 
+@dataclass
+class MCMConfig:
+    """A class to store mid-circuit measurement configurations."""
+
+    mcm_method: Optional[str] = None
+    """Which mid-circuit measurement strategy to use. Use ``deferred`` for the deferred
+    measurements principle and "one-shot" if using finite shots to execute the circuit
+    for each shot separately."""
+
+    postselect_mode: Optional[str] = None
+    """Configuration for handling shots with mid-circuit measurement postselection. If
+    ``"hw-like"``, invalid shots will be discarded and only results for valid shots will
+    be returned. If ``"fill-shots"``, results corresponding to the original number of
+    shots will be returned."""
+
+
 # pylint: disable=too-many-instance-attributes
 @dataclass
 class ExecutionConfig:
@@ -67,7 +83,7 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
-    mcm_config: Optional[dict] = None
+    mcm_config: Optional[MCMConfig] = MCMConfig()
     """Configuration options for handling mid-circuit measurements"""
 
     def __post_init__(self):
@@ -92,11 +108,10 @@ class ExecutionConfig:
         if self.gradient_keyword_arguments is None:
             self.gradient_keyword_arguments = {}
 
-        if self.mcm_config is None:
-            self.mcm_config = {}
-        for option in ("postselect_mode", "mcm_method"):
-            if option not in self.mcm_config:
-                self.mcm_config[option] = None
+        if isinstance(self.mcm_config, dict):
+            self.mcm_config = MCMConfig(**self.mcm_config)
+        elif not isinstance(self.mcm_config, MCMConfig):
+            raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 
 
 DefaultExecutionConfig = ExecutionConfig()

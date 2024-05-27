@@ -1051,9 +1051,6 @@ class QNode:
                 device=self.device,
                 mcm_config=self.execute_kwargs["mcm_config"],
             )
-            shots = self.device.shots if override_shots is False else override_shots
-            if shots and mcm_method in ("one-shot", None):
-                override_shots = 1
         elif hasattr(self.device, "capabilities"):
             full_transform_program.add_transform(
                 qml.defer_measurements,
