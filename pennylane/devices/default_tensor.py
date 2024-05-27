@@ -153,6 +153,7 @@ class DefaultTensor(Device):
     Currently, only the Matrix Product State (MPS) method is supported, based on the ``quimb``'s ``CircuitMPS`` class.
 
     This device does not currently support finite shots, derivatives, or vector-Jacobian products.
+    The currently supported measurement types are expectation values and variances.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
