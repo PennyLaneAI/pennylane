@@ -158,31 +158,28 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def expected_circuit(op):
             qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.ctrl(op, [0,1])
+            qml.ctrl(op, [0])
             return qml.probs()
 
         @qml.qnode(dev)
         def decomp_circuit(op):
             qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.ops.ctrl_decomp_zyz(op, [0,1])
+            qml.ops.ctrl_decomp_zyz(op, [0])
             return qml.probs()
 
     Measurements on both circuits will give us the same results:
 
-    >>> op = qml.RX(0.123, wires=2)
+    >>> op = qml.RX(0.123, wires=1)
     >>> expected_circuit(op)
-    tensor([0.25      , 0.        , 0.25      , 0.        , 0.25      ,
-        0.        , 0.24905563, 0.00094437], requires_grad=True)
+    tensor([0.5       , 0.        , 0.49811126, 0.00188874], requires_grad=True)
+
     >>> decomp_circuit(op)
-    tensor([0.25      , 0.        , 0.25      , 0.        , 0.25      ,
-        0.        , 0.24905563, 0.00094437], requires_grad=True)
+    tensor([0.5       , 0.        , 0.49811126, 0.00188874], requires_grad=True)
 
     """
     if len(target_operation.wires) != 1:
