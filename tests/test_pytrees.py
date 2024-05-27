@@ -14,6 +14,9 @@
 """
 Tests for the pennylane pytrees module
 """
+
+import pytest
+
 import pennylane as qml
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 
@@ -102,6 +105,9 @@ def test_dict():
 
 def test_nested_pl_object():
     """Test that we can flatten and unflatten nested pennylane object."""
+
+    if not qml.operation.active_new_opmath():
+        pytest.skip("This feature is new opmath only.")
 
     tape = qml.tape.QuantumScript(
         [qml.adjoint(qml.RX(0.1, wires=0))],
