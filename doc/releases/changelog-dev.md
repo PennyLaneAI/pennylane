@@ -35,7 +35,8 @@ def circuit():
 
 <h3>Improvements 🛠</h3>
 
-* The `snapshots` function is now a transform that splits a `QuantumTape` into several depending on the `Snapshot` instances in the circuit. [(#5722)](https://github.com/PennyLaneAI/pennylane/pull/5722)
+* The `snapshots` function is now a transform that splits a `QuantumTape` into several depending on the `Snapshot` instances in the circuit.
+  [(#5722)](https://github.com/PennyLaneAI/pennylane/pull/5722)
 
 ```python
 ops = [
