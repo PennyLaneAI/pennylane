@@ -289,7 +289,7 @@ def parse_native_mid_circuit_measurements(
                 # as it assumes all elements of the input are of builtin python types and not belonging
                 # to any particular interface
                 result = qml.math.stack(result, like=interface)
-            meas = gather_non_mcm(m, result, is_valid)
+            meas = gather_non_mcm(m, result, is_valid, postselect_shots)
             m_count += 1
         if isinstance(m, SampleMP):
             meas = qml.math.squeeze(meas)
@@ -370,7 +370,7 @@ def gather_mcm(measurement, samples, is_valid, postselect_shots):
             return counts / qml.math.sum(counts)
         if isinstance(measurement, CountsMP):
             mcm_samples = [{"".join(str(int(v)) for v in tuple(s)): 1} for s in mcm_samples]
-        return gather_non_mcm(measurement, mcm_samples, is_valid)
+        return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_shots)
     mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=interface))
     if isinstance(measurement, ProbabilityMP):
         counts = [qml.math.sum((mcm_samples == v) * is_valid) for v in list(mv.branches.values())]
@@ -378,4 +378,4 @@ def gather_mcm(measurement, samples, is_valid, postselect_shots):
         return counts / qml.math.sum(counts)
     if isinstance(measurement, CountsMP):
         mcm_samples = [{float(s): 1} for s in mcm_samples]
-    return gather_non_mcm(measurement, mcm_samples, is_valid)
+    return gather_non_mcm(measurement, mcm_samples, is_valid, postselect_shots)
