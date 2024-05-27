@@ -16,7 +16,6 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
 import abc
-import copy
 import types
 import warnings
 from collections import OrderedDict
@@ -81,7 +80,7 @@ def _local_tape_expand(tape, depth, stop_at):
             if isinstance(obj, Operator):
                 if obj.has_decomposition:
                     with QueuingManager.stop_recording():
-                        obj = QuantumScript(obj.decomposition(), _update=False)
+                        obj = QuantumScript(obj.decomposition())
                 else:
                     new_queue.append(obj)
                     continue
@@ -94,11 +93,9 @@ def _local_tape_expand(tape, depth, stop_at):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots)
 
     # Update circuit info
-    new_tape.wires = copy.copy(tape.wires)
-    new_tape.num_wires = tape.num_wires
     new_tape._batch_size = tape._batch_size
     new_tape._output_dim = tape._output_dim
     return new_tape
@@ -675,9 +672,9 @@ class Device(abc.ABC):
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
         )
-        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
+        obs_on_same_wire = len(circuit.obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
-            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit._obs_sharing_wires
+            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit.obs_sharing_wires
         )
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
@@ -688,7 +685,6 @@ class Device(abc.ABC):
             circuit = _local_tape_expand(
                 circuit, depth=max_expansion, stop_at=self.stopping_condition
             )
-            circuit._update()
 
         return circuit
 
@@ -780,7 +776,7 @@ class Device(abc.ABC):
             circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 
         elif (
-            len(circuit._obs_sharing_wires) > 0
+            len(circuit.obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
                 not isinstance(m, (SampleMP, ProbabilityMP, CountsMP)) for m in circuit.measurements

@@ -88,6 +88,11 @@
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
+* `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
+  traced quantum functions. This feature is used with Catalyst to enable the pattern
+  `m = measure(0); qml.sample(m)`.
+  [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
+
 * PennyLane operators can now automatically be captured as instructions in JAXPR. See the experimental
   `capture` module for more information.
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
@@ -101,6 +106,10 @@
 
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
+
+* `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
+  `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
+  [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
 
 <h4>Community contributions 🥳</h4>
 
@@ -149,6 +158,9 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `dynamic_one_shot` transform now has expanded support for the `jax` and `torch` interfaces.
+  [(#5672)](https://github.com/PennyLaneAI/pennylane/pull/5672)
 
 * The decomposition of `StronglyEntanglingLayers` is now compatible with broadcasting.
   [(#5716)](https://github.com/PennyLaneAI/pennylane/pull/5716)
@@ -200,10 +212,13 @@ Astral Cai,
 Ahmed Darwish,
 Isaac De Vlugt,
 Pietropaolo Frisoni,
+Emiliano Godinez,
+David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Lee James O'Riordan,
+Mudit Pandey,
 Kenya Sakka,
 David Wierichs.
