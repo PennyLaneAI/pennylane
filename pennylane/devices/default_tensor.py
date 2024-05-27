@@ -192,9 +192,7 @@ class DefaultTensor(Device):
                 qml.CZ(wires=[qubit, qubit + 1])
                 qml.X(wires=[qubit])
                 qml.Z(wires=[qubit + 1])
-
-            observed_wire = np.random.randint(0, num_qubits)
-            return qml.expval(qml.Z(observed_wire))
+            return qml.expval(qml.Z(0))
 
 
     >>> circuit(num_qubits)
