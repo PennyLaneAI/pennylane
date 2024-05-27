@@ -236,9 +236,6 @@ def split_non_commuting(
 
     """
 
-    if grouping_strategy not in (None, "pauli", "naive", "default"):
-        raise ValueError(f"grouping_strategy must be one of None, 'pauli', 'naive', or 'default'.")
-
     # Special case for a single measurement of a Sum or Hamiltonian, in which case
     # the grouping information can be computed and cached in the observable.
     if (
