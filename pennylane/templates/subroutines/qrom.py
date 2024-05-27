@@ -235,7 +235,7 @@ class QROM(Operation):
             # Swap block
             control_swap_wires = control_wires[n_control_select_wires:]
             swap_ops = []
-            for ind, wire in enumerate(control_swap_wires):
+            for ind in range(len(control_swap_wires)):
                 for j in range(2**ind):
                     new_op = qml.prod(_multi_swap)(
                         swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
