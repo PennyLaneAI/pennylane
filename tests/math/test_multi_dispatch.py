@@ -185,6 +185,7 @@ def test_gammainc(n, t, gamma_ref):
 
 
 def test_dot_autograd():
+
     x = np.array([1.0, 2.0], requires_grad=False)
     y = np.array([2.0, 3.0], requires_grad=True)
 
@@ -194,6 +195,50 @@ def test_dot_autograd():
     assert fn.allclose(res, 8)
 
     assert fn.allclose(qml_grad(fn.dot)(x, y), x)
+
+
+def test_dot_autograd_with_scalar():
+
+    x = np.array(1.0, requires_grad=False)
+    y = np.array([2.0, 3.0], requires_grad=True)
+
+    res = fn.dot(x, y)
+    assert isinstance(res, np.tensor)
+    assert res.requires_grad
+    assert fn.allclose(res, [2.0, 3.0])
+
+    res = fn.dot(y, x)
+    assert isinstance(res, np.tensor)
+    assert res.requires_grad
+    assert fn.allclose(res, [2.0, 3.0])
+
+
+def test_dot_tf_with_scalar():
+
+    x = tf.Variable(1.0)
+    y = tf.Variable([2.0, 3.0])
+
+    res = fn.dot(x, y)
+    assert isinstance(res, tf.Tensor)
+    assert fn.allclose(res, [2.0, 3.0])
+
+    res = fn.dot(y, x)
+    assert isinstance(res, tf.Tensor)
+    assert fn.allclose(res, [2.0, 3.0])
+
+
+def test_dot_torch_with_scalar():
+
+    x = torch.tensor(1.0)
+    y = torch.tensor([2.0, 3.0])
+
+    res = fn.dot(x, y)
+    assert isinstance(res, torch.Tensor)
+    assert fn.allclose(res, [2.0, 3.0])
+
+    res = fn.dot(y, x)
+    assert isinstance(res, torch.Tensor)
+    assert fn.allclose(res, [2.0, 3.0])
 
 
 def test_kron():

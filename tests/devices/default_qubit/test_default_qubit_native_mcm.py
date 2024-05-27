@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit preprocessing."""
-from functools import partial, reduce
+from functools import reduce
 from typing import Iterable, Sequence
 
 import numpy as np
@@ -24,7 +24,11 @@ from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
 
-get_device = partial(qml.device, name="default.qubit", seed=8237945)
+
+def get_device(**kwargs):
+    kwargs.setdefault("shots", None)
+    kwargs.setdefault("seed", 8237945)
+    return qml.device("default.qubit", **kwargs)
 
 
 def validate_counts(shots, results1, results2, batch_size=None):
@@ -88,7 +92,7 @@ def validate_samples(shots, results1, results2, batch_size=None):
     assert results1.ndim == results2.ndim
     if results2.ndim > 1:
         assert results1.shape[1] == results2.shape[1]
-    np.allclose(np.sum(results1), np.sum(results2), atol=20, rtol=0.2)
+    np.allclose(qml.math.sum(results1), qml.math.sum(results2), atol=20, rtol=0.2)
 
 
 def validate_expval(shots, results1, results2, batch_size=None):
@@ -679,7 +683,7 @@ def test_sample_with_prng_key(shots, postselect, reset):
     # pylint: disable=import-outside-toplevel
     from jax.random import PRNGKey
 
-    dev = qml.device("default.qubit", shots=shots, seed=PRNGKey(678))
+    dev = get_device(shots=shots, seed=PRNGKey(678))
     param = [np.pi / 4, np.pi / 3]
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
@@ -727,7 +731,7 @@ def test_jax_jit(diff_method, postselect, reset):
 
     shots = 10
 
-    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(678))
+    dev = get_device(shots=shots, seed=jax.random.PRNGKey(678))
     params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliY(0)
 
@@ -823,3 +827,44 @@ def test_counts_return_type(mcm_f):
 
     for r1, r2 in zip(results1.keys(), results2.keys()):
         assert r1 == r2
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("postselect", [None, 1])
+@pytest.mark.parametrize("diff_method", [None, "best"])
+@pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
+@pytest.mark.parametrize("meas_obj", [qml.PauliZ(1), [0, 1], "composite_mcm", "mcm_list"])
+def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
+    """Test that native MCM circuits are executed correctly with Torch"""
+    if measure_f in (qml.var, qml.expval) and (
+        isinstance(meas_obj, list) or meas_obj == "mcm_list"
+    ):
+        pytest.skip("Can't use wires/mcm lists with var or expval")
+
+    import torch
+
+    shots = 7000
+    dev = get_device(shots=shots, seed=123456789)
+    param = torch.tensor(np.pi / 3, dtype=torch.float64)
+
+    @qml.qnode(dev, diff_method=diff_method)
+    def func(x):
+        qml.RX(x, 0)
+        m0 = qml.measure(0)
+        qml.RX(0.5 * x, 1)
+        m1 = qml.measure(1, postselect=postselect)
+        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        m2 = qml.measure(0)
+
+        mid_measure = 0.5 * m2 if meas_obj == "composite_mcm" else [m1, m2]
+        measurement_key = "wires" if isinstance(meas_obj, list) else "op"
+        measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
+        return measure_f(**{measurement_key: measurement_value})
+
+    func1 = func
+    func2 = qml.defer_measurements(func)
+
+    results1 = func1(param)
+    results2 = func2(param)
+
+    validate_measurements(measure_f, shots, results1, results2)

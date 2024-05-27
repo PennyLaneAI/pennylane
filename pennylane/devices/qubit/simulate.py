@@ -315,7 +315,7 @@ def simulate(
             trainable_params=circuit.trainable_params,
         )
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
-        if qml.math.get_deep_interface(circuit.data) == "jax":
+        if qml.math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
             # pylint: disable=import-outside-toplevel
             import jax
 
@@ -433,21 +433,17 @@ def simulate_tree_mcm(
     update_mcm_samples(op, samples, mcm_active, mcm_samples)
 
     # Define ``branch_measurement`` here to capture ``op``, ``rng``, ``prng_key``, ``debugger``, ``interface``
-    def branch_measurement(
-        circuit_base, circuit_next, counts, state, branch, mcm_active, mcm_samples
-    ):
+    def branch_measurement(circuit_next, state, branch, mcm_active, mcm_samples):
         """Returns the measurements of the specified branch by executing ``circuit_next``."""
 
         def branch_state(state, branch, wire):
             state = apply_operation(qml.Projector([branch], wire), state)
-            state /= qml.math.norm(state)
+            state = state / qml.math.norm(state)
             if op.reset and branch == 1:
                 state = apply_operation(qml.PauliX(wire), state)
             return state
 
-        wire = circuit_base._measurements[0].wires
-        new_state = branch_state(state, branch, wire)
-        circuit_next._shots = qml.measurements.Shots(counts[branch])
+        new_state = branch_state(state, branch, op.wires)
         return simulate_tree_mcm(
             circuit_next,
             debugger=debugger,
@@ -465,10 +461,9 @@ def simulate_tree_mcm(
             prune_mcm_samples(op, branch, mcm_active, mcm_samples)
             continue
         mcm_active[op] = branch
+        circuit_next._shots = qml.measurements.Shots(count)
         meas = branch_measurement(
-            circuit_base,
             circuit_next,
-            counts,
             state,
             branch,
             mcm_active=mcm_active,

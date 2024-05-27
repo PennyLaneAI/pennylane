@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
-# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=too-many-arguments,too-few-public-methods, use-dict-literal, use-implicit-booleaness-not-comparison,
+# pylint: disable=unnecessary-lambda-assignment
 import autograd
 import autograd.numpy as anp
 import pytest
@@ -1776,7 +1777,7 @@ class TestSample:
         assert np.array_equal(result[0].shape, (n_sample,))
         assert isinstance(result[1], np.ndarray)
         assert isinstance(result[2], np.ndarray)
-        assert result[0].dtype == np.dtype("int")
+        assert result[0].dtype == np.dtype("float")
 
     def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
