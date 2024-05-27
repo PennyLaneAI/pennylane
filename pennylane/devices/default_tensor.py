@@ -34,6 +34,7 @@ from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMeasu
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
+from pennylane.wires import WireError
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -164,8 +165,6 @@ class DefaultTensor(Device):
                     to each other before applying the gate, then swaps them back. Default is ``auto-mps``.
     """
 
-    # pylint: disable=too-many-instance-attributes
-
     # So far we just consider the options for MPS simulator
     _device_options = (
         "contract",
@@ -177,15 +176,11 @@ class DefaultTensor(Device):
 
     def __init__(
         self,
-        wires,
-        *,
+        wires=None,
         method="mps",
         dtype=np.complex128,
         **kwargs,
     ) -> None:
-
-        if wires is None:
-            raise TypeError("Wires must be provided for the default.tensor device.")
 
         if not has_quimb:
             raise ImportError(
@@ -213,29 +208,6 @@ class DefaultTensor(Device):
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
         self._contract = kwargs.get("contract", "auto-mps")
 
-        device_options = self._setup_execution_config().device_options
-
-        self._init_state_opts = {
-            "binary": "0" * (len(self._wires) if self._wires else 1),
-            "dtype": self._dtype.__name__,
-            "tags": [str(l) for l in self._wires.labels] if self._wires else None,
-        }
-
-        self._gate_opts = {
-            "parametrize": None,
-            "contract": device_options["contract"],
-            "cutoff": device_options["cutoff"],
-            "max_bond": device_options["max_bond_dim"],
-        }
-
-        self._expval_opts = {
-            "dtype": self._dtype.__name__,
-            "simplify_sequence": "ADCRS",
-            "simplify_atol": 0.0,
-        }
-
-        self._circuitMPS = qtn.CircuitMPS(psi0=self._initial_mps())
-
         for arg in kwargs:
             if arg not in self._device_options:
                 raise TypeError(
@@ -257,20 +229,23 @@ class DefaultTensor(Device):
         """Tensor complex data type."""
         return self._dtype
 
-    def _reset_state(self) -> None:
-        """Reset the MPS."""
-        self._circuitMPS = qtn.CircuitMPS(psi0=self._initial_mps())
-
-    def _initial_mps(self) -> "qtn.MatrixProductState":
+    def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
         r"""
         Return an initial state to :math:`\ket{0}`.
 
         Internally, it uses `quimb`'s `MPS_computational_state` method.
 
+        Args:
+            wires (Wires): The wires to initialize the MPS.
+
         Returns:
             MatrixProductState: The initial MPS of a circuit.
         """
-        return qtn.MPS_computational_state(**self._init_state_opts)
+        return qtn.MPS_computational_state(
+            binary="0" * (len(wires) if wires else 1),
+            dtype=self._dtype.__name__,
+            tags=[str(l) for l in wires.labels] if wires else None,
+        )
 
     def _setup_execution_config(
         self, config: Optional[ExecutionConfig] = DefaultExecutionConfig
@@ -345,10 +320,11 @@ class DefaultTensor(Device):
 
         results = []
         for circuit in circuits:
-            # we need to check if the wires of the circuit are compatible with the wires of the device
-            # since the initial tensor state is created with the wires of the device
-            if not self.wires.contains_wires(circuit.wires):
-                raise AttributeError(
+            if self.wires is not None and not self.wires.contains_wires(circuit.wires):
+                # quimb raises a cryptic error if the circuit has wires that are not in the device,
+                # so we raise a more informative error here
+                raise WireError(
+                    "Mismatch between circuit and device wires. "
                     f"Circuit has wires {circuit.wires.tolist()}. "
                     f"Tensor on device has wires {self.wires.tolist()}"
                 )
@@ -367,40 +343,49 @@ class DefaultTensor(Device):
             Tuple[TensorLike]: The results of the simulation.
         """
 
-        self._reset_state()
+        wires = circuit.wires if self.wires is None else self.wires
+
+        state = qtn.CircuitMPS(
+            psi0=self._initial_mps(wires),
+            max_bond=self._max_bond_dim,
+            gate_contract=self._contract,
+            cutoff=self._cutoff,
+        )
 
         for op in circuit.operations:
-            self._apply_operation(op)
+            self._apply_operation(op, state)
 
         if not circuit.shots:
             if len(circuit.measurements) == 1:
-                return self.measurement(circuit.measurements[0])
-            return tuple(self.measurement(mp) for mp in circuit.measurements)
+                return self.measurement(circuit.measurements[0], state)
+            return tuple(self.measurement(mp, state) for mp in circuit.measurements)
 
         raise NotImplementedError  # pragma: no cover
 
-    def _apply_operation(self, op: qml.operation.Operator) -> None:
+    def _apply_operation(self, op: qml.operation.Operator, state) -> None:
         """Apply a single operator to the circuit, keeping the state always in a MPS form.
 
         Internally it uses `quimb`'s `apply_gate` method.
 
         Args:
             op (Operator): The operation to apply.
+            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
         """
 
-        self._circuitMPS.apply_gate(op.matrix().astype(self._dtype), *op.wires, **self._gate_opts)
+        state.apply_gate(op.matrix().astype(self._dtype), *op.wires, parametrize=None)
 
-    def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
+    def measurement(self, measurementprocess: MeasurementProcess, state) -> TensorLike:
         """Measure the measurement required by the circuit over the MPS.
 
         Args:
             measurementprocess (MeasurementProcess): measurement to apply to the state.
+            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
 
         Returns:
             TensorLike: the result of the measurement.
         """
 
-        return self._get_measurement_function(measurementprocess)(measurementprocess)
+        return self._get_measurement_function(measurementprocess)(measurementprocess, state)
 
     def _get_measurement_function(
         self, measurementprocess: MeasurementProcess
@@ -422,11 +407,12 @@ class DefaultTensor(Device):
 
         raise NotImplementedError
 
-    def expval(self, measurementprocess: MeasurementProcess) -> float:
+    def expval(self, measurementprocess: MeasurementProcess, state) -> float:
         """Expectation value of the supplied observable contained in the MeasurementProcess.
 
         Args:
             measurementprocess (StateMeasurement): measurement to apply to the MPS.
+            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
 
         Returns:
             Expectation value of the observable.
@@ -434,15 +420,16 @@ class DefaultTensor(Device):
 
         obs = measurementprocess.obs
 
-        result = self._local_expectation(obs.matrix(), tuple(obs.wires))
+        result = self._local_expectation(obs.matrix(), tuple(obs.wires), state)
 
         return result
 
-    def var(self, measurementprocess: MeasurementProcess) -> float:
+    def var(self, measurementprocess: MeasurementProcess, state) -> float:
         """Variance of the supplied observable contained in the MeasurementProcess.
 
         Args:
             measurementprocess (StateMeasurement): measurement to apply to the MPS.
+            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
 
         Returns:
             Variance of the observable.
@@ -451,12 +438,14 @@ class DefaultTensor(Device):
         obs = measurementprocess.obs
 
         obs_mat = obs.matrix()
-        expect_op = self.expval(measurementprocess)
-        expect_squar_op = self._local_expectation(obs_mat @ obs_mat.conj().T, tuple(obs.wires))
+        expect_op = self.expval(measurementprocess, state)
+        expect_squar_op = self._local_expectation(
+            obs_mat @ obs_mat.conj().T, tuple(obs.wires), state
+        )
 
         return expect_squar_op - np.square(expect_op)
 
-    def _local_expectation(self, matrix, wires) -> float:
+    def _local_expectation(self, matrix, wires, state) -> float:
         """Compute the local expectation value of a matrix on the MPS.
 
         Internally, it uses `quimb`'s `local_expectation` method.
@@ -464,18 +453,21 @@ class DefaultTensor(Device):
         Args:
             matrix (array): the matrix to compute the expectation value of.
             wires (tuple[int]): the wires the matrix acts on.
+            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
 
         Returns:
             Local expectation value of the matrix on the MPS.
         """
 
         # We need to copy the MPS to avoid modifying the original state
-        qc = copy.deepcopy(self._circuitMPS)
+        qc = copy.deepcopy(state)
 
         exp_val = qc.local_expectation(
             matrix,
             wires,
-            **self._expval_opts,
+            dtype=self._dtype.__name__,
+            simplify_sequence="ADCRS",
+            simplify_atol=0.0,
         )
 
         return float(np.real(exp_val))

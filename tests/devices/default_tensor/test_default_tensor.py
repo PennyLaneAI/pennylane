@@ -21,6 +21,7 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane.wires import WireError
 
 quimb = pytest.importorskip("quimb")
 
@@ -125,42 +126,36 @@ all_obs = observables_list.keys()
 
 def test_name():
     """Test the name of DefaultTensor."""
-    assert qml.device("default.tensor", wires=0).name == "default.tensor"
+    assert qml.device("default.tensor").name == "default.tensor"
 
 
 def test_wires():
     """Test that a device can be created with wires."""
-    assert qml.device("default.tensor", wires=0).wires is not None
+    assert qml.device("default.tensor").wires is None
     assert qml.device("default.tensor", wires=2).wires == qml.wires.Wires([0, 1])
     assert qml.device("default.tensor", wires=[0, 2]).wires == qml.wires.Wires([0, 2])
 
     with pytest.raises(AttributeError):
-        qml.device("default.tensor", wires=0).wires = [0, 1]
+        qml.device("default.tensor").wires = [0, 1]
 
 
-def test_wires_error():
-    """Test that an error is raised if the wires are not provided."""
-    with pytest.raises(TypeError):
-        qml.device("default.tensor")
+def test_wires_runtime():
+    """Test that this device can execute a tape with wires determined at runtime if they are not provided."""
+    dev = qml.device("default.tensor")
+    ops = [qml.Identity(0), qml.Identity((0, 1)), qml.RX(2, 0), qml.RY(1, 5), qml.RX(2, 1)]
+    measurements = [qml.expval(qml.PauliZ(15))]
+    tape = qml.tape.QuantumScript(ops, measurements)
+    assert dev.execute(tape) == 1.0
 
-    with pytest.raises(TypeError):
-        qml.device("default.tensor", wires=None)
 
-
-def test_wires_execution_error():
-    """Test that this device cannot execute a tape if its wires do not match the wires on the device."""
-    dev = qml.device("default.tensor", wires=3)
-    ops = [
-        qml.Identity(0),
-        qml.Identity((0, 1)),
-        qml.RX(2, 0),
-        qml.RY(1, 5),
-        qml.RX(2, 1),
-    ]
+def test_wires_runtime_error():
+    """Test that this device raises an error if the wires are provided by user and there is a mismatch."""
+    dev = qml.device("default.tensor", wires=1)
+    ops = [qml.Identity(0), qml.Identity((0, 1)), qml.RX(2, 0), qml.RY(1, 5), qml.RX(2, 1)]
     measurements = [qml.expval(qml.PauliZ(15))]
     tape = qml.tape.QuantumScript(ops, measurements)
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(WireError):
         dev.execute(tape)
 
 
@@ -192,7 +187,7 @@ def test_invalid_kwarg():
 
 def test_method():
     """Test the device method."""
-    assert qml.device("default.tensor", wires=0).method == "mps"
+    assert qml.device("default.tensor").method == "mps"
 
 
 def test_invalid_method():
@@ -272,12 +267,12 @@ class TestSupportsDerivatives:
 
     def test_support_derivatives(self):
         """Test that the device does not support derivatives yet."""
-        dev = qml.device("default.tensor", wires=0)
+        dev = qml.device("default.tensor")
         assert not dev.supports_derivatives()
 
     def test_compute_derivatives(self):
         """Test that an error is raised if the `compute_derivatives` method is called."""
-        dev = qml.device("default.tensor", wires=0)
+        dev = qml.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of derivatives has yet to be implemented for the default.tensor device.",
@@ -286,7 +281,7 @@ class TestSupportsDerivatives:
 
     def test_execute_and_compute_derivatives(self):
         """Test that an error is raised if `execute_and_compute_derivative` method is called."""
-        dev = qml.device("default.tensor", wires=0)
+        dev = qml.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of derivatives has yet to be implemented for the default.tensor device.",
@@ -295,12 +290,12 @@ class TestSupportsDerivatives:
 
     def test_supports_vjp(self):
         """Test that the device does not support VJP yet."""
-        dev = qml.device("default.tensor", wires=0)
+        dev = qml.device("default.tensor")
         assert not dev.supports_vjp()
 
     def test_compute_vjp(self):
         """Test that an error is raised if `compute_vjp` method is called."""
-        dev = qml.device("default.tensor", wires=0)
+        dev = qml.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of vector-Jacobian product has yet to be implemented for the default.tensor device.",
@@ -309,7 +304,7 @@ class TestSupportsDerivatives:
 
     def test_execute_and_compute_vjp(self):
         """Test that an error is raised if `execute_and_compute_vjp` method is called."""
-        dev = qml.device("default.tensor", wires=0)
+        dev = qml.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of vector-Jacobian product has yet to be implemented for the default.tensor device.",
