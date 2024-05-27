@@ -17,7 +17,7 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 """
 
 from functools import partial
-from typing import Callable, Dict, List, Sequence, Tuple, Union
+from typing import Callable, Dict, List, Sequence, Tuple, Optional, Literal
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
