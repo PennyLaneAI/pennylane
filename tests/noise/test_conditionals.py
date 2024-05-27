@@ -207,6 +207,7 @@ class TestNoiseFunctions:
             (["CZ", "RY"], [qml.CZ([0, 1]), qml.RY(1.0, [1])], True),
             (qml.Z(0) @ qml.Z(1), qml.Z("b") @ qml.Z("a"), True),
             (qml.Z(0) + qml.Z(1), qml.Z("b") + qml.Z("a"), True),
+            (qml.Z(0) + 1.2 * qml.Z(1), 2.4 * qml.Z("b") + qml.Z("a"), False),
             (qml.Z(0) + 1.2 * qml.Z(1), qml.Z("b") + qml.Z("a"), False),
             (qml.exp(qml.RX(1.2, 0), 1.2, 1), qml.exp(qml.RX(2.3, "a"), 1.2, 1), True),
             (qml.exp(qml.Z(0) + qml.Z(1), 1.2, 2), qml.exp(qml.Z("b") + qml.Z("a"), 1.2, 2), True),

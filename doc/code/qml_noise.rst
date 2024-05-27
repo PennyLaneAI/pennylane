@@ -32,7 +32,7 @@ Conditional Constructors
     ~op_in
     ~wires_eq
     ~wires_in
-    ~BooleanFn
+    pennylane.BooleanFn
 
 Callable Constructor
 ^^^^^^^^^^^^^^^^^^^^
