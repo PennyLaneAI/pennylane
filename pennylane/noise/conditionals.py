@@ -11,7 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains utility functions for building boolean conditionals for noise models"""
+"""Contains utility functions for building boolean conditionals for noise models
+
+Developer note: Conditionals inherit from BooleanFn and store the condition they
+utilize in the ``condition`` attribute.
+"""
 
 from functools import partial
 from inspect import isclass, signature

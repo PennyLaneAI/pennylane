@@ -103,12 +103,14 @@ class BooleanFn:
 
     @property
     def bitwise(self):
-        """Determine whether wrapped callable is for a bitwise operation or not."""
+        """Determine whether wrapped callable performs a bit-wise operation or not.
+        This checks for the ``operands`` attribute that should be defined by it."""
         return bool(getattr(self, "operands", tuple()))
 
     @property
     def conditional(self):
-        """Determine whether wrapped callable is for a conditional or not."""
+        """Determine whether wrapped callable is for a conditional or not.
+        This checks for the ``condition`` attribute that should be defined by it."""
         return bool(getattr(self, "condition", None))
 
 
