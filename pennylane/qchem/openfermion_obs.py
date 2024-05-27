@@ -789,13 +789,10 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 
     mapping = mapping.strip().lower()
 
-    if mapping not in ("jordan_wigner", "bravyi_kitaev"):
-        raise TypeError(
-            f"The '{mapping}' transformation is not available. \n "
-            f"Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'."
-        )
-
     # fermionic-to-qubit transformation of the Hamiltonian
+    if mapping == "parity":
+        binary_code = openfermion.parity_code(molecule.n_qubits)
+        return openfermion.transforms.binary_code_transform(fermionic_hamiltonian, binary_code)
     if mapping == "bravyi_kitaev":
         return openfermion.transforms.bravyi_kitaev(fermionic_hamiltonian)
 
@@ -1058,6 +1055,12 @@ def _molecular_hamiltonian(
     if method not in ["dhf", "pyscf", "openfermion"]:
         raise ValueError("Only 'dhf', 'pyscf' and 'openfermion' backends are supported.")
 
+    if mapping.strip().lower() not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
+        raise ValueError(
+            f"'{mapping}' is not supported."
+            f"Please set the mapping to 'jordan_wigner', 'parity' or 'bravyi_kitaev'."
+        )
+
     if len(coordinates) == len(symbols) * 3:
         geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
@@ -1082,11 +1085,6 @@ def _molecular_hamiltonian(
 
     if method == "dhf":
 
-        if mapping != "jordan_wigner":
-            raise ValueError(
-                "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
-            )
-
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
@@ -1105,9 +1103,9 @@ def _molecular_hamiltonian(
 
         requires_grad = args is not None
         h = (
-            qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+            qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
             if requires_grad
-            else qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
+            else qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
         )
 
         if active_new_opmath():
@@ -1128,19 +1126,33 @@ def _molecular_hamiltonian(
             h = qml.map_wires(h, wires_map)
         return h, 2 * len(active)
 
-    if method == "pyscf" and mapping.strip().lower() == "jordan_wigner":
+    if method == "pyscf":
         core_constant, one_mo, two_mo = _pyscf_integrals(
             symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
         )
 
         hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
+        mapping = mapping.strip().lower()
+        qubits = len(hf.wires)
 
         if active_new_opmath():
-            h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
+            if mapping == "jordan_wigner":
+                h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10)
+            elif mapping == "parity":
+                h_pl = qml.parity_transform(hf, qubits, wire_map=wires_map, tol=1.0e-10)
+            elif mapping == "bravyi_kitaev":
+                h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10)
 
+            h_pl.simplify()
         else:
-            h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
-            h_pl = simplify(h_pl)
+            if mapping == "jordan_wigner":
+                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10)
+            elif mapping == "parity":
+                h_pl = qml.parity_transform(hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10)
+            elif mapping == "bravyi_kitaev":
+                h_pl = qml.bravyi_kitaev(hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10)
+
+            h_pl = simplify(h_pl.hamiltonian())
 
         return h_pl, len(h_pl.wires)
 

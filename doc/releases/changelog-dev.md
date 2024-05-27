@@ -103,6 +103,9 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
+* `qml.qchem.molecular_hamiltonian function now works with parity and Bravyi-Kitaev mappings.
+  [(#5657)](https://github.com/PennyLaneAI/pennylane/pull/5657/)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -189,6 +192,7 @@ Lillian M. A. Frederiksen,
 Ahmed Darwish,
 Gabriel Bottrill,
 Isaac De Vlugt,
+Diksha Dhawan,
 Pietropaolo Frisoni,
 Soran Jahangiri,
 Korbinian Kottmann,

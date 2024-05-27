@@ -155,16 +155,16 @@ def test_building_hamiltonian_molecule_class(
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "h_ref_data"),
+    ("symbols", "geometry", "mapping", "h_ref_data"),
     [
         (
             ["H", "H"],
             np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            "jordan_wigner",
             # computed with OpenFermion; data reordered
             # h_mol = molecule.get_molecular_hamiltonian()
             # h_f = openfermion.transforms.get_fermion_operator(h_mol)
             # h_q = openfermion.transforms.jordan_wigner(h_f)
-            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
             (
                 np.array(
                     [
@@ -206,12 +206,107 @@ def test_building_hamiltonian_molecule_class(
         ),
         (
             ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            "parity",
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # binary_code = openfermion.parity_code(molecule.n_qubits)
+            # h_q = openfermion.transforms.binary_code_transform(h_f, binary_code)
+            (
+                np.array(
+                    [
+                        0.2981787007221673,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.20813364101195764,
+                        0.20813364101195767,
+                        0.13290292584331462,
+                        0.13290292584331462,
+                        0.175463287257566,
+                        0.175463287257566,
+                        0.17860976802544348,
+                        -0.34724871015550757,
+                        0.18470917137696227,
+                        -0.3472487101555076,
+                    ]
+                ),
+                [
+                    I(0),
+                    X(0) @ Z(1) @ X(2),
+                    X(0) @ Z(1) @ X(2) @ Z(3),
+                    Y(0) @ Y(2),
+                    Y(0) @ Y(2) @ Z(3),
+                    Z(0),
+                    Z(0) @ Z(1),
+                    Z(0) @ Z(1) @ Z(2),
+                    Z(0) @ Z(1) @ Z(2) @ Z(3),
+                    Z(0) @ Z(2),
+                    Z(0) @ Z(2) @ Z(3),
+                    Z(1),
+                    Z(1) @ Z(2),
+                    Z(1) @ Z(3),
+                    Z(2) @ Z(3),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            "bravyi_kitaev",
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.bravyi_kitaev(h_f)
+            (
+                np.array(
+                    [
+                        0.2981787007221673,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.20813364101195764,
+                        0.20813364101195767,
+                        0.175463287257566,
+                        0.175463287257566,
+                        0.13290292584331462,
+                        0.13290292584331462,
+                        0.17860976802544348,
+                        -0.3472487101555076,
+                        0.18470917137696227,
+                        -0.34724871015550757,
+                    ]
+                ),
+                [
+                    I(0),
+                    X(0) @ Z(1) @ X(2),
+                    X(0) @ Z(1) @ X(2) @ Z(3),
+                    Y(0) @ Z(1) @ Y(2),
+                    Y(0) @ Z(1) @ Y(2) @ Z(3),
+                    Z(0),
+                    Z(0) @ Z(1),
+                    Z(0) @ Z(1) @ Z(2),
+                    Z(0) @ Z(1) @ Z(2) @ Z(3),
+                    Z(0) @ Z(2),
+                    Z(0) @ Z(2) @ Z(3),
+                    Z(1),
+                    Z(1) @ Z(2) @ Z(3),
+                    Z(1) @ Z(3),
+                    Z(2),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            "jordan_wigner",
             # computed with OpenFermion; data reordered
             # h_mol = molecule.get_molecular_hamiltonian()
             # h_f = openfermion.transforms.get_fermion_operator(h_mol)
             # h_q = openfermion.transforms.jordan_wigner(h_f)
-            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
             (
                 np.array(
                     [
@@ -254,16 +349,18 @@ def test_building_hamiltonian_molecule_class(
     ],
 )
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
+def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
     r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
     backend."""
 
     geometry.requires_grad = True
     args = [geometry.reshape(2, 3)]
-    h_args = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", args=args)[0]
+    h_args = qchem.molecular_hamiltonian(
+        symbols, geometry, method="dhf", args=args, mapping=mapping
+    )[0]
 
     geometry.requires_grad = False
-    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf")[0]
+    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping=mapping)[0]
 
     ops = [
         qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
@@ -290,16 +387,16 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "h_ref_data"),
+    ("symbols", "geometry", "mapping", "h_ref_data"),
     [
         (
             ["H", "H"],
             np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            "jordan_wigner",
             # computed with OpenFermion; data reordered
             # h_mol = molecule.get_molecular_hamiltonian()
             # h_f = openfermion.transforms.get_fermion_operator(h_mol)
             # h_q = openfermion.transforms.jordan_wigner(h_f)
-            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
             (
                 np.array(
                     [
@@ -341,12 +438,107 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
         ),
         (
             ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            "parity",
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # binary_code = openfermion.parity_code(molecule.n_qubits)
+            # h_q = openfermion.transforms.binary_code_transform(h_f, binary_code)
+            (
+                np.array(
+                    [
+                        0.2981787007221673,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.20813364101195764,
+                        0.20813364101195767,
+                        0.13290292584331462,
+                        0.13290292584331462,
+                        0.175463287257566,
+                        0.175463287257566,
+                        0.17860976802544348,
+                        -0.34724871015550757,
+                        0.18470917137696227,
+                        -0.3472487101555076,
+                    ]
+                ),
+                [
+                    I(0),
+                    X(0) @ Z(1) @ X(2),
+                    X(0) @ Z(1) @ X(2) @ Z(3),
+                    Y(0) @ Y(2),
+                    Y(0) @ Y(2) @ Z(3),
+                    Z(0),
+                    Z(0) @ Z(1),
+                    Z(0) @ Z(1) @ Z(2),
+                    Z(0) @ Z(1) @ Z(2) @ Z(3),
+                    Z(0) @ Z(2),
+                    Z(0) @ Z(2) @ Z(3),
+                    Z(1),
+                    Z(1) @ Z(2),
+                    Z(1) @ Z(3),
+                    Z(2) @ Z(3),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            "bravyi_kitaev",
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.bravyi_kitaev(h_f)
+            (
+                np.array(
+                    [
+                        0.2981787007221673,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.04256036141425139,
+                        0.20813364101195764,
+                        0.20813364101195767,
+                        0.175463287257566,
+                        0.175463287257566,
+                        0.13290292584331462,
+                        0.13290292584331462,
+                        0.17860976802544348,
+                        -0.3472487101555076,
+                        0.18470917137696227,
+                        -0.34724871015550757,
+                    ]
+                ),
+                [
+                    I(0),
+                    X(0) @ Z(1) @ X(2),
+                    X(0) @ Z(1) @ X(2) @ Z(3),
+                    Y(0) @ Z(1) @ Y(2),
+                    Y(0) @ Z(1) @ Y(2) @ Z(3),
+                    Z(0),
+                    Z(0) @ Z(1),
+                    Z(0) @ Z(1) @ Z(2),
+                    Z(0) @ Z(1) @ Z(2) @ Z(3),
+                    Z(0) @ Z(2),
+                    Z(0) @ Z(2) @ Z(3),
+                    Z(1),
+                    Z(1) @ Z(2) @ Z(3),
+                    Z(1) @ Z(3),
+                    Z(2),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            "jordan_wigner",
             # computed with OpenFermion; data reordered
             # h_mol = molecule.get_molecular_hamiltonian()
             # h_f = openfermion.transforms.get_fermion_operator(h_mol)
             # h_q = openfermion.transforms.jordan_wigner(h_f)
-            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
             (
                 np.array(
                     [
@@ -389,18 +581,18 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     ],
 )
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_differentiable_hamiltonian_molecule_class(symbols, geometry, h_ref_data):
+def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h_ref_data):
     r"""Test that molecular_hamiltonian generated using the molecule class
     returns the correct Hamiltonian with the differentiable backend."""
 
     geometry.requires_grad = True
     args = [geometry.reshape(2, 3)]
     molecule = qchem.Molecule(symbols, geometry)
-    h_args = qchem.molecular_hamiltonian(molecule, method="dhf", args=args)[0]
+    h_args = qchem.molecular_hamiltonian(molecule, method="dhf", args=args, mapping=mapping)[0]
 
     geometry.requires_grad = False
     molecule = qchem.Molecule(symbols, geometry)
-    h_noargs = qchem.molecular_hamiltonian(molecule, method="dhf")[0]
+    h_noargs = qchem.molecular_hamiltonian(molecule, method="dhf", mapping=mapping)[0]
 
     ops = [
         qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
@@ -605,9 +797,6 @@ def test_diff_hamiltonian_error():
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
-    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
-
     with pytest.raises(
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
     ):
@@ -637,14 +826,14 @@ def test_diff_hamiltonian_error_molecule_class():
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
-    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
-
     molecule = qchem.Molecule(symbols, geometry)
     with pytest.raises(
         ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
     ):
         qchem.molecular_hamiltonian(molecule, method="psi4")
+
+    with pytest.raises(ValueError, match="'bksf' is not supported."):
+        qchem.molecular_hamiltonian(molecule, mapping="bksf")
 
 
 @pytest.mark.parametrize(
@@ -798,6 +987,279 @@ def test_error_raised_for_missing_molecule_information():
         match="The provided arguments do not contain information about symbols in the molecule.",
     ):
         qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge", "mapping", "h_ref_data"),
+    [
+        (
+            ["H", "H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
+            1,
+            "jordan_wigner",
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            (
+                np.array(
+                    [
+                        1.3657458030310135,
+                        -0.03586487568545097,
+                        -0.03201092703651771,
+                        0.03586487568545097,
+                        0.03201092703651771,
+                        -0.031492075818254375,
+                        -0.031492075818254375,
+                        0.037654484403957786,
+                        -0.032229274210852504,
+                        -0.0022222066814484463,
+                        -0.03371428249970282,
+                        -0.030511339285364605,
+                        0.03586487568545097,
+                        0.03201092703651771,
+                        -0.03586487568545097,
+                        -0.03201092703651771,
+                        -0.031492075818254375,
+                        -0.031492075818254375,
+                        0.037654484403957786,
+                        -0.032229274210852504,
+                        -0.0022222066814484463,
+                        -0.03371428249970282,
+                        -0.030511339285364605,
+                        0.27235785388149386,
+                        -0.03051133928536461,
+                        -0.03051133928536461,
+                        0.17448913735995256,
+                        0.11784682872956924,
+                        0.15371170441502022,
+                        0.1487316290904712,
+                        0.18074255612698886,
+                        0.031492075818254375,
+                        -0.031492075818254375,
+                        0.037654484403957786,
+                        -0.032229274210852504,
+                        -0.03371428249970282,
+                        -0.0022222066814484463,
+                        -0.031492075818254375,
+                        0.031492075818254375,
+                        0.037654484403957786,
+                        -0.032229274210852504,
+                        -0.03371428249970282,
+                        -0.0022222066814484463,
+                        0.27235785388149386,
+                        0.15371170441502022,
+                        0.11784682872956924,
+                        0.18074255612698886,
+                        0.1487316290904712,
+                        -0.03583418633226662,
+                        0.03583418633226662,
+                        0.03583418633226662,
+                        -0.03583418633226662,
+                        -0.06458411201474276,
+                        0.16096866344343394,
+                        0.1288375790750158,
+                        0.16467176540728246,
+                        -0.06458411201474279,
+                        0.16467176540728246,
+                        0.1288375790750158,
+                        -0.8044935587718376,
+                        0.20315172438516313,
+                        -0.8044935587718377,
+                    ]
+                ),
+                [
+                    I(0),
+                    X(0) @ X(1) @ Y(2) @ Y(3),
+                    X(0) @ X(1) @ Y(4) @ Y(5),
+                    X(0) @ Y(1) @ Y(2) @ X(3),
+                    X(0) @ Y(1) @ Y(4) @ X(5),
+                    X(0) @ Z(1) @ X(2) @ X(3) @ Z(4) @ X(5),
+                    X(0) @ Z(1) @ X(2) @ Y(3) @ Z(4) @ Y(5),
+                    X(0) @ Z(1) @ Z(2) @ Z(3) @ X(4),
+                    X(0) @ Z(1) @ Z(2) @ Z(3) @ X(4) @ Z(5),
+                    X(0) @ Z(1) @ Z(2) @ X(4),
+                    X(0) @ Z(1) @ Z(3) @ X(4),
+                    X(0) @ Z(2) @ Z(3) @ X(4),
+                    Y(0) @ X(1) @ X(2) @ Y(3),
+                    Y(0) @ X(1) @ X(4) @ Y(5),
+                    Y(0) @ Y(1) @ X(2) @ X(3),
+                    Y(0) @ Y(1) @ X(4) @ X(5),
+                    Y(0) @ Z(1) @ Y(2) @ X(3) @ Z(4) @ X(5),
+                    Y(0) @ Z(1) @ Y(2) @ Y(3) @ Z(4) @ Y(5),
+                    Y(0) @ Z(1) @ Z(2) @ Z(3) @ Y(4),
+                    Y(0) @ Z(1) @ Z(2) @ Z(3) @ Y(4) @ Z(5),
+                    Y(0) @ Z(1) @ Z(2) @ Y(4),
+                    Y(0) @ Z(1) @ Z(3) @ Y(4),
+                    Y(0) @ Z(2) @ Z(3) @ Y(4),
+                    Z(0),
+                    Z(0) @ X(1) @ Z(2) @ Z(3) @ Z(4) @ X(5),
+                    Z(0) @ Y(1) @ Z(2) @ Z(3) @ Z(4) @ Y(5),
+                    Z(0) @ Z(1),
+                    Z(0) @ Z(2),
+                    Z(0) @ Z(3),
+                    Z(0) @ Z(4),
+                    Z(0) @ Z(5),
+                    X(1) @ X(2) @ Y(3) @ Y(4),
+                    X(1) @ Y(2) @ Y(3) @ X(4),
+                    X(1) @ Z(2) @ Z(3) @ Z(4) @ X(5),
+                    X(1) @ Z(2) @ Z(3) @ X(5),
+                    X(1) @ Z(2) @ Z(4) @ X(5),
+                    X(1) @ Z(3) @ Z(4) @ X(5),
+                    Y(1) @ X(2) @ X(3) @ Y(4),
+                    Y(1) @ Y(2) @ X(3) @ X(4),
+                    Y(1) @ Z(2) @ Z(3) @ Z(4) @ Y(5),
+                    Y(1) @ Z(2) @ Z(3) @ Y(5),
+                    Y(1) @ Z(2) @ Z(4) @ Y(5),
+                    Y(1) @ Z(3) @ Z(4) @ Y(5),
+                    Z(1),
+                    Z(1) @ Z(2),
+                    Z(1) @ Z(3),
+                    Z(1) @ Z(4),
+                    Z(1) @ Z(5),
+                    X(2) @ X(3) @ Y(4) @ Y(5),
+                    X(2) @ Y(3) @ Y(4) @ X(5),
+                    Y(2) @ X(3) @ X(4) @ Y(5),
+                    Y(2) @ Y(3) @ X(4) @ X(5),
+                    Z(2),
+                    Z(2) @ Z(3),
+                    Z(2) @ Z(4),
+                    Z(2) @ Z(5),
+                    Z(3),
+                    Z(3) @ Z(4),
+                    Z(3) @ Z(5),
+                    Z(4),
+                    Z(4) @ Z(5),
+                    Z(5),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            0,
+            "parity",
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # binary_code = openfermion.parity_code(molecule.n_qubits)
+            # h_q = openfermion.transforms.binary_code_transform(h_f, binary_code)
+            (
+                np.array(
+                    [
+                        -0.3596823978788041,
+                        0.050130618654510024,
+                        0.050130618654510024,
+                        0.050130618654510024,
+                        0.050130618654510024,
+                        0.13082413502487947,
+                        0.13082413502487947,
+                        0.1031689785681825,
+                        0.1031689785681825,
+                        0.15329959722269254,
+                        0.15329959722269254,
+                        0.15405495529252655,
+                        -0.11496333923452409,
+                        0.16096866344343408,
+                        -0.11496333923452409,
+                    ]
+                ),
+                [
+                    I(0),
+                    X(0) @ Z(1) @ X(2),
+                    X(0) @ Z(1) @ X(2) @ Z(3),
+                    Y(0) @ Y(2),
+                    Y(0) @ Y(2) @ Z(3),
+                    Z(0),
+                    Z(0) @ Z(1),
+                    Z(0) @ Z(1) @ Z(2),
+                    Z(0) @ Z(1) @ Z(2) @ Z(3),
+                    Z(0) @ Z(2),
+                    Z(0) @ Z(2) @ Z(3),
+                    Z(1),
+                    Z(1) @ Z(2),
+                    Z(1) @ Z(3),
+                    Z(2) @ Z(3),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            0,
+            "bravyi_kitaev",
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.bravyi_kitaev(h_f)
+            (
+                np.array(
+                    [
+                        -0.3596823978788041,
+                        0.050130618654510024,
+                        0.050130618654510024,
+                        0.050130618654510024,
+                        0.050130618654510024,
+                        0.13082413502487947,
+                        0.13082413502487947,
+                        0.15329959722269254,
+                        0.15329959722269254,
+                        0.1031689785681825,
+                        0.1031689785681825,
+                        0.15405495529252655,
+                        -0.11496333923452409,
+                        0.16096866344343408,
+                        -0.11496333923452409,
+                    ]
+                ),
+                [
+                    I(0),
+                    X(0) @ Z(1) @ X(2),
+                    X(0) @ Z(1) @ X(2) @ Z(3),
+                    Y(0) @ Z(1) @ Y(2),
+                    Y(0) @ Z(1) @ Y(2) @ Z(3),
+                    Z(0),
+                    Z(0) @ Z(1),
+                    Z(0) @ Z(1) @ Z(2),
+                    Z(0) @ Z(1) @ Z(2) @ Z(3),
+                    Z(0) @ Z(2),
+                    Z(0) @ Z(2) @ Z(3),
+                    Z(1),
+                    Z(1) @ Z(2) @ Z(3),
+                    Z(1) @ Z(3),
+                    Z(2),
+                ],
+            ),
+        ),
+    ],
+)
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_mapped_hamiltonian_pyscf_openfermion(
+    symbols, geometry, charge, mapping, h_ref_data, tmpdir
+):
+    r"""Test that molecular_hamiltonian returns the correct qubit Hamiltonian with the pyscf and openfermion
+    backend."""
+    methods = ["openfermion", "pyscf"]
+    for method in methods:
+        geometry.requires_grad = False
+        molecule = qchem.Molecule(symbols, geometry, charge=charge)
+        h = qchem.molecular_hamiltonian(
+            molecule, method=method, mapping=mapping, outpath=tmpdir.strpath
+        )[0]
+
+        ops = [
+            qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+            for op in map(qml.simplify, h_ref_data[1])
+        ]
+        h_ref = qml.Hamiltonian(h_ref_data[0], ops)
+
+        h_ref_coeffs, h_ref_ops = h_ref.terms()
+        h_coeffs, h_ops = h.terms()
+
+        assert np.allclose(np.sort(h_coeffs), np.sort(h_ref_coeffs))
+        assert qml.Hamiltonian(np.ones(len(h_coeffs)), h_ops).compare(
+            qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
+        )
 
 
 @pytest.mark.parametrize(
