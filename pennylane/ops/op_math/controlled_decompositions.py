@@ -137,13 +137,13 @@ def _is_identity(matrix, atol=1e-6, rtol=0):
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     """Decompose the controlled version of a target single-qubit operation
 
-    This function decomposes a controlled single-qubit target operation using the
-    decomposition defined in Lemma 4.3 and Lemma 5.1 of
+    This function decomposes a controlled single-qubit target operation with one
+    single control using the decomposition defined in Lemma 4.3 and Lemma 5.1 of
     `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
-        control_wires (~.wires.Wires): the control wires of the operation
+        control_wires (~.wires.Wires): the control wires of the operation.
 
     Returns:
         list[Operation]: the decomposed operations
@@ -190,7 +190,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     control_wires = Wires(control_wires)
     if len(control_wires) > 1:
         raise ValueError(
-            "The control_wires should be a single wire, instead got" f"{len(control_wires)}-wires"
+            f"The control_wires should be a single wire, instead got: {len(control_wires)}-wires"
         )
 
     target_wire = target_operation.wires
@@ -227,7 +227,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     # Add C operator
     decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
 
-    # leeave only the rotation gates that are not equal to identity
+    # leave only the rotation gates that are not equal to identity
     decomp = [gate for gate in decomp if not _is_identity(qml.matrix(gate))]
     return decomp
 
@@ -464,10 +464,76 @@ def decompose_mcx(control_wires, target_wire, work_wires):
 
     num_work_wires_needed = len(control_wires) - 2
 
-    if len(work_wires) >= num_work_wires_needed:
-        return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
+    if len(control_wires) == 1:
+        return [qml.CNOT(wires=control_wires + target_wire)]
+    if len(control_wires) == 2:
+        return qml.Toffoli.compute_decomposition(wires=control_wires + target_wire)
 
-    return _decompose_mcx_with_one_worker(control_wires, target_wire, work_wires[0])
+    if len(work_wires) >= num_work_wires_needed:
+        # Lemma 7.2
+        return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
+    if len(work_wires) >= 1:
+        # Lemma 7.3
+        return _decompose_mcx_with_one_worker(control_wires, target_wire, work_wires[0])
+
+    # Lemma 7.5
+    with qml.QueuingManager.stop_recording():
+        op = qml.X(target_wire)
+    return _decompose_multicontrolled_unitary(op, control_wires, target_wire)
+
+
+def _decompose_multicontrolled_unitary(op, control_wires, target_wire):
+    """Decomposes general multi controlled unitary with no work wires
+    Follows approach from Lemma 7.5 combined with 7.3 and 7.2 of
+    https://arxiv.org/abs/quant-ph/9503016.
+
+    We are assuming this decomposition is used only in the general cases
+    """
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary
+
+    if not op.has_matrix or len(op.wires) != 1:
+        raise ValueError("Op should be a single qubit operator with a matrix representation")
+
+    if len(control_wires) == 0:
+        return [op]
+    if len(control_wires) == 1:
+        return ctrl_decomp_zyz(op, control_wires)
+    if _is_single_qubit_special_unitary(op):
+        return ctrl_decomp_bisect(op, control_wires)
+    # use recursive decomposition of general gate
+    return _decompose_recursive(op, 1.0, control_wires, target_wire, Wires([]))
+
+
+def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
+    """Decompose multicontrolled operator recursively using lemma 7.5
+    Number of gates in decomposition are: O(len(control_wires)^2)
+    """
+    if len(control_wires) == 1:
+        with qml.QueuingManager.stop_recording():
+            powered_op = qml.pow(op, power)
+        return ctrl_decomp_zyz(powered_op, control_wires)
+
+    with qml.QueuingManager.stop_recording():
+        cnots = decompose_mcx(
+            control_wires=control_wires[:-1],
+            target_wire=control_wires[-1],
+            work_wires=work_wires + target_wire,
+        )
+    with qml.QueuingManager.stop_recording():
+        powered_op = qml.pow(op, 0.5 * power)
+        powered_op_adj = qml.pow(op, -0.5 * power)
+
+    decomposition = [
+        *ctrl_decomp_zyz(powered_op, control_wires[-1]),
+        *(qml.apply(o) for o in cnots),
+        *ctrl_decomp_zyz(powered_op_adj, control_wires[-1]),
+        *(qml.apply(o) for o in cnots),
+        *_decompose_recursive(
+            op, 0.5 * power, control_wires[:-1], target_wire, control_wires[-1] + work_wires
+        ),
+    ]
+    return decomposition
 
 
 def _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires):

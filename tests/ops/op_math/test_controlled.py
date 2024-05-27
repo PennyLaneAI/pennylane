@@ -1040,16 +1040,15 @@ class TestDecomposition:
         assert qml.math.allclose(op.matrix(), decomp_mat)
 
     def test_differentiable_one_qubit_special_unitary(self):
-        """Assert that a differentiable qubit speical unitary uses the zyz decomposition."""
+        """Assert that a differentiable qubit special unitary uses the zyz decomposition."""
 
-        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1, 2, 3, 4))
+        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1))
         decomp = op.decomposition()
 
-        assert qml.equal(decomp[0], qml.RZ(qml.numpy.array(1.2), 0))
-        assert qml.equal(decomp[1], qml.MultiControlledX(wires=(1, 2, 3, 4, 0)))
-        assert qml.equal(decomp[2], qml.RZ(qml.numpy.array(-0.6), wires=0))
-        assert qml.equal(decomp[3], qml.MultiControlledX(wires=(1, 2, 3, 4, 0)))
-        assert qml.equal(decomp[4], qml.RZ(qml.numpy.array(-0.6), wires=0))
+        assert qml.equal(decomp[0], qml.PhaseShift(qml.numpy.array(1.2 / 2), 0))
+        assert qml.equal(decomp[1], qml.CNOT(wires=(1, 0)))
+        assert qml.equal(decomp[2], qml.PhaseShift(qml.numpy.array(-1.2 / 2), 0))
+        assert qml.equal(decomp[3], qml.CNOT(wires=(1, 0)))
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
@@ -1720,6 +1719,7 @@ class TestCtrl:
 
         if isinstance(op, qml.QubitUnitary):
             pytest.skip("ControlledQubitUnitary can accept any number of control wires.")
+            expected = None  # to pass pylint(possibly-used-before-assignment) error
         elif isinstance(op, Controlled):
             expected = Controlled(
                 op.base,

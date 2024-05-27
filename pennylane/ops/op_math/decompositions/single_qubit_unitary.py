@@ -216,14 +216,14 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-    phis, thetas, omegas, *alphas = _get_single_qubit_rot_angles_via_matrix(
+    phis, thetas, omegas, *global_phase = _get_single_qubit_rot_angles_via_matrix(
         U, return_global_phase=True
     )
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        alphas = math.squeeze(alphas)
-        operations.append(qml.GlobalPhase(-alphas))
+        global_phase = math.squeeze(global_phase)
+        operations.append(qml.GlobalPhase(-global_phase))
 
     return operations
 
