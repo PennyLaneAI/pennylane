@@ -296,7 +296,7 @@ def simulate(
             trainable_params=circuit.trainable_params,
         )
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
-        if qml.math.get_deep_interface(circuit.data) == "jax":
+        if qml.math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
             # pylint: disable=import-outside-toplevel
             import jax
 
