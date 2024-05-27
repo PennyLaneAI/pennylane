@@ -160,11 +160,9 @@ def adjoint(fn, lazy=True):
 
     """
     if active_jit := compiler.active_compiler():
-        if lazy is False:
-            raise CompileError("Setting lazy=False is not supported with qjit.")
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.adjoint(fn)
+        return ops_loader.adjoint(fn, laze=lazy)
     if qml.math.is_abstract(fn):
         return Adjoint(fn)
     if isinstance(fn, Operator):
