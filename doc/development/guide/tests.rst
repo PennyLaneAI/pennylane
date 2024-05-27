@@ -9,7 +9,7 @@ some extentions thereof, for example:
 * ``pytest-cov``: determines test coverage
 * ``pytest-mock``: allows replacing components with dummy/mock objects
 * ``flaky``: manages tests with non-deterministic behaviour
-* ``pytest-benchmark``: benchmarks the performance of functions, and can be used to ensure consistent runtime.
+* ``pytest-benchmark``: benchmarks the performance of functions, and can be used to ensure consistent runtime
 * ``pytest-xdist``: currently used to force some tests to run on the same thread to avoid race conditions
 
 If you properly followed the installation guide, you should have all of these packages and others installed in your
