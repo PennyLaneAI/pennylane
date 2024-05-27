@@ -161,7 +161,7 @@ def adjoint(fn, lazy=True):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.adjoint(fn, laze=lazy)
+        return ops_loader.adjoint(fn, lazy=lazy)
     if qml.math.is_abstract(fn):
         return Adjoint(fn)
     if isinstance(fn, Operator):
