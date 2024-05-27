@@ -20,7 +20,7 @@ docutils==0.16
 duet==0.2.9
 exceptiongroup==1.2.1
 flatbuffers==24.3.25
-fonttools==4.52.3
+fonttools==4.52.4
 frozenlist==1.4.1
 fsspec==2024.5.0
 future==1.0.0
