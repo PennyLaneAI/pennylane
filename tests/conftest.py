@@ -348,9 +348,6 @@ def set_log_level():
                 caplog.set_level(l, logger=m)
             yield
 
-        except Exception:  # pylint: disable=broad-except
-            raise
-
         finally:
             filter_loggers = ["pennylane", "catalyst"]
             mod += [
