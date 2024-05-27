@@ -182,7 +182,7 @@ class OpIn(BooleanFn):
                     c in self._cops
                     if isclass(x) or not getattr(x, "arithmetic_depth", 0)
                     else any(
-                        _check_with_lc_op(op, x)
+                        _check_arithmetic_ops(op, x)
                         for op in self._cond
                         if getattr(op, "arithmetic_depth", 0)
                     )
@@ -225,7 +225,7 @@ class OpEq(BooleanFn):
                 len(xs) == len(self._cond)
                 and _get_ops(xs) == self._cops
                 and all(
-                    _check_with_lc_op(op, x)
+                    _check_arithmetic_ops(op, x)
                     for (op, x) in zip(self._cond, xs)
                     if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
@@ -260,10 +260,26 @@ def _get_ops(val):
     )
 
 
-def _check_with_lc_op(op1, op2):
-    """Helper method for comparing two arithmetic operators using their LinearCombination"""
+def _check_arithmetic_ops(op1, op2):
+    """Helper method for comparing two arithmetic operators based on type check of the bases"""
     # pylint: disable = unnecessary-lambda-assignment
-    lc_cop = lambda op: qml.ops.LinearCombination(*qml.simplify(op).terms())
+    lc_cop = lambda op: qml.ops.LinearCombination(*op.terms())
+
+    if isinstance(op1, qml.ops.Exp) or isinstance(op2, qml.ops.Exp):
+        if (
+            not isinstance(op1, type(op2))
+            or (op1.base.arithmetic_depth != op2.base.arithmetic_depth)
+            or not qml.math.allclose(op1.coeff, op2.coeff)
+            or (op1.num_steps != op2.num_steps)
+        ):
+            return False
+        if op1.base.arithmetic_depth:
+            return _check_arithmetic_ops(op1.base, op2.base)
+        return _get_ops(op1.base) == _get_ops(op2.base)
+
+    op1, op2 = qml.simplify(op1), qml.simplify(op2)
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return False
 
     coeffs, op_terms = lc_cop(op1).terms()
     sprods = [_get_ops(getattr(op_term, "operands", op_term)) for op_term in op_terms]
