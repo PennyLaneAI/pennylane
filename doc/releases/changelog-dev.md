@@ -4,7 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
 <h3>Improvements 🛠</h3>
+
+* `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
+
+* Add support for 3 new pytest markers: `unit`, `integration` and `system`.
+  [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
@@ -71,6 +80,15 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
+* `qml.qchem.Molecule` and qchem functions that take `Molecule` object as an argument now work with coordinates
+  provided in units Angstrom along with Bohr.
+  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
+
+* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them 
+  consistent with the other observables. The `dtype` of the returned values when sampling these observables 
+  (e.g. `qml.sample(X(0))`) is also changed to `float`. 
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
 
@@ -95,6 +113,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
   [(#5660)](https://github.com/PennyLaneAI/pennylane/pull/5660)
 
@@ -107,6 +128,9 @@
 * `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
   returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
   [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
+
+* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
+  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
 
 <h3>Deprecations 👋</h3>
 
@@ -123,6 +147,22 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* The decomposition of `StronglyEntanglingLayers` is now compatible with broadcasting.
+  [(#5716)](https://github.com/PennyLaneAI/pennylane/pull/5716)
+
+* `qml.cond` can now be applied to `ControlledOp` operations when deferring measurements.
+  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
+
+* The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
+  [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
+
+* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
+  returned samples of observables containing the `qml.Identity` operator.
+  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
+
+* The signature of `CaptureMeta` objects (like `Operator`) now match the signature of the `__init__` call.
+  [(#5727)](https://github.com/PennyLaneAI/pennylane/pull/5727)
 
 * Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
   [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
@@ -145,6 +185,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Lillian M. A. Frederiksen,
 Ahmed Darwish,
 Gabriel Bottrill,
 Isaac De Vlugt,
@@ -153,5 +194,6 @@ Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
+Lee James O'Riordan,
 Kenya Sakka,
 David Wierichs.

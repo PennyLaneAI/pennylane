@@ -1,5 +1,5 @@
 numpy
-scipy
+scipy<1.13.0
 cvxpy
 cvxopt
 networkx

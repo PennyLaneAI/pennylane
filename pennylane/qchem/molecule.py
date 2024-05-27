@@ -27,6 +27,9 @@ from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
 
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+bohr_angs = 0.529177210903
+
 
 class Molecule:
     r"""Create a molecule object that stores molecular information and default basis set parameters.
@@ -41,8 +44,7 @@ class Molecule:
             where ``N`` is the number of atoms.
         charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
-            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Currently,
-            openshell systems are not supported; ``mult`` must be equal to :math:`1`.
+            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
             only supported basis sets are 'STO-3G', '6-31G', '6-311G' and 'CC-PVDZ'.
         load_data (bool): flag to load data from the basis-set-exchange library
@@ -51,6 +53,7 @@ class Molecule:
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
         normalize (bool): if True, the basis functions get normalized
+        unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
 
     **Example**
 
@@ -75,6 +78,7 @@ class Molecule:
         alpha=None,
         coeff=None,
         normalize=True,
+        unit="bohr",
     ):
         if (
             basis_name.lower()
@@ -97,21 +101,25 @@ class Molecule:
 
         self.symbols = symbols
         self.coordinates = coordinates
+        self.unit = unit.strip().lower()
         self.charge = charge
         self.mult = mult
         self.basis_name = basis_name.lower()
         self.name = name
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
+        if self.unit not in ("angstrom", "bohr"):
+            raise ValueError(
+                f"The provided unit '{unit}' is not supported. "
+                f"Please set 'unit' to 'bohr' or 'angstrom'."
+            )
+
+        if self.unit == "angstrom":
+            self.coordinates = self.coordinates / bohr_angs
+
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
         self.n_electrons = sum(self.nuclear_charges) - self.charge
-
-        if self.n_electrons % 2 == 1 or self.mult != 1:
-            raise ValueError(
-                "Openshell systems are not supported. Change the charge or spin "
-                "multiplicity of the molecule."
-            )
 
         if l is None:
             l = [i[0] for i in self.basis_data]

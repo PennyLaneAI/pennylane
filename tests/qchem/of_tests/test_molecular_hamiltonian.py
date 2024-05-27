@@ -65,8 +65,8 @@ test_coordinates = np.array(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
-        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
-        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER"),
+        (1, 2, "openfermion", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "openfermion", 1, 2, "jordan_WIGNER"),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
@@ -116,6 +116,8 @@ def test_building_hamiltonian(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
+        (1, 2, "openfermion", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "openfermion", 1, 2, "jordan_WIGNER"),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
@@ -800,8 +802,22 @@ def test_diff_hamiltonian_error():
     ):
         qchem.molecular_hamiltonian(symbols, geometry, method="psi4")
 
-    with pytest.raises(ValueError, match="Openshell systems are not supported"):
+    with pytest.raises(ValueError, match="Open-shell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
+
+
+def test_pyscf_hamiltonian_error():
+    r"""Test that molecular_hamiltonian raises an error for open-shell systems."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+
+    with pytest.raises(ValueError, match="Open-shell systems are not supported"):
+        qchem.molecular_hamiltonian(symbols, geometry, mult=3, method="pyscf")
+
+    molecule = qchem.Molecule(symbols, geometry, mult=3)
+    with pytest.raises(ValueError, match="Open-shell systems are not supported"):
+        qchem.molecular_hamiltonian(molecule, method="pyscf")
 
 
 def test_diff_hamiltonian_error_molecule_class():
@@ -974,6 +990,7 @@ def test_error_raised_for_missing_molecule_information():
 
 
 @pytest.mark.parametrize(
+
     ("symbols", "geometry", "charge", "mapping", "method", "h_ref_data"),
     [
         (
@@ -1396,3 +1413,74 @@ def test_mapped_hamiltonian_pyscf_openfermion(
     assert qml.Hamiltonian(np.ones(len(h_coeffs)), h_ops).compare(
         qml.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
     )
+    ("method"),
+    [
+        "pyscf",
+        "dhf",
+        "openfermion",
+    ],
+)
+def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
+    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units."""
+
+    symbols = ["H", "H"]
+    geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    geometry_ang = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
+
+    hamiltonian_bohr, _ = qchem.molecular_hamiltonian(
+        symbols,
+        geometry_bohr,
+        unit="bohr",
+        method=method,
+        outpath=tmpdir.strpath,
+    )
+
+    hamiltonian_ang, _ = qchem.molecular_hamiltonian(
+        symbols,
+        geometry_ang,
+        unit="angstrom",
+        method=method,
+        outpath=tmpdir.strpath,
+    )
+    assert qml.equal(hamiltonian_ang, hamiltonian_bohr)
+
+
+@pytest.mark.parametrize(
+    ("method"),
+    [
+        "pyscf",
+        "dhf",
+        "openfermion",
+    ],
+)
+def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdir):
+    r"""Test that molecular_hamiltonian generates the Hamiltonian for both Bohr and Angstrom units."""
+
+    symbols = ["H", "H"]
+    geometry_bohr = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    geometry_ang = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.529177210903]])
+
+    molecule_bohr = qchem.Molecule(symbols, geometry_bohr, unit="bohr")
+    hamiltonian_bohr, _ = qchem.molecular_hamiltonian(
+        molecule_bohr,
+        method=method,
+        outpath=tmpdir.strpath,
+    )
+
+    molecule_ang = qchem.Molecule(symbols, geometry_ang, unit="angstrom")
+    hamiltonian_ang, _ = qchem.molecular_hamiltonian(
+        molecule_ang,
+        method=method,
+        outpath=tmpdir.strpath,
+    )
+    assert qml.equal(hamiltonian_ang, hamiltonian_bohr)
+
+
+def test_unit_error_molecular_hamiltonian():
+    r"""Test that an error is raised if a wrong/not-supported unit for coordinates is entered."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+
+    with pytest.raises(ValueError, match="The provided unit 'degrees' is not supported."):
+        qchem.molecular_hamiltonian(symbols, geometry, unit="degrees")
