@@ -200,7 +200,7 @@ class StronglyEntanglingLayers(Operation):
         CNOT(wires=['a', 'a']),
         CNOT(wires=['b', 'b'])]
         """
-        n_layers = qml.math.shape(weights)[0]
+        n_layers = qml.math.shape(weights)[-3]
         wires = qml.wires.Wires(wires)
         op_list = []
 
