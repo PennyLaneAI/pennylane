@@ -68,7 +68,7 @@ importing PennyLane in Python.
 
 Apart from the core packages needed to run PennyLane. Some extra packages need
 to be installed for several development processes, such as linting, testing, and
-pre-commit quality checks to name a few. Those can be installed easily via ``pip``:
+pre-commit quality checks. Those can be installed easily via ``pip``:
 
 .. code-block:: bash
 
