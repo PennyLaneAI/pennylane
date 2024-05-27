@@ -73,7 +73,7 @@ def _make_execution_config(
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
-    mcm_config = getattr(circuit, "execute_kwargs", {}).get("mcm_config", None)
+    mcm_config = getattr(circuit, "execute_kwargs", {}).get("mcm_config", {})
 
     return qml.devices.ExecutionConfig(
         interface=getattr(circuit, "interface", None),

@@ -545,6 +545,7 @@ def execute(
         )
 
     gradient_kwargs = gradient_kwargs or {}
+    mcm_config = mcm_config or {}
     config = config or _get_execution_config(
         gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
     )
