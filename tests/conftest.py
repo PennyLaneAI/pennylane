@@ -330,34 +330,49 @@ def pytest_runtest_setup(item):
                 )
 
 
+class LogExceptionMgr:
+    """
+    This context manager class defines setup and teardown for log-levels as part of testing. It is often required to enable various levels beyond the capability of the in-built caplog setting, so this class allow setting of outter log-level messages, and the inner caplog defined level can be set within the manager as expected. With this, multiple layers of control can be provided for the logging configuration.
+    """
+
+    # Use lock due to process-wide modification to configuration
+    def __init__(self, caplog, mod, levels):
+        self._caplog = caplog
+        self._mod = mod
+        self._levels = levels
+        self._pl_logger = None
+
+    def __enter__(self):
+        pl_logging.enable_logging()
+        self._pl_logger = logging.root.manager.loggerDict["pennylane"]
+
+        # Ensure logs messages are propagated for pytest capture
+        self._pl_logger.propagate = True
+
+        for l, m in zip(self._levels, self._mod):
+            self._caplog.set_level(l, logger=m)
+
+    def __exit__(self, *exc):
+        # Ensure all recently added loggers and handlers are removed
+        filter_loggers = ["pennylane", "catalyst"]
+        self._mod += [
+            lgr_name
+            for (lgr_name, _) in logging.root.manager.loggerDict.items()
+            if any(filt_lgr in lgr_name for filt_lgr in filter_loggers)
+        ]
+        for m in self._mod:
+            self._caplog.set_level(logging.NOTSET, logger=m)
+            logger = logging.root.manager.loggerDict[m]
+            logger.setLevel(logging.NOTSET)
+            logger.propagate = True
+            logger.filters.clear()
+            logger.handlers.clear()
+            logger.disabled = False
+
+
 # pylint: disable=pointless-statement
 @pytest.fixture(scope="function")
 def set_log_level():
-    "Add log-level context-managing fixture to avoid log-levels propagating outside of tests"
+    "Wrap LogExceptionMgr to provide fixture function-level support for enabling and disabling logging"
 
-    @contextlib.contextmanager
-    def log_level_fixture(caplog, mod, levels):
-        try:
-            pl_logging.enable_logging()
-            pl_logger = logging.root.manager.loggerDict["pennylane"]
-
-            # Ensure logs messages are propagated for pytest capture
-            pl_logger.propagate = True
-
-            for l, m in zip(levels, mod):
-                caplog.set_level(l, logger=m)
-            yield
-
-        finally:
-            filter_loggers = ["pennylane", "catalyst"]
-            mod += [
-                lgr
-                for (lgr, _) in logging.root.manager.loggerDict.items()
-                if any(filt_lgr in lgr for filt_lgr in filter_loggers)
-            ]
-            for m in mod:
-                caplog.set_level(logging.NOTSET, logger=m)
-
-            pl_logger.propagate = False
-
-    return log_level_fixture
+    return LogExceptionMgr
