@@ -94,11 +94,14 @@ class QROM(Operation):
         Following the idea in `arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__, auxiliary qubits can be used to
         load in parallel more than one bit string. Let :math:`\lambda` be
         the number of bitstrings we want to store in parallel, which it is assumed to be a power of :math:`2`.
-        Then, :math:`k = m \cdot (\lambda-1)` work wires are needed,
-        where :math:`m` is the length of the bitstrings.
+        Then, :math:`k = l \cdot (\lambda-1)` work wires are needed,
+        where :math:`l` is the length of the bitstrings.
 
-        The version applied by setting ``clean = True`` is able to work with ``work_wires`` that are not initialized to zero.
-        In `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__ you could find more details.
+        The QROM template has two variants. The first one (``clean = False``) is based on the previous paper that creates garbage in the ``work_wires``.
+        The second one (``clean = True``), based on `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, solves that issue by
+        returning ``work_wires`` to their initial state. This technique is able to work with ``work_wires`` that are not
+        initialized to zero.
+
     """
 
     def __init__(
