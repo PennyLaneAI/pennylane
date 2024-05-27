@@ -1132,31 +1132,27 @@ def _molecular_hamiltonian(
         )
 
         hf = qml.qchem.fermionic_observable(core_constant, one_mo, two_mo)
+        mapping = mapping.strip().lower()
+        qubits = len(hf.wires)
 
         if active_new_opmath():
-            if mapping.strip().lower() == "jordan_wigner":
-                h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10).simplify()
-            elif mapping.strip().lower() == "parity":
-                qubits = len(hf.wires)
-                h_pl = qml.parity_transform(hf, qubits, wire_map=wires_map, tol=1.0e-10).simplify()
-            elif mapping.strip().lower() == "bravyi_kitaev":
-                qubits = len(hf.wires)
-                h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10).simplify()
-        else:
-            if mapping.strip().lower() == "jordan_wigner":
-                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10).hamiltonian()
-            elif mapping.strip().lower() == "parity":
-                qubits = len(hf.wires)
-                h_pl = qml.parity_transform(
-                    hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10
-                ).hamiltonian()
-            elif mapping.strip().lower() == "bravyi_kitaev":
-                qubits = len(hf.wires)
-                h_pl = qml.bravyi_kitaev(
-                    hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10
-                ).hamiltonian()
+            if mapping == "jordan_wigner":
+                h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10)
+            elif mapping == "parity":
+                h_pl = qml.parity_transform(hf, qubits, wire_map=wires_map, tol=1.0e-10)
+            elif mapping == "bravyi_kitaev":
+                h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10)
 
-            h_pl = simplify(h_pl)
+            h_pl.simplify()
+        else:
+            if mapping == "jordan_wigner":
+                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10)
+            elif mapping == "parity":
+                h_pl = qml.parity_transform(hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10)
+            elif mapping == "bravyi_kitaev":
+                h_pl = qml.bravyi_kitaev(hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10)
+
+            h_pl = simplify(h_pl.hamiltonian())
 
         return h_pl, len(h_pl.wires)
 

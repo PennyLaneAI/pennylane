@@ -189,6 +189,8 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, mapping="jorda
         cutoff (float): cutoff value for discarding the negligible electronic integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
+        mapping (str): Specifies the fermion-to-qubit mapping. Input values can
+            be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
     Returns:
         function: function that computes the qubit hamiltonian

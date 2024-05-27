@@ -104,7 +104,8 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     Args:
         o_ferm (Union[FermiWord, FermiSentence]): fermionic operator
         cutoff (float): cutoff value for discarding the negligible terms
-
+        mapping (str): Specifies the fermion-to-qubit mapping. Input values can
+            be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
     Returns:
         Operator: Simplified PennyLane Hamiltonian
 
