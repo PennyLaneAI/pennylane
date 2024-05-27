@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
-import copy
 import sys
 
 # pylint: disable=protected-access
 from collections import Counter
 from functools import partial, singledispatch
-from typing import Optional, Sequence
+from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
@@ -154,12 +153,11 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    if initial_state is None:
-        state = create_initial_state(
-            sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface]
-        )
-    else:
-        state = initial_state
+    state = (
+        create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+        if initial_state is None
+        else initial_state
+    )
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -197,7 +195,9 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
 
 
 # pylint: disable=too-many-arguments
-def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
+def measure_final_state(
+    circuit, state, is_state_batched, initial_state=None, **execution_kwargs
+) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -207,6 +207,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         circuit (.QuantumScript): The single circuit to simulate
         state (TensorLike): The state to perform measurement on
         is_state_batched (bool): Whether the state has a batch dimension or not.
+        initial_state (TensorLike): Initial statevector
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -215,7 +216,6 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
-        initial_state (TensorLike): Initial statevector
 
     Returns:
         Tuple[TensorLike]: The measurement results
@@ -223,7 +223,6 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
-    initial_state = execution_kwargs.get("initial_state", None)
     mid_measurements = execution_kwargs.get("mid_measurements", None)
 
     if initial_state is None:
@@ -348,13 +347,11 @@ def simulate(
 # pylint: disable=too-many-arguments, dangerous-default-value
 def simulate_tree_mcm(
     circuit: qml.tape.QuantumScript,
-    rng=None,
-    prng_key=None,
     debugger=None,
-    interface=None,
     initial_state=None,
     mcm_active=None,
     mcm_samples=None,
+    **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script with native mid-circuit measurements.
 
@@ -375,6 +372,8 @@ def simulate_tree_mcm(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
+    interface = execution_kwargs.get("interface", None)
+
     samples_present = any(isinstance(mp, SampleMP) for mp in circuit.measurements)
     postselect_present = any(
         op.postselect is not None for op in circuit.operations if isinstance(op, MidMeasureMP)
@@ -398,15 +397,7 @@ def simulate_tree_mcm(
         for s in circuit.shots:
             aux_circuit = circuit.copy()
             aux_circuit._shots = qml.measurements.Shots(s)
-            results.append(
-                simulate_tree_mcm(
-                    aux_circuit,
-                    rng,
-                    prng_key,
-                    debugger,
-                    interface,
-                )
-            )
+            results.append(simulate_tree_mcm(aux_circuit, debugger, **execution_kwargs))
         return tuple(results)
 
     #######################
@@ -425,17 +416,12 @@ def simulate_tree_mcm(
     state, is_state_batched = get_final_state(
         circuit_base,
         debugger=debugger,
-        interface=interface,
         initial_state=initial_state,
         mid_measurements=mcm_active,
+        **execution_kwargs,
     )
     measurements = measure_final_state(
-        circuit_base,
-        state,
-        is_state_batched,
-        rng=rng,
-        prng_key=prng_key,
-        initial_state=initial_state,
+        circuit_base, state, is_state_batched, initial_state=initial_state, **execution_kwargs
     )
 
     # Simply return measurements when ``circuit_base`` does not have an MCM
@@ -452,61 +438,48 @@ def simulate_tree_mcm(
     ):
         """Returns the measurements of the specified branch by executing ``circuit_next``."""
 
-        def branch_state(state, wire, branch):
-            axis = wire.toarray()[0]
-            slices = [slice(None)] * state.ndim
-            slices[axis] = int(not branch)
-            state = copy.deepcopy(state)
-            state[tuple(slices)] = 0.0
-            state_norm = np.linalg.norm(state)
-            # we can throw here because vanished states should
-            # be handled right outside ``branch_measurement``
-            if state_norm < 1.0e-15:  # pragma: no cover
-                raise ValueError(f"Cannot normalize state with state_norm {state_norm}")
-            state = state / state_norm
+        def branch_state(state, branch, wire):
+            state = apply_operation(qml.Projector([branch], wire), state)
+            state /= qml.math.norm(state)
             if op.reset and branch == 1:
                 state = apply_operation(qml.PauliX(wire), state)
             return state
 
         wire = circuit_base._measurements[0].wires
-        new_state = branch_state(state, wire, branch)
+        new_state = branch_state(state, branch, wire)
         circuit_next._shots = qml.measurements.Shots(counts[branch])
         return simulate_tree_mcm(
             circuit_next,
-            rng=rng,
-            prng_key=prng_key,
             debugger=debugger,
-            interface=interface,
             initial_state=new_state,
             mcm_active=mcm_active,
             mcm_samples=mcm_samples,
+            **execution_kwargs,
         )
 
     counts = samples_to_counts(samples)
-    measurements = []
-    for branch in counts.keys():
+    measurements = [{} for _ in circuit_next.measurements]
+    single_measurement = len(circuit_next.measurements) == 1
+    for branch, count in counts.items():
         if op.postselect is not None and branch != op.postselect:
             prune_mcm_samples(op, branch, mcm_active, mcm_samples)
             continue
         mcm_active[op] = branch
-        measurements.append(
-            branch_measurement(
-                circuit_base,
-                circuit_next,
-                counts,
-                state,
-                branch,
-                mcm_active=mcm_active,
-                mcm_samples=mcm_samples,
-            )
+        meas = branch_measurement(
+            circuit_base,
+            circuit_next,
+            counts,
+            state,
+            branch,
+            mcm_active=mcm_active,
+            mcm_samples=mcm_samples,
         )
-    dict_measurements = dict(
-        (
-            (branch, (count, value))
-            for branch, count, value in zip(counts.keys(), counts.values(), measurements)
-        )
-    )
-    return combine_measurements(circuit, dict_measurements, mcm_samples)
+        if single_measurement:
+            meas = [meas]
+        for i, m in enumerate(meas):
+            measurements[i][branch] = (count, m)
+
+    return combine_measurements(circuit, measurements, mcm_samples)
 
 
 def samples_to_counts(samples):
@@ -623,23 +596,8 @@ def measurement_with_no_shots(measurement):
     )
 
 
-# pylint: disable=too-many-branches
 def combine_measurements(circuit, measurements, mcm_samples):
     """Returns combined measurement values of various types."""
-
-    keys = list(measurements.keys())
-
-    # convert dict-of-lists to list-of-dicts
-    if keys and isinstance(measurements[keys[0]][1], Sequence):
-        ds = [
-            [(measurements[keys[i]][0], m) for m in measurements[keys[i]][1]]
-            for i in range(len(measurements))
-        ]
-        new_measurements = []
-        for m in zip(*ds):
-            new_measurements.append(dict((k, v) for k, v in zip(keys, m)))
-    else:
-        new_measurements = [measurements]
     empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
     if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):
         raise ValueError("mcm_samples have inconsistent shapes.")
@@ -652,12 +610,12 @@ def combine_measurements(circuit, measurements, mcm_samples):
             mcm_samples = dict((k, v.reshape((-1, 1))) for k, v in mcm_samples.items())
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = dyn_gather_mcm(circ_meas, mcm_samples, is_valid)
-        elif not new_measurements or not new_measurements[0]:
-            if len(new_measurements) > 0:
-                _ = new_measurements.pop(0)
+        elif not measurements or not measurements[0]:
+            if len(measurements) > 0:
+                _ = measurements.pop(0)
             comb_meas = measurement_with_no_shots(circ_meas)
         else:
-            comb_meas = combine_measurements_core(circ_meas, new_measurements.pop(0))
+            comb_meas = combine_measurements_core(circ_meas, measurements.pop(0))
         if isinstance(circ_meas, SampleMP):
             comb_meas = qml.math.squeeze(comb_meas)
         final_measurements.append(comb_meas)
