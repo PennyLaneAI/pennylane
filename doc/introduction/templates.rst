@@ -305,7 +305,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`QROM <../code/api/pennylane.QROM>`
-    :figure: _static/templates/qrom/thumbnail_qrom.png
+    :figure: _static/templates/qrom/qrom_thumbnail.png
 
 
 .. raw:: html
