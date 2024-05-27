@@ -43,14 +43,10 @@ class QROM(Operation):
 
     Args:
         bitstrings (list[str]): the bitstrings to be encoded
-        target_wires (Sequence[int]): the wires where the bitstring is loaded
         control_wires (Sequence[int]): the wires where the indexes are specified
+        target_wires (Sequence[int]): the wires where the bitstring is loaded
         work_wires (Sequence[int]): the auxiliary wires used for the computation
         clean (bool): if True, the work wires are not altered by operator, default is ``True``
-
-    .. note::
-
-        The position of the bitstrings in the list determines which index store that bitstring.
 
     **Example**
 
@@ -84,10 +80,22 @@ class QROM(Operation):
     .. details::
         :title: Usage Details
 
-        The ``work_wires`` are the auxiliary qubits used by the template. If :math:`m` is the number of target wires,
-        :math:`m \cdot 2^{\lambda-1}` work wires can be used, where :math:`\lambda` is the number of bitstrings
-        we want to store per column. In case it is not a power of two, this template uses the closest approximation.
-        See `arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__ for more information.
+        This template takes as input three different sets of wires. The first one in ``control_wires``. This register
+        makes reference to the wires where we will introduce the index. Therefore, if we have :math:`m` bitstrings, we need
+        at least :math:`\lceil \log_2(m)\rceil` wires.
+
+        The second set of wires is ``target_wires``. These are the wires where the bitstrings will be stored.
+        For instance, if the bitstring is "0110", we will need four target wires. Internally the bitstrings are
+        encoded using the :class:`~.BasisEmbedding` template.
+
+
+        The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
+        Let :math:`k` be the number of work wires. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
+        Following the idea in `arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__, auxiliary qubits can be used to
+        load in parallel more than one bit string. Let :math:`\lambda` be
+        the number of bitstrings we want to store in parallel, which it is assumed to be a power of :math:`2`.
+        Then, :math:`k = m \cdot (\lambda-1)` work wires are needed,
+        where :math:`m` is the length of the bitstrings.
 
         The version applied by setting ``clean = True`` is able to work with ``work_wires`` that are not initialized to zero.
         In `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__ you could find more details.
