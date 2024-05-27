@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* One can now pass a `qml.measurements.SampleMeasurement`-based measurements into a snapshot. [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+* One can now pass a `qml.measurements.SampleMeasurement`-based measurements into a snapshot.
+  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 ```python
 @qml.snapshots
