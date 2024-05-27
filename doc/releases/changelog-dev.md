@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
+
 * `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
   [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
