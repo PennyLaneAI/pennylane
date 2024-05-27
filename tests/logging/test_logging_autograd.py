@@ -13,13 +13,11 @@
 # limitations under the License.
 """Unit tests for the the logging module"""
 # pylint: disable=import-outside-toplevel, protected-access, no-member
-import contextlib
 import logging
 
 import pytest
 
 import pennylane as qml
-import pennylane.logging as pl_logging
 
 _grad_log_map = {
     "adjoint": "gradient_fn=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
