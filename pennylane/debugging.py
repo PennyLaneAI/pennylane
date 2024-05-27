@@ -55,7 +55,7 @@ class _Debugger:
 
 @transform
 def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
-    r"""Transforms a QNode into several tapes by aggregating all operations up to a `qml.Snapshot`
+    r"""Transforms a QNode into several tapes by aggregating all operations up to a ``qml.Snapshot``
     operation into their own execution tape.
 
     The transform is conservative about the wires that it includes in each tape.
