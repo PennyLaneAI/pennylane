@@ -229,6 +229,8 @@ class QROM(Operation):
             select_ops = []
             if control_select_wires:
                 select_ops += [qml.Select(new_ops, control=control_select_wires)]
+            else:
+                select_ops = new_ops
 
             # Swap block
             control_swap_wires = control_wires[n_control_select_wires:]
@@ -243,7 +245,7 @@ class QROM(Operation):
                             * len(target_wires)
                         ],
                     )
-                    swap_ops.append(qml.ctrl(new_op, control=wire))
+                    swap_ops.insert(0, qml.ctrl(new_op, control=control_swap_wires[-ind - 1]))
 
             if not clean:
                 # Based on this paper: https://arxiv.org/abs/1812.00954
@@ -255,7 +257,7 @@ class QROM(Operation):
                 adjoint_swap_ops = swap_ops[::-1]
                 hadamard_ops = [qml.Hadamard(wires=w) for w in target_wires]
 
-                decomp_ops = 2 * (hadamard_ops + swap_ops + select_ops + adjoint_swap_ops)
+                decomp_ops = 2 * (hadamard_ops + adjoint_swap_ops + select_ops + swap_ops)
 
         if qml.QueuingManager.recording():
             for op in decomp_ops:
