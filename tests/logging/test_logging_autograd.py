@@ -107,11 +107,6 @@ class TestLogging:
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records, set_log_level):
         "Test logging of QNode with parameterised gradients"
 
-        # Set specific log-levels for validation
-        caplog.set_level(logging.INFO, logger="pennylane")
-        caplog.set_level(logging.DEBUG, logger="pennylane.workflow")
-        caplog.set_level(logging.DEBUG, logger="pennylane.devices")
-
         with set_log_level(
             caplog,
             ["pennylane", "pennylane.workflow", "pennylane.devices"],
@@ -153,6 +148,54 @@ class TestLogging:
                 [
                     "Entry with args=(tapes=(<QuantumScript: wires=[0], params=1>,)",
                     _grad_log_map[diff_method],
+                ],
+            ),
+        ]
+
+        for expected, actual in zip(log_records_expected, caplog.records[:2]):
+            assert expected[0] in actual.name
+            assert all(msg in actual.getMessage() for msg in expected[1])
+
+    def test_execution_debugging_qutrit_mixed(self, caplog, set_log_level):
+        """Test logging of QNode forward pass from default qutrit mixed."""
+
+        with set_log_level(
+            caplog,
+            ["pennylane", "pennylane.workflow", "pennylane.devices"],
+            [logging.INFO, logging.DEBUG, logging.DEBUG],
+        ):
+            # Set inner level to log local details
+            with caplog.at_level(logging.DEBUG):
+                dev = qml.device("default.qutrit.mixed", wires=2)
+                params = qml.numpy.array(0.1234)
+
+                @qml.qnode(dev, diff_method=None)
+                def circuit(params):
+                    qml.TRX(params, wires=0)
+                    return qml.expval(qml.GellMann(0, 3))
+
+                circuit(params)
+
+        assert len(caplog.records) == 6
+
+        log_records_expected = [
+            (
+                "pennylane.devices.default_qutrit_mixed",
+                ["Calling <__init__(self=<default.qutrit.mixed device (wires=2)"],
+            ),
+            (
+                "pennylane.workflow.qnode",
+                ["Creating QNode(func=<function TestLogging.test_execution_debugging_qutrit_mixed"],
+            ),
+            (
+                "pennylane.workflow.qnode",
+                ["Calling <construct(self=<QNode: device='<default.qutrit.mixed device (wires=2)"],
+            ),
+            (
+                "pennylane.workflow.execution",
+                [
+                    "device=<default.qutrit.mixed device (wires=2)",
+                    "gradient_fn=None, interface=None",
                 ],
             ),
         ]
