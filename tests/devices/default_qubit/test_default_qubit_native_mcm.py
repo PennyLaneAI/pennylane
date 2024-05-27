@@ -17,7 +17,6 @@ from typing import Iterable, Sequence
 
 import numpy as np
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
@@ -314,7 +313,7 @@ def obs_tape(x, y, z, reset=False, postselect=None):
     return m0, m1
 
 
-@pytest.mark.parametrize("shots", [None, 20000, [20000, 20001]])
+@pytest.mark.parametrize("shots", [None, 8500, [8500, 8501]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -435,6 +434,14 @@ def test_single_mcm_multiple_measurements(postselect, reset, measure_f):
     if shots is not None:
         func3 = qml.dynamic_one_shot(func)
         results3 = func3(*params)
+        if isinstance(shots, Sequence):
+            for s, r1, r2 in zip(shots, results3, results2):
+                for _r1, _r2 in zip(r1, r2):
+                    validate_measurements(measure_f, s, _r1, _r2)
+            return
+
+        for r1, r2 in zip(results3, results2):
+            validate_measurements(measure_f, shots, r1, r2)
 
     if isinstance(shots, Sequence):
         for s, r1, r2 in zip(shots, results1, results2):
@@ -534,7 +541,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
             validate_measurements(measure_f, shots, results3, results2)
 
 
-@pytest.mark.parametrize("shots", [None, 7000, [7000, 7001]])
+@pytest.mark.parametrize("shots", [None, 8500, [8500, 8501]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
@@ -604,43 +611,6 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
         validate_measurements(measure_f, shots, results3, results2)
 
     validate_measurements(measure_f, shots, results1, results2)
-
-
-@pytest.mark.parametrize("shots", [5000])
-@pytest.mark.parametrize("postselect", [None, 0, 1])
-@pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.expval])
-def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
-    """Tests that DefaultQubit can differentiate a circuit with a composite mid-circuit
-    measurement and a conditional gate. A single measurement of a common observable is
-    performed at the end."""
-
-    dev = get_device(shots=shots)
-    param = qml.numpy.array([np.pi / 3, np.pi / 6])
-    obs = qml.PauliZ(0) @ qml.PauliZ(1)
-
-    @qml.qnode(dev, diff_method="parameter-shift")
-    def func(x, y):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(y, 1)
-        m1 = qml.measure(1, reset=reset, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2 * np.pi / 3, 0)
-        qml.cond((m0 + m1) > 0, qml.RY)(2 * np.pi / 3, 1)
-        return measure_f(op=obs)
-
-    func1 = func
-    func2 = qml.defer_measurements(func)
-
-    results1 = func1(*params)
-    results2 = func2(*params)
-
-    validate_measurements(measure_f, shots, results1, results2)
-
-    grad1 = qml.grad(func)(*params)
-    grad2 = qml.grad(func2)(*params)
-
-    assert np.allclose(grad1, grad2, atol=0.01, rtol=0.3)
 
 
 @pytest.mark.parametrize("shots", [5000, [5000, 5001]])

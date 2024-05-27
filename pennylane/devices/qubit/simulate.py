@@ -13,6 +13,7 @@
 # limitations under the License.
 """Simulate a quantum script."""
 import copy
+import sys
 
 # pylint: disable=protected-access
 from collections import Counter
@@ -374,6 +375,20 @@ def simulate_tree_mcm(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
+    samples_present = any(isinstance(mp, SampleMP) for mp in circuit.measurements)
+    postselect_present = any(
+        op.postselect is not None for op in circuit.operations if isinstance(op, MidMeasureMP)
+    )
+    if postselect_present and samples_present and circuit.batch_size is not None:
+        raise ValueError(
+            "Returning qml.sample is not supported when postselecting mid-circuit "
+            "measurements with broadcasting"
+        )
+
+    n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
+
+    if n_mcms > sys.getrecursionlimit():
+        sys.setrecursionlimit(n_mcms)
 
     #########################
     # shot vector treatment #
@@ -608,69 +623,21 @@ def measurement_with_no_shots(measurement):
     )
 
 
-def gather_mcm(measurement, samples):
-    """Combines, gathers and normalizes several measurements with non-trivial measurement values.
-
-    Args:
-        measurement (MeasurementProcess): measurement
-        samples (List[dict]): Mid-circuit measurement samples
-
-    Returns:
-        TensorLike: The combined measurement outcome
-    """
-    mv = measurement.mv
-    if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
-        wires = qml.wires.Wires(range(len(mv)))
-        if isinstance(samples, Sequence):
-            mcm_samples = list(
-                np.array([m.concretize(dct) for dct in samples]).reshape((-1, 1)) for m in mv
-            )
-        else:
-            mcm_samples = list(m.concretize(samples).reshape((-1, 1)) for m in mv)
-        mcm_samples = np.concatenate(mcm_samples, axis=1)
-        meas_tmp = measurement.__class__(wires=wires)
-        return meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    if isinstance(measurement, ProbabilityMP):
-        if isinstance(samples, Sequence):
-            mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
-        else:
-            mcm_samples = mv.concretize(samples).reshape((-1, 1))
-        use_as_is = True
-    else:
-        if isinstance(samples, Sequence):
-            mcm_samples = np.array([mv.concretize(dct) for dct in samples]).reshape((-1, 1))
-        else:
-            mcm_samples = mv.concretize(samples).reshape((-1, 1))
-        use_as_is = mv.branches == {(0,): 0, (1,): 1}
-    use_as_is = mv.branches == {(0,): 0, (1,): 1}
-    if use_as_is:
-        wires, meas_tmp = mv.wires, measurement
-    else:
-        # For composite measurements, `mcm_samples` has one column but
-        # `mv.wires` usually includes several wires. We therefore need to create a
-        # single-wire measurement for `process_samples` to handle the conversion
-        # correctly.
-        if isinstance(measurement, (ExpectationMP, VarianceMP)):
-            mcm_samples = mcm_samples.ravel()
-        wires = qml.wires.Wires(0)
-        meas_tmp = measurement.__class__(wires=wires)
-    new_measurement = meas_tmp.process_samples(mcm_samples, wire_order=wires)
-    # if isinstance(measurement, CountsMP) and not use_as_is:
-    #     new_measurement = dict(sorted((int(x), y) for x, y in new_measurement.items()))
-    return new_measurement
-
-
+# pylint: disable=too-many-branches
 def combine_measurements(circuit, measurements, mcm_samples):
     """Returns combined measurement values of various types."""
 
     keys = list(measurements.keys())
+
     # convert dict-of-lists to list-of-dicts
     if keys and isinstance(measurements[keys[0]][1], Sequence):
         ds = [
             [(measurements[keys[i]][0], m) for m in measurements[keys[i]][1]]
             for i in range(len(measurements))
         ]
-        new_measurements = [{keys[0]: m0, keys[1]: m1} for m0, m1 in zip(*ds)]
+        new_measurements = []
+        for m in zip(*ds):
+            new_measurements.append(dict((k, v) for k, v in zip(keys, m)))
     else:
         new_measurements = [measurements]
     empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
@@ -685,7 +652,6 @@ def combine_measurements(circuit, measurements, mcm_samples):
             mcm_samples = dict((k, v.reshape((-1, 1))) for k, v in mcm_samples.items())
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = dyn_gather_mcm(circ_meas, mcm_samples, is_valid)
-            # comb_meas = gather_mcm(circ_meas, mcm_samples)
         elif not new_measurements or not new_measurements[0]:
             if len(new_measurements) > 0:
                 _ = new_measurements.pop(0)

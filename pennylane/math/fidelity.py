@@ -20,8 +20,8 @@ be found in pennylane/math/fidelity_gradient.md
 from functools import lru_cache
 
 import autograd
-import autoray as ar
 
+import autoray as ar
 import pennylane as qml
 
 from .quantum import _check_density_matrix, _check_state_vector

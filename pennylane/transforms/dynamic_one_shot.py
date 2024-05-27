@@ -331,10 +331,6 @@ def gather_mcm(measurement, samples, is_valid):
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
         mcm_samples = [m.concretize(samples) for m in mv]
         mcm_samples = qml.math.concatenate(mcm_samples, axis=1)
-        if isinstance(mv, Sequence):
-            wires = qml.wires.Wires(range(len(mv)))
-            meas_tmp = measurement.__class__(wires=wires)
-            return meas_tmp.process_samples(mcm_samples, wire_order=wires)
         if isinstance(measurement, ProbabilityMP):
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))
