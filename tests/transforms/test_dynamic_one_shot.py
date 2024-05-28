@@ -45,7 +45,7 @@ from pennylane.transforms.dynamic_one_shot import parse_native_mid_circuit_measu
 def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
     circuit = qml.tape.QuantumScript([qml.RX(1.0, 0)], [measurement])
     with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
-        parse_native_mid_circuit_measurements(circuit, [circuit], [[]], None)
+        parse_native_mid_circuit_measurements(circuit, [circuit], [[]])
 
 
 def test_postselection_error_with_wrong_device():
@@ -59,28 +59,6 @@ def test_postselection_error_with_wrong_device():
         def _():
             qml.measure(0, postselect=1)
             return qml.probs(wires=[0])
-
-
-def test_qjit_postselection_error(monkeypatch):
-    """Test that an error is raised if qjit is active with `postselect_mode="hw-like"`"""
-    # TODO: Update test once defer_measurements can be used with qjit
-    # catalyst = pytest.importorskip("catalyst")
-    # dev = qml.device("lightning.qubit", wires=3, shots=10)
-    dev = qml.device("default.qubit", wires=3, shots=10)
-
-    # @qml.qjit
-    @qml.qnode(dev, postselect_mode="hw-like", mcm_method="one-shot")
-    def func(x):
-        qml.RX(x, 0)
-        _ = qml.measure(0, postselect=0)
-        # _ = catalyst.measure(0, postselect=0)
-        return qml.sample(wires=[0, 1])
-
-    # Mocking qml.compiler.active() to always return True
-    with monkeypatch.context() as m:
-        m.setattr(qml.compiler, "active", lambda: True)
-        with pytest.raises(ValueError, match="Cannot discard invalid shots while using qml.qjit"):
-            _ = func(1.8)
 
 
 @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
@@ -103,7 +81,33 @@ def test_postselect_mode(postselect_mode, mocker):
         assert len(res) < shots
     else:
         assert len(res) == shots
-        assert np.any(res == np.iinfo(np.int32).min)
+        assert np.all(res != np.iinfo(np.int32).min)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("use_jit", [True, False])
+@pytest.mark.parametrize("diff_method", [None, "best"])
+def test_hw_like_with_jax(use_jit, diff_method):
+    """Test that invalid shots are replaced with INTEGER_MIN_VAL if
+    postselect_mode="hw-like" with JAX"""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    shots = 10
+    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(123))
+
+    @qml.qnode(dev, postselect_mode="hw-like", diff_method=diff_method)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    if use_jit:
+        f = jax.jit(f)
+
+    res = f(jax.numpy.array(np.pi / 2))
+
+    assert len(res) == shots
+    assert np.any(res == np.iinfo(np.int32).min)
 
 
 def test_unsupported_measurements():
