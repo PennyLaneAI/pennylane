@@ -57,7 +57,7 @@ def pytree_structure_dump(
 
     >>> _, struct = flatten([{"a": 1}, 2])
     >>> struct
-    'PyTreeStructure(<class 'list'>, None, [PyTreeStructure(<class 'dict'>, ("a",), [PyTreeStructure()]), PyTreeStructure()])'
+    PyTreeStructure(list, None, [dict, ("a",), [PyTreeStructure()]), PyTreeStructure()])'
 
     >>> pytree_structure_dump(struct)
     b'["builtins.list",null,[["builtins.dict",["a"],[null]],null]]'
@@ -89,7 +89,7 @@ def pytree_structure_load(data: Union[str, bytes, bytearray]) -> PyTreeStructure
     >>> from pennylane.pytrees.serialization import pytree_structure_dump
 
     >>> pytree_structure_load('["builtins.list",null,[["builtins.dict",["a"],[null]],null]')
-    'PyTreeStructure(<class 'list'>, None, [PyTreeStructure(<class 'dict'>, ["a"], [PyTreeStructure()]), PyTreeStructure()])'
+    PyTreeStructure(list, None, [PyTreeStructure(dict, ["a"], [PyTreeStructure()]), PyTreeStructure()])'
     """
     jsoned = json.loads(data)
     root = PyTreeStructure(get_typename_type(jsoned[0]), jsoned[1], jsoned[2])
