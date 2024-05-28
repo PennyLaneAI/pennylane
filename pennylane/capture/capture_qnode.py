@@ -90,7 +90,9 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     Args:
         qnode (QNode): a qnode
         *args: the arguments the qnode is called with
-        **kwargs: the keyword arguments the qnode is called with.
+
+    Keyword Args:
+        Any keyword arguments accepted by the quantum function
 
     Returns:
         qml.typing.Result: the result of a qnode execution
@@ -114,7 +116,8 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         print("\nresult: \n", res)
 
-    .. code-block::
+
+    .. code-block:: none
 
         jaxpr:
         { lambda ; a:f32[]. let
@@ -136,6 +139,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
         result:
         [Array([-1.08, -0.64], dtype=float32)]
+
 
     """
     shots = kwargs.pop("shots", _get_device_shots(qnode.device))
