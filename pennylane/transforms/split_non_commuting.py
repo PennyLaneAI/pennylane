@@ -36,7 +36,8 @@ def split_non_commuting(
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to be split.
         grouping_strategy (str): The strategy to use for computing disjoint groups of commuting
-            observables, can be "default", "naive", "pauli", or None to disable grouping.
+            observables, can be ``"default"``, ``"naive"``, ``"pauli"``,
+            or ``None`` to disable grouping.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -93,7 +94,7 @@ def split_non_commuting(
     0: ──RY(0.79)─┤ ╭<X@Z>
     1: ──RX(0.79)─┤ ╰<X@Z>
 
-    Additionally, note that the observable Y(1) occurs twice in the original circuit, but only once
+    Additionally, note that the observable ``Y(1)`` occurs twice in the original circuit, but only once
     in the transformed circuits. When there are duplicate observables measured in the circuit,
     the measurement is performed once and the outcome is copied when obtaining the final result.
 
@@ -112,7 +113,7 @@ def split_non_commuting(
 
     The ``grouping_strategy`` keyword argument can be used to specify the grouping strategy. By
     default, pauli grouping is used whenever possible, except when the circuit contains multiple
-    measurements including measurement of a `qml.Hamiltonian`. In this case, naive grouping is
+    measurements including measurement of a ``qml.Hamiltonian``. In this case, naive grouping is
     used in case the Hamiltonian is very large, to save on classical runtime. To force pauli
     grouping in all cases, set ``grouping_strategy="pauli"``. Similarly, to force naive grouping
     in all cases, set ``grouping_strategy="naive"``:
