@@ -2319,12 +2319,14 @@ class Tensor(Observable):
             for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
-                    self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))
+                    self._eigvals_cache = qml.math.kron(
+                        self._eigvals_cache, pauli_eigs(len(list(g)))
+                    )
                 else:
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
+                        self._eigvals_cache = qml.math.kron(self._eigvals_cache, ns_ob.eigvals())
 
         return self._eigvals_cache
 
