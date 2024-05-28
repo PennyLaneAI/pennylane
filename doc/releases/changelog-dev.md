@@ -160,6 +160,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `dynamic_one_shot` transform now has expanded support for the `jax` and `torch` interfaces.
+  [(#5672)](https://github.com/PennyLaneAI/pennylane/pull/5672)
+
 * The decomposition of `StronglyEntanglingLayers` is now compatible with broadcasting.
   [(#5716)](https://github.com/PennyLaneAI/pennylane/pull/5716)
 
@@ -217,5 +220,6 @@ Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Lee James O'Riordan,
+Mudit Pandey,
 Kenya Sakka,
 David Wierichs.
