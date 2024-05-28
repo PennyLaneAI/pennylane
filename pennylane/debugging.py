@@ -16,6 +16,7 @@ This module contains functionality for debugging quantum programs on simulator d
 """
 import pdb
 import sys
+import copy
 
 import pennylane as qml
 from pennylane import DeviceError
@@ -173,6 +174,16 @@ class PLDB(pdb.Pdb):
         """Reset the global active device list (to empty)."""
         cls.__active_dev = []
 
+    @classmethod
+    def _execute(cls, batch_tapes):
+        """Execute tape on the active device"""
+        dev = cls.get_active_device()
+
+        program, new_config = dev.preprocess()
+        new_batch, fn = program(batch_tapes)
+
+        return fn(dev.execute(new_batch, new_config))
+
 
 def breakpoint():
     """Launch the custom PennyLane debugger."""
@@ -180,3 +191,60 @@ def breakpoint():
 
     debugger = PLDB()
     debugger.set_trace(sys._getframe().f_back)  # pylint: disable=protected-access
+
+
+def state():
+    """Compute the state of the quantum circuit.
+
+    Returns:
+        Array(complex): Quantum state of the circuit.
+    """
+    with qml.queuing.QueuingManager.stop_recording():
+        m = qml.state()
+
+    return _measure(m)
+
+
+def expval(op):
+    """Compute the expectation value of an observable.
+
+    Args:
+        op (Operator): The observable to compute the expectation value for.
+
+    Returns:
+        complex: Quantum state of the circuit.
+    """
+
+    qml.queuing.QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
+
+    with qml.queuing.QueuingManager.stop_recording():
+        m = qml.expval(op)
+
+    return _measure(m)
+
+
+def _measure(measurement):
+    """Perform the measurement.
+
+    Args:
+        measurement (MeasurementProcess): The type of measurement to be performed
+
+    Returns:
+        tuple(complex): Results from the measurement
+    """
+    active_queue = qml.queuing.QueuingManager.active_context()
+    copied_queue = copy.deepcopy(active_queue)
+    
+    copied_queue.append(measurement)
+    tape = qml.tape.QuantumScript.from_queue(copied_queue)
+    return PLDB._execute((tape,))
+  
+
+def tape():
+    """Access the tape of the quantum circuit.
+
+    Returns:
+        QuantumScript: The quantum script representing the circuit.
+    """
+    active_queue = qml.queuing.QueuingManager.active_context()
+    return qml.tape.QuantumScript.from_queue(active_queue)

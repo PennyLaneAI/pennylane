@@ -412,7 +412,7 @@ class TestPLDB:
 
     def test_valid_context_not_compatible_device(self):
         """Test that valid_context raises an error when breakpoint
-        is called outside of a qnode execution."""
+        is called in a qnode with an incompatible device."""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev)
