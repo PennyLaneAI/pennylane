@@ -83,14 +83,70 @@ def _get_device_shots(device) -> "qml.measurements.Shots":
     return device.shots
 
 
-def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> qml.typing.Result:
-    """A capture compatible call to a qnode."""
+def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
+    """A capture compatible call to a qnode.
+
+    Args:
+        qnode (QNode): a qnode
+        *args: the arguments the qnode is called with
+        **kwargs: the keyword arguments the qnode is called with.
+
+    Returns:
+        qml.typing.Result: the result of a qnode execution
+
+    **Example:**
+
+    .. code-block:: python
+
+        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Z(0)), qml.probs()
+
+        def f(x):
+            expval_z, probs = circuit(np.pi * x, shots=50)
+            return 2*expval_z + probs
+
+        jaxpr = jax.make_jaxpr(f)(0.1)
+        print("jaxpr: \n", jaxpr)
+
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
+        print("\nresult: \n", res)
+
+    .. code-block::
+
+        jaxpr:
+        { lambda ; a:f32[]. let
+            b:f32[] = mul 3.141592653589793 a
+            c:f32[] d:f32[2] = qnode[
+            device=<lightning.qubit device (wires=1) at 0x30755b3d0>
+            qfunc_jaxpr={ lambda ; e:f32[]. let
+                _:AbstractOperator() = RX[n_wires=1] e 0
+                f:AbstractOperator() = PauliZ[n_wires=1] 0
+                g:AbstractMeasurement(n_wires=None) = expval_obs f
+                h:AbstractMeasurement(n_wires=0) = probs_wires
+                in (g, h) }
+            qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'max_expansion': 10, 'device_vjp': False}
+            shots=Shots(total=50)
+            ] b
+            i:f32[] = mul 2.0 c
+            j:f32[2] = add i d
+        in (j,) }
+
+        result:
+        [Array([-1.08, -0.64], dtype=float32)]
+
+    """
     shots = kwargs.pop("shots", _get_device_shots(qnode.device))
     shots = qml.measurements.Shots(shots)
-    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+    if shots.has_partitioned_shots:
+        # Questions over the pytrees and the nested result object shape
+        raise NotImplementedError("shot vectors are not yet supported with pl capture.")
 
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
+
+    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
     qfunc_jaxpr = jax.make_jaxpr(qfunc)(*args)
     qnode_kwargs = {"diff_method": qnode.diff_method, **qnode.execute_kwargs}

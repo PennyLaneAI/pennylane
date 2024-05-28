@@ -14,6 +14,8 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
+from functools import partial
+
 # pylint: disable=protected-access
 import pytest
 
@@ -32,6 +34,32 @@ def enable_disable_plxpr():
     qml.capture.enable()
     yield
     qml.capture.disable()
+
+
+def test_error_if_shot_vector():
+    """Test that a NotImplementedError is raised if a shot vector is provided."""
+
+    dev = qml.device("default.qubit", wires=1, shots=(50, 50))
+
+    @qml.qnode(dev)
+    def circuit():
+        return qml.sample()
+
+    with pytest.raises(NotImplementedError):
+        jax.make_jaxpr(circuit)()
+
+
+def test_error_if_no_device_wires():
+    """Test that a NotImplementedError is raised if the device does not provide wires."""
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit():
+        return qml.sample()
+
+    with pytest.raises(NotImplementedError):
+        jax.make_jaxpr(circuit)()
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
@@ -84,3 +112,117 @@ def test_simple_qnode(x64_mode):
     assert qml.math.allclose(output[0], jax.numpy.cos(0.5))
 
     jax.config.update("jax_enable_x64", initial_mode)
+
+
+@pytest.mark.parametrize("x64_mode", (True, False))
+def test_overriding_shots(x64_mode):
+    """Test that the number of shots can be overridden on call."""
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        return qml.sample()
+
+    jaxpr = jax.make_jaxpr(partial(circuit, shots=50))()
+    assert len(jaxpr.eqns) == 1
+    eqn0 = jaxpr.eqns[0]
+
+    assert eqn0.primitive == qnode_prim
+    assert eqn0.params["device"] == dev
+    assert eqn0.params["shots"] == qml.measurements.Shots(50)
+    assert (
+        eqn0.params["qfunc_jaxpr"].eqns[0].primitive == qml.measurements.SampleMP._wires_primitive
+    )
+
+    assert eqn0.outvars[0].aval == jax.core.ShapedArray(
+        (50,), jax.numpy.int64 if x64_mode else jax.numpy.int32
+    )
+
+    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+    assert qml.math.allclose(res, jax.numpy.zeros((50,)))
+
+    jax.config.update("jax_enable_x64", initial_mode)
+
+
+def test_providing_keyword_argument():
+    """Test that keyword arguments can be provided to the qnode."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit(*, n_iterations=0):
+        for _ in range(n_iterations):
+            qml.X(0)
+        return qml.probs()
+
+    jaxpr = jax.make_jaxpr(partial(circuit, n_iterations=3))()
+
+    assert jaxpr.eqns[0].primitive == qnode_prim
+
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+    for i in range(3):
+        assert qfunc_jaxpr.eqns[i].primitive == qml.PauliX._primitive
+    assert len(qfunc_jaxpr.eqns) == 4
+
+
+@pytest.mark.parametrize("x64_mode", (True, False))
+def test_multiple_measurements(x64_mode):
+    """Test that the qnode can return multiple measurements."""
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+
+    @qml.qnode(qml.device("default.qubit", wires=3, shots=50))
+    def circuit():
+        return qml.sample(), qml.probs(wires=(0, 1)), qml.state()
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+    assert qfunc_jaxpr.eqns[0].primitive == qml.measurements.SampleMP._wires_primitive
+    assert qfunc_jaxpr.eqns[1].primitive == qml.measurements.ProbabilityMP._wires_primitive
+    assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.StateMP._wires_primitive
+
+    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
+        (50, 3), jax.numpy.int64 if x64_mode else jax.numpy.int32
+    )
+    assert jaxpr.out_avals[1] == jax.core.ShapedArray(
+        (4,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+    )
+    assert jaxpr.out_avals[2] == jax.core.ShapedArray(
+        (8,), jax.numpy.complex128 if x64_mode else jax.numpy.complex64
+    )
+
+    jax.config.update("jax_enable_x64", initial_mode)
+
+
+def test_capture_qnode_kwargs():
+    """Test that qnode kwargs are captured as parameters."""
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(
+        dev,
+        diff_method="parameter-shift",
+        grad_on_execution=False,
+        cache=True,
+        cachesize=10,
+        max_diff=2,
+    )
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    assert jaxpr.eqns[0].primitive == qnode_prim
+    expected = {
+        "diff_method": "parameter-shift",
+        "grad_on_execution": False,
+        "cache": True,
+        "cachesize": 10,
+        "max_diff": 2,
+        "max_expansion": 10,
+        "device_vjp": False,
+    }
+    assert jaxpr.eqns[0].params["qnode_kwargs"] == expected
