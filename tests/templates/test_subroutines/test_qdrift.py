@@ -62,20 +62,17 @@ class TestInitialization:
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
 
-        qml.ops.functions.assert_valid(op)
+        if seed is not None:
+            # For seed = None, composition and compute_decomposition do not match because
+            # compute_decomposition is stochastic
+            qml.ops.functions.assert_valid(op)
 
         assert op.wires == h.wires
         assert op.parameters == [*h.data, time]
         assert op.data == (*h.data, time)
 
         assert op.hyperparameters["n"] == n
-        if seed is None:
-            internal_seed = op.hyperparameters["seed"]
-            assert internal_seed is not None and isinstance(internal_seed, int)
-            second_op = qml.QDrift(h, time, n=n, seed=seed)
-            assert second_op.hyperparameters["seed"] != internal_seed
-        else:
-            assert op.hyperparameters["seed"] == seed
+        assert op.hyperparameters["seed"] == seed
         assert op.hyperparameters["base"] == h
 
     @pytest.mark.parametrize("n", (1, 2, 3))

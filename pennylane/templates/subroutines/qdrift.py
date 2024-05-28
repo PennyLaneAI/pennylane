@@ -102,9 +102,8 @@ class QDrift(Operation):
     Args:
         hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a sum of operations
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
-        n (int): An integer representing the number of exponentiated terms
-        seed (int): The seed for the random number generator. If no seed is provided, a random
-            integer is sampled to achieve reproducible behaviour.
+        n (int): An integer representing the number of exponentiated terms.
+        seed (int): The seed for the random number generator.
 
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
@@ -210,7 +209,6 @@ class QDrift(Operation):
                 "coefficients of the input Hamiltonian."
             )
 
-        seed = qml.math.random.randint(0, high=10000000) if seed is None else seed
         self._hyperparameters = {"n": n, "seed": seed, "base": hamiltonian}
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
