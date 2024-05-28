@@ -79,7 +79,6 @@ class TestVnEntanglementEntropy:
     @pytest.mark.autograd
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 4)[1:])
     def test_qnode_transform_grad(self, params):
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method="backprop")
@@ -156,7 +155,6 @@ class TestVnEntanglementEntropy:
     @pytest.mark.torch
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 4)[1:])
     def test_qnode_transform_grad_torch(self, params):
-
         import torch
 
         dev = qml.device("default.qubit", wires=2)

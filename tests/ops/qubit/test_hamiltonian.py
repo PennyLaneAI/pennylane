@@ -66,7 +66,6 @@ H_TWO_QUBITS = np.array(
 COEFFS = [(0.5, 1.2, -0.7), (2.2, -0.2, 0.0), (0.33,)]
 
 with qml.operation.disable_new_opmath_cm():
-
     OBSERVABLES = [
         (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
         (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),

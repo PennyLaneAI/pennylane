@@ -327,7 +327,6 @@ def test_assert_equal_types():
 
 
 def test_assert_equal_unspecified():
-
     # pylint: disable=too-few-public-methods
     class RandomType:
         """dummy type"""

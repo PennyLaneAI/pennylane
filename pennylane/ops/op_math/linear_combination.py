@@ -135,7 +135,6 @@ class LinearCombination(Sum):
             _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
 
         if simplify:
-
             warnings.warn(
                 "The simplify argument in qml.Hamiltonian and qml.ops.LinearCombination is deprecated. "
                 "Instead, you can call qml.simplify on the constructed operator.",

@@ -1036,7 +1036,6 @@ class MultiControlledX(ControlledOp):
 
     # pylint: disable=too-many-arguments
     def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
-
         # First raise deprecation warnings regardless of the validity of other arguments
         if isinstance(control_values, str):
             warnings.warn(
