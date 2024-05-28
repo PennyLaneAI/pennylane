@@ -195,7 +195,6 @@ def _check_pytree(op):
             f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
         )
         raise AssertionError(message) from e
-    assert qml.equal(op, new_op)
     assert op == new_op, "metadata and data must be able to reproduce the original operation"
 
     try:
