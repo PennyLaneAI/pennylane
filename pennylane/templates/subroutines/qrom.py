@@ -248,11 +248,11 @@ class QROM(Operation):
                     swap_ops.insert(0, qml.ctrl(new_op, control=control_swap_wires[-ind - 1]))
 
             if not clean:
-                # Based on this paper: https://arxiv.org/abs/1812.00954
+                # Based on this paper (Fig 1.c): https://arxiv.org/abs/1812.00954
                 decomp_ops = select_ops + swap_ops
 
             else:
-                # Based on this paper: https://arxiv.org/abs/1902.02134
+                # Based on this paper (Fig 4): https://arxiv.org/abs/1902.02134
 
                 adjoint_swap_ops = swap_ops[::-1]
                 hadamard_ops = [qml.Hadamard(wires=w) for w in target_wires]
