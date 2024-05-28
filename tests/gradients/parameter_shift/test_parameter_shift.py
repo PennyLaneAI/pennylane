@@ -317,7 +317,7 @@ class TestGetOperationRecipe:
         tape = qml.tape.QuantumScript.from_queue(q)
         # Incorrect gradient recipe, but this test only checks execution with an unshifted term.
         recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],)
-        tapes, fn = param_shift(tape, gradient_recipes=recipes)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=recipes)
         assert len(tapes) == 2
 
         res = fn(qml.execute(tapes, dev, None))
@@ -620,7 +620,7 @@ class TestParamShift:
         tape.trainable_params = []
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = param_shift(tape, broadcast=broadcast)
+            g_tapes, post_processing = qml.gradients.param_shift(tape, broadcast=broadcast)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -818,7 +818,6 @@ class TestParamShift:
             [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None
             for i in range(2)
         )
-
         tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
         # two (one with broadcast) tapes per parameter that doesn't use a custom recipe,
@@ -839,8 +838,6 @@ class TestParamShift:
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
-        if multi_measure and broadcast:
-            pytest.skip("Multiple measurements are not supported with `broadcast=True` yet.")
         dev = qml.device("default.qubit", wires=2)
         x = [0.543, -0.654]
 
@@ -893,13 +890,9 @@ class TestParamShift:
             qml.expval(qml.PauliZ(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        custom_recipe = [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
         gradient_recipes = tuple(
-            (
-                [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
-                if i in ops_with_custom_recipe
-                else None
-            )
-            for i in range(2)
+            custom_recipe if i in ops_with_custom_recipe else None for i in range(2)
         )
         tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
@@ -1192,8 +1185,7 @@ class TestParamShiftUsingBroadcasting:
     The tests for `param_shift` on already broadcasted tapes can be found above."""
 
     def test_independent_parameter(self, mocker):
-        """Test that an independent parameter is skipped
-        during the Jacobian computation."""
+        """Test that an independent parameter is skipped during the Jacobian computation."""
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -2896,18 +2888,21 @@ class TestParameterShiftRuleBroadcast:
                 assert np.allclose(g, grad_F1[idx1][idx2], atol=tol, rtol=0)
                 assert np.allclose(g, grad_F2[idx1][idx2], atol=tol, rtol=0)
 
-    @pytest.mark.xfail
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_fallback(self, dev_name, mocker):
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    def test_fallback(self, dev_name, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
+
+        import jax
+        from jax import numpy as jnp
+
         spy = mocker.spy(qml.gradients, "finite_diff")
         dev = qml.device(dev_name, wires=2)
         execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         x = 0.543
         y = -0.654
 
-        params = np.array([x, y], requires_grad=True)
+        params = jnp.array([x, y])
 
         def cost_fn(params):
             with qml.queuing.AnnotatedQueue() as q:
@@ -2927,18 +2922,16 @@ class TestParameterShiftRuleBroadcast:
 
             return fn(execute_fn(tapes))
 
-        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            cost_fn(params)
-        # TODO: Uncomment the following when #2693 is resolved. Add test fixture arg `tol`
-        # res = cost_fn(params)
-        # assert res.shape == (2, 2)
-        # expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        # assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = cost_fn(params)
+        assert len(res) == 2 and isinstance(res, tuple)
+        assert all(len(r) == 2 and isinstance(r, tuple) for r in res)
+        expected = ((-np.sin(x), 0), (0, -2 * np.cos(y) * np.sin(y)))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # double check the derivative
-        # jac = qml.jacobian(cost_fn)(params)
-        # assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
-        # assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
+        jac = jax.jacobian(cost_fn)(params)
+        assert np.allclose(jac[0][0][0], -np.cos(x), atol=tol, rtol=0)
+        assert np.allclose(jac[1][1][1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
@@ -3638,6 +3631,7 @@ class TestHamiltonianExpvalGradients:
 
         dev = qml.device(dev_name, wires=2)
 
+        # Old op math with old device API does not support broadcasting
         if broadcast and "tf" in dev_name and not qml.operation.active_new_opmath():
             with pytest.raises(
                 NotImplementedError, match="Hamiltonians .* together with parameter broadcasting"
@@ -3672,6 +3666,7 @@ class TestHamiltonianExpvalGradients:
 
         dev = qml.device(dev_name, wires=2)
 
+        # Old op math with old device API does not support broadcasting
         if broadcast and "torch" in dev_name and not qml.operation.active_new_opmath():
             with pytest.raises(
                 NotImplementedError, match="Hamiltonians .* together with parameter broadcasting"
@@ -3706,6 +3701,7 @@ class TestHamiltonianExpvalGradients:
         weights = jnp.array([0.4, 0.5])
         dev = qml.device(dev_name, wires=2)
 
+        # Old op math with old device API does not support broadcasting
         if broadcast and "jax" in dev_name and not qml.operation.active_new_opmath():
             with pytest.raises(
                 NotImplementedError, match="Hamiltonians .* together with parameter broadcasting"
