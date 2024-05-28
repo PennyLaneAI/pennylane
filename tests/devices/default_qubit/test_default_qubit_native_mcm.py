@@ -387,12 +387,17 @@ def test_single_mcm_multiple_measure_obs(postselect, reset):
 
     func1 = func
     func2 = qml.defer_measurements(func)
+    func3 = qml.dynamic_one_shot(func)
 
     results1 = func1(*params)
     results2 = func2(*params)
+    results3 = func3(*params)
 
     for measure_f, res1, res2 in zip([qml.counts, qml.expval], results1, results2):
         validate_measurements(measure_f, shots, res1, res2)
+
+    for measure_f, res3, res2 in zip([qml.counts, qml.expval], results3, results2):
+        validate_measurements(measure_f, shots, res3, res2)
 
 
 @pytest.mark.parametrize("shots", [None, 3000, [3000, 3001]])
@@ -451,20 +456,11 @@ def test_single_mcm_multiple_measurements(postselect, reset, measure_f):
 
     func1 = func
     func2 = qml.defer_measurements(func)
+    func3 = qml.dynamic_one_shot(func)
 
     results1 = func1(*params)
     results2 = func2(*params)
-    if shots is not None:
-        func3 = qml.dynamic_one_shot(func)
-        results3 = func3(*params)
-        if isinstance(shots, Sequence):
-            for s, r1, r2 in zip(shots, results3, results2):
-                for _r1, _r2 in zip(r1, r2):
-                    validate_measurements(measure_f, s, _r1, _r2)
-            return
-
-        for r1, r2 in zip(results3, results2):
-            validate_measurements(measure_f, shots, r1, r2)
+    results3 = func3(*params)
 
     if isinstance(shots, Sequence):
         for s, r1, r2 in zip(shots, results1, results2):
@@ -473,6 +469,15 @@ def test_single_mcm_multiple_measurements(postselect, reset, measure_f):
         return
 
     for r1, r2 in zip(results1, results2):
+        validate_measurements(measure_f, shots, r1, r2)
+
+    if isinstance(shots, Sequence):
+        for s, r1, r2 in zip(shots, results3, results2):
+            for _r1, _r2 in zip(r1, r2):
+                validate_measurements(measure_f, s, _r1, _r2)
+        return
+
+    for r1, r2 in zip(results3, results2):
         validate_measurements(measure_f, shots, r1, r2)
 
 
@@ -509,11 +514,14 @@ def test_simple_composite_mcm(mcm_f, measure_f):
 
     func1 = func
     func2 = qml.defer_measurements(func)
+    func3 = qml.dynamic_one_shot(func)
 
     results1 = func1(param)
     results2 = func2(param)
+    results3 = func3(param)
 
     validate_measurements(measure_f, shots, results1, results2)
+    validate_measurements(measure_f, shots, results3, results2)
 
 
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
@@ -625,15 +633,14 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
 
     func1 = func
     func2 = qml.defer_measurements(func)
+    func3 = qml.dynamic_one_shot(func)
 
     results1 = func1(param)
     results2 = func2(param)
-    if shots is not None:
-        func3 = qml.dynamic_one_shot(func)
-        results3 = func3(param)
-        validate_measurements(measure_f, shots, results3, results2)
+    results3 = func3(param)
 
     validate_measurements(measure_f, shots, results1, results2)
+    validate_measurements(measure_f, shots, results3, results2)
 
 
 @pytest.mark.parametrize("shots", [5000, [5000, 5001]])
@@ -837,15 +844,16 @@ def test_counts_return_type(mcm_f):
 
     func1 = func
     func2 = qml.defer_measurements(func)
+    func3 = qml.dynamic_one_shot(func)
     results1 = func1(param)
     results2 = func2(param)
-    if shots is not None:
-        func3 = qml.dynamic_one_shot(func)
-        results3 = func3(param)
-        validate_measurements(qml.counts, shots, results3, results2)
+    results3 = func3(param)
 
     for r1, r2 in zip(results1.keys(), results2.keys()):
         assert r1 == r2
+
+    validate_measurements(qml.counts, shots, results1, results2)
+    validate_measurements(qml.counts, shots, results3, results2)
 
 
 @pytest.mark.torch
@@ -882,8 +890,11 @@ def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
 
     func1 = func
     func2 = qml.defer_measurements(func)
+    func3 = qml.dynamic_one_shot(func)
 
-    results1 = func1(param)
+    results3 = func3(param)
     results2 = func2(param)
+    results1 = func1(param)
 
     validate_measurements(measure_f, shots, results1, results2)
+    validate_measurements(measure_f, shots, results3, results2)
