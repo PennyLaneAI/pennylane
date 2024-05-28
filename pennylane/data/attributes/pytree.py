@@ -30,7 +30,7 @@ T = TypeVar("T")
 class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
     """Attribute type for an object that can be converted to
     a Pytree. This is the default serialization method for
-    all Pennylane Pytrees, including sublcasses of ``Operator``.
+    all Pennylane Pytrees, including subclasses of ``Operator``.
     """
 
     type_id = "pytree"

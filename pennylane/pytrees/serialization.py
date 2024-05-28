@@ -60,7 +60,7 @@ def pytree_structure_dump(
     'PyTreeStructure(<class 'list'>, None, [PyTreeStructure(<class 'dict'>, ("a",), [PyTreeStructure()]), PyTreeStructure()])'
 
     >>> pytree_structure_dump(struct)
-    b'["builtins.list",null,[["builtins.dict",["a"],[null]],null]'
+    b'["builtins.list",null,[["builtins.dict",["a"],[null]],null]]'
 
     Args:
         root: Root of a Pytree structure
