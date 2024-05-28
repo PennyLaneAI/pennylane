@@ -1859,12 +1859,10 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("grouping", [True, False])
     def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("expval of the legacy Hamiltonian does not support finite shots.")
 
         dev = qml.device("default.qubit.legacy", wires=3, shots=50000)
 
