@@ -38,13 +38,6 @@ def test_standard_validity():
     qml.ops.functions.assert_valid(op)
 
 
-def test_standard_validity():
-    """Test the standard criteria for a valid operation."""
-    work_wires = qml.wires.Wires((3, 4))
-    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=work_wires)
-    qml.ops.functions.assert_valid(op)
-
-
 def test_work_wires():
     """Assert work wires get passed to MultiControlledX"""
     wires = ("a", "b")
