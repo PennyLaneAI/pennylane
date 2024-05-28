@@ -16,12 +16,12 @@
 import functools
 from collections.abc import Sequence
 
+# pylint: disable=wrong-import-order
+import autoray as ar
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
-from numpy import ndarray
-
-import autoray as ar
 from autoray import numpy as np
+from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .utils import cast, cast_like, get_interface, requires_grad

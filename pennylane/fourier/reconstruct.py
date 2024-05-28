@@ -17,8 +17,8 @@ import warnings
 from functools import wraps
 from inspect import signature
 
-from autoray import numpy as anp
 import numpy as np
+from autoray import numpy as anp
 
 import pennylane as qml
 

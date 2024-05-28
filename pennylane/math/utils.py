@@ -14,12 +14,12 @@
 """Utility functions"""
 import warnings
 
+# pylint: disable=wrong-import-order
+import autoray as ar
 import numpy as _np
 
 # pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
-
-import autoray as ar
 from autoray import numpy as np
 
 from . import single_dispatch  # pylint:disable=unused-import

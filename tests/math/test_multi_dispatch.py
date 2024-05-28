@@ -13,12 +13,12 @@
 # limitations under the License.
 """ Assertion test for multi_dispatch function/decorator
 """
+# pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods,wrong-import-order
+import autoray
 import numpy as onp
 import pytest
-
-# pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods
-import autoray
 from autoray import numpy as anp
+
 from pennylane import grad as qml_grad
 from pennylane import math as fn
 from pennylane import numpy as np

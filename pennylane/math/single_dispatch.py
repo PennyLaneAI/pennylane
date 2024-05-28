@@ -16,11 +16,11 @@
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
 
+# pylint: disable=wrong-import-order
+import autoray as ar
 import numpy as np
 import semantic_version
 from scipy.linalg import block_diag as _scipy_block_diag
-
-import autoray as ar
 
 from .utils import get_deep_interface, is_abstract
 
