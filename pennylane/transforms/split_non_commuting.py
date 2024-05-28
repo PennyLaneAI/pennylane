@@ -297,7 +297,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
     offset = 0
 
     # A dictionary for measurements of each unique single-term observable, mapped to the
-    # indices of the original measurements it belongs to, its coefficient, the index of
+    # indices of the original measurements it belongs to, its coefficients, the index of
     # the group it belongs to, and the index of the measurement in the group.
     single_term_obs_mps = {}
 
@@ -376,6 +376,10 @@ def _split_using_pauli_grouping(
     index_groups = []
     if len(obs_list) > 0:
         _, index_groups = qml.pauli.group_observables(obs_list, range(len(obs_list)))
+
+    # A dictionary for measurements of each unique single-term observable, mapped to the
+    # indices of the original measurements it belongs to, its coefficients, the index of
+    # the group it belongs to, and the index of the measurement in the group.
     single_term_obs_mps_grouped = {}
 
     mp_groups = [[] for _ in index_groups]
@@ -431,6 +435,10 @@ def _split_using_naive_grouping(
     mp_groups = []
     wires_for_each_group = []
     group_sizes = []
+
+    # A dictionary for measurements of each unique single-term observable, mapped to the
+    # indices of the original measurements it belongs to, its coefficient, the index of
+    # the group it belongs to, and the index of the measurement in the group.
     single_term_obs_mps_grouped = {}
     num_groups = 0
 
