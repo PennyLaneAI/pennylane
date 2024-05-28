@@ -395,8 +395,12 @@ def simulate_tree_mcm(
     if circuit.shots.has_partitioned_shots:
         results = []
         for s in circuit.shots:
-            aux_circuit = circuit.copy()
-            aux_circuit._shots = qml.measurements.Shots(s)
+            aux_circuit = qml.tape.QuantumScript(
+                circuit.operations,
+                circuit.measurements,
+                shots=qml.measurements.Shots(s),
+                trainable_params=circuit.trainable_params,
+            )
             results.append(simulate_tree_mcm(aux_circuit, debugger, **execution_kwargs))
         return tuple(results)
 
@@ -461,9 +465,13 @@ def simulate_tree_mcm(
             prune_mcm_samples(op, branch, mcm_active, mcm_samples)
             continue
         mcm_active[op] = branch
-        circuit_next._shots = qml.measurements.Shots(count)
         meas = branch_measurement(
-            circuit_next,
+            qml.tape.QuantumScript(
+                circuit_next.operations,
+                circuit_next.measurements,
+                shots=qml.measurements.Shots(count),
+                trainable_params=circuit_next.trainable_params,
+            ),
             state,
             branch,
             mcm_active=mcm_active,
@@ -578,7 +586,6 @@ def circuit_up_to_first_mcm(circuit):
         trainable_params=circuit.trainable_params,
     )
     circuit_next._ops = circuit_next._ops[i + 1 :]
-
     return circuit_base, circuit_next, op
 
 

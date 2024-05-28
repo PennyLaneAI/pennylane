@@ -388,14 +388,7 @@ class QuantumScript:
         except AttributeError:
             pass
 
-    @cached_property
-    def wires(self) -> Wires:
-        """Returns the wires used in the quantum script process
-
-        Returns:
-            ~.Wires: wires in quantum script process
-        """
-        return Wires.all_wires(dict.fromkeys(op.wires for op in self))
+        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
 
     @property
     def num_wires(self) -> int:

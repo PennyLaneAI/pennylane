@@ -17,10 +17,10 @@ import warnings
 from functools import wraps
 from inspect import signature
 
+from autoray import numpy as anp
 import numpy as np
 
 import pennylane as qml
-from autoray import numpy as anp
 
 
 def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
