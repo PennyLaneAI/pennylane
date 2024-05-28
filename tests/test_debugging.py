@@ -21,8 +21,8 @@ import pennylane as qml
 
 
 def _compare_numpy_dicts(dict1, dict2):
-    assert all(k1 == k2 for k1, k2 in zip(dict1.keys(), dict2.keys()))
-    assert all(np.allclose(v1, v2) for v1, v2 in zip(dict1.values(), dict2.values()))
+    assert dict1.keys() == dict2.keys()
+    assert all(np.allclose(dict1[key], dict_2_val) for key, dict_2_val in dict2.items())
 
 
 class TestSnapshotTape:
@@ -175,10 +175,10 @@ class TestSnapshotSupportedQNode:
 
         result = qml.snapshots(circuit)()
         expected = {
-            0: np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
             "very_important_state": np.array(
                 [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
             ),
+            0: np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
             2: np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]),
             "execution_results": np.array(0),
         }
@@ -238,7 +238,7 @@ class TestSnapshotSupportedQNode:
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_qutrit_mixed(self, method):
-        """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
+        """Test that multiple snapshots are returned correctly on the qutrit density-matrix simulator."""
         np.random.seed(1)
 
         dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
@@ -273,55 +273,6 @@ class TestSnapshotSupportedQNode:
         del expected["execution_results"]
         del result[1]
         del expected[1]
-
-        _compare_numpy_dicts(result, expected)
-
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("method", [None, "parameter-shift"])
-    def test_default_qutrit(self, method):
-        """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
-        np.random.seed(7)
-
-        dev = qml.device("default.qutrit", wires=2, shots=100)
-
-        assert qml.debugging._is_snapshot_compatible(dev)
-
-        @qml.qnode(dev, diff_method=method)
-        def circuit():
-            qml.Snapshot(shots=None)
-            qml.THadamard(wires=0)
-            qml.Snapshot("very_important_state", shots=None)
-            qml.TSWAP(wires=[0, 1])
-            qml.Snapshot(measurement=qml.probs(), shots=None)
-            return qml.counts()
-
-        circuit()
-        assert dev._debugger is None
-
-        result = qml.snapshots(circuit)()
-        expected = {
-            0: np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            "very_important_state": np.array(
-                [
-                    0.0 - 0.57735027j,
-                    0.0 + 0.0j,
-                    0.0 + 0.0j,
-                    0.0 - 0.57735027j,
-                    0.0 + 0.0j,
-                    0.0 + 0.0j,
-                    0.0 - 0.57735027j,
-                    0.0 + 0.0j,
-                    0.0 + 0.0j,
-                ]
-            ),
-            2: np.array([0.33, 0.33, 0.34, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            "execution_results": {"00": 39, "01": 31, "02": 30},
-        }
-
-        assert result["execution_results"] == expected["execution_results"]
-
-        del result["execution_results"]
-        del expected["execution_results"]
 
         _compare_numpy_dicts(result, expected)
 
@@ -608,6 +559,54 @@ class TestSnapshotUnsupportedQNode:
             2: np.array([0.70710678, 0.0, 0.0, 0.70710678]),
             "execution_results": 0.0,
         }
+
+        _compare_numpy_dicts(result, expected)
+
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("method", [None, "parameter-shift"])
+    def test_default_qutrit(self, method):
+        """Test that multiple snapshots are returned correctly on the pure qutrit simulator."""
+        np.random.seed(7)
+
+        dev = qml.device("default.qutrit", wires=2, shots=100)
+
+        assert not qml.debugging._is_snapshot_compatible(dev)
+
+        @qml.snapshots
+        @qml.qnode(dev, diff_method=method)
+        def circuit():
+            qml.Snapshot(shots=None)
+            qml.THadamard(wires=0)
+            qml.Snapshot("very_important_state", shots=None)
+            qml.TSWAP(wires=[0, 1])
+            qml.Snapshot(measurement=qml.probs(), shots=None)
+            return qml.counts()
+
+        result = circuit()
+
+        expected = {
+            0: np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            "very_important_state": np.array(
+                [
+                    0.0 - 0.57735027j,
+                    0.0 + 0.0j,
+                    0.0 + 0.0j,
+                    0.0 - 0.57735027j,
+                    0.0 + 0.0j,
+                    0.0 + 0.0j,
+                    0.0 - 0.57735027j,
+                    0.0 + 0.0j,
+                    0.0 + 0.0j,
+                ]
+            ),
+            2: np.array([0.38, 0.28, 0.34, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            "execution_results": {"00": 30, "01": 33, "02": 37},
+        }
+
+        assert result["execution_results"] == expected["execution_results"]
+
+        del result["execution_results"]
+        del expected["execution_results"]
 
         _compare_numpy_dicts(result, expected)
 
