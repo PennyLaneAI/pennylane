@@ -18,6 +18,9 @@
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
+* Added compute_sparse_matrix for BasisStateProjector.
+  [(#5752)](https://github.com/PennyLaneAI/pennylane/pull/5752)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
@@ -218,4 +221,5 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
-David Wierichs.
+David Wierichs,
+Anurav Modak.

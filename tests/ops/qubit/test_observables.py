@@ -18,6 +18,7 @@ import pickle
 
 import numpy as np
 import pytest
+from scipy.sparse import csr_matrix
 from gate_data import H, I, X, Y, Z
 
 import pennylane as qml
@@ -548,7 +549,8 @@ class TestProjector:
         expected_matrix.rows = [0]
         expected_matrix.cols = [0]
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_single_qubit_basis_state_1(self):
         """Tests the function with a single-qubit basis state |1>."""
@@ -558,7 +560,7 @@ class TestProjector:
         expected_matrix.rows = [1]
         expected_matrix.cols = [1]
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_two_qubit_basis_state_10(self):
         """Tests the function with a two-qubits basis state |10>."""
@@ -568,7 +570,7 @@ class TestProjector:
         expected_matrix.rows = [2]
         expected_matrix.cols = [2]
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_two_qubit_basis_state_01(self):
         """Tests the function with a two-qubits basis state |01>."""
@@ -578,7 +580,7 @@ class TestProjector:
         expected_matrix.rows = [1]
         expected_matrix.cols = [1]
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_two_qubit_basis_state_11(self):
         """Tests the function with a two-qubits basis state |11>."""
@@ -588,7 +590,7 @@ class TestProjector:
         expected_matrix.rows = [3]
         expected_matrix.cols = [3]
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_three_qubit_basis_state_101(self):
         """Tests the function with a three-qubits basis state |101>."""
@@ -598,13 +600,17 @@ class TestProjector:
         expected_matrix.rows = [5]
         expected_matrix.cols = [5]
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_invalid_basis_state(self):
         """Tests the function with an invalid state."""
         basis_state = [0, 2]  # Invalid basis state
-        with self.assertRaises(ValueError):
+        try:
             BasisStateProjector.compute_sparse_matrix(basis_state)
+        except ValueError:
+            pass  # Expected exception, pass the test
+        else:
+            assert False, "ValueError not raised"  # Fail the test if no exception is raised
 
     @pytest.mark.jax
     def test_jit_measurement(self):
