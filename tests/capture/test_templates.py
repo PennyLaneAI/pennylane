@@ -621,6 +621,37 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.QuantumMonteCarlo(probs, **kwargs)
 
+    def test_qubitization(self):
+        """Test the primitive bind call of Qubitization."""
+
+        ops = [qml.X(2), qml.RX(0.2, 3), qml.Y(2), qml.Z(3)]
+        hamiltonian = qml.dot([0.5, 1.2, -0.84], [qml.X(2), qml.Hadamard(3), qml.Z(2) @ qml.Y(3)])
+        kwargs = {"hamiltonian": hamiltonian, "control": [0, 1]}
+
+        def qfunc():
+            qml.Qubitization(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.Qubitization._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        assert qml.equal(q.queue[0], qml.Qubitization(**kwargs))
+
     @pytest.mark.parametrize(
         "template, kwargs",
         [

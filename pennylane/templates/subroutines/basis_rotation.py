@@ -105,10 +105,8 @@ class BasisRotation(Operation):
         # pylint: disable=arguments-differ
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
-            return type.__call__(cls, wires, unitary_matrix, check=check, id=id)
+            return type.__call__(cls, wires, unitary_matrix, check=check, id=id)  # pragma: no cover
 
-        if not isinstance(wires, (list, tuple, qml.wires.Wires, range, set)):
-            wires = (wires,)
         return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
 
     def __init__(self, wires, unitary_matrix, check=False, id=None):
