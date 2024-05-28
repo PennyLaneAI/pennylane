@@ -32,7 +32,16 @@ Conditional Constructors
     ~op_in
     ~wires_eq
     ~wires_in
-    pennylane.BooleanFn
+
+An arbitrary conditional can also be defined by wrapping the functional form
+of a custom condition with the following decorator:
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+ 
+    ~BooleanFn
 
 Callable Constructor
 ^^^^^^^^^^^^^^^^^^^^
