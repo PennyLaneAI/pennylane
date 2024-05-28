@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
+  [(#5748)](https://github.com/PennyLaneAI/pennylane/pull/5748)
+
 * `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
   [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
@@ -120,6 +123,9 @@
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
 <h3>Breaking changes 💔</h3>
+
+* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
+  [(#5748)](https://github.com/PennyLaneAI/pennylane/pull/5748)
 
 * Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
