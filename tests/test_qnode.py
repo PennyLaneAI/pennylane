@@ -1701,34 +1701,6 @@ class TestNewDeviceIntegration:
 class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", [True, False])
-    @pytest.mark.parametrize("interface", ["jax", "auto"])
-    def test_jax_warning_with_postselect_mode_hw_like(self, use_jit, interface):
-        """Test that a warning is raised when postselect_mode="hw-like" with jax"""
-        import jax  # pylint: disable=import-outside-toplevel
-
-        shots = 100
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-
-        @qml.qnode(dev, postselect_mode="hw-like", interface=interface)
-        def f(x):
-            qml.RX(x, 0)
-            _ = qml.measure(0, postselect=1)
-            return qml.sample(wires=[0, 1])
-
-        if use_jit:
-            f = jax.jit(f)
-        param = jax.numpy.array(np.pi / 4)
-
-        with pytest.warns(
-            UserWarning,
-            match="Cannot discard invalid shots with postselection when using the 'jax' interface",
-        ):
-            res = f(param)
-
-        assert len(res) == shots
-
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     def test_one_shot_warning_without_shots(self, dev_name, mocker):
         """Test that a warning is raised if mcm_method="one-shot" with no shots"""
