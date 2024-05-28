@@ -730,7 +730,7 @@ ar.register_function("torch", "sort", _sort_torch)
 
 def _tensordot_torch(tensor1, tensor2, axes):
     torch = _i("torch")
-    if not Version(torch.__version__) >= Version("1.10.0") and axes == 0:
+    if Version(torch.__version__) < Version("1.10.0") and axes == 0:
         return torch.outer(tensor1, tensor2)
     return torch.tensordot(tensor1, tensor2, axes)
 
