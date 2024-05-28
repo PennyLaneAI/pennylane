@@ -538,46 +538,57 @@ PennyLane. For ease of use, we provide the following configuration options to us
   .. warning::
 
       If the ``mcm_method`` argument is provided, the :func:`~pennylane.defer_measurements` or
-      :func:`~pennylane.dynamic_one_shot` transforms should not be applied directly to a :class:`~pennylane.QNode`
+      :func:`~pennylane.dynamic_one_shot` transforms must not be applied directly to a :class:`~pennylane.QNode`
       as it can lead to incorrect behaviour.
 
 * ``postselect_mode``: To configure how invalid shots are handled when postselecting mid-circuit measurements
-  with finite-shot circuits. Use ``postselect_mode="hw-like"`` to discard invalid shots. In this case, the number
-  of samples that are used for processing results will be less than or equal to the total number of shots. Use
-  ``postselect_mode="fill-shots"`` to keep invalid shots.
+  with finite-shot circuits. Use ``postselect_mode="hw-like"`` to discard invalid samples. In this case, the number
+  of samples that are used for processing results will be less than or equal to the total number of shots. If
+  ``postselect_mode="fill-shots"`` is used, then the postselected value will be picked unconditionally, and all
+  samples will be considered valid.
+
+  .. code-block:: python3
+  
+      import pennylane as qml
+      import numpy as np
+  
+      dev = qml.device("default.qubit", wires=3, shots=10)
+  
+      @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
+      def circuit(x):
+          qml.RX(x, 0)
+          m0 = qml.measure(0, postselect=1)
+          qml.CNOT([0, 1])
+          return qml.sample(qml.PauliZ(0))
+  
+  >>> circuit(np.pi / 2)
+  array([-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.])
 
   .. note::
 
-      If ``postselect_mode="fill-shots"``, the specified ``mcm_method`` will impact the results due to the particular
-      features/limitations of the requested ``mcm_method``.
+      If ``postselect_mode="hw-like"``, invalid shots will not be discarded when using the ``jax`` interface.
+      Instead, invalid samples will be replaced by ``np.iinfo(np.int32).min``. These invalid samples will not be
+      used for processing final results. Consider the circuit below:
 
-      * If using ``mcm_method="hw-like"``, invalid samples will be replaced with ``np.iinfo(np.int32).min``,
-        and these invalid values will not be used for processing final results.
-      * If using ``mcm_method="deferred"``, all shots will be projected to the postselected value, so all
-        shots will be considered valid.
+      .. code-block:: python3
 
-  .. note::
+          import pennylane as qml
+          import jax
+          import jax.numpy as jnp
 
-      When using the ``jax`` interface or while using :func:`~pennylane.qjit`, the results will reflect
-      ``postselect_mode="fill-shots"`` regardless of the specified value.
+          dev = qml.device("default.qubit", wires=3, shots=10, seed=jax.random.PRNGKey(123))
+          
+          @qml.qnode(dev, postselect_mode="hw-like", mcm_method="one-shot")
+          def circuit(x):
+              qml.RX(x, 0)
+              qml.measure(0, postselect=1)
+              return qml.sample(qml.PauliZ(0))
 
-.. code-block:: python3
-
-    import pennylane as qml
-    import numpy as np
-
-    dev = qml.device("default.qubit", wires=3, shots=10)
-
-    @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
-    def circuit(x):
-        qml.RX(x, 0)
-        m0 = qml.measure(0, postselect=1)
-        qml.CNOT([0, 1])
-        return qml.expval(qml.PauliZ(0))
-
->>> circuit(np.pi / 2)
-array([-2147483648,           1, -2147483648, -2147483648,           1,
-                 1,           1,           1,           1,           1])
+      >>> x = jnp.array(1.8)
+      >>> f(x)
+      Array([-2.1474836e+09, -1.0000000e+00, -2.1474836e+09, -2.1474836e+09,
+             -1.0000000e+00, -2.1474836e+09, -1.0000000e+00, -2.1474836e+09,
+             -1.0000000e+00, -1.0000000e+00], dtype=float32, weak_type=True)
 
 Changing the number of shots
 ----------------------------
