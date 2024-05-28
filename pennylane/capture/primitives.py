@@ -306,7 +306,7 @@ def create_measurement_wires_primitive(
     @primitive.def_impl
     def _(*args, has_eigvals=False, **kwargs):
         if has_eigvals:
-            wires = args[:-1]
+            wires = qml.wires.Wires(args[:-1])
             kwargs["eigvals"] = args[-1]
         else:
             wires = qml.wires.Wires(args)
