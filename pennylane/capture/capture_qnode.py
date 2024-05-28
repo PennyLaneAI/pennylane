@@ -53,7 +53,8 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
 
 @lru_cache()
 def _get_qnode_prim():
-
+    if not has_jax:
+        return None
     qnode_prim = jax.core.Primitive("qnode")
     qnode_prim.multiple_results = True
 
