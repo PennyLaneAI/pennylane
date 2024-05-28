@@ -33,8 +33,8 @@ Conditional Constructors
     ~wires_eq
     ~wires_in
 
-An arbitrary conditional can also be defined by wrapping the functional form
-of a custom condition with the following decorator:
+Arbitrary conditionals can also be defined by wrapping the functional form
+of custom conditions with the following decorator:
 
 .. currentmodule:: pennylane
 
