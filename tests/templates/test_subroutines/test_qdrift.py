@@ -63,7 +63,7 @@ class TestInitialization:
         op = qml.QDrift(h, time, n=n, seed=seed)
 
         if seed is not None:
-            # For seed = None, composition and compute_decomposition do not match because
+            # For seed = None, decomposition and compute_decomposition do not match because
             # compute_decomposition is stochastic
             qml.ops.functions.assert_valid(op)
 
