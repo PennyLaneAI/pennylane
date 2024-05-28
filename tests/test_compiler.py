@@ -238,6 +238,7 @@ class TestCatalyst:
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
+    @pytest.mark.xfail(reason="supported once catalyst #768 is merged")
     def test_qjit_adjoint(self):
         """Test JIT compilation with adjoint support"""
         dev = qml.device("lightning.qubit", wires=2)
