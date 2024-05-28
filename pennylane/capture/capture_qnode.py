@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines the abstract classes and primitives for capture.
+This submodule defines a capture compatible call to the qnode.
 """
 
-from functools import lru_cache
+from functools import lru_cache, partial
 
 import pennylane as qml
 
@@ -83,17 +83,16 @@ def _get_device_shots(device) -> "qml.measurements.Shots":
     return device.shots
 
 
-def qnode_call(qnode, *args, **kwargs):
+def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> qml.typing.Result:
     """A capture compatible call to a qnode."""
     shots = kwargs.pop("shots", _get_device_shots(qnode.device))
     shots = qml.measurements.Shots(shots)
-    if kwargs:
-        raise NotImplementedError
+    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
-    qfunc_jaxpr = jax.make_jaxpr(qnode.func)(*args)
+    qfunc_jaxpr = jax.make_jaxpr(qfunc)(*args)
     qnode_kwargs = {"diff_method": qnode.diff_method, **qnode.execute_kwargs}
     qnode_prim = _get_qnode_prim()
 
