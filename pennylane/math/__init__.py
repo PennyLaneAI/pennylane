@@ -61,7 +61,6 @@ from .multi_dispatch import (
     scatter_element_add,
     set_index,
     stack,
-    sqrt,
     tensordot,
     unwrap,
     where,
