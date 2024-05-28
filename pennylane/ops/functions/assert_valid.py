@@ -59,10 +59,7 @@ def _check_decomposition(op):
         assert isinstance(compute_decomp, list), "decomposition must be a list"
         assert isinstance(expand, qml.tape.QuantumScript), "expand must return a QuantumScript"
 
-        print("original op: ", op)
         for o1, o2, o3, o4 in zip(decomp, compute_decomp, processed_queue, expand):
-            print("decomposition", o1)
-            print("queue: ", o3)
             assert o1 == o2, "decomposition must match compute_decomposition"
             assert o1 == o3, "decomposition must match queued operations"
             assert o1 == o4, "decomposition must match expansion"
