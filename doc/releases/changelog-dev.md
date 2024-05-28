@@ -7,28 +7,28 @@
 * One can now pass a `qml.measurements.SampleMeasurement`-based measurements into a snapshot.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
-```python
-@qml.snapshots
-@qml.qnode(qml.device("default.qubit", wires=2, shots=200))
-def circuit():
-    qml.Hadamard(wires=0),
-    qml.Snapshot("device-shots counts", qml.counts())
-    qml.CNOT(wires=[0, 1]),
-    qml.Snapshot("custom-shots samples", qml.sample(), shots=5)
-    qml.Snapshot("Exact state", qml.state(), shots=None)
-    return qml.expval(qml.PauliZ(0))
-```
-```pycon
->>> circuit()
-{'device-shots counts': {'00': 106, '10': 94}, 
-'custom-shots samples': array([[0, 0],
-       [1, 1],
-       [0, 0],
-       [1, 1],
-       [0, 0]]), 
-'Exact state': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]), 
-'execution_results': tensor(-0.06, requires_grad=True)}
-```
+  ```python
+  @qml.snapshots
+  @qml.qnode(qml.device("default.qubit", wires=2, shots=200))
+  def circuit():
+      qml.Hadamard(wires=0),
+      qml.Snapshot("device-shots counts", qml.counts())
+      qml.CNOT(wires=[0, 1]),
+      qml.Snapshot("custom-shots samples", qml.sample(), shots=5)
+      qml.Snapshot("Exact state", qml.state(), shots=None)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```pycon
+  >>> circuit()
+  {'device-shots counts': {'00': 106, '10': 94}, 
+  'custom-shots samples': array([[0, 0],
+        [1, 1],
+        [0, 0],
+        [1, 1],
+        [0, 0]]), 
+  'Exact state': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]), 
+  'execution_results': tensor(-0.06, requires_grad=True)}
+  ```
 
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)

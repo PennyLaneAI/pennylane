@@ -58,6 +58,13 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
     r"""Transforms a QNode into several tapes by aggregating all operations up to a ``qml.Snapshot``
     operation into their own execution tape.
 
+    Args:
+        tape (QNode or QuantumTape or Callable): a quantum circuit.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
     The transform is conservative about the wires that it includes in each tape.
     So, if all operations preceding a snapshot in a 3-qubit circuit has been applied to only one wire,
     the tape would only be looking at this wire. This can be overriden by the configuration of the execution device
@@ -73,13 +80,6 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
 
     It should be noted that for unsupported devices, a separate execution would be carried out for each snapshot.
     As illustrated in one of the examples below.
-
-    Args:
-        tape (QNode or QuantumTape or Callable): a quantum circuit.
-
-    Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
-        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     .. warning::
 
