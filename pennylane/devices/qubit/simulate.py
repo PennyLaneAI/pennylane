@@ -140,11 +140,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             whether the state has a batch dimension.
 
     """
-    rng = execution_kwargs.get("rng", None)
-    prng_key = execution_kwargs.get("prng_key", None)
+    prng_key = execution_kwargs.pop("prng_key", None)
     interface = execution_kwargs.get("interface", None)
-    mid_measurements = execution_kwargs.get("mid_measurements", None)
-    postselect_mode = execution_kwargs.get("postselect_mode", None)
 
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
@@ -164,20 +161,14 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             state,
             is_state_batched=is_state_batched,
             debugger=debugger,
-            mid_measurements=mid_measurements,
-            rng=rng,
             prng_key=key,
+            **execution_kwargs,
         )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             prng_key, key = jax_random_split(prng_key)
             state, new_shots = _postselection_postprocess(
-                state,
-                is_state_batched,
-                circuit.shots,
-                rng=rng,
-                prng_key=key,
-                postselect_mode=postselect_mode,
+                state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
             )
             circuit._shots = circuit._shots = new_shots
 
@@ -293,11 +284,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    rng = execution_kwargs.get("rng", None)
-    prng_key = execution_kwargs.get("prng_key", None)
-    interface = execution_kwargs.get("interface", None)
-    postselect_mode = execution_kwargs.get("postselect_mode", None)
-
+    prng_key = execution_kwargs.pop("prng_key", None)
     circuit = circuit.map_to_standard_wires()
 
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
@@ -316,7 +303,7 @@ def simulate(
 
             def simulate_partial(k):
                 return simulate_one_shot_native_mcm(
-                    aux_circ, debugger=debugger, rng=rng, prng_key=k, interface=interface
+                    aux_circ, debugger=debugger, prng_key=k, **execution_kwargs
                 )
 
             results = jax.vmap(simulate_partial, in_axes=(0,))(keys)
@@ -325,23 +312,20 @@ def simulate(
             for i in range(circuit.shots.total_shots):
                 results.append(
                     simulate_one_shot_native_mcm(
-                        aux_circ, debugger=debugger, rng=rng, prng_key=keys[i], interface=interface
+                        aux_circ, debugger=debugger, prng_key=keys[i], **execution_kwargs
                     )
                 )
         return tuple(results)
 
     ops_key, meas_key = jax_random_split(prng_key)
     state, is_state_batched = get_final_state(
-        circuit,
-        debugger=debugger,
-        rng=rng,
-        prng_key=ops_key,
-        interface=interface,
-        postselect_mode=postselect_mode,
+        circuit, debugger=debugger, prng_key=ops_key, **execution_kwargs
     )
     if state_cache is not None:
         state_cache[circuit.hash] = state
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=meas_key)
+    return measure_final_state(
+        circuit, state, is_state_batched, prng_key=meas_key, **execution_kwargs
+    )
 
 
 def simulate_one_shot_native_mcm(
@@ -357,30 +341,30 @@ def simulate_one_shot_native_mcm(
             the key to the JAX pseudo random number generator. If None, a random key will be
             generated. Only for simulation using JAX.
         interface (str): The machine learning interface to create the initial state with
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots.
 
     Returns:
         tuple(TensorLike): The results of the simulation
         dict: The mid-circuit measurement results of the simulation
     """
-    rng = execution_kwargs.get("rng", None)
-    prng_key = execution_kwargs.get("prng_key", None)
-    interface = execution_kwargs.get("interface", None)
+    prng_key = execution_kwargs.pop("prng_key", None)
 
     ops_key, meas_key = jax_random_split(prng_key)
     mid_measurements = {}
     state, is_state_batched = get_final_state(
         circuit,
         debugger=debugger,
-        interface=interface,
         mid_measurements=mid_measurements,
-        rng=rng,
         prng_key=ops_key,
+        **execution_kwargs,
     )
     return measure_final_state(
         circuit,
         state,
         is_state_batched,
-        rng=rng,
         prng_key=meas_key,
         mid_measurements=mid_measurements,
+        **execution_kwargs,
     )
