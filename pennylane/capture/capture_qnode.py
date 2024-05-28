@@ -19,13 +19,36 @@ from functools import lru_cache
 
 import pennylane as qml
 
-from .measure import _get_measure_primitive
-
 has_jax = True
 try:
     import jax
 except ImportError:
     has_jax = False
+
+
+def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
+    if jax.config.jax_enable_x64:
+        dtype_map = {
+            float: jax.numpy.float64,
+            int: jax.numpy.int64,
+            complex: jax.numpy.complex128,
+        }
+    else:
+        dtype_map = {
+            float: jax.numpy.float32,
+            int: jax.numpy.int32,
+            complex: jax.numpy.complex64,
+        }
+
+    shapes = []
+    if not shots:
+        shots = [None]
+
+    for s in shots:
+        for m in measurements:
+            shape, dtype = m.abstract_eval(shots=s, num_device_wires=num_device_wires)
+            shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
+    return shapes
 
 
 @lru_cache()
@@ -42,13 +65,11 @@ def _get_qnode_prim():
         qnode = qml.QNode(qfunc, device, **qnode_kwargs)
         return qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
 
-    measure_prim = _get_measure_primitive()
-
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
     def _(*args, shots, device, qnode_kwargs, qfunc_jaxpr):
         mps = qfunc_jaxpr.out_avals
-        return measure_prim.abstract_eval(*mps, shots=shots, num_device_wires=len(device.wires))[0]
+        return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
 
     return qnode_prim
 
