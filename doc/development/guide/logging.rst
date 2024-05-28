@@ -43,7 +43,7 @@ within the formatter configuration (see :class:`pennylane.logging.DefaultFormatt
       def my_func(arg1, arg2):
          return arg1 + arg2
 
-#. explicitly by if-else statements, which compare the given module’s log-level to any log record message it receives. This step is not necessary, as the message will
+#. Explicitly by if-else statements, which compare the given module’s log-level to any log record message it receives. This step is not necessary, as the message will
    only output if the level is enabled, though if an expensive function
    call is required to build the string for the log-message, it can be
    faster to perform this check:
