@@ -533,7 +533,8 @@ PennyLane. For ease of use, we provide the following configuration options to us
 
 * ``mcm_method``: To set the method used for applying mid-circuit measurements. Use ``mcm_method="deferred"``
   to use the deferred measurements principle or ``mcm_method="one-shot"`` to use the one-shot transform as
-  described above.
+  described above. When executing with finite shots, ``mcm_method="one-shot"`` will be the default, and
+  ``mcm_method="deferred"`` otherwise.
 
   .. warning::
 
@@ -545,7 +546,7 @@ PennyLane. For ease of use, we provide the following configuration options to us
   with finite-shot circuits. Use ``postselect_mode="hw-like"`` to discard invalid samples. In this case, the number
   of samples that are used for processing results will be less than or equal to the total number of shots. If
   ``postselect_mode="fill-shots"`` is used, then the postselected value will be picked unconditionally, and all
-  samples will be considered valid.
+  samples will be considered valid. The default behaviour is ``postselect_mode="hw-like"``.
 
   .. code-block:: python3
   
