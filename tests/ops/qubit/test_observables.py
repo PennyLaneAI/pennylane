@@ -540,6 +540,72 @@ class TestProjector:
         assert qml.equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
 
+    def test_single_qubit_basis_state_0(self):
+        """Tests the function with a single-qubit basis state |0>."""
+        basis_state = [0]
+        expected_matrix = csr_matrix(([], ([], [])), shape=(2, 2))
+        expected_matrix.data = [1]
+        expected_matrix.rows = [0]
+        expected_matrix.cols = [0]
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_single_qubit_basis_state_1(self):
+        """Tests the function with a single-qubit basis state |1>."""
+        basis_state = [1]
+        expected_matrix = csr_matrix(([], ([], [])), shape=(2, 2))
+        expected_matrix.data = [1]
+        expected_matrix.rows = [1]
+        expected_matrix.cols = [1]
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_10(self):
+        """Tests the function with a two-qubits basis state |10>."""
+        basis_state = [1, 0]
+        expected_matrix = csr_matrix(([], ([], [])), shape=(4, 4))
+        expected_matrix.data = [1]
+        expected_matrix.rows = [2]
+        expected_matrix.cols = [2]
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_01(self):
+        """Tests the function with a two-qubits basis state |01>."""
+        basis_state = [0, 1]
+        expected_matrix = csr_matrix(([], ([], [])), shape=(4, 4))
+        expected_matrix.data = [1]
+        expected_matrix.rows = [1]
+        expected_matrix.cols = [1]
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_11(self):
+        """Tests the function with a two-qubits basis state |11>."""
+        basis_state = [1, 1]
+        expected_matrix = csr_matrix(([], ([], [])), shape=(4, 4))
+        expected_matrix.data = [1]
+        expected_matrix.rows = [3]
+        expected_matrix.cols = [3]
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_three_qubit_basis_state_101(self):
+        """Tests the function with a three-qubits basis state |101>."""
+        basis_state = [1, 1]
+        expected_matrix = csr_matrix(([], ([], [])), shape=(8, 8))
+        expected_matrix.data = [1]
+        expected_matrix.rows = [5]
+        expected_matrix.cols = [5]
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_invalid_basis_state(self):
+        """Tests the function with an invalid state."""
+        basis_state = [0, 2]  # Invalid basis state
+        with self.assertRaises(ValueError):
+            BasisStateProjector.compute_sparse_matrix(basis_state)
+
     @pytest.mark.jax
     def test_jit_measurement(self):
         """Test that the measurement of a projector can be jitted."""

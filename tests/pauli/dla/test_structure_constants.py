@@ -56,7 +56,6 @@ class TestAdjointRepr:
         ad_rep = structure_constants(dla, pauli=True)
         for i in range(d):
             for j in range(d):
-
                 comm_res = 1j * dla[i].commutator(dla[j])
 
                 res = sum(

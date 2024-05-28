@@ -185,7 +185,6 @@ def test_gammainc(n, t, gamma_ref):
 
 
 def test_dot_autograd():
-
     x = np.array([1.0, 2.0], requires_grad=False)
     y = np.array([2.0, 3.0], requires_grad=True)
 
@@ -198,7 +197,6 @@ def test_dot_autograd():
 
 
 def test_dot_autograd_with_scalar():
-
     x = np.array(1.0, requires_grad=False)
     y = np.array([2.0, 3.0], requires_grad=True)
 
@@ -214,7 +212,6 @@ def test_dot_autograd_with_scalar():
 
 
 def test_dot_tf_with_scalar():
-
     x = tf.Variable(1.0)
     y = tf.Variable([2.0, 3.0])
 
@@ -228,7 +225,6 @@ def test_dot_tf_with_scalar():
 
 
 def test_dot_torch_with_scalar():
-
     x = torch.tensor(1.0)
     y = torch.tensor([2.0, 3.0])
 

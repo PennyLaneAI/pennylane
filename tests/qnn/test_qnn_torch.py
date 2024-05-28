@@ -383,7 +383,6 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         circuit_out_raw = c(x, *weights)
 
         if isinstance(shots, list):
-
             assert isinstance(layer_out, tuple)
             for out, exp in zip(layer_out, circuit_out_raw):
                 circuit_out = torch.hstack(exp)

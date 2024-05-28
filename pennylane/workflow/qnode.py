@@ -86,7 +86,6 @@ def _make_execution_config(
 def _to_qfunc_output_type(
     results: qml.typing.Result, qfunc_output, has_partitioned_shots
 ) -> qml.typing.Result:
-
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
@@ -723,7 +722,6 @@ class QNode:
         """
         config = _make_execution_config(None, "best")
         if isinstance(device, qml.devices.Device):
-
             if device.supports_derivatives(config, circuit=tape):
                 new_config = device.preprocess(config)[1]
                 return new_config.gradient_method, {}, device
@@ -1075,7 +1073,6 @@ class QNode:
         )
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
-
         old_interface = self.interface
         if old_interface == "auto":
             interface = qml.math.get_interface(*args, *list(kwargs.values()))

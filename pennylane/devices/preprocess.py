@@ -342,7 +342,6 @@ def decompose(
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
     try:
-
         new_ops = [
             final_op
             for op in tape.operations[len(prep_op) :]

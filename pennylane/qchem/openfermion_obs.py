@@ -934,7 +934,6 @@ def molecular_hamiltonian(
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
 
     if method == "dhf":
-
         if mapping != "jordan_wigner":
             raise ValueError(
                 "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
