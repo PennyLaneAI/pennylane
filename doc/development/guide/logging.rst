@@ -31,7 +31,7 @@ which will be used within the given module, and track directories,
 filenames and function names, as we have defined the appropriate types
 within the formatter configuration (see :class:`pennylane.logging.DefaultFormatter`). With the logger defined, we can selectively add to the logger via two methods: 
 
-#. using decorators on the required functions and methods in a given module:
+#. Using decorators on the required functions and methods in a given module:
 
    .. code:: python
 
