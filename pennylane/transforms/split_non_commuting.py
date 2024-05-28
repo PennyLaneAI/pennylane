@@ -553,7 +553,7 @@ def _processing_fn_no_grouping(
 
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
-            of (n_groups [,n_shots] [,n_mps] [,n_parameters])
+            of (n_groups [,n_shots] [,n_mps] [,batch_size])
         single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
@@ -577,13 +577,13 @@ def _processing_fn_no_grouping(
         for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
     ]
 
-    # res_for_each_mp should have shape (n_mps, [,n_shots] [,n_parameters])
+    # res_for_each_mp should have shape (n_mps, [,n_shots] [,batch_size])
     if len(res_for_each_mp) == 1:
         return res_for_each_mp[0]
 
     if shots.has_partitioned_shots:
         # If the shot vector dimension exists, it should be moved to the first axis
-        # Basically, the shape becomes (n_shots, n_mps, [,n_parameters])
+        # Basically, the shape becomes (n_shots, n_mps, [,batch_size])
         res_for_each_mp = [
             tuple(res_for_each_mp[j][i] for j in range(len(res_for_each_mp)))
             for i in range(len(res_for_each_mp[0]))
@@ -603,7 +603,7 @@ def _processing_fn_with_grouping(
 
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
-            of (n_groups [,n_shots] [,n_mps] [,n_parameters])
+            of (n_groups [,n_shots] [,n_mps] [,batch_size])
         single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float], int, int]]):
             A dictionary of measurements of each unique single-term observable, mapped to the
             indices of the original measurements it belongs to, its coefficients, its group
@@ -622,11 +622,11 @@ def _processing_fn_with_grouping(
 
     for _, (mp_indices, coeffs, group_idx, mp_idx_in_group) in single_term_obs_mps.items():
 
-        res_group = res[group_idx]  # ([n_shots] [,n_mps] [,n_parameters])
+        res_group = res[group_idx]  # ([n_shots] [,n_mps] [,batch_size])
         group_size = group_sizes[group_idx]
 
         if group_size > 1 and shots.has_partitioned_shots:
-            # Each result should have shape ([n_shots] [,n_parameters])
+            # Each result should have shape ([n_shots] [,batch_size])
             sub_res = [_res[mp_idx_in_group] for _res in res_group]
         else:
             # If there is only one term in the group, the n_mps dimension would have
@@ -644,13 +644,13 @@ def _processing_fn_with_grouping(
         for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
     ]
 
-    # res_for_each_mp should have shape (n_mps, [,n_shots] [,n_parameters])
+    # res_for_each_mp should have shape (n_mps, [,n_shots] [,batch_size])
     if len(res_for_each_mp) == 1:
         return res_for_each_mp[0]
 
     if shots.has_partitioned_shots:
         # If the shot vector dimension exists, it should be moved to the first axis
-        # Basically, the shape becomes (n_shots, n_mps, [,n_parameters])
+        # Basically, the shape becomes (n_shots, n_mps, [,batch_size])
         res_for_each_mp = [
             tuple(res_for_each_mp[j][i] for j in range(len(res_for_each_mp)))
             for i in range(len(res_for_each_mp[0]))
@@ -666,7 +666,7 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float) -> Result:
     if coeffs == [1] and offset == 0:
         return res[0]
 
-    # The shape of res at this point is (n_terms, [,n_shots] [,n_parameters])
+    # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
     for c, r in zip(coeffs, res):
         dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
