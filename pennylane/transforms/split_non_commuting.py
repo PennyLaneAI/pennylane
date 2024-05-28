@@ -243,7 +243,10 @@ def split_non_commuting(
         len(tape.measurements) == 1
         and isinstance(tape.measurements[0], ExpectationMP)
         and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
-        and (grouping_strategy is not None or tape.measurements[0].obs.grouping_indices is not None)
+        and (
+            grouping_strategy in ("default", "pauli")
+            or tape.measurements[0].obs.grouping_indices is not None
+        )
     ):
         return _split_ham_with_grouping(tape)
 
@@ -294,7 +297,8 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
     offset = 0
 
     # A dictionary for measurements of each unique single-term observable, mapped to the
-    # indices of the original measurements it belongs to, and its coefficient.
+    # indices of the original measurements it belongs to, its coefficient, the index of
+    # the group it belongs to, and the index of the measurement in the group.
     single_term_obs_mps = {}
 
     # A list of lists for each group of commuting measurement processes.
@@ -319,7 +323,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
                     # and the coefficients for each duplicate should be combined.
                     single_term_obs_mps[new_mp] = (
                         single_term_obs_mps[new_mp][0],
-                        single_term_obs_mps[new_mp][1] + coeffs[obs_idx],
+                        [single_term_obs_mps[new_mp][1][0] + coeffs[obs_idx]],
                         single_term_obs_mps[new_mp][2],
                         single_term_obs_mps[new_mp][3],
                     )
@@ -327,9 +331,9 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
                     mp_group.append(new_mp)
                     single_term_obs_mps[new_mp] = (
                         [0],
-                        coeffs[obs_idx],
+                        [coeffs[obs_idx]],
                         group_idx,
-                        group_size,
+                        group_size,  # the index of this measurement in the group
                     )
                     group_size += 1
 
@@ -349,16 +353,16 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
 
 def _split_using_pauli_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], float]],
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
     offsets: List[float],
 ):
     """Split tapes using group_observables in the Pauli module.
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float]]): A dictionary of
-            measurements of each unique single-term observable, mapped to the indices of the
-            original measurements it belongs to, and its coefficient.
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A dictionary
+            of measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficients.
         offsets (List[float]): Offsets associated with each original measurement in the tape.
 
     """
@@ -410,16 +414,16 @@ def _split_using_pauli_grouping(
 
 def _split_using_naive_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], float]],
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
     offsets: List[float],
 ):
     """Split tapes by grouping observables based on overlapping wires.
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float]]): A dictionary of
-            measurements of each unique single-term observable, mapped to the indices of the
-            original measurements it belongs to, and its coefficient.
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A dictionary
+            of measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficients.
         offsets (List[float]): Offsets associated with each original measurement in the tape.
 
     """
@@ -430,13 +434,13 @@ def _split_using_naive_grouping(
     single_term_obs_mps_grouped = {}
     num_groups = 0
 
-    for smp, (mp_indices, coeff) in single_term_obs_mps.items():
+    for smp, (mp_indices, coeffs) in single_term_obs_mps.items():
 
         if len(smp.wires) == 0:  # measurement acting on all wires
             mp_groups.append([smp])
             wires_for_each_group.append(tape.wires)
             group_sizes.append(1)
-            single_term_obs_mps_grouped[smp] = (mp_indices, coeff, num_groups, 0)
+            single_term_obs_mps_grouped[smp] = (mp_indices, coeffs, num_groups, 0)
             num_groups += 1
             continue
 
@@ -449,7 +453,7 @@ def _split_using_naive_grouping(
                 wires_for_each_group[group_idx] += smp.wires
                 single_term_obs_mps_grouped[smp] = (
                     mp_indices,
-                    coeff,
+                    coeffs,
                     group_idx,
                     group_sizes[group_idx],
                 )
@@ -461,7 +465,7 @@ def _split_using_naive_grouping(
             mp_groups.append([smp])
             wires_for_each_group.append(smp.wires)
             group_sizes.append(1)
-            single_term_obs_mps_grouped[smp] = (mp_indices, coeff, num_groups, 0)
+            single_term_obs_mps_grouped[smp] = (mp_indices, coeffs, num_groups, 0)
             num_groups += 1
 
     tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
@@ -481,15 +485,15 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         tape (~qml.tape.QuantumScript): The tape with measurements to split.
 
     Returns:
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float]]): A dictionary
-            for measurements of each unique single-term observable, mapped to the indices of the
-            original measurements it belongs to, and its coefficient.
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A
+            dictionary for measurements of each unique single-term observable, mapped to the
+            indices of the original measurements it belongs to, and its coefficients.
         offsets (List[float]): Offsets associated with each original measurement in the tape.
 
     """
 
     # The dictionary for measurements of each unique single-term observable, mapped the indices
-    # of the original measurements it belongs to, and its coefficient.
+    # of the original measurements it belongs to, and its coefficients.
     single_term_obs_mps = {}
 
     # Offsets associated with each original measurement in the tape (from Identity)
@@ -514,15 +518,17 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 # pylint: disable=superfluous-parens
                 elif (sm := qml.expval(o)) in single_term_obs_mps:
                     single_term_obs_mps[sm][0].append(mp_idx)
+                    single_term_obs_mps[sm][1].append(c)
                 # Otherwise, add this new measurement to the list of single-term measurements.
                 else:
-                    single_term_obs_mps[sm] = ([mp_idx], c)
+                    single_term_obs_mps[sm] = ([mp_idx], [c])
         else:
             # For all other measurement types, simply add them to the list of measurements.
             if mp not in single_term_obs_mps:
-                single_term_obs_mps[mp] = ([mp_idx], 1)
+                single_term_obs_mps[mp] = ([mp_idx], [1])
             else:
                 single_term_obs_mps[mp][0].append(mp_idx)
+                single_term_obs_mps[mp][1].append(1)
 
         offsets.append(offset)
 
@@ -531,7 +537,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
 
 def _processing_fn_no_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], float]],
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
     offsets: List[float],
     shots: Shots,
 ):
@@ -540,9 +546,9 @@ def _processing_fn_no_grouping(
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
             of (n_groups [,n_shots] [,n_mps] [,n_parameters])
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float]]): A dictionary of
-            measurements of each unique single-term observable, mapped to the indices of the
-            original measurements it belongs to, and its coefficient.
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A dictionary
+            of measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficients.
         offsets (List[float]): Offsets associated with each original measurement in the tape.
         shots (Shots): The shots settings of the original tape.
 
@@ -551,9 +557,9 @@ def _processing_fn_no_grouping(
     res_batch_for_each_mp = [[] for _ in offsets]
     coeffs_for_each_mp = [[] for _ in offsets]
 
-    for smp_idx, (_, (mp_indices, coeff)) in enumerate(single_term_obs_mps.items()):
+    for smp_idx, (_, (mp_indices, coeffs)) in enumerate(single_term_obs_mps.items()):
 
-        for mp_idx in mp_indices:
+        for mp_idx, coeff in zip(mp_indices, coeffs):
             res_batch_for_each_mp[mp_idx].append(res[smp_idx])
             coeffs_for_each_mp[mp_idx].append(coeff)
 
@@ -580,7 +586,7 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], float, int, int]],
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float], int, int]],
     offsets: List[float],
     group_sizes: List[int],
     shots: Shots,
@@ -590,9 +596,9 @@ def _processing_fn_with_grouping(
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
             of (n_groups [,n_shots] [,n_mps] [,n_parameters])
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], float, int, int]]):
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float], int, int]]):
             A dictionary of measurements of each unique single-term observable, mapped to the
-            indices of the original measurements it belongs to, its coefficient, its group
+            indices of the original measurements it belongs to, its coefficients, its group
             index, and the index of the measurement within the group.
         offsets (List[float]): Offsets associated with each original measurement in the tape.
         group_sizes (List[int]): The number of tapes in each group.
@@ -606,7 +612,7 @@ def _processing_fn_with_grouping(
     res_batch_for_each_mp = [[] for _ in offsets]
     coeffs_for_each_mp = [[] for _ in offsets]
 
-    for _, (mp_indices, coeff, group_idx, mp_idx_in_group) in single_term_obs_mps.items():
+    for _, (mp_indices, coeffs, group_idx, mp_idx_in_group) in single_term_obs_mps.items():
 
         res_group = res[group_idx]  # ([n_shots] [,n_mps] [,n_parameters])
         group_size = group_sizes[group_idx]
@@ -620,7 +626,7 @@ def _processing_fn_with_grouping(
             sub_res = res_group if group_size == 1 else res_group[mp_idx_in_group]
 
         # Add this result to the result batch for the corresponding original measurement
-        for mp_idx in mp_indices:
+        for mp_idx, coeff in zip(mp_indices, coeffs):
             res_batch_for_each_mp[mp_idx].append(sub_res)
             coeffs_for_each_mp[mp_idx].append(coeff)
 
