@@ -15,6 +15,7 @@
 This module contains the qml.matrix function.
 """
 from functools import partial
+from importlib.metadata import distribution
 
 # pylint: disable=protected-access,too-many-branches
 from typing import Callable, Sequence, Union
@@ -25,6 +26,15 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.transforms import TransformError
 from pennylane.typing import TensorLike
+
+
+def catalyst_qjit(qnode):
+    """The ``catalyst.while`` wrapper method"""
+    try:
+        distribution("pennylane_catalyst")
+        return qnode.__class__.__name__ == "QJIT"
+    except ImportError:
+        return False
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
@@ -177,6 +187,9 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             wires specified, and this is the order in which wires appear in ``circuit()``.
 
     """
+    if catalyst_qjit(op):
+        op = op.user_function
+
     if not isinstance(op, Operator):
 
         if isinstance(op, (PauliWord, PauliSentence)):
