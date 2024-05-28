@@ -461,7 +461,6 @@ def ctrl_decomp_bisect(
 
 def decompose_mcx(control_wires, target_wire, work_wires):
     """Decomposes the multi-controlled PauliX gate"""
-
     num_work_wires_needed = len(control_wires) - 2
 
     if len(control_wires) == 1:
@@ -524,15 +523,26 @@ def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
         powered_op = qml.pow(op, 0.5 * power)
         powered_op_adj = qml.pow(op, -0.5 * power)
 
-    decomposition = [
-        *ctrl_decomp_zyz(powered_op, control_wires[-1]),
-        *(qml.apply(o) for o in cnots),
-        *ctrl_decomp_zyz(powered_op_adj, control_wires[-1]),
-        *(qml.apply(o) for o in cnots),
-        *_decompose_recursive(
-            op, 0.5 * power, control_wires[:-1], target_wire, control_wires[-1] + work_wires
-        ),
-    ]
+    if qml.QueuingManager.recording():
+        decomposition = [
+            *ctrl_decomp_zyz(powered_op, control_wires[-1]),
+            *(qml.apply(o) for o in cnots),
+            *ctrl_decomp_zyz(powered_op_adj, control_wires[-1]),
+            *(qml.apply(o) for o in cnots),
+            *_decompose_recursive(
+                op, 0.5 * power, control_wires[:-1], target_wire, control_wires[-1] + work_wires
+            ),
+        ]
+    else:
+        decomposition = [
+            *ctrl_decomp_zyz(powered_op, control_wires[-1]),
+            *cnots,
+            *ctrl_decomp_zyz(powered_op_adj, control_wires[-1]),
+            *cnots,
+            *_decompose_recursive(
+                op, 0.5 * power, control_wires[:-1], target_wire, control_wires[-1] + work_wires
+            ),
+        ]
     return decomposition
 
 

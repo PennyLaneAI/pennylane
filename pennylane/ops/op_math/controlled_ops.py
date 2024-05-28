@@ -1163,7 +1163,9 @@ class MultiControlledX(ControlledOp):
         if len(wires) < 2:
             raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")
 
-        target_wire = wires[-1]
+        # target_wire = wires[-1] if isinstance(wires, Wires) else Wires(wires[-1])
+        # control_wires = wires[:-1] if isinstance(wires, Wires) else Wires(wires[:-1])
+        target_wire = wires[-1:]
         control_wires = wires[:-1]
 
         if control_values is None:
