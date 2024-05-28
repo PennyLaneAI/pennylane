@@ -660,7 +660,7 @@ class TestInterfaces:
         assert np.allclose(matrix, expected_matrix)
 
     @pytest.mark.catalyst
-    @pytest.mark.external 
+    @pytest.mark.external
     def test_catalyst(self):
         """Test with Catalyst interface"""
 
@@ -904,4 +904,3 @@ def test_jitting_matrix():
     normal_mat = qml.matrix(op)
 
     assert qml.math.allclose(normal_mat, jit_mat)
-
