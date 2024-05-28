@@ -18,7 +18,6 @@ import logging
 import pytest
 
 import pennylane as qml
-import pennylane.logging as pl_logging
 
 _grad_log_map = {
     "adjoint": "gradient_fn=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
@@ -26,21 +25,21 @@ _grad_log_map = {
     "parameter-shift": "gradient_fn=<transform: param_shift>",
 }
 
+
 @pytest.mark.logging
 class TestLogging:
     """Tests for logging integration"""
 
-    def test_qd_dev_creation(self, caplog, set_log_level):
+    def test_qd_dev_creation(self, caplog):
         "Test logging of device creation"
 
-        # with set_log_level(caplog, ["pennylane.devices.default_qubit"], [logging.DEBUG]):
         with caplog.at_level(logging.DEBUG):
             qml.device("default.qubit", wires=2)
 
         assert len(caplog.records) == 1
         assert "Calling <__init__(self=<default.qubit device" in caplog.text
 
-    def test_qd_qnode_creation(self, caplog, set_log_level):
+    def test_qd_qnode_creation(self, caplog):
         "Test logging of QNode creation"
 
         dev = qml.device("default.qubit", wires=2)
@@ -56,7 +55,7 @@ class TestLogging:
         assert len(caplog.records) == 1
         assert "Creating QNode" in caplog.text
 
-    def test_dq_qnode_execution(self, caplog, set_log_level):
+    def test_dq_qnode_execution(self, caplog):
         "Test logging of QNode forward pass"
 
         dev = qml.device("default.qubit", wires=2)
@@ -100,7 +99,7 @@ class TestLogging:
     @pytest.mark.parametrize(
         "diff_method,num_records", [("parameter-shift", 23), ("backprop", 14), ("adjoint", 18)]
     )
-    def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records, set_log_level):
+    def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parameterised gradients"
 
         dev = qml.device("default.qubit", wires=2)
@@ -146,7 +145,7 @@ class TestLogging:
             assert expected[0] in actual.name
             assert all(msg in actual.getMessage() for msg in expected[1])
 
-    def test_execution_debugging_qutrit_mixed(self, caplog, set_log_level):
+    def test_execution_debugging_qutrit_mixed(self, caplog):
         """Test logging of QNode forward pass from default qutrit mixed."""
 
         with caplog.at_level(logging.DEBUG):
