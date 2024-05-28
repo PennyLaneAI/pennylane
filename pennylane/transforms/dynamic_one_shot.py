@@ -195,8 +195,10 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
             else:
                 new_measurements.append(m)
     for op in circuit:
-        if is_mcm(op):
+        if isinstance(op, MidMeasureMP):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
+        if "MidCircuitMeasure" in str(type(op)):
+            new_measurements.append(qml.sample(op.out_classical_tracers[0]))
 
     return qml.tape.QuantumScript(
         circuit.operations,
@@ -229,6 +231,7 @@ def parse_native_mid_circuit_measurements(
 
     interface = qml.math.get_deep_interface(circuit.data)
     interface = "numpy" if interface == "builtins" else interface
+    active_jit = qml.compiler.active_compiler()
 
     all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
     n_mcms = len(all_mcms)
@@ -243,7 +246,7 @@ def parse_native_mid_circuit_measurements(
     )
     mcm_samples = qml.math.array(
         [[res] if single_measurement else res[-n_mcms::] for res in results], like=interface
-    )
+    ).reshape((-1, n_mcms))
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
     has_postselect = qml.math.array(
         [[int(op.postselect is not None) for op in all_mcms]], like=interface
@@ -266,13 +269,24 @@ def parse_native_mid_circuit_measurements(
             )
         if interface != "jax" and m.mv and not has_valid:
             meas = measurement_with_no_shots(m)
+        elif m.mv and active_jit:
+            found = False
+            for k, meas in mcm_samples.items():
+                if m.mv is k.out_classical_tracers[0]:
+                    found = True
+                    break
+            if not found:
+                raise LookupError("MCM not found")
         elif m.mv:
             meas = gather_mcm(m, mcm_samples, is_valid)
         elif interface != "jax" and not has_valid:
             meas = measurement_with_no_shots(m)
             m_count += 1
         else:
-            result = [res[m_count] for res in results]
+            # result = [res[m_count] for res in results]
+            result = qml.math.squeeze(
+                qml.math.array([res[m_count] for res in results], like=interface)
+            )
             if not isinstance(m, CountsMP):
                 # We don't need to cast to arrays when using qml.counts. qml.math.array is not viable
                 # as it assumes all elements of the input are of builtin python types and not belonging
