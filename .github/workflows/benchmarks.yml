@@ -25,6 +25,8 @@ jobs:
       if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
 
       uses: ./.github/workflows/interface-unit-tests.yml
+      secrets:
+        codecov_token: ${{ secrets.CODECOV_TOKEN }}
       with:
         # If running by workflow call, will check by provided ref_branch, if not will default to 'add-pytest-benchmarks'.
         branch: ${{ inputs.ref_branch || 'add-pytest-benchmarks' }}
@@ -47,6 +49,8 @@ jobs:
       if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
 
       uses: ./.github/workflows/interface-unit-tests.yml
+      secrets:
+        codecov_token: ${{ secrets.CODECOV_TOKEN }}
       needs: reference-benchmarks
       with:
         # If running by workflow call, will check by provided branch, if not will default to github.ref.
