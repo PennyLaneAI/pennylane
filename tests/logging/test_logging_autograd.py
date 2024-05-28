@@ -18,12 +18,81 @@ import logging
 import pytest
 
 import pennylane as qml
+import pennylane.logging as pl_logging
 
 _grad_log_map = {
     "adjoint": "gradient_fn=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
     "backprop": "gradient_fn=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
     "parameter-shift": "gradient_fn=<transform: param_shift>",
 }
+
+
+class LogExceptionMgr:
+    """
+    This context manager class defines setup and teardown for log-levels as part of testing. It is often required to enable various levels beyond the capability of the in-built caplog setting, so this class allow setting of outter log-level messages, and the inner caplog defined level can be set within the manager as expected. With this, multiple layers of control can be provided for the logging configuration.
+    """
+
+    # Use lock due to process-wide modification to configuration
+    def __init__(self, caplog, mod, levels):
+        self._caplog = caplog
+        self._mod = mod
+        self._levels = levels
+        self._pl_logger = None
+
+    def __enter__(self):
+        pl_logging.enable_logging()
+        self._pl_logger = logging.root.manager.loggerDict["pennylane"]
+
+        # Ensure logs messages are propagated for pytest capture
+        self._pl_logger.propagate = True
+
+        for l, m in zip(self._levels, self._mod):
+            self._caplog.set_level(l, logger=m)
+
+    def __exit__(self, *exc):
+        # Ensure all recently added loggers and handlers are removed
+        reset_logging()
+        self._caplog.clear()
+
+
+# pylint: disable=pointless-statement
+@pytest.fixture(scope="function")
+def set_log_level():
+    "Wrap LogExceptionMgr to provide fixture function-level support for enabling and disabling logging"
+
+    return LogExceptionMgr
+
+
+def reset_logging():
+    manager = logging.root.manager
+    manager.disabled = logging.NOTSET
+    for logger in manager.loggerDict.values():
+        if isinstance(logger, logging.Logger):
+            logger.setLevel(logging.NOTSET)
+            logger.propagate = True
+            logger.disabled = False
+            logger.filters.clear()
+            handlers = logger.handlers.copy()
+            for handler in handlers:
+                # Copied from `logging.shutdown`.
+                try:
+                    handler.acquire()
+                    handler.flush()
+                    handler.close()
+                except (OSError, ValueError):
+                    pass
+                finally:
+                    handler.release()
+                logger.removeHandler(handler)
+
+
+# pylint: disable=pointless-statement
+@pytest.fixture(scope="module")
+def disable_logging():
+    "Wrap LogExceptionMgr to provide fixture function-level support for enabling and disabling logging"
+
+    yield
+    logging.shutdown()
 
 
 @pytest.mark.logging
@@ -33,9 +102,9 @@ class TestLogging:
     def test_qd_dev_creation(self, caplog, set_log_level):
         "Test logging of device creation"
 
-        with set_log_level(caplog, ["pennylane.devices.default_qubit"], [logging.DEBUG]):
-            with caplog.at_level(logging.DEBUG):
-                qml.device("default.qubit", wires=2)
+        # with set_log_level(caplog, ["pennylane.devices.default_qubit"], [logging.DEBUG]):
+        with caplog.at_level(logging.DEBUG):
+            qml.device("default.qubit", wires=2)
 
         assert len(caplog.records) == 1
         assert "Calling <__init__(self=<default.qubit device" in caplog.text
@@ -43,63 +112,59 @@ class TestLogging:
     def test_qd_qnode_creation(self, caplog, set_log_level):
         "Test logging of QNode creation"
 
-        with set_log_level(caplog, ["pennylane.workflow.qnode"], [logging.DEBUG]):
-            with caplog.at_level(logging.INFO):
-                dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
-            # Single log entry, QNode creation
-            with caplog.at_level(logging.DEBUG):
+        # Single log entry, QNode creation
+        with caplog.at_level(logging.DEBUG):
 
-                @qml.qnode(dev, diff_method=None)
-                def circuit():  # pylint: disable=unused-variable
-                    qml.PauliX(wires=0)
-                    return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+            @qml.qnode(dev, diff_method=None)
+            def circuit():  # pylint: disable=unused-variable
+                qml.PauliX(wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
-            assert len(caplog.records) == 1
-            assert "Creating QNode" in caplog.text
+        assert len(caplog.records) == 1
+        assert "Creating QNode" in caplog.text
 
     def test_dq_qnode_execution(self, caplog, set_log_level):
         "Test logging of QNode forward pass"
 
-        # Set specific log-levels for validation
-        with set_log_level(
-            caplog,
-            ["pennylane", "pennylane.workflow.execution", "pennylane.workflow.qnode"],
-            [logging.INFO, logging.DEBUG, logging.DEBUG],
-        ):
-            dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
-            with caplog.at_level(logging.DEBUG):
-                params = qml.numpy.array(0.1234)
+        with caplog.at_level(logging.DEBUG):
+            params = qml.numpy.array(0.1234)
 
-                @qml.qnode(dev, diff_method=None)
-                def circuit(params):
-                    qml.RX(params, wires=0)
-                    return qml.expval(qml.PauliZ(0))
+            @qml.qnode(dev, diff_method=None)
+            def circuit(params):
+                qml.RX(params, wires=0)
+                return qml.expval(qml.PauliZ(0))
 
-                circuit(params)
-            assert len(caplog.records) == 3
-            log_records_expected = [
-                (
-                    "pennylane.workflow.qnode",
-                    ["Creating QNode(func=<function TestLogging.test_dq_qnode_execution"],
-                ),
-                (
-                    "pennylane.workflow.qnode",
-                    ["Calling <construct(self=<QNode: device='<default.qubit device"],
-                ),
-                (
-                    "pennylane.workflow.execution",
-                    [
-                        "device=<default.qubit device (wires=2)",
-                        "gradient_fn=None, interface=None",
-                    ],
-                ),
-            ]
+            circuit(params)
+        assert len(caplog.records) == 8
+        log_records_expected = [
+            (
+                "pennylane.workflow.qnode",
+                ["Creating QNode(func=<function TestLogging.test_dq_qnode_execution"],
+            ),
+            (
+                "pennylane.workflow.qnode",
+                ["Calling <construct(self=<QNode: device='<default.qubit device"],
+            ),
+            (
+                "pennylane.devices.default_qubit",
+                ["Calling <preprocess(self=<default.qubit device (wires=2)"],
+            ),
+            (
+                "pennylane.workflow.execution",
+                [
+                    "device=<default.qubit device (wires=2)",
+                    "gradient_fn=None, interface=None",
+                ],
+            ),
+        ]
 
-            for expected, actual in zip(log_records_expected, caplog.records[:3]):
-                assert expected[0] in actual.name
-                assert all(msg in actual.getMessage() for msg in expected[1])
+        for expected, actual in zip(log_records_expected, caplog.records[:3]):
+            assert expected[0] in actual.name
+            assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
         "diff_method,num_records", [("parameter-shift", 23), ("backprop", 14), ("adjoint", 18)]
@@ -107,24 +172,18 @@ class TestLogging:
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records, set_log_level):
         "Test logging of QNode with parameterised gradients"
 
-        with set_log_level(
-            caplog,
-            ["pennylane", "pennylane.workflow", "pennylane.devices"],
-            [logging.INFO, logging.DEBUG, logging.DEBUG],
-        ):
-            with caplog.at_level(logging.INFO):
-                dev = qml.device("default.qubit", wires=2)
-            params = qml.numpy.array(0.1234)
+        dev = qml.device("default.qubit", wires=2)
+        params = qml.numpy.array(0.1234)
 
-            # Single log entry, QNode creation
-            with caplog.at_level(logging.DEBUG):
+        # Single log entry, QNode creation
+        with caplog.at_level(logging.DEBUG):
 
-                @qml.qnode(dev, diff_method=diff_method)
-                def circuit(params):
-                    qml.RX(params, wires=0)
-                    return qml.expval(qml.PauliZ(0))
+            @qml.qnode(dev, diff_method=diff_method)
+            def circuit(params):
+                qml.RX(params, wires=0)
+                return qml.expval(qml.PauliZ(0))
 
-                qml.grad(circuit)(params)
+            qml.grad(circuit)(params)
 
         assert len(caplog.records) == num_records
 
@@ -159,22 +218,16 @@ class TestLogging:
     def test_execution_debugging_qutrit_mixed(self, caplog, set_log_level):
         """Test logging of QNode forward pass from default qutrit mixed."""
 
-        with set_log_level(
-            caplog,
-            ["pennylane", "pennylane.workflow", "pennylane.devices"],
-            [logging.INFO, logging.DEBUG, logging.DEBUG],
-        ):
-            # Set inner level to log local details
-            with caplog.at_level(logging.DEBUG):
-                dev = qml.device("default.qutrit.mixed", wires=2)
-                params = qml.numpy.array(0.1234)
+        with caplog.at_level(logging.DEBUG):
+            dev = qml.device("default.qutrit.mixed", wires=2)
+            params = qml.numpy.array(0.1234)
 
-                @qml.qnode(dev, diff_method=None)
-                def circuit(params):
-                    qml.TRX(params, wires=0)
-                    return qml.expval(qml.GellMann(0, 3))
+            @qml.qnode(dev, diff_method=None)
+            def circuit(params):
+                qml.TRX(params, wires=0)
+                return qml.expval(qml.GellMann(0, 3))
 
-                circuit(params)
+            circuit(params)
 
         assert len(caplog.records) == 6
 
