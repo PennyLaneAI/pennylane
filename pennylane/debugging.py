@@ -14,9 +14,9 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
+import copy
 import pdb
 import sys
-import copy
 
 import pennylane as qml
 from pennylane import DeviceError
@@ -234,11 +234,11 @@ def _measure(measurement):
     """
     active_queue = qml.queuing.QueuingManager.active_context()
     copied_queue = copy.deepcopy(active_queue)
-    
+
     copied_queue.append(measurement)
     tape = qml.tape.QuantumScript.from_queue(copied_queue)
     return PLDB._execute((tape,))
-  
+
 
 def tape():
     """Access the tape of the quantum circuit.
