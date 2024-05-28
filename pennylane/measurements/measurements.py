@@ -23,6 +23,7 @@ from enum import Enum
 from typing import Optional, Sequence, Tuple, Union
 
 import pennylane as qml
+from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
@@ -192,6 +193,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         This information is similar to ``numeric_type`` and ``shape``, but is provided through
         a class method and does not require the creation of an instance.
 
+        Note that ``shots`` should strictly be ``None`` or ``int``. Shot vectors are handled higher
+        in the stack.
+
         If ``n_wires is None``, then the measurement process contains an observable. An integer
         ``n_wires`` can correspond either to the number of wires or to the number of mid circuit
         measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
@@ -206,9 +210,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         ((50,), float)
         >>> SampleMP._abstract_eval(n_wires=None, shots=50)
         ((50,), float)
-
-        Note that ``shots`` should strictly be ``None`` or ``int``. Shot vectors are handled higher
-        in the stack.
 
         """
         return (), float
@@ -242,6 +243,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
             # Cast sequence of measurement values to list
             self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
+            self.obs = None
+        elif is_abstract(obs):  # Catalyst program with qml.sample(m, wires=i)
+            self.mv = obs
             self.obs = None
         else:
             self.obs = obs
@@ -388,7 +392,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.mv is not None:
+        if self.mv is not None and not is_abstract(self.mv):
             if isinstance(self.mv, list):
                 return qml.wires.Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires

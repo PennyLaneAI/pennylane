@@ -342,12 +342,14 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                     measurements.append(qml.probs(op=obs_new))
 
             new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=tape.shots)
-
             _rotations, _measurements = qml.tape.tape.rotations_and_diagonal_measurements(new_tape)
-            # pylint: disable=protected-access
-            new_tape._ops = new_tape.operations + _rotations
-            new_tape._measurements = _measurements
-            new_tape._update()
+            new_ops = new_tape.operations + _rotations
+            new_tape = qml.tape.QuantumScript(
+                new_ops,
+                _measurements,
+                shots=new_tape.shots,
+                trainable_params=new_tape.trainable_params,
+            )
 
             num_tape += 1
 

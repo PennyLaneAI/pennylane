@@ -29,12 +29,10 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
-    ~CaptureMeta
     ~create_operator_primitive
-    ~create_measurment_obs_primitive
+    ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
-    ~measure
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -53,31 +51,6 @@ By default, the mechanism is disabled:
     >>> qml.capture.disable()
     >>> qml.capture.enabled()
     False
-
-**Integrated Example:**
-
-.. code-block:: python
-
-    def f(x):
-        qml.RX(x, wires=0)
-        mp1 = qml.expval(qml.Z(0))
-        mp2 = qml.sample()
-        res1, res2 = qml.capture.measure(mp1, mp2, shots=50, num_device_wires=4)
-        return res1 * res2
-
-    jax.make_jaxpr(f)(0.1)
-
-.. code-block::
-
-    { lambda ; a:f32[]. let
-        _:AbstractOperator() = RX[n_wires=1] a 0
-        b:AbstractOperator() = PauliZ[n_wires=1] 0
-        c:AbstractMeasurement(n_wires=None) = expval b
-        d:AbstractMeasurement(n_wires=0) = sample
-        e:f32[] f:i32[50,4] = measure[num_device_wires=4 shots=Shots(total=50)] c d
-        g:f32[50,4] = convert_element_type[new_dtype=float32 weak_type=False] f
-        h:f32[50,4] = mul e g
-    in (h,) }
 
 **Custom Operator Behaviour**
 
@@ -159,7 +132,6 @@ from .primitives import (
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
 )
-from .measure import measure
 from .capture_qnode import qnode_call
 
 

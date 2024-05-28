@@ -96,7 +96,8 @@ class TestInheritanceMixins:
 
         # Check some basic observable functionality
         assert ob.compare(ob)
-        assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
+        with pytest.warns(UserWarning, match="Tensor object acts on overlapping"):
+            assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
 
         # check the dir
         assert "grad_recipe" not in dir(ob)
@@ -182,7 +183,8 @@ class TestInitialization:
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_base(self):
         """Test adjoint initialization for a hamiltonian."""
-        base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
+        with pytest.warns(UserWarning, match="Tensor object acts on overlapping"):
+            base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
 
         op = Adjoint(base)
 
@@ -1178,7 +1180,7 @@ class TestAdjointConstructorIntegration:
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
-        x = tf.Variable(0.234)
+        x = tf.Variable(0.234, dtype=tf.float64)
         with tf.GradientTape() as tape:
             y = circ(x)
 
