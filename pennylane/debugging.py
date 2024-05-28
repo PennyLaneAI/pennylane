@@ -64,7 +64,7 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
     and its nature. For supported simulators, measurements with no specified wires would default to all wires.
 
     The output is a dictionary where each key is either the tag supplied to the snapshot or its
-    index in order of appearance, in additition to an "execution_results" that returns the final output
+    index in order of appearance, in addition to an "execution_results" that returns the final output
     of the quantum circuit. The post-processing function is responsible for aggregating the results into
     this dictionary.
 
