@@ -208,7 +208,7 @@ class DefaultTensor(Device):
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
         self._contract = kwargs.get("contract", "auto-mps")
 
-        self._quimb_tensor = qtn.CircuitMPS(psi0=self._initial_mps(self.wires))
+        self._quimb_mps = qtn.CircuitMPS(psi0=self._initial_mps(self.wires))
 
         for arg in kwargs:
             if arg not in self._device_options:
@@ -233,12 +233,14 @@ class DefaultTensor(Device):
 
     def _reset_mps(self, wires: qml.wires.Wires) -> None:
         """
-        Reset the MPS.
+        Reset the MPS associated with the circuit.
+
+        Internally, it uses `quimb`'s `CircuitMPS` class.
 
         Args:
-            wires (Wires): The wires to initialize the MPS.
+            wires (Wires): The wires to reset the MPS.
         """
-        self._quimb_tensor = qtn.CircuitMPS(
+        self._quimb_mps = qtn.CircuitMPS(
             psi0=self._initial_mps(wires),
             max_bond=self._max_bond_dim,
             gate_contract=self._contract,
@@ -382,7 +384,7 @@ class DefaultTensor(Device):
             op (Operator): The operation to apply.
         """
 
-        self._quimb_tensor.apply_gate(op.matrix().astype(self._dtype), *op.wires, parametrize=None)
+        self._quimb_mps.apply_gate(op.matrix().astype(self._dtype), *op.wires, parametrize=None)
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
         """Measure the measurement required by the circuit over the MPS.
@@ -463,8 +465,8 @@ class DefaultTensor(Device):
             Local expectation value of the matrix on the MPS.
         """
 
-        # We need to copy the MPS to avoid modifying the original state
-        qc = copy.deepcopy(self._quimb_tensor)
+        # We need to copy the MPS since `local_expectation` modifies the state
+        qc = copy.deepcopy(self._quimb_mps)
 
         exp_val = qc.local_expectation(
             matrix,
