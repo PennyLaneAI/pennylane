@@ -185,8 +185,6 @@ class QuantumScript:
         self._obs_sharing_wires = None
         self._obs_sharing_wires_id = None
 
-        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
-
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
@@ -388,7 +386,14 @@ class QuantumScript:
         except AttributeError:
             pass
 
-        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
+    @cached_property
+    def wires(self) -> Wires:
+        """Returns the wires used in the quantum script process
+
+        Returns:
+            ~.Wires: wires in quantum script process
+        """
+        return Wires.all_wires(dict.fromkeys(op.wires for op in self))
 
     @property
     def num_wires(self) -> int:

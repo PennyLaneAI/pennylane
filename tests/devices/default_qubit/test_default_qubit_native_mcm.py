@@ -222,6 +222,25 @@ def test_unsupported_measurement():
         func(*params)
 
 
+def test_deep_circuit():
+    """Tests that DefaultQubit handles a circuit with more than 1000 mid-circuit measurements."""
+
+    dev = qml.device("default.qubit", shots=10)
+
+    @qml.qnode(dev)
+    def func(x):
+        for _ in range(1234):
+            qml.RX(x, wires=0)
+            _ = qml.measure(0)
+        return qml.expval(qml.PauliY(0))
+
+    func1 = func
+    func2 = qml.dynamic_one_shot(func)
+
+    _ = func1(0.1243)
+    _ = func2(0.1243)
+
+
 @pytest.mark.parametrize("shots", [5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])

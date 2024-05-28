@@ -128,7 +128,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         circuit (.QuantumScript): The single circuit to simulate
         debugger (._Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        initial_state (TensorLike): Initial statevector
+        initial_state (TensorLike): Initial state vector
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
@@ -186,7 +186,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         is_state_batched = is_state_batched or (op.batch_size is not None)
 
     if initial_state is None:
-        for _ in range(len(circuit.wires) - len(circuit.op_wires)):
+        for _ in range(circuit.num_wires - len(circuit.op_wires)):
             # if any measured wires are not operated on, we pad the state with zeros.
             # We know they belong at the end because the circuit is in standard wire-order
             state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
@@ -207,7 +207,7 @@ def measure_final_state(
         circuit (.QuantumScript): The single circuit to simulate
         state (TensorLike): The state to perform measurement on
         is_state_batched (bool): Whether the state has a batch dimension or not.
-        initial_state (TensorLike): Initial statevector
+        initial_state (TensorLike): Initial state vector
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -305,6 +305,9 @@ def simulate(
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
         if circuit.shots.total_shots != circuit.shots.num_copies:
+            n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
+            if n_mcms > sys.getrecursionlimit():
+                sys.setrecursionlimit(2 * n_mcms + 100)
             return simulate_tree_mcm(circuit, **execution_kwargs)
 
         results = []
@@ -365,7 +368,7 @@ def simulate_tree_mcm(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        initial_state (TensorLike): Initial statevector
+        initial_state (TensorLike): Initial state vector
         mcm_active (dict): Mid-circuit measurement values or all parent circuits of ``circuit``
         mcm_samples (dict): Mid-circuit measurement samples or all parent circuits of ``circuit``
 
@@ -383,11 +386,6 @@ def simulate_tree_mcm(
             "Returning qml.sample is not supported when postselecting mid-circuit "
             "measurements with broadcasting"
         )
-
-    n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
-
-    if n_mcms > sys.getrecursionlimit():
-        sys.setrecursionlimit(n_mcms)
 
     #########################
     # shot vector treatment #
@@ -416,7 +414,7 @@ def simulate_tree_mcm(
 
     circuit_base, circuit_next, op = circuit_up_to_first_mcm(circuit)
     # we need to make sure the state is the all-wire state
-    initial_state = prep_initial_state(circuit_base, interface, initial_state)
+    initial_state = prep_initial_state(circuit_base, interface, initial_state, circuit.wires)
     state, is_state_batched = get_final_state(
         circuit_base,
         debugger=debugger,
@@ -465,13 +463,14 @@ def simulate_tree_mcm(
             prune_mcm_samples(op, branch, mcm_active, mcm_samples)
             continue
         mcm_active[op] = branch
+        circuit_branch = qml.tape.QuantumScript(
+            circuit_next.operations,
+            circuit_next.measurements,
+            shots=qml.measurements.Shots(count),
+            trainable_params=circuit_next.trainable_params,
+        )
         meas = branch_measurement(
-            qml.tape.QuantumScript(
-                circuit_next.operations,
-                circuit_next.measurements,
-                shots=qml.measurements.Shots(count),
-                trainable_params=circuit_next.trainable_params,
-            ),
+            circuit_branch,
             state,
             branch,
             mcm_active=mcm_active,
@@ -494,19 +493,20 @@ def samples_to_counts(samples):
     return dict((int(x), int(y)) for x, y in zip(*counts))
 
 
-def prep_initial_state(circuit_base, interface, initial_state):
+def prep_initial_state(circuit_base, interface, initial_state, wires):
     """Returns an initial state which will act on all wires.
 
     ``get_final_state`` executes a circuit on a subset of wires found in operations
     or measurements, unless an initial_state is passed as an optional argument.
     This function makes sure that an initial state with the correct size is passed
-    on the first invocation of ``simulate_tree_mcm``."""
+    on the first invocation of ``simulate_tree_mcm``. ``wires`` should be the wires attribute
+    of the original circuit."""
     if initial_state is not None:
         return initial_state
     prep = None
     if len(circuit_base) > 0 and isinstance(circuit_base[0], qml.operation.StatePrepBase):
         prep = circuit_base[0]
-    return create_initial_state(sorted(circuit_base.wires), prep, like=INTERFACE_TO_LIKE[interface])
+    return create_initial_state(wires, prep, like=INTERFACE_TO_LIKE[interface])
 
 
 def prune_mcm_samples(op, branch, mcm_active, mcm_samples):
@@ -565,12 +565,11 @@ def circuit_up_to_first_mcm(circuit):
     i, op = find_next_mcm(circuit)
     # run circuit until next MidMeasureMP and sample
     circuit_base = qml.tape.QuantumScript(
-        circuit.operations,
+        circuit.operations[0:i],
         [qml.sample(wires=op.wires) if op.obs is None else qml.sample(op=op.obs)],
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
     )
-    circuit_base._ops = circuit_base._ops[0:i]
     # circuit beyond next MidMeasureMP with VarianceMP <==> SampleMP
     new_measurements = []
     for m in circuit.measurements:
@@ -580,12 +579,11 @@ def circuit_up_to_first_mcm(circuit):
             else:
                 new_measurements.append(m)
     circuit_next = qml.tape.QuantumScript(
-        circuit.operations,
+        circuit.operations[i + 1 :],
         new_measurements,
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
     )
-    circuit_next._ops = circuit_next._ops[i + 1 :]
     return circuit_base, circuit_next, op
 
 
