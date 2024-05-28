@@ -185,7 +185,6 @@ class DefaultTensor(Device):
 
         dev = qml.device("default.tensor", wires=num_qubits)
 
-
         @qml.qnode(dev)
         def circuit(num_qubits):
             for qubit in range(0, num_qubits - 1):
@@ -193,7 +192,6 @@ class DefaultTensor(Device):
                 qml.X(wires=[qubit])
                 qml.Z(wires=[qubit + 1])
             return qml.expval(qml.Z(0))
-
 
     >>> circuit(num_qubits)
     tensor(-1., requires_grad=True)
