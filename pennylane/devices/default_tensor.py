@@ -208,6 +208,8 @@ class DefaultTensor(Device):
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
         self._contract = kwargs.get("contract", "auto-mps")
 
+        self._quimb_tensor = qtn.CircuitMPS(psi0=self._initial_mps(self.wires))
+
         for arg in kwargs:
             if arg not in self._device_options:
                 raise TypeError(
@@ -228,6 +230,20 @@ class DefaultTensor(Device):
     def dtype(self):
         """Tensor complex data type."""
         return self._dtype
+
+    def _reset_mps(self, wires: qml.wires.Wires) -> None:
+        """
+        Reset the MPS.
+
+        Args:
+            wires (Wires): The wires to initialize the MPS.
+        """
+        self._quimb_tensor = qtn.CircuitMPS(
+            psi0=self._initial_mps(wires),
+            max_bond=self._max_bond_dim,
+            gate_contract=self._contract,
+            cutoff=self._cutoff,
+        )
 
     def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
         r"""
@@ -345,47 +361,40 @@ class DefaultTensor(Device):
 
         wires = circuit.wires if self.wires is None else self.wires
 
-        state = qtn.CircuitMPS(
-            psi0=self._initial_mps(wires),
-            max_bond=self._max_bond_dim,
-            gate_contract=self._contract,
-            cutoff=self._cutoff,
-        )
+        self._reset_mps(wires)
 
         for op in circuit.operations:
-            self._apply_operation(op, state)
+            self._apply_operation(op)
 
         if not circuit.shots:
             if len(circuit.measurements) == 1:
-                return self.measurement(circuit.measurements[0], state)
-            return tuple(self.measurement(mp, state) for mp in circuit.measurements)
+                return self.measurement(circuit.measurements[0])
+            return tuple(self.measurement(mp) for mp in circuit.measurements)
 
         raise NotImplementedError  # pragma: no cover
 
-    def _apply_operation(self, op: qml.operation.Operator, state) -> None:
+    def _apply_operation(self, op: qml.operation.Operator) -> None:
         """Apply a single operator to the circuit, keeping the state always in a MPS form.
 
         Internally it uses `quimb`'s `apply_gate` method.
 
         Args:
             op (Operator): The operation to apply.
-            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
         """
 
-        state.apply_gate(op.matrix().astype(self._dtype), *op.wires, parametrize=None)
+        self._quimb_tensor.apply_gate(op.matrix().astype(self._dtype), *op.wires, parametrize=None)
 
-    def measurement(self, measurementprocess: MeasurementProcess, state) -> TensorLike:
+    def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
         """Measure the measurement required by the circuit over the MPS.
 
         Args:
             measurementprocess (MeasurementProcess): measurement to apply to the state.
-            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
 
         Returns:
             TensorLike: the result of the measurement.
         """
 
-        return self._get_measurement_function(measurementprocess)(measurementprocess, state)
+        return self._get_measurement_function(measurementprocess)(measurementprocess)
 
     def _get_measurement_function(
         self, measurementprocess: MeasurementProcess
@@ -407,12 +416,11 @@ class DefaultTensor(Device):
 
         raise NotImplementedError
 
-    def expval(self, measurementprocess: MeasurementProcess, state) -> float:
+    def expval(self, measurementprocess: MeasurementProcess) -> float:
         """Expectation value of the supplied observable contained in the MeasurementProcess.
 
         Args:
             measurementprocess (StateMeasurement): measurement to apply to the MPS.
-            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
 
         Returns:
             Expectation value of the observable.
@@ -420,16 +428,15 @@ class DefaultTensor(Device):
 
         obs = measurementprocess.obs
 
-        result = self._local_expectation(obs.matrix(), tuple(obs.wires), state)
+        result = self._local_expectation(obs.matrix(), tuple(obs.wires))
 
         return result
 
-    def var(self, measurementprocess: MeasurementProcess, state) -> float:
+    def var(self, measurementprocess: MeasurementProcess) -> float:
         """Variance of the supplied observable contained in the MeasurementProcess.
 
         Args:
             measurementprocess (StateMeasurement): measurement to apply to the MPS.
-            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
 
         Returns:
             Variance of the observable.
@@ -438,14 +445,12 @@ class DefaultTensor(Device):
         obs = measurementprocess.obs
 
         obs_mat = obs.matrix()
-        expect_op = self.expval(measurementprocess, state)
-        expect_squar_op = self._local_expectation(
-            obs_mat @ obs_mat.conj().T, tuple(obs.wires), state
-        )
+        expect_op = self.expval(measurementprocess)
+        expect_squar_op = self._local_expectation(obs_mat @ obs_mat.conj().T, tuple(obs.wires))
 
         return expect_squar_op - np.square(expect_op)
 
-    def _local_expectation(self, matrix, wires, state) -> float:
+    def _local_expectation(self, matrix, wires) -> float:
         """Compute the local expectation value of a matrix on the MPS.
 
         Internally, it uses `quimb`'s `local_expectation` method.
@@ -453,14 +458,13 @@ class DefaultTensor(Device):
         Args:
             matrix (array): the matrix to compute the expectation value of.
             wires (tuple[int]): the wires the matrix acts on.
-            state (quimb.tensor.circuit.CircuitMPS): The current state of the circuit.
 
         Returns:
             Local expectation value of the matrix on the MPS.
         """
 
         # We need to copy the MPS to avoid modifying the original state
-        qc = copy.deepcopy(state)
+        qc = copy.deepcopy(self._quimb_tensor)
 
         exp_val = qc.local_expectation(
             matrix,
