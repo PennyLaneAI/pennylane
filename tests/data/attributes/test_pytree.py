@@ -20,8 +20,8 @@ from dataclasses import dataclass
 import pytest
 
 from pennylane.data import Dataset, DatasetPyTree
-from pennylane.pytrees import register_pytree
 from pennylane.pytrees.pytrees import (
+    _register_pytree_with_pennylane,
     flatten_registrations,
     type_to_typename,
     typename_to_type,
@@ -50,7 +50,9 @@ def unflatten_custom(data, metadata):
 def register_test_node():
     """Fixture that temporarily registers the ``CustomNode`` class as
     a Pytree."""
-    register_pytree(CustomNode, flatten_custom, unflatten_custom)
+    # Use this instead of ``register_pytree()`` so that ``CustomNode`` will not
+    # be registered with jax.
+    _register_pytree_with_pennylane(CustomNode, "test.CustomNode", flatten_custom, unflatten_custom)
 
     yield
 

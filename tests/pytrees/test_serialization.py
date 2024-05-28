@@ -23,8 +23,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops import PauliX, Prod, Sum
-from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, register_pytree, unflatten
+from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
 from pennylane.pytrees.pytrees import (
+    _register_pytree_with_pennylane,
     flatten_registrations,
     type_to_typename,
     typename_to_type,
@@ -56,7 +57,9 @@ def unflatten_custom(data, metadata):
 def register_test_node():
     """Fixture that temporarily registers the ``CustomNode`` class as
     a Pytree."""
-    register_pytree(CustomNode, flatten_custom, unflatten_custom, namespace="test")
+    # Use this instead of ``register_pytree()`` so that ``CustomNode`` will not
+    # be registered with jax.
+    _register_pytree_with_pennylane(CustomNode, "test.CustomNode", flatten_custom, unflatten_custom)
 
     yield
 
