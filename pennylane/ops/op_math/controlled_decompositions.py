@@ -127,13 +127,6 @@ def _bisect_compute_b(u: np.ndarray):
     return _param_su2(c, d, b, 0)
 
 
-def _is_identity(matrix, atol=1e-6, rtol=0):
-    """Checks whether matrix is close to an identity."""
-    identity = np.eye(matrix.shape[0])
-    identity = math.convert_like(identity, matrix)
-    return math.allclose(matrix, identity, atol=atol, rtol=rtol)
-
-
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     """Decompose the controlled version of a target single-qubit operation
 
@@ -207,28 +200,33 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     _, global_phase = _convert_to_su2(qml.matrix(target_operation), return_global_phase=True)
 
+    # We use the conditional statements to account when decomposition is ran within a queue
     decomp = []
     # Add negative of global phase. Compare definition of qml.GlobalPhase and Ph(delta) from section 4.1 of Barenco et al.
-    decomp.append(
-        qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
-    )
+    if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
+        decomp.append(
+            qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
+        )
     # Add A operator
-    decomp.append(qml.RZ(phi, wires=target_wire))
-    decomp.append(qml.RY(theta / 2, wires=target_wire))
+    if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
+        decomp.append(qml.RZ(phi, wires=target_wire))
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RY(theta / 2, wires=target_wire))
 
     decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
 
     # Add B operator
-    decomp.append(qml.RY(-theta / 2, wires=target_wire))
-    decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RY(-theta / 2, wires=target_wire))
+    if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
+        decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
 
     decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
 
     # Add C operator
-    decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
+    if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
 
-    # leave only the rotation gates that are not equal to identity
-    decomp = [gate for gate in decomp if not _is_identity(qml.matrix(gate))]
     return decomp
 
 
@@ -460,7 +458,8 @@ def ctrl_decomp_bisect(
 
 
 def decompose_mcx(control_wires, target_wire, work_wires):
-    """Decomposes the multi-controlled PauliX gate"""
+    """Decomposes the multi-controlled PauliX gate using decompositions from
+    `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_"""
     num_work_wires_needed = len(control_wires) - 2
 
     if len(control_wires) == 1:
