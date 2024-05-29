@@ -216,17 +216,17 @@ class TestQutritAmplitudeDamping:
     @staticmethod
     def expected_jac_fn(gamma_1, gamma_2, gamma_3):
         """Gets the expected Jacobian of Kraus matrices"""
-        partial_1 = [math.zeros((3, 3)) for _ in range(3)]
+        partial_1 = [math.zeros((3, 3)) for _ in range(4)]
         partial_1[0][1, 1] = -1 / (2 * math.sqrt(1 - gamma_1))
         partial_1[1][0, 1] = 1 / (2 * math.sqrt(gamma_1))
 
-        partial_2 = [math.zeros((3, 3)) for _ in range(3)]
+        partial_2 = [math.zeros((3, 3)) for _ in range(4)]
         partial_2[0][2, 2] = -1 / (2 * math.sqrt(1 - gamma_2 - gamma_3))
         partial_2[2][0, 2] = 1 / (2 * math.sqrt(gamma_2))
 
-        partial_3 = [math.zeros((3, 3)) for _ in range(3)]
+        partial_3 = [math.zeros((3, 3)) for _ in range(4)]
         partial_3[0][2, 2] = -1 / (2 * math.sqrt(1 - gamma_2 - gamma_3))
-        partial_3[2][1, 2] = 1 / (2 * math.sqrt(gamma_3))
+        partial_3[3][1, 2] = 1 / (2 * math.sqrt(gamma_3))
 
         return [partial_1, partial_2, partial_3]
 
