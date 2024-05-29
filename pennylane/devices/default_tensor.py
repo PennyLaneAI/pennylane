@@ -328,13 +328,6 @@ class DefaultTensor(Device):
             gate_contract=self._contract,
             cutoff=self._cutoff,
         )
-    def _reset_state(self) -> None:
-        """
-        Reset the MPS.
-
-        This method modifies the tensor state of the device.
-        """
-        self._circuitMPS = qtn.CircuitMPS(psi0=self._initial_mps())
 
     def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
         r"""
