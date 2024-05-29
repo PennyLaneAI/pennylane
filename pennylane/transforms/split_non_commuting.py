@@ -31,7 +31,7 @@ from pennylane.typing import Result, ResultBatch
 @transform
 def split_non_commuting(
     tape: qml.tape.QuantumScript,
-    grouping_strategy: Optional[Literal["default", "naive", "pauli"]] = "default",
+    grouping_strategy: Optional[str] = "default",
 ) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
