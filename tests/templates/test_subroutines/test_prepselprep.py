@@ -103,34 +103,58 @@ def test_control_in_ops():
     with pytest.raises(ValueError, match="Control wires should be different from operation wires."):
         qml.PrepSelPrep(lcu, control=0)
 
-#def test_autograd():
-#    dev = qml.device("default.qubit")
-#
-#    coeffs = pnp.array([1/2, 1/2], requires_grad=True)
-#    ops = [qml.Identity(1), qml.PauliZ(1)]
-#    lcu = qml.dot(coeffs, ops)
-#
-#    @qml.qnode(dev)
-#    def circuit(coeffs, ops):
-#        lcu = qml.dot(coeffs, ops)
-#        qml.PrepSelPrep(lcu, control=0)
-#        return qml.expval(qml.Identity(1))
-#
-#    qml.grad(circuit)(coeffs, ops)
+def test_autograd():
+    dev = qml.device("default.qubit")
 
-#def test_jax():
-#
-#    dev = qml.device("default.qubit")
-#    coeffs = jnp.array([1/2, 1/2])
-#    ops = [qml.Identity(1), qml.PauliZ(1)]
-#    lcu = qml.dot(coeffs, ops)
-#
-#    @qml.qnode(dev)
-#    def circuit(coeffs, ops):
-#        lcu = qml.dot(coeffs, ops)
-#        qml.PrepSelPrep(lcu, control=0)
-#        return qml.expval(qml.PauliZ(wires=1))
-#
-#    grad_fn = jax.grad(circuit)
-#    grads = grad_fn(coeffs, ops)
+    coeffs = pnp.array([1/2, 1/2], requires_grad=True)
+    ops = [qml.Identity(1), qml.PauliZ(1)]
 
+    @qml.qnode(dev)
+    def prepselprep(coeffs):
+        lcu = qml.ops.LinearCombination(coeffs, ops)
+        qml.PrepSelPrep(lcu, control=0)
+        return qml.expval(qml.Z(1))
+
+    @qml.qnode(dev)
+    def manual(coeffs):
+        lcu = qml.ops.LinearCombination(coeffs, ops)
+        normalized_coeffs = (qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs)))
+
+        qml.StatePrep(normalized_coeffs, wires=0)
+        qml.Select(ops, control=0)
+        qml.adjoint(qml.StatePrep(normalized_coeffs, wires=0))
+        return qml.expval(qml.Z(1))
+
+    grad_prepselprep = qml.grad(prepselprep)(coeffs)
+    grad_manual = qml.grad(manual)(coeffs)
+
+    assert qml.math.allclose(grad_prepselprep, grad_manual)
+
+def test_jax():
+    import jax
+    import jax.numpy as jnp
+
+    dev = qml.device("default.qubit")
+    coeffs = jnp.array([1/2, 1/2])
+    ops = [qml.Identity(1), qml.PauliZ(1)]
+
+    @qml.qnode(dev)
+    def prepselprep(coeffs):
+        lcu = qml.ops.LinearCombination(coeffs, ops)
+        qml.PrepSelPrep(lcu, control=0)
+        return qml.expval(qml.Z(1))
+
+    @qml.qnode(dev)
+    def manual(coeffs):
+        lcu = qml.ops.LinearCombination(coeffs, ops)
+        normalized_coeffs = (qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs)))
+
+        qml.StatePrep(normalized_coeffs, wires=0)
+        qml.Select(ops, control=0)
+        qml.adjoint(qml.StatePrep(normalized_coeffs, wires=0))
+        return qml.expval(qml.Z(1))
+
+    grad_prepselprep = jax.grad(prepselprep)(coeffs)
+    grad_manual = jax.grad(manual)(coeffs)
+
+    assert qml.math.allclose(grad_prepselprep, grad_manual)

@@ -3,7 +3,6 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane import math as qmlmath
 from pennylane.operation import Operation
 
 class PrepSelPrep(Operation):
@@ -34,7 +33,6 @@ class PrepSelPrep(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "PrepSelPrep":
-        print(data)
         return cls(data, metadata)
 
     def __repr__(self):
@@ -51,8 +49,7 @@ class PrepSelPrep(Operation):
 
     @staticmethod
     def compute_decomposition(coeffs, ops, control):
-        interface = qml.math.get_interface(coeffs)
-        normalized_coeffs = (np.sqrt(coeffs) / qml.math.norm(np.sqrt(coeffs)))
+        normalized_coeffs = (qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs)))
 
         with qml.QueuingManager.stop_recording():
             prep_ops = qml.StatePrep.compute_decomposition(normalized_coeffs, control)
