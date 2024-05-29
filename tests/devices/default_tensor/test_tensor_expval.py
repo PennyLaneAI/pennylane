@@ -188,6 +188,7 @@ class TestExpval:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_hamiltonian_expectation(self, theta, phi, tol, dev):
         """Tests a Hamiltonian."""
 
@@ -354,6 +355,7 @@ class TestTensorExpval:
         assert np.allclose(calculated_val, reference_val, tol)
 
 
+@pytest.mark.usefixtures("new_opmath_only")
 @pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
 def test_multi_qubit_gates(theta, phi, dev):
     """Tests a simple circuit with multi-qubit gates."""
