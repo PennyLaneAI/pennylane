@@ -24,9 +24,11 @@ def test_repr():
 
 
 class TestPrepSelPrep:
-    """ Test the correctness of the decomposition """
+    """Test the correctness of the decomposition"""
 
     def manual_circuit(self, lcu, control):
+        """ Circuit equivalent to decomposition of PrepSelPrep """
+
         coeffs, unitaries = lcu.terms()
         normalized_coeffs = np.sqrt(coeffs) / np.linalg.norm(np.sqrt(coeffs))
 
@@ -37,22 +39,26 @@ class TestPrepSelPrep:
         return qml.state()
 
     def prepselprep_circuit(self, lcu, control):
+        """ PrepSelPrep circuit used for testing"""
+
         qml.PrepSelPrep(lcu, control)
         return qml.state()
 
     def test_decomposition(self):
+        """Test that the template produces the corrent decomposition"""
+
         dev = qml.device("default.qubit")
         manual = qml.QNode(self.manual_circuit, dev)
         prepselprep = qml.QNode(self.prepselprep_circuit, dev)
 
         lcu = qml.dot([0.25, 0+0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)])
         assert np.array_equal(
-            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0), 
+            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
             qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0))
 
         lcu = qml.dot([1/2, 1/2], [qml.Identity(0), qml.PauliZ(0)])
         assert np.array_equal(
-            qml.matrix(manual, wire_order=[0, 'ancilla'])(lcu, control='ancilla'), 
+            qml.matrix(manual, wire_order=[0, 'ancilla'])(lcu, control='ancilla'),
             qml.matrix(prepselprep, wire_order=[0, 'ancilla'])(lcu, control='ancilla'))
 
         a = 0.25
@@ -67,10 +73,12 @@ class TestPrepSelPrep:
         unitaries = [qml.map_wires(op, {0: 1, 1: 2}) for op in unitaries]
         lcu = qml.dot(coeffs, unitaries)
         assert np.array_equal(
-            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0), 
+            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
             qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0))
 
     def test_copy(self):
+        """Test the copy function"""
+
         lcu = qml.dot([1/2, 1/2], [qml.Identity(1), qml.PauliZ(1)])
         op = qml.PrepSelPrep(lcu, control=0)
         op_copy = copy.copy(op)
@@ -78,6 +86,8 @@ class TestPrepSelPrep:
         assert qml.equal(op, op_copy)
 
     def test_flatten_unflatten(self):
+        """Test that the class can be correctly flattened and unflattened"""
+
         lcu = qml.ops.LinearCombination([1/2, 1/2], [qml.Identity(1), qml.PauliZ(1)])
         lcu_coeffs, lcu_ops = lcu.terms()
 
@@ -105,15 +115,19 @@ class TestPrepSelPrep:
         assert op is not new_op
 
 def test_control_in_ops():
+    """Test that using an operation wire as a control wire results in an error"""
+
     lcu = qml.dot([1/2, 1/2], [qml.Identity(0), qml.PauliZ(0)])
     with pytest.raises(ValueError, match="Control wires should be different from operation wires."):
         qml.PrepSelPrep(lcu, control=0)
 
 class TestInterfaces:
-    """ Tests that the template is compatible with interfaces used to compute gradients. """
+    """Tests that the template is compatible with interfaces used to compute gradients"""
 
     @pytest.mark.autograd
     def test_autograd(self):
+        """Test the autograd interface"""
+
         dev = qml.device("default.qubit")
 
         coeffs = pnp.array([1/2, 1/2], requires_grad=True)
@@ -127,7 +141,6 @@ class TestInterfaces:
 
         @qml.qnode(dev)
         def manual(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, ops)
             normalized_coeffs = (qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs)))
 
             qml.StatePrep(normalized_coeffs, wires=0)
@@ -142,6 +155,7 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jax(self):
+        """Test the jax interface"""
         import jax
         import jax.numpy as jnp
 
@@ -157,7 +171,6 @@ class TestInterfaces:
 
         @qml.qnode(dev)
         def manual(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, ops)
             normalized_coeffs = (qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs)))
 
             qml.StatePrep(normalized_coeffs, wires=0)
@@ -172,6 +185,7 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jax_jit(self):
+        """Test the jax interface with jit"""
         import jax
         import jax.numpy as jnp
 
@@ -189,7 +203,6 @@ class TestInterfaces:
         @jax.jit
         @qml.qnode(dev)
         def manual(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, ops)
             normalized_coeffs = (qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs)))
 
             qml.StatePrep(normalized_coeffs, wires=0)

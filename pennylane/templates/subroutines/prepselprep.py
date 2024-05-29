@@ -4,6 +4,9 @@ import pennylane as qml
 from pennylane.operation import Operation
 
 class PrepSelPrep(Operation):
+    """This class implements a block-encoding of a linear combination of unitaries
+    using the Prepare, Select, Prepare method"""
+
     def __init__(self, lcu, control, id=None):
         coeffs, ops = lcu.terms()
         control = qml.wires.Wires(control)
