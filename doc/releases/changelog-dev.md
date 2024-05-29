@@ -160,6 +160,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
+  [(#5759)](https://github.com/PennyLaneAI/pennylane/pull/5759)
+
 * The `dynamic_one_shot` transform now has expanded support for the `jax` and `torch` interfaces.
   [(#5672)](https://github.com/PennyLaneAI/pennylane/pull/5672)
 
