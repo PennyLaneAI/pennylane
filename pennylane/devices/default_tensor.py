@@ -471,7 +471,9 @@ class DefaultTensor(Device):
             op (Operator): The operation to apply.
         """
 
-        self._circuitMPS.apply_gate(op.matrix().astype(self._dtype), *op.wires, **self._gate_opts)
+        self._circuitMPS.apply_gate(
+            qml.matrix(op).astype(self._dtype), *op.wires, **self._gate_opts
+        )
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
         """Measure the measurement required by the circuit over the MPS.
@@ -517,7 +519,7 @@ class DefaultTensor(Device):
 
         obs = measurementprocess.obs
 
-        result = self._local_expectation(obs.matrix(), tuple(obs.wires))
+        result = self._local_expectation(qml.matrix(obs), tuple(obs.wires))
 
         return result
 
@@ -533,7 +535,7 @@ class DefaultTensor(Device):
 
         obs = measurementprocess.obs
 
-        obs_mat = obs.matrix()
+        obs_mat = qml.matrix(obs)
         expect_op = self.expval(measurementprocess)
         expect_squar_op = self._local_expectation(obs_mat @ obs_mat.conj().T, tuple(obs.wires))
 
