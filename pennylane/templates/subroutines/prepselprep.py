@@ -22,6 +22,7 @@ import copy
 import pennylane as qml
 from pennylane.operation import Operation
 
+
 class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
     using the Prepare, Select, Prepare method"""
@@ -40,10 +41,8 @@ class PrepSelPrep(Operation):
         ):
             raise ValueError("Control wires should be different from operation wires.")
 
-
         target_wires = qml.wires.Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
-
 
         all_wires = target_wires + control
         super().__init__(*self.data, wires=all_wires, id=id)
@@ -73,7 +72,9 @@ class PrepSelPrep(Operation):
     @staticmethod
     def compute_decomposition(lcu, control):
         coeffs, ops = lcu.terms()
-        normalized_coeffs = (qml.math.sqrt(qml.math.abs(coeffs)) / qml.math.norm(qml.math.sqrt(qml.math.abs(coeffs))))
+        normalized_coeffs = qml.math.sqrt(qml.math.abs(coeffs)) / qml.math.norm(
+            qml.math.sqrt(qml.math.abs(coeffs))
+        )
 
         with qml.QueuingManager.stop_recording():
             prep_ops = qml.StatePrep.compute_decomposition(normalized_coeffs, control)
