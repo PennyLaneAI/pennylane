@@ -173,9 +173,9 @@ OpenFermion-PySCF backend
 
 The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
 with non-differentiable backends that use the
-`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin and the
+`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin or the
 electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_. The non-differentiable
-backends can be selected by setting ``method='openfermion'`` and ``method='pyscf'``
+backends can be selected by setting ``method='openfermion'`` or ``method='pyscf'``
 in ``molecular_hamiltonian``:
 
 .. code-block:: python

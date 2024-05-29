@@ -853,15 +853,14 @@ def molecular_hamiltonian(*args, **kwargs):
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed  Hamiltonian
         and the number of qubits
 
-    .. warning::
-        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated.
-        Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at the `Usage Details`
-        for more details on the old interface.
+    .. note::
+        The ``molecular_hamiltonian`` function accepts a ``Molecule`` object as its first argument.
+        Look at the `Usage Details` for more details on the old interface.
 
     **Example**
 
     >>> symbols = ['H', 'H']
-    >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+    >>> coordinates = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
     >>> molecule = qml.qchem.Molecule(symbols, coordinates)
     >>> H, qubits = qml.qchem.molecular_hamiltonian(molecule)
     >>> print(qubits)

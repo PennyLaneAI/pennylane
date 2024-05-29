@@ -41,7 +41,7 @@ with external backends that use the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin or the
 electronic structure package `PySCF <https://github.com/pyscf/pyscf>`_, which requires separate
 installation. These backends are non-differentiable and can be selected by setting
-``method='openfermion'`` and ``method='pyscf'`` in ``molecular_hamiltonian``.
+``method='openfermion'`` or ``method='pyscf'`` in ``molecular_hamiltonian``.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
