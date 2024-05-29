@@ -258,8 +258,10 @@ class QutritAmplitudeDamping(Channel):
 
     .. note::
 
-        When :math:`\gamma_3=0` then Kraus operators :math:`\{K_0, K_1, K_2\}` are adapted from [`1 <https://doi.org/10.48550/arXiv.1905.10481>`_] (Eq. 8).
-        The Kraus operator :math:`K_3` represents the :math:`|2 \rangle \rightarrow |1 \rangle` transition which is more likely on some devices [`2 <TODO>`_].
+        When :math:`\gamma_3=0` then Kraus operators :math:`\{K_0, K_1, K_2\}` are adapted from
+        [`1 <https://doi.org/10.48550/arXiv.1905.10481>`_] (Eq. 8).
+        The Kraus operator :math:`K_3` represents the :math:`|2 \rangle \rightarrow |1 \rangle` transition which is more
+        likely on some devices [`2 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
 
 
     **Details:**

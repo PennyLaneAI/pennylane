@@ -179,7 +179,7 @@ class TestQutritAmplitudeDamping:
         kraus_mats = qml.QutritAmplitudeDamping(0, 0, 0, wires=0).kraus_matrices()
         assert np.allclose(kraus_mats[0], np.eye(3), atol=tol, rtol=0)
         for kraus_mat in kraus_mats[1:]:
-            assert np.allclose(kraus_mats[1], np.zeros((3, 3)), atol=tol, rtol=0)
+            assert np.allclose(kraus_mat, np.zeros((3, 3)), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("gamma1,gamma2,gamma3", ((0.1, 0.2, 0.3), (0.75, 0.75, 0.25)))
     def test_gamma_arbitrary(self, gamma1, gamma2, gamma3, tol):
