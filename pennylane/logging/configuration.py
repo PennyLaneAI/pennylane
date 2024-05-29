@@ -89,7 +89,7 @@ def enable_logging(config_file: str = "log_config.toml"):
     Enabling logging through this method will override any externally defined logging configurations.
 
     Args:
-        config_file (str): The path to a given log configuration file, parsed as TOML and adhering to the ``logging.config.dictConfig`` end-point. The default argument uses the PennyLane ecosystem log-file configuration.
+        config_file (str): The path to a given log configuration file, parsed as TOML and adhering to the ``logging.config.dictConfig`` end-point. The default argument uses the PennyLane ecosystem log-file configuration, located at the directory returned from :func:`pennylane.logging.config_path`.
 
     **Example**
 
