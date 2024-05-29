@@ -217,7 +217,7 @@ def device(name, *args, **kwargs):
     * :mod:`'default.qutrit' <pennylane.devices.default_qutrit>`: a simple
       state simulator of qutrit-based quantum circuit architectures.
 
-    * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a 
+    * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a
       mixed-state simulator of qutrit-based quantum circuit architectures.
 
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
