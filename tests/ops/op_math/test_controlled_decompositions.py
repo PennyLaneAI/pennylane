@@ -766,7 +766,7 @@ class TestControlledBisectGeneral:
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
 
-class TestControlledMultiControlledUnitary:
+class TestMultiControlledUnitary:
     """tests for qml.ops._ops_math.controlled_decompositions._decompose_multicontrolled_unitary"""
 
     def test_invalid_op_size_error(self):
@@ -900,6 +900,70 @@ class TestControlledMultiControlledUnitary:
 
         res = _decompose_multicontrolled_unitary(op, Wires(control_wires))
         assert equal_list(res, expected)
+
+    @pytest.mark.parametrize("op", gen_ops + su2_gen_ops)
+    @pytest.mark.parametrize("control_wires", cw5)
+    def test_decomposition_matrix(self, op, control_wires, tol):
+        """Tests that the matrix representation of the controlled decomposition
+        of a single-qubit operation is correct"""
+
+        expected_op = qml.ctrl(op, control_wires)
+        res = qml.matrix(
+            record_from_list(_decompose_multicontrolled_unitary), wire_order=control_wires + [0]
+        )(op, Wires(control_wires))
+        expected = expected_op.matrix()
+
+        assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+
+class TestControlledUnitaryRecursive:
+    """tests for qml.ops._decompose_recursive"""
+
+    gen_ops = [
+        qml.PauliX(0),
+        qml.PauliZ(0),
+        qml.Hadamard(0),
+    ]
+    controlled_wires = tuple(list(range(1, 1 + n)) for n in range(1, 6))
+
+    @pytest.mark.parametrize("op", gen_ops)
+    @pytest.mark.parametrize("control_wires", controlled_wires)
+    def test_decomposition_circuit(self, op, control_wires, tol):
+        """Tests that the controlled decomposition of a single-qubit operation
+        behaves as expected in a quantum circuit"""
+        dev = qml.device("default.qubit", wires=max(control_wires) + 1)
+
+        @qml.qnode(dev)
+        def decomp_circuit():
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            record_from_list(_decompose_recursive)(
+                op, 1.0, Wires(control_wires), op.wires, Wires([])
+            )
+            return qml.probs()
+
+        @qml.qnode(dev)
+        def expected_circuit():
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            qml.ctrl(op, control_wires)
+            return qml.probs()
+
+        res = decomp_circuit()
+        expected = expected_circuit()
+        assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+    @pytest.mark.parametrize("op", gen_ops)
+    @pytest.mark.parametrize("control_wires", controlled_wires)
+    def test_decomposition_matrix(self, op, control_wires, tol):
+        """Tests that the matrix representation of the controlled decomposition
+        of a single-qubit operation is correct"""
+
+        expected_op = qml.ctrl(op, control_wires)
+        res = qml.matrix(record_from_list(_decompose_recursive), wire_order=control_wires + [0])(
+            op, 1.0, Wires(control_wires), op.wires, Wires([])
+        )
+        expected = expected_op.matrix()
+
+        assert np.allclose(res, expected, atol=tol, rtol=tol)
 
 
 class TestMCXDecomposition:
