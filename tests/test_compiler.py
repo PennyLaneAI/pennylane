@@ -716,3 +716,24 @@ class TestCatalystGrad:
             CompileError, match="Pennylane does not support the VJP function without QJIT."
         ):
             vjp(x, dy)
+
+
+class TestCatalystSample:
+    """Test qml.sample with Catalyst."""
+
+    @pytest.mark.xfail(reason="requires simultaneous catalyst pr")
+    def test_sample_measure(self):
+        """Test that qml.sample can be used with catalyst.measure."""
+
+        dev = qml.device("lightning.qubit", wires=1, shots=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            m = catalyst.measure(0)
+            qml.PauliX(0)
+            return qml.sample(m)
+
+        assert circuit(0.0) == 0
+        assert circuit(jnp.pi) == 1

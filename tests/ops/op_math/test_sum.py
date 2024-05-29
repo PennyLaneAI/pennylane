@@ -679,11 +679,9 @@ class TestProperties:
         sum_op = sum_method(*ops_lst)
         assert sum_op._queue_category is None  # pylint: disable=protected-access
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_eigvals_Identity_no_wires(self):
         """Test that eigenvalues can be computed for a sum containing identity with no wires."""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("Identity with no wires is not supported for legacy opmath")
 
         op1 = qml.X(0) + 2 * qml.I()
         op2 = qml.X(0) + 2 * qml.I(0)
