@@ -46,10 +46,10 @@ of custom conditions with the following decorator:
 .. note::
 
     Conditionals built via these constructors or decorator can be combined using
-    standard bitwise operators, such as ``&``, ``|``, ``^``, or ``~``. The resulting
-    combination will still behave as a single conditional and store the individual
+    standard bit-wise operators, such as ``&``, ``|``, ``^``, or ``~``. The resulting
+    combination will still behave like a single conditional and store the individual
     components in the ``operands`` attribute. As Python will evaluate the expression
-    in the same order, i.e., left to right, the order of composition might matter,
+    in the same order, i.e., left to right, the order of composition could matter,
     even though bitwise operations are symmetric by definition.
 
 Callable Constructor
@@ -64,10 +64,11 @@ Callable Constructor
 
 .. note::
 
-    Any user-defined callable, must follow the following signature - 
-    ``callable (op: Operation, **kwargs) -> None``, i.e., it will accept
-    an operation and some metadata-based keyword arguments. It will then
-    let one queue the noisy gates corresponding to that operation.
+    The signature of any user-defined callable must be -
+    ``callable(op: Operation, **kwargs) -> None``, i.e., it accepts
+    an operation and some metadata-based keyword arguments. It should
+    then let one queue the noisy gates corresponding to that operation
+    similar to a quantum function but without returning any measurements.
 
 Conditional Classes
 ^^^^^^^^^^^^^^^^^^^
