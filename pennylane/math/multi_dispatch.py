@@ -564,7 +564,7 @@ def einsum(indices, *operands, like=None, optimize=None):
 
 
 def where(condition, x=None, y=None):
-    """Returns elements chosen from x or y depending on a boolean tensor condition,
+    r"""Returns elements chosen from x or y depending on a boolean tensor condition,
     or the indices of entries satisfying the condition.
 
     The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
