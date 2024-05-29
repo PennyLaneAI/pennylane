@@ -624,7 +624,6 @@ class TestModifiedTemplates:
     def test_qubitization(self):
         """Test the primitive bind call of Qubitization."""
 
-        ops = [qml.X(2), qml.RX(0.2, 3), qml.Y(2), qml.Z(3)]
         hamiltonian = qml.dot([0.5, 1.2, -0.84], [qml.X(2), qml.Hadamard(3), qml.Z(2) @ qml.Y(3)])
         kwargs = {"hamiltonian": hamiltonian, "control": [0, 1]}
 
