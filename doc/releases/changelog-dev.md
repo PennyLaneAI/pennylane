@@ -143,6 +143,7 @@
   
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
+  [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
 
 <h3>Deprecations 👋</h3>
 
