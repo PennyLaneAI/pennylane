@@ -46,7 +46,8 @@ class Molecule:
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
-            only supported basis sets are 'STO-3G', '6-31G', '6-311G' and 'CC-PVDZ'.
+            only supported basis sets are ``STO-3G``, ``6-31G``, ``6-311G`` and ``CC-PVDZ``. Other
+            basis sets can be loaded from the basis-set-exchange library using ``load_data``.
         load_data (bool): flag to load data from the basis-set-exchange library
         l (tuple[int]): angular momentum quantum numbers of the basis function
         alpha (array[float]): exponents of the primitive Gaussian functions
@@ -106,6 +107,7 @@ class Molecule:
         self.mult = mult
         self.basis_name = basis_name.lower()
         self.name = name
+        self.load_data = load_data
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
         if self.unit not in ("angstrom", "bohr"):
