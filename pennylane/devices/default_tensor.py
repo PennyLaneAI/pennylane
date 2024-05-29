@@ -384,9 +384,7 @@ class DefaultTensor(Device):
             op (Operator): The operation to apply.
         """
 
-        self._quimb_mps.apply_gate(
-            qml.matrix(op).astype(self._dtype), *op.wires, parametrize=None
-        )
+        self._quimb_mps.apply_gate(qml.matrix(op).astype(self._dtype), *op.wires, parametrize=None)
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
         """Measure the measurement required by the circuit over the MPS.
