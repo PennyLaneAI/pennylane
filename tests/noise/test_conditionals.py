@@ -127,7 +127,7 @@ class TestNoiseFunctions:
         [
             (0, 0, True),
             ([1, 2, 3], 0, False),
-            (qml.wires.Wires(["street", "fighter"]), "fighter", True),
+            (qml.wires.Wires(["aurora", "borealis"]), "borealis", True),
             (qml.wires.Wires(1), [0], False),
             (qml.Y(2), 2, True),
             (qml.CNOT(["a", "c"]), "b", False),
@@ -204,6 +204,7 @@ class TestNoiseFunctions:
     @pytest.mark.parametrize(
         ("obj", "op", "result"),
         [
+            ("I", qml.I(wires=[0, 1]), True),
             (qml.Y(1), qml.RY(1.0, 1), False),
             (qml.CNOT(["a", "c"]), qml.CNOT([0, 1]), True),
             (qml.RX(0, 1), qml.RY(1.0, 1), False),

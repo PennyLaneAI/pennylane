@@ -254,7 +254,7 @@ def _get_ops(val):
     vals = val if isinstance(val, (list, tuple, set)) else [val]
     return tuple(
         (
-            getattr(qml.ops, val)
+            getattr(qml.ops, val, None) or getattr(qml, val)
             if isinstance(val, str)
             else (val if isclass(val) else getattr(val, "__class__"))
         )
