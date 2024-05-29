@@ -325,7 +325,6 @@ class TestSupportsDerivatives:
             return qml.expval(qml.Z(0))
 
         weights = jax.numpy.array([0.2, 0.5, 0.1])
-        print(isinstance(dev, qml.Device))
         qnode = qml.QNode(circuit, dev, interface="jax")
         ref_qnode = qml.QNode(circuit, ref_dev, interface="jax")
 
