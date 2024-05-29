@@ -136,7 +136,7 @@ def edit_system_config(wait_on_close=False):
     .. warning::
 
         As each OS configuration differs user-to-user, you may wish to
-        instead open this file manually with the `config_path()` provided path.
+        instead open this file manually with the ``config_path()`` provided path.
     """
     if editor := os.getenv("EDITOR"):
         # pylint:disable = consider-using-with
