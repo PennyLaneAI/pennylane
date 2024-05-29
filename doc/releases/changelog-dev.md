@@ -125,6 +125,7 @@
 
 * The qchem docs are updated with the new qchem improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
+  [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
 
 <h4>Community contributions 🥳</h4>
 
