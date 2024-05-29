@@ -263,3 +263,40 @@ class TestQutritAmplitudeDamping:
         gamma_2 = jax.numpy.array(0.12)
         jac = jax.jacobian(self.kraus_fn, argnums=[0, 1])(gamma_1, gamma_2)
         assert math.allclose(jac, self.expected_jac_fn(gamma_1, gamma_2))
+
+
+class TestQutritChannel:
+    """Tests for the quantum channel QubitChannel"""
+
+    def test_input_correctly_handled(self, tol):
+        """Test that Kraus matrices are correctly processed"""
+        K_list = channel.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
+        out = channel.QutritChannel(K_list, wires=0).kraus_matrices()
+
+        assert np.allclose(out, K_list, atol=tol, rtol=0)
+
+    def test_kraus_matrices_are_square(self):
+        """Tests that the given Kraus matrices are square"""
+        K_list = [np.zeros((3, 3)), np.zeros((2, 3))]
+        with pytest.raises(
+            ValueError, match="Only channels with the same input and output Hilbert space"
+        ):
+            channel.QutritChannel(K_list, wires=0)
+
+    def test_kraus_matrices_are_of_same_shape(self):
+        """Tests that the given Kraus matrices are of same shape"""
+        K_list = [np.eye(3), np.eye(4)]
+        with pytest.raises(ValueError, match="All Kraus matrices must have the same shape."):
+            channel.QutritChannel(K_list, wires=0)
+
+    def test_kraus_matrices_are_dimensions(self):
+        """Tests that the given Kraus matrices are of right dimension i.e (3,3)"""
+        K_list = [np.eye(4), np.eye(4)]
+        with pytest.raises(ValueError, match="Dimension of all Kraus matrices must be "):
+            channel.QutritChannel(K_list, wires=0)
+
+    def test_kraus_matrices_are_trace_preserved(self):
+        """Tests that the channel represents a trace-preserving map"""
+        K_list = [0.75 * np.eye(3), 0.35j * np.eye(3)]
+        with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
+            channel.QutritChannel(K_list, wires=0)
