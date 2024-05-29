@@ -134,6 +134,11 @@ class QDrift(Operation):
     >>> my_circ()
     array([0.65379493, 0.        , 0.34620507, 0.        ])
 
+    .. note::
+
+        The option to pass a custom ``decomposition`` to ``QDrift`` has been removed.
+        Instead, the custom decomposition can be applied using :func:`~.pennylane.apply`
+        on all operations in the decomposition.
 
     .. details::
         :title: Usage Details
