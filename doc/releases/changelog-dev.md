@@ -80,10 +80,6 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
-* `qml.qchem.Molecule` and qchem functions that take `Molecule` object as an argument now work with coordinates
-  provided in units Angstrom along with Bohr.
-  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
-
 * The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them 
   consistent with the other observables. The `dtype` of the returned values when sampling these observables 
   (e.g. `qml.sample(X(0))`) is also changed to `float`. 
@@ -111,12 +107,24 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
-* `qml.qchem.molecular_hamiltonian function now works with parity and Bravyi-Kitaev mappings.
-  [(#5657)](https://github.com/PennyLaneAI/pennylane/pull/5657/)
-
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
+
+* The `qml.qchem.Molecule` object is now the central object used by all qchem functions.
+  [(#5571)](https://github.com/PennyLaneAI/pennylane/pull/5571)
+
+* The `qml.qchem.Molecule` class now supports Angstrom as a unit.
+  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
+
+* The `qml.qchem.Molecule` class now supports open-shell systems.
+  [(#5655)](https://github.com/PennyLaneAI/pennylane/pull/5655)
+
+* The `qml.qchem.molecular_hamiltonian` function now supports parity and Bravyi-Kitaev mappings.
+  [(#5657)](https://github.com/PennyLaneAI/pennylane/pull/5657/)
+
+* The qchem docs are updated with the new qchem improvements.
+  [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
 
 <h4>Community contributions 🥳</h4>
 
