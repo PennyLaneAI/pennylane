@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines a capture compatible call to the qnode.
+This submodule defines a capture compatible call to QNodes.
 """
 
 from functools import lru_cache, partial
@@ -85,11 +85,11 @@ def _get_device_shots(device) -> "qml.measurements.Shots":
 
 
 def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
-    """A capture compatible call to a qnode.
+    """A capture compatible call to a QNode.
 
     Args:
-        qnode (QNode): a qnode
-        *args: the arguments the qnode is called with
+        qnode (QNode): a QNode
+        *args: the arguments the QNode is called with
 
     Keyword Args:
         Any keyword arguments accepted by the quantum function
@@ -146,7 +146,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     shots = qml.measurements.Shots(shots)
     if shots.has_partitioned_shots:
         # Questions over the pytrees and the nested result object shape
-        raise NotImplementedError("shot vectors are not yet supported with pl capture.")
+        raise NotImplementedError("shot vectors are not yet supported with plxpr capture.")
 
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")

@@ -46,7 +46,7 @@ def test_error_if_shot_vector(dev_name):
     def circuit():
         return qml.sample()
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
         jax.make_jaxpr(circuit)()
 
 
@@ -59,7 +59,7 @@ def test_error_if_no_device_wires():
     def circuit():
         return qml.sample()
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError, match="devices must specify wires"):
         jax.make_jaxpr(circuit)()
 
 
@@ -79,6 +79,7 @@ def test_simple_qnode(x64_mode):
 
     jaxpr = jax.make_jaxpr(circuit)(0.5)
 
+    assert len(jaxpr.eqns) == 1
     eqn0 = jaxpr.eqns[0]
 
     assert jaxpr.in_avals == [
@@ -100,6 +101,7 @@ def test_simple_qnode(x64_mode):
     assert eqn0.params["qnode_kwargs"] == expected_kwargs
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
+    assert len(qfunc_jaxpr.eqns) == 3
     assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
     assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
     assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
