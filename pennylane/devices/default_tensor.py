@@ -160,13 +160,14 @@ class DefaultTensor(Device):
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
         method (str): Supported method. Currently, only ``"mps"`` is supported.
-        dtype (type): Datatype for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
+        dtype (type): Data type for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
     Keyword Args:
         max_bond_dim (int): Maximum bond dimension for the MPS method.
-            It corresponds to the number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
-        cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is ``np.finfo(dtype).eps``.
+            It corresponds to the maximum number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
+        cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is the machine limit for the given tensor data type,
+            retrieved with the ``numpy.finfo`` function.
         contract (str): The contraction method for applying gates in the MPS method. It can be either ``auto-mps`` or ``nonlocal``.
             ``nonlocal`` turns each gate into a Matrix Product Operator (MPO) and applies it directly to the MPS,
             while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next to each other before applying the gate,
@@ -174,7 +175,8 @@ class DefaultTensor(Device):
 
     **Example:**
 
-    The following code demonstrates how to create a very simple quantum circuit using the ``default.tensor`` device:
+    The following code shows how to create a simple short-depth quantum circuit with 100 qubits using the ``default.tensor`` device.
+    Depending on the machine, the execution time for this circuit is around 0.3 seconds:
 
     .. code-block:: python
 
