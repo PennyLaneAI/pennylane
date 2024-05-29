@@ -277,7 +277,7 @@ class QutritAmplitudeDamping(Channel):
         id (str or None): String representing the operation (optional)
     """
 
-    num_params = 2
+    num_params = 3
     num_wires = 1
     grad_method = "F"
 
