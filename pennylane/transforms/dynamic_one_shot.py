@@ -272,18 +272,7 @@ def parse_native_mid_circuit_measurements(
         if interface != "jax" and m.mv and not has_valid:
             meas = measurement_with_no_shots(m)
         elif m.mv and active_jit:
-            found, meas = False, None
-            for k, meas in mcm_samples.items():
-                if m.mv is k.out_classical_tracers[0]:
-                    found = True
-                    break
-            if not found:
-                raise LookupError("MCM not found")
-            meas = qml.math.squeeze(meas)
-            if isinstance(m, CountsMP):
-                count1 = qml.math.sum(meas * is_valid)
-                return {0: qml.math.sum(is_valid) - count1, 1: count1}
-            meas = gather_non_mcm(m, meas, is_valid)
+            meas = gather_mcm_jit(m, mcm_samples, is_valid)
         elif m.mv:
             meas = gather_mcm(m, mcm_samples, is_valid)
         elif interface != "jax" and not has_valid:
@@ -309,6 +298,38 @@ def parse_native_mid_circuit_measurements(
         normalized_meas.append(meas)
 
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
+
+
+def gather_mcm_jit(circuit_measurement, measurement, is_valid):
+    """Combines, gathers and normalizes several measurements with trivial measurement values
+    when the Catalyst compiler is active.
+
+    Args:
+        circuit_measurement (MeasurementProcess): measurement
+        measurement (TensorLike): measurement results
+        samples (List[dict]): Mid-circuit measurement samples
+
+    Returns:
+        TensorLike: The combined measurement outcome
+    """
+    found, meas = False, None
+    for k, meas in measurement.items():
+        if circuit_measurement.mv is k.out_classical_tracers[0]:
+            found = True
+            break
+    if not found:
+        raise LookupError("MCM not found")
+    meas = qml.math.squeeze(meas)
+    if isinstance(circuit_measurement, CountsMP):
+        count1 = qml.math.sum(meas * is_valid)
+        return {0: qml.math.sum(is_valid) - count1, 1: count1}
+    if isinstance(circuit_measurement, ProbabilityMP):
+        count1 = qml.math.sum(meas * is_valid)
+        counts = qml.math.array(
+            [qml.math.sum(is_valid) - count1, count1], like=qml.math.get_deep_interface(is_valid)
+        )
+        return counts / qml.math.sum(is_valid)
+    return gather_non_mcm(circuit_measurement, meas, is_valid)
 
 
 def gather_non_mcm(circuit_measurement, measurement, is_valid):
