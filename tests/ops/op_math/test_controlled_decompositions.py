@@ -780,6 +780,7 @@ class TestMultiControlledUnitary:
     def test_invalid_op_matrix(self):
         """Tests that an error is raised when op does not define a matrix"""
 
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operator):
             num_wires = 1
 
