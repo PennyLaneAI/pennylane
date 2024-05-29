@@ -1141,8 +1141,8 @@ class TestDecomposition:
             op.decomposition()
 
     def test_global_phase_decomp_raises_warning(self):
-        """Test that ctrl(GlobalPhase).decomposition() raises a warning."""
-        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0])
+        """Test that ctrl(GlobalPhase).decomposition() raises a warning with more than one control."""
+        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0, 1])
         with pytest.warns(
             UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
         ):
