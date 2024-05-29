@@ -131,6 +131,10 @@ class TestNoiseFunctions:
             (qml.wires.Wires(1), [0], False),
             (qml.Y(2), 2, True),
             (qml.CNOT(["a", "c"]), "b", False),
+            (qml.CZ(["a", "c"]), "c", True),
+            (qml.DoubleExcitation(1.2, ["alpha", "beta", "gamma", "delta"]), "alpha", True),
+            (qml.TrotterProduct(qml.Z(0) + qml.Z(1), -3j), 2, False),
+            (qml.TrotterProduct(qml.Z("a") + qml.Z("b"), -3j), "b", True),
         ],
     )
     def test_wires_in(self, obj, wires, result):
@@ -152,6 +156,8 @@ class TestNoiseFunctions:
             (qml.Y(2), 2, True),
             (qml.CNOT(["a", "c"]), "b", False),
             (qml.CNOT(["c", "d"]), ["c", "d"], True),
+            (qml.TrotterProduct(qml.Z(0) + qml.Z(1), -3j), 2, False),
+            (qml.TrotterProduct(qml.Z("b") + qml.Z("a"), -3j), ["b", "a"], True),
         ],
     )
     def test_wires_eq(self, obj, wires, result):

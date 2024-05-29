@@ -22,7 +22,7 @@ from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
-from pennylane.wires import Wires
+from pennylane.wires import WireError, Wires
 
 # pylint: disable = unnecessary-lambda, too-few-public-methods
 
@@ -76,7 +76,7 @@ def _get_wires(val):
     iters = val if isinstance(val, (list, tuple, set, Wires)) else getattr(val, "wires", [val])
     try:
         wires = set().union(*((getattr(w, "wires", None) or Wires(w)).tolist() for w in iters))
-    except TypeError:
+    except (TypeError, WireError):
         raise ValueError(f"Wires cannot be computed for {val}") from None
     return wires
 
@@ -146,7 +146,7 @@ def wires_eq(wires):
     Additionally, if an :class:`Operation <pennylane.operation.Operation>` is provided,
     its ``wires`` are extracted and used to build the wire set:
 
-    >>> cond_func = qml.noise.wires_in(qml.RX(1.0, "dino"))
+    >>> cond_func = qml.noise.wires_eq(qml.RX(1.0, "dino"))
     >>> cond_func(qml.RZ(1.23, wires="dino"))
     True
     >>> cond_func("eve")
@@ -414,7 +414,7 @@ def partial_wires(operation, *args, **kwargs):
     qml.RX(1.2, wires=["wires"])
 
     Additionally, class of :class:`Operation <pennylane.operation.Operation>` can
-    also be provided, while provided required positional arguments via ``args``:
+    also be provided, while providing required positional arguments via ``args``:
 
     >>> func = qml.noise.partial_wires(qml.RX, 3.2, [20])
     >>> func(qml.RY(1.0, [0]))
