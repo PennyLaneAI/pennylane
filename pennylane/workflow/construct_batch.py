@@ -16,7 +16,7 @@
 """
 import inspect
 from functools import wraps
-from typing import Callable, Tuple, Union
+from typing import Callable, Literal, Optional, Tuple, Union
 
 import pennylane as qml
 
@@ -186,7 +186,10 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
     return full_transform_program[level]
 
 
-def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") -> Callable:
+def construct_batch(
+    qnode: QNode,
+    level: Optional[Union[Literal["top", "user", "device", "gradient"], int, slice]] = "user",
+) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
     Args:

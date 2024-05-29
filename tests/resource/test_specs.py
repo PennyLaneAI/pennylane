@@ -14,7 +14,7 @@
 """Unit tests for the specs transform"""
 from collections import defaultdict
 from contextlib import nullcontext
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Tuple
 
 import pytest
 
@@ -25,8 +25,75 @@ from pennylane import numpy as np
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
+    def test_max_expansion_throws_warning(self):
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circ():
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(UserWarning, match="'max_expansion' has no effect"):
+            qml.specs(circ, max_expansion=10)()
+
+    def test_only_one_of_level_or_expansion_strategy_passed(self):
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circ():
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
+            qml.specs(circ, level="device", expansion_strategy="gradient")
+
+    @pytest.mark.parametrize("level,expected_gates", [(0, 6), (1, 4), (2, 2), (3, 1)])
+    def test_int_specs_level(self, level, expected_gates):
+        @qml.transforms.undo_swaps
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+        def circuit(x):
+            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+            qml.RX(x, wires=0)
+            qml.RX(-x, wires=0)
+            qml.SWAP((0, 1))
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.X(0) + qml.Y(1))
+
+        specs = qml.specs(circuit, level=level)(0.1)
+
+        assert specs["level"] == level
+        assert specs["resources"].num_gates == expected_gates
+        assert specs["num_trainable_params"] == 3 if level < 2 else 1
+
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
+        "level1,level2", [("top", 0), (0, slice(0, 0))]  # (None, slice(0, None))]
+    )
+    def test_equivalent_levels(self, level1, level2):
+
+        @qml.transforms.undo_swaps
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+        def circuit(x):
+            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+            qml.RX(x, wires=0)
+            qml.RX(-x, wires=0)
+            qml.SWAP((0, 1))
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.X(0) + qml.Y(1))
+
+        specs1 = qml.specs(circuit, level=level1)(0.1)
+        specs2 = qml.specs(circuit, level=level2)(0.1)
+
+        del specs1["level"]
+        del specs2["level"]
+
+        assert specs1 == specs2
+
+    @pytest.mark.parametrize(
+        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
     )
     def test_empty(self, diff_method, len_info):
         dev = qml.device("default.qubit", wires=1)
@@ -52,13 +119,14 @@ class TestSpecsTransform:
         assert info["diff_method"] == diff_method
         assert info["num_trainable_params"] == 0
         assert info["device_name"] == dev.name
+        assert info["level"] == "gradient"
 
         if diff_method == "parameter-shift":
             assert info["num_gradient_executions"] == 0
             assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
+        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
     )
     def test_specs(self, diff_method, len_info):
         """Test the specs transforms works in standard situations"""
@@ -77,11 +145,7 @@ class TestSpecsTransform:
         x = np.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
         y = np.array(0.1, requires_grad=False)
 
-        info_func = qml.specs(circuit)
-
-        info = info_func(x, y, add_RY=False)
-
-        circuit(x, y, add_RY=False)
+        info = qml.specs(circuit)(x, y, add_RY=False)
 
         assert len(info) == len_info
 
@@ -94,16 +158,17 @@ class TestSpecsTransform:
 
         assert info["num_observables"] == 2
         assert info["num_diagonalizing_gates"] == 1
-        assert info["num_device_wires"] == 3
+        assert info["num_device_wires"] == 4
         assert info["diff_method"] == diff_method
-        assert info["num_trainable_params"] == 4
+        assert info["num_trainable_params"] == 5
         assert info["device_name"] == dev.name
+        assert info["level"] == "gradient"
 
         if diff_method == "parameter-shift":
             assert info["num_gradient_executions"] == 6
 
     @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]
+        "diff_method, len_info", [("backprop", 13), ("parameter-shift", 14), ("adjoint", 13)]
     )
     def test_specs_state(self, diff_method, len_info):
         """Test specs works when state returned"""
@@ -114,14 +179,14 @@ class TestSpecsTransform:
         def circuit():
             return qml.state()
 
-        info_func = qml.specs(circuit)
-        info = info_func()
+        info = qml.specs(circuit)()
         assert len(info) == len_info
 
         assert info["resources"] == qml.resource.Resources(gate_types=defaultdict(int))
 
         assert info["num_observables"] == 1
         assert info["num_diagonalizing_gates"] == 0
+        assert info["level"] == "gradient"
 
     def make_qnode_and_params(self, initial_expansion_strategy):
         """Generates a qnode and params for use in other tests"""
@@ -174,7 +239,7 @@ class TestSpecsTransform:
         info = qml.specs(circuit, expansion_strategy="device")(params)
         assert circuit.expansion_strategy == "gradient"
 
-        assert len(info) == 12
+        assert len(info) == 13
 
     def test_gradient_transform(self):
         """Test that a gradient transform is properly labelled"""
@@ -194,7 +259,9 @@ class TestSpecsTransform:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.core.transform
-        def my_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+        def my_transform(
+            tape: qml.tape.QuantumTape,
+        ) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
             return tape, None
 
         @qml.qnode(dev, diff_method=my_transform)
@@ -209,7 +276,7 @@ class TestSpecsTransform:
         "device,num_wires",
         [
             (qml.device("default.qubit"), 1),
-            (qml.device("default.qubit", wires=2), 1),
+            (qml.device("default.qubit", wires=2), 2),
             (qml.device("default.qubit.legacy", wires=2), 2),
         ],
     )

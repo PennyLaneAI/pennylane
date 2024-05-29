@@ -13,6 +13,7 @@
 # limitations under the License.
 """Code for resource estimation"""
 import inspect
+import warnings
 
 import pennylane as qml
 
@@ -21,7 +22,7 @@ def _get_absolute_import_path(fn):
     return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
-def specs(qnode, max_expansion=None, expansion_strategy=None):
+def specs(qnode, level=None, expansion_strategy=None, max_expansion=None):
     """Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -31,8 +32,13 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
         qnode (.QNode): the QNode to calculate the specifications for
 
     Keyword Args:
-        max_expansion (int): The number of times the internal circuit should be expanded when
-            calculating the specification. Defaults to ``qnode.max_expansion``.
+        level (None, str, int, slice): An indication of what transforms to use from the full program.
+
+            - ``None``: use the full transform program
+            - ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
+            - ``int``: How many transforms to include, starting from the front of the program
+            - ``slice``: a slice to select out components of the transform program.
+
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
             are required.
 
@@ -42,6 +48,8 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            calculating the specification. Defaults to ``qnode.max_expansion``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
@@ -80,8 +88,15 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
     'diff_method': 'parameter-shift',
     'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
     'num_gradient_executions': 2}
-
     """
+
+    if max_expansion:
+        warnings.warn(
+            "'max_expansion' has no effect on the output of 'specs()' and should not be used."
+        )
+
+    if level and expansion_strategy:
+        raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
 
     def specs_qnode(*args, **kwargs):
         """Returns information on the structure and makeup of provided QNode.
@@ -110,26 +125,20 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
         Returns:
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
-        initial_max_expansion = qnode.max_expansion
-        initial_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
-        try:
-            qnode.max_expansion = initial_max_expansion if max_expansion is None else max_expansion
-            qnode.expansion_strategy = expansion_strategy or initial_expansion_strategy
-            qnode.construct(args, kwargs)
-        finally:
-            qnode.max_expansion = initial_max_expansion
-            qnode.expansion_strategy = initial_expansion_strategy
-
-        info = qnode.qtape.specs.copy()
-
-        info["num_device_wires"] = (
-            len(qnode.tape.wires)
-            if isinstance(qnode.device, qml.devices.Device)
-            else len(qnode.device.wires)
+        # Decide on the final transforms level using precedence of the `or` arguments
+        specs_level = (
+            level if level == 0 else level or expansion_strategy or qnode.expansion_strategy
         )
+
+        batch, _ = qml.workflow.construct_batch(qnode, level=specs_level)(*args, **kwargs)
+        info = batch[0].specs.copy()
+
+        info["num_device_wires"] = len(qnode.device.wires or batch[0].wires)
+        info["num_tape_wires"] = batch[0].num_wires
+
         info["device_name"] = getattr(qnode.device, "short_name", qnode.device.name)
-        info["expansion_strategy"] = qnode.expansion_strategy
+        info["level"] = specs_level
         info["gradient_options"] = qnode.gradient_kwargs
         info["interface"] = qnode.interface
         info["diff_method"] = (
@@ -142,7 +151,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
             info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
 
             try:
-                info["num_gradient_executions"] = len(qnode.gradient_fn(qnode.qtape)[0])
+                info["num_gradient_executions"] = len(qnode.gradient_fn(batch[0])[0])
             except Exception as e:  # pylint: disable=broad-except
                 # In the case of a broad exception, we don't want the `qml.specs` transform
                 # to fail. Instead, we simply indicate that the number of gradient executions
