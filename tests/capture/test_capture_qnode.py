@@ -49,6 +49,16 @@ def test_error_if_shot_vector(dev_name):
     with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
         jax.make_jaxpr(circuit)()
 
+    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
+        circuit()
+
+    jax.make_jaxpr(partial(circuit, shots=50))()  # should run fine
+    res = circuit(shots=50)
+    assert qml.math.allclose(res, jax.numpy.zeros((50,)))
+
+    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
+        jax.make_jaxpr(partial(circuit, shots=(1, 1, 1)))()
+
 
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
@@ -61,6 +71,9 @@ def test_error_if_no_device_wires():
 
     with pytest.raises(NotImplementedError, match="devices must specify wires"):
         jax.make_jaxpr(circuit)()
+
+    with pytest.raises(NotImplementedError, match="devices must specify wires"):
+        circuit()
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
@@ -77,16 +90,17 @@ def test_simple_qnode(x64_mode):
         qml.RX(x, wires=0)
         return qml.expval(qml.Z(0))
 
+    res = circuit(0.5)
+    assert qml.math.allclose(res, jax.numpy.cos(0.5))
+
     jaxpr = jax.make_jaxpr(circuit)(0.5)
 
     assert len(jaxpr.eqns) == 1
     eqn0 = jaxpr.eqns[0]
 
-    assert jaxpr.in_avals == [
-        jax.core.ShapedArray(
-            (), jax.numpy.float64 if x64_mode else jax.numpy.float32, weak_type=True
-        )
-    ]
+    fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+
+    assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
 
     assert eqn0.primitive == qnode_prim
     assert eqn0.invars[0].aval == jaxpr.in_avals[0]
@@ -107,9 +121,7 @@ def test_simple_qnode(x64_mode):
     assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     assert len(eqn0.outvars) == 1
-    assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
-    )
+    assert eqn0.outvars[0].aval == jax.core.ShapedArray((), fdtype)
 
     output = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
     assert qml.math.allclose(output[0], jax.numpy.cos(0.5))
@@ -169,6 +181,12 @@ def test_providing_keyword_argument():
         assert qfunc_jaxpr.eqns[i].primitive == qml.PauliX._primitive
     assert len(qfunc_jaxpr.eqns) == 4
 
+    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+    assert qml.math.allclose(res, jax.numpy.array([0, 1]))
+
+    res2 = circuit(n_iterations=4)
+    assert qml.math.allclose(res2, jax.numpy.array([1, 0]))
+
 
 @pytest.mark.parametrize("x64_mode", (True, False))
 def test_multiple_measurements(x64_mode):
@@ -178,7 +196,7 @@ def test_multiple_measurements(x64_mode):
 
     @qml.qnode(qml.device("default.qubit", wires=3, shots=50))
     def circuit():
-        return qml.sample(), qml.probs(wires=(0, 1)), qml.state()
+        return qml.sample(), qml.probs(wires=(0, 1)), qml.expval(qml.Z(0))
 
     jaxpr = jax.make_jaxpr(circuit)()
 
@@ -186,7 +204,8 @@ def test_multiple_measurements(x64_mode):
 
     assert qfunc_jaxpr.eqns[0].primitive == qml.measurements.SampleMP._wires_primitive
     assert qfunc_jaxpr.eqns[1].primitive == qml.measurements.ProbabilityMP._wires_primitive
-    assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.StateMP._wires_primitive
+    assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
+    assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     assert jaxpr.out_avals[0] == jax.core.ShapedArray(
         (50, 3), jax.numpy.int64 if x64_mode else jax.numpy.int32
@@ -195,7 +214,45 @@ def test_multiple_measurements(x64_mode):
         (4,), jax.numpy.float64 if x64_mode else jax.numpy.float32
     )
     assert jaxpr.out_avals[2] == jax.core.ShapedArray(
+        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
+    )
+
+    res1, res2, res3 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+    assert qml.math.allclose(res1, jax.numpy.zeros((50, 3)))
+    assert qml.math.allclose(res2, jax.numpy.array([1, 0, 0, 0]))
+    assert qml.math.allclose(res3, 1.0)
+
+    res1, res2, res3 = circuit()
+    assert qml.math.allclose(res1, jax.numpy.zeros((50, 3)))
+    assert qml.math.allclose(res2, jax.numpy.array([1, 0, 0, 0]))
+    assert qml.math.allclose(res3, 1.0)
+
+    jax.config.update("jax_enable_x64", initial_mode)
+
+
+@pytest.mark.parametrize("x64_mode", (True, False))
+def test_complex_return_types(x64_mode):
+    """Test returning measurements with complex values."""
+
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+
+    @qml.qnode(qml.device("default.qubit", wires=3))
+    def circuit():
+        return qml.state(), qml.density_matrix(wires=(0, 1))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+    assert qfunc_jaxpr.eqns[0].primitive == qml.measurements.StateMP._wires_primitive
+    assert qfunc_jaxpr.eqns[1].primitive == qml.measurements.DensityMatrixMP._wires_primitive
+
+    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
         (8,), jax.numpy.complex128 if x64_mode else jax.numpy.complex64
+    )
+    assert jaxpr.out_avals[1] == jax.core.ShapedArray(
+        (4, 4), jax.numpy.complex128 if x64_mode else jax.numpy.complex64
     )
 
     jax.config.update("jax_enable_x64", initial_mode)

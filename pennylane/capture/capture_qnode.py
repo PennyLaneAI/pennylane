@@ -85,11 +85,11 @@ def _get_device_shots(device) -> "qml.measurements.Shots":
 
 
 def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
-    """A capture compatible call to a QNode.
+    """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
     Args:
         qnode (QNode): a QNode
-        *args: the arguments the QNode is called with
+        args: the arguments the QNode is called with
 
     Keyword Args:
         Any keyword arguments accepted by the quantum function
