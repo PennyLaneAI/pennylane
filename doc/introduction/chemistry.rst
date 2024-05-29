@@ -41,12 +41,12 @@ with external backends that use the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin or the
 electronic structure package `PySCF <https://github.com/pyscf/pyscf>`_, which requires separate
 installation. These backends are non-differentiable and can be selected by setting
-``method='openfermion'`` and ``method='pyscf'`` in :func:`~.molecular_hamiltonian`.
+``method='openfermion'`` and ``method='pyscf'`` in ``molecular_hamiltonian``.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
-`atomic basis functions <https://www.basissetexchange.org/>`_ and the active space can also be
-specified for each backend.
+`atomic basis functions <https://www.basissetexchange.org/>`_, the mapping method and the active
+space can also be specified for each backend.
 
 .. code-block:: python
 
@@ -58,6 +58,7 @@ specified for each backend.
         basis_name='sto-3g')
     hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
         molecule,
+        mapping='jordan_wigner',
         active_electrons=2,
         active_orbitals=2
     )
@@ -69,7 +70,7 @@ If the electronic Hamiltonian is built independently using
 `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted 
 to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also 
 capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
-from `PySCF <https://github.com/pyscf/pyscf>`_, which could be used to for example to provide a better
+from `PySCF <https://github.com/pyscf/pyscf>`_, which could be used to for example provide a better
 starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.qchem.import_state` 
 utility function.
 

@@ -171,12 +171,12 @@ integral can be differentiated with respect to the basis set parameters as follo
 OpenFermion-PySCF backend
 -------------------------
 
-The :func:`~.molecular_hamiltonian` function can be also used to construct the molecular Hamiltonian
+The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
 with non-differentiable backends that use the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin and the
 electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_. The non-differentiable
 backends can be selected by setting ``method='openfermion'`` and ``method='pyscf'``
-in :func:`~.molecular_hamiltonian`:
+in ``molecular_hamiltonian``:
 
 .. code-block:: python
 
@@ -188,9 +188,10 @@ in :func:`~.molecular_hamiltonian`:
     molecule = qml.qchem.Molecule(symbols, geometry, charge=0, mult=1, basis_name='sto-3g')
     hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, method='pyscf')
 
-The non-differentiable backend requires the ``OpenFermion-PySCF`` plugin to be installed by the user
-with
+The non-differentiable backends require either ``OpenFermion-PySCF`` or ``PySCF`` to be installed by
+the user with
 
 .. code-block:: bash
 
     pip install openfermionpyscf
+    pip install pyscf
