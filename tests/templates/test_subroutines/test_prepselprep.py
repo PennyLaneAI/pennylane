@@ -1,3 +1,19 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Tests for the PrepSelPrep template.
+"""
 import copy
 import numpy as np
 import pytest
@@ -30,7 +46,7 @@ class TestPrepSelPrep:
         """ Circuit equivalent to decomposition of PrepSelPrep """
 
         coeffs, unitaries = lcu.terms()
-        normalized_coeffs = np.sqrt(coeffs) / np.linalg.norm(np.sqrt(coeffs))
+        normalized_coeffs = qml.math.sqrt(qml.math.abs(coeffs)) / qml.math.norm(qml.math.sqrt(qml.math.abs(coeffs)))
 
         qml.StatePrep(normalized_coeffs, wires=control)
         qml.Select(unitaries, control=control)
@@ -51,10 +67,12 @@ class TestPrepSelPrep:
         manual = qml.QNode(self.manual_circuit, dev)
         prepselprep = qml.QNode(self.prepselprep_circuit, dev)
 
-        lcu = qml.dot([0.25, 0+0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)])
+        lcu = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
         assert np.array_equal(
             qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
             qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0))
+
+
 
         lcu = qml.dot([1/2, 1/2], [qml.Identity(0), qml.PauliZ(0)])
         assert np.array_equal(
@@ -72,6 +90,28 @@ class TestPrepSelPrep:
         coeffs, unitaries = lcu.terms()
         unitaries = [qml.map_wires(op, {0: 1, 1: 2}) for op in unitaries]
         lcu = qml.dot(coeffs, unitaries)
+        assert np.array_equal(
+            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
+            qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0))
+
+    def test_decomposition_negative_coefficients(self):
+        """Test on an LCU with negative coefficients"""
+        dev = qml.device("default.qubit")
+        manual = qml.QNode(self.manual_circuit, dev)
+        prepselprep = qml.QNode(self.prepselprep_circuit, dev)
+
+        lcu = qml.dot([-0.25, -0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
+        assert np.array_equal(
+            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
+            qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0))
+
+    def test_decomposition_complex_coefficients(self):
+        """Test on an LCU with complex coefficients"""
+        dev = qml.device("default.qubit")
+        manual = qml.QNode(self.manual_circuit, dev)
+        prepselprep = qml.QNode(self.prepselprep_circuit, dev)
+
+        lcu = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)])
         assert np.array_equal(
             qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
             qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0))

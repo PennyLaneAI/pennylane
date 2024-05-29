@@ -1,3 +1,22 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Contains the PrepSelPrep template.
+This template contains a decomposition for performing a block-encoding on a
+linear combination of unitaries using the Prepare, Select, Prepare method.
+"""
+# pylint: disable=arguments-differ
 import copy
 
 import pennylane as qml
@@ -49,11 +68,12 @@ class PrepSelPrep(Operation):
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
-        return self.compute_decomposition(self.hyperparameters['coeffs'], self.ops, self.control)
+        return self.compute_decomposition(self.lcu, self.control)
 
     @staticmethod
-    def compute_decomposition(coeffs, ops, control):
-        normalized_coeffs = (qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs)))
+    def compute_decomposition(lcu, control):
+        coeffs, ops = lcu.terms()
+        normalized_coeffs = (qml.math.sqrt(qml.math.abs(coeffs)) / qml.math.norm(qml.math.sqrt(qml.math.abs(coeffs))))
 
         with qml.QueuingManager.stop_recording():
             prep_ops = qml.StatePrep.compute_decomposition(normalized_coeffs, control)
