@@ -309,7 +309,7 @@ def _check_arithmetic_ops(op1, op2):
 
 def op_in(ops):
     """Builds a conditional as a boolean function for evaluating
-    if a given operation exist in a specified set of operation.
+    if a given operation exist in a specified set of operations.
 
     Args:
         ops (str, class, Operation, Union(list[str, class, Operation])): sequence of string
