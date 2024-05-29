@@ -15,7 +15,6 @@
 This module contains the qml.matrix function.
 """
 from functools import partial
-from importlib.metadata import distribution
 
 # pylint: disable=protected-access,too-many-branches
 from typing import Callable, Sequence, Union
@@ -29,12 +28,8 @@ from pennylane.typing import TensorLike
 
 
 def catalyst_qjit(qnode):
-    """The ``catalyst.while`` wrapper method"""
-    try:
-        distribution("pennylane_catalyst")
-        return qnode.__class__.__name__ == "QJIT"
-    except ImportError:
-        return False
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
