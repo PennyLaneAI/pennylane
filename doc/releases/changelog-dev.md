@@ -10,8 +10,7 @@
   [(#5679)](https://github.com/PennyLaneAI/pennylane/pull/5679)
 
   * `postselect_mode="hw-like"` will indicate to devices to discard invalid shots when postselecting
-    mid-circuit measurements. Use `postselect_mode="fill-shots"` to return invalid shots, which will be replaced
-    by dummy values.
+    mid-circuit measurements. Use `postselect_mode="fill-shots"` to treat all shots as valid.
   * `mcm_method` will indicate which strategy to use for running circuits with mid-circuit measurements.
     Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
     to execute once for each shot.

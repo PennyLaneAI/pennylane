@@ -83,7 +83,7 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
-    mcm_config: MCMConfig = Union[MCMConfig(), dict]
+    mcm_config: Union[MCMConfig, dict] = MCMConfig()
     """Configuration options for handling mid-circuit measurements"""
 
     def __post_init__(self):

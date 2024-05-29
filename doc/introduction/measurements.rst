@@ -549,21 +549,25 @@ PennyLane. For ease of use, we provide the following configuration options to us
   samples will be considered valid. The default behaviour is ``postselect_mode="hw-like"``.
 
   .. code-block:: python3
-  
+
       import pennylane as qml
       import numpy as np
-  
+
       dev = qml.device("default.qubit", wires=3, shots=10)
-  
-      @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
+
       def circuit(x):
           qml.RX(x, 0)
           m0 = qml.measure(0, postselect=1)
           qml.CNOT([0, 1])
           return qml.sample(qml.PauliZ(0))
-  
-  >>> circuit(np.pi / 2)
+
+      fill_shots_qnode = qml.QNode(circuit, dev, mcm_method="one-shot", postselect_mode="fill-shots")
+      hw_like_qnode = qml.QNode(circuit, dev, mcm_method="one-shot", postselect_mode="hw-like")
+
+  >>> fill_shots_qnode(np.pi / 2)
   array([-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.])
+  >>> hw_like_qnode(np.pi / 2)
+  array([-1., -1., -1., -1., -1., -1., -1.])
 
   .. note::
 
@@ -571,7 +575,8 @@ PennyLane. For ease of use, we provide the following configuration options to us
       chosen ``mcm_method``.
 
       * If ``mcm_method="one-shot"``, invalid shots will not be discarded. Instead, invalid samples will be replaced
-        by ``np.iinfo(np.int32).min``. These invalid samples will not be used for processing final results. Consider
+        by ``np.iinfo(np.int32).min``. These invalid samples will not be used for processing final results (like
+        expectation values), but will appear in the ``QNode`` output if samples are requested directly. Consider
         the circuit below:
 
         .. code-block:: python3
