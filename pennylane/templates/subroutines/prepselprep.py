@@ -1,5 +1,4 @@
 import copy
-import itertools
 
 import pennylane as qml
 from pennylane.operation import Operation
