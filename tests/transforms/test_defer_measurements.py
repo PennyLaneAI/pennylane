@@ -105,28 +105,6 @@ def test_postselection_error_with_wrong_device():
         _ = circ()
 
 
-def test_qjit_postselection_error(monkeypatch):
-    """Test that an error is raised if qjit is active with `postselect=True`"""
-    # TODO: Update test once defer_measurements can be used with qjit
-    # catalyst = pytest.importorskip("catalyst")
-    # dev = qml.device("lightning.qubit", wires=3, shots=10)
-    dev = qml.device("default.qubit", wires=3, shots=10)
-
-    # @qml.qjit
-    @qml.qnode(dev, postselect_mode="hw-like", mcm_method="deferred")
-    def func(x):
-        qml.RX(x, 0)
-        _ = qml.measure(0, postselect=0)
-        # _ = catalyst.measure(0, postselect=0)
-        return qml.sample(wires=[0, 1])
-
-    # Mocking qml.compiler.active() to always return True
-    with monkeypatch.context() as m:
-        m.setattr(qml.compiler, "active", lambda: True)
-        with pytest.raises(ValueError, match="Cannot discard invalid shots while using qml.qjit"):
-            _ = func(1.8)
-
-
 @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
 def test_postselect_mode(postselect_mode, mocker):
     """Test that invalid shots are discarded if requested"""
