@@ -143,6 +143,7 @@ def edit_system_config(wait_on_close=False):
         with subprocess.Popen((editor, config_path())) as p:
             if wait_on_close:  # Only valid when editor is known
                 p.wait()
+    # pylint:disable = superfluous-parens
     elif (s := platform.system()) in ["Linux", "Darwin"]:
         f_cmd = None
         if s == "Linux":
