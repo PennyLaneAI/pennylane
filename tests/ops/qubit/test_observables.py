@@ -604,15 +604,11 @@ class TestProjector:
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
         assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
-    def test_invalid_basis_state(self):
+    def test_invalid_basis_state():
         """Tests the function with an invalid state."""
         basis_state = [0, 2]  # Invalid basis state
-        try:
+        with pytest.raises(ValueError):
             BasisStateProjector.compute_sparse_matrix(basis_state)
-        except ValueError:
-            raise ValueError  # Expected exception, pass the test
-        else:
-            assert False, "ValueError not raised"  # Fail the test if no exception is raised
 
     @pytest.mark.jax
     def test_jit_measurement(self):
