@@ -255,7 +255,7 @@ class TestQutritAmplitudeDamping:
         gamma_2 = torch.tensor(0.12, requires_grad=True)
         gamma_3 = torch.tensor(0.35, requires_grad=True)
 
-        jac = torch.autograd.functional.jacobian(self.kraus_fn, (gamma_1, gamma_2))
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, (gamma_1, gamma_2, gamma_3))
         expected = self.expected_jac_fn(
             gamma_1.detach().numpy(), gamma_2.detach().numpy(), gamma_3.detach.numpy()
         )
