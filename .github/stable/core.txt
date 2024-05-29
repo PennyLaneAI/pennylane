@@ -33,7 +33,7 @@ matplotlib==3.9.0
 mccabe==0.6.1
 mypy-extensions==1.0.0
 networkx==3.2.1
-nodeenv==1.8.0
+nodeenv==1.9.0
 numpy==1.26.4
 osqp==0.6.7
 packaging==24.0
@@ -57,7 +57,7 @@ pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 PyYAML==6.0.1
 qdldl==0.1.7.post2
-requests==2.32.2
+requests==2.32.3
 rustworkx==0.14.2
 scipy==1.13.1
 scs==3.2.4.post1

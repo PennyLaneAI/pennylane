@@ -104,7 +104,7 @@ nbconvert==7.16.4
 nbformat==5.10.4
 nest-asyncio==1.6.0
 networkx==3.2.1
-nodeenv==1.8.0
+nodeenv==1.9.0
 notebook==7.2.0
 notebook_shim==0.2.4
 numba==0.59.1
@@ -151,7 +151,7 @@ pyzx==0.8.0
 qdldl==0.1.7.post2
 quimb==1.8.1
 referencing==0.35.1
-requests==2.32.2
+requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.7.1
