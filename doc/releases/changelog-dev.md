@@ -156,10 +156,17 @@
 
 <h3>Documentation 📝</h3>
 
+* The documentation for the `default.tensor` device has been added.
+  [(#5719)](https://github.com/PennyLaneAI/pennylane/pull/5719)
+
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* Replaced `semantic_version` with `packaging.version.Version`, since the former cannot
+  handle the metadata `.post` in the version string.
+  [(#5754)](https://github.com/PennyLaneAI/pennylane/pull/5754)
 
 * The `dynamic_one_shot` transform now has expanded support for the `jax` and `torch` interfaces.
   [(#5672)](https://github.com/PennyLaneAI/pennylane/pull/5672)
