@@ -1,6 +1,8 @@
 .. role:: html(raw)
    :format: html
 
+.. _installation:
+
 Installation and dependencies
 =============================
 
