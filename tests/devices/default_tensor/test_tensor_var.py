@@ -187,7 +187,6 @@ class TestVar:
         tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
         assert np.allclose(calculated_val, reference_val, atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_hamiltonian_variance(self, theta, phi, dev):
         """Tests a Hamiltonian."""
 
@@ -362,6 +361,8 @@ class TestTensorVar:
         assert np.allclose(calculated_val, reference_val, tol)
 
 
+# This test is only for the new opmath since there is an error
+# in the tape computation with `default.qubit`, that we use as reference.
 @pytest.mark.usefixtures("new_opmath_only")
 @pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
 def test_multi_qubit_gates(theta, phi, dev):
