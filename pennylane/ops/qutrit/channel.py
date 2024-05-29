@@ -334,7 +334,7 @@ class QutritAmplitudeDamping(Channel):
         K2 = math.sqrt(gamma_2 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 0, 1], [0, 0, 0], [0, 0, 0]]), gamma_2), gamma_2
         )
-        K3 = math.sqrt(3 + math.eps) * math.convert_like(
-            math.cast_like(math.array([[0, 0, 0], [0, 0, 1], [0, 0, 0]]), gamma_2), gamma_2
+        K3 = math.sqrt(gamma_3 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 0, 0], [0, 0, 1], [0, 0, 0]]), gamma_3), gamma_3
         )
         return [K0, K1, K2, K3]

@@ -204,7 +204,7 @@ class TestQutritAmplitudeDamping:
         (
             (1.5, 0.0, 0.0),
             (0.0, 1.0 + math.eps, 0.0),
-            (0.0, 0.0, 1.0),
+            (0.0, 0.0, 1.1),
             (0.0, 0.33, 0.67 + math.eps),
         ),
     )
@@ -257,7 +257,7 @@ class TestQutritAmplitudeDamping:
 
         jac = torch.autograd.functional.jacobian(self.kraus_fn, (gamma_1, gamma_2, gamma_3))
         expected = self.expected_jac_fn(
-            gamma_1.detach().numpy(), gamma_2.detach().numpy(), gamma_3.detach.numpy()
+            gamma_1.detach().numpy(), gamma_2.detach().numpy(), gamma_3.detach().numpy()
         )
 
         for res_partial, exp_partial in zip(jac, expected):
@@ -286,5 +286,5 @@ class TestQutritAmplitudeDamping:
         gamma_2 = jax.numpy.array(0.12)
         gamma_3 = jax.numpy.array(0.35)
 
-        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1])(gamma_1, gamma_2, gamma_3)
+        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(gamma_1, gamma_2, gamma_3)
         assert math.allclose(jac, self.expected_jac_fn(gamma_1, gamma_2, gamma_3))
