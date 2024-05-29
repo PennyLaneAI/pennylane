@@ -155,6 +155,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The documentation for the `default.tensor` device has been added.
+  [(#5719)](https://github.com/PennyLaneAI/pennylane/pull/5719)
+
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
