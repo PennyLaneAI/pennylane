@@ -117,6 +117,9 @@ def dynamic_one_shot(
 
     aux_tapes = [init_auxiliary_tape(t) for t in tapes]
 
+    def reshape_data(array):
+        return qml.math.squeeze(qml.math.vstack(array))
+
     def processing_fn(results, has_partitioned_shots=None, batched_results=None):
         if batched_results is None and batch_size is not None:
             # If broadcasting, recursively process the results for each batch. For each batch
@@ -140,6 +143,14 @@ def dynamic_one_shot(
             return tuple(final_results)
         if not tape.shots.has_partitioned_shots:
             results = results[0]
+
+        is_scalar = not isinstance(results[0], Sequence)
+        if is_scalar:
+            results = [reshape_data(tuple(results))]
+        else:
+            results = [
+                reshape_data(tuple(res[i] for res in results)) for i, _ in enumerate(results[0])
+            ]
         return parse_native_mid_circuit_measurements(tape, aux_tapes, results)
 
     return aux_tapes, processing_fn
@@ -235,18 +246,8 @@ def parse_native_mid_circuit_measurements(
 
     all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
     n_mcms = len(all_mcms)
-    post_process_tape = qml.tape.QuantumScript(
-        aux_tapes[0].operations,
-        aux_tapes[0].measurements[0:-n_mcms],
-        shots=aux_tapes[0].shots,
-        trainable_params=aux_tapes[0].trainable_params,
-    )
-    single_measurement = (
-        len(post_process_tape.measurements) == 0 and len(aux_tapes[0].measurements) == 1
-    )
-    mcm_samples = qml.math.array(
-        [[res] if single_measurement else res[-n_mcms::] for res in results], like=interface
-    ).reshape((-1, n_mcms))
+    mcm_samples = qml.math.hstack(tuple(res.reshape((-1, 1)) for res in results[-n_mcms:]))
+    mcm_samples = qml.math.array(mcm_samples, like=interface)
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
     has_postselect = qml.math.array(
         [[int(op.postselect is not None) for op in all_mcms]], like=interface
@@ -283,15 +284,12 @@ def parse_native_mid_circuit_measurements(
             meas = measurement_with_no_shots(m)
             m_count += 1
         else:
-            # result = [res[m_count] for res in results]
-            result = qml.math.squeeze(
-                qml.math.array([res[m_count] for res in results], like=interface)
-            )
+            result = results[m_count]
             if not isinstance(m, CountsMP):
                 # We don't need to cast to arrays when using qml.counts. qml.math.array is not viable
                 # as it assumes all elements of the input are of builtin python types and not belonging
                 # to any particular interface
-                result = qml.math.stack(result, like=interface)
+                result = qml.math.array(result, like=interface)
             meas = gather_non_mcm(m, result, is_valid)
             m_count += 1
         if isinstance(m, SampleMP):
