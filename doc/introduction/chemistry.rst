@@ -27,7 +27,8 @@ to generate the electronic Hamiltonian in a single call. For example,
 
     symbols = ["H", "H"]
     geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    molecule = qml.qchem.Molecule(symbols, geometry)
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule)
 
 where:
 
@@ -36,11 +37,11 @@ where:
 * ``qubits`` is the number of qubits needed to perform the quantum simulation.
 
 The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
-with an external backend that uses the
-`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
+with external backends that use the
+`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin or the
 electronic structure package `PySCF <https://github.com/pyscf/pyscf>`_, which requires separate
-installation. This backend is non-differentiable and can be selected by setting
-``method='pyscf'`` in :func:`~.molecular_hamiltonian`. 
+installation. These backends are non-differentiable and can be selected by setting
+``method='openfermion'`` and ``method='pyscf'`` in :func:`~.molecular_hamiltonian`.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -49,13 +50,14 @@ specified for each backend.
 
 .. code-block:: python
 
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
+    molecule = qml.qchem.Molecule(
         symbols,
         geometry,
         charge=0,
         mult=1,
-        basis='sto-3g',
-        method='pyscf',
+        basis_name='sto-3g')
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
+        molecule,
         active_electrons=2,
         active_orbitals=2
     )
@@ -100,7 +102,8 @@ expectation value of a Hamiltonian can be calculated using ``qml.expval``:
 
     symbols = ["H", "H"]
     geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    molecule = qml.qchem.Molecule(symbols, geometry)
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule)
 
     @qml.qnode(dev)
     def circuit(params):
