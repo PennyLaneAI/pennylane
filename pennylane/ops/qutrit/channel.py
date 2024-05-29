@@ -282,7 +282,7 @@ class QutritAmplitudeDamping(Channel):
     def __init__(self, gamma_1, gamma_2, gamma_3, wires, id=None):
         # Verify input
         for gamma in (gamma_1, gamma_2, gamma_3):
-            if not (math.is_abstract(gamma)):
+            if not math.is_abstract(gamma):
                 if not 0.0 <= gamma <= 1.0:
                     raise ValueError("Each probability must be in the interval [0,1]")
         if not (math.is_abstract(gamma_2) or math.is_abstract(gamma_3)):
