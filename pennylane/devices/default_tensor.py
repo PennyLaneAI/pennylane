@@ -150,9 +150,9 @@ class DefaultTensor(Device):
     This device is designed to simulate large-scale quantum circuits using tensor networks. For small circuits, other devices like ``default.qubit`` may be more suitable.
 
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
-    Currently, only the Matrix Product State (MPS) method is supported, based on the ``quimb``'s ``CircuitMPS`` class.
+    Currently, only the Matrix Product State (MPS) method is supported, based on ``quimb``'s ``CircuitMPS`` class.
 
-    This device does not currently support finite shots, derivatives, or vector-Jacobian products.
+    This device does not currently support finite shots or differentiation.
     The currently supported measurement types are expectation values and variances.
 
     Args:
@@ -181,7 +181,6 @@ class DefaultTensor(Device):
     .. code-block:: python
 
         import pennylane as qml
-        import numpy as np
 
         num_qubits = 100
 
