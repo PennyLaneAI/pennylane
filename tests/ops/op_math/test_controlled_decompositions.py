@@ -36,6 +36,7 @@ from pennylane.ops.op_math.controlled_decompositions import (
     _decompose_multicontrolled_unitary,
     _decompose_recursive,
     ctrl_decomp_bisect,
+    decompose_mcx,
 )
 from pennylane.wires import Wires
 
@@ -1039,9 +1040,8 @@ class TestMCXDecomposition:
         target_wire = n_ctrl_wires
 
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 1)
-        op = qml.X(target_wire)
         with qml.queuing.AnnotatedQueue() as q:
-            _decompose_multicontrolled_unitary(op, control_wires)
+            decompose_mcx(control_wires, Wires(target_wire), work_wires=Wires([]))
         tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=1)
 
