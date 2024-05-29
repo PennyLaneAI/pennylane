@@ -245,8 +245,7 @@ class TestSnapshot:
     @pytest.mark.parametrize("shots", [None, 1, 1000000])
     def test_different_shots(self, shots):
         """Test that snapshots are returned correctly with different QNode shot values."""
-        np.random.seed(51)
-        dev = qml.device("default.qubit", wires=2, shots=shots, seed=4821)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit():
