@@ -573,7 +573,7 @@ def _processing_fn_no_grouping(
 
     # Sum up the results for each original measurement
     res_for_each_mp = [
-        _sum_terms(_sub_res, coeffs, offset)
+        _sum_terms(_sub_res, coeffs, offset, shots.num_copies)
         for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
     ]
 
@@ -586,7 +586,7 @@ def _processing_fn_no_grouping(
         # Basically, the shape becomes (n_shots, n_mps, [,batch_size])
         res_for_each_mp = [
             tuple(res_for_each_mp[j][i] for j in range(len(res_for_each_mp)))
-            for i in range(len(res_for_each_mp[0]))
+            for i in range(shots.num_copies)
         ]
 
     return tuple(res_for_each_mp)
@@ -640,7 +640,7 @@ def _processing_fn_with_grouping(
 
     # Sum up the results for each original measurement
     res_for_each_mp = [
-        _sum_terms(_sub_res, coeffs, offset)
+        _sum_terms(_sub_res, coeffs, offset, shots.num_copies)
         for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
     ]
 
@@ -653,13 +653,13 @@ def _processing_fn_with_grouping(
         # Basically, the shape becomes (n_shots, n_mps, [,batch_size])
         res_for_each_mp = [
             tuple(res_for_each_mp[j][i] for j in range(len(res_for_each_mp)))
-            for i in range(len(res_for_each_mp[0]))
+            for i in range(shots.num_copies)
         ]
 
     return tuple(res_for_each_mp)
 
 
-def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float) -> Result:
+def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, n_copies: int) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
     # Trivially return the original result
@@ -671,7 +671,7 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float) -> Result:
     for c, r in zip(coeffs, res):
         dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
-        return offset
+        return tuple(offset for _ in range(n_copies)) if n_copies > 1 else offset
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
     return qml.math.convert_like(summed_dot_products + offset, res[0])
 
