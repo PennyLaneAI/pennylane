@@ -106,6 +106,7 @@ class Molecule:
         self.mult = mult
         self.basis_name = basis_name.lower()
         self.name = name
+        self.load_data = load_data
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
         if self.unit not in ("angstrom", "bohr"):
