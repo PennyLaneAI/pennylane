@@ -305,7 +305,7 @@ class CountsMP(SampleMeasurement):
             # remove nans
             mask = qml.math.isnan(samples)
             num_wires = shape[-1]
-            if np.any(mask):
+            if qml.math.any(mask):
                 mask = np.logical_not(np.any(mask, axis=tuple(range(1, samples.ndim))))
                 samples = samples[mask, ...]
 

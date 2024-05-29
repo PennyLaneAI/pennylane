@@ -219,6 +219,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     )
 
 
+# pylint: disable=too-many-branches,too-many-statements
 def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript, aux_tapes: qml.tape.QuantumScript, results
 ):
@@ -271,13 +272,18 @@ def parse_native_mid_circuit_measurements(
         if interface != "jax" and m.mv and not has_valid:
             meas = measurement_with_no_shots(m)
         elif m.mv and active_jit:
-            found = False
+            found, meas = False, None
             for k, meas in mcm_samples.items():
                 if m.mv is k.out_classical_tracers[0]:
                     found = True
                     break
             if not found:
                 raise LookupError("MCM not found")
+            meas = qml.math.squeeze(meas)
+            if isinstance(m, CountsMP):
+                count1 = qml.math.sum(meas * is_valid)
+                return {0: qml.math.sum(is_valid) - count1, 1: count1}
+            meas = gather_non_mcm(m, meas, is_valid)
         elif m.mv:
             meas = gather_mcm(m, mcm_samples, is_valid)
         elif interface != "jax" and not has_valid:
@@ -290,6 +296,12 @@ def parse_native_mid_circuit_measurements(
                 # as it assumes all elements of the input are of builtin python types and not belonging
                 # to any particular interface
                 result = qml.math.array(result, like=interface)
+            if active_jit:
+                if isinstance(m, CountsMP):
+                    normalized_meas.append((result[0][0], qml.math.sum(result[1], axis=0)))
+                    m_count += 1
+                    continue
+                result = qml.math.squeeze(result)
             meas = gather_non_mcm(m, result, is_valid)
             m_count += 1
         if isinstance(m, SampleMP):
