@@ -567,29 +567,36 @@ PennyLane. For ease of use, we provide the following configuration options to us
 
   .. note::
 
-      If ``postselect_mode="hw-like"``, invalid shots will not be discarded when using the ``jax`` interface.
-      Instead, invalid samples will be replaced by ``np.iinfo(np.int32).min``. These invalid samples will not be
-      used for processing final results. Consider the circuit below:
+      When using the ``jax`` interface, ``postselect_mode="hw-like"`` will have different behaviour based on the
+      chosen ``mcm_method``.
 
-      .. code-block:: python3
+      * If ``mcm_method="one-shot"``, invalid shots will not be discarded. Instead, invalid samples will be replaced
+        by ``np.iinfo(np.int32).min``. These invalid samples will not be used for processing final results. Consider
+        the circuit below:
 
-          import pennylane as qml
-          import jax
-          import jax.numpy as jnp
+        .. code-block:: python3
 
-          dev = qml.device("default.qubit", wires=3, shots=10, seed=jax.random.PRNGKey(123))
-          
-          @qml.qnode(dev, postselect_mode="hw-like", mcm_method="one-shot")
-          def circuit(x):
-              qml.RX(x, 0)
-              qml.measure(0, postselect=1)
-              return qml.sample(qml.PauliZ(0))
+            import pennylane as qml
+            import jax
+            import jax.numpy as jnp
 
-      >>> x = jnp.array(1.8)
-      >>> f(x)
-      Array([-2.1474836e+09, -1.0000000e+00, -2.1474836e+09, -2.1474836e+09,
-             -1.0000000e+00, -2.1474836e+09, -1.0000000e+00, -2.1474836e+09,
-             -1.0000000e+00, -1.0000000e+00], dtype=float32, weak_type=True)
+            dev = qml.device("default.qubit", wires=3, shots=10, seed=jax.random.PRNGKey(123))
+
+            @qml.qnode(dev, postselect_mode="hw-like", mcm_method="one-shot")
+            def circuit(x):
+                qml.RX(x, 0)
+                qml.measure(0, postselect=1)
+                return qml.sample(qml.PauliZ(0))
+
+        >>> x = jnp.array(1.8)
+        >>> f(x)
+        Array([-2.1474836e+09, -1.0000000e+00, -2.1474836e+09, -2.1474836e+09,
+               -1.0000000e+00, -2.1474836e+09, -1.0000000e+00, -2.1474836e+09,
+               -1.0000000e+00, -1.0000000e+00], dtype=float32, weak_type=True)
+
+      * If ``mcm_method="deferred"``, then using ``postselect_mode="hw-like"`` will have the same behaviour as when
+        ``postselect_mode="fill-shots"``. This is due to the limitations of the :func:`~pennylane.defer_measurements`
+        transform, and this behaviour will change in the future to be more consistent with ``mcm_method="one-shot"``.
 
 Changing the number of shots
 ----------------------------
