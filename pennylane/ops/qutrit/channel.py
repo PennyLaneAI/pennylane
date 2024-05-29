@@ -235,8 +235,9 @@ class QutritAmplitudeDamping(Channel):
         K_0 = \begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \sqrt{1-\gamma_1} & 0 \\
-                0 & 0 & \sqrt{1-\gamma_2-\gamma_3}
-                \end{bmatrix}, \quad
+                0 & 0 & \sqrt{1-(\gamma_2+\gamma_3)}
+                \end{bmatrix}
+    .. math::
         K_1 = \begin{bmatrix}
                 0 & \sqrt{\gamma_1} & 0 \\
                 0 & 0 & 0 \\
@@ -246,7 +247,7 @@ class QutritAmplitudeDamping(Channel):
                 0 & 0 & \sqrt{\gamma_2} \\
                 0 & 0 & 0 \\
                 0 & 0 & 0
-                \end{bmatrix}
+                \end{bmatrix}, \quad
         K_3 = \begin{bmatrix}
                 0 & 0 & 0 \\
                 0 & 0 & \sqrt{\gamma_3} \\
