@@ -129,8 +129,8 @@ def edit_system_config(wait_on_close=False):
     """
     This function opens the log configuration file using OS-specific editors.
 
-    Setting the `EDITOR` environment variable will override xdg-open/open on
-    Linux and MacOS, and allows use of `wait_on_close` for editor close before
+    Setting the ``EDITOR`` environment variable will override ``xdg-open/open`` on
+    Linux and MacOS, and allows use of ``wait_on_close`` for editor close before
     continuing execution.
 
     .. warning::
