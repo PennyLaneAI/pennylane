@@ -14,6 +14,9 @@
 """
 Tests for the pennylane pytrees module
 """
+
+import pytest
+
 import pennylane as qml
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 
@@ -100,6 +103,7 @@ def test_dict():
     assert new_x == {"a": 5, "b": {"c": 6, "d": 7}}
 
 
+@pytest.mark.usefixtures("new_opmath_only")
 def test_nested_pl_object():
     """Test that we can flatten and unflatten nested pennylane object."""
 
