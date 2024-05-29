@@ -28,7 +28,7 @@ from pennylane.wires import Wires
 
 
 class WiresIn(BooleanFn):
-    """A ``Conditional`` for evaluating if a given wire exist in a specified set of wires
+    """A conditional for evaluating if a given wire exist in a specified set of wires.
 
     Args:
         wires (Union[list[int, str], Wires]): sequence of wires for building the wire set.
@@ -43,7 +43,7 @@ class WiresIn(BooleanFn):
 
 
 class WiresEq(BooleanFn):
-    """A ``Conditional`` for evaluating if a given wire is equal to a specified set of wires
+    """A conditional for evaluating if a given wire is equal to a specified set of wires.
 
     Args:
         wires (Union[list[int, str], Wires]): sequence of wires for building the wire set.
@@ -82,7 +82,7 @@ def _get_wires(val):
 
 
 def wires_in(wires):
-    """Builds a ``Conditional`` as a boolean function for evaluating
+    """Builds a conditional as a boolean function for evaluating
     if a given wire exist in a specified set of wires.
 
     Args:
@@ -119,7 +119,7 @@ def wires_in(wires):
 
 
 def wires_eq(wires):
-    """Builds a ``Conditional`` as a boolean function for evaluating
+    """Builds a conditional as a boolean function for evaluating
     if a given wire is equal to specified set of wires.
 
     Args:
@@ -156,10 +156,11 @@ def wires_eq(wires):
 
 
 class OpIn(BooleanFn):
-    """A ``Conditional`` for evaluating if a given operation exist in a specified set of operation
+    """A conditional for evaluating if a given operation exist in a specified set of operation.
 
     Args:
-        ops (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
+        ops (Union[str, class, Operation, list[str, class, Operation]]): sequence of operation
+            instances, string representations or classes to build the operation set.
 
     .. seealso:: Users are advised to use :func:`~.op_in` for a functional construction.
     """
@@ -197,16 +198,17 @@ class OpIn(BooleanFn):
 
 
 class OpEq(BooleanFn):
-    """A ``Conditional`` for evaluating if a given operation is equal to the specified operation
+    """A conditional for evaluating if a given operation is equal to the specified operation.
 
     Args:
-        ops (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
+        ops (Union[str, class, Operation]): An operation instance, string representation or
+            class to build the operation set.
 
     .. seealso:: Users are advised to use :func:`~.op_eq` for a functional construction.
     """
 
     def __init__(self, ops):
-        self._cond = ops
+        self._cond = [ops] if not isinstance(ops, (list, tuple, set)) else ops
         self._cops = _get_ops(ops)
         self.condition = self._cops
         cops_names = list(getattr(op, "__name__") for op in self._cops)
@@ -306,11 +308,11 @@ def _check_arithmetic_ops(op1, op2):
 
 
 def op_in(ops):
-    """Builds a ``Conditional`` as a boolean function for evaluating
+    """Builds a conditional as a boolean function for evaluating
     if a given operation exist in a specified set of operation.
 
     Args:
-        ops (str, Operation, Union(list[str, Operation])): sequence of string
+        ops (str, class, Operation, Union(list[str, class, Operation])): sequence of string
             representations, instances or classes of the operation(s).
 
     Returns:
@@ -346,17 +348,16 @@ def op_in(ops):
 
 
 def op_eq(ops):
-    """Builds a ``Conditional`` as a boolean function for evaluating
+    """Builds a conditional as a boolean function for evaluating
     if a given operation is equal to the specified operation.
 
     Args:
-        ops (str, Operation, Union(list[str, Operation])): string
-            representation, an instance or the class of the operation.
+        ops (str, class, Operation): string representation, an instance or class of the operation.
 
     Returns:
         :class:`OpEq <pennylane.noise.OpEq>`: a boolean function that evaluates to ``True``, if a
-        given operation is equal to the specified set of operation(s) based on a comparison of the type,
-        irrespective of their wires.
+        given operation is equal to the specified set of operation(s) based on a comparison of
+        the type, irrespective of their wires.
 
     **Example**
 
@@ -379,7 +380,6 @@ def op_eq(ops):
     >>> cond_func(qml.RY(1.23, wires=["dino"]))
     False
     """
-    ops = [ops] if not isinstance(ops, (list, tuple, set)) else ops
     return OpEq(ops)
 
 
