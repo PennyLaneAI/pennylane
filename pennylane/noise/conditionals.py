@@ -39,7 +39,9 @@ class WiresIn(BooleanFn):
     def __init__(self, wires):
         self._cond = set(wires)
         self.condition = self._cond
-        super().__init__(lambda x: _get_wires(x).issubset(self._cond), f"WiresIn({list(wires)})")
+        super().__init__(
+            lambda wire: _get_wires(wire).issubset(self._cond), f"WiresIn({list(wires)})"
+        )
 
 
 class WiresEq(BooleanFn):
@@ -55,7 +57,7 @@ class WiresEq(BooleanFn):
         self._cond = set(wires)
         self.condition = self._cond
         super().__init__(
-            lambda x: _get_wires(x) == self._cond,
+            lambda wire: _get_wires(wire) == self._cond,
             f"WiresEq({list(wires) if len(wires) > 1 else list(wires)[0]})",
         )
 
@@ -90,8 +92,10 @@ def wires_in(wires):
             for building the wire set.
 
     Returns:
-        :class:`WiresIn <pennylane.noise.WiresIn>`: a boolean function
-        which evaluates to ``True`` if a given wire exist in a specified set of wires.
+        :class:`WiresIn <pennylane.noise.conditionals.WiresIn>`: a callable object that
+        accepts an argument ``wire`` and gives a boolean output. It evaluates to ``True``
+        if the wire set constructed from ``wire`` is a subset of the one built from the
+        specified set.
 
     Raises:
         ValueError: if the wire set cannot be computed from ``wires``.
@@ -127,8 +131,10 @@ def wires_eq(wires):
             for building the wire set.
 
     Returns:
-        :class:`WiresEq <pennylane.noise.WiresEq>`: a boolean function
-        which evaluates to ``True`` if a given wire is equal to specified set of wires.
+        :class:`WiresEq <pennylane.noise.conditionals.WiresEq>`: a callable object that
+        accepts an argument ``wire`` and gives a boolean output. It evaluates to ``True``
+        if the wire set constructed from ``wire`` is equal to the one built from the
+        specified set.
 
     Raises:
         ValueError: if the wire set cannot be computed from ``wires``.
@@ -173,8 +179,8 @@ class OpIn(BooleanFn):
             self._check_in_ops, f"OpIn({[getattr(op, '__name__') for op in self._cops]})"
         )
 
-    def _check_in_ops(self, x):
-        xs = x if isinstance(x, (list, tuple, set)) else [x]
+    def _check_in_ops(self, operation):
+        xs = operation if isinstance(operation, (list, tuple, set)) else [operation]
         cs = _get_ops(xs)
 
         try:
@@ -217,12 +223,12 @@ class OpEq(BooleanFn):
             f"OpEq({cops_names if len(cops_names) > 1 else cops_names[0]})",
         )
 
-    def _check_eq_ops(self, x):
+    def _check_eq_ops(self, operation):
         if all(isclass(op) or not getattr(op, "arithmetic_depth", 0) for op in self._cond):
-            return _get_ops(x) == self._cops
+            return _get_ops(operation) == self._cops
 
         try:
-            xs = x if isinstance(x, (list, tuple, set)) else [x]
+            xs = operation if isinstance(operation, (list, tuple, set)) else [operation]
             return (
                 len(xs) == len(self._cond)
                 and _get_ops(xs) == self._cops
@@ -316,9 +322,10 @@ def op_in(ops):
             representations, instances or classes of the operation(s).
 
     Returns:
-        :class:`OpIn <pennylane.noise.OpIn>`: a boolean function that evaluates to ``True``, if a
-        given operation exist in a specified set of operation(s) based on a comparison of the type,
-        irrespective of their wires.
+        :class:`OpIn <pennylane.noise.conditionals.OpIn>`: A callable object that accepts
+        an ``operation`` and gives a boolean output. It evaluates to ``True``, if the
+        input operation exist in a specified set of operation(s) based on a comparison of
+        the type, irrespective of their wires.
 
     **Example**
 
@@ -355,9 +362,10 @@ def op_eq(ops):
         ops (str, class, Operation): string representation, an instance or class of the operation.
 
     Returns:
-        :class:`OpEq <pennylane.noise.OpEq>`: a boolean function that evaluates to ``True``, if a
-        given operation is equal to the specified set of operation(s) based on a comparison of
-        the type, irrespective of their wires.
+        :class:`OpEq <pennylane.noise.conditionals.OpEq>`: A callable object that accepts
+        an ``operation`` and gives a boolean output. It evaluates to ``True``, if the
+        input operation is equal to the specified set of operation(s) based on a comparison
+        of the type, irrespective of their wires.
 
     **Example**
 
@@ -388,11 +396,11 @@ def partial_wires(operation, *args, **kwargs):
     all argument frozen except ``wires``.
 
     Args:
-        operation (Operation, class): instance of the operation or the class
-            corresponding to operation.
-        args: Positional arguments provided in the case where the keyword argument
+        operation (Operation, class): instance of an operation or the class
+            corresponding to the operation.
+        *args: positional arguments provided in the case where the keyword argument
             ``operation`` is a class for building the partially evaluated instance.
-        kwargs: Keyword arguments for the building the partially evaluated instance.
+        **kwargs: keyword arguments for the building the partially evaluated instance.
             These will override any arguments present in the operation instance or ``args``.
 
     Returns:
