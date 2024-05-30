@@ -20,7 +20,6 @@ from sys import version_info
 
 
 import numpy as _np
-from packaging.version import Version, parse
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
