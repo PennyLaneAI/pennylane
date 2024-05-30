@@ -15,12 +15,12 @@
 Unit tests for functions needed for converting ``QubitOperator``from OpenFermion to 
 PennyLane ``LinearCombination`` and vice versa.
 """
-
 import pytest
-openfermion = pytest.importorskip("openfermion")
 
 import pennylane as qml
 from pennylane import numpy as np
+
+openfermion = pytest.importorskip("openfermion")
 
 
 def test_from_openfermion():
