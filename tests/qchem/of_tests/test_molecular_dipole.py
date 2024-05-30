@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import active_new_opmath
 
 h2 = ["H", "H"]
 x_h2 = np.array([0.0, 0.0, -0.661, 0.0, 0.0, 0.661])
@@ -62,8 +61,8 @@ ops_h2_parity.append(
 )
 
 eig_h2 = []
-eig_h2.append([0., 0.])
-eig_h2.append([0., 0.])
+eig_h2.append([0.0, 0.0])
+eig_h2.append([0.0, 0.0])
 eig_h2.append([-1.81780062, -0.90890031, -0.90890031])
 
 
@@ -166,7 +165,7 @@ ops_h3p.append([I(0)])
 eig_h3p = []
 eig_h3p.append([-3.15687028, -3.01293514, -3.01293514])
 eig_h3p.append([-2.00177188, -1.96904253, -1.96904253])
-eig_h3p.append([0., 0.])
+eig_h3p.append([0.0, 0.0])
 
 
 h2o = ["H", "H", "O"]
@@ -197,10 +196,11 @@ ops_h2o.append(
     ]
 )
 
-eig_h2o=[]
+eig_h2o = []
 eig_h2o.append([-0.14803188, -0.07401594, -0.07401594])
-eig_h2o.append([0., 0.])
+eig_h2o.append([0.0, 0.0])
 eig_h2o.append([-0.67873019, -0.45673019, -0.45673019])
+
 
 @pytest.mark.parametrize(
     (
@@ -258,6 +258,7 @@ def test_openfermion_molecular_dipole(
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(d_ops, r_ops))
 
+
 @pytest.mark.parametrize(
     (
         "symbols",
@@ -277,7 +278,7 @@ def test_openfermion_molecular_dipole(
 )
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_molecular_dipole(
-    symbols, geometry, charge, active_el, active_orb, mapping, eig_ref, tol, tmpdir
+    symbols, geometry, charge, active_el, active_orb, mapping, eig_ref, tmpdir
 ):
     r"""Test that molecular_dipole returns the correct eigenvalues with the dhf backend."""
 
@@ -294,11 +295,11 @@ def test_differentiable_molecular_dipole(
     for idx, dip in enumerate(dip_dhf):
         wires = dip.wires
         if not wires:
-            eig =[0, 0]
+            eig = [0, 0]
         else:
-            eig = qml.eigvals(qml.SparseHamiltonian(dip.sparse_matrix(), wires = wires), k=3)
-        assert(np.allclose(np.sort(eig), np.sort(eig_ref[idx])))
-        
+            eig = qml.eigvals(qml.SparseHamiltonian(dip.sparse_matrix(), wires=wires), k=3)
+        assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
+
 
 def test_molecular_dipole_error():
     r"""Test that molecular_dipole raises an error with unsupported backend and open-shell systems."""
