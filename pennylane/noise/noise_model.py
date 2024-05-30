@@ -23,7 +23,7 @@ class NoiseModel:
     defines noise operations using some optional metadata.
 
     Args:
-        model_map (dict[Union[~.BooleanFn] -> Union[Callable]]): Data for the
+        model_map (dict[Union[~.BooleanFn, Conditional] -> Callable]): Data for the
             noise model as a ``{conditional: noise_fn}`` dictionary. The signature of
             ``noise_fn`` must be ``noise_fn(op: Operation, **kwargs) -> None``, where
             ``op`` is the operation that the conditional evaluates and ``kwargs`` are
@@ -32,15 +32,21 @@ class NoiseModel:
 
     .. note::
 
-    In each key-value pair of ``model_map``, the definition of ``noise_fn`` should
-    have the operations in the order in which they are to be queued for an operation
-    ``op``, for which the corresponding ``conditional`` evaluates to ``True``.
+        For each key-value pair of ``model_map``:
+
+        - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
+          a callable object built via the constructor functions (:func:`pennylane.noise.op_eq`,
+          :func:`pennylane.noise.op_in`, :func:`pennylane.noise.wires_eq`, and
+          :func:`pennylane.noise.wires_in`), or their bit-wise combination.
+        - Defintion of ``noise_fn(op, **kwargs)`` should have the operations in same the order
+          in which they are to be queued for an operation ``op``, whenever the corresponding
+          ``conditional`` evaluates to ``True``.
 
     **Example**
 
     .. code-block:: python
 
-        # Set up the conditions
+        # Set up the conditionals
         c0 = qml.noise.op_eq(qml.PauliX) | qml.noise.op_eq(qml.PauliY)
         c1 = qml.noise.op_eq(qml.Hadamard) & qml.noise.wires_in([0, 1])
         c2 = qml.noise.op_eq(qml.RX)
@@ -49,7 +55,7 @@ class NoiseModel:
         def c3(op, **kwargs):
             return isinstance(op, qml.RY) and op.parameters[0] >= 0.5
 
-        # Set up noisy ops
+        # Set up the noise functions
         n0 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
         def n1(op, **kwargs):
@@ -74,7 +80,7 @@ class NoiseModel:
     """
 
     def __init__(self, model_map, **kwargs):
-        self._check_model(model_map)
+        self.check_model(model_map)
         self._model_map = model_map
         self._metadata = kwargs
 
@@ -124,8 +130,19 @@ class NoiseModel:
 
         return model_str
 
-    @classmethod
-    def _check_model(cls, model):
+    @staticmethod
+    def check_model(model):
+        """Class method to validate the ``model_map`` for constructing a NoiseModel.
+
+        Args:
+            model: ``model_map`` or the data for the noise model
+
+        Raises:
+            ValueError: if any of the conditional in ``model`` is not an instance of
+                BooleanFn or one of its subclasses
+            ValueError: if any callables in ``model`` does not accept **kwargs as
+                their last argument.
+        """
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
                 raise ValueError(
@@ -133,8 +150,8 @@ class NoiseModel:
                     "BooleanFn or one of its subclasses."
                 )
 
-            parameters = inspect.signature(noise).parameters.values()
-            if not any(p for p in reversed(parameters) if p.kind == p.VAR_KEYWORD):
+            final_parameter = list(inspect.signature(noise).parameters.values())[-1]
+            if final_parameter.kind != final_parameter.VAR_KEYWORD:
                 raise ValueError(
                     f"{noise} provided for {condition} must accept **kwargs "
                     "as the last argument in its signature."
