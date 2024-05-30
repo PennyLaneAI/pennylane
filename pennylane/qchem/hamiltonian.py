@@ -17,7 +17,7 @@ This module contains the functions needed for computing the molecular Hamiltonia
 from functools import singledispatch
 
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
-# pylint: disable=protected-access
+# pylint: disable=consider-using-generator, protected-access
 import pennylane as qml
 from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify
