@@ -395,7 +395,9 @@ class TestPLDB:
         """Test that valid_context raises an error when breakpoint
         is called outside of a qnode execution."""
 
-        with pytest.raises(TypeError, match="Can't call breakpoint outside of a qnode execution"):
+        with pytest.raises(
+            RuntimeError, match="Can't call breakpoint outside of a qnode execution"
+        ):
             with qml.queuing.AnnotatedQueue() as _:
                 qml.X(0)
                 qml.breakpoint()
@@ -407,12 +409,14 @@ class TestPLDB:
             qml.Hadamard(0)
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(TypeError, match="Can't call breakpoint outside of a qnode execution"):
+        with pytest.raises(
+            RuntimeError, match="Can't call breakpoint outside of a qnode execution"
+        ):
             _ = my_qfunc()
 
     def test_valid_context_not_compatible_device(self):
         """Test that valid_context raises an error when breakpoint
-        is called outside of a qnode execution."""
+        is called with an un-supported device."""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev)
@@ -422,7 +426,7 @@ class TestPLDB:
             qml.Hadamard(0)
             return qml.expva(qml.Z(0))
 
-        with pytest.raises(TypeError, match="Device not supported with breakpoint"):
+        with pytest.raises(TypeError, match="Breakpoints not supported on this device"):
             _ = my_circ()
 
         PLDB.reset_active_dev()
@@ -470,7 +474,7 @@ class TestPLDB:
         the active device when there are no active devices."""
         assert getattr(PLDB, "_PLDB__active_dev") == []
 
-        with pytest.raises(ValueError, match="No active device to get"):
+        with pytest.raises(RuntimeError, match="No active device to get"):
             _ = PLDB.get_active_device()
 
     @pytest.mark.parametrize("device_name", dev_names)
@@ -524,7 +528,7 @@ def test_breakpoint_integration_with_valid_context_error(mock_method):
         qml.breakpoint()
         return qml.expval(qml.Z(1))
 
-    with pytest.raises(TypeError, match="Device not supported with breakpoint"):
+    with pytest.raises(TypeError, match="Breakpoints not supported on this device"):
         _ = my_circ()
 
     mock_method.assert_not_called()  # Error was raised before we triggered breakpoint

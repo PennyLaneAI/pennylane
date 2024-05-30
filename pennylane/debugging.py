@@ -125,15 +125,15 @@ class PLDB(pdb.Pdb):
         """Determine if the debugger is called in a valid context.
 
         Raises:
-            TypeError: Can't call breakpoint outside of a qnode execution
-            TypeError: Device not supported with breakpoint
+            RuntimeError: Can't call breakpoint outside of a qnode execution
+            TypeError: Breakpoints not supported on this device
         """
 
         if not qml.queuing.QueuingManager.recording() or not cls.is_active_dev():
-            raise TypeError("Can't call breakpoint outside of a qnode execution")
+            raise RuntimeError("Can't call breakpoint outside of a qnode execution")
 
         if cls.get_active_device().name not in ("default.qubit", "lightning.qubit"):
-            raise TypeError("Device not supported with breakpoint")
+            raise TypeError("Breakpoints not supported on this device")
 
     @classmethod
     def add_device(cls, dev):
@@ -149,13 +149,13 @@ class PLDB(pdb.Pdb):
         """Return the active device.
 
         Raises:
-            ValueError: No active device to get
+            RuntimeError: No active device to get
 
         Returns:
             Union[Device, "qml.devices.Device"]: The active device
         """
         if not cls.is_active_dev():
-            raise ValueError("No active device to get")
+            raise RuntimeError("No active device to get")
 
         return cls.__active_dev[0]
 
