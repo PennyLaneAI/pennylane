@@ -181,7 +181,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     return _fermionic_hamiltonian
 
 
-def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
+def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, mapping="jordan_wigner"):
     r"""Return a function that computes the qubit Hamiltonian.
 
     Args:
@@ -189,6 +189,8 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         cutoff (float): cutoff value for discarding the negligible electronic integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
+        mapping (str): Specifies the fermion-to-qubit mapping. Input values can
+            be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
     Returns:
         function: function that computes the qubit hamiltonian
@@ -222,6 +224,6 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
 
         h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
-        return qubit_observable(h_ferm)
+        return qubit_observable(h_ferm, mapping=mapping)
 
     return _molecular_hamiltonian
