@@ -242,6 +242,9 @@
 * Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
+* `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
+  [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -262,4 +265,5 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Haochen Paul Wang,
 David Wierichs.
