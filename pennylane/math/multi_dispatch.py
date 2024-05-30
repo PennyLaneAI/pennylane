@@ -416,6 +416,7 @@ def get_trainable_indices(values, like=None):
 
     **Example**
 
+    >>> from pennylane import numpy as pnp
     >>> def cost_fn(params):
     ...     print("Trainable:", qml.math.get_trainable_indices(params))
     ...     return np.sum(np.sin(params[0] * params[1]))
