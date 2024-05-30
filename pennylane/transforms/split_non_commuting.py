@@ -260,6 +260,7 @@ def split_non_commuting(
             single_term_obs_mps=single_term_obs_mps,
             offsets=offsets,
             shots=tape.shots,
+            batch_size=tape.batch_size,
         )
 
     if (
@@ -348,6 +349,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
         offsets=[offset],
         group_sizes=group_sizes,
         shots=tape.shots,
+        batch_size=tape.batch_size,
     )
 
 
@@ -413,6 +415,7 @@ def _split_using_pauli_grouping(
         offsets=offsets,
         group_sizes=group_sizes,
         shots=tape.shots,
+        batch_size=tape.batch_size,
     )
 
 
@@ -483,6 +486,7 @@ def _split_using_naive_grouping(
         offsets=offsets,
         group_sizes=group_sizes,
         shots=tape.shots,
+        batch_size=tape.batch_size,
     )
 
 
@@ -548,6 +552,7 @@ def _processing_fn_no_grouping(
     single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
     offsets: List[float],
     shots: Shots,
+    batch_size: int,
 ):
     """Postprocessing function for the split_non_commuting transform without grouping.
 
@@ -571,9 +576,11 @@ def _processing_fn_no_grouping(
             res_batch_for_each_mp[mp_idx].append(res[smp_idx])
             coeffs_for_each_mp[mp_idx].append(coeff)
 
+    result_shape = _infer_result_shape(shots, batch_size)
+
     # Sum up the results for each original measurement
     res_for_each_mp = [
-        _sum_terms(_sub_res, coeffs, offset, shots.num_copies)
+        _sum_terms(_sub_res, coeffs, offset, result_shape)
         for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
     ]
 
@@ -598,12 +605,13 @@ def _processing_fn_with_grouping(
     offsets: List[float],
     group_sizes: List[int],
     shots: Shots,
+    batch_size: int,
 ):
     """Postprocessing function for the split_non_commuting transform with grouping.
 
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
-            of (n_groups [,n_shots] [,n_mps] [,batch_size])
+            of (n_groups [,n_shots] [,n_mps_in_group] [,batch_size])
         single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float], int, int]]):
             A dictionary of measurements of each unique single-term observable, mapped to the
             indices of the original measurements it belongs to, its coefficients, its group
@@ -617,7 +625,7 @@ def _processing_fn_with_grouping(
 
     """
 
-    res_batch_for_each_mp = [[] for _ in offsets]
+    res_batch_for_each_mp = [[] for _ in offsets]  # ([n_mps] [,n_shots] [,batch_size])
     coeffs_for_each_mp = [[] for _ in offsets]
 
     for _, (mp_indices, coeffs, group_idx, mp_idx_in_group) in single_term_obs_mps.items():
@@ -638,9 +646,11 @@ def _processing_fn_with_grouping(
             res_batch_for_each_mp[mp_idx].append(sub_res)
             coeffs_for_each_mp[mp_idx].append(coeff)
 
+    result_shape = _infer_result_shape(shots, batch_size)
+
     # Sum up the results for each original measurement
     res_for_each_mp = [
-        _sum_terms(_sub_res, coeffs, offset, shots.num_copies)
+        _sum_terms(_sub_res, coeffs, offset, result_shape)
         for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
     ]
 
@@ -659,7 +669,7 @@ def _processing_fn_with_grouping(
     return tuple(res_for_each_mp)
 
 
-def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, n_copies: int) -> Result:
+def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tuple) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
     # Trivially return the original result
@@ -671,7 +681,7 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, n_copies: i
     for c, r in zip(coeffs, res):
         dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
-        return tuple(offset for _ in range(n_copies)) if n_copies > 1 else offset
+        return qml.math.ones(shape) * offset
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
     return qml.math.convert_like(summed_dot_products + offset, res[0])
 
@@ -689,3 +699,14 @@ def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.oper
 
     obs_wires = mp.wires if mp.wires else tape.wires
     return qml.prod(*(qml.Z(wire) for wire in obs_wires))
+
+
+def _infer_result_shape(shots: Shots, batch_size: int) -> Tuple:
+    """Based on the result, infer the ([,n_shots] [,batch_size]) shape of the result."""
+
+    shape = ()
+    if shots.has_partitioned_shots:
+        shape += (shots.num_copies,)
+    if batch_size and batch_size > 1:
+        shape += (batch_size,)
+    return shape
