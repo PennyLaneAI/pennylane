@@ -16,6 +16,7 @@ This module contains functionality for debugging quantum programs on simulator d
 """
 import pdb
 import sys
+from contextlib import contextmanager
 
 import pennylane as qml
 from pennylane import DeviceError
@@ -113,7 +114,7 @@ def snapshots(qnode):
 class PLDB(pdb.Pdb):
     """Custom debugging class integrated with Pdb."""
 
-    __active_dev = []
+    __active_dev = None
 
     def __init__(self, *args, **kwargs):
         """Initialize the debugger, and set custom prompt string."""
@@ -137,12 +138,12 @@ class PLDB(pdb.Pdb):
 
     @classmethod
     def add_device(cls, dev):
-        """Add a device to the global active device list.
+        """Update the global active device.
 
         Args:
             dev (Union[Device, "qml.devices.Device"]): The active device
         """
-        cls.__active_dev.append(dev)
+        cls.__active_dev = dev
 
     @classmethod
     def get_active_device(cls):
@@ -157,7 +158,7 @@ class PLDB(pdb.Pdb):
         if not cls.is_active_dev():
             raise RuntimeError("No active device to get")
 
-        return cls.__active_dev[0]
+        return cls.__active_dev
 
     @classmethod
     def is_active_dev(cls):
@@ -171,12 +172,27 @@ class PLDB(pdb.Pdb):
     @classmethod
     def reset_active_dev(cls):
         """Reset the global active device list (to empty)."""
-        cls.__active_dev = []
+        cls.__active_dev = None
+
+
+@contextmanager
+def pldb_device_manager(device):
+    """Context manager to automatically set and reset active
+    device on the PLDB debugger.
+
+    Args:
+        device (Union[Device, "qml.devices.Device"]): The active device instance
+    """
+    try:
+        PLDB.add_device(device)
+        yield
+    finally:
+        PLDB.reset_active_dev()
 
 
 def breakpoint():
     """Launch the custom PennyLane debugger."""
     PLDB.valid_context()  # Ensure its being executed in a valid context
 
-    debugger = PLDB()
+    debugger = PLDB(skip=["pennylane.*"])  # skip internals when stepping through trace
     debugger.set_trace(sys._getframe().f_back)  # pylint: disable=protected-access

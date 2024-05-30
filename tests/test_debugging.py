@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.debugging import PLDB
+from pennylane.debugging import PLDB, pldb_device_manager
 
 
 class TestSnapshot:
@@ -389,7 +389,7 @@ class TestPLDB:
         """Test that PLDB initializes correctly"""
         debugger = PLDB()
         assert debugger.prompt == "[pldb]: "
-        assert getattr(debugger, "_PLDB__active_dev") == []
+        assert getattr(debugger, "_PLDB__active_dev") is None
 
     def test_valid_context_outside_qnode(self):
         """Test that valid_context raises an error when breakpoint
@@ -433,7 +433,7 @@ class TestPLDB:
 
     def test_add_device(self):
         """Test that we can add a device to the global active device list."""
-        assert getattr(PLDB, "_PLDB__active_dev") == []
+        assert getattr(PLDB, "_PLDB__active_dev") is None
 
         dev1, dev2, dev3 = (
             qml.device("default.qubit", wires=3),
@@ -442,14 +442,12 @@ class TestPLDB:
         )
 
         PLDB.add_device(dev1)
-        assert getattr(PLDB, "_PLDB__active_dev") == [dev1]
+        assert getattr(PLDB, "_PLDB__active_dev") == dev1
 
-        PLDB.add_device(dev2)
-        PLDB.add_device(dev3)
-        debugger_active_devs = getattr(PLDB, "_PLDB__active_dev")
+        PLDB.add_device(dev2)  # overwrites dev1
+        PLDB.add_device(dev3)  # overwrites dev2
 
-        for active_dev, d in zip(debugger_active_devs, [dev1, dev2, dev3]):
-            assert active_dev is d
+        assert getattr(PLDB, "_PLDB__active_dev") == dev3
 
         PLDB.reset_active_dev()  # clean up the debugger active devices
 
@@ -472,7 +470,7 @@ class TestPLDB:
     def test_get_active_device_error_when_no_active_device(self):
         """Test that an error is raised if we try to get
         the active device when there are no active devices."""
-        assert getattr(PLDB, "_PLDB__active_dev") == []
+        assert getattr(PLDB, "_PLDB__active_dev") == None
 
         with pytest.raises(RuntimeError, match="No active device to get"):
             _ = PLDB.get_active_device()
@@ -482,14 +480,14 @@ class TestPLDB:
         """Test that we can rest the global active device list."""
         dev = qml.device(device_name, wires=2)
         PLDB.add_device(dev)
-        assert getattr(PLDB, "_PLDB__active_dev") == [dev]
+        assert getattr(PLDB, "_PLDB__active_dev") == dev
 
         PLDB.reset_active_dev()
-        assert getattr(PLDB, "_PLDB__active_dev") == []
+        assert getattr(PLDB, "_PLDB__active_dev") == None
 
     def test_is_active_device(self):
         """Test that we can determine if there is an active device."""
-        assert getattr(PLDB, "_PLDB__active_dev") == []
+        assert getattr(PLDB, "_PLDB__active_dev") == None
 
         dev = qml.device("default.qubit")
         PLDB.add_device(dev)
@@ -497,6 +495,18 @@ class TestPLDB:
 
         PLDB.reset_active_dev()
         assert PLDB.is_active_dev() is False
+
+
+@pytest.mark.parametrize("device_name", ("default.qubit", "lightning.qubit"))
+def test_pldb_device_manager(device_name):
+    """Test that the context manager works as expected."""
+    assert getattr(PLDB, "_PLDB__active_dev") == None
+    dev = qml.device(device_name, wires=2)
+
+    with pldb_device_manager(dev) as _:
+        assert getattr(PLDB, "_PLDB__active_dev") == dev
+
+    assert getattr(PLDB, "_PLDB__active_dev") == None
 
 
 @patch.object(PLDB, "set_trace")
