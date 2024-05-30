@@ -25,7 +25,7 @@ from pennylane import numpy as np
 
 def test_from_openfermion():
     """Test the from_openfermion function."""
-    q_op = of.QubitOperator("X0", 1.2) + of.QubitOperator("Z1", 2.4)
+    q_op = openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)
     pl_linear_combination = qml.from_openfermion(q_op)
 
     assert str(pl_linear_combination) == "1.2 * X(0) + 2.4 * Z(1)"
@@ -33,7 +33,7 @@ def test_from_openfermion():
 
 def test_from_openfermion_tol():
     """Test the from_openfermion function with complex coefficients."""
-    q_op = of.QubitOperator("X0", complex(1.0, 1e-8)) + of.QubitOperator("Z1", complex(1.3, 1e-8))
+    q_op = openfermion.QubitOperator("X0", complex(1.0, 1e-8)) + openfermion.QubitOperator("Z1", complex(1.3, 1e-8))
     # The method should discard the imaginary part of the coefficients.
     pl_linear_combination = qml.from_openfermion(q_op, tol=1e-10)
     # Check whether coefficients do not contain imaginary part.
@@ -42,7 +42,7 @@ def test_from_openfermion_tol():
 
 def test_from_openfermion_custom_wires():
     """Test the from_openfermion function with custom (swapped) wires."""
-    q_op = of.QubitOperator("X0", 1.2) + of.QubitOperator("Z1", 2.4) + of.QubitOperator("Y2", 0.1)
+    q_op = openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4) + openfermion.QubitOperator("Y2", 0.1)
     pl_linear_combination = qml.from_openfermion(q_op, wires={0: 2, 1: 1, 2: 0})
 
     assert str(pl_linear_combination) == "1.2 * X(2) + 2.4 * Z(1) + 0.1 * Y(0)"
