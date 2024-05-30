@@ -973,7 +973,8 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 
 def molecular_hamiltonian(*args, **kwargs):
     """molecular_hamiltonian(molecule, method="dhf", active_electrons=None, active_orbitals=None,\
-    mapping="jordan_wigner", outpath=".", wires=None, args=None, load_data=False, convert_tol=1e12)
+    mapping="jordan_wigner", outpath=".", wires=None, args=None, convert_tol=1e12)
+
     Generate the qubit Hamiltonian of a molecule.
 
     This function drives the construction of the second-quantized electronic Hamiltonian
@@ -1016,7 +1017,6 @@ def molecular_hamiltonian(*args, **kwargs):
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping. If None, will use identity map.
         args (array[array[float]]): initial values of the differentiable parameters
-        load_data (bool): flag to load data from the basis-set-exchange library
         convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
@@ -1026,15 +1026,15 @@ def molecular_hamiltonian(*args, **kwargs):
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed  Hamiltonian
         and the number of qubits
 
-    .. warning::
-        Use of ``qml.qchem.molecular_hamiltonian`` with symbols and geometry arguments is being deprecated.
-        Instead, please use the method with ``qml.Molecule`` object as its first argument. Look at the `Usage Details`
-        for more details on the old interface.
+    .. note::
+        The ``molecular_hamiltonian`` function accepts a ``Molecule`` object as its first argument.
+        Look at the `Usage Details` for more details on the old interface.
+
 
     **Example**
 
     >>> symbols = ['H', 'H']
-    >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+    >>> coordinates = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
     >>> molecule = qml.qchem.Molecule(symbols, coordinates)
     >>> H, qubits = qml.qchem.molecular_hamiltonian(molecule)
     >>> print(qubits)
@@ -1127,7 +1127,6 @@ def _(
     outpath=".",
     wires=None,
     args=None,
-    load_data=False,
     convert_tol=1e12,
 ):
     return _molecular_hamiltonian(
@@ -1146,7 +1145,7 @@ def _(
         molecule.alpha,
         molecule.coeff,
         args,
-        load_data,
+        molecule.load_data,
         convert_tol,
     )
 
