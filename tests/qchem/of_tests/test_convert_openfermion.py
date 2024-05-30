@@ -35,9 +35,12 @@ def test_from_openfermion_tol():
     """Test the from_openfermion function with complex coefficients."""
     q_op = openfermion.QubitOperator("X0", complex(1.0, 1e-8)) + openfermion.QubitOperator("Z1", complex(1.3, 1e-8))
     # The method should discard the imaginary part of the coefficients.
-    pl_linear_combination = qml.from_openfermion(q_op, tol=1e-10)
+    pl_linear_combination = qml.from_openfermion(q_op, tol=1e-6)
     # Check whether coefficients do not contain imaginary part.
     assert ~np.any( pl_linear_combination.coeffs.imag )
+    pl_linear_combination = qml.from_openfermion(q_op, tol=1e-10)
+    # Check whether coefficients do contain imaginary part since imaginary part exceeds treshold.
+    assert np.any( pl_linear_combination.coeffs.imag )
 
 
 def test_from_openfermion_custom_wires():
