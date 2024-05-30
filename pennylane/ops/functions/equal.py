@@ -453,17 +453,31 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
 
     if check_interface:
         for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.get_interface(params1) != qml.math.get_interface(params2):
-                return False
+            params1_interface = qml.math.get_interface(params1)
+            params2_interface = qml.math.get_interface(params2)
+            if params1_interface != params2_interface:
+                return (
+                    "Parameters have different interfaces.\n"
+                    f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
+                )
+
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.requires_grad(params1) != qml.math.requires_grad(params2):
-                return False
+            params1_trainability = qml.math.requires_grad(params1)
+            params2_trainability = qml.math.requires_grad(params2)
+            if params1_trainability != params2_trainability:
+                return (
+                    "Parameters have different trainability.\n"
+                    f"{params1} trainability is {params1_trainability} and {params2} trainability is {params2_trainability}"
+                )
 
     if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
-        return False
+        return f"Op1 and Op2 have different coefficients. Got {op1.coeff} and {op2.coeff}"
 
-    return qml.equal(op1.base, op2.base, **kwargs)
+    if not qml.equal(op1.base, op2.base, **kwargs):
+        return f"Op1 and Op2 have different base operators. Got {op1.base} and {op2.base}"
+
+    return True
 
 
 @_equal.register

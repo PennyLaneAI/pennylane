@@ -1710,6 +1710,28 @@ class TestSymbolicOpComparison:
         op2 = qml.exp(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
+        if bases_match and params_match:
+            assert_equal(op1, op2)
+        else:
+            with pytest.raises(AssertionError, match="Op1 and Op2 have different"):
+                assert_equal(op1, op2)
+
+    def test_exp_with_different_coeffs(self):
+        """Test that assert_equal fails when coeffs are different"""
+        op1 = qml.exp(qml.X(0), 0.5j)
+        op2 = qml.exp(qml.X(0), 1.0j)
+
+        with pytest.raises(AssertionError, match="Op1 and Op2 have different coefficients."):
+            assert_equal(op1, op2)
+
+    def test_exp_with_different_base_operator(self):
+        """Test that assert_equal fails when base operators are different"""
+        op1 = qml.exp(qml.X(0), 0.5j)
+        op2 = qml.exp(qml.Y(0), 0.5j)
+
+        with pytest.raises(AssertionError, match="Op1 and Op2 have different base operators."):
+            assert_equal(op1, op2)
+
     def test_exp_comparison_with_tolerance(self):
         """Test that equal compares the parameters within a provided tolerance of the Exp class."""
         op1 = qml.exp(qml.PauliX(0), 0.12)
@@ -1728,6 +1750,10 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
 
+        assert_equal(op1, op2, check_interface=False, check_trainability=False)
+        with pytest.raises(AssertionError, match="Parameters have different interface"):
+            assert_equal(op1, op2, check_interface=True, check_trainability=False)
+
     def test_exp_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the Exp class."""
         op1 = qml.exp(qml.PauliX(0), npp.array(1.2, requires_grad=False))
@@ -1736,6 +1762,10 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
+        assert_equal(op1, op2, check_interface=False, check_trainability=False)
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(op1, op2, check_interface=False, check_trainability=True)
+
     def test_exp_base_op_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the base operator of Exp class."""
         op1 = qml.exp(qml.RX(0.5, wires=0), 1.2)
@@ -1743,6 +1773,10 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+        assert_equal(op1, op2, check_interface=False, check_trainability=False)
+        with pytest.raises(AssertionError, match="Parameters have different interface"):
+            assert_equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_exp_base_op_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the base operator of Exp class."""
