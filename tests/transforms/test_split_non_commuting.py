@@ -198,6 +198,17 @@ class TestUnits:
         assert all(t.shots == tape.shots for t in tapes)
 
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    def test_state_measurement_in_separate_tape(self, grouping_strategy):
+        """Tests that a state measurement is in a separate tape"""
+
+        measurements = [qml.expval(qml.Z(0) @ qml.Z(1)), qml.state()]
+        tape = qml.tape.QuantumScript([qml.X(0), qml.CNOT([0, 1])], measurements, shots=100)
+        tapes, _ = split_non_commuting(tape, grouping_strategy=grouping_strategy)
+        assert len(tapes) == 2
+        assert all(t.operations == [qml.X(0), qml.CNOT([0, 1])] for t in tapes)
+        assert all(t.shots == tape.shots for t in tapes)
+
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
     @pytest.mark.parametrize(
         "make_H",
         [
