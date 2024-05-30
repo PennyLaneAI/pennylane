@@ -3017,7 +3017,7 @@ def enable_new_opmath(warn=True):
     """
     if warn:
         warnings.warn(
-            "Re-enabling the new Operator arithmetic system after disabling it is not advised."
+            "Re-enabling the new Operator arithmetic system after disabling it is not advised. "
             "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
             UserWarning,
         )
@@ -3044,8 +3044,8 @@ def disable_new_opmath(warn=True):
     """
     if warn:
         warnings.warn(
-            "Disabling the new Operator arithmetic system for legacy support."
-            "If you need help troubleshooting your code, please visit"
+            "Disabling the new Operator arithmetic system for legacy support. "
+            "If you need help troubleshooting your code, please visit "
             "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
             UserWarning,
         )
