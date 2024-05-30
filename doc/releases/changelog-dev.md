@@ -21,9 +21,6 @@
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
-* `molecular_dipole` function is added to calculate dipole operator using openfermion and dhf backends.
-  [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
-
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
@@ -86,10 +83,6 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
-* `qml.qchem.Molecule` and qchem functions that take `Molecule` object as an argument now work with coordinates
-  provided in units Angstrom along with Bohr.
-  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
-
 * The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them 
   consistent with the other observables. The `dtype` of the returned values when sampling these observables 
   (e.g. `qml.sample(X(0))`) is also changed to `float`. 
@@ -136,6 +129,9 @@
 * The qchem docs are updated with the new qchem improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+
+* `molecular_dipole` function is added to calculate dipole operator using openfermion and dhf backends.
+  [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
 
 <h4>Community contributions 🥳</h4>
 

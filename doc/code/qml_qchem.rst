@@ -185,7 +185,6 @@ in ``molecular_hamiltonian``:
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-
     molecule = qml.qchem.Molecule(symbols, geometry, charge=0, mult=1, basis_name='sto-3g')
     hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, method='pyscf')
 
