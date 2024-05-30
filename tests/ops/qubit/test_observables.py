@@ -604,7 +604,7 @@ class TestProjector:
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
         assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
-    def test_invalid_basis_state():
+    def test_invalid_basis_state(self):
         """Tests the function with an invalid state."""
         basis_state = [0, 2]  # Invalid basis state
         with pytest.raises(ValueError):
