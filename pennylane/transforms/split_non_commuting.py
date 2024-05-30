@@ -19,7 +19,7 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 # pylint: disable=too-many-arguments
 
 from functools import partial
-from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
