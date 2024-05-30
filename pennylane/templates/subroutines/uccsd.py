@@ -15,11 +15,14 @@ r"""
 Contains the UCCSD template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BasisState
+from pennylane.wires import Wires
 
 
 class UCCSD(Operation):
@@ -191,9 +194,25 @@ class UCCSD(Operation):
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
-        self._hyperparameters = {"init_state": init_state, "s_wires": s_wires, "d_wires": d_wires}
+        self._hyperparameters = {
+            "init_state": tuple(init_state),
+            "s_wires": tuple(tuple(w) for w in s_wires),
+            "d_wires": tuple(tuple(tuple(w) for w in dw) for dw in d_wires),
+        }
 
         super().__init__(weights, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["s_wires"] = tuple(
+            tuple(wire_map.get(w, w) for w in wires) for wires in self._hyperparameters["s_wires"]
+        )
+        new_op._hyperparameters["d_wires"] = tuple(
+            tuple(tuple(wire_map.get(w, w) for w in _wires) for _wires in wires)
+            for wires in self._hyperparameters["d_wires"]
+        )
+        return new_op
 
     @property
     def num_params(self):
