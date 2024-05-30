@@ -64,6 +64,16 @@ class TestTransformProgramGetter:
         with pytest.raises(ValueError, match=r"level bah not recognized."):
             get_transform_program(circuit, level="bah")
 
+    def test_none_value_invalid(self):
+        """Test a value error is raised if a bad string key is provided."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"None is not a valid value for level"):
+            get_transform_program(circuit, level=None)
+
     def test_get_transform_program_gradient_fn_transform(self):
         """Tests for the transform program when the gradient_fn is a transform."""
 
@@ -102,9 +112,9 @@ class TestTransformProgramGetter:
         p_dev = get_transform_program(circuit, level="device")
         assert isinstance(p_grad, TransformProgram)
         p_default = get_transform_program(circuit)
-        p_none = get_transform_program(circuit, None)
+        p_all = get_transform_program(circuit, all)
         assert p_dev == p_default
-        assert p_none == p_dev
+        assert p_all == p_dev
         assert len(p_dev) == 9
         assert p_dev == p_grad + dev.preprocess()[0]
 
@@ -304,7 +314,7 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.parametrize("level", ("device", None))
+    @pytest.mark.parametrize("level", ("device", all))
     def test_device_transforms(self, level):
         """Test that all device transforms can be run with the device keyword."""
 
@@ -320,9 +330,9 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.parametrize("level", ("device", None))
+    @pytest.mark.parametrize("level", ("device", all))
     def test_device_transforms_legacy_interface(self, level):
-        """Test that the device transforms can be selected with level=device or None without trainable parameters"""
+        """Test that the device transforms can be selected with level=device or all without trainable parameters"""
 
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("default.qubit.legacy", wires=2, shots=50))
@@ -347,7 +357,7 @@ class TestConstructBatch:
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
 
     def test_final_transform(self):
-        """Test that the final transform is included when level=None."""
+        """Test that the final transform is included when level=all."""
 
         @qml.gradients.param_shift
         @qml.transforms.merge_rotations
@@ -357,7 +367,7 @@ class TestConstructBatch:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(0.5)
+        batch, fn = construct_batch(circuit, level=all)(0.5)
         assert len(batch) == 2
         expected0 = qml.tape.QuantumScript(
             [qml.RX(1.0 + np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
@@ -427,7 +437,7 @@ class TestConstructBatch:
                 qml.S(0)
             return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(shots=2)
+        batch, fn = construct_batch(circuit, level=all)(shots=2)
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(
             [qml.S(0), qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=100

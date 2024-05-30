@@ -67,14 +67,14 @@ def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformP
     return program
 
 
-def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.TransformProgram":
+def get_transform_program(qnode: "QNode", level=all) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.
 
     Args:
         qnode (QNode): the qnode to get the transform program for.
-        level (None, str, int, slice): And indication of what transforms to use from the full program.
+        level (all, str, int, slice): And indication of what transforms to use from the full program.
 
-            * ``None``: use the full transform program
+            * ``all``: use the full transform program
             * ``str``: Acceptable keys are ``"user"``, ``"device"``, ``"top"`` and ``"gradient"``
             * ``int``: How many transforms to include, starting from the front of the program
             * ``slice``: a slice to select out components of the transform program.
@@ -107,7 +107,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
             def circuit():
                 return qml.expval(qml.Z(0))
 
-        By default, we get the full transform program. This can be manually specified by ``level=None``.
+        By default, we get the full transform program. This can be manually specified by ``level=all``.
 
         >>> qml.workflow.get_transform_program(circuit)
         TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor,
@@ -159,6 +159,10 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         _expand_metric_tensor, merge_rotations, cancel_inverses)
 
     """
+    if level is None:
+        raise ValueError(
+            "None is not a valid value for level. If you want the full transform program, set level=all"
+        )
     full_transform_program = _get_full_transform_program(qnode)
 
     num_user = len(qnode.transform_program)
@@ -167,7 +171,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         num_user -= 1
 
     if level == "device":
-        level = -1 if full_transform_program.has_final_transform else None
+        level = -1 if full_transform_program.has_final_transform else all
     elif level == "top":
         level = 0
     elif level == "user":
@@ -181,19 +185,21 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
-    if level is None or isinstance(level, int):
-        level = slice(0, level)
+
+    if level is all or isinstance(level, int):
+        level = slice(0, None if level is all else level)
+
     return full_transform_program[level]
 
 
-def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") -> Callable:
+def construct_batch(qnode: QNode, level: Union[all, str, int, slice] = "user") -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
-        level (None, str, int, slice): And indication of what transforms to use from the full program.
+        level (all, str, int, slice): And indication of what transforms to use from the full program.
 
-            * ``None``: use the full transform program
+            * ``all``: use the full transform program
             * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
             * ``int``: How many transforms to include, starting from the front of the program
             * ``slice``: a slice to select out components of the transform program.
