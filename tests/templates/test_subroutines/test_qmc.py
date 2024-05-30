@@ -80,6 +80,10 @@ class TestProbsToUnitary:
 class TestFuncToUnitary:
     """Tests for the func_to_unitary function"""
 
+    @staticmethod
+    def func(i):
+        return np.sin(i) ** 2
+
     def test_not_bounded_func(self):
         """Test if a ValueError is raised if a function that evaluates outside of the [0, 1]
         interval is provided"""
@@ -91,9 +95,8 @@ class TestFuncToUnitary:
         """Test for a fixed example if the returned unitary maps input states to the
         expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
         M = 8
-        func = lambda i: np.sin(i) ** 2
 
-        r = func_to_unitary(func, M)
+        r = func_to_unitary(self.func, M)
 
         for i in range(M):
             # The control qubit is the last qubit, so we have to look at every other term
@@ -101,8 +104,8 @@ class TestFuncToUnitary:
             output_state = r[::2][i]
             output_0 = output_state[::2]
             output_1 = output_state[1::2]
-            assert np.allclose(output_0[i], np.sqrt(1 - func(i)))
-            assert np.allclose(output_1[i], np.sqrt(func(i)))
+            assert np.allclose(output_0[i], np.sqrt(1 - self.func(i)))
+            assert np.allclose(output_1[i], np.sqrt(self.func(i)))
 
         assert np.allclose(r @ r.T, np.eye(2 * M))
         assert np.allclose(r.T @ r, np.eye(2 * M))
@@ -115,7 +118,9 @@ class TestFuncToUnitary:
         from jax import numpy as jnp
 
         M = 8
-        func = lambda i: jnp.sin(i) ** 2
+
+        def func(i):
+            return jnp.sin(i) ** 2
 
         r = func_to_unitary(jax.jit(func), M)
 
@@ -137,11 +142,9 @@ class TestFuncToUnitary:
         wire encodes the function."""
         wires = 3
         M = 2**wires
-        func = lambda i: np.sin(i) ** 2
+        r = func_to_unitary(self.func, M)
 
-        r = func_to_unitary(func, M)
-
-        dev = qml.device("default.qubit", wires=(wires + 1))
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def apply_r(input_state):
@@ -151,7 +154,7 @@ class TestFuncToUnitary:
 
         for i, state in enumerate(np.eye(M)):
             p = apply_r(state)[1]
-            assert np.allclose(p, func(i))
+            assert np.allclose(p, self.func(i))
 
 
 def test_V():
@@ -255,22 +258,13 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
-    # pylint: disable=protected-access
-    def test_flatten_unflatten(self):
-        """Test the flatten and unflatten methods."""
+    def test_standard_validity(self):
+        """Test standard validity criteria with assert_valid."""
         p = np.ones(4) / 4
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-
-        data, metadata = op._flatten()
-        assert data is op.data
-        assert metadata[0] == op.wires
-        assert dict(metadata[1]) == op.hyperparameters
-
-        new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
-        assert op is not new_op
+        qml.ops.functions.assert_valid(op)
 
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""
@@ -351,7 +345,8 @@ class TestQuantumMonteCarlo:
         probs = np.array([norm().pdf(x) for x in xs])
         probs /= np.sum(probs)
 
-        func = lambda i: np.cos(xs[i]) ** 2
+        def func(i):
+            return np.cos(xs[i]) ** 2
 
         estimates = []
 
@@ -361,7 +356,7 @@ class TestQuantumMonteCarlo:
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit", wires=(n + m + 1))
+            dev = qml.device("default.qubit")
 
             @qml.qnode(dev)
             def circuit():
@@ -401,7 +396,8 @@ class TestQuantumMonteCarlo:
         probs = jnp.array([norm().pdf(x) for x in xs])
         probs /= jnp.sum(probs)
 
-        func = lambda i: jnp.cos(xs[i]) ** 2
+        def func(i):
+            return jnp.cos(xs[i]) ** 2
 
         estimates = []
 
@@ -411,7 +407,7 @@ class TestQuantumMonteCarlo:
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit", wires=(n + m + 1))
+            dev = qml.device("default.qubit")
 
             @jax.jit
             @qml.qnode(dev, interface="jax")
@@ -447,7 +443,8 @@ class TestQuantumMonteCarlo:
         probs = np.array([norm().pdf(x) for x in xs])
         probs /= np.sum(probs)
 
-        func = lambda i: np.cos(xs[i]) ** 2
+        def func(i):
+            return np.cos(xs[i]) ** 2
 
         n = 10
         N = 2**n
@@ -475,7 +472,9 @@ class TestQuantumMonteCarlo:
         xs = np.linspace(-np.pi, np.pi, 2**5)
         probs = np.array([norm().pdf(x) for x in xs])
         probs /= np.sum(probs)
-        func = lambda i: np.cos(xs[i]) ** 2
+
+        def func(i):
+            return np.cos(xs[i]) ** 2
 
         target_wires = [0, "a", -1.1, -10, "bbb", 1000]
         estimation_wires = ["bob", -3, 42, "penny", "lane", 247, "straw", "berry", 5.5, 6.6]
