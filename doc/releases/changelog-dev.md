@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* A number of templates have been updated to be valid pytrees and PennyLane operations.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
+
 * `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
   [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
@@ -144,6 +147,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
+  operation directly with `qml.apply`.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
+
 * Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
@@ -185,6 +192,12 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
+
+* The decomposition of `AmplitudeAmplification` now correctly queues all operations.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
 * Replaced `semantic_version` with `packaging.version.Version`, since the former cannot
   handle the metadata `.post` in the version string.
