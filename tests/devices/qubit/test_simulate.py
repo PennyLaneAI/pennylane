@@ -428,7 +428,7 @@ class Test_FlexShots:
         assert shot_vector == expected_shot_vector
 
     def test_init_with_other_shots(self):
-        """Test that a new _FlexShots object is not created if the input is a Shots object."""
+        """Test that a new _FlexShots object is not created if the input is a _FlexShots object."""
         shots = _FlexShots(10)
         new_shots = _FlexShots(shots)
         assert new_shots is shots

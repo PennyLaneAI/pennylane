@@ -81,7 +81,7 @@ def test_postselect_mode(postselect_mode, mocker):
         assert len(res) < shots
     else:
         assert len(res) == shots
-        assert np.all(res != np.iinfo(np.int32).min)
+    assert np.all(res != np.iinfo(np.int32).min)
 
 
 @pytest.mark.jax

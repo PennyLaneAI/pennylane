@@ -68,20 +68,19 @@ def _make_execution_config(
         _gradient_method = diff_method
     else:
         _gradient_method = "gradient-transform"
-    grad_on_execution = getattr(circuit, "execute_kwargs", {}).get("grad_on_execution")
+    execute_kwargs = getattr(circuit, "execute_kwargs", {})
+    grad_on_execution = execute_kwargs.get("grad_on_execution")
     if getattr(circuit, "interface", "") == "jax":
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
-    mcm_config = getattr(circuit, "execute_kwargs", {}).get("mcm_config", {})
+    mcm_config = execute_kwargs.get("mcm_config", {})
 
     return qml.devices.ExecutionConfig(
         interface=getattr(circuit, "interface", None),
         gradient_method=_gradient_method,
         grad_on_execution=grad_on_execution,
-        use_device_jacobian_product=getattr(circuit, "execute_kwargs", {"device_vjp": False})[
-            "device_vjp"
-        ],
+        use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
         mcm_config=mcm_config,
     )
 
@@ -219,14 +218,15 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
-            postselection. If ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned. If
-            ``"fill-shots"``, results corresponding to the original number of shots will be returned. For usage details,
-            please refer to the :doc:`main measurements page </introduction/measurements>`.
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
+            ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
+            If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
+            default is ``"hw-like"``. For usage details, please refer to the
+            :doc:`main measurements page </introduction/measurements>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
-            to execute using the deferred measurements principle (applied using the
-            :func:`~pennylane.defer_measurements` transform), or ``"one-shot"`` if using finite shots to execute the
-            circuit for each shot separately. For usage details, please refer to the
+            to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
+            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately. If not provided,
+            the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`main measurements page </introduction/measurements>`.
 
     Keyword Args:
@@ -451,7 +451,7 @@ class QNode:
         cachesize=10000,
         max_diff=1,
         device_vjp=False,
-        postselect_mode=None,
+        postselect_mode="hw-like",
         mcm_method=None,
         **gradient_kwargs,
     ):
@@ -518,6 +518,12 @@ class QNode:
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
         cache = (max_diff > 1) if cache == "auto" else cache
+
+        postselect_mode = postselect_mode or "hw-like"
+        if mcm_method not in ("deferred", "one-shot", None):
+            raise ValueError(f"Invalid mid-circuit measurements method '{mcm_method}'.")
+        if postselect_mode not in ("hw-like", "fill-shots"):
+            raise ValueError(f"Invalid postselection mode '{postselect_mode}'.")
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -1022,14 +1028,14 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        mcm_method = self.execute_kwargs["mcm_config"].get("mcm_method", None)
-        if mcm_method not in ("deferred", "one-shot", None):
+        finite_shots = _get_device_shots if override_shots is False else override_shots
+        if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
             warnings.warn(
-                f"Invalid mid-circuit measurements method '{mcm_method}'. Automatically "
-                "detecting optimal method.",
+                "Cannot use the 'one-shot' method for mid-circuit measurements with "
+                "analytic mode. Using deferred measurements.",
                 UserWarning,
             )
-            mcm_method = self.execute_kwargs["mcm_config"]["mcm_method"] = None
+            self.execute_kwargs["mcm_config"]["mcm_method"] = "deferred"
 
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
@@ -1054,7 +1060,6 @@ class QNode:
         elif hasattr(self.device, "capabilities"):
             full_transform_program.add_transform(
                 qml.defer_measurements,
-                postselect_mode=self.execute_kwargs["mcm_config"]["postselect_mode"],
                 device=self.device,
             )
 

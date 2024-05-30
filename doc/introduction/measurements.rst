@@ -539,14 +539,15 @@ PennyLane. For ease of use, we provide the following configuration options to us
   .. warning::
 
       If the ``mcm_method`` argument is provided, the :func:`~pennylane.defer_measurements` or
-      :func:`~pennylane.dynamic_one_shot` transforms must not be applied directly to a :class:`~pennylane.QNode`
+      :func:`~pennylane.dynamic_one_shot` transforms must not be applied directly to the :class:`~pennylane.QNode`
       as it can lead to incorrect behaviour.
 
 * ``postselect_mode``: To configure how invalid shots are handled when postselecting mid-circuit measurements
   with finite-shot circuits. Use ``postselect_mode="hw-like"`` to discard invalid samples. In this case, the number
-  of samples that are used for processing results will be less than or equal to the total number of shots. If
-  ``postselect_mode="fill-shots"`` is used, then the postselected value will be picked unconditionally, and all
-  samples will be considered valid. The default behaviour is ``postselect_mode="hw-like"``.
+  of samples that are used for processing results can be less than the total number of shots. If
+  ``postselect_mode="fill-shots"`` is used, then the postselected value will be sampled unconditionally, and all
+  samples will be valid. This is equivalent to sampling until the number of valid samples matches the total number
+  of shots. The default behaviour is ``postselect_mode="hw-like"``.
 
   .. code-block:: python3
 

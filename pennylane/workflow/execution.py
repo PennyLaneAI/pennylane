@@ -550,14 +550,6 @@ def execute(
         gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
     )
 
-    if any(not tape.shots for tape in tapes) and config.mcm_config.mcm_method == "one-shot":
-        warnings.warn(
-            "Cannot use the 'one-shot' method for mid-circuit measurements with "
-            "analytic mode. Using deferred measurements.",
-            UserWarning,
-        )
-        config.mcm_config.mcm_method = "deferred"
-
     if transform_program is None:
         if isinstance(device, qml.devices.Device):
             transform_program = device.preprocess(config)[0]

@@ -27,9 +27,10 @@ class MCMConfig:
     mcm_method: Optional[str] = None
     """Which mid-circuit measurement strategy to use. Use ``deferred`` for the deferred
     measurements principle and "one-shot" if using finite shots to execute the circuit
-    for each shot separately."""
+    for each shot separately. If not specified, the device will decide which method to
+    use."""
 
-    postselect_mode: Optional[str] = None
+    postselect_mode: str = "hw-like"
     """Configuration for handling shots with mid-circuit measurement postselection. If
     ``"hw-like"``, invalid shots will be discarded and only results for valid shots will
     be returned. If ``"fill-shots"``, results corresponding to the original number of

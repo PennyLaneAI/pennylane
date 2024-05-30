@@ -1724,19 +1724,31 @@ class TestMCMConfiguration:
         assert spy.call_count != 0
         one_shot_spy.assert_not_called()
 
-    def test_invalid_mcm_method_warning(self):
-        """Test that a warning is raised if the requested mcm_method is invalid"""
+    def test_invalid_mcm_method_error(self):
+        """Test that an error is raised if the requested mcm_method is invalid"""
         shots = 100
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
-        @qml.qnode(dev, mcm_method="foo")
         def f(x):
             qml.RX(x, 0)
             _ = qml.measure(0, postselect=1)
             return qml.sample(wires=[0, 1])
 
-        with pytest.warns(UserWarning, match="Invalid mid-circuit measurements method 'foo'"):
-            _ = f(1.8)
+        with pytest.raises(ValueError, match="Invalid mid-circuit measurements method 'foo'"):
+            _ = qml.QNode(f, dev, mcm_method="foo")
+
+    def test_invalid_postselect_mode_error(self):
+        """Test that an error is raised if the requested postselect_mode is invalid"""
+        shots = 100
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        def f(x):
+            qml.RX(x, 0)
+            _ = qml.measure(0, postselect=1)
+            return qml.sample(wires=[0, 1])
+
+        with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
+            _ = qml.QNode(f, dev, postselect_mode="foo")
 
 
 class TestTapeExpansion:

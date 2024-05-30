@@ -109,13 +109,14 @@ def test_postselection_error_with_wrong_device():
 def test_postselect_mode(postselect_mode, mocker):
     """Test that invalid shots are discarded if requested"""
     shots = 100
+    postselect_value = 1
     dev = qml.device("default.qubit", shots=shots)
     spy = mocker.spy(qml.defer_measurements, "_transform")
 
     @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method="deferred")
     def f(x):
         qml.RX(x, 0)
-        _ = qml.measure(0, postselect=1)
+        _ = qml.measure(0, postselect=postselect_value)
         return qml.sample(wires=[0, 1])
 
     res = f(np.pi / 4)
@@ -125,6 +126,7 @@ def test_postselect_mode(postselect_mode, mocker):
         assert len(res) < shots
     else:
         assert len(res) == shots
+    assert np.allclose(res, postselect_value)
 
 
 @pytest.mark.parametrize(

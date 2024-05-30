@@ -52,8 +52,6 @@ INTERFACE_TO_LIKE = {
 class _FlexShots(qml.measurements.Shots):
     """Shots class that allows zero shots."""
 
-    _frozen = False
-
     # pylint: disable=super-init-not-called
     def __init__(self, shots=None):
         if isinstance(shots, int):
@@ -79,7 +77,6 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
-    postselect_mode = execution_kwargs.get("postselect_mode", None)
 
     # The floor function is being used here so that a norm very close to zero becomes exactly
     # equal to zero so that the state can become invalid. This way, execution can continue, and
@@ -103,7 +100,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
         postselected_shots = (
             [int(binomial_fn(s, float(norm**2))) for s in shots]
-            if postselect_mode in (None, "hw-like") and not qml.math.is_abstract(norm)
+            if not qml.math.is_abstract(norm)
             else shots
         )
 
@@ -130,10 +127,10 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            If None, a ``numpy.random.default_rng`` will be for sampling.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
-            keep the same number of shots.
+            keep the same number of shots. Default is ``"hw-like"``.
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -170,7 +167,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             state, new_shots = _postselection_postprocess(
                 state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
             )
-            circuit._shots = circuit._shots = new_shots
+            circuit._shots = new_shots
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or (op.batch_size is not None)
@@ -201,7 +198,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
-            will be for sampling.
+            will be used for sampling.
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
@@ -269,7 +266,7 @@ def simulate(
         interface (str): The machine learning interface to create the initial state with
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
-            keep the same number of shots.
+            keep the same number of shots. Default is ``"hw-like"``.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -343,7 +340,7 @@ def simulate_one_shot_native_mcm(
         interface (str): The machine learning interface to create the initial state with
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
-            keep the same number of shots.
+            keep the same number of shots. Default is ``"hw-like"``.
 
     Returns:
         tuple(TensorLike): The results of the simulation

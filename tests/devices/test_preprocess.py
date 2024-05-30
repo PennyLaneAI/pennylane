@@ -455,7 +455,7 @@ class TestMidCircuitMeasurements:
         ],
     )
     def test_mcm_method(self, mcm_method, shots, expected_transform, mocker):
-        """Test that the transform adheres to the specified transform"""
+        """Test that the preprocessing transform adheres to the specified transform"""
         dev = qml.device("default.qubit")
         mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
