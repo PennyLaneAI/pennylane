@@ -25,13 +25,8 @@ from .wrapper import tensor_wrapper, wrap_arrays
 
 wrap_arrays(_random.__dict__, globals())
 
-# Define the version requirement
-np_version_spec = SpecifierSet(">=0.17.0")
 
-# Parse the current NumPy version
-np_version = Version(np_version)
-
-if np_version in np_version_spec:
+if Version(np_version) in SpecifierSet(">=0.17.0"):
     # pylint: disable=too-few-public-methods
     # pylint: disable=missing-class-docstring
     class Generator(_random.Generator):
