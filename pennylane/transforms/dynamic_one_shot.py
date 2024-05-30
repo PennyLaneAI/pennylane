@@ -186,6 +186,7 @@ def is_mcm(operation):
     return mcm or "MidCircuitMeasure" in str(type(operation))
 
 
+# pylint: disable=protected-access
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
 
@@ -205,14 +206,19 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
                 new_measurements.append(m)
-    for op in circuit:
+    new_operations = []
+    for op in circuit.operations:
         if isinstance(op, MidMeasureMP):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
         if "MidCircuitMeasure" in str(type(op)):
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
-
+            new_op = op
+            op._override_postselect = True
+            new_operations.append(new_op)
+        else:
+            new_operations.append(op)
     return qml.tape.QuantumScript(
-        circuit.operations,
+        new_operations,
         new_measurements,
         shots=[1] * circuit.shots.total_shots,
         trainable_params=circuit.trainable_params,
@@ -261,7 +267,6 @@ def parse_native_mid_circuit_measurements(
     mid_meas = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = [mcm_samples[:, i : i + 1] for i in range(n_mcms)]
     mcm_samples = dict((k, v) for k, v in zip(mid_meas, mcm_samples))
-
     normalized_meas = []
     m_count = 0
     for m in circuit.measurements:
@@ -287,7 +292,9 @@ def parse_native_mid_circuit_measurements(
                 result = qml.math.array(result, like=interface)
             if active_jit:
                 if isinstance(m, CountsMP):
-                    normalized_meas.append((result[0][0], qml.math.sum(result[1], axis=0)))
+                    normalized_meas.append(
+                        (result[0][0], qml.math.sum(result[1] * is_valid.reshape((-1, 1)), axis=0))
+                    )
                     m_count += 1
                     continue
                 result = qml.math.squeeze(result)
@@ -349,7 +356,8 @@ def gather_non_mcm(circuit_measurement, measurement, is_valid):
             tmp.update(
                 dict((k if isinstance(k, str) else float(k), v * is_valid[i]) for k, v in d.items())
             )
-        tmp = Counter({k: v for k, v in tmp.items() if v > 0})
+        if not circuit_measurement.all_outcomes:
+            tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
     if isinstance(circuit_measurement, ExpectationMP):
         return qml.math.sum(measurement * is_valid) / qml.math.sum(is_valid)

@@ -292,7 +292,7 @@ def test_single_mcm_multiple_measure_obs(postselect, reset):
     @qml.qnode(dev)
     def func(x, y, z):
         obs_tape(x, y, z, reset=reset, postselect=postselect)
-        return qml.counts(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+        return qml.counts(qml.PauliZ(0), all_outcomes=True), qml.expval(qml.PauliY(1))
 
     func1 = func
     func2 = qml.defer_measurements(func)
