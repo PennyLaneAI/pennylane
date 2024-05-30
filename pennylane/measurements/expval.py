@@ -91,9 +91,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    @property
-    def return_type(self):
-        return Expectation
+    return_type = Expectation
 
     @property
     def numeric_type(self):
