@@ -11,20 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains utility functions for building boolean conditionals for noise models"""
+"""Contains utility functions for building boolean conditionals for noise models
+
+Developer note: Conditionals inherit from BooleanFn and store the condition they
+utilize in the ``condition`` attribute.
+"""
 
 from functools import partial
 from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
-from pennylane.wires import Wires
+from pennylane.wires import WireError, Wires
 
 # pylint: disable = unnecessary-lambda, too-few-public-methods
 
 
 class WiresIn(BooleanFn):
-    """A ``Conditional`` for evaluating if a given wire exist in a specified set of wires
+    """A conditional for evaluating if a given wire exist in a specified set of wires.
 
     Args:
         wires (Union[list[int, str], Wires]): sequence of wires for building the wire set.
@@ -35,11 +39,13 @@ class WiresIn(BooleanFn):
     def __init__(self, wires):
         self._cond = set(wires)
         self.condition = self._cond
-        super().__init__(lambda x: _get_wires(x).issubset(self._cond), f"WiresIn({list(wires)})")
+        super().__init__(
+            lambda wire: _get_wires(wire).issubset(self._cond), f"WiresIn({list(wires)})"
+        )
 
 
 class WiresEq(BooleanFn):
-    """A ``Conditional`` for evaluating if a given wire is equal to a specified set of wires
+    """A conditional for evaluating if a given wire is equal to a specified set of wires.
 
     Args:
         wires (Union[list[int, str], Wires]): sequence of wires for building the wire set.
@@ -51,7 +57,7 @@ class WiresEq(BooleanFn):
         self._cond = set(wires)
         self.condition = self._cond
         super().__init__(
-            lambda x: _get_wires(x) == self._cond,
+            lambda wire: _get_wires(wire) == self._cond,
             f"WiresEq({list(wires) if len(wires) > 1 else list(wires)[0]})",
         )
 
@@ -71,14 +77,14 @@ def _get_wires(val):
     """
     iters = val if isinstance(val, (list, tuple, set, Wires)) else getattr(val, "wires", [val])
     try:
-        wires = [[w] if isinstance(w, (int, str)) else getattr(w, "wires").tolist() for w in iters]
-    except TypeError:
+        wires = set().union(*((getattr(w, "wires", None) or Wires(w)).tolist() for w in iters))
+    except (TypeError, WireError):
         raise ValueError(f"Wires cannot be computed for {val}") from None
-    return set(w for wire in wires for w in wire)
+    return wires
 
 
 def wires_in(wires):
-    """Builds a ``Conditional`` as a boolean function for evaluating
+    """Builds a conditional as a boolean function for evaluating
     if a given wire exist in a specified set of wires.
 
     Args:
@@ -86,8 +92,10 @@ def wires_in(wires):
             for building the wire set.
 
     Returns:
-        :class:`WiresIn <pennylane.noise.WiresIn>`: a boolean function
-        which evaluates to ``True`` if a given wire exist in a specified set of wires.
+        :class:`WiresIn <pennylane.noise.conditionals.WiresIn>`: a callable object that
+        accepts an argument ``wire`` and gives a boolean output. It evaluates to ``True``
+        if the wire set constructed from ``wire`` is a subset of the one built from the
+        specified set.
 
     Raises:
         ValueError: if the wire set cannot be computed from ``wires``.
@@ -115,7 +123,7 @@ def wires_in(wires):
 
 
 def wires_eq(wires):
-    """Builds a ``Conditional`` as a boolean function for evaluating
+    """Builds a conditional as a boolean function for evaluating
     if a given wire is equal to specified set of wires.
 
     Args:
@@ -123,8 +131,10 @@ def wires_eq(wires):
             for building the wire set.
 
     Returns:
-        :class:`WiresEq <pennylane.noise.WiresEq>`: a boolean function
-        which evaluates to ``True`` if a given wire is equal to specified set of wires.
+        :class:`WiresEq <pennylane.noise.conditionals.WiresEq>`: a callable object that
+        accepts an argument ``wire`` and gives a boolean output. It evaluates to ``True``
+        if the wire set constructed from ``wire`` is equal to the one built from the
+        specified set.
 
     Raises:
         ValueError: if the wire set cannot be computed from ``wires``.
@@ -142,7 +152,7 @@ def wires_eq(wires):
     Additionally, if an :class:`Operation <pennylane.operation.Operation>` is provided,
     its ``wires`` are extracted and used to build the wire set:
 
-    >>> cond_func = qml.noise.wires_in(qml.RX(1.0, "dino"))
+    >>> cond_func = qml.noise.wires_eq(qml.RX(1.0, "dino"))
     >>> cond_func(qml.RZ(1.23, wires="dino"))
     True
     >>> cond_func("eve")
@@ -152,10 +162,11 @@ def wires_eq(wires):
 
 
 class OpIn(BooleanFn):
-    """A ``Conditional`` for evaluating if a given operation exist in a specified set of operation
+    """A conditional for evaluating if a given operation exist in a specified set of operation.
 
     Args:
-        wires (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
+        ops (Union[str, class, Operation, list[str, class, Operation]]): sequence of operation
+            instances, string representations or classes to build the operation set.
 
     .. seealso:: Users are advised to use :func:`~.op_in` for a functional construction.
     """
@@ -168,44 +179,42 @@ class OpIn(BooleanFn):
             self._check_in_ops, f"OpIn({[getattr(op, '__name__') for op in self._cops]})"
         )
 
-    def _check_in_ops(self, x):
-        x = [x] if not isinstance(x, (list, tuple, set)) else x
+    def _check_in_ops(self, operation):
+        xs = operation if isinstance(operation, (list, tuple, set)) else [operation]
+        cs = _get_ops(xs)
 
         try:
             return all(
                 (
-                    _x in self._cops
-                    if isclass(_x)
-                    else (
-                        isinstance(_x, self._cops)
-                        if not getattr(_x, "arithmetic_depth", 0)
-                        else any(
-                            _check_with_lc_op(op, _x)
-                            for op in self._cond
-                            if not isclass(op) and getattr(op, "arithmetic_depth", 0)
-                        )
+                    c in self._cops
+                    if isclass(x) or not getattr(x, "arithmetic_depth", 0)
+                    else any(
+                        _check_arithmetic_ops(op, x)
+                        for op in self._cond
+                        if getattr(op, "arithmetic_depth", 0)
                     )
                 )
-                for _x in x
+                for x, c in zip(xs, cs)
             )
         except:  # pylint: disable = bare-except # pragma: no cover
             raise ValueError(
-                "OpEq does not support arithmetic operations "
+                "OpIn does not support arithmetic operations "
                 "that cannot be converted to a linear combination"
             ) from None
 
 
 class OpEq(BooleanFn):
-    """A ``Conditional`` for evaluating if a given operation is equal to the specified operation
+    """A conditional for evaluating if a given operation is equal to the specified operation.
 
     Args:
-        wires (Union[str, Operation, list[str, Operation]]): sequence of operations to build the operation set.
+        ops (Union[str, class, Operation]): An operation instance, string representation or
+            class to build the operation set.
 
     .. seealso:: Users are advised to use :func:`~.op_eq` for a functional construction.
     """
 
     def __init__(self, ops):
-        self._cond = ops
+        self._cond = [ops] if not isinstance(ops, (list, tuple, set)) else ops
         self._cops = _get_ops(ops)
         self.condition = self._cops
         cops_names = list(getattr(op, "__name__") for op in self._cops)
@@ -214,19 +223,19 @@ class OpEq(BooleanFn):
             f"OpEq({cops_names if len(cops_names) > 1 else cops_names[0]})",
         )
 
-    def _check_eq_ops(self, x):
-        if not any(not isclass(op) and getattr(op, "arithmetic_depth", 0) for op in self._cond):
-            return _get_ops(x) == self._cops
+    def _check_eq_ops(self, operation):
+        if all(isclass(op) or not getattr(op, "arithmetic_depth", 0) for op in self._cond):
+            return _get_ops(operation) == self._cops
 
         try:
-            return _get_ops(x) == self._cops and (
-                _check_with_lc_op(self._cond[0], x)
-                if len(self._cops) == 1
-                else len(x) == len(self._cond)
+            xs = operation if isinstance(operation, (list, tuple, set)) else [operation]
+            return (
+                len(xs) == len(self._cond)
+                and _get_ops(xs) == self._cops
                 and all(
-                    _check_with_lc_op(_op, _x)
-                    for (_x, _op) in zip(x, self._cond)
-                    if not isclass(_x) and getattr(_x, "arithmetic_depth", 0)
+                    _check_arithmetic_ops(op, x)
+                    for (op, x) in zip(self._cond, xs)
+                    if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
             )
         except:  # pylint: disable = bare-except # pragma: no cover
@@ -242,16 +251,16 @@ def _get_ops(val):
 
     Args:
         val (Union[str, Operation, Iterable]): object to be used
-            for building the wire set.
+            for building the operation set.
 
     Returns:
         tuple[class]: tuple of :class:`Operation <pennylane.operation.Operation>`
         classes corresponding to val.
     """
-    vals = val if isinstance(val, (list, tuple, set, qml.wires.Wires)) else [val]
+    vals = val if isinstance(val, (list, tuple, set)) else [val]
     return tuple(
         (
-            getattr(qml.ops, val)
+            getattr(qml.ops, val, None) or getattr(qml, val)
             if isinstance(val, str)
             else (val if isclass(val) else getattr(val, "__class__"))
         )
@@ -259,10 +268,26 @@ def _get_ops(val):
     )
 
 
-def _check_with_lc_op(op1, op2):
-    """Helper method for comparing two arithmetic operators using their LinearCombination"""
+def _check_arithmetic_ops(op1, op2):
+    """Helper method for comparing two arithmetic operators based on type check of the bases"""
     # pylint: disable = unnecessary-lambda-assignment
-    lc_cop = lambda op: qml.ops.LinearCombination(*qml.simplify(op).terms())
+    lc_cop = lambda op: qml.ops.LinearCombination(*op.terms())
+
+    if isinstance(op1, qml.ops.Exp) or isinstance(op2, qml.ops.Exp):
+        if (
+            not isinstance(op1, type(op2))
+            or (op1.base.arithmetic_depth != op2.base.arithmetic_depth)
+            or not qml.math.allclose(op1.coeff, op2.coeff)
+            or (op1.num_steps != op2.num_steps)
+        ):
+            return False
+        if op1.base.arithmetic_depth:
+            return _check_arithmetic_ops(op1.base, op2.base)
+        return _get_ops(op1.base) == _get_ops(op2.base)
+
+    op1, op2 = qml.simplify(op1), qml.simplify(op2)
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return False
 
     coeffs, op_terms = lc_cop(op1).terms()
     sprods = [_get_ops(getattr(op_term, "operands", op_term)) for op_term in op_terms]
@@ -270,17 +295,18 @@ def _check_with_lc_op(op1, op2):
     def _lc_op(x):
         coeffs2, op_terms2 = lc_cop(x).terms()
         sprods2 = [_get_ops(getattr(op_term, "operands", op_term)) for op_term in op_terms2]
-        present = True
         for coeff, sprod in zip(coeffs2, sprods2):
-            present = sprod in sprods
+            present, p_index = False, -1
+            while sprod in sprods[p_index + 1 :]:
+                p_index = sprods[p_index + 1 :].index(sprod) + (p_index + 1)
+                if qml.math.allclose(coeff, coeffs[p_index]):
+                    coeffs.pop(p_index)
+                    sprods.pop(p_index)
+                    present = True
+                    break
+
             if not present:
                 break
-            p_index = sprods.index(sprod)
-            if not qml.math.equal(coeff, coeffs[p_index]):
-                present = False
-                break
-            coeffs.pop(p_index)
-            sprods.pop(p_index)
 
         return present
 
@@ -288,16 +314,18 @@ def _check_with_lc_op(op1, op2):
 
 
 def op_in(ops):
-    """Builds a ``Conditional`` as a boolean function for evaluating
-    if a given operation exist in a specified set of operation.
+    """Builds a conditional as a boolean function for evaluating
+    if a given operation exist in a specified set of operations.
 
     Args:
-        ops (str, Operation, Union(list[str, Operation])): string
-            representation or instance of the operation.
+        ops (str, class, Operation, Union(list[str, class, Operation])): sequence of string
+            representations, instances or classes of the operation(s).
 
     Returns:
-        :class:`OpIn <pennylane.noise.OpIn>`: a boolean function that evaluates to ``True``, if a
-        given operation exist in a specified set of operation(s), irrespective of their wires.
+        :class:`OpIn <pennylane.noise.conditionals.OpIn>`: A callable object that accepts
+        an ``operation`` and gives a boolean output. It evaluates to ``True``, if the
+        input operation exist in a specified set of operation(s) based on a comparison of
+        the type, irrespective of their wires.
 
     **Example**
 
@@ -327,16 +355,17 @@ def op_in(ops):
 
 
 def op_eq(ops):
-    """Builds a ``Conditional`` as a boolean function for evaluating
+    """Builds a conditional as a boolean function for evaluating
     if a given operation is equal to the specified operation.
 
     Args:
-        ops (str, Operation, Union(list[str, Operation])): string
-            representation or instance of the operation.
+        ops (str, class, Operation): string representation, an instance or class of the operation.
 
     Returns:
-        :class:`OpEq <pennylane.noise.OpEq>`: a boolean function that evaluates to ``True``, if a
-        given operation is equal to the specified set of operation(s), irrespective of their wires.
+        :class:`OpEq <pennylane.noise.conditionals.OpEq>`: A callable object that accepts
+        an ``operation`` and gives a boolean output. It evaluates to ``True``, if the
+        input operation is equal to the specified set of operation(s) based on a comparison
+        of the type, irrespective of their wires.
 
     **Example**
 
@@ -359,7 +388,6 @@ def op_eq(ops):
     >>> cond_func(qml.RY(1.23, wires=["dino"]))
     False
     """
-    ops = [ops] if not isinstance(ops, (list, tuple, set)) else ops
     return OpEq(ops)
 
 
@@ -378,11 +406,11 @@ def partial_wires(operation, *args, **kwargs):
     all argument frozen except ``wires``.
 
     Args:
-        operation (Operation, class): instance of the operation or the class
-            corresponding to operation.
-        args: Positional arguments provided in the case where the keyword argument
+        operation (Operation, class): instance of an operation or the class
+            corresponding to the operation.
+        *args: positional arguments provided in the case where the keyword argument
             ``operation`` is a class for building the partially evaluated instance.
-        kwargs: Keyword arguments for the building the partially evaluated instance.
+        **kwargs: keyword arguments for the building the partially evaluated instance.
             These will override any arguments present in the operation instance or ``args``.
 
     Returns:
@@ -404,7 +432,7 @@ def partial_wires(operation, *args, **kwargs):
     qml.RX(1.2, wires=["wires"])
 
     Additionally, class of :class:`Operation <pennylane.operation.Operation>` can
-    also be provided, while provided required positional arguments via ``args``:
+    also be provided, while providing required positional arguments via ``args``:
 
     >>> func = qml.noise.partial_wires(qml.RX, 3.2, [20])
     >>> func(qml.RY(1.0, [0]))

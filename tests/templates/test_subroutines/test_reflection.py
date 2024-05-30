@@ -27,6 +27,12 @@ def hadamards(wires):
         qml.Hadamard(wires=wire)
 
 
+def test_standard_validity():
+    """Test standard validity criteria using assert_valid."""
+    op = qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0])
+    qml.ops.functions.assert_valid(op)
+
+
 @pytest.mark.parametrize(
     ("prod", "reflection_wires"),
     [
@@ -296,20 +302,3 @@ def test_correct_reflection(state):
     expected = np.array(output[::-1])
 
     assert np.allclose(state, expected)
-
-
-# pylint: disable=protected-access
-def test_flatten_and_unflatten():
-    """Test the _flatten and _unflatten methods for Reflection."""
-
-    op = qml.Reflection(qml.RX(0.25, wires=0), alpha=0.5)
-    data, metadata = op._flatten()
-
-    assert len(data) == 2
-    assert len(metadata) == 1
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
-
-    assert hash(metadata)
