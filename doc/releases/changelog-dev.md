@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
+
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
@@ -242,6 +245,9 @@
 * Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
+* `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
+  [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -262,4 +268,5 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Haochen Paul Wang,
 David Wierichs.
