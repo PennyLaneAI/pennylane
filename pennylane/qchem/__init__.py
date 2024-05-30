@@ -14,15 +14,6 @@
 """
 This subpackage provides the functionality to perform quantum chemistry calculations.
 """
-from .openfermion_obs import (
-    observable,
-    one_particle,
-    two_particle,
-    dipole_of,
-    meanfield,
-    decompose,
-)
-
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
@@ -69,7 +60,7 @@ from .matrices import (
 from .molecule import Molecule
 from .number import particle_number
 from .observable_hf import fermionic_observable, qubit_observable
-from .openfermion_obs import (
+from .openfermion_pyscf import (
     decompose,
     dipole_of,
     meanfield,

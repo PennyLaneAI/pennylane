@@ -564,7 +564,7 @@ def _molecular_hamiltonian(
         return h, 2 * len(active)
 
     if method == "pyscf":
-        core_constant, one_mo, two_mo = qml.qchem.openfermion_obs._pyscf_integrals(
+        core_constant, one_mo, two_mo = qml.qchem.openfermion_pyscf._pyscf_integrals(
             symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
         )
 
@@ -593,7 +593,7 @@ def _molecular_hamiltonian(
 
         return h_pl, len(h_pl.wires)
 
-    h_pl = qml.qchem.openfermion_obs._openfermion_hamiltonian(
+    h_pl = qml.qchem.openfermion_pyscf._openfermion_hamiltonian(
         symbols,
         geometry_hf,
         name,
