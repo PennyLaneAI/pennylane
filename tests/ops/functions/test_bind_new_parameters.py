@@ -493,7 +493,7 @@ def test_conditional_ops(op, new_params, expected_op):
     new_op = bind_new_parameters(cond_op, new_params)
 
     assert isinstance(new_op, qml.ops.Conditional)
-    assert new_op.then_op == expected_op
+    assert new_op.base == expected_op
     assert new_op.meas_val.measurements == [mp0]
 
 

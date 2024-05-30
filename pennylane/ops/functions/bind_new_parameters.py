@@ -244,7 +244,7 @@ def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
 
 @bind_new_parameters.register
 def bind_new_parameters_conditional(op: qml.ops.Conditional, params: Sequence[TensorLike]):
-    then_op = bind_new_parameters(op.then_op, params)
+    then_op = bind_new_parameters(op.base, params)
     mv = copy.deepcopy(op.meas_val)
 
     return qml.ops.Conditional(mv, then_op)
