@@ -13,6 +13,8 @@
 # limitations under the License.
 """This module enables support for log-level messaging throughout PennyLane, following the native Python logging framework interface. Please see the :doc:`PennyLane logging development guidelines</development/guide/logging>`, and the official Python documentation for details on usage https://docs.python.org/3/library/logging.html"""
 
-from .configuration import TRACE, config_path, enable_logging
+from .configuration import TRACE, config_path, edit_system_config, enable_logging
+from .decorators import debug_logger, debug_logger_init
 from .filter import DebugOnlyFilter, LocalProcessFilter
 from .formatters.formatter import DefaultFormatter, SimpleFormatter
+from .utils import _add_logging_all

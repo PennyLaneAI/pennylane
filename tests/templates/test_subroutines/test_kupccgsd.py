@@ -21,45 +21,46 @@ import pytest
 
 import pennylane as qml
 
+k_delta_sz_init_state_wires = [
+    (1, 0, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),
+    (1, -1, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),
+    (2, 1, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),
+    (2, 0, qml.math.array([1, 1, 0, 0, 0, 0]), qml.math.array([0, 1, 2, 3, 4, 5])),
+    (2, 1, qml.math.array([1, 1, 0, 0, 0, 0, 0, 0]), qml.math.array([0, 1, 2, 3, 4, 5, 6, 7])),
+]
+
+
+@pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
+def test_standard_validity(k, delta_sz, init_state, wires):
+    """Test standard validity criteria for kUpCCGSD."""
+    sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))])
+    gen_single_terms_wires = [
+        wires[r : p + 1] if r < p else wires[p : r + 1][::-1]
+        for r in range(len(wires))
+        for p in range(len(wires))
+        if sz[p] - sz[r] == delta_sz and p != r
+    ]
+
+    # wires for generalized pair coupled cluser double exictation terms
+    pair_double_terms_wires = [
+        [wires[r : r + 2], wires[p : p + 2]]
+        for r in range(0, len(wires) - 1, 2)
+        for p in range(0, len(wires) - 1, 2)
+        if p != r
+    ]
+
+    n_excit_terms = len(gen_single_terms_wires) + len(pair_double_terms_wires)
+    weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
+
+    op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
+
+    qml.ops.functions.assert_valid(op)
+
 
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize(
-        ("k", "delta_sz", "init_state", "wires"),
-        [
-            (
-                1,
-                0,
-                qml.math.array([1, 1, 0, 0]),
-                qml.math.array([0, 1, 2, 3]),
-            ),
-            (
-                1,
-                -1,
-                qml.math.array([1, 1, 0, 0]),
-                qml.math.array([0, 1, 2, 3]),
-            ),
-            (
-                2,
-                1,
-                qml.math.array([1, 1, 0, 0]),
-                qml.math.array([0, 1, 2, 3]),
-            ),
-            (
-                2,
-                0,
-                qml.math.array([1, 1, 0, 0, 0, 0]),
-                qml.math.array([0, 1, 2, 3, 4, 5]),
-            ),
-            (
-                2,
-                1,
-                qml.math.array([1, 1, 0, 0, 0, 0, 0, 0]),
-                qml.math.array([0, 1, 2, 3, 4, 5, 6, 7]),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
     def test_kupccgsd_operations(self, k, delta_sz, init_state, wires):
         """Test the correctness of the k-UpCCGSD template including the gate count
         and order, the wires the operation acts on and the correct use of parameters
@@ -345,40 +346,6 @@ class TestDecomposition:
 
         assert gen_singles_wires == generalized_singles_wires
         assert gen_doubles_wires == generalized_pair_doubles_wires
-
-
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Tests the flatten and unflatten methods."""
-    weights = qml.math.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]])
-    wires = qml.wires.Wires((0, 1, 2, 3))
-    init_state = qml.math.array([1, 1, 0, 0])
-    op = qml.kUpCCGSD(
-        weights,
-        wires=wires,
-        k=1,
-        delta_sz=0,
-        init_state=init_state,
-    )
-    data, metadata = op._flatten()
-    assert data == (weights,)
-    assert len(metadata) == 2
-    assert metadata[0] == wires
-    assert metadata[1] == (("k", 1), ("delta_sz", 0), ("init_state", tuple(init_state)))
-
-    # make sure metadata hashable
-    assert hash(metadata)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert op.data == new_op.data
-    assert type(new_op) is type(op)
-    assert op.hyperparameters["s_wires"] == new_op.hyperparameters["s_wires"]
-    assert op.hyperparameters["d_wires"] == new_op.hyperparameters["d_wires"]
-    assert op.hyperparameters["k"] == new_op.hyperparameters["k"]
-    assert op.hyperparameters["delta_sz"] == new_op.hyperparameters["delta_sz"]
-    assert qml.math.allclose(op.hyperparameters["init_state"], new_op.hyperparameters["init_state"])
-
-    assert op is not new_op
 
 
 class TestInputs:

@@ -21,6 +21,13 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+def test_standard_validity():
+    """Test standard validity criteria using assert_valid."""
+    weight = np.pi / 3
+    op = qml.FermionicSingleExcitation(weight, wires=[0, 1, 2])
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
