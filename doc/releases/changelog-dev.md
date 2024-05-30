@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
+
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
