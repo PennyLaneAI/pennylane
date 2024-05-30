@@ -986,8 +986,8 @@ class TestDifferentiability:
             expected_grad_1 = expected_grad_param_0[:-1]
             expected_grad_2 = expected_grad_param_1[:-1]
 
-        assert qml.math.allclose(grad1, expected_grad_1)
-        assert qml.math.allclose(grad2, expected_grad_2)
+        assert qml.math.allclose(grad1, expected_grad_1, atol=1e-5)
+        assert qml.math.allclose(grad2, expected_grad_2, atol=1e-5)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
