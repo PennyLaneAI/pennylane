@@ -18,8 +18,9 @@ Tests for the PrepSelPrep template.
 import copy
 
 import numpy as np
-import pennylane as qml
 import pytest
+
+import pennylane as qml
 from pennylane import numpy as pnp
 
 
