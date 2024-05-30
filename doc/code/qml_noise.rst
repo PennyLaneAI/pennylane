@@ -63,6 +63,8 @@ of custom conditions with the following decorator:
 Callable Constructor
 ^^^^^^^^^^^^^^^^^^^^
 
+.. currentmodule:: pennylane.noise.conditionals
+
 .. autosummary::
     :toctree: api
 
@@ -71,13 +73,15 @@ Callable Constructor
 .. note::
 
     The signature of any user-defined callable must be -
-    ``callable(op: Operation, **kwargs) -> None``, i.e., it accepts
+    ``noise_fn(op: Operation, **kwargs) -> None``, i.e., it accepts
     an operation and some metadata-based keyword arguments. It should
     then let one queue the noisy gates corresponding to that operation
     similar to a quantum function but without returning any measurements.
 
 Conditional Classes
 ^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.noise.conditionals
 
 .. autosummary::
     :toctree: api

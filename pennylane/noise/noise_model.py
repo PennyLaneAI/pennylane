@@ -19,12 +19,22 @@ import pennylane as qml
 
 
 class NoiseModel:
-    """Build a noise model based on ``Conditional``, ``Callable`` and some ``metadata``.
+    """Builds a noise model based on a mapping of conditionals to callables that
+    defines noise operations using some optional metadata.
 
     Args:
-        model_map (dict[Union[~.BooleanFn]->Union[Operation, Channel]]): Model
-            data for the noise model as a ``{conditional: noise_op}`` dictionary.
-        kwargs: Keyword arguments for specifying metadata related to noise model.
+        model_map (dict[Union[~.BooleanFn] -> Union[Callable]]): Data for the
+            noise model as a ``{conditional: noise_fn}`` dictionary. The signature of
+            ``noise_fn`` must be ``noise_fn(op: Operation, **kwargs) -> None``, where
+            ``op`` is the operation that the conditional evaluates and ``kwargs`` are
+            the specified metadata arguments.
+        **kwargs: Keyword arguments for specifying metadata related to noise model.
+
+    .. note::
+
+    In each key-value pair of ``model_map``, the definition of ``noise_fn`` should
+    have the operations in the order in which they are to be queued for an operation
+    ``op``, for which the corresponding ``conditional`` evaluates to ``True``.
 
     **Example**
 
