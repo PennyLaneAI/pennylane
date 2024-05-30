@@ -14,7 +14,7 @@
 """Unit tests for the specs transform"""
 from collections import defaultdict
 from contextlib import nullcontext
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence
 
 import pytest
 
@@ -67,7 +67,7 @@ class TestSpecsTransform:
         assert specs["num_trainable_params"] == 3 if level < 2 else 1
 
     @pytest.mark.parametrize(
-        "level1,level2", [("top", 0), (0, slice(0, 0))]  # (None, slice(0, None))]
+        "level1,level2", [("top", 0), (0, slice(0, 0)), ("user", 3)]  # (None, slice(0, None))]
     )
     def test_equivalent_levels(self, level1, level2):
 
@@ -188,6 +188,34 @@ class TestSpecsTransform:
         assert info["num_diagonalizing_gates"] == 0
         assert info["level"] == "gradient"
 
+    def test_splitting_transforms(self):
+        coeffs = [0.2, -0.543]
+        obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        @qml.transforms.hamiltonian_expand
+        @qml.transforms.merge_rotations
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+        def circuit(x):
+            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+            qml.RX(x, wires=0)
+            qml.RX(-x, wires=0)
+            qml.SWAP((0, 1))
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(H)
+
+        specs_instance = qml.specs(circuit, level=1)(np.array([1.23, -1]))
+
+        assert isinstance(specs_instance, dict)
+
+        specs_list = qml.specs(circuit, level=2)(np.array([1.23, -1]))
+
+        assert len(specs_list) == 2
+
+        assert specs_list[0]["num_diagonalizing_gates"] == 1
+        assert specs_list[0]["num_diagonalizing_gates"] == 3
+
     def make_qnode_and_params(self, initial_expansion_strategy):
         """Generates a qnode and params for use in other tests"""
         n_layers = 2
@@ -261,7 +289,7 @@ class TestSpecsTransform:
         @qml.transforms.core.transform
         def my_transform(
             tape: qml.tape.QuantumTape,
-        ) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
+        ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
             return tape, None
 
         @qml.qnode(dev, diff_method=my_transform)

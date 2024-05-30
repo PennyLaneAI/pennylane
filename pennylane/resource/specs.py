@@ -128,38 +128,43 @@ def specs(qnode, level=None, expansion_strategy=None, max_expansion=None):
 
         # Decide on the final transforms level using precedence of the `or` arguments
         specs_level = (
-            level if level == 0 else level or expansion_strategy or qnode.expansion_strategy
+            level if level == 0 else (level or expansion_strategy or qnode.expansion_strategy)
         )
 
+        infos = []
         batch, _ = qml.workflow.construct_batch(qnode, level=specs_level)(*args, **kwargs)
-        info = batch[0].specs.copy()
 
-        info["num_device_wires"] = len(qnode.device.wires or batch[0].wires)
-        info["num_tape_wires"] = batch[0].num_wires
+        for elem in batch:
+            info = elem.specs.copy()
 
-        info["device_name"] = getattr(qnode.device, "short_name", qnode.device.name)
-        info["level"] = specs_level
-        info["gradient_options"] = qnode.gradient_kwargs
-        info["interface"] = qnode.interface
-        info["diff_method"] = (
-            _get_absolute_import_path(qnode.diff_method)
-            if callable(qnode.diff_method)
-            else qnode.diff_method
-        )
+            info["num_device_wires"] = len(qnode.device.wires or elem.wires)
+            info["num_tape_wires"] = elem.num_wires
 
-        if isinstance(qnode.gradient_fn, qml.transforms.core.TransformDispatcher):
-            info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
+            info["device_name"] = getattr(qnode.device, "short_name", qnode.device.name)
+            info["level"] = specs_level
+            info["gradient_options"] = qnode.gradient_kwargs
+            info["interface"] = qnode.interface
+            info["diff_method"] = (
+                _get_absolute_import_path(qnode.diff_method)
+                if callable(qnode.diff_method)
+                else qnode.diff_method
+            )
 
-            try:
-                info["num_gradient_executions"] = len(qnode.gradient_fn(batch[0])[0])
-            except Exception as e:  # pylint: disable=broad-except
-                # In the case of a broad exception, we don't want the `qml.specs` transform
-                # to fail. Instead, we simply indicate that the number of gradient executions
-                # is not supported for the reason specified.
-                info["num_gradient_executions"] = f"NotSupported: {str(e)}"
-        else:
-            info["gradient_fn"] = qnode.gradient_fn
+            if isinstance(qnode.gradient_fn, qml.transforms.core.TransformDispatcher):
+                info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
 
-        return info
+                try:
+                    info["num_gradient_executions"] = len(qnode.gradient_fn(elem)[0])
+                except Exception as e:  # pylint: disable=broad-except
+                    # In the case of a broad exception, we don't want the `qml.specs` transform
+                    # to fail. Instead, we simply indicate that the number of gradient executions
+                    # is not supported for the reason specified.
+                    info["num_gradient_executions"] = f"NotSupported: {str(e)}"
+            else:
+                info["gradient_fn"] = qnode.gradient_fn
+
+            infos.append(info)
+
+        return infos[0] if len(infos) == 1 else infos
 
     return specs_qnode
