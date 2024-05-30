@@ -170,6 +170,9 @@
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
 
+* `qml.workflow.construct_batch` and `qml.workflow.get_transform_program` do not accept `level=None` anymore. Rather, `level=all` should be used instead.
+  [(#5770)](https://github.com/PennyLaneAI/pennylane/pull/5770)
+
 <h3>Deprecations 👋</h3>
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated. 
