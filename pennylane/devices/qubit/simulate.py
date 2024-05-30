@@ -306,7 +306,7 @@ def simulate(
     if circuit.shots and has_mcm:
         if circuit.shots.total_shots != circuit.shots.num_copies:
             n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
-            if n_mcms > sys.getrecursionlimit():
+            if 2 * n_mcms + 100 > sys.getrecursionlimit():
                 sys.setrecursionlimit(2 * n_mcms + 100)
             return simulate_tree_mcm(circuit, **execution_kwargs)
 
