@@ -21,8 +21,7 @@ from sys import version_info
 
 import numpy as _np
 
-from packaging.version import Version
-from semantic_version import SimpleSpec
+from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
