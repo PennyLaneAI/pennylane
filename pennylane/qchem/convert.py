@@ -118,7 +118,7 @@ def _process_wires(wires, n_wires=None):
     return wires
 
 
-def _openfermion_to_pennylane(qubit_operator, wires=None):
+def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1e-12):
     r"""Convert OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
@@ -177,8 +177,13 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
         *[(coef, _get_op(term, wires)) for term, coef in qubit_operator.terms.items()]
         # example term: ((0,'X'), (2,'Z'), (3,'Y'))
     )
-
-    return np.array(coeffs).real, list(ops)
+    coeffs = np.array(coeffs)
+    # If the imaginary part of the coefficients are smaller than 
+    # the provided tolerance, only keep the real part of the coefficients.
+    if tol and ( np.abs(coeffs.imag) < tol ).all():
+        coeffs = coeffs.real
+    
+    return coeffs, list(ops)
 
 
 def _ps_to_coeff_term(ps, wire_order):

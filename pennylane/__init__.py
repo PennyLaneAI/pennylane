@@ -37,6 +37,7 @@ from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, c
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
+from pennylane.qchem.convert_openfermion import from_openfermion, to_openfermion
 from pennylane.fermi import (
     FermiC,
     FermiA,
