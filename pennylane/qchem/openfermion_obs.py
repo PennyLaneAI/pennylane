@@ -670,6 +670,48 @@ def molecular_dipole(
     cutoff=1.0e-16,
 ):  # pylint:disable=too-many-arguments, too-many-statements
     r"""Generate the dipole moment operator for a molecule in the Pauli basis.
+
+    The dipole operator in the second-quantized form is
+
+    .. math::
+
+        \hat{D} = -\sum_{pq} d_{pq} [\hat{c}_{p\uparrow}^\dagger \hat{c}_{q\uparrow} +
+        \hat{c}_{p\downarrow}^\dagger \hat{c}_{q\downarrow}] -
+        \hat{D}_\mathrm{c} + \hat{D}_\mathrm{n},
+
+    where the matrix elements :math:`d_{pq}` are given by the integral of the position operator
+    :math:`\hat{{\bf r}}` over molecular orbitals :math:`\phi`
+
+    .. math::
+
+        d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
+
+    and :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
+    respectively. The contribution of the core orbitals and nuclei are denoted by
+    :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}`, respectively, which are computed as
+
+    .. math::
+
+        \hat{D}_\mathrm{c} = 2 \sum_{i=1}^{N_\mathrm{core}} d_{ii},
+
+    and
+
+    .. math::
+
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i,
+
+    where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
+    nuclear coordinates of the :math:`i`-th atom of the molecule.
+
+    The fermonic dipole operator is then transformed to the qubit basis which gives
+
+    .. math::
+
+        \hat{D} = \sum_{j} c_j P_j,
+
+    where :math:`c_j` is a numerical coefficient and :math:`P_j` is a ternsor product of
+    single-qubit Pauli operators :math:`X, Y, Z, I`.
+
     Args:
         molecule (~qchem.molecule.Molecule): the molecule object
         method (str): Quantum chemistry method used to solve the
@@ -680,7 +722,7 @@ def molecular_dipole(
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
             are considered to be active.
-        mapping (str): transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian
+        mapping (str): transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian. Input values can be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
         outpath (str): path to the directory containing output files
         wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
             For types ``Wires``/``list``/``tuple``, each item in the iterable represents a wire label
@@ -694,8 +736,8 @@ def molecular_dipole(
 
     Returns:
         list[pennylane.Hamiltonian]: the qubit observables corresponding to the components
-        :math:`\hat{D}_x`, :math:`\hat{D}_y` and :math:`\hat{D}_z` of the dipole operator in
-        atomic units.
+        :math:`\hat{D}_x`, :math:`\hat{D}_y` and :math:`\hat{D}_z` of the dipole operator.
+
 
     """
 
@@ -712,15 +754,11 @@ def molecular_dipole(
     coordinates = molecule.coordinates
 
     if len(coordinates) == len(symbols) * 3:
-        print("1D coordinates")
         geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
-        print(geometry_dhf, geometry_hf)
     elif len(coordinates) == len(symbols):
-        print("2D coordinates")
         geometry_dhf = qml.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
-        print(geometry_dhf, geometry_hf)
 
     if molecule.mult != 1:
         raise ValueError(
