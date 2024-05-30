@@ -487,7 +487,8 @@ class QNode:
             if kwarg in ["gradient_fn", "grad_method"]:
                 warnings.warn(
                     "It appears you may be trying to set the method of differentiation via the "
-                    f"kwarg {kwarg}. This is not supported in qnode and will default to "
+                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
+
                     "backpropogation. Use diff_method instead."
                 )
             elif kwarg == "shots":
