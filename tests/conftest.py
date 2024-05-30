@@ -224,12 +224,6 @@ def new_opmath_only():
         pytest.skip("This feature only works with new opmath enabled")
 
 
-@pytest.fixture
-def legacy_opmath_only():
-    if qml.operation.active_new_opmath():
-        pytest.skip("This test case only tests legacy opmath behaviour")
-
-
 #######################################################################
 
 try:
