@@ -48,7 +48,25 @@ def test_repr():
 class TestPrepSelPrep:
     """Test the correctness of the decomposition"""
 
-    def manual_circuit(self, lcu, control):
+    # Use these LCUs as test input
+    lcu1 = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
+    lcu2 = qml.dot([1 / 2, 1 / 2], [qml.Identity(0), qml.PauliZ(0)])
+
+    a = 0.25
+    b = 0.75
+    A = np.array([[a, 0, 0, b], [0, -a, b, 0], [0, b, a, 0], [b, 0, 0, -a]])
+    decomp = qml.pauli_decompose(A)
+    coeffs, unitaries = decomp.terms()
+    unitaries = [qml.map_wires(op, {0: 1, 1: 2}) for op in unitaries]
+
+    lcu3 = qml.dot(coeffs, unitaries)
+    lcu4 = qml.dot([-0.25, -0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
+    lcu5 = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)])
+    lcu6 = qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)])
+    lcu6 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(1), qml.X(1), qml.X(1)])
+
+    @staticmethod
+    def manual_circuit(lcu, control):
         """Circuit equivalent to decomposition of PrepSelPrep"""
 
         coeffs, unitaries = lcu.terms()
@@ -62,65 +80,65 @@ class TestPrepSelPrep:
 
         return qml.state()
 
-    def prepselprep_circuit(self, lcu, control):
+    @staticmethod
+    def prepselprep_circuit(lcu, control):
         """PrepSelPrep circuit used for testing"""
 
         qml.PrepSelPrep(lcu, control)
         return qml.state()
 
-    def test_decomposition(self):
+    # Use these circuits in tests
+    dev = qml.device("default.qubit")
+    manual = qml.QNode(manual_circuit, dev)
+    prepselprep = qml.QNode(prepselprep_circuit, dev)
+
+    @pytest.mark.parametrize(
+        ("lcu", "control", "produced_matrix", "expected_matrix"),
+        [
+            (
+                lcu1,
+                0,
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
+            (
+                lcu2,
+                "ancilla",
+                qml.matrix(prepselprep, wire_order=[0, "ancilla"]),
+                qml.matrix(manual, wire_order=[0, "ancilla"]),
+            ),
+            (
+                lcu3,
+                0,
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
+            (
+                lcu4,
+                0,
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
+            (
+                lcu5,
+                0,
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
+            (
+                lcu6,
+                0,
+                qml.matrix(prepselprep, wire_order=[0, 1]),
+                qml.matrix(manual, wire_order=[0, 1]),
+            ),
+        ],
+    )
+    def test_decomposition(self, lcu, control, produced_matrix, expected_matrix):
         """Test that the template produces the corrent decomposition"""
 
-        dev = qml.device("default.qubit")
-        manual = qml.QNode(self.manual_circuit, dev)
-        prepselprep = qml.QNode(self.prepselprep_circuit, dev)
-
-        lcu = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
         assert np.array_equal(
-            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
-            qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0),
-        )
-
-        lcu = qml.dot([1 / 2, 1 / 2], [qml.Identity(0), qml.PauliZ(0)])
-        assert np.array_equal(
-            qml.matrix(manual, wire_order=[0, "ancilla"])(lcu, control="ancilla"),
-            qml.matrix(prepselprep, wire_order=[0, "ancilla"])(lcu, control="ancilla"),
-        )
-
-        a = 0.25
-        b = 0.75
-        A = np.array([[a, 0, 0, b], [0, -a, b, 0], [0, b, a, 0], [b, 0, 0, -a]])
-        lcu = qml.pauli_decompose(A)
-        coeffs, unitaries = lcu.terms()
-        unitaries = [qml.map_wires(op, {0: 1, 1: 2}) for op in unitaries]
-        lcu = qml.dot(coeffs, unitaries)
-        assert np.array_equal(
-            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
-            qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0),
-        )
-
-    def test_decomposition_negative_coefficients(self):
-        """Test on an LCU with negative coefficients"""
-        dev = qml.device("default.qubit")
-        manual = qml.QNode(self.manual_circuit, dev)
-        prepselprep = qml.QNode(self.prepselprep_circuit, dev)
-
-        lcu = qml.dot([-0.25, -0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-        assert np.array_equal(
-            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
-            qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0),
-        )
-
-    def test_decomposition_complex_coefficients(self):
-        """Test on an LCU with complex coefficients"""
-        dev = qml.device("default.qubit")
-        manual = qml.QNode(self.manual_circuit, dev)
-        prepselprep = qml.QNode(self.prepselprep_circuit, dev)
-
-        lcu = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)])
-        assert np.array_equal(
-            qml.matrix(manual, wire_order=[0, 1, 2])(lcu, control=0),
-            qml.matrix(prepselprep, wire_order=[0, 1, 2])(lcu, control=0),
+            produced_matrix(lcu, control=control),
+            expected_matrix(lcu, control=control),
         )
 
     def test_copy(self):

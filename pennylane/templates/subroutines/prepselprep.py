@@ -60,7 +60,7 @@ class PrepSelPrep(Operation):
     def __repr__(self):
         return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={self.ops}, control={self.control})"
 
-    def map_wires(self, wire_map: dict) -> "Select":
+    def map_wires(self, wire_map: dict) -> "PrepSelPrep":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
         new_lcu = qml.dot(self.hyperparameters["coeffs"], new_ops)
@@ -79,7 +79,7 @@ class PrepSelPrep(Operation):
         with qml.QueuingManager.stop_recording():
             prep_ops = qml.StatePrep.compute_decomposition(normalized_coeffs, control)
             select_ops = qml.Select.compute_decomposition(ops, control)
-            adjoint_prep_ops = list(map(qml.adjoint, prep_ops))
+            adjoint_prep_ops = qml.adjoint(qml.StatePrep(normalized_coeffs, control)).decomposition()
 
         ops = prep_ops + select_ops + adjoint_prep_ops
         return ops
