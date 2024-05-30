@@ -15,10 +15,12 @@ r"""
 Contains the IQPEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
 from itertools import combinations
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.wires import Wires
 
 
 class IQPEmbedding(Operation):
@@ -185,6 +187,15 @@ class IQPEmbedding(Operation):
         self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
         super().__init__(features, wires=wires, id=id)
+
+    def map_wires(self, wire_map):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["pattern"] = [
+            [wire_map.get(w, w) for w in wires] for wires in new_op._hyperparameters["pattern"]
+        ]
+        return new_op
 
     @property
     def num_params(self):
