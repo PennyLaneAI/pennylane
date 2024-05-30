@@ -34,7 +34,7 @@ def from_openfermion(of_qubit_operator, wires=None, tol=None):
         tol (float): tolerance value to decide whether the imaginary part of the coefficients is retained
 
     Returns:
-        pennylane.ops.LinearCombination: a linear combination of Pauli matrices 
+        pennylane.ops.LinearCombination: a linear combination of Pauli matrices
 
     **Example**
 

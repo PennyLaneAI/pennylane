@@ -180,7 +180,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1e-12):
     coeffs = np.array(coeffs)
     # If the imaginary part of the coefficients are smaller than
     # the provided tolerance, only keep the real part of the coefficients.
-    if tol and ( np.abs(coeffs.imag) < tol ).all():
+    if tol and (np.abs(coeffs.imag) < tol).all():
         coeffs = coeffs.real
 
     return coeffs, list(ops)
