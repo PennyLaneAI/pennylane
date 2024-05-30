@@ -117,7 +117,7 @@ def test_postselect_mode(postselect_mode, mocker):
     def f(x):
         qml.RX(x, 0)
         _ = qml.measure(0, postselect=postselect_value)
-        return qml.sample(wires=[0, 1])
+        return qml.sample(wires=[0])
 
     res = f(np.pi / 4)
     spy.assert_called_once()

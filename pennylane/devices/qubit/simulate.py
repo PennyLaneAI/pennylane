@@ -77,6 +77,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
+    postselect_mode = execution_kwargs.get("postselect_mode", "hw-like")
 
     # The floor function is being used here so that a norm very close to zero becomes exactly
     # equal to zero so that the state can become invalid. This way, execution can continue, and
@@ -99,9 +100,9 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
             binomial_fn = np.random.binomial if rng is None else rng.binomial
 
         postselected_shots = (
-            [int(binomial_fn(s, float(norm**2))) for s in shots]
-            if not qml.math.is_abstract(norm)
-            else shots
+            shots
+            if postselect_mode == "fill-shots" or qml.math.is_abstract(norm)
+            else [int(binomial_fn(s, float(norm**2))) for s in shots]
         )
 
         # _FlexShots is used here since the binomial distribution could result in zero

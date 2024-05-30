@@ -550,6 +550,11 @@ def execute(
         gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
     )
 
+    if interface == "jax-jit" and config.mcm_config.mcm_method == "deferred":
+        # This is a current limitation of defer_measurements. "hw-like" behaviour is
+        # not yet accessible.
+        config.mcm_config.postselect_mode = "fill-shots"
+
     if transform_program is None:
         if isinstance(device, qml.devices.Device):
             transform_program = device.preprocess(config)[0]

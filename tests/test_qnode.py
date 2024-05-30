@@ -1750,6 +1750,39 @@ class TestMCMConfiguration:
         with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
             _ = qml.QNode(f, dev, postselect_mode="foo")
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", [None, "best"])
+    def test_defer_measurements_hw_like_with_jit(self, diff_method, mocker):
+        """Test that using mcm_method="deferred" with postselect_mode="hw-like" defaults
+        to behaviour like postselect_mode="fill-shots" when using jax jit."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        shots = 100
+        postselect = 1
+        param = jax.numpy.array(np.pi / 2)
+        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_transform")
+
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
+
+        @qml.qnode(dev, diff_method=diff_method, postselect_mode="hw-like", mcm_method="deferred")
+        def f(x):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=postselect)
+            return qml.sample(wires=0)
+
+        f_jit = jax.jit(f)
+        res = f(param)
+        res_jit = f_jit(param)
+
+        assert spy.call_count > 0
+        spy_one_shot.assert_not_called()
+
+        assert len(res) < shots
+        assert len(res_jit) == shots
+        assert qml.math.allclose(res, postselect)
+        assert qml.math.allclose(res_jit, postselect)
+
 
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""

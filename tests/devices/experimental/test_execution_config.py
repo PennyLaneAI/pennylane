@@ -36,7 +36,7 @@ def test_default_values():
 def test_mcm_config_default_values():
     """Test that the default values of MCMConfig are correct"""
     mcm_config = MCMConfig()
-    assert mcm_config.postselect_mode is None
+    assert mcm_config.postselect_mode == "hw-like"
     assert mcm_config.mcm_method is None
 
 

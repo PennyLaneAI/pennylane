@@ -152,7 +152,7 @@ class TestBasics:
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
             r" device_options={}, interface=None, derivative_order=1,"
-            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None))>"
+            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode='hw-like'))>"
         )
 
         assert repr(jpc) == expected
@@ -171,7 +171,7 @@ class TestBasics:
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={}, device_options={},"
             r" interface=None, derivative_order=1,"
-            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None))>"
+            r" mcm_config=MCMConfig(mcm_method=None, postselect_mode='hw-like'))>"
         )
 
         assert repr(jpc) == expected
