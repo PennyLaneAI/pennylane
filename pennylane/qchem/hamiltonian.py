@@ -14,18 +14,18 @@
 """
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
+from functools import singledispatch
+
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
+# pylint: disable=protected-access
 import pennylane as qml
 from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify
 
-from functools import singledispatch
-
 from .basis_data import atomic_numbers
-
 from .hartree_fock import nuclear_energy, scf
-from .observable_hf import fermionic_observable, qubit_observable
 from .molecule import Molecule
+from .observable_hf import fermionic_observable, qubit_observable
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
