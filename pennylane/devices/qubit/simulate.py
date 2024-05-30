@@ -543,6 +543,14 @@ def update_mcm_samples(op, samples, mcm_active, mcm_samples):
     If the ``mcm_active`` dictionary is not empty, we need to find which samples are
     corresponding to the current branch by looking at all parent nodes. ``mcm_samples`
     is then updated with samples at indices corresponding to parent nodes.
+
+    To illustrate how the function works, let's take an example. Suppose there are
+    `2**20` shots in total and the computation is midway through the circuit at the
+    7th MCM, the active branch is `[0,1,1,0,0,1]` and each MCM everything happened to
+    split the counts 50/50 so there are `2**24` samples to update.
+    These samples are not contiguous in general and they are correlated with the parent
+    branches, so where do they go? They must update the `2**24` elements whose parent
+    sequence corresponds to `[0,1,1,0,0,1]`.
     """
     if mcm_active:
         shape = next(iter(mcm_samples.values())).shape
