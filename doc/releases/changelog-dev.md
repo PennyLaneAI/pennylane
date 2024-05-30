@@ -111,6 +111,22 @@
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
 
+* The `qml.qchem.Molecule` object is now the central object used by all qchem functions.
+  [(#5571)](https://github.com/PennyLaneAI/pennylane/pull/5571)
+
+* The `qml.qchem.Molecule` class now supports Angstrom as a unit.
+  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
+
+* The `qml.qchem.Molecule` class now supports open-shell systems.
+  [(#5655)](https://github.com/PennyLaneAI/pennylane/pull/5655)
+
+* The `qml.qchem.molecular_hamiltonian` function now supports parity and Bravyi-Kitaev mappings.
+  [(#5657)](https://github.com/PennyLaneAI/pennylane/pull/5657/)
+
+* The qchem docs are updated with the new qchem improvements.
+  [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
+  [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -219,6 +235,7 @@ Gabriel Bottrill,
 Astral Cai,
 Ahmed Darwish,
 Isaac De Vlugt,
+Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 David Ittah,
