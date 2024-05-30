@@ -14,7 +14,6 @@
 """
 This module contains the functions needed to convert OpenFermion ``QubitOperator`` objects to PennyLane ``Sum`` and ``LinearCombination`` and vice versa.
 """
-import numpy as np
 
 import pennylane as qml
 from pennylane.qchem.convert import _openfermion_to_pennylane, _pennylane_to_openfermion
@@ -46,7 +45,7 @@ def from_openfermion(of_qubit_operator, wires=None, tol=None):
     >>> from_openfermion(q_op)
     1.2 * X(0) + 2.4 * Z(1)
     """
-    
+
     coeffs, ops = _openfermion_to_pennylane(of_qubit_operator, wires=wires, tol=tol)
     return qml.ops.LinearCombination(coeffs, ops)
 
@@ -75,7 +74,6 @@ def to_openfermion(pl_linear_combination, wires=None):
     1.2 [X0] +
     2.4 [Z1]
     """
-    
+
     coeffs, ops = pl_linear_combination.terms()
     return _pennylane_to_openfermion(coeffs, ops, wires=wires)
-
