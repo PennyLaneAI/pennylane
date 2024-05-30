@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for converting ``QubitOperator``from OpenFermion to 
+Unit tests for functions needed for converting ``QubitOperator``from OpenFermion to
 PennyLane ``LinearCombination`` and vice versa.
 """
 import pytest

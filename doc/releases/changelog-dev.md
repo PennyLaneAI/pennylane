@@ -141,7 +141,7 @@
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
-* Conversion between ``openfermion.QubitOperator`` and ``qml.LinearCombonation`` has been added.
+* Conversion between ``openfermion.QubitOperator`` and ``qml.ops.LinearCombonation`` has been added.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
 
 <h3>Breaking changes 💔</h3>
