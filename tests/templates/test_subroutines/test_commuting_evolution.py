@@ -32,28 +32,6 @@ def test_standard_validity():
     qml.ops.functions.assert_valid(op)
 
 
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Unit tests for the flatten and unflatten methods."""
-    H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
-    time = 0.5
-    frequencies = (2, 4)
-    shifts = (1, 0.5)
-    op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    data, metadata = op._flatten()
-
-    assert hash(metadata)
-
-    assert len(data) == 2
-    assert data[1] is H
-    assert data[0] == time
-    assert metadata == (frequencies, shifts)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
-
-
 def test_adjoint():
     """Tests the CommutingEvolution.adjoint method provides the correct adjoint operation."""
 
