@@ -14,14 +14,33 @@
 """
 This subpackage provides the functionality to perform quantum chemistry calculations.
 """
+from .openfermion_obs import (
+    observable,
+    one_particle,
+    two_particle,
+    dipole_of,
+    meanfield,
+    decompose,
+)
+
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole
 from .factorization import basis_rotation, factorize
+
 from .givens_decomposition import givens_decomposition
 from .hamiltonian import diff_hamiltonian, electron_integrals, fermionic_hamiltonian
 from .hartree_fock import hf_energy, nuclear_energy, scf
+
+from .hamiltonian import (
+    electron_integrals,
+    fermionic_hamiltonian,
+    diff_hamiltonian,
+    molecular_hamiltonian,
+)
+from .hartree_fock import scf, nuclear_energy, hf_energy
+
 from .integrals import (
     attraction_integral,
     contracted_norm,
@@ -54,7 +73,6 @@ from .openfermion_obs import (
     decompose,
     dipole_of,
     meanfield,
-    molecular_hamiltonian,
     observable,
     one_particle,
     two_particle,
