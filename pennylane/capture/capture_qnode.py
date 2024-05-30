@@ -111,10 +111,13 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
             return 2*expval_z + probs
 
         jaxpr = jax.make_jaxpr(f)(0.1)
-        print("jaxpr: \n", jaxpr)
+        print("jaxpr:")
+        print(jaxpr)
 
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
-        print("\nresult: \n", res)
+        print()
+        print("result:")
+        print(res)
 
 
     .. code-block:: none
@@ -123,7 +126,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         { lambda ; a:f32[]. let
             b:f32[] = mul 3.141592653589793 a
             c:f32[] d:f32[2] = qnode[
-            device=<lightning.qubit device (wires=1) at 0x30755b3d0>
+            device=<lightning.qubit device (wires=1) at 0x107639010>
             qfunc_jaxpr={ lambda ; e:f32[]. let
                 _:AbstractOperator() = RX[n_wires=1] e 0
                 f:AbstractOperator() = PauliZ[n_wires=1] 0
@@ -138,7 +141,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         in (j,) }
 
         result:
-        [Array([-1.08, -0.64], dtype=float32)]
+        [Array([-1.3 , -0.74], dtype=float32)]
 
 
     """
