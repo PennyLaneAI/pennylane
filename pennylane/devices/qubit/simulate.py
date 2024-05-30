@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
+import logging
 import sys
 
 # pylint: disable=protected-access
@@ -23,6 +24,7 @@ import numpy as np
 from numpy.random import default_rng
 
 import pennylane as qml
+from pennylane.logging import debug_logger
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -38,6 +40,9 @@ from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import jax_random_split, measure_with_samples
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
@@ -118,6 +123,7 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_ke
     return state, shots
 
 
+@debug_logger
 def get_final_state(circuit, debugger=None, **execution_kwargs):
     """
     Get the final state that results from executing the given quantum script.
@@ -195,6 +201,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
 
 
 # pylint: disable=too-many-arguments
+@debug_logger
 def measure_final_state(
     circuit, state, is_state_batched, initial_state=None, **execution_kwargs
 ) -> Result:
@@ -263,6 +270,7 @@ def measure_final_state(
     return results
 
 
+@debug_logger
 def simulate(
     circuit: qml.tape.QuantumScript,
     debugger=None,
@@ -675,6 +683,7 @@ def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-arg
     return np.squeeze(np.concatenate(new_sample))
 
 
+@debug_logger
 def simulate_one_shot_native_mcm(
     circuit: qml.tape.QuantumScript, debugger=None, **execution_kwargs
 ) -> Result:

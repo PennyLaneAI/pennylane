@@ -28,6 +28,39 @@ class CaptureMeta(type):
 
     See ``pennylane/capture/explanations.md`` for more detailed information on how this technically
     works.
+
+    .. code-block::
+
+        class AbstractMyObj(jax.core.AbstractValue):
+            pass
+
+        jax.core.raise_to_shaped_mappings[AbstractMyObj] = lambda aval, _: aval
+
+        class MyObj(metaclass=qml.capture.CaptureMeta):
+
+            primitive = jax.core.Primitive("MyObj")
+
+            @classmethod
+            def _primitive_bind_call(cls, a):
+                return cls.primitive.bind(a)
+
+            def __init__(self, a):
+                self.a = a
+
+        @MyObj.primitive.def_impl
+        def _(a):
+            return type.__call__(MyObj, a)
+
+        @MyObj.primitive.def_abstract_eval
+        def _(a):
+            return AbstractMyObj()
+
+    >>> jaxpr = jax.make_jaxpr(MyObj)(0.1)
+    >>> jaxpr
+    { lambda ; a:f32[]. let b:AbstractMyObj() = MyObj a in (b,) }
+    >>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.1)
+    [<__main__.MyObj at 0x17fc3ea50>]
+
     """
 
     @property
