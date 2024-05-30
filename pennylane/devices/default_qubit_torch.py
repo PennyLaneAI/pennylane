@@ -18,12 +18,14 @@ import inspect
 import logging
 import warnings
 
-import semantic_version
+from packaging.version import Version
 
 try:
     import torch
 
-    VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
+    VERSION_SUPPORT = Version(torch.__version__) >= Version(
+        "1.8.1",
+    )
     if not VERSION_SUPPORT:  # pragma: no cover
         raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
