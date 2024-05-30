@@ -186,7 +186,6 @@ def is_mcm(operation):
     return mcm or "MidCircuitMeasure" in str(type(operation))
 
 
-# pylint: disable=protected-access
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
 
@@ -213,7 +212,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
         if "MidCircuitMeasure" in str(type(op)):
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
             new_op = op
-            op._override_postselect = True
+            op.bypass_postselect = True
             new_operations.append(new_op)
         else:
             new_operations.append(op)
