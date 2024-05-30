@@ -34,6 +34,7 @@ requirements = [
     "pennylane-lightning>=0.36",
     "requests",
     "typing_extensions",
+    "packaging",
 ]
 
 info = {
