@@ -599,10 +599,6 @@ class BasisStateProjector(Projector, Operation):
             scipy.sparse.csr_matrix: The sparse CSR matrix representation of the projector.
         """
 
-        # Validate the basis state
-        if any(bit not in [0, 1] for bit in basis_state):
-            raise ValueError("Basis state must only contain 0 or 1.")
-
         num_qubits = len(basis_state)
         data = [1]
         rows = [int("".join(str(bit) for bit in basis_state), 2)]
