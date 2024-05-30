@@ -14,9 +14,11 @@
 r"""
 Contains the Permute template.
 """
+import copy
 
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import SWAP
+from pennylane.wires import Wires
 
 
 class Permute(Operation):
@@ -163,6 +165,15 @@ class Permute(Operation):
 
         self._hyperparameters = {"permutation": tuple(permutation)}
         super().__init__(wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["permutation"] = tuple(
+            wire_map.get(w, w) for w in new_op._hyperparameters["permutation"]
+        )
+        return new_op
 
     @property
     def num_params(self):

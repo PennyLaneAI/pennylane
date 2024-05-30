@@ -21,6 +21,18 @@ quantum-classical programs.
 
     This module is experimental and will change significantly in the future.
 
+.. currentmodule:: pennylane.capture
+
+.. autosummary::
+    :toctree: api
+
+    ~disable
+    ~enable
+    ~enabled
+    ~create_operator_primitive
+    ~create_measurement_obs_primitive
+    ~create_measurement_wires_primitive
+    ~create_measurement_mcm_primitive
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -114,4 +126,17 @@ If needed, developers can also override the implementation method of the primiti
 """
 from .switches import disable, enable, enabled
 from .capture_meta import CaptureMeta
-from .primitives import create_operator_primitive
+from .primitives import (
+    create_operator_primitive,
+    create_measurement_obs_primitive,
+    create_measurement_wires_primitive,
+    create_measurement_mcm_primitive,
+)
+
+
+def __getattr__(key):
+    if key == "AbstractOperator":
+        from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
+
+        return _get_abstract_operator()
+    raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
