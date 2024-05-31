@@ -19,10 +19,7 @@ from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole
 from .factorization import basis_rotation, factorize
-
 from .givens_decomposition import givens_decomposition
-from .hartree_fock import hf_energy, nuclear_energy, scf
-
 from .hamiltonian import (
     electron_integrals,
     fermionic_hamiltonian,
@@ -30,7 +27,6 @@ from .hamiltonian import (
     molecular_hamiltonian,
 )
 from .hartree_fock import scf, nuclear_energy, hf_energy
-
 from .integrals import (
     attraction_integral,
     contracted_norm,
