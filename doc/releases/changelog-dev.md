@@ -118,6 +118,9 @@
   
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
+ 
+* Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow` and `Exp.`
+ [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
 
 <h3>Breaking changes 💔</h3>
 
