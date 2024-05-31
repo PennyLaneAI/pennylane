@@ -132,7 +132,7 @@ class NoiseModel:
 
     @staticmethod
     def check_model(model):
-        """Method to validate the ``model_map`` for constructing a NoiseModel.
+        r"""Method to validate the ``model_map`` for constructing a NoiseModel.
 
         Args:
             model: ``model_map`` or the data for the noise model.
