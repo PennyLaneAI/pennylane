@@ -209,10 +209,10 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     for op in circuit.operations:
         if isinstance(op, MidMeasureMP):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
-        elif "MidCircuitMeasure" in str(type(op)):
+        if "MidCircuitMeasure" in str(type(op)):
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
             new_op = op
-            op.bypass_postselect = True
+            new_op.bypass_postselect = True
             new_operations.append(new_op)
         else:
             new_operations.append(op)
@@ -231,9 +231,9 @@ def parse_native_mid_circuit_measurements(
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
 
     Args:
-        circuit (QuantumTape): A one-shot (auxiliary) QuantumScript
-        all_shot_meas (Sequence[Any]): List of accumulated measurement results
-        mcm_shot_meas (Sequence[dict]): List of dictionaries containing the mid-circuit measurement results of each shot
+        circuit (QuantumTape): The original tape
+        aux_tapes tuple[QuantumTape]: A tuple of transformed tapes
+        results tuple[Sequence[Any]]: A tuple of results with length n-shots
 
     Returns:
         tuple(TensorLike): The results of the simulation

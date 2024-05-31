@@ -26,6 +26,9 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
+  [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
+  
 * The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
   [(#5617)](https://github.com/PennyLaneAI/pennylane/pull/5617)
   
