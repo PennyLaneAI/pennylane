@@ -127,15 +127,24 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
-    def test_supports_adjoint(self):
+    @pytest.mark.parametrize(
+        "device_wires, measurement",
+        [
+            (None, qml.expval(qml.PauliZ(0))),
+            (2, qml.expval(qml.PauliZ(0))),
+            (2, qml.probs()),
+            (2, qml.probs([0])),
+        ],
+    )
+    def test_supports_adjoint(self, device_wires, measurement):
         """Test that DefaultQubit says that it supports adjoint differentiation."""
-        dev = DefaultQubit()
+        dev = DefaultQubit(wires=device_wires)
         config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript([], [measurement])
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
@@ -299,7 +308,7 @@ class TestBasicCircuit:
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
 
         dev = DefaultQubit(max_workers=max_workers)
 
@@ -783,7 +792,7 @@ class TestExecutingBatches:
 
         dev = DefaultQubit(max_workers=max_workers)
 
-        x = tf.Variable(5.2281)
+        x = tf.Variable(5.2281, dtype="float64")
         with tf.GradientTape(persistent=True) as tape:
             results = self.f(dev, x)
 
@@ -905,7 +914,7 @@ class TestSumOfTermsDifferentiability:
 
         dev = DefaultQubit()
 
-        x = tf.Variable(0.5)
+        x = tf.Variable(0.5, dtype="float64")
 
         with tf.GradientTape() as tape1:
             out = self.f(dev, x, style=style)

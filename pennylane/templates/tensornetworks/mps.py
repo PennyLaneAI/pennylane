@@ -174,7 +174,7 @@ class MPS(Operation):
         offset=None,
         id=None,
         **kwargs,
-    ):
+    ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(
             wires=wires,
             n_block_wires=n_block_wires,

@@ -14,14 +14,15 @@
 """
 Integration tests for the capture of PennyLane templates into plxpr.
 """
+import inspect
+
 # pylint: disable=protected-access
 from typing import Any
-import inspect
-import pytest
 
 import numpy as np
-import pennylane as qml
+import pytest
 
+import pennylane as qml
 from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
@@ -186,7 +187,7 @@ unmodified_templates_cases = [
     (
         qml.UCCSD,
         (jnp.ones(3), [2, 3, 0, 1]),
-        {"s_wires": [0, 1], "d_wires": [[2, 3]], "init_state": [0, 1, 1, 0]},
+        {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
 ]
 
@@ -348,7 +349,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.AmplitudeAmplification(U, O, **kwargs)
 
-    @pytest.mark.xfail(reason="Can't initialize BasisRotation with wires kwarg (#5521)")
     def test_basis_rotation(self):
         """Test the primitive bind call of BasisRotation."""
 
@@ -369,12 +369,12 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.BasisRotation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == {"wires": wires, "check": True}
+        assert eqn.params == {"check": True, "id": None}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, mat)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
 
         assert len(q) == 1
         assert q.queue[0] == qml.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
@@ -620,6 +620,36 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.QuantumMonteCarlo(probs, **kwargs)
+
+    def test_qubitization(self):
+        """Test the primitive bind call of Qubitization."""
+
+        hamiltonian = qml.dot([0.5, 1.2, -0.84], [qml.X(2), qml.Hadamard(3), qml.Z(2) @ qml.Y(3)])
+        kwargs = {"hamiltonian": hamiltonian, "control": [0, 1]}
+
+        def qfunc():
+            qml.Qubitization(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.Qubitization._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        assert qml.equal(q.queue[0], qml.Qubitization(**kwargs))
 
     @pytest.mark.parametrize(
         "template, kwargs",

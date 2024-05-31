@@ -16,12 +16,26 @@ Unit tests for the batch transform.
 """
 # pylint: disable=too-few-public-methods,not-callable
 
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
 
 
 class TestMapBatchTransform:
     """Tests for the map_batch_transform function"""
+
+    def test_map_batch_transform_is_deprecated(self):
+        """Test that map_batch_transform is deprecated."""
+        ops = [qml.RX(1.2345, wires=0)]
+        measurements = [qml.expval(qml.Z(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
+        transform = qml.transforms.compile
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="deprecated",
+        ):
+            _ = qml.transforms.map_batch_transform(transform, [tape])
 
     def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
@@ -45,9 +59,13 @@ class TestMapBatchTransform:
 
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
-        tapes, fn = qml.transforms.map_batch_transform(
-            qml.transforms.hamiltonian_expand, [tape1, tape2]
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="deprecated",
+        ):
+            tapes, fn = qml.transforms.map_batch_transform(
+                qml.transforms.hamiltonian_expand, [tape1, tape2]
+            )
 
         spy.assert_called()
         assert len(tapes) == 5
@@ -79,9 +97,13 @@ class TestMapBatchTransform:
                 qml.expval(H + qml.Hamiltonian([0.5], [qml.PauliY(0)]))
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
-            tapes, fn = qml.transforms.map_batch_transform(
-                qml.transforms.hamiltonian_expand, [tape1, tape2]
-            )
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                tapes, fn = qml.transforms.map_batch_transform(
+                    qml.transforms.hamiltonian_expand, [tape1, tape2]
+                )
             res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
             return np.sum(fn(res))
 
