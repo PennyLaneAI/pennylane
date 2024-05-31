@@ -19,6 +19,7 @@ be installed alongside PennyLane:
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
 * `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.11
+* `packaging <https://github.com/pypa/packaging>`_
 
 The following Python packages are optional:
 
