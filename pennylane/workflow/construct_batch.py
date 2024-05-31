@@ -18,6 +18,8 @@ import inspect
 from functools import wraps
 from typing import Callable, Literal, Optional, Tuple, Union
 
+import tensorflow as tf
+
 import pennylane as qml
 
 from .qnode import QNode, _get_device_shots, _make_execution_config
@@ -295,6 +297,21 @@ def construct_batch(
             shots = _get_device_shots(qnode.device)
         else:
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
+
+        if isinstance(qnode, qml.qnn.KerasLayer):
+            with tf.GradientTape() as tape:
+                tape.watch(list(qnode.qnode_weights.values()))
+
+                kwargs = {
+                    **{k: 1.0 * w for k, w in qnode.qnode_weights.items()},
+                    **kwargs,
+                }
+
+        if isinstance(qnode, qml.qnn.TorchLayer):
+            x = args[0]
+            kwargs = {
+                **{arg: weight.data.to(x) for arg, weight in qnode.qnode_weights.items()},
+            }
 
         initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
 
