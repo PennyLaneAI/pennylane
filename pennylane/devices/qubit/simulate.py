@@ -567,7 +567,14 @@ def update_mcm_samples(op, samples, mcm_active, mcm_samples):
 
 
 def circuit_up_to_first_mcm(circuit):
-    """Returns two circuits; one that runs up-to the next mid-circuit measurement and one that runs beyond it."""
+    """Returns two circuits; one that runs up-to the next mid-circuit measurement and one that runs beyond it.
+
+    Measurement processes are computed on each branch, and then combined at the node.
+    This can be done recursively until a single node is left.
+    This is true for `counts`, `expval`, `probs` and `sample` but not `var` measurements.
+    There is no way to recombine "partial variances" from two branches, so `var` measurements are replaced
+    by `sample` measurements from which the variance is calculated (once samples from all branches are available).
+    """
     if not has_mid_circuit_measurements(circuit):
         return circuit, None, None
 
