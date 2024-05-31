@@ -127,15 +127,24 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
-    def test_supports_adjoint(self):
+    @pytest.mark.parametrize(
+        "device_wires, measurement",
+        [
+            (None, qml.expval(qml.PauliZ(0))),
+            (2, qml.expval(qml.PauliZ(0))),
+            (2, qml.probs()),
+            (2, qml.probs([0])),
+        ],
+    )
+    def test_supports_adjoint(self, device_wires, measurement):
         """Test that DefaultQubit says that it supports adjoint differentiation."""
-        dev = DefaultQubit()
+        dev = DefaultQubit(wires=device_wires)
         config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript([], [measurement])
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True

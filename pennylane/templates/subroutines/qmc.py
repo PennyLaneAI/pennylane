@@ -15,11 +15,14 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 # pylint: disable=too-many-arguments
+import copy
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import QubitUnitary
+from pennylane.wires import Wires
 
 
 def probs_to_unitary(probs):
@@ -342,6 +345,10 @@ class QuantumMonteCarlo(Operation):
     grad_method = None
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
         new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
@@ -363,8 +370,8 @@ class QuantumMonteCarlo(Operation):
                 "The probability distribution must have a length that is a power of two"
             )
 
-        target_wires = list(target_wires)
-        estimation_wires = list(estimation_wires)
+        target_wires = tuple(target_wires)
+        estimation_wires = tuple(estimation_wires)
         wires = target_wires + estimation_wires
 
         if num_target_wires != len(target_wires):
@@ -379,6 +386,16 @@ class QuantumMonteCarlo(Operation):
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
         super().__init__(A, R, Q, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        for key in ["estimation_wires", "target_wires"]:
+            new_op._hyperparameters[key] = tuple(
+                wire_map.get(w, w) for w in self._hyperparameters[key]
+            )
+        return new_op
 
     @property
     def num_params(self):

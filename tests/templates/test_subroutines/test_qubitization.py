@@ -106,7 +106,7 @@ def test_operator_definition_qpe(hamiltonian):
     peaks, _ = find_peaks(circuit(theta))
 
     # Calculates the eigenvalues from the obtained output
-    lamb = sum([abs(c) for c in hamiltonian.terms()[0]])
+    lamb = sum(abs(c) for c in hamiltonian.terms()[0])
     estimated_eigenvalues = lamb * np.cos(2 * np.pi * peaks / 2**8)
 
     assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
