@@ -69,10 +69,10 @@ class PrepSelPrep(Operation):
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
-        return self.compute_decomposition(self.lcu, self.control, self.target_wires)
+        return self.compute_decomposition(self.lcu, self.control)
 
     @staticmethod
-    def compute_decomposition(lcu, control, target):
+    def compute_decomposition(lcu, control):
         new_coeffs = []
         new_ops = []
         for coeff, op in zip(*lcu.terms()):
@@ -106,10 +106,8 @@ class PrepSelPrep(Operation):
             pow2 = 2**math.ceil(math.log2(len(new_coeffs)))
 
         pad_zeros = list(itertools.repeat(0, pow2 - len(new_coeffs)))
-        pad_ident = list(itertools.repeat(qml.Identity(target[0]), pow2 - len(new_ops)))
 
         new_coeffs = new_coeffs + pad_zeros
-        new_ops = new_ops + pad_ident
         normalized_coeffs = qml.math.sqrt(new_coeffs) / qml.math.norm(qml.math.sqrt(new_coeffs))
 
         with qml.QueuingManager.stop_recording():
