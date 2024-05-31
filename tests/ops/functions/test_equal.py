@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
+from pennylane.operation import Operator
 from pennylane.ops.functions.equal import _equal, assert_equal
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
@@ -350,35 +351,62 @@ class TestEqual:
     def test_equal_simple_diff_op(self, ops):
         """Test different operators return False"""
         assert not qml.equal(ops[0], ops[1], check_trainability=False, check_interface=False)
+        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+            assert_equal(ops[0], ops[1], check_trainability=False, check_interface=False)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
     def test_equal_simple_same_op(self, op1):
         """Test same operators return True"""
         assert qml.equal(op1, op1, check_trainability=False, check_interface=False)
+        assert_equal(op1, op1, check_trainability=False, check_interface=False)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
     def test_equal_simple_op_1p1w(self, op1):
         """Test changing parameter or wire returns False"""
         wire = 0
         param = 0.123
+        test_operator = op1(param, wires=wire)
         assert qml.equal(
-            op1(param, wires=wire),
-            op1(param, wires=wire),
+            test_operator,
+            test_operator,
             check_trainability=False,
             check_interface=False,
         )
+        assert_equal(
+            test_operator,
+            test_operator,
+            check_trainability=False,
+            check_interface=False,
+        )
+
+        test_operator_diff_parameter = op1(param * 2, wires=wire)
         assert not qml.equal(
-            op1(param, wires=wire),
-            op1(param * 2, wires=wire),
+            test_operator,
+            test_operator_diff_parameter,
             check_trainability=False,
             check_interface=False,
         )
+        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+            assert_equal(
+                test_operator,
+                test_operator_diff_parameter,
+                check_trainability=False,
+                check_interface=False,
+            )
+        test_operator_diff_wire = op1(param, wires=wire + 1)
         assert not qml.equal(
-            op1(param, wires=wire),
-            op1(param, wires=wire + 1),
+            test_operator,
+            test_operator_diff_wire,
             check_trainability=False,
             check_interface=False,
         )
+        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+            assert_equal(
+                test_operator,
+                test_operator_diff_wire,
+                check_trainability=False,
+                check_interface=False,
+            )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
@@ -425,6 +453,14 @@ class TestEqual:
             check_trainability=True,
             check_interface=False,
         )
+
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_2W)
@@ -1006,6 +1042,15 @@ class TestEqual:
             check_trainability=False,
             check_interface=False,
         )
+        with pytest.raises(
+            AssertionError, match="The hyperparameter is not equal for op1 and op2."
+        ):
+            assert_equal(
+                op1(param, "Y", wires=wire),
+                op1(param, "Z", wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
 
         wire = 0
         param = np.eye(2) * 1j
@@ -1154,11 +1199,32 @@ class TestEqual:
             check_interface=False,
         )
 
+        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+            assert_equal(
+                op1(pl_tensor, wires=wire),
+                op1(torch_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=True,
+            )
+
     def test_equal_with_different_arithmetic_depth(self):
         """Test equal method with two operators with different arithmetic depth."""
-        op1 = qml.RX(0.3, wires=0)
-        op2 = qml.prod(op1, qml.RY(0.25, wires=1))
-        assert not qml.equal(op1, op2)
+
+        class DepthIncreaseOperator(Operator):
+            def __init__(self, op: Operator):
+                self._op = op
+
+            @property
+            def arithmetic_depth(self) -> int:
+                """Arithmetic depth of the operator."""
+                return 1 + self._op.arithmetic_depth
+
+        op1 = Operator(wires=0)
+        op2 = DepthIncreaseOperator(op1)
+
+        assert qml.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths"):
+            assert_equal(op1, op2)
 
     def test_equal_with_unsupported_nested_operators_returns_false(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) returns
@@ -1172,6 +1238,8 @@ class TestEqual:
         assert op1.arithmetic_depth > 0
 
         assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="op1 and op2 have arithmetic depth > 0"):
+            assert_equal(op1, op2)
 
     # Measurements test cases
     @pytest.mark.parametrize("ops", PARAMETRIZED_MEASUREMENTS_COMBINATIONS)
