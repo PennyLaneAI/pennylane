@@ -102,6 +102,7 @@
 * PennyLane operators and measurements can now automatically be captured as instructions in JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+  [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
@@ -191,6 +192,9 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
+  [(#5761)](https://github.com/PennyLaneAI/pennylane/pull/5761)
 
 * `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
