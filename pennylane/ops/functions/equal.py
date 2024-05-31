@@ -400,18 +400,18 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
 @_equal.register
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
-    # work wires and control_wire/control_value combinations compared here
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+
     # op.base.wires compared in return
-    if [
-        dict(zip(op1.control_wires, op1.control_values)),
-        op1.work_wires,
-        op1.arithmetic_depth,
-    ] != [
-        dict(zip(op2.control_wires, op2.control_values)),
-        op2.work_wires,
-        op2.arithmetic_depth,
-    ]:
-        return False
+    if op1.work_wires != op2.work_wires:
+        return f"op1 and op2 have different work wires. Got {op1.work_wires} and {op2.work_wires}"
+
+    # work wires and control_wire/control_value combinations compared here
+    op1_control_dict = dict(zip(op1.control_wires, op1.control_values))
+    op2_control_dict = dict(zip(op2.control_wires, op2.control_values))
+    if op1_control_dict != op2_control_dict:
+        return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
 
     return qml.equal(op1.base, op2.base, **kwargs)
 

@@ -1641,7 +1641,15 @@ class TestSymbolicOpComparison:
         op1 = qml.ops.op_math.Controlled(base1, control_wires=[1, 2], control_values=controls1)
         op2 = qml.ops.op_math.Controlled(base2, control_wires=[1, 2], control_values=controls2)
 
-        assert qml.equal(op1, op2) == np.allclose(controls1, controls2)
+        if np.allclose(controls1, controls2):
+            assert qml.equal(op1, op2)
+            assert_equal(op1, op2)
+        else:
+            assert not qml.equal(op1, op2)
+            with pytest.raises(
+                AssertionError, match="op1 and op2 have different control dictionaries."
+            ):
+                assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         ("wires1", "controls1", "wires2", "controls2", "res"),
@@ -1678,7 +1686,22 @@ class TestSymbolicOpComparison:
         base2 = qml.MultiRZ(1.23, [0, 1])
         op1 = Controlled(base1, control_wires=2, work_wires=wire1)
         op2 = Controlled(base2, control_wires=2, work_wires=wire2)
-        assert qml.equal(op1, op2) == res
+        if res:
+            assert qml.equal(op1, op2) == res
+            assert_equal(op1, op2)
+        else:
+            assert not qml.equal(op1, op2)
+            with pytest.raises(AssertionError, match="op1 and op2 have different work wires."):
+                assert_equal(op1, op2)
+
+    def test_controlled_arithmetic_depth(self):
+        """The depths of controlled operators are different due to nesting"""
+        base = qml.MultiRZ(1.23, [0, 1])
+        op1 = Controlled(base, control_wires=5)
+        op2 = Controlled(op1, control_wires=6)
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths."):
+            assert_equal(op1, op2)
 
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_adjoint_comparison(self, base):
