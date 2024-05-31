@@ -1749,6 +1749,14 @@ class TestSymbolicOpComparison:
         op2 = qml.pow(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
+    def test_diff_pow_comparison(self):
+        """Test different exponents"""
+        base = qml.PauliX(0)
+        op1 = qml.pow(base, 0.2)
+        op2 = qml.pow(base, 0.3)
+        with pytest.raises(AssertionError, match="Exponent are different."):
+            assert_equal(op1, op2)
+
     def test_pow_comparison_with_tolerance(self):
         """Test that equal compares the parameters within a provided tolerance of the Pow class."""
         op1 = qml.pow(qml.RX(1.2, wires=0), 2)
@@ -1766,6 +1774,8 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+        with pytest.raises(AssertionError, match="Exponent have different interfaces.\n"):
+            assert_equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_pow_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the Pow class."""
@@ -1774,6 +1784,8 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+        with pytest.raises(AssertionError, match="Exponent have different trainability.\n"):
+            assert_equal(op1, op2, check_interface=True, check_trainability=True)
 
     def test_pow_base_op_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the base operator of Pow class."""

@@ -435,14 +435,24 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     check_interface, check_trainability = kwargs["check_interface"], kwargs["check_trainability"]
 
     if check_interface:
-        if qml.math.get_interface(op1.z) != qml.math.get_interface(op2.z):
-            return False
+        interface1 = qml.math.get_interface(op1.z)
+        interface2 = qml.math.get_interface(op2.z)
+        if interface1 != interface2:
+            return (
+                "Exponent have different interfaces.\n"
+                f"{op1.z} interface is {interface1} and {op2.z} interface is {interface2}"
+            )
     if check_trainability:
-        if qml.math.requires_grad(op1.z) != qml.math.requires_grad(op2.z):
-            return False
+        grad1 = qml.math.requires_grad(op1.z)
+        grad2 = qml.math.requires_grad(op2.z)
+        if grad1 != grad2:
+            return (
+                "Exponent have different trainability.\n"
+                f"{op1.z} interface is {grad1} and {op2.z} interface is {grad2}"
+            )
 
     if op1.z != op2.z:
-        return False
+        return f"Exponent are different. Got {op1.z} and {op2.z}"
 
     return qml.equal(op1.base, op2.base, **kwargs)
 
