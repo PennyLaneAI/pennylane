@@ -72,42 +72,58 @@ class PrepSelPrep(Operation):
         return self.compute_decomposition(self.lcu, self.control)
 
     @staticmethod
-    def compute_decomposition(lcu, control):
+    def preprocess_lcu(lcu):
+        """Convert LCU into an equivalent form with positive real coefficients,
+        and a power of 2 number of terms"""
         new_coeffs = []
         new_ops = []
+
         for coeff, op in zip(*lcu.terms()):
-            if qml.math.iscomplex(coeff):
-                real = qml.math.real(coeff)
-                if real < 0:
-                    new_coeffs.append((-1)*real)
-                    new_ops.append((-1)*op)
-                if real > 0:
-                    new_coeffs.append(real)
-                    new_ops.append(op)
+            real = qml.math.real(coeff)
+            sign = qml.math.sign(real)
+            new_coeffs.append(sign*real)
+            new_op = qml.ops.LinearCombination([sign], [op])
+            new_ops.append(new_op)
 
-                imag = qml.math.imag(coeff)
-                if imag < 0:
-                    new_coeffs.append((-1)*imag)
-                    new_ops.append((-1j)*op)
-                if imag > 0:
-                    new_coeffs.append(imag)
-                    new_ops.append((1j)*op)
-            else:
-                if coeff < 0:
-                    new_coeffs.append((-1)*coeff)
-                    new_ops.append((-1)*op)
-                else:
-                    new_coeffs.append(coeff)
-                    new_ops.append(op)
+            imag = qml.math.imag(coeff)
+            sign = qml.math.sign(imag)
+            new_coeffs.append(sign*imag)
+            new_op = qml.ops.LinearCombination([1j*sign], [op])
+            new_ops.append(new_op)
 
-        if (len(new_coeffs) & (len(new_coeffs)-1) == 0) and len(new_coeffs) != 0:
-            pow2 = len(new_coeffs)
+
+        keep_coeffs = []
+        keep_ops = []
+
+        for coeff, op in zip(new_coeffs, new_ops):
+            if not qml.math.allclose(op.terms()[0], 0):
+                keep_coeffs.append(coeff)
+                keep_ops.append(op)
+
+        final_ops = []
+        for op in keep_ops:
+            if len(op.wires) == 0:
+                continue
+
+            unitary = qml.QubitUnitary(qml.matrix(op), wires=op.wires)
+            final_ops.append(unitary)
+
+        if (len(keep_coeffs) & (len(keep_coeffs)-1) == 0) and len(keep_coeffs) != 0:
+            pow2 = len(keep_coeffs)
         else:
-            pow2 = 2**math.ceil(math.log2(len(new_coeffs)))
+            pow2 = 2**math.ceil(math.log2(len(keep_coeffs)))
 
-        pad_zeros = list(itertools.repeat(0, pow2 - len(new_coeffs)))
+        pad_zeros = list(itertools.repeat(0, pow2 - len(keep_coeffs)))
 
-        new_coeffs = new_coeffs + pad_zeros
+        interface_coeffs = qml.math.get_interface(lcu.terms()[0])
+        final_coeffs = qml.math.array(keep_coeffs + pad_zeros, like=interface_coeffs)
+
+        return final_coeffs, final_ops
+
+
+    @staticmethod
+    def compute_decomposition(lcu, control):
+        new_coeffs, new_ops = PrepSelPrep.preprocess_lcu(lcu)
         normalized_coeffs = qml.math.sqrt(new_coeffs) / qml.math.norm(qml.math.sqrt(new_coeffs))
 
         with qml.QueuingManager.stop_recording():
