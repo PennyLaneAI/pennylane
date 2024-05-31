@@ -16,6 +16,7 @@ This module contains the functions needed to convert OpenFermion ``QubitOperator
 """
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.qchem.convert import _openfermion_to_pennylane, _pennylane_to_openfermion
 
 
@@ -77,4 +78,4 @@ def to_openfermion(pl_linear_combination, wires=None, tol=None):
     """
 
     coeffs, ops = pl_linear_combination.terms()
-    return _pennylane_to_openfermion(coeffs, ops, wires=wires, tol=tol)
+    return _pennylane_to_openfermion(np.array(coeffs), ops, wires=wires, tol=tol)

@@ -621,7 +621,7 @@ class _SumSummandsGrouping:
         for coeff, summand in self.queue.values():
             if coeff == 1:
                 new_summands.append(summand)
-            elif abs(coeff.real) > cutoff or abs(coeff.imag) > cutoff:
+            elif abs(coeff) > cutoff:
                 new_summands.append(qml.s_prod(coeff, summand))
 
         return new_summands

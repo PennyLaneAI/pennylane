@@ -69,7 +69,7 @@ def test_to_openfermion():
 
 def test_to_openfermion_tol():
     """Test the to_openfermion function with complex coefficients."""
-    pl_linear_combination = complex(1.2, 1e-08) * qml.X(0) + (2.4, 1e-08) * qml.Z(1)
+    pl_linear_combination = complex(1.2, 1e-08) * qml.X(0) + complex(2.4, 1e-08) * qml.Z(1)
 
     # The method should discard the imaginary part of the coefficients.
     q_op = qml.to_openfermion(pl_linear_combination, tol=1e-6)
@@ -78,7 +78,7 @@ def test_to_openfermion_tol():
     assert ~np.any(coeffs.imag)
 
     # The method should not discard the imaginary part of the coefficients.
-    q_op = qml.to_openfermion(q_op, tol=1e-10)
+    q_op = qml.to_openfermion(pl_linear_combination, tol=1e-10)
     coeffs = np.array(list(q_op.terms.values()))
     # Check whether coefficients do contain imaginary part since imaginary part exceeds treshold.
     assert np.any(coeffs.imag)
