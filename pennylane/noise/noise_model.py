@@ -23,7 +23,7 @@ class NoiseModel:
     defines noise operations using some optional metadata.
 
     Args:
-        model_map (dict[Union[~.BooleanFn, Conditional] -> Callable]): Data for the
+        model_map (dict[~.BooleanFn -> Callable]): Data for the
             noise model as a ``{conditional: noise_fn}`` dictionary. The signature of
             ``noise_fn`` must be ``noise_fn(op: Operation, **kwargs) -> None``, where
             ``op`` is the operation that the conditional evaluates and ``kwargs`` are
@@ -35,9 +35,9 @@ class NoiseModel:
         For each key-value pair of ``model_map``:
 
         - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
-          a callable object built via the constructor functions (:func:`pennylane.noise.op_eq`,
-          :func:`pennylane.noise.op_in`, :func:`pennylane.noise.wires_eq`, and
-          :func:`pennylane.noise.wires_in`), or their bit-wise combination.
+          a callable object built via the constructor functions (:func:`~.pennylane.noise.op_eq`,
+          :func:`~.pennylane.noise.op_in`, :func:`~.pennylane.noise.wires_eq`, and
+          :func:`~.pennylane.noise.wires_in`), or their bit-wise combination.
         - Defintion of ``noise_fn(op, **kwargs)`` should have the operations in same the order
           in which they are to be queued for an operation ``op``, whenever the corresponding
           ``conditional`` evaluates to ``True``.
@@ -132,16 +132,14 @@ class NoiseModel:
 
     @staticmethod
     def check_model(model):
-        """Class method to validate the ``model_map`` for constructing a NoiseModel.
+        """Method to validate the ``model_map`` for constructing a NoiseModel.
 
         Args:
-            model: ``model_map`` or the data for the noise model
+            model: ``model_map`` or the data for the noise model.
 
         Raises:
-            ValueError: if any of the conditional in ``model`` is not an instance of
-                BooleanFn or one of its subclasses
-            ValueError: if any callables in ``model`` does not accept **kwargs as
-                their last argument.
+            ValueError: if any conditional in ``model`` is not an instance of BooleanFn or its subclasses.
+            ValueError: if any callables in ``model`` does not accept **kwargs as their last argument.
         """
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
