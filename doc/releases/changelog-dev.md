@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added `packaging` in the required list of packages.
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
+
 * Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
   [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
 
@@ -23,6 +26,9 @@
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+
+* `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
+  [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
@@ -102,6 +108,7 @@
 * PennyLane operators and measurements can now automatically be captured as instructions in JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+  [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
@@ -188,6 +195,12 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* Disable Docker builds on PR merge.
+  [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
+
+* The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
+  [(#5761)](https://github.com/PennyLaneAI/pennylane/pull/5761)
 
 * `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
