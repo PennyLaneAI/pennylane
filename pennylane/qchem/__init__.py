@@ -21,7 +21,6 @@ from .dipole import dipole_integrals, dipole_moment, fermionic_dipole
 from .factorization import basis_rotation, factorize
 
 from .givens_decomposition import givens_decomposition
-from .hamiltonian import diff_hamiltonian, electron_integrals, fermionic_hamiltonian
 from .hartree_fock import hf_energy, nuclear_energy, scf
 
 from .hamiltonian import (
