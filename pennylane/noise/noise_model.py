@@ -59,7 +59,7 @@ class NoiseModel:
         n0 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
         def n1(op, **kwargs):
-            ThermalRelaxationError(0.4, kwargs["t1"], 0.2, 0.6, op.wires)
+            qml.ThermalRelaxationError(0.4, kwargs["t1"], 0.2, 0.6, op.wires)
 
         def n2(op, **kwargs):
             qml.RX(op.parameters[0] * 0.05, op.wires)
@@ -117,12 +117,18 @@ class NoiseModel:
         )
 
     def __eq__(self, other):
-        return self.model_map == other.model_map and self.metadata == other.metadata
+        for model1, model2 in zip(self.model_map.items(), other.model_map.items()):
+            (fcond1, noise1), (fcond2, noise2) = model1, model2
+            if getattr(fcond1, "condition", fcond1.fn) != getattr(fcond2, "condition", fcond2.fn):
+                return False
+            if noise1 != noise2:
+                return False
+        return self.metadata == other.metadata
 
     def __repr__(self):
         model_str = "NoiseModel({\n"
         for key, val in self.model_map.items():
-            model_str += "    " + f"{key} = {val.__name__}" + "\n"
+            model_str += "    " + f"{key}: {val.__name__}" + "\n"
         model_str += "}, "
         for key, val in self._metadata.items():
             model_str += f"{key} = {val}, "
@@ -138,8 +144,8 @@ class NoiseModel:
             model: ``model_map`` or the data for the noise model.
 
         Raises:
-            ValueError: if any conditional in ``model`` is not an instance of BooleanFn or its subclasses.
-            ValueError: if any callables in ``model`` does not accept **kwargs as their last argument.
+            ValueError: if any conditional in ``model`` is not an instance of BooleanFn or its subclasses,
+                and if any callables in ``model`` does not accept **kwargs as their last argument.
         """
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):

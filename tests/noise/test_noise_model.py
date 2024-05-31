@@ -41,7 +41,6 @@ class TestNoiseModels:
     )
     def test_building_noise_model(self, fcond, noise):
         """Test that noise models are built correctly using NoiseModels"""
-        noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
         noise_model = qml.NoiseModel({fcond: noise}, t1=0.04, t2=0.02)
 
@@ -51,7 +50,7 @@ class TestNoiseModels:
         assert list(noise_model.metadata.values()) == [0.04, 0.02]
         assert (
             repr(noise_model) == "NoiseModel({\n"
-            f"    {fcond} = {noise.__name__}" + "\n"
+            f"    {fcond}: {noise.__name__}" + "\n"
             "}, t1 = 0.04, t2 = 0.02)"
         )
 
@@ -98,6 +97,25 @@ class TestNoiseModels:
 
         sub_model1 = noise_model - qml.NoiseModel({fcond1: noise1}, t2=0.02)
         assert qml.NoiseModel({fcond: noise}, t1=0.04) == sub_model1
+
+    # pylint: disable=comparison-with-callable, unused-argument
+    def test_eq_noise_models(self):
+        """Test that noise models can be subtracted and manipulated"""
+
+        fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
+
+        def noise(op, **kwargs):
+            qml.RX(op.parameters[0] * 0.05, op.wires)
+
+        # explicit construction
+        noise_model = qml.NoiseModel({fcond: noise})
+        noise_model2 = qml.NoiseModel({fcond: noise})
+        assert noise_model == noise_model2
+
+        # implicit construction
+        noise_model = qml.NoiseModel({qml.noise.op_eq(qml.X): noise})
+        noise_model2 = qml.NoiseModel({qml.noise.op_eq(qml.X): noise})
+        assert noise_model == noise_model2
 
     def test_build_model_errors(self):
         """Test for checking building noise models raise correct error when signatures are not proper"""
