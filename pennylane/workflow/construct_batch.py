@@ -181,8 +181,10 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
+
     if level is None or isinstance(level, int):
         level = slice(0, level)
+
     return full_transform_program[level]
 
 

@@ -25,6 +25,22 @@ from pennylane import numpy as np
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
+    def sample_circuit(self):
+        @qml.transforms.merge_rotations
+        @qml.transforms.undo_swaps
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+        def circuit(x):
+            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+            qml.RX(x, wires=0)
+            qml.RX(-x, wires=0)
+            qml.SWAP((0, 1))
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.X(0) + qml.Y(1))
+
+        return circuit
+
     def test_max_expansion_throws_warning(self):
         dev = qml.device("default.qubit", wires=1)
 
@@ -45,47 +61,40 @@ class TestSpecsTransform:
         with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
             qml.specs(circ, level="device", expansion_strategy="gradient")
 
-    @pytest.mark.parametrize("level,expected_gates", [(0, 6), (1, 4), (2, 2), (3, 1)])
-    def test_int_specs_level(self, level, expected_gates):
-        @qml.transforms.undo_swaps
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
-        def circuit(x):
-            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
-            qml.RX(x, wires=0)
-            qml.RX(-x, wires=0)
-            qml.SWAP((0, 1))
-            qml.X(0)
-            qml.X(0)
-            return qml.expval(qml.X(0) + qml.Y(1))
+    def test_disallow_pos_args(self):
+        circ = self.sample_circuit()
+        with pytest.raises(TypeError, match="takes 1 positional argument"):
+            qml.specs(circ, "device")(0.1)
 
-        specs = qml.specs(circuit, level=level)(0.1)
+    @pytest.mark.parametrize(
+        "level,expected_gates,exptected_train_params",
+        [(0, 6, 3), (1, 4, 3), (2, 3, 3), (3, 1, 1), (None, 2, 2)],
+    )
+    def test_int_specs_level(self, level, expected_gates, exptected_train_params):
+        circ = self.sample_circuit()
+        specs = qml.specs(circ, level=level)(0.1)
 
         assert specs["level"] == level
         assert specs["resources"].num_gates == expected_gates
-        assert specs["num_trainable_params"] == 3 if level < 2 else 1
+
+        assert specs["num_trainable_params"] == exptected_train_params
 
     @pytest.mark.parametrize(
-        "level1,level2", [("top", 0), (0, slice(0, 0)), ("user", 3)]  # (None, slice(0, None))]
+        "level1,level2",
+        [
+            ("top", 0),
+            (0, slice(0, 0)),
+            ("user", 3),
+            (None, slice(0, None)),
+            (-1, slice(0, -1)),
+            ("device", slice(0, None)),
+        ],
     )
     def test_equivalent_levels(self, level1, level2):
+        circ = self.sample_circuit()
 
-        @qml.transforms.undo_swaps
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
-        def circuit(x):
-            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
-            qml.RX(x, wires=0)
-            qml.RX(-x, wires=0)
-            qml.SWAP((0, 1))
-            qml.X(0)
-            qml.X(0)
-            return qml.expval(qml.X(0) + qml.Y(1))
-
-        specs1 = qml.specs(circuit, level=level1)(0.1)
-        specs2 = qml.specs(circuit, level=level2)(0.1)
+        specs1 = qml.specs(circ, level=level1)(0.1)
+        specs2 = qml.specs(circ, level=level2)(0.1)
 
         del specs1["level"]
         del specs2["level"]
@@ -189,8 +198,8 @@ class TestSpecsTransform:
         assert info["level"] == "gradient"
 
     def test_splitting_transforms(self):
-        coeffs = [0.2, -0.543]
-        obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)]
+        coeffs = [0.2, -0.543, 0.1]
+        obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2), qml.Y(0) @ qml.X(2)]
         H = qml.Hamiltonian(coeffs, obs)
 
         @qml.transforms.hamiltonian_expand
@@ -211,10 +220,15 @@ class TestSpecsTransform:
 
         specs_list = qml.specs(circuit, level=2)(np.array([1.23, -1]))
 
-        assert len(specs_list) == 2
+        assert len(specs_list) == len(H)
 
         assert specs_list[0]["num_diagonalizing_gates"] == 1
-        assert specs_list[0]["num_diagonalizing_gates"] == 3
+        assert specs_list[1]["num_diagonalizing_gates"] == 3
+        assert specs_list[2]["num_diagonalizing_gates"] == 4
+
+        assert specs_list[0]["num_device_wires"] == specs_list[0]["num_tape_wires"] == 2
+        assert specs_list[1]["num_device_wires"] == specs_list[1]["num_tape_wires"] == 3
+        assert specs_list[2]["num_device_wires"] == specs_list[1]["num_tape_wires"] == 3
 
     def make_qnode_and_params(self, initial_expansion_strategy):
         """Generates a qnode and params for use in other tests"""

@@ -22,7 +22,30 @@ def _get_absolute_import_path(fn):
     return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
-def specs(qnode, level=None, expansion_strategy=None, max_expansion=None):
+def _determine_spec_level(kwargs, qnode):
+    if "max_expansion" in kwargs:
+        warnings.warn(
+            "'max_expansion' has no effect on the output of 'specs()' and should not be used."
+        )
+
+    sentinel = object()
+
+    level = kwargs.get("level", sentinel)
+    expansion_strategy = kwargs.get("expansion_strategy", sentinel)
+
+    if all(val != sentinel for val in (level, expansion_strategy)):
+        raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
+
+    if level == sentinel and expansion_strategy == sentinel:
+        return qnode.expansion_strategy
+
+    if level == sentinel:
+        return expansion_strategy
+
+    return level
+
+
+def specs(qnode, **kwargs):
     """Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -90,13 +113,7 @@ def specs(qnode, level=None, expansion_strategy=None, max_expansion=None):
     'num_gradient_executions': 2}
     """
 
-    if max_expansion:
-        warnings.warn(
-            "'max_expansion' has no effect on the output of 'specs()' and should not be used."
-        )
-
-    if level and expansion_strategy:
-        raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
+    specs_level = _determine_spec_level(kwargs, qnode)
 
     def specs_qnode(*args, **kwargs):
         """Returns information on the structure and makeup of provided QNode.
@@ -125,11 +142,6 @@ def specs(qnode, level=None, expansion_strategy=None, max_expansion=None):
         Returns:
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
-
-        # Decide on the final transforms level using precedence of the `or` arguments
-        specs_level = (
-            level if level == 0 else (level or expansion_strategy or qnode.expansion_strategy)
-        )
 
         infos = []
         batch, _ = qml.workflow.construct_batch(qnode, level=specs_level)(*args, **kwargs)
