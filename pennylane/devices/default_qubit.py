@@ -592,7 +592,7 @@ class DefaultQubit(Device):
                 _simulate_wrapper(
                     c,
                     {
-                        "rng": self._rng,
+                        "rng": execution_config.device_options.get("rng", self._rng),
                         "debugger": self._debugger,
                         "interface": interface,
                         "state_cache": self._state_cache,
