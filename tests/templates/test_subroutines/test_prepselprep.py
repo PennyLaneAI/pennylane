@@ -109,7 +109,7 @@ class TestPrepSelPrep:
             ),
             (
                 lcu3,
-                0,
+                [0, 1],
                 qml.matrix(prepselprep, wire_order=[0, 1, 2]),
                 qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
@@ -140,6 +140,38 @@ class TestPrepSelPrep:
             produced_matrix(lcu, control=control),
             expected_matrix(lcu, control=control),
         )
+
+    @pytest.mark.parametrize(
+        ("lcu", "control", "wire_order", "dim"),
+        [
+            (
+                qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]),
+                [0],
+                [0, 1],
+                2
+            ),
+            (
+                qml.dot([0.5j, -0.5j], [qml.Z(1), qml.X(1)]),
+                [0],
+                [0, 1],
+                2
+            ),
+            (
+                qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]),
+                'ancilla',
+                ['ancilla', 0],
+                2
+            )
+        ]
+    )
+    def test_block_encoding(self, lcu, control, wire_order, dim):
+        """Test that the decomposition is a block-encoding"""
+        dev = qml.device("default.qubit")
+        prepselprep = qml.QNode(TestPrepSelPrep.prepselprep_circuit, dev)
+        matrix = qml.matrix(lcu)
+        block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
+        assert qml.math.allclose(matrix, block_encoding[0:dim,0:dim])
+
 
     ops1 = lcu1.terms()[1]
     coeffs1 = lcu1.terms()[0]

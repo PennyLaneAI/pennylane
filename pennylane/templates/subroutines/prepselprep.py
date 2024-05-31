@@ -71,14 +71,38 @@ class PrepSelPrep(Operation):
 
     @staticmethod
     def compute_decomposition(lcu, control):
-        coeffs, ops = lcu.terms()
-        normalized_coeffs = qml.math.sqrt(qml.math.abs(coeffs)) / qml.math.norm(
-            qml.math.sqrt(qml.math.abs(coeffs))
-        )
+        new_coeffs = []
+        new_ops = []
+        for coeff, op in zip(*lcu.terms()):
+            if qml.math.iscomplex(coeff):
+                real = qml.math.real(coeff)
+                if real < 0:
+                    new_coeffs.append((-1)*real)
+                    new_ops.append((-1)*op)
+                if real > 0:
+                    new_coeffs.append(real)
+                    new_ops.append(op)
+
+                imag = qml.math.imag(coeff)
+                if imag < 0:
+                    new_coeffs.append((-1)*imag)
+                    new_ops.append((-1j)*op)
+                if imag > 0:
+                    new_coeffs.append(imag)
+                    new_ops.append((1j)*op)
+            else:
+                if coeff < 0:
+                    new_coeffs.append((-1)*coeff)
+                    new_ops.append((-1)*op)
+                else:
+                    new_coeffs.append(coeff)
+                    new_ops.append(op)
+
+        normalized_coeffs = qml.math.sqrt(new_coeffs) / qml.math.norm(qml.math.sqrt(new_coeffs))
 
         with qml.QueuingManager.stop_recording():
             prep_ops = qml.StatePrep.compute_decomposition(normalized_coeffs, control)
-            select_ops = qml.Select.compute_decomposition(ops, control)
+            select_ops = qml.Select.compute_decomposition(new_ops, control)
             adjoint_prep_ops = qml.adjoint(
                 qml.StatePrep(normalized_coeffs, control)
             ).decomposition()
