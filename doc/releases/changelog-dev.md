@@ -193,6 +193,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Disable Docker builds on PR merge.
+  [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
+
 * The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
   [(#5761)](https://github.com/PennyLaneAI/pennylane/pull/5761)
 
