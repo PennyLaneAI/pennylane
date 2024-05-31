@@ -164,10 +164,8 @@ class TestUnits:
     @pytest.mark.parametrize(
         "make_H",
         [
-            lambda obs_list: qml.Hamiltonian([0.1, 0.2, 0.3, 0.4, 0.5], obs_list),
-            lambda obs_list: qml.sum(
-                *(qml.s_prod(c, o) for c, o in zip([0.1, 0.2, 0.3, 0.4, 0.5], obs_list))
-            ),
+            lambda coeffs, obs: qml.Hamiltonian(coeffs, obs),
+            lambda coeffs, obs: qml.sum(*(qml.s_prod(c, o) for c, o in zip(coeffs, obs))),
         ],
     )
     def test_number_of_tapes_single_hamiltonian(self, grouping_strategy, n_tapes, make_H):
@@ -177,7 +175,10 @@ class TestUnits:
         if not qml.operation.active_new_opmath():
             obs_list = _convert_obs_to_legacy_opmath(obs_list)
 
-        H = make_H(obs_list)
+        obs_list = obs_list + [qml.Y(0), qml.X(0) @ qml.Y(1)]  # add duplicate terms
+        coeffs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+
+        H = make_H(coeffs, obs_list)
         tape = qml.tape.QuantumScript([qml.X(0), qml.CNOT([0, 1])], [qml.expval(H)], shots=100)
         tapes, _ = split_non_commuting(tape, grouping_strategy=grouping_strategy)
         assert len(tapes) == n_tapes
