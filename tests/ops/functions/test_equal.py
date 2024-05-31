@@ -1210,7 +1210,10 @@ class TestEqual:
     def test_equal_with_different_arithmetic_depth(self):
         """Test equal method with two operators with different arithmetic depth."""
 
+        # pylint: disable=too-few-public-methods
         class DepthIncreaseOperator(Operator):
+            """Dummy class which increases depth by one"""
+
             def __init__(self, op: Operator):
                 self._op = op
 
