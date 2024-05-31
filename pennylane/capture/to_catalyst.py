@@ -21,33 +21,20 @@ try:
 except ImportError:
     has_jax = False
 
-from catalyst.jax_primitives import (
-    AbstractObs,
-    AbstractQbit,
-    AbstractQreg,
-    expval_p,
-    func_p,
-    namedobs_p,
-    probs_p,
-    qalloc_p,
-    qdealloc_p,
-    qdevice_p,
-    qextract_p,
-    qinsert_p,
-    qinst_p,
-)
+has_catalyst = True
+try:
+    from catalyst import jax_primitives as cat_p
+except ImportError:
+    cat_p = None
+    has_catalyst = False
 
 from .capture_qnode import _get_qnode_prim, _get_shapes_for
 from .primitives import _get_abstract_measurement, _get_abstract_operator
 
-AbstractOperator = _get_abstract_operator()
-AbstractMeasurement = _get_abstract_measurement()
-qnode_p = _get_qnode_prim()
-
-has_catalyst = True
-
-
-measurement_map = {"expval_obs": expval_p, "probs_wires": probs_p}
+if has_catalyst:
+    measurement_map = {"expval_obs": cat_p.expval_p, "probs_wires": cat_p.probs_p}
+else:
+    measurement_map = {}
 
 
 def _get_jaxpr_count(jaxpr) -> int:
@@ -67,12 +54,12 @@ def to_catalyst(jaxpr):
         eqns=[],
     )
     for eqn in jaxpr.eqns:
-        if eqn.primitive != qnode_p:
+        if eqn.primitive != _get_qnode_prim():
             new_xpr.eqns.append(eqn)
         else:
             invars = eqn.invars
             outvars = eqn.outvars
-            primitive = func_p
+            primitive = cat_p.func_p
             call_jaxpr = plxpr_to_catalyst(eqn.params["qfunc_jaxpr"].jaxpr, eqn.params["device"])
             params = {"fn": "TODO", "call_jaxpr": call_jaxpr}
 
@@ -124,7 +111,7 @@ class CatalystConverter:
             "rtd_name": device.name,
         }
         device_eqn = jax.core.JaxprEqn(
-            [], [], qdevice_p, params, effects=jax.core.no_effects, source_info=None
+            [], [], cat_p.qdevice_p, params, effects=jax.core.no_effects, source_info=None
         )
         self.catalyst_xpr.eqns.append(device_eqn)
 
@@ -132,10 +119,10 @@ class CatalystConverter:
         invars = [
             jax.core.Literal(val=n_wires, aval=jax.core.ConcreteArray(dtype=int, val=n_wires))
         ]
-        qreg = self._make_var(AbstractQreg())
+        qreg = self._make_var(cat_p.AbstractQreg())
         self._qreg = qreg
         qalloc_eqn = jax.core.JaxprEqn(
-            invars, [qreg], qalloc_p, {}, effects=jax.core.no_effects, source_info=None
+            invars, [qreg], cat_p.qalloc_p, {}, effects=jax.core.no_effects, source_info=None
         )
         self.catalyst_xpr.eqns.append(qalloc_eqn)
 
@@ -150,10 +137,10 @@ class CatalystConverter:
 
         wire_var = jax.core.Literal(val=wire, aval=jax.core.ConcreteArray(dtype=int, val=wire))
         invars = [self._qreg, wire_var]
-        wire = self._make_var(AbstractQbit())
+        wire = self._make_var(cat_p.AbstractQbit())
         outvar = [wire]
         qextract_eqn = jax.core.JaxprEqn(
-            invars, outvar, qextract_p, {}, effects=jax.core.no_effects, source_info=None
+            invars, outvar, cat_p.qextract_p, {}, effects=jax.core.no_effects, source_info=None
         )
         self.catalyst_xpr.eqns.append(qextract_eqn)
         return wire
@@ -162,18 +149,18 @@ class CatalystConverter:
         for orig_wire, wire in self._wire_map.items():
             orig_wire_var = jax.core.Literal(val=orig_wire, aval=orig_wire)
             invars = [self._qreg, orig_wire_var, wire]
-            new_qreg = self._make_var(AbstractQreg())
+            new_qreg = self._make_var(cat_p.AbstractQreg())
             outvars = [new_qreg]
 
             eqn = jax.core.JaxprEqn(
-                invars, outvars, qinsert_p, {}, effects=jax.core.no_effects, source_info=None
+                invars, outvars, cat_p.qinsert_p, {}, effects=jax.core.no_effects, source_info=None
             )
             self.catalyst_xpr.eqns.append(eqn)
 
             self._qreg = new_qreg
 
         eqn = jax.core.JaxprEqn(
-            [self._qreg], [], qdealloc_p, {}, effects=jax.core.no_effects, source_info=None
+            [self._qreg], [], cat_p.qdealloc_p, {}, effects=jax.core.no_effects, source_info=None
         )
         self.catalyst_xpr.eqns.append(eqn)
 
@@ -184,12 +171,12 @@ class CatalystConverter:
         wires = [self._get_wire(w) for w in orig_wires]
         invars = wires + eqn.invars[:-n_wires]
 
-        outvars = [self._make_var(AbstractQbit()) for _ in range(eqn.params["n_wires"])]
+        outvars = [self._make_var(cat_p.AbstractQbit()) for _ in range(eqn.params["n_wires"])]
 
         for w, outvar in zip(orig_wires, outvars):
             self._wire_map[w.val] = outvar
 
-        primitive = qinst_p
+        primitive = cat_p.qinst_p
         params = {
             "op": eqn.primitive.name,
             "qubits_len": eqn.params["n_wires"],
@@ -202,14 +189,14 @@ class CatalystConverter:
         self.catalyst_xpr.eqns.append(new_eqn)
 
     def _add_obs_eqn(self, eqn):
-        primitive = namedobs_p
+        primitive = cat_p.namedobs_p
 
         n_wires = eqn.params["n_wires"]
         orig_wires = eqn.invars[-n_wires:]
         wires = [self._get_wire(w) for w in orig_wires]
         invars = wires + eqn.invars[:-n_wires]
 
-        outvars = [self._make_var(AbstractObs())]
+        outvars = [self._make_var(cat_p.AbstractObs())]
         params = {"kind": eqn.primitive.name}
 
         new_eqn = jax.core.JaxprEqn(
@@ -218,16 +205,35 @@ class CatalystConverter:
         self.catalyst_xpr.eqns.append(new_eqn)
         return outvars[0]
 
+    def _add_comp_basis_eqn(self, eqn):
+        wires_invars = [self._get_wire(w) for w in eqn.invars]
+        outvars = [self._make_var(cat_p.AbstractObs())]
+        wires_eqn = jax.core.JaxprEqn(
+            wires_invars,
+            outvars,
+            cat_p.compbasis_p,
+            {},
+            effects=jax.core.no_effects,
+            source_info=None,
+        )
+        self.catalyst_xpr.eqns.append(wires_eqn)
+        return outvars
+
     def _add_measurement_eqn(self, eqn):
         primitive = measurement_map[eqn.primitive.name]
 
-        invars = []
-        for orig_invar in eqn.invars:
-            if isinstance(orig_invar, jax.core.Literal):
-                invars.append(orig_invar)
-            elif orig_invar in self._op_math_cache:
-                obs = self._add_obs_eqn(self._op_math_cache[orig_invar])
-                invars.append(obs)
+        if "_wires" in eqn.primitive.name:
+            if eqn.params.get("has_eigvals", False):
+                raise NotImplementedError
+            invars = self._add_comp_basis_eqn(eqn)
+        else:
+            invars = []
+            for orig_invar in eqn.invars:
+                if isinstance(orig_invar, jax.core.Literal):
+                    invars.append(orig_invar)
+                elif orig_invar in self._op_math_cache:
+                    obs = self._add_obs_eqn(self._op_math_cache[orig_invar])
+                    invars.append(obs)
 
         outavals = _get_shapes_for(
             eqn.outvars[0].aval, shots=self.shots, num_device_wires=self.num_device_wires
@@ -247,12 +253,12 @@ class CatalystConverter:
 
     def convert_plxpr_eqns(self):
         for eqn in self.plxpr.eqns:
-            if isinstance(eqn.outvars[0].aval, AbstractOperator):
+            if isinstance(eqn.outvars[0].aval, _get_abstract_operator()):
                 if isinstance(eqn.outvars[0], jax.core.DropVar):
                     self._add_operator_eqn(eqn)
                 else:
                     self._op_math_cache[eqn.outvars[0]] = eqn
-            elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
+            elif isinstance(eqn.outvars[0].aval, _get_abstract_measurement()):
                 mp_outaval = self._add_measurement_eqn(eqn)
                 self.catalyst_xpr.outvars.extend(mp_outaval)
             else:
