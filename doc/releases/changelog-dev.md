@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* A new `qml.noise` module which contains utililty function for building `NoiseModels`.
+* A new `qml.noise` module which contains utility functions for building `NoiseModels`.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
 
