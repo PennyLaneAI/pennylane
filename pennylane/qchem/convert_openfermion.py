@@ -50,7 +50,7 @@ def from_openfermion(of_qubit_operator, wires=None, tol=None):
     return qml.ops.LinearCombination(coeffs, ops)
 
 
-def to_openfermion(pl_linear_combination, wires=None):
+def to_openfermion(pl_linear_combination, wires=None, tol=None):
     r"""Convert ``LinearCombination`` object in PennyLane representing a linear combination of qubit operators to a OpenFermion ``QubitOperator``.
 
     Args:
@@ -77,4 +77,4 @@ def to_openfermion(pl_linear_combination, wires=None):
     """
 
     coeffs, ops = pl_linear_combination.terms()
-    return _pennylane_to_openfermion(coeffs, ops, wires=wires)
+    return _pennylane_to_openfermion(coeffs, ops, wires=wires, tol=tol)
