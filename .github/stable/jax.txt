@@ -20,7 +20,7 @@ exceptiongroup==1.2.1
 execnet==2.1.1
 filelock==3.14.0
 flaky==3.8.1
-fonttools==4.52.4
+fonttools==4.53.0
 future==1.0.0
 identify==2.5.36
 idna==3.7
@@ -65,7 +65,7 @@ qdldl==0.1.7.post2
 requests==2.32.3
 rustworkx==0.14.2
 scipy==1.12.0
-scs==3.2.4.post1
+scs==3.2.4.post2
 semantic-version==2.10.0
 six==1.16.0
 toml==0.10.2
@@ -74,4 +74,4 @@ typing_extensions==4.12.0
 urllib3==2.2.1
 virtualenv==20.26.2
 wrapt==1.12.1
-zipp==3.19.0
+zipp==3.19.1

@@ -23,7 +23,7 @@ execnet==2.1.1
 filelock==3.14.0
 flaky==3.8.1
 flatbuffers==24.3.25
-fonttools==4.52.4
+fonttools==4.53.0
 future==1.0.0
 gast==0.5.4
 google-pasta==0.2.0
@@ -80,8 +80,8 @@ qdldl==0.1.7.post2
 requests==2.32.3
 rich==13.7.1
 rustworkx==0.14.2
-scipy==1.13.1
-scs==3.2.4.post1
+scipy==1.11.4
+scs==3.2.4.post2
 semantic-version==2.10.0
 six==1.16.0
 tensorboard==2.16.2
@@ -97,4 +97,4 @@ urllib3==2.2.1
 virtualenv==20.26.2
 Werkzeug==3.0.3
 wrapt==1.12.1
-zipp==3.19.0
+zipp==3.19.1
