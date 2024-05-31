@@ -35,12 +35,12 @@ single_term_obs_list = [
     qml.Y(0) @ qml.Z(1),
 ]
 
-single_term_pauli_groups = [
+single_term_qwc_groups = [
     [qml.X(0), qml.X(0) @ qml.Y(1)],
     [qml.Y(0), qml.Z(1), qml.Y(0) @ qml.Z(1)],
 ]
 
-single_term_naive_groups = [
+single_term_wires_groups = [
     [qml.X(0), qml.Z(1)],
     [qml.Y(0)],
     [qml.X(0) @ qml.Y(1)],
@@ -48,8 +48,8 @@ single_term_naive_groups = [
 ]
 
 # contains the following observables: X(0), Y(0), Y(0) @ Z(1), X(1), Z(1), X(0) @ Y(1)
-# pauli groups: [[0, 5], [1, 3], [2, 4]]
-# naive groups: [[0, 3], [1, 4], [2], [5]]
+# qwc groups: [[0, 5], [1, 3], [2, 4]]
+# wires groups: [[0, 3], [1, 4], [2], [5]]
 complex_obs_list = [
     qml.X(0),  # single observable
     0.5 * qml.Y(0),  # scalar product
@@ -94,15 +94,15 @@ def complex_no_grouping_processing_fn(results):
     )
 
 
-complex_pauli_groups = [
+complex_qwc_groups = [
     [qml.X(0), qml.X(0) @ qml.Y(1)],
     [qml.Y(0), qml.X(1)],
     [qml.Y(0) @ qml.Z(1), qml.Z(1)],
 ]
 
 
-def complex_pauli_processing_fn(results):
-    """The expected processing function for pauli grouping of complex_obs_list"""
+def complex_qwc_processing_fn(results):
+    """The expected processing function for qwc grouping of complex_obs_list"""
     group0, group1, group2 = results
     return (
         group0[0],
@@ -113,7 +113,7 @@ def complex_pauli_processing_fn(results):
     )
 
 
-complex_naive_groups = [
+complex_wires_groups = [
     [qml.X(0), qml.X(1)],
     [qml.Y(0), qml.Z(1)],
     [qml.Y(0) @ qml.Z(1)],
@@ -121,8 +121,8 @@ complex_naive_groups = [
 ]
 
 
-def complex_naive_processing_fn(results):
-    """The expected processing function for naive grouping of complex_obs_list"""
+def complex_wires_processing_fn(results):
+    """The expected processing function for wires grouping of complex_obs_list"""
 
     group0, group1, group2, group3 = results
     return (
@@ -146,7 +146,7 @@ class TestUnits:
 
     @pytest.mark.parametrize("measure_fn", obs_measurements)
     @pytest.mark.parametrize(
-        "grouping_strategy, n_tapes", [(None, 5), ("default", 2), ("pauli", 2), ("naive", 4)]
+        "grouping_strategy, n_tapes", [(None, 5), ("default", 2), ("qwc", 2), ("wires", 4)]
     )
     def test_number_of_tapes(self, measure_fn, grouping_strategy, n_tapes):
         """Tests that the correct number of tapes is returned"""
@@ -159,7 +159,7 @@ class TestUnits:
         assert all(t.shots == tape.shots for t in tapes)
 
     @pytest.mark.parametrize(
-        "grouping_strategy, n_tapes", [(None, 5), ("default", 2), ("pauli", 2), ("naive", 4)]
+        "grouping_strategy, n_tapes", [(None, 5), ("default", 2), ("qwc", 2), ("wires", 4)]
     )
     @pytest.mark.parametrize(
         "make_H",
@@ -186,7 +186,7 @@ class TestUnits:
         assert all(t.shots == tape.shots for t in tapes)
 
     @pytest.mark.parametrize(
-        "grouping_strategy, n_tapes", [(None, 6), ("default", 4), ("pauli", 3), ("naive", 4)]
+        "grouping_strategy, n_tapes", [(None, 6), ("default", 4), ("qwc", 3), ("wires", 4)]
     )
     def test_number_of_tapes_complex_obs(self, grouping_strategy, n_tapes):
         """Tests number of tapes with mixed types of observables"""
@@ -198,7 +198,7 @@ class TestUnits:
         assert all(t.operations == [qml.X(0), qml.CNOT([0, 1])] for t in tapes)
         assert all(t.shots == tape.shots for t in tapes)
 
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_state_measurement_in_separate_tape(self, grouping_strategy):
         """Tests that a state measurement is in a separate tape"""
 
@@ -209,7 +209,7 @@ class TestUnits:
         assert all(t.operations == [qml.X(0), qml.CNOT([0, 1])] for t in tapes)
         assert all(t.shots == tape.shots for t in tapes)
 
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     @pytest.mark.parametrize(
         "make_H",
         [
@@ -256,7 +256,7 @@ class TestUnits:
         assert len(tapes) == 1
         assert fn([[0.1, 0.2, 0.3, 0.4, 0.5]]) == (0.1, 0.2, 0.3, 0.4, 0.5)
 
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_single_observable(self, grouping_strategy):
         """Tests a circuit that contains a single observable"""
 
@@ -265,7 +265,7 @@ class TestUnits:
         assert len(tapes) == 1
         assert fn([0.1]) == 0.1
 
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_single_hamiltonian_single_observable(self, grouping_strategy):
         """Tests a circuit that contains a single observable"""
 
@@ -336,16 +336,16 @@ class TestUnits:
             qml.tape.QuantumScript([], [qml.expval(o)], shots=100) for o in single_term_obs_list
         ]
 
-        # pauli grouping produces [[0, 3], [1, 2, 4]]
-        expected_tapes_pauli_grouping = [
+        # qwc grouping produces [[0, 3], [1, 2, 4]]
+        expected_tapes_qwc_grouping = [
             qml.tape.QuantumScript([], [qml.expval(o) for o in group], shots=100)
-            for group in single_term_pauli_groups
+            for group in single_term_qwc_groups
         ]
 
-        # naive grouping produces [[0, 2], [1], [3], [4]]
-        expected_tapes_naive_grouping = [
+        # wires grouping produces [[0, 2], [1], [3], [4]]
+        expected_tapes_wires_grouping = [
             qml.tape.QuantumScript([], [qml.expval(o) for o in group], shots=100)
-            for group in single_term_naive_groups
+            for group in single_term_wires_groups
         ]
 
         tapes, fn = split_non_commuting(tape, grouping_strategy=None)
@@ -354,27 +354,27 @@ class TestUnits:
         assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), [0.01, 0.04, 0.09, 0.16, 0.25])
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="default")
-        # When new opmath is disabled, c * o gives Hamiltonians, which leads to naive grouping
+        # When new opmath is disabled, c * o gives Hamiltonians, which leads to wires grouping
         if qml.operation.active_new_opmath():
-            for actual_tape, expected_tape in zip(tapes, expected_tapes_pauli_grouping):
+            for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
                 assert qml.equal(actual_tape, expected_tape)
             assert qml.math.allclose(
                 fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), [0.01, 0.06, 0.12, 0.08, 0.25]
             )
         else:
-            for actual_tape, expected_tape in zip(tapes, expected_tapes_naive_grouping):
+            for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
                 assert qml.equal(actual_tape, expected_tape)
             assert qml.math.allclose(
                 fn([[0.1, 0.2], 0.3, 0.4, 0.5]), [0.01, 0.06, 0.06, 0.16, 0.25]
             )
 
-        tapes, fn = split_non_commuting(tape, grouping_strategy="pauli")
-        for actual_tape, expected_tape in zip(tapes, expected_tapes_pauli_grouping):
+        tapes, fn = split_non_commuting(tape, grouping_strategy="qwc")
+        for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
             assert qml.equal(actual_tape, expected_tape)
         assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), [0.01, 0.06, 0.12, 0.08, 0.25])
 
-        tapes, fn = split_non_commuting(tape, grouping_strategy="naive")
-        for actual_tape, expected_tape in zip(tapes, expected_tapes_naive_grouping):
+        tapes, fn = split_non_commuting(tape, grouping_strategy="wires")
+        for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
             assert qml.equal(actual_tape, expected_tape)
         assert qml.math.allclose(fn([[0.1, 0.2], 0.3, 0.4, 0.5]), [0.01, 0.06, 0.06, 0.16, 0.25])
 
@@ -389,19 +389,19 @@ class TestUnits:
         """Tests that a single Hamiltonian or Sum is split correctly"""
 
         coeffs, obs_list = [0.1, 0.2, 0.3, 0.4, 0.5], single_term_obs_list
-        pauli_groups = single_term_pauli_groups
+        qwc_groups = single_term_qwc_groups
 
         if not qml.operation.active_new_opmath():
             obs_list = _convert_obs_to_legacy_opmath(obs_list)
-            pauli_groups = _convert_obs_to_legacy_opmath(single_term_pauli_groups)
+            qwc_groups = _convert_obs_to_legacy_opmath(single_term_qwc_groups)
 
         expected_tapes_no_grouping = [
             qml.tape.QuantumScript([], [qml.expval(o)], shots=100) for o in obs_list
         ]
 
-        expected_tapes_pauli_grouping = [
+        expected_tapes_qwc_grouping = [
             qml.tape.QuantumScript([], [qml.expval(o) for o in group], shots=100)
-            for group in pauli_groups
+            for group in qwc_groups
         ]
 
         if qml.operation.active_new_opmath():
@@ -421,7 +421,7 @@ class TestUnits:
         assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), expected)
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="default")
-        for actual_tape, expected_tape in zip(tapes, expected_tapes_pauli_grouping):
+        for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
             assert qml.equal(actual_tape, expected_tape)
         expected = 0.52 if not qml.operation.active_new_opmath() else 1.12
         assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), expected)
@@ -439,21 +439,21 @@ class TestUnits:
                 [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
             ),
             (
-                "naive",
+                "wires",
                 [
                     qml.tape.QuantumScript([], [qml.expval(o) for o in group], shots=100)
-                    for group in complex_naive_groups
+                    for group in complex_wires_groups
                 ],
-                complex_naive_processing_fn,
+                complex_wires_processing_fn,
                 [[0.1, 0.2], [0.3, 0.4], 0.5, 0.6],
             ),
             (
-                "pauli",
+                "qwc",
                 [
                     qml.tape.QuantumScript([], [qml.expval(o) for o in group], shots=100)
-                    for group in complex_pauli_groups
+                    for group in complex_qwc_groups
                 ],
-                complex_pauli_processing_fn,
+                complex_qwc_processing_fn,
                 [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]],
             ),
         ],
@@ -513,7 +513,7 @@ class TestUnits:
 class TestIntegration:
     """Tests the ``split_non_commuting`` transform performed on a QNode"""
 
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
     @pytest.mark.parametrize(
         "params, expected_results",
@@ -578,7 +578,7 @@ class TestIntegration:
         else:
             assert qml.math.allclose(res, expected, atol=0.05)
 
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
     @pytest.mark.parametrize(
         "params, expected_results",
@@ -650,7 +650,7 @@ class TestIntegration:
         else:
             assert qml.math.allclose(res, expected_results, atol=0.05)
 
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     @pytest.mark.parametrize("shots", [20000, [20000, 30000, 40000]])
     @pytest.mark.parametrize(
         "params, expected_results",
@@ -761,7 +761,7 @@ class TestIntegration:
             expval_res = res[4:]
             assert qml.math.allclose(expval_res, expected_results, atol=0.05)
 
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_single_hamiltonian_only_constant_offset(self, grouping_strategy):
         """Tests that split_non_commuting can handle a single Identity observable"""
 
@@ -779,7 +779,7 @@ class TestIntegration:
         assert qml.math.allclose(res, 4.0)
 
     @pytest.mark.usefixtures("new_opmath_only")
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_no_obs_tape(self, grouping_strategy):
         """Tests tapes with only constant offsets (only measurements on Identity)"""
 
@@ -798,7 +798,7 @@ class TestIntegration:
         assert qml.math.allclose(res, 1.5)
 
     @pytest.mark.usefixtures("new_opmath_only")
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_no_obs_tape_multi_measurement(self, grouping_strategy):
         """Tests tapes with only constant offsets (only measurements on Identity)"""
 
@@ -846,7 +846,7 @@ class TestDifferentiability:
     """Tests the differentiability of the ``split_non_commuting`` transform"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_autograd(self, grouping_strategy):
         """Tests that the output of ``split_non_commuting`` is differentiable with autograd"""
 
@@ -884,7 +884,7 @@ class TestDifferentiability:
         assert qml.math.allclose(grad2, expected_grad_2)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_jax(self, grouping_strategy):
         """Tests that the output of ``split_non_commuting`` is differentiable with jax"""
 
@@ -923,7 +923,7 @@ class TestDifferentiability:
         assert qml.math.allclose(grad2, expected_grad_2)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_jax_jit(self, grouping_strategy):
         """Tests that the output of ``split_non_commuting`` is differentiable with jax and jit"""
 
@@ -963,7 +963,7 @@ class TestDifferentiability:
         assert qml.math.allclose(grad2, expected_grad_2)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_torch(self, grouping_strategy):
         """Tests that the output of ``split_non_commuting`` is differentiable with torch"""
 
@@ -1002,7 +1002,7 @@ class TestDifferentiability:
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-5)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("grouping_strategy", [None, "default", "pauli", "naive"])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_tensorflow(self, grouping_strategy):
         """Tests that the output of ``split_non_commuting`` is differentiable with torch"""
 

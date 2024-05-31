@@ -37,8 +37,8 @@ def split_non_commuting(
 
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to be split.
-        grouping_strategy (str): The strategy to use for computing disjoint groups of commuting
-            observables, can be ``"default"``, ``"naive"``, ``"pauli"``,
+        grouping_strategy (str): The strategy to use for computing disjoint groups of
+            commuting observables, can be ``"default"``, ``"wires"``, ``"qwc"``,
             or ``None`` to disable grouping.
 
     Returns:
@@ -46,8 +46,8 @@ def split_non_commuting(
 
     **Examples:**
 
-    This transform allows us to transform a QNode that measures non-commuting observables
-    to *multiple* circuit executions with qubit-wise commuting groups:
+    This transform allows us to transform a QNode measuring multiple observables into multiple
+    circuit executions, each measuring a group of commuting observables.
 
     .. code-block:: python3
 
@@ -65,8 +65,8 @@ def split_non_commuting(
                 qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
             ]
 
-    Instead of decorating the QNode, we can also create a new function that yields the
-    same result in the following way:
+    Instead of decorating the QNode, we can also create a new function that yields the same
+    result in the following way:
 
     .. code-block:: python3
 
@@ -83,8 +83,7 @@ def split_non_commuting(
 
         circuit = qml.transforms.split_non_commuting(circuit)
 
-    Internally, the QNode is split into circuits measuring groups of commuting observables
-    when executed:
+    Internally, the QNode is split into multiple circuits when executed:
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)─┤ ╭<Z@Z>  <Z>
@@ -96,33 +95,35 @@ def split_non_commuting(
     0: ──RY(0.79)─┤ ╭<X@Z>
     1: ──RX(0.79)─┤ ╰<X@Z>
 
-    Additionally, note that the observable ``Y(1)`` occurs twice in the original circuit, but only once
-    in the transformed circuits. When there are duplicate observables measured in the circuit,
-    the measurement is performed once and the outcome is copied when obtaining the final result.
+    Note that the observable ``Y(1)`` occurs twice in the original QNode, but only once in the
+    transformed circuits. When there are multiple expecatation value measurements that rely on
+    the same observable, this observable is measured only once, and the result is copied to each
+    original measurement.
 
-    Note that while internally multiple tapes are created, the end result has the same ordering as
-    the user provides in the return statement. Executing the above QNode returns the original
-    ordering of the expectation values.
+    While internally multiple tapes are created, the end result has the same ordering as the user
+    provides in the return statement. Executing the above QNode returns the original ordering of
+    the expectation values.
 
     >>> circuit([np.pi/4, np.pi/4])
     [0.7071067811865475, -0.7071067811865475, 0.5, 0.5]
 
-    There are two algorithms used to compute disjoint groups of commuting observables: ``"pauli"``
-    grouping uses :func:`~pennylane.pauli.group_observables` and produces the fewest number of
-    circuit executions, but can be expensive to compute for large multi-term Hamiltonians.
-    Alternatively, ``"naive"`` grouping ensures that no circuit contains two measurements on the
-    same wire, disregarding commutativity between the observables.
+    There are two algorithms used to compute disjoint groups of commuting observables: ``"qwc"``
+    grouping uses :func:`~pennylane.pauli.group_observables` which computes groups of qubit-wise
+    commuting observables, producing the fewest number of circuit executions, but can be expensive
+    to compute for large multi-term Hamiltonians, while ``"wires"`` grouping simply ensures
+    that no circuit contains two measurements with overlapping wires, disregarding commutativity
+    between the observables being measured.
 
     The ``grouping_strategy`` keyword argument can be used to specify the grouping strategy. By
-    default, pauli grouping is used whenever possible, except when the circuit contains multiple
-    measurements including measurement of a ``qml.Hamiltonian``. In this case, naive grouping is
-    used in case the Hamiltonian is very large, to save on classical runtime. To force pauli
-    grouping in all cases, set ``grouping_strategy="pauli"``. Similarly, to force naive grouping
-    in all cases, set ``grouping_strategy="naive"``:
+    default, qwc grouping is used whenever possible, except when the circuit contains multiple
+    measurements that includes an expectation value of a ``qml.Hamiltonian``, in which case wires
+    grouping is used in case the Hamiltonian is very large, to save on classical runtime. To force
+    qwc grouping in all cases, set ``grouping_strategy="qwc"``. Similarly, to force wires grouping,
+    set ``grouping_strategy="wires"``:
 
     .. code-block:: python3
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping="naive")
+        @functools.partial(qml.transforms.split_non_commuting, grouping="wires")
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -134,7 +135,7 @@ def split_non_commuting(
                 qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
             ]
 
-    In this case, four tapes are created as follows:
+    In this case, four circuits are created as follows:
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)─┤  <X>
@@ -149,7 +150,7 @@ def split_non_commuting(
     0: ──RY(0.79)─┤  <Z>
     1: ──RX(0.79)─┤
 
-    Finally, to disable grouping completely, set ``grouping_strategy=None``:
+    Alternatively, to disable grouping completely, set ``grouping_strategy=None``:
 
     .. code-block:: python3
 
@@ -182,6 +183,10 @@ def split_non_commuting(
     <BLANKLINE>
     0: ──RY(0.79)─┤  <Z>
     1: ──RX(0.79)─┤
+
+    Note that there is an exception to the above rules: if the circuit only contains a single
+    expectation value measurement of a ``Hamiltonian`` or ``Sum`` with pre-computed grouping
+    indices, the grouping information will be used regardless of the requested ``grouping_strategy``
 
     .. details::
         :title: Usage Details
@@ -246,7 +251,7 @@ def split_non_commuting(
         and isinstance(tape.measurements[0], ExpectationMP)
         and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
         and (
-            grouping_strategy in ("default", "pauli")
+            grouping_strategy in ("default", "qwc")
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):
@@ -266,25 +271,25 @@ def split_non_commuting(
         )
 
     if (
-        grouping_strategy == "naive"
+        grouping_strategy == "wires"
         or grouping_strategy == "default"
         and any(
             isinstance(m, ExpectationMP) and isinstance(m.obs, (LinearCombination, Hamiltonian))
             for m in tape.measurements
         )
     ):
-        # This is a loose check to see whether naive grouping or pauli grouping should be used,
-        # which does not necessarily make perfect sense but consistent with the old decision
-        # logic in `LegacyDevice.batch_transform`. The premise is that pauli grouping is
-        # classically expensive but produces fewer tapes, whereas naive grouping is classically
-        # faster to compute, but inefficient quantum-wise. If this transform is to be added to a
-        # device's `preprocess`, it will be performed for every circuit execution, which can get
-        # very expensive if there is a large number of observables. The reasoning here is, large
+        # This is a loose check to see whether wires grouping or qwc grouping should be used,
+        # which does not necessarily make perfect sense but is consistent with the old decision
+        # logic in `Device.batch_transform`. The premise is that qwc grouping is classically
+        # expensive but produces fewer tapes, whereas wires grouping is classically faster to
+        # compute, but inefficient quantum-wise. If this transform is to be added to a device's
+        # `preprocess`, it will be performed for every circuit execution, which can get very
+        # expensive if there is a large number of observables. The reasoning here is, large
         # Hamiltonians typically come in the form of a `LinearCombination` or `Hamiltonian`, so
-        # if we see one of those, use naive grouping to be safe. Otherwise, use pauli grouping.
-        return _split_using_naive_grouping(tape, single_term_obs_mps, offsets)
+        # if we see one of those, use wires grouping to be safe. Otherwise, use qwc grouping.
+        return _split_using_wires_grouping(tape, single_term_obs_mps, offsets)
 
-    return _split_using_pauli_grouping(tape, single_term_obs_mps, offsets)
+    return _split_using_qwc_grouping(tape, single_term_obs_mps, offsets)
 
 
 def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
@@ -355,7 +360,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
     )
 
 
-def _split_using_pauli_grouping(
+def _split_using_qwc_grouping(
     tape: qml.tape.QuantumScript,
     single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
     offsets: List[float],
@@ -421,7 +426,7 @@ def _split_using_pauli_grouping(
     )
 
 
-def _split_using_naive_grouping(
+def _split_using_wires_grouping(
     tape: qml.tape.QuantumScript,
     single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
     offsets: List[float],
