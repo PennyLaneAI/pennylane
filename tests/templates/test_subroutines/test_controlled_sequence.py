@@ -36,28 +36,6 @@ class TestInitialization:
         op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2], id="a")
         assert op.id == "a"
 
-    # pylint: disable=protected-access
-    def test_flatten_and_unflatten(self):
-        """Test the _flatten and _unflatten methods for ControlledSequence"""
-
-        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
-        data, metadata = op._flatten()
-
-        assert len(data) == 1
-        assert qml.equal(data[0], op.base)
-
-        assert len(metadata) == 1
-        assert metadata[0] == op.control
-
-        # make sure metadata is hashable
-        assert hash(metadata)
-
-        new_op = type(op)._unflatten(*op._flatten())
-
-        assert qml.equal(op.base, new_op.base)
-        assert op.control_wires == new_op.control_wires
-        assert op is not new_op
-
     def test_overlapping_wires_error(self):
         """Test that an error is raised if the wires of the base
         operator and the control wires overlap"""

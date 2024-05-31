@@ -21,6 +21,18 @@ quantum-classical programs.
 
     This module is experimental and will change significantly in the future.
 
+.. currentmodule:: pennylane.capture
+
+.. autosummary::
+    :toctree: api
+
+    ~disable
+    ~enable
+    ~enabled
+    ~create_operator_primitive
+    ~create_measurement_obs_primitive
+    ~create_measurement_wires_primitive
+    ~create_measurement_mcm_primitive
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -69,7 +81,7 @@ But an operator developer may need to override custom behavior for calling ``cls
 (where ``cls`` indicates the class) if:
 
 * The operator does not accept wires, like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
-* The operator needs to enforce a data/ metadata distinction, like :class:`~.PauliRot`.
+* The operator needs to enforce a data / metadata distinction, like :class:`~.PauliRot`.
 
 In such cases, the operator developer can override ``cls._primitive_bind_call``, which
 will be called when constructing a new class instance instead of ``type.__call__``.  For example,
@@ -114,4 +126,17 @@ If needed, developers can also override the implementation method of the primiti
 """
 from .switches import disable, enable, enabled
 from .capture_meta import CaptureMeta
-from .primitives import create_operator_primitive
+from .primitives import (
+    create_operator_primitive,
+    create_measurement_obs_primitive,
+    create_measurement_wires_primitive,
+    create_measurement_mcm_primitive,
+)
+
+
+def __getattr__(key):
+    if key == "AbstractOperator":
+        from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
+
+        return _get_abstract_operator()
+    raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
