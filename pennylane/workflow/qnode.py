@@ -25,8 +25,8 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.logging import debug_logger
 from pennylane.debugging import pldb_device_manager
+from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
 
