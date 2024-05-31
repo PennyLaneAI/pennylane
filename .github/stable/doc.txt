@@ -118,4 +118,4 @@ Werkzeug==3.0.3
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
 yarl==1.9.4
-zipp==3.19.0
+zipp==3.19.1
