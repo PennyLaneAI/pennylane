@@ -16,7 +16,8 @@
 Tests for the PrepSelPrep template.
 """
 import copy
-
+import itertools
+import math
 import numpy as np
 import pytest
 
@@ -31,7 +32,6 @@ def test_standard_checks():
 
     op = qml.PrepSelPrep(lcu, control)
     qml.ops.functions.assert_valid(op)
-
 
 def test_repr():
     """Test the repr method."""
@@ -58,24 +58,66 @@ class TestPrepSelPrep:
     decomp = qml.pauli_decompose(A)
     coeffs, unitaries = decomp.terms()
     unitaries = [qml.map_wires(op, {0: 1, 1: 2}) for op in unitaries]
-
     lcu3 = qml.dot(coeffs, unitaries)
+
     lcu4 = qml.dot([-0.25, -0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-    lcu5 = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)])
+    lcu5 = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)])
     lcu6 = qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)])
-    lcu6 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(1), qml.X(1), qml.X(1)])
+    lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
 
     @staticmethod
-    def manual_circuit(lcu, control):
-        """Circuit equivalent to decomposition of PrepSelPrep"""
+    def build_new_lcu(lcu, target):
+        """Handle negative/complex coefficients, and non-power of two sums"""
+        new_coeffs = []
+        new_ops = []
+        for coeff, op in zip(*lcu.terms()):
+            if qml.math.iscomplex(coeff):
+                real = qml.math.real(coeff)
+                if real < 0:
+                    new_coeffs.append((-1)*real)
+                    new_ops.append((-1)*op)
+                if real > 0:
+                    new_coeffs.append(real)
+                    new_ops.append(op)
 
-        coeffs, unitaries = lcu.terms()
+                imag = qml.math.imag(coeff)
+                if imag < 0:
+                    new_coeffs.append((-1)*imag)
+                    new_ops.append((-1j)*op)
+                if imag > 0:
+                    new_coeffs.append(imag)
+                    new_ops.append((1j)*op)
+            else:
+                if coeff < 0:
+                    new_coeffs.append((-1)*coeff)
+                    new_ops.append((-1)*op)
+                else:
+                    new_coeffs.append(coeff)
+                    new_ops.append(op)
+
+        if (len(new_coeffs) & (len(new_coeffs)-1) == 0) and len(new_coeffs) != 0:
+            pow2 = len(new_coeffs)
+        else:
+            pow2 = 2**math.ceil(math.log2(len(new_coeffs)))
+
+        pad_zeros = list(itertools.repeat(0, pow2 - len(new_coeffs)))
+        pad_ident = list(itertools.repeat(qml.Identity(target), pow2 - len(new_ops)))
+
+        new_coeffs = new_coeffs + pad_zeros
+        new_ops = new_ops + pad_ident
+
+        return new_coeffs, new_ops
+
+    @staticmethod
+    def manual_circuit(lcu, control, target):
+        """Circuit equivalent to decomposition of PrepSelPrep"""
+        coeffs, ops = TestPrepSelPrep.build_new_lcu(lcu, target)
         normalized_coeffs = qml.math.sqrt(qml.math.abs(coeffs)) / qml.math.norm(
             qml.math.sqrt(qml.math.abs(coeffs))
         )
 
         qml.StatePrep(normalized_coeffs, wires=control)
-        qml.Select(unitaries, control=control)
+        qml.Select(ops, control=control)
         qml.adjoint(qml.StatePrep(normalized_coeffs, wires=control))
 
         return qml.state()
@@ -93,52 +135,65 @@ class TestPrepSelPrep:
     prepselprep = qml.QNode(prepselprep_circuit, dev)
 
     @pytest.mark.parametrize(
-        ("lcu", "control", "produced_matrix", "expected_matrix"),
+        ("lcu", "control", "target", "produced_matrix", "expected_matrix"),
         [
             (
                 lcu1,
                 0,
+                1,
                 qml.matrix(prepselprep, wire_order=[0, 1, 2]),
                 qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
             (
                 lcu2,
-                "ancilla",
-                qml.matrix(prepselprep, wire_order=[0, "ancilla"]),
-                qml.matrix(manual, wire_order=[0, "ancilla"]),
+                'ancilla',
+                0,
+                qml.matrix(prepselprep, wire_order=['ancilla', 0]),
+                qml.matrix(manual, wire_order=['ancilla', 0]),
             ),
             (
                 lcu3,
-                [0, 1],
+                [0],
+                1,
                 qml.matrix(prepselprep, wire_order=[0, 1, 2]),
                 qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
             (
                 lcu4,
-                0,
+                [0],
+                1,
                 qml.matrix(prepselprep, wire_order=[0, 1, 2]),
                 qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
             (
                 lcu5,
-                0,
+                [0, 1],
+                2,
+                qml.matrix(prepselprep, wire_order=[0, 1, 2, 3]),
+                qml.matrix(manual, wire_order=[0, 1, 2, 3]),
+            ),
+            (
+                lcu6,
+                [0],
+                1,
                 qml.matrix(prepselprep, wire_order=[0, 1, 2]),
                 qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
             (
-                lcu6,
-                0,
-                qml.matrix(prepselprep, wire_order=[0, 1]),
-                qml.matrix(manual, wire_order=[0, 1]),
+                lcu7,
+                [0, 1],
+                2,
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
         ],
     )
-    def test_decomposition(self, lcu, control, produced_matrix, expected_matrix):
+    def test_decomposition(self, lcu, control, target, produced_matrix, expected_matrix):
         """Test that the template produces the corrent decomposition"""
 
         assert np.array_equal(
-            produced_matrix(lcu, control=control),
-            expected_matrix(lcu, control=control),
+            produced_matrix(lcu, control),
+            expected_matrix(lcu, control, target),
         )
 
     @pytest.mark.parametrize(

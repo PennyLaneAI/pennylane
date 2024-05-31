@@ -18,6 +18,8 @@ linear combination of unitaries using the Prepare, Select, Prepare method.
 """
 # pylint: disable=arguments-differ
 import copy
+import itertools
+import math
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -67,10 +69,10 @@ class PrepSelPrep(Operation):
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
-        return self.compute_decomposition(self.lcu, self.control)
+        return self.compute_decomposition(self.lcu, self.control, self.target_wires)
 
     @staticmethod
-    def compute_decomposition(lcu, control):
+    def compute_decomposition(lcu, control, target):
         new_coeffs = []
         new_ops = []
         for coeff, op in zip(*lcu.terms()):
@@ -98,6 +100,16 @@ class PrepSelPrep(Operation):
                     new_coeffs.append(coeff)
                     new_ops.append(op)
 
+        if (len(new_coeffs) & (len(new_coeffs)-1) == 0) and len(new_coeffs) != 0:
+            pow2 = len(new_coeffs)
+        else:
+            pow2 = 2**math.ceil(math.log2(len(new_coeffs)))
+
+        pad_zeros = list(itertools.repeat(0, pow2 - len(new_coeffs)))
+        pad_ident = list(itertools.repeat(qml.Identity(target[0]), pow2 - len(new_ops)))
+
+        new_coeffs = new_coeffs + pad_zeros
+        new_ops = new_ops + pad_ident
         normalized_coeffs = qml.math.sqrt(new_coeffs) / qml.math.norm(qml.math.sqrt(new_coeffs))
 
         with qml.QueuingManager.stop_recording():
