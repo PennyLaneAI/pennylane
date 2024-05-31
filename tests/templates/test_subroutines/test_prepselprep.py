@@ -16,8 +16,6 @@
 Tests for the PrepSelPrep template.
 """
 import copy
-import itertools
-import math
 import numpy as np
 import pytest
 
@@ -28,25 +26,17 @@ from pennylane import numpy as pnp
 @pytest.mark.parametrize(
     ("lcu", "control"),
     [
-        (
-            qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-            [0]
-        ),
-        (
-            qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-            [0]
-        ),
-        (
-            qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]),
-            [0, 1]
-        )
-    ]
+        (qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
+        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
+        (qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1]),
+    ],
 )
 def test_standard_checks(lcu, control):
     """Run standard validity tests."""
 
     op = qml.PrepSelPrep(lcu, control)
     qml.ops.functions.assert_valid(op)
+
 
 def test_repr():
     """Test the repr method."""
@@ -80,7 +70,6 @@ class TestPrepSelPrep:
     lcu6 = qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)])
     lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
 
-
     @staticmethod
     def manual_circuit(lcu, control):
         """Circuit equivalent to decomposition of PrepSelPrep"""
@@ -110,42 +99,42 @@ class TestPrepSelPrep:
     @pytest.mark.parametrize(
         ("lcu", "control", "produced_matrix", "expected_matrix"),
         [
-            #(
+            # (
             #    lcu1,
             #    0,
             #    qml.matrix(prepselprep, wire_order=[0, 1, 2]),
             #    qml.matrix(manual, wire_order=[0, 1, 2]),
-            #),
-            #(
+            # ),
+            # (
             #    lcu2,
             #    'ancilla',
             #    qml.matrix(prepselprep, wire_order=['ancilla', 0]),
             #    qml.matrix(manual, wire_order=['ancilla', 0]),
-            #),
-            #(
+            # ),
+            # (
             #    lcu3,
             #    [0],
             #    qml.matrix(prepselprep, wire_order=[0, 1, 2]),
             #    qml.matrix(manual, wire_order=[0, 1, 2]),
-            #),
-            #(
+            # ),
+            # (
             #    lcu4,
             #    [0],
             #    qml.matrix(prepselprep, wire_order=[0, 1, 2]),
             #    qml.matrix(manual, wire_order=[0, 1, 2]),
-            #),
-            #(
+            # ),
+            # (
             #    lcu5,
             #    [0, 1],
             #    qml.matrix(prepselprep, wire_order=[0, 1, 2, 3]),
             #    qml.matrix(manual, wire_order=[0, 1, 2, 3]),
-            #),
-            #(
+            # ),
+            # (
             #    lcu6,
             #    [0],
             #    qml.matrix(prepselprep, wire_order=[0, 1, 2]),
             #    qml.matrix(manual, wire_order=[0, 1, 2]),
-            #),
+            # ),
             (
                 lcu7,
                 [0, 1],
@@ -165,25 +154,10 @@ class TestPrepSelPrep:
     @pytest.mark.parametrize(
         ("lcu", "control", "wire_order", "dim"),
         [
-            (
-                qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]),
-                [0],
-                [0, 1],
-                2
-            ),
-            (
-                qml.dot([0.5j, -0.5j], [qml.Z(1), qml.X(1)]),
-                [0],
-                [0, 1],
-                2
-            ),
-            (
-                qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]),
-                'ancilla',
-                ['ancilla', 0],
-                2
-            )
-        ]
+            (qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
+            (qml.dot([0.5j, -0.5j], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
+            (qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]), "ancilla", ["ancilla", 0], 2),
+        ],
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
         """Test that the decomposition is a block-encoding"""
@@ -191,8 +165,7 @@ class TestPrepSelPrep:
         prepselprep = qml.QNode(TestPrepSelPrep.prepselprep_circuit, dev)
         matrix = qml.matrix(lcu)
         block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
-        assert qml.math.allclose(matrix, block_encoding[0:dim,0:dim])
-
+        assert qml.math.allclose(matrix, block_encoding[0:dim, 0:dim])
 
     ops1 = lcu1.terms()[1]
     coeffs1 = lcu1.terms()[0]
@@ -206,15 +179,31 @@ class TestPrepSelPrep:
                 [0],
                 [
                     qml.MottonenStatePreparation(normalized1, wires=[0]),
-                    qml.ctrl(qml.ops.QubitUnitary(qml.math.array([[0.+0j, 0.+0.j], [0.+0.j, -1.+0.j]]), wires=[2]), 0),
-                    qml.ctrl(qml.ops.QubitUnitary(qml.math.array([[0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
-                                                                  [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j],
-                                                                  [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-                                                                  [1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]]), wires=[1, 2]), 0),
-                    qml.ops.Adjoint(qml.MottonenStatePreparation(normalized1, wires=[0]))
-                ]
+                    qml.ctrl(
+                        qml.ops.QubitUnitary(
+                            qml.math.array([[0.0 + 0j, 0.0 + 0.0j], [0.0 + 0.0j, -1.0 + 0.0j]]),
+                            wires=[2],
+                        ),
+                        0,
+                    ),
+                    qml.ctrl(
+                        qml.ops.QubitUnitary(
+                            qml.math.array(
+                                [
+                                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j],
+                                    [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j],
+                                    [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                                    [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                                ]
+                            ),
+                            wires=[1, 2],
+                        ),
+                        0,
+                    ),
+                    qml.ops.Adjoint(qml.MottonenStatePreparation(normalized1, wires=[0])),
+                ],
             )
-        ]
+        ],
     )
     def test_queuing_ops(self, lcu, control, results):
         """Test that qml.PrepSelPrep queues operations in the correct order."""

@@ -81,16 +81,15 @@ class PrepSelPrep(Operation):
         for coeff, op in zip(*lcu.terms()):
             real = qml.math.real(coeff)
             sign = qml.math.sign(real)
-            new_coeffs.append(sign*real)
+            new_coeffs.append(sign * real)
             new_op = qml.ops.LinearCombination([sign], [op])
             new_ops.append(new_op)
 
             imag = qml.math.imag(coeff)
             sign = qml.math.sign(imag)
-            new_coeffs.append(sign*imag)
-            new_op = qml.ops.LinearCombination([1j*sign], [op])
+            new_coeffs.append(sign * imag)
+            new_op = qml.ops.LinearCombination([1j * sign], [op])
             new_ops.append(new_op)
-
 
         keep_coeffs = []
         keep_ops = []
@@ -108,10 +107,10 @@ class PrepSelPrep(Operation):
             unitary = qml.QubitUnitary(qml.matrix(op), wires=op.wires)
             final_ops.append(unitary)
 
-        if (len(keep_coeffs) & (len(keep_coeffs)-1) == 0) and len(keep_coeffs) != 0:
+        if (len(keep_coeffs) & (len(keep_coeffs) - 1) == 0) and len(keep_coeffs) != 0:
             pow2 = len(keep_coeffs)
         else:
-            pow2 = 2**math.ceil(math.log2(len(keep_coeffs)))
+            pow2 = 2 ** math.ceil(math.log2(len(keep_coeffs)))
 
         pad_zeros = list(itertools.repeat(0, pow2 - len(keep_coeffs)))
 
@@ -119,7 +118,6 @@ class PrepSelPrep(Operation):
         final_coeffs = qml.math.array(keep_coeffs + pad_zeros, like=interface_coeffs)
 
         return final_coeffs, final_ops
-
 
     @staticmethod
     def compute_decomposition(lcu, control, jit):
