@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added `packaging` in the required list of packages.
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
+
 * Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
   [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
 
