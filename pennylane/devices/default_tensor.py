@@ -290,6 +290,10 @@ class DefaultTensor(Device):
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
         self._contract = kwargs.get("contract", "auto-mps")
 
+        # The `quimb` state is a class attribute so that we can implement methods
+        # that access it as soon as the device is created without running a circuit.
+        # The state is reset every time a new circuit is executed, and number of wires
+        # can be established at runtime to match the circuit.
         self._quimb_mps = qtn.CircuitMPS(psi0=self._initial_mps(self.wires))
 
         for arg in kwargs:
