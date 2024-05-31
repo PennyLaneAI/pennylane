@@ -189,6 +189,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `MottonenStatePreparation` produces wrong derivatives at special parameter values.
+  [(#5774)](https://github.com/PennyLaneAI/pennylane/pull/5774)
+
 * `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
