@@ -261,6 +261,28 @@ def test_control_in_ops():
     with pytest.raises(ValueError, match="Control wires should be different from operation wires."):
         qml.PrepSelPrep(lcu, control=0)
 
+def test_jit_not_power_2():
+    """Test that calling jit with a non-power of 2 number of terms results in an error"""
+
+    lcu = qml.dot([1, 2, 3], [qml.Identity(1), qml.PauliZ(1), qml.PauliX(1)])
+    with pytest.raises(ValueError, match="Number of terms must be a power of 2."):
+        qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
+
+def test_jit_complex_coeff():
+    """Test that calling jit with complex coefficients results in an error"""
+    lcu = qml.dot([0.5j, 1], [qml.PauliZ(1), qml.PauliX(1)])
+    with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
+        qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
+
+def test_jit_negative_coeff():
+    """Test that calling jit with complex coefficients results in an error"""
+    import jax.numpy as jnp
+
+    coeffs = jnp.array([0.5, -1])
+    lcu = qml.ops.LinearCombination(coeffs, [qml.PauliZ(1), qml.PauliX(1)])
+    with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
+        qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
+
 
 class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""

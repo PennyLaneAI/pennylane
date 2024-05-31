@@ -24,6 +24,9 @@ import math
 import pennylane as qml
 from pennylane.operation import Operation
 
+def is_pow2(n):
+    return ((n & (n - 1) == 0) and n != 0)
+
 
 class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
@@ -107,7 +110,7 @@ class PrepSelPrep(Operation):
             unitary = qml.QubitUnitary(qml.matrix(op), wires=op.wires)
             final_ops.append(unitary)
 
-        if (len(keep_coeffs) & (len(keep_coeffs) - 1) == 0) and len(keep_coeffs) != 0:
+        if is_pow2(len(keep_coeffs)):
             pow2 = len(keep_coeffs)
         else:
             pow2 = 2 ** math.ceil(math.log2(len(keep_coeffs)))
@@ -122,7 +125,24 @@ class PrepSelPrep(Operation):
     @staticmethod
     def compute_decomposition(lcu, control, jit):
         if jit:
+            import jax
+
+            def raiseIfNegative(x):
+                if x < 0:
+                    raise ValueError("Coefficients must be positive real numbers.")
+
             coeffs, ops = lcu.terms()
+
+            if not is_pow2(len(coeffs)):
+                raise ValueError("Number of terms must be a power of 2.")
+
+            if jax.numpy.iscomplexobj(coeffs):
+                raise ValueError("Coefficients must be positive real numbers.")
+
+            smallest = jax.numpy.min(coeffs)
+            jax.debug.callback(raiseIfNegative, smallest)
+
+
         else:
             coeffs, ops = PrepSelPrep.preprocess_lcu(lcu)
 
