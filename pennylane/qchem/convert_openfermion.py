@@ -71,6 +71,7 @@ def to_openfermion(pl_linear_combination, wires=None):
     >>> pl_term
     1.2 * X(0) + 2.4 * Z(1)
     >>> q_op = to_openfermion(q_op)
+    >>> q_op
     1.2 [X0] +
     2.4 [Z1]
     """

@@ -62,13 +62,9 @@ def test_to_openfermion():
 
     pl_linear_combination = 1.2 * qml.X(0) + 2.4 * qml.Z(1)
     q_op = qml.to_openfermion(pl_linear_combination)
+    q_op_ref = openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)
 
-    q_op_str = str(q_op)
-
-    # Remove new line characters
-    q_op_str = q_op_str.replace("\n", " ")
-    expected = "(1.2+0j) [X0] + (2.4+0j) [Z1]"
-    assert q_op_str == expected
+    assert q_op == q_op_ref
 
 
 def test_to_openfermion_custom_wires():
@@ -85,3 +81,42 @@ def test_to_openfermion_custom_wires():
     # The qubit operator should now reflect the swapped order of the first and third qubits.
     expected = "(0.2+0j) [Y0] + (2.4+0j) [Z1] + (1.2+0j) [X2]"
     assert q_op_str == expected
+
+
+invalid_ops = (
+    qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+    qml.prod(qml.PauliX(0), qml.Hadamard(1)),
+    qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
+)
+
+
+@pytest.mark.parametrize("op", invalid_ops)
+def test_not_xyz_to_openfermion(op):
+    r"""Test if the conversion complains about non Pauli matrix observables in the ``LinearCombination``."""
+    _match = "Expected a Pennylane operator with a valid Pauli word representation,"
+
+    pl_linear_combination = qml.ops.LinearCombination(
+        np.array([0.1 + 0.0j, 0.0]), [qml.operation.Tensor(qml.PauliX(0)), op]
+    )
+    with pytest.raises(ValueError, match=_match):
+        qml.to_openfermion(qml.to_openfermion(pl_linear_combination))
+
+
+def test_wires_not_covered_to_openfermion():
+    r"""Test if the conversion complains about supplied wires not covering ops wires."""
+    pl_linear_combination = qml.ops.LinearCombination(
+        np.array([0.1, 0.2]),
+        [
+            qml.operation.Tensor(qml.PauliX(wires=["w0"])),
+            qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
+        ],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Supplied `wires` does not cover all wires defined in `ops`.",
+    ):
+        qml.to_openfermion(
+            pl_linear_combination,
+            wires=qml.wires.Wires(["w0", "w1"]),
+        )
