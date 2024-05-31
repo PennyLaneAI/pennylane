@@ -209,7 +209,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     for op in circuit.operations:
         if isinstance(op, MidMeasureMP):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
-        if "MidCircuitMeasure" in str(type(op)):
+        elif "MidCircuitMeasure" in str(type(op)):
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
             new_op = op
             op.bypass_postselect = True
