@@ -352,7 +352,7 @@ class TestInterfaces:
         @qml.qnode(dev)
         def prepselprep(coeffs):
             lcu = qml.ops.LinearCombination(coeffs, ops)
-            qml.PrepSelPrep(lcu, control=0)
+            qml.PrepSelPrep(lcu, control=0, jit=True)
             return qml.expval(qml.Z(1))
 
         @jax.jit

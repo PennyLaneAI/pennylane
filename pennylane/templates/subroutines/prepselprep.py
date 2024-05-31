@@ -29,14 +29,14 @@ class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
     using the Prepare, Select, Prepare method"""
 
-    def __init__(self, lcu, control, id=None):
+    def __init__(self, lcu, control, jit=False, id=None):
         coeffs, ops = lcu.terms()
         control = qml.wires.Wires(control)
         self.hyperparameters["lcu"] = lcu
         self.hyperparameters["coeffs"] = coeffs
         self.hyperparameters["ops"] = tuple(ops)
         self.hyperparameters["control"] = control
-
+        self.hyperparameters["jit"] = jit
         if any(
             control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
             for control_wire in control
@@ -69,7 +69,7 @@ class PrepSelPrep(Operation):
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
-        return self.compute_decomposition(self.lcu, self.control)
+        return self.compute_decomposition(self.lcu, self.control, self.jit)
 
     @staticmethod
     def preprocess_lcu(lcu):
@@ -122,13 +122,17 @@ class PrepSelPrep(Operation):
 
 
     @staticmethod
-    def compute_decomposition(lcu, control):
-        new_coeffs, new_ops = PrepSelPrep.preprocess_lcu(lcu)
-        normalized_coeffs = qml.math.sqrt(new_coeffs) / qml.math.norm(qml.math.sqrt(new_coeffs))
+    def compute_decomposition(lcu, control, jit):
+        if jit:
+            coeffs, ops = lcu.terms()
+        else:
+            coeffs, ops = PrepSelPrep.preprocess_lcu(lcu)
+
+        normalized_coeffs = qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs))
 
         with qml.QueuingManager.stop_recording():
             prep_ops = qml.StatePrep.compute_decomposition(normalized_coeffs, control)
-            select_ops = qml.Select.compute_decomposition(new_ops, control)
+            select_ops = qml.Select.compute_decomposition(ops, control)
             adjoint_prep_ops = qml.adjoint(
                 qml.StatePrep(normalized_coeffs, control)
             ).decomposition()
@@ -199,3 +203,8 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+    @property
+    def jit(self):
+        """Prevent preprocessing to enable Jax Jit"""
+        return self.hyperparameters["jit"]
