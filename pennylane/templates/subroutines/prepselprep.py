@@ -79,9 +79,16 @@ class PrepSelPrep(Operation):
         with qml.QueuingManager.stop_recording():
             prep_ops = qml.StatePrep.compute_decomposition(normalized_coeffs, control)
             select_ops = qml.Select.compute_decomposition(ops, control)
-            adjoint_prep_ops = qml.adjoint(qml.StatePrep(normalized_coeffs, control)).decomposition()
+            adjoint_prep_ops = qml.adjoint(
+                qml.StatePrep(normalized_coeffs, control)
+            ).decomposition()
 
         ops = prep_ops + select_ops + adjoint_prep_ops
+
+        for op in ops:
+            if qml.QueuingManager.recording():
+                qml.apply(op)
+
         return ops
 
     def __copy__(self):

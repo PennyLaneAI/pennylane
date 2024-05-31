@@ -141,6 +141,35 @@ class TestPrepSelPrep:
             expected_matrix(lcu, control=control),
         )
 
+    ops1 = lcu1.terms()[1]
+    coeffs1 = lcu1.terms()[0]
+    normalized1 = qml.math.sqrt(coeffs1) / qml.math.norm(qml.math.sqrt(coeffs1))
+
+    @pytest.mark.parametrize(
+        ("lcu", "control", "results"),
+        [
+            (
+                lcu1,
+                [0],
+                [
+                    qml.MottonenStatePreparation(normalized1, wires=[0]),
+                    qml.ops.Controlled(qml.Z(2), [0]),
+                    qml.ops.Controlled(qml.X(1) @ qml.X(2), [0]),
+                    qml.ops.Adjoint(qml.MottonenStatePreparation(normalized1, wires=[0]))
+                ]
+            )
+        ]
+    )
+    def test_queuing_ops(self, lcu, control, results):
+        """Test that qml.PrepSelPrep queues operations in the correct order."""
+        with qml.tape.QuantumTape() as tape:
+            qml.PrepSelPrep(lcu, control=control)
+
+        for idx, val in enumerate(tape.expand().operations):
+            assert val.name == results[idx].name
+            assert len(val.parameters) == len(results[idx].parameters)
+            assert all([a == b] for a, b in zip(val.parameters, results[idx].parameters))
+
     def test_copy(self):
         """Test the copy function"""
 
@@ -200,7 +229,7 @@ class TestInterfaces:
         coeffs = pnp.array([1 / 2, 1 / 2], requires_grad=True)
         ops = [qml.Identity(1), qml.PauliZ(1)]
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="finite-diff")
         def prepselprep(coeffs):
             lcu = qml.ops.LinearCombination(coeffs, ops)
             qml.PrepSelPrep(lcu, control=0)
@@ -219,6 +248,9 @@ class TestInterfaces:
         grad_manual = qml.grad(manual)(coeffs)
 
         assert qml.math.allclose(grad_prepselprep, grad_manual)
+
+        fd_prepselprep = qml.jacobian(prepselprep)(coeffs)
+        assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
 
     @pytest.mark.jax
     def test_jax(self):
