@@ -254,35 +254,35 @@ class TestPrepSelPrep:
         assert op is not new_op
 
 
-def test_control_in_ops():
-    """Test that using an operation wire as a control wire results in an error"""
+class TestErrors:
+    def test_control_in_ops(self):
+        """Test that using an operation wire as a control wire results in an error"""
 
-    lcu = qml.dot([1 / 2, 1 / 2], [qml.Identity(0), qml.PauliZ(0)])
-    with pytest.raises(ValueError, match="Control wires should be different from operation wires."):
-        qml.PrepSelPrep(lcu, control=0)
+        lcu = qml.dot([1 / 2, 1 / 2], [qml.Identity(0), qml.PauliZ(0)])
+        with pytest.raises(ValueError, match="Control wires should be different from operation wires."):
+            qml.PrepSelPrep(lcu, control=0)
 
-def test_jit_not_power_2():
-    """Test that calling jit with a non-power of 2 number of terms results in an error"""
+    def test_jit_not_power_2(self):
+        """Test that calling jit with a non-power of 2 number of terms results in an error"""
 
-    lcu = qml.dot([1, 2, 3], [qml.Identity(1), qml.PauliZ(1), qml.PauliX(1)])
-    with pytest.raises(ValueError, match="Number of terms must be a power of 2."):
-        qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
+        lcu = qml.dot([1, 2, 3], [qml.Identity(1), qml.PauliZ(1), qml.PauliX(1)])
+        with pytest.raises(ValueError, match="Number of terms must be a power of 2."):
+            qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
 
-def test_jit_complex_coeff():
-    """Test that calling jit with complex coefficients results in an error"""
-    lcu = qml.dot([0.5j, 1], [qml.PauliZ(1), qml.PauliX(1)])
-    with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
-        qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
+    def test_jit_complex_coeff(self):
+        """Test that calling jit with complex coefficients results in an error"""
+        lcu = qml.dot([0.5j, 1], [qml.PauliZ(1), qml.PauliX(1)])
+        with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
+            qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
 
-def test_jit_negative_coeff():
-    """Test that calling jit with complex coefficients results in an error"""
-    import jax.numpy as jnp
+    def test_jit_negative_coeff(self):
+        """Test that calling jit with complex coefficients results in an error"""
+        import jax.numpy as jnp
 
-    coeffs = jnp.array([0.5, -1])
-    lcu = qml.ops.LinearCombination(coeffs, [qml.PauliZ(1), qml.PauliX(1)])
-    with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
-        qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
-
+        coeffs = jnp.array([0.5, -1])
+        lcu = qml.ops.LinearCombination(coeffs, [qml.PauliZ(1), qml.PauliX(1)])
+        with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
+            qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
 
 class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
