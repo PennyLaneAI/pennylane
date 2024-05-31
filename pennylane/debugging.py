@@ -175,6 +175,16 @@ class PLDB(pdb.Pdb):
         """Reset the global active device list (to empty)."""
         cls.__active_dev = None
 
+    @classmethod
+    def _execute(cls, batch_tapes):
+        """Execute tape on the active device"""
+        dev = cls.get_active_device()
+
+        program, new_config = dev.preprocess()
+        new_batch, fn = program(batch_tapes)
+
+        return fn(dev.execute(new_batch, new_config))
+
 
 @contextmanager
 def pldb_device_manager(device):
@@ -189,16 +199,6 @@ def pldb_device_manager(device):
         yield
     finally:
         PLDB.reset_active_dev()
-
-    @classmethod
-    def _execute(cls, batch_tapes):
-        """Execute tape on the active device"""
-        dev = cls.get_active_device()
-
-        program, new_config = dev.preprocess()
-        new_batch, fn = program(batch_tapes)
-
-        return fn(dev.execute(new_batch, new_config))
 
 
 def breakpoint():
