@@ -363,7 +363,7 @@ def _equal_operators(
             params2_train = qml.math.requires_grad(params2)
             if params1_train != params2_train:
                 return (
-                    "Parameters have different trainability.\n"
+                    "Parameters have different trainability.\n "
                     f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
                 )
 
@@ -373,7 +373,7 @@ def _equal_operators(
             params2_interface = qml.math.get_interface(params2)
             if params1_interface != params2_interface:
                 return (
-                    "Parameters have different interfaces.\n"
+                    "Parameters have different interfaces.\n "
                     f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
                 )
 
@@ -394,7 +394,12 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 
-    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2))
+    for o1, o2 in zip(sorted_ops1, sorted_ops2):
+        op_check = _equal(o1, o2, **kwargs)
+        if isinstance(op_check, str):
+            return f"Operations {op1} and {op2} are different because " + op_check
+
+    return True
 
 
 @_equal.register
@@ -413,7 +418,10 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     if op1_control_dict != op2_control_dict:
         return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
 
-    return qml.equal(op1.base, op2.base, **kwargs)
+    base_equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(base_equal_check, str):
+        return "operations are different because base operations " + base_equal_check
+    return True
 
 
 @_equal.register
@@ -462,7 +470,10 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
 def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
-    return qml.equal(op1.base, op2.base, **kwargs)
+    base_equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(base_equal_check, str):
+        return "operations are different because base operations " + base_equal_check
+    return True
 
 
 @_equal.register
