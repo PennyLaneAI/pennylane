@@ -117,6 +117,20 @@ class TestNoiseModels:
         noise_model2 = qml.NoiseModel({qml.noise.op_eq(qml.X): noise})
         assert noise_model == noise_model2
 
+        # check inequality
+        @qml.BooleanFn
+        def fcond1(op):
+            return isinstance(op, qml.RY) and op.parameters[0] >= 0.5
+
+        noise_model = qml.NoiseModel({fcond1: noise})
+        noise_model2 = qml.NoiseModel({fcond: noise})
+        assert noise_model != noise_model2
+
+        noise1 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+        noise_model = qml.NoiseModel({fcond: noise})
+        noise_model2 = qml.NoiseModel({fcond: noise1})
+        assert noise_model != noise_model2
+
     def test_build_model_errors(self):
         """Test for checking building noise models raise correct error when signatures are not proper"""
 

@@ -138,15 +138,7 @@ class NoiseModel:
 
     @staticmethod
     def check_model(model):
-        r"""Method to validate the ``model_map`` for constructing a NoiseModel.
-
-        Args:
-            model: ``model_map`` or the data for the noise model.
-
-        Raises:
-            ValueError: if any conditional in ``model`` is not an instance of BooleanFn or its subclasses,
-                and if any callables in ``model`` does not accept **kwargs as their last argument.
-        """
+        """Method to validate the ``model`` map for constructing a NoiseModel."""
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
                 raise ValueError(
