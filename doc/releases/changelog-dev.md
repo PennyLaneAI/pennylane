@@ -190,6 +190,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
+  [(#5761)](https://github.com/PennyLaneAI/pennylane/pull/5761)
+
 * `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
