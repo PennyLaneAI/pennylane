@@ -326,7 +326,7 @@ def _equal_operators(
     if not isinstance(
         op2, type(op1)
     ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
-        return False
+        return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
 
     if isinstance(op1, qml.Identity):
         # All Identities are equivalent, independent of wires.
@@ -335,32 +335,36 @@ def _equal_operators(
         return True
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
-        return False
+        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}."
 
     if op1.arithmetic_depth > 0:
         # Other dispatches cover cases of operations with arithmetic depth > 0.
         # If any new operations are added with arithmetic depth > 0, a new dispatch
         # should be created for them.
-        return False
+        return f"op1 has an arithmetic depth major than 0. Got {op1.arithmetic_depth}."
+
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
-        return False
+        return f"op1 and op2 have different data. Got {op1.data} and {op2.data}."
+
     if op1.wires != op2.wires:
-        return False
+        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
 
     if op1.hyperparameters != op2.hyperparameters:
-        return False
+        return f"op1 and op2 have different hyperparameters. Got {op1.hyperparameters} and {op2.hyperparameters}."
 
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
             if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
-                return False
+                return f"Either op1 or op2 have a parameter that does not require a gradient. Got {op1.data} and {op2.data}"
 
     if check_interface:
         for params_1, params_2 in zip(op1.data, op2.data):
-            if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
-                return False
+            interface1 = qml.math.get_interface(params_1)
+            interface2 = qml.math.get_interface(params_2)
+            if interface1 != interface2:
+                return f"op1 and op2 have different interfaces. Got {interface1} and {interface2}."
 
     return True
 
@@ -385,20 +389,22 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
 @_equal.register
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
-    # work wires and control_wire/control_value combinations compared here
-    # op.base.wires compared in return
-    if [
-        dict(zip(op1.control_wires, op1.control_values)),
-        op1.work_wires,
-        op1.arithmetic_depth,
-    ] != [
-        dict(zip(op2.control_wires, op2.control_values)),
-        op2.work_wires,
-        op2.arithmetic_depth,
-    ]:
-        return False
 
-    return qml.equal(op1.base, op2.base, **kwargs)
+    if op1.work_wires != op2.work_wires:
+        return f"op1 and op2 have different work_wires. Got {op1.work_wires} and {op2.work_wires}."
+
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return f"op1 and op2 have different arithmetic depth. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}."
+
+    if dict(zip(op1.control_wires, op1.control_values)) != dict(
+        zip(op2.control_wires, op2.control_values)
+    ):
+        return f"op1 and op2 have different control wires/values. "
+
+    if not qml.equal(op1.base, op2.base, **kwargs):
+        return f"op1 and op2 have different bases because op1.base is not equal to op2.base. Got {op1.base} and {op2.base}."
+
+    return True
 
 
 @_equal.register
@@ -420,16 +426,22 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     check_interface, check_trainability = kwargs["check_interface"], kwargs["check_trainability"]
 
     if check_interface:
-        if qml.math.get_interface(op1.z) != qml.math.get_interface(op2.z):
-            return False
+        interface1 = qml.math.get_interface(op1.z)
+        interface2 = qml.math.get_interface(op2.z)
+        if interface1 != interface2:
+            return f"op1 and op2 have different interfaces. Got {interface1} and {interface2}."
+
     if check_trainability:
         if qml.math.requires_grad(op1.z) != qml.math.requires_grad(op2.z):
-            return False
+            return f"Either op1 or op2 have an exponent that does not require a gradient. {op1.z} and {op2.z}"
 
     if op1.z != op2.z:
-        return False
+        return f"op1 and op2 have a different exponents. Got {op1.z} and {op2.z}."
 
-    return qml.equal(op1.base, op2.base, **kwargs)
+    if not qml.equal(op1.base, op2.base, **kwargs):
+        return f"op1 and op2 have different bases because op1.base is not equal to op2.base. Got {op1.base} and {op2.base}."
+
+    return True
 
 
 @_equal.register
@@ -437,7 +449,10 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
 def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
-    return qml.equal(op1.base, op2.base, **kwargs)
+    if not qml.equal(op1.base, op2.base, **kwargs):
+        return f"op1 and op2 have different bases because op1.base is not equal to op2.base. Got {op1.base} and {op2.base}."
+
+    return True
 
 
 @_equal.register
@@ -453,17 +468,23 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
 
     if check_interface:
         for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.get_interface(params1) != qml.math.get_interface(params2):
-                return False
+            interface1 = qml.math.get_interface(params1)
+            interface2 = qml.math.get_interface(params2)
+            if interface1 != interface2:
+                return f"op1 and op2 have different interfaces. Got {interface1} and {interface2}."
+
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data):
             if qml.math.requires_grad(params1) != qml.math.requires_grad(params2):
-                return False
+                return f"Either op1 or op2 have an exponent that does not require a gradient. Got {params1} and {params2}."
 
     if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
-        return False
+        return f"op1 and op2 have different coefficients. Got {op1.coeff} and {op2.coeff}."
 
-    return qml.equal(op1.base, op2.base, **kwargs)
+    if not qml.equal(op1.base, op2.base, **kwargs):
+        return f"op1 and op2 have different bases because op1.data[0] is not equal to op2.data[0]. Got {op1.data[0]} and {op2.data[0]}."
+
+    return True
 
 
 @_equal.register

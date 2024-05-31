@@ -19,8 +19,8 @@ from importlib import reload, metadata
 from sys import version_info
 
 
-import numpy as _np
 from semantic_version import SimpleSpec, Version
+import numpy as _np
 
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy

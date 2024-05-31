@@ -24,6 +24,10 @@
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
+* `_equal_operators`,`_equal_controlled`, `_equal_adjoint`, `_equal_pow` and `_equal_exp`
+  now return True or a string explaining why two operators are not equal.
+  [(#TODO)](https://github.com/PennyLaneAI/pennylane/pull/TODO)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.

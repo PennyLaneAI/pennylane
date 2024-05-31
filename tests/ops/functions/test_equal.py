@@ -1700,6 +1700,17 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
+    def test_pow_comparison_with_exponent(self):
+        """Test that equal compares the exponents within two objects of the Pow class."""
+        op1 = qml.pow(qml.RX(npp.array(1.2), wires=0), 2)
+        op2 = qml.pow(qml.RX(npp.array(1.2), wires=0), 3)
+
+        assert not qml.equal(op1, op2)
+
+        op2 = qml.pow(qml.RX(npp.array(1.2), wires=0), 2)
+
+        assert qml.equal(op1, op2)
+
     @pytest.mark.parametrize("bases_bases_match", BASES)
     @pytest.mark.parametrize("params_params_match", PARAMS)
     def test_exp_comparison(self, bases_bases_match, params_params_match):
@@ -1751,6 +1762,17 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+
+    def test_exp_comparison_coefficient(self):
+        """Test that equal compares the coefficients of two objects of Exp class."""
+        op1 = qml.exp(qml.RX(npp.array(0.5), wires=0), 1.2)
+        op2 = qml.exp(qml.RX(npp.array(0.5), wires=0), 1.2)
+
+        assert qml.equal(op1, op2)
+
+        op2 = qml.exp(qml.RX(npp.array(0.5), wires=0), 3)
+
+        assert not qml.equal(op1, op2)
 
     additional_cases = [
         (qml.sum(qml.PauliX(0), qml.PauliY(0)), qml.sum(qml.PauliY(0), qml.PauliX(0)), True),
