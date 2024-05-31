@@ -15,10 +15,13 @@
 Contains the QuantumPhaseEstimation template.
 """
 # pylint: disable=too-many-arguments,arguments-differ
+import copy
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operator
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.wires import Wires
 
 
 class QuantumPhaseEstimation(ErrorOperation):
@@ -148,6 +151,10 @@ class QuantumPhaseEstimation(ErrorOperation):
         return data, metadata
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
         return cls(data[0], estimation_wires=metadata[0])
 
@@ -232,17 +239,16 @@ class QuantumPhaseEstimation(ErrorOperation):
 
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
-        new_op = super().map_wires(wire_map)
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["unitary"] = qml.map_wires(
             new_op._hyperparameters["unitary"], wire_map
         )
 
-        new_op._hyperparameters["estimation_wires"] = [
-            wire_map.get(wire, wire) for wire in self.estimation_wires
-        ]
-        new_op._hyperparameters["target_wires"] = [
-            wire_map.get(wire, wire) for wire in self.target_wires
-        ]
+        for key in ["estimation_wires", "target_wires"]:
+            new_op._hyperparameters[key] = [
+                wire_map.get(wire, wire) for wire in self.hyperparameters[key]
+            ]
 
         return new_op
 
