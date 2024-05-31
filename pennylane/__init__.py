@@ -21,9 +21,6 @@ from sys import version_info
 
 import numpy as _np
 
-from packaging.specifiers import SpecifierSet
-from packaging.version import Version
-
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
@@ -141,6 +138,9 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
+
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
