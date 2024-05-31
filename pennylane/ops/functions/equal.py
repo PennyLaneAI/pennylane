@@ -399,7 +399,7 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     if dict(zip(op1.control_wires, op1.control_values)) != dict(
         zip(op2.control_wires, op2.control_values)
     ):
-        return f"op1 and op2 have different control wires/values. "
+        return "op1 and op2 have different control wires/values."
 
     if not qml.equal(op1.base, op2.base, **kwargs):
         return f"op1 and op2 have different bases because op1.base is not equal to op2.base. Got {op1.base} and {op2.base}."
