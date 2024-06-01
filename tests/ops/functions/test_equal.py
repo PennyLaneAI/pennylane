@@ -1214,19 +1214,6 @@ class TestEqual:
 
     def test_equal_with_different_arithmetic_depth(self):
         """Test equal method with two operators with different arithmetic depth."""
-
-        # pylint: disable=too-few-public-methods
-        class DepthIncreaseOperator(Operator):
-            """Dummy class which increases depth by one"""
-
-            def __init__(self, op: Operator):
-                self._op = op
-
-            @property
-            def arithmetic_depth(self) -> int:
-                """Arithmetic depth of the operator."""
-                return 1 + self._op.arithmetic_depth
-
         op1 = Operator(wires=0)
         op2 = DepthIncreaseOperator(op1)
 
@@ -1636,6 +1623,23 @@ class TestSymbolicOpComparison:
         op2 = ControlledSequence(base2, control=2)
         assert qml.equal(op1, op2) == res
 
+    def test_controlled_sequence_with_different_base_operator(self):
+        """Test controlled sequence operator with different base operators"""
+        op1 = ControlledSequence(qml.PauliX(0), control=2)
+        op2 = ControlledSequence(qml.PauliY(0), control=2)
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op2)
+
+    def test_controlled_sequence_with_different_arithmetic_depth(self):
+        """The depths of controlled sequence operators are different due to nesting"""
+        base = qml.MultiRZ(1.23, [0, 1])
+        depth_increased_base = DepthIncreaseOperator(base)
+        op1 = ControlledSequence(base, control=5)
+        op2 = ControlledSequence(depth_increased_base, control=5)
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths."):
+            assert_equal(op1, op2)
+
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_control_wires_comparison(self, wire1, wire2, res):
         """Test that equal compares control_wires for Controlled operators"""
@@ -1691,6 +1695,9 @@ class TestSymbolicOpComparison:
         op1 = ControlledSequence(base1, control=wires1)
         op2 = ControlledSequence(base2, control=wires2)
         assert qml.equal(op1, op2) == res
+        if not res:
+            with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+                assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_controlled_work_wires_comparison(self, wire1, wire2, res):
@@ -2615,3 +2622,21 @@ class TestHilbertSchmidt:
         assert qml.equal(op, other_op, check_interface=False) is False
         assert qml.equal(op, other_op, check_trainability=False) is False
         assert qml.equal(op, other_op, check_interface=False, check_trainability=False) is True
+
+
+# pylint: disable=too-few-public-methods
+class DepthIncreaseOperator(Operator):
+    """Dummy class which increases depth by one"""
+
+    # pylint: disable=super-init-not-called
+    def __init__(self, op: Operator):
+        self._op = op
+
+    @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 1 + self._op.arithmetic_depth
+
+    @property
+    def wires(self):
+        return self._op.wires

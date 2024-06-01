@@ -445,13 +445,16 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 @_equal_dispatch.register
 def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
     """Determine whether two ControlledSequences are equal"""
-    if [op1.wires, op1.arithmetic_depth] != [
-        op2.wires,
-        op2.arithmetic_depth,
-    ]:
-        return False
+    if op1.wires != op2.wires:
+        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
 
-    return qml.equal(op1.base, op2.base, **kwargs)
+    base_equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(base_equal_check, str):
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
+
+    return True
 
 
 @_equal_dispatch.register
