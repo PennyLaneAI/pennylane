@@ -255,6 +255,8 @@ class TestPrepSelPrep:
 
 
 class TestErrors:
+    """Tests that the template propertly raises errors"""
+
     def test_control_in_ops(self):
         """Test that using an operation wire as a control wire results in an error"""
 
