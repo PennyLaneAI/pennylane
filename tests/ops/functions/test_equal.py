@@ -19,6 +19,7 @@ import itertools
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
+import re
 
 import numpy as np
 import pytest
@@ -1435,6 +1436,10 @@ class TestObservablesComparisons:
 
         assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
+        if not res:
+            error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not same")
+            with pytest.raises(AssertionError, match=error_message_pattern):
+                assert_equal(H1, H2)
 
     @pytest.mark.parametrize(("T1", "T2", "res"), equal_tensors)
     def test_tensors_equal(self, T1, T2, res):
