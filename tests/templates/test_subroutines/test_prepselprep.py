@@ -157,6 +157,7 @@ class TestPrepSelPrep:
             (qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.5j, -0.5j], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]), "ancilla", ["ancilla", 0], 2),
+            (qml.dot([0.5, 0.5, 0.5], [qml.PauliX(2), qml.PauliY(2), qml.PauliZ(2)]), [0, 1], [0, 1, 2], 2)
         ],
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
@@ -165,7 +166,14 @@ class TestPrepSelPrep:
         prepselprep = qml.QNode(TestPrepSelPrep.prepselprep_circuit, dev)
         matrix = qml.matrix(lcu)
         block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
-        assert qml.math.allclose(matrix, block_encoding[0:dim, 0:dim])
+
+        coeffs, _ = qml.PrepSelPrep.preprocess_lcu(lcu)
+        normalization_factor = qml.math.sum(qml.math.abs(coeffs))
+
+        print(matrix / normalization_factor)
+        print(block_encoding[0:dim, 0:dim])
+
+        assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
     ops1 = lcu1.terms()[1]
     coeffs1 = lcu1.terms()[0]
