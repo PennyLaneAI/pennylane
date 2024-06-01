@@ -151,6 +151,10 @@
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
+* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
+  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
+  [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
+
 <h3>Breaking changes 💔</h3>
 
 * A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
@@ -176,10 +180,6 @@
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
   Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
   [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
-  
-* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
-  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
-  [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
 
 <h3>Deprecations 👋</h3>
 
