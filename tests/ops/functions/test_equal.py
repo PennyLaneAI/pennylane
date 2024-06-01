@@ -16,10 +16,9 @@ Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
 import itertools
-
+import re
 # pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
-import re
 
 import numpy as np
 import pytest
@@ -30,11 +29,8 @@ from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
-    BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
-    OPERANDS_MISMATCH_ERROR_MESSAGE,
-    _equal,
-    assert_equal,
-)
+    BASE_OPERATION_MISMATCH_ERROR_MESSAGE, OPERANDS_MISMATCH_ERROR_MESSAGE,
+    _equal, assert_equal)
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
