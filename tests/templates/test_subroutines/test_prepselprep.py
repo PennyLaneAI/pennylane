@@ -331,7 +331,7 @@ class TestInterfaces:
         coeffs = jnp.array([1 / 2, 1 / 2])
         ops = [qml.Identity(1), qml.PauliZ(1)]
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="finite-diff")
         def prepselprep(coeffs):
             lcu = qml.ops.LinearCombination(coeffs, ops)
             qml.PrepSelPrep(lcu, control=0)
@@ -350,6 +350,9 @@ class TestInterfaces:
         grad_manual = jax.grad(manual)(coeffs)
 
         assert qml.math.allclose(grad_prepselprep, grad_manual)
+
+        fd_prepselprep = jax.jacobian(prepselprep)(coeffs)
+        assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
 
     @pytest.mark.jax
     def test_jax_jit(self):
