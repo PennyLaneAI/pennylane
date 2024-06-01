@@ -32,7 +32,7 @@ from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     OPERANDS_MISMATCH_ERROR_MESSAGE,
-    _equal_dispatch,
+    _equal,
     assert_equal,
 )
 from pennylane.ops.op_math import Controlled, SymbolicOp
@@ -343,7 +343,7 @@ def test_assert_equal_unspecified():
             pass
 
     # pylint: disable=unused-argument
-    @_equal_dispatch.register
+    @_equal.register
     def _(op1: RandomType, op2, **_):
         """always returns false"""
         return False
