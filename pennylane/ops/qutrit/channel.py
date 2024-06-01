@@ -317,7 +317,7 @@ class QutritAmplitudeDamping(Channel):
 
 class TritFlip(Channel):
     r"""
-    Single-qutrit parameter flipping error channel, similar to (GellMann :math:`\{\gamma_1, \gamma_4, \gamma_6\}`).
+    Single-qutrit parameter flipping error channel, similar to (GellMann :math:`\{\lambda_1, \lambda_4, \lambda_6\}`).
 
     This channel is modelled by the following Kraus matrices:
 
@@ -351,10 +351,10 @@ class TritFlip(Channel):
     .. note::
         The Kraus operators :math:`\{K_0, K_1, K_2, K_3\}` are adapted from The BitFlip channel's Kraus operators.
 
-        This channel is primarily meant to characterize the misclasification inherent to measurements on some platforms.
-        An example of this can be seen in [`2 <TODO>`_] (TODO).
+        This channel is primarily meant to characterize the misclassification inherent to measurements on some platforms.
+        An example of of a measurement with misclassification can be seen in [`1 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
 
-        To maintain normalization :math:`p_01 + p_02 + p_12 \leq 1`.
+        To maintain normalization :math:`p_{01} + p_{02} + p_{12} \leq 1`.
 
 
     **Details:**
