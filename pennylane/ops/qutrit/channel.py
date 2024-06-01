@@ -313,3 +313,106 @@ class QutritAmplitudeDamping(Channel):
             math.cast_like(math.array([[0, 0, 1], [0, 0, 0], [0, 0, 0]]), gamma_2), gamma_2
         )
         return [K0, K1, K2]
+
+
+class TritFlip(Channel):
+    r"""
+    Single-qutrit parameter flipping error channel, similar to (GellMann :math:`\{\gamma_1, \gamma_4, \gamma_6\}`).
+
+    This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-(p_{01} + p_{02} + p_{12})} \begin{bmatrix}
+                1 & 0 & 0  \\
+                0 & 1 & 0  \\
+                0 & 0 & 1
+                \end{bmatrix}
+
+    .. math::
+        K_1 = \sqrt{p_{01}}\begin{bmatrix}
+                0 & 1 & 0  \\
+                1 & 0 & 0  \\
+                0 & 0 & 1
+                \end{bmatrix}, \quad
+        K_2 = \sqrt{p_{02}}\begin{bmatrix}
+                0 & 0 & 1  \\
+                0 & 1 & 0  \\
+                1 & 0 & 0
+                \end{bmatrix}, \quad
+        K_3 = \sqrt{p_{12}}\begin{bmatrix}
+                1 & 0 & 0  \\
+                0 & 0 & 1  \\
+                0 & 1 & 0
+                \end{bmatrix}
+
+    where :math:`p_{01}, p_{02}, p_{12} \in [0, 1]` is the probability of a parameter flipping for subspaces (0,1),
+    (0,2), and (1,2) respectively.
+
+    .. note::
+        The Kraus operators :math:`\{K_0, K_1, K_2, K_3\}` are adapted from The BitFlip channel's Kraus operators.
+
+        This channel is primarily meant to characterize the misclasification inherent to measurements on some platforms.
+        An example of this can be seen in [`2 <TODO>`_] (TODO).
+
+        To maintain normalization :math:`p_01 + p_02 + p_12 \leq 1`.
+
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 3
+
+    Args:
+        p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` parameter flip error occurs.
+        p_02 (float): The probability that a :math:`|0 \rangle \leftrightarrow |2 \rangle` parameter flip error occurs.
+        p_12 (float): The probability that a :math:`|1 \rangle \leftrightarrow |2 \rangle` parameter flip error occurs.
+        wires (Sequence[int] or int): the wire the channel acts on
+        id (str or None): String representing the operation (optional)
+    """
+
+    num_params = 3
+    num_wires = 1
+    grad_method = "F"
+
+    def __init__(self, p_01, p_02, p_12, wires, id=None):
+        # Verify input
+        ps = (p_01, p_02, p_12)
+        for p in ps:
+            if not math.is_abstract(p) and not 0.0 <= p <= 1.0:
+                raise ValueError("All probabilities must be in the interval [0,1]")
+        if not any(math.is_abstract(p) for p in ps):
+            if not 0.0 <= sum(ps) <= 1.0:
+                raise ValueError("The sum of probabilities must be in the interval [0,1]")
+
+        super().__init__(p_01, p_02, p_12, wires=wires, id=id)
+
+    @staticmethod
+    def compute_kraus_matrices(p_01, p_02, p_12):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the TritFlip channel.
+
+        Args:
+            p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` parameter flip error occurs.
+            p_02 (float): The probability that a :math:`|0 \rangle \leftrightarrow |2 \rangle` parameter flip error occurs.
+            p_12 (float): The probability that a :math:`|1 \rangle \leftrightarrow |2 \rangle` parameter flip error occurs.
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.TritFlip.compute_kraus_matrices(0.5)
+        TODO
+        """
+        K0 = math.sqrt(1 - (p_01 + p_02 + p_12) + math.eps) * math.convert_like(
+            math.cast_like(np.eye(3), p_01), p_01
+        )
+        K1 = math.sqrt(p_01 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]), p_01), p_01
+        )
+        K2 = math.sqrt(p_02 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]), p_02), p_02
+        )
+        K3 = math.sqrt(p_12 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]]), p_12), p_12
+        )
+        return [K0, K1, K2, K3]

@@ -51,6 +51,7 @@ __obs__ = {
 __channels__ = {
     "QutritDepolarizingChannel",
     "QutritAmplitudeDamping",
+    "TritFlip"
 }
 
 __all__ = list(__ops__ | __obs__ | __channels__)
