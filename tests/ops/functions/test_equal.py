@@ -30,6 +30,7 @@ from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
+    OPERANDS_MISMATCH_ERROR_MESSAGE,
     _equal_dispatch,
     assert_equal,
 )
@@ -1915,6 +1916,27 @@ class TestSymbolicOpComparison:
         op2 = qml.s_prod(param2, base2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
+    def test_s_prod_comparison_different_scalar(self):
+        """Test that equal compares two objects of the SProd class with different scalars"""
+        base = qml.PauliX(0) @ qml.PauliY(1)
+        op1 = qml.s_prod(0.2, base)
+        op2 = qml.s_prod(0.3, base)
+
+        with pytest.raises(
+            AssertionError, match="op1 and op2 have different scalars. Got 0.2 and 0.3"
+        ):
+            assert_equal(op1, op2)
+
+    def test_s_prod_comparison_different_operands(self):
+        """Test that equal compares two objects of the SProd class with different operands"""
+        base1 = qml.PauliX(0) @ qml.PauliY(1)
+        base2 = qml.PauliX(0) @ qml.PauliY(2)
+        op1 = qml.s_prod(0.2, base1)
+        op2 = qml.s_prod(0.2, base2)
+
+        with pytest.raises(AssertionError, match=OPERANDS_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op2)
+
     def test_s_prod_comparison_with_tolerance(self):
         """Test that equal compares the parameters within a provided tolerance of the SProd class."""
         op1 = qml.s_prod(0.12, qml.PauliX(0))
@@ -1932,6 +1954,8 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+        with pytest.raises(AssertionError, match="Parameters have different interfaces."):
+            assert_equal(op1, op2)
 
     def test_s_prod_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the SProd class."""
@@ -1940,6 +1964,8 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+        with pytest.raises(AssertionError, match="Parameters have different trainability."):
+            assert_equal(op1, op2)
 
     def test_s_prod_base_op_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the base operator of SProd class."""
@@ -2140,6 +2166,28 @@ class TestSumComparisons:
         op1 = qml.sum(*base_list1)
         op2 = qml.sum(*base_list2)
         assert qml.equal(op1, op2) == res
+
+    def test_sum_with_different_operands(self):
+        """Test sum equals with different operands"""
+        operands1 = [qml.PauliX(0), qml.PauliY(1)]
+        operands2 = [qml.PauliY(0), qml.PauliY(1)]
+        op1 = qml.sum(*operands1)
+        op2 = qml.sum(*operands2)
+
+        with pytest.raises(AssertionError, match=OPERANDS_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op2)
+
+    def test_sum_with_different_number_of_operands(self):
+        """Test sum equals with different number of operands"""
+        operands1 = [qml.PauliX(0), qml.PauliY(1)]
+        operands2 = [qml.PauliY(1)]
+        op1 = qml.sum(*operands1)
+        op2 = qml.sum(*operands2)
+
+        with pytest.raises(
+            AssertionError, match="op1 and op2 have different number of operands. Got 2 and 1"
+        ):
+            assert_equal(op1, op2)
 
     def test_sum_equal_order_invarient(self):
         """Test that the order of operations doesn't affect equality"""

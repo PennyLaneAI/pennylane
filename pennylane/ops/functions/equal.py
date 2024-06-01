@@ -41,6 +41,8 @@ from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumTape
 from pennylane.templates.subroutines import ControlledSequence
 
+OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
+
 BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operations because "
 
 
@@ -159,7 +161,7 @@ def equal(
     """
 
     if isinstance(op2, (Hamiltonian, Tensor)):
-        return _equal(op2, op1)
+        op1, op2 = op2, op1
 
     dispatch_result = _equal(
         op1,
@@ -403,7 +405,7 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
         return True
 
     if len(op1.operands) != len(op2.operands):
-        return False
+        return f"op1 and op2 have different number of operands. Got {len(op1.operands)} and {len(op2.operands)}"
 
     # organizes by wire indicies while respecting commutation relations
     sorted_ops1 = op1._sort(op1.operands)
@@ -412,7 +414,7 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     for o1, o2 in zip(sorted_ops1, sorted_ops2):
         op_check = _equal(o1, o2, **kwargs)
         if isinstance(op_check, str):
-            return "op1 and op2 are different because " + op_check
+            return OPERANDS_MISMATCH_ERROR_MESSAGE + op_check
 
     return True
 
@@ -436,6 +438,7 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
+
     return True
 
 
@@ -492,6 +495,7 @@ def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
+
     return True
 
 
@@ -549,19 +553,35 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
 
     if check_interface:
         for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.get_interface(params1) != qml.math.get_interface(params2):
-                return False
+            params1_interface = qml.math.get_interface(params1)
+            params2_interface = qml.math.get_interface(params2)
+            if params1_interface != params2_interface:
+                return (
+                    "Parameters have different interfaces.\n "
+                    f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
+                )
+
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data):
-            if qml.math.requires_grad(params1) != qml.math.requires_grad(params2):
-                return False
+            params1_train = qml.math.requires_grad(params1)
+            params2_train = qml.math.requires_grad(params2)
+            if params1_train != params2_train:
+                return (
+                    "Parameters have different trainability.\n "
+                    f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
+                )
 
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
-    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
-        return False
 
-    return qml.equal(op1.base, op2.base, **kwargs)
+    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
+        return f"op1 and op2 have different scalars. Got {op1.scalar} and {op2.scalar}"
+
+    equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(equal_check, str):
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + equal_check
+
+    return True
 
 
 @_equal_dispatch.register
