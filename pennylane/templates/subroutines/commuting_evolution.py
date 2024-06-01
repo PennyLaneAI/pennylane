@@ -115,6 +115,10 @@ class CommutingEvolution(Operation):
         return data, (self.hyperparameters["frequencies"], self.hyperparameters["shifts"])
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
         return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
 
