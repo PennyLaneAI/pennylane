@@ -362,7 +362,7 @@ class TestTritFlip:
         import jax
 
         p_01 = jax.numpy.array(0.14)
-        p_02 = jax.numpy.array(0.0)
+        p_02 = jax.numpy.array(0.04)
         p_12 = jax.numpy.array(0.23)
         jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(p_01, p_02, p_12)
         assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
