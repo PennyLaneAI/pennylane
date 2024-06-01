@@ -28,7 +28,11 @@ from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
-from pennylane.ops.functions.equal import _equal, assert_equal
+from pennylane.ops.functions.equal import (
+    _equal_dispatch,
+    assert_equal,
+    BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
+)
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
@@ -337,7 +341,7 @@ def test_assert_equal_unspecified():
             pass
 
     # pylint: disable=unused-argument
-    @_equal.register
+    @_equal_dispatch.register
     def _(op1: RandomType, op2, **_):
         """always returns false"""
         return False
@@ -1621,9 +1625,7 @@ class TestSymbolicOpComparison:
             assert qml.equal(op1, op2)
         else:
             assert not qml.equal(op1, op2)
-            with pytest.raises(
-                AssertionError, match="operations are different because base operations"
-            ):
+            with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
                 assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("base1", "base2", "res"), BASES)
@@ -1722,9 +1724,7 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2)
         assert not qml.equal(op1, op3)
-        with pytest.raises(
-            AssertionError, match="operations are different because base operations"
-        ):
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
             assert_equal(op1, op3)
 
     def test_adjoint_comparison_with_tolerance(self):
@@ -1825,20 +1825,15 @@ class TestSymbolicOpComparison:
         param1, param2, params_match = params_params_match
         op1 = qml.exp(base1, param1)
         op2 = qml.exp(base2, param2)
-        assert qml.equal(op1, op2) == (bases_match and params_match)
 
-        if bases_match and params_match:
-            assert_equal(op1, op2)
-        else:
-            with pytest.raises(AssertionError, match="Op1 and Op2 have different"):
-                assert_equal(op1, op2)
+        assert qml.equal(op1, op2) == (bases_match and params_match)
 
     def test_exp_with_different_coeffs(self):
         """Test that assert_equal fails when coeffs are different"""
         op1 = qml.exp(qml.X(0), 0.5j)
         op2 = qml.exp(qml.X(0), 1.0j)
 
-        with pytest.raises(AssertionError, match="Op1 and Op2 have different coefficients."):
+        with pytest.raises(AssertionError, match="op1 and op2 have different coefficients."):
             assert_equal(op1, op2)
 
     def test_exp_with_different_base_operator(self):
@@ -1846,7 +1841,7 @@ class TestSymbolicOpComparison:
         op1 = qml.exp(qml.X(0), 0.5j)
         op2 = qml.exp(qml.Y(0), 0.5j)
 
-        with pytest.raises(AssertionError, match="Op1 and Op2 have different base operators."):
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
             assert_equal(op1, op2)
 
     def test_exp_comparison_with_tolerance(self):

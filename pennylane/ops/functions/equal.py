@@ -41,6 +41,8 @@ from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumTape
 from pennylane.templates.subroutines import ControlledSequence
 
+BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operations because "
+
 
 def equal(
     op1: Union[Operator, MeasurementProcess, QuantumTape],
@@ -156,10 +158,6 @@ def equal(
         True
     """
 
-    # types don't have to be the same type, they just both have to be Observables
-    if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
-        return False
-
     if isinstance(op2, (Hamiltonian, Tensor)):
         return _equal(op2, op1)
 
@@ -239,10 +237,6 @@ def assert_equal(
     AssertionError: The hyperparameter unitary_matrix has different interfaces for op1 and op2. Got numpy and autograd.
 
     """
-    if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
-        raise AssertionError(
-            f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
-        )
 
     dispatch_result = _equal(
         op1,
@@ -258,8 +252,29 @@ def assert_equal(
         raise AssertionError(f"{op1} and {op2} are not equal for an unspecified reason.")
 
 
-@singledispatch
 def _equal(
+    op1,
+    op2,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+) -> Union[bool, str]:  # pylint: disable=unused-argument
+    if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
+        return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
+
+    return _equal_dispatch(
+        op1,
+        op2,
+        check_interface=check_interface,
+        check_trainability=check_trainability,
+        atol=atol,
+        rtol=rtol,
+    )
+
+
+@singledispatch
+def _equal_dispatch(
     op1,
     op2,
     check_interface=True,
@@ -270,7 +285,7 @@ def _equal(
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
-@_equal.register
+@_equal_dispatch.register
 def _equal_circuit(
     op1: qml.tape.QuantumScript,
     op2: qml.tape.QuantumScript,
@@ -313,7 +328,7 @@ def _equal_circuit(
     return True
 
 
-@_equal.register
+@_equal_dispatch.register
 def _equal_operators(
     op1: Operator,
     op2: Operator,
@@ -380,7 +395,7 @@ def _equal_operators(
     return True
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument, protected-access
 def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     """Determine whether two Prod or Sum objects are equal"""
@@ -397,12 +412,12 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     for o1, o2 in zip(sorted_ops1, sorted_ops2):
         op_check = _equal(o1, o2, **kwargs)
         if isinstance(op_check, str):
-            return f"Operations {op1} and {op2} are different because " + op_check
+            return "op1 and op2 are different because " + op_check
 
     return True
 
 
-@_equal.register
+@_equal_dispatch.register
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
     if op1.arithmetic_depth != op2.arithmetic_depth:
@@ -420,11 +435,11 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):
-        return "operations are different because base operations " + base_equal_check
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
     return True
 
 
-@_equal.register
+@_equal_dispatch.register
 def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
     """Determine whether two ControlledSequences are equal"""
     if [op1.wires, op1.arithmetic_depth] != [
@@ -436,7 +451,7 @@ def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence,
     return qml.equal(op1.base, op2.base, **kwargs)
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
@@ -462,21 +477,25 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     if op1.z != op2.z:
         return f"Exponent are different. Got {op1.z} and {op2.z}"
 
-    return qml.equal(op1.base, op2.base, **kwargs)
+    base_equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(base_equal_check, str):
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
+
+    return True
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):
-        return "operations are different because base operations " + base_equal_check
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
     return True
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     """Determine whether two Exp objects are equal"""
@@ -508,15 +527,16 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
                 )
 
     if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
-        return f"Op1 and Op2 have different coefficients. Got {op1.coeff} and {op2.coeff}"
+        return f"op1 and op2 have different coefficients. Got {op1.coeff} and {op2.coeff}"
 
-    if not qml.equal(op1.base, op2.base, **kwargs):
-        return f"Op1 and Op2 have different base operators. Got {op1.base} and {op2.base}"
+    equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(equal_check, str):
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + equal_check
 
     return True
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
@@ -544,7 +564,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     return qml.equal(op1.base, op2.base, **kwargs)
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
@@ -560,7 +580,7 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     return False
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
@@ -569,7 +589,7 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     return op1.compare(op2)
 
 
-@_equal.register
+@_equal_dispatch.register
 def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
     # check times match
     if op1.t is None or op2.t is None:
@@ -591,7 +611,7 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
     return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops))
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_measurements(
     op1: MeasurementProcess,
@@ -638,7 +658,7 @@ def _equal_measurements(
     return False
 
 
-@_equal.register
+@_equal_dispatch.register
 def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
     return (
         op1.wires == op2.wires
@@ -648,7 +668,7 @@ def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
     )
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
@@ -657,7 +677,7 @@ def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
     return eq_m and log_base_match
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
@@ -666,7 +686,7 @@ def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
     return eq_m and log_base_match
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
     """Determine whether two ShadowExpvalMP objects are equal"""
@@ -685,12 +705,12 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
     return wires_match and H_match and k_match
 
 
-@_equal.register
+@_equal_dispatch.register
 def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
     return _equal_measurements(op1, op2, **kwargs) and op1.all_outcomes == op2.all_outcomes
 
 
-@_equal.register
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_basis_rotation(
     op1: qml.BasisRotation,
@@ -723,7 +743,7 @@ def _equal_basis_rotation(
     return True
 
 
-@_equal.register
+@_equal_dispatch.register
 def _equal_hilbert_schmidt(
     op1: qml.HilbertSchmidt,
     op2: qml.HilbertSchmidt,
