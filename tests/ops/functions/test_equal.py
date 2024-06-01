@@ -17,7 +17,6 @@ Tests are divided by number of parameters and wires different operators take.
 """
 import itertools
 import re
-
 # pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
 
@@ -30,11 +29,8 @@ from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
-    BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
-    OPERANDS_MISMATCH_ERROR_MESSAGE,
-    _equal_dispatch,
-    assert_equal,
-)
+    BASE_OPERATION_MISMATCH_ERROR_MESSAGE, OPERANDS_MISMATCH_ERROR_MESSAGE,
+    _equal_dispatch, assert_equal)
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
@@ -1447,6 +1443,13 @@ class TestObservablesComparisons:
         assert qml.equal(T1, T2) == qml.equal(T2, T1)
         assert qml.equal(T1, T2) == res
 
+    def test_tensors_not_equal(self):
+        """Tensors are not equal because of different observable data"""
+        op1 = qml.operation.Tensor(qml.X(0), qml.Y(1))
+        op2 = qml.operation.Tensor(qml.Y(0), qml.X(1))
+        with pytest.raises(AssertionError, match="op1 and op2 have different _obs_data outputs"):
+            assert_equal(op1, op2)
+
     @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
     def test_hamiltonians_and_tensors_equal(self, H, T, res):
         """Tests that equality can be checked between a Hamiltonian and a Tensor"""
@@ -1482,6 +1485,8 @@ class TestObservablesComparisons:
         op2 = qml.RX(1.2, 0)
         assert qml.equal(op1, op2) is False
         assert qml.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="is not of type Observable"):
+            assert_equal(op1, op2)
 
     def test_tensor_and_unsupported_observable_returns_false(self):
         """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian returns False"""
@@ -1489,6 +1494,9 @@ class TestObservablesComparisons:
         op2 = qml.Hermitian([[0, 1], [1, 0]], 0)
 
         assert not qml.equal(op1, op2)
+        error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not same")
+        with pytest.raises(AssertionError, match=error_message_pattern):
+            assert_equal(op1, op2)
 
     def test_unsupported_object_type_not_implemented(self):
         dev = qml.device("default.qubit", wires=1)

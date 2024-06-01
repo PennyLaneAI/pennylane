@@ -20,6 +20,7 @@ from functools import singledispatch
 from typing import Union
 
 import pennylane as qml
+from pennylane import Hermitian
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
@@ -592,15 +593,17 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
 def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
     if not isinstance(op2, Observable):
-        return False
+        return f"{op2} is not of type Observable"
 
-    if isinstance(op2, (Hamiltonian, LinearCombination)):
-        return op2.compare(op1)
+    if isinstance(op2, (Hamiltonian, LinearCombination, Hermitian)):
+        if not op2.compare(op1):
+            return f"'{op1}' and '{op2}' are not same"
 
     if isinstance(op2, Tensor):
-        return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
+        if not op1._obs_data() == op2._obs_data():  # pylint: disable=protected-access
+            return "op1 and op2 have different _obs_data outputs"
 
-    return False
+    return True
 
 
 @_equal_dispatch.register
