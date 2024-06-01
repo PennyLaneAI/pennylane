@@ -9,6 +9,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
+  [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
+
+* Added `packaging` in the required list of packages.
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
+
 * Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
   [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
 
@@ -24,9 +30,12 @@
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
+* `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
+  [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
+  
 * `_equal_operators`,`_equal_controlled`, `_equal_adjoint`, `_equal_pow` and `_equal_exp`
   now return True or a string explaining why two operators are not equal.
-  [(#TODO)](https://github.com/PennyLaneAI/pennylane/pull/TODO)
+  [(#5778)](https://github.com/PennyLaneAI/pennylane/pull/5778)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
@@ -193,6 +202,9 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* Disable Docker builds on PR merge.
+  [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
 
 * The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
   [(#5761)](https://github.com/PennyLaneAI/pennylane/pull/5761)
