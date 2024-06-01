@@ -9,6 +9,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
+  [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
+
+* Added `packaging` in the required list of packages.
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
+
+* Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
+
+* A number of templates have been updated to be valid pytrees and PennyLane operations.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
+
 * `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
   [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
@@ -17,6 +29,9 @@
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+
+* `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
+  [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
@@ -93,9 +108,10 @@
   `m = measure(0); qml.sample(m)`.
   [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
 
-* PennyLane operators can now automatically be captured as instructions in JAXPR. See the experimental
-  `capture` module for more information.
+* PennyLane operators and measurements can now automatically be captured as instructions in JAXPR.
+  [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+  [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
@@ -111,6 +127,22 @@
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
 
+* The `qml.qchem.Molecule` object is now the central object used by all qchem functions.
+  [(#5571)](https://github.com/PennyLaneAI/pennylane/pull/5571)
+
+* The `qml.qchem.Molecule` class now supports Angstrom as a unit.
+  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
+
+* The `qml.qchem.Molecule` class now supports open-shell systems.
+  [(#5655)](https://github.com/PennyLaneAI/pennylane/pull/5655)
+
+* The `qml.qchem.molecular_hamiltonian` function now supports parity and Bravyi-Kitaev mappings.
+  [(#5657)](https://github.com/PennyLaneAI/pennylane/pull/5657/)
+
+* The qchem docs are updated with the new qchem improvements.
+  [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
+  [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -123,6 +155,10 @@
  [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
 
 <h3>Breaking changes 💔</h3>
+
+* A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
+  operation directly with `qml.apply`.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
 * Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
@@ -165,6 +201,18 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* Disable Docker builds on PR merge.
+  [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
+
+* The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
+  [(#5761)](https://github.com/PennyLaneAI/pennylane/pull/5761)
+
+* `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
+
+* The decomposition of `AmplitudeAmplification` now correctly queues all operations.
+  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
 * Replaced `semantic_version` with `packaging.version.Version`, since the former cannot
   handle the metadata `.post` in the version string.
@@ -213,6 +261,9 @@
 * Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
+* `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
+  [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -222,6 +273,7 @@ Gabriel Bottrill,
 Astral Cai,
 Ahmed Darwish,
 Isaac De Vlugt,
+Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 David Ittah,
@@ -232,4 +284,5 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Haochen Paul Wang,
 David Wierichs.
