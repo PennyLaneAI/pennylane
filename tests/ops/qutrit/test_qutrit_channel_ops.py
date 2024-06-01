@@ -325,7 +325,7 @@ class TestTritFlip:
         p_02 = pnp.array(0.04, requires_grad=True)
         p_12 = pnp.array(0.23, requires_grad=True)
         jac = qml.jacobian(self.kraus_fn)(p_01, p_02, p_12)
-        assert qml.math.allclose(jac, self.expected_jac_fn(p))
+        assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
 
     @pytest.mark.torch
     def test_kraus_jac_torch(self):

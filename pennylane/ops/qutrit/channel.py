@@ -388,7 +388,7 @@ class TritFlip(Channel):
 
     @staticmethod
     def compute_kraus_matrices(p_01, p_02, p_12):  # pylint:disable=arguments-differ
-        """Kraus matrices representing the TritFlip channel.
+        r"""Kraus matrices representing the TritFlip channel.
 
         Args:
             p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` parameter flip error occurs.
@@ -400,8 +400,21 @@ class TritFlip(Channel):
 
         **Example**
 
-        >>> qml.TritFlip.compute_kraus_matrices(0.5)
-        TODO
+        >>> qml.TritFlip.compute_kraus_matrices(0.05, 0.01, 0.10)
+        [
+        array([ [0.91651514, 0.        , 0.        ],
+                [0.        , 0.91651514, 0.        ],
+                [0.        , 0.        , 0.91651514]]),
+        array([ [0.        , 0.2236068 , 0.       ],
+                [0.2236068 , 0.        , 0.       ],
+                [0.        , 0.        , 0.2236068]]),
+        array([ [0.        , 0.        , 0.1      ],
+                [0.        , 0.1       , 0.       ],
+                [0.1       , 0.        , 0.       ]]),
+        array([ [0.31622777, 0.        , 0.        ],
+                [0.        , 0.        , 0.31622777],
+                [0.        , 0.31622777, 0.        ]])
+        ]
         """
         K0 = math.sqrt(1 - (p_01 + p_02 + p_12) + math.eps) * math.convert_like(
             math.cast_like(np.eye(3), p_01), p_01
