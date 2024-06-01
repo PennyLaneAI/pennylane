@@ -29,9 +29,9 @@ from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
+    BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     _equal_dispatch,
     assert_equal,
-    BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
 )
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
