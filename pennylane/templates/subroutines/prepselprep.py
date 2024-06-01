@@ -103,12 +103,14 @@ class PrepSelPrep(Operation):
                 keep_coeffs.append(coeff)
                 keep_ops.append(op)
 
+        all_op_wires = qml.wires.Wires.all_wires([op.wires for op in keep_ops])
         final_ops = []
         for op in keep_ops:
             if len(op.wires) == 0:
-                continue
+                unitary = op
+            else:
+                unitary = qml.QubitUnitary(qml.matrix(op), wires=op.wires)
 
-            unitary = qml.QubitUnitary(qml.matrix(op), wires=op.wires)
             final_ops.append(unitary)
 
         if is_pow2(len(keep_coeffs)):
@@ -117,9 +119,12 @@ class PrepSelPrep(Operation):
             pow2 = 2 ** math.ceil(math.log2(len(keep_coeffs)))
 
         pad_zeros = list(itertools.repeat(0, pow2 - len(keep_coeffs)))
+        with qml.QueuingManager.stop_recording():
+            pad_ident = list(itertools.repeat(qml.Identity(all_op_wires), pow2-len(keep_ops)))
 
         interface_coeffs = qml.math.get_interface(lcu.terms()[0])
         final_coeffs = qml.math.array(keep_coeffs + pad_zeros, like=interface_coeffs)
+        final_ops = final_ops + pad_ident
 
         return final_coeffs, final_ops
 
@@ -142,8 +147,6 @@ class PrepSelPrep(Operation):
 
             smallest = jax.numpy.min(coeffs)
             jax.debug.callback(raiseIfNegative, smallest)
-
-
         else:
             coeffs, ops = PrepSelPrep.preprocess_lcu(lcu)
 

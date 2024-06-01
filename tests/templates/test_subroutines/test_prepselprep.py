@@ -380,3 +380,27 @@ class TestInterfaces:
         grad_manual = jax.grad(manual)(coeffs)
 
         assert qml.math.allclose(grad_prepselprep, grad_manual)
+
+    @pytest.mark.jax
+    def test_jit_with_preprocessing(self):
+        """Test that jit works with the preprocessed output"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit")
+        coeffs = jnp.array([0.5, -0.5, 0.5j])
+        ops = [qml.I(2), qml.Y(2), qml.Z(2)]
+        lcu = qml.ops.LinearCombination(coeffs, ops)
+
+        preprocessed_coeffs, preprocessed_ops = qml.PrepSelPrep.preprocess_lcu(lcu)
+        assert len(preprocessed_coeffs) == len(preprocessed_ops)
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit(coeffs):
+
+            lcu = qml.ops.LinearCombination(coeffs, preprocessed_ops)
+            qml.PrepSelPrep(lcu, control=[0, 1], jit=True)
+            return qml.state()
+
+        circuit(preprocessed_coeffs)
