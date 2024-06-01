@@ -99,42 +99,42 @@ class TestPrepSelPrep:
     @pytest.mark.parametrize(
         ("lcu", "control", "produced_matrix", "expected_matrix"),
         [
-            # (
-            #    lcu1,
-            #    0,
-            #    qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-            #    qml.matrix(manual, wire_order=[0, 1, 2]),
-            # ),
-            # (
-            #    lcu2,
-            #    'ancilla',
-            #    qml.matrix(prepselprep, wire_order=['ancilla', 0]),
-            #    qml.matrix(manual, wire_order=['ancilla', 0]),
-            # ),
-            # (
-            #    lcu3,
-            #    [0],
-            #    qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-            #    qml.matrix(manual, wire_order=[0, 1, 2]),
-            # ),
-            # (
-            #    lcu4,
-            #    [0],
-            #    qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-            #    qml.matrix(manual, wire_order=[0, 1, 2]),
-            # ),
-            # (
-            #    lcu5,
-            #    [0, 1],
-            #    qml.matrix(prepselprep, wire_order=[0, 1, 2, 3]),
-            #    qml.matrix(manual, wire_order=[0, 1, 2, 3]),
-            # ),
-            # (
-            #    lcu6,
-            #    [0],
-            #    qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-            #    qml.matrix(manual, wire_order=[0, 1, 2]),
-            # ),
+            (
+               lcu1,
+               0,
+               qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+               qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
+            (
+               lcu2,
+               'ancilla',
+               qml.matrix(prepselprep, wire_order=['ancilla', 0]),
+               qml.matrix(manual, wire_order=['ancilla', 0]),
+            ),
+            (
+               lcu3,
+               [0],
+               qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+               qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
+            (
+               lcu4,
+               [0],
+               qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+               qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
+            (
+               lcu5,
+               [0, 1],
+               qml.matrix(prepselprep, wire_order=[0, 1, 2, 3]),
+               qml.matrix(manual, wire_order=[0, 1, 2, 3]),
+            ),
+            (
+               lcu6,
+               [0],
+               qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+               qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
             (
                 lcu7,
                 [0, 1],

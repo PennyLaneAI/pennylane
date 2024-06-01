@@ -25,8 +25,8 @@ import pennylane as qml
 from pennylane.operation import Operation
 
 def is_pow2(n):
+    """Returns true if n is a power of 2, false otherwise"""
     return ((n & (n - 1) == 0) and n != 0)
-
 
 class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
@@ -40,6 +40,7 @@ class PrepSelPrep(Operation):
         self.hyperparameters["ops"] = tuple(ops)
         self.hyperparameters["control"] = control
         self.hyperparameters["jit"] = jit
+
         if any(
             control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
             for control_wire in control
