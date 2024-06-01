@@ -16,7 +16,7 @@ Contains the PrepSelPrep template.
 This template contains a decomposition for performing a block-encoding on a
 linear combination of unitaries using the Prepare, Select, Prepare method.
 """
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ,import-outside-toplevel
 import copy
 import itertools
 import math

@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 Tests for the PrepSelPrep template.
 """
+# pylint: disable=protected-access,import-outside-toplevel
 import copy
 import numpy as np
 import pytest
