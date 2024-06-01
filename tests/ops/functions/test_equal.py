@@ -17,6 +17,7 @@ Tests are divided by number of parameters and wires different operators take.
 """
 import itertools
 import re
+
 # pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
 
@@ -29,8 +30,11 @@ from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
-    BASE_OPERATION_MISMATCH_ERROR_MESSAGE, OPERANDS_MISMATCH_ERROR_MESSAGE,
-    _equal, assert_equal)
+    BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
+    OPERANDS_MISMATCH_ERROR_MESSAGE,
+    _equal,
+    assert_equal,
+)
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
@@ -1469,6 +1473,8 @@ class TestObservablesComparisons:
         op2 = qml.RX(1.2, 0)
         assert qml.equal(op1, op2) is False
         assert qml.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="is not of type Observable"):
+            assert_equal(op1, op2)
 
     def test_tensor_and_operation_not_equal(self):
         """Tests that comparing a Tensor with an Operator that is not an Observable returns False"""
