@@ -284,8 +284,8 @@ class TestTritFlip:
             [[1, 0, 0], [0, 0, 1], [0, 1, 0]],
         ]
 
-        for p, K, res in zip(ps[1:], Ks, kraus_mats[1:]):
-            expected_K = np.sqrt(p) * K
+        for p, K, res in zip(ps, Ks, kraus_mats[1:]):
+            expected_K = np.sqrt(p) * np.array(K)
             assert np.allclose(res, expected_K, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
@@ -337,8 +337,11 @@ class TestTritFlip:
         p_01 = torch.tensor(ps[0], requires_grad=True)
         p_02 = torch.tensor(ps[1], requires_grad=True)
         p_12 = torch.tensor(ps[2], requires_grad=True)
-        jac = torch.autograd.functional.jacobian(self.kraus_fn, p_01, p_02, p_12)
-        assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(*ps))
+
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, (p_01, p_02, p_12))
+        expected_jac = self.expected_jac_fn(*ps)
+        for j, exp in zip(jac, expected_jac):
+            assert qml.math.allclose(j.detach().numpy(), exp)
 
     @pytest.mark.tf
     def test_kraus_jac_tf(self):
@@ -350,7 +353,7 @@ class TestTritFlip:
         p_12 = tf.Variable(0.23)
         with tf.GradientTape() as tape:
             out = self.kraus_fn(p_01, p_02, p_12)
-        jac = tape.jacobian(out, p_01, p_02, p_12)
+        jac = tape.jacobian(out, (p_01, p_02, p_12))
         assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
 
     @pytest.mark.jax
@@ -361,5 +364,5 @@ class TestTritFlip:
         p_01 = jax.numpy.array(0.14)
         p_02 = jax.numpy.array(0.0)
         p_12 = jax.numpy.array(0.23)
-        jac = jax.jacobian(self.kraus_fn)(p_01, p_02, p_12)
+        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(p_01, p_02, p_12)
         assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
