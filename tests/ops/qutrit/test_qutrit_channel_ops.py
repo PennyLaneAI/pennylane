@@ -304,7 +304,7 @@ class TestTritFlip:
         partials = math.zeros((3, 4, 3, 3))
 
         # All 3 partials have the same first Kraus Operator output
-        partials[:, 0] = -1 / (2 * math.sqrt(1 - (p_01 + p_02 + p_12))) * math.eye()
+        partials[:, 0] = -1 / (2 * math.sqrt(1 - (p_01 + p_02 + p_12))) * math.eye(3)
 
         # Set the matrix defined by each partials parameter, the rest are 0
         partials[0, 1] = 1 / (2 * math.sqrt(p_01)) * math.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
