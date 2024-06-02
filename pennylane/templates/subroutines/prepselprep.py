@@ -145,7 +145,6 @@ class PrepSelPrep(Operation):
             if jax.numpy.iscomplexobj(coeffs):
                 raise ValueError("Coefficients must be positive real numbers.")
 
-            print(coeffs)
             smallest = jax.numpy.min(coeffs)
             jax.debug.callback(raiseIfNegative, smallest)
         else:

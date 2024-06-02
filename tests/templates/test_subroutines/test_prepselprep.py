@@ -170,9 +170,6 @@ class TestPrepSelPrep:
         coeffs, _ = qml.PrepSelPrep.preprocess_lcu(lcu)
         normalization_factor = qml.math.sum(qml.math.abs(coeffs))
 
-        print(matrix / normalization_factor)
-        print(block_encoding[0:dim, 0:dim])
-
         assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
     ops1 = lcu1.terms()[1]
