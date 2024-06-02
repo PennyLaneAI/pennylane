@@ -32,12 +32,12 @@ class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
     using the Prepare, Select, Prepare method"""
 
-    def __init__(self, lcu, control, jit=False, id=None):
+    def __init__(self, lcu, control=None, jit=False, id=None):
         coeffs, ops = lcu.terms()
         control = qml.wires.Wires(control)
         self.hyperparameters["lcu"] = lcu
         self.hyperparameters["coeffs"] = coeffs
-        self.hyperparameters["ops"] = tuple(ops)
+        self.hyperparameters["ops"] = ops
         self.hyperparameters["control"] = control
         self.hyperparameters["jit"] = jit
 
@@ -64,7 +64,7 @@ class PrepSelPrep(Operation):
         return cls(lcu, metadata)
 
     def __repr__(self):
-        return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={self.ops}, control={self.control})"
+        return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={tuple(self.ops)}, control={self.control})"
 
     def map_wires(self, wire_map: dict) -> "PrepSelPrep":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
@@ -145,6 +145,7 @@ class PrepSelPrep(Operation):
             if jax.numpy.iscomplexobj(coeffs):
                 raise ValueError("Coefficients must be positive real numbers.")
 
+            print(coeffs)
             smallest = jax.numpy.min(coeffs)
             jax.debug.callback(raiseIfNegative, smallest)
         else:
@@ -185,16 +186,12 @@ class PrepSelPrep(Operation):
     @property
     def data(self):
         """Create data property"""
-        return tuple(d for op in self.ops for d in op.data)
+        return self.lcu.data
 
     @data.setter
     def data(self, new_data):
         """Set the data property"""
-        for op in self.ops:
-            op_num_params = op.num_params
-            if op_num_params > 0:
-                op.data = new_data[:op_num_params]
-                new_data = new_data[op_num_params:]
+        self.hyperparameters['lcu'].data = new_data
 
     @property
     def coeffs(self):
