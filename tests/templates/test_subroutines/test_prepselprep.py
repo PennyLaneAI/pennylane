@@ -303,8 +303,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit")
 
-        coeffs = pnp.array([1 / 2, 1 / 2], requires_grad=True)
-        ops = [qml.Identity(1), qml.PauliZ(1)]
+        coeffs = pnp.array([1., 1.], requires_grad=True)
+        ops = [qml.X(1), qml.Z(1)]
 
         @qml.qnode(dev, diff_method="finite-diff")
         def prepselprep(coeffs):
@@ -324,6 +324,7 @@ class TestInterfaces:
         grad_prepselprep = qml.grad(prepselprep)(coeffs)
         grad_manual = qml.grad(manual)(coeffs)
 
+        assert not qml.math.allclose(grad_prepselprep, pnp.array([0, 0]))
         assert qml.math.allclose(grad_prepselprep, grad_manual)
 
         fd_prepselprep = qml.jacobian(prepselprep)(coeffs)
@@ -336,8 +337,8 @@ class TestInterfaces:
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit")
-        coeffs = jnp.array([1 / 2, 1 / 2])
-        ops = [qml.Identity(1), qml.PauliZ(1)]
+        coeffs = jnp.array([1., 1.])
+        ops = [qml.X(1), qml.Z(1)]
 
         @qml.qnode(dev, diff_method="finite-diff")
         def prepselprep(coeffs):
@@ -357,6 +358,7 @@ class TestInterfaces:
         grad_prepselprep = jax.grad(prepselprep)(coeffs)
         grad_manual = jax.grad(manual)(coeffs)
 
+        assert not qml.math.allclose(grad_prepselprep, jnp.array([0, 0]))
         assert qml.math.allclose(grad_prepselprep, grad_manual)
 
         fd_prepselprep = jax.jacobian(prepselprep)(coeffs)
@@ -369,8 +371,8 @@ class TestInterfaces:
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit")
-        coeffs = jnp.array([1 / 2, 1 / 2])
-        ops = [qml.Identity(1), qml.PauliZ(1)]
+        coeffs = jnp.array([1., 1.])
+        ops = [qml.X(1), qml.Z(1)]
 
         @jax.jit
         @qml.qnode(dev)
@@ -392,7 +394,11 @@ class TestInterfaces:
         grad_prepselprep = jax.grad(prepselprep)(coeffs)
         grad_manual = jax.grad(manual)(coeffs)
 
+        assert not qml.math.allclose(grad_prepselprep, jnp.array([0, 0]))
         assert qml.math.allclose(grad_prepselprep, grad_manual)
+
+        fd_prepselprep = jax.jacobian(prepselprep)(coeffs)
+        assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
 
     @pytest.mark.jax
     def test_jit_with_preprocessing(self):
