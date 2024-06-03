@@ -85,14 +85,6 @@ class Conditional(SymbolicOp):
     def eigvals(self):
         return self.base.eigvals()
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_decomposition(self):
-        return self.base.has_decomposition
-
-    def decomposition(self):
-        return self.base.decomposition()
-
     @property
     def has_adjoint(self):
         return self.base.has_adjoint
