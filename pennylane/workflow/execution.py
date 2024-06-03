@@ -269,6 +269,8 @@ def _make_inner_execute(
     if isinstance(device, qml.devices.LegacyDevice):
         dev_execute = (
             device.batch_execute
+            # If this condition is not met, then dev.batch_execute likely also doesn't include
+            # any kwargs in its signature, hence why we use partial
             if execution_config is None
             or not device.capabilities().get("supports_mid_measure", False)
             else partial(
