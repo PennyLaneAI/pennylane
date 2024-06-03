@@ -710,7 +710,7 @@ def molecular_dipole(
         molecule (~qchem.molecule.Molecule): the molecule object
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
-            to specify the built-in differentiable Hartree-Fock solver, `or to
+            to specify the built-in differentiable Hartree-Fock solver, or ``method="openfermion"`` to
             use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
