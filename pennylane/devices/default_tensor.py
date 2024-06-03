@@ -714,4 +714,3 @@ class DefaultTensor(Device):
         raise NotImplementedError(
             "The computation of vector-Jacobian product has yet to be implemented for the default.tensor device."
         )
-
