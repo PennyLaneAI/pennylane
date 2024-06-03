@@ -162,7 +162,7 @@ def test_wires_runtime_error():
 @pytest.mark.parametrize("max_bond_dim", [None, 10])
 @pytest.mark.parametrize("cutoff", [1e-16, 1e-12])
 @pytest.mark.parametrize("contract", ["auto-mps", "nonlocal"])
-@pytest.mark.parametrize("method", ["mps", "tns"])
+@pytest.mark.parametrize("method", ["mps", "tn"])
 def test_kwargs(method, max_bond_dim, cutoff, contract):
     """Test the class initialization with different arguments and returned properties."""
 
@@ -191,7 +191,7 @@ def test_invalid_kwarg():
         qml.device("default.tensor", wires=0, fake_arg=None)
 
 
-@pytest.mark.parametrize("method", ["mps", "tns"])
+@pytest.mark.parametrize("method", ["mps", "tn"])
 def test_method(method):
     """Test the device method."""
     assert qml.device("default.tensor", method=method).method == method
@@ -216,7 +216,7 @@ def test_ivalid_data_type():
         qml.device("default.tensor", wires=0, dtype=float)
 
 
-@pytest.mark.parametrize("method", ["mps", "tns"])
+@pytest.mark.parametrize("method", ["mps", "tn"])
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
 
@@ -320,7 +320,7 @@ class TestSupportsDerivatives:
             dev.execute_and_compute_vjp(circuits=None, cotangents=None)
 
 
-@pytest.mark.parametrize("method", ["mps", "tns"])
+@pytest.mark.parametrize("method", ["mps", "tn"])
 class TestJaxSupport:
     """Test the JAX support for the DefaultTensor device."""
 

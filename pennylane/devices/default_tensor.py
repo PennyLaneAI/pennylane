@@ -123,7 +123,7 @@ _observables = frozenset(
 )
 # The set of supported observables.
 
-_methods = frozenset({"mps", "tns"})
+_methods = frozenset({"mps", "tn"})
 # The set of supported methods.
 
 
@@ -160,7 +160,7 @@ class DefaultTensor(Device):
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
-        method (str): Supported method. Currently, the supported methods are 'mps' (Matrix Product State) and 'tns' (Exact Tensor Network).
+        method (str): Supported method. Currently, the supported methods are 'mps' (Matrix Product State) and 'tn' (Exact Tensor Network).
         dtype (type): Data type for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
@@ -172,8 +172,8 @@ class DefaultTensor(Device):
         contract (str): The contraction method for applying gates in the MPS method. It can be either ``auto-mps`` or ``nonlocal``.
             ``nonlocal`` turns each gate into a Matrix Product Operator (MPO) and applies it directly to the MPS,
             while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next to each other before applying the gate,
-            then swaps them back. Default is ``auto-mps``. TODO: change this
-        # TODO: add options for TNS
+            then swaps them back. Default is ``auto-mps``. TODO: update description with new choices
+        # TODO: add kwargs for TN
 
     **Example:**
 
@@ -272,7 +272,7 @@ class DefaultTensor(Device):
 
         if not accepted_methods(method):
             raise ValueError(
-                f"Unsupported method: {method}. Supported methods are 'mps' (Matrix Product State) and 'tns' (Exact Tensor Network)."
+                f"Unsupported method: {method}. Supported methods are 'mps' (Matrix Product State) and 'tn' (Exact Tensor Network)."
             )
 
         if dtype not in [np.complex64, np.complex128]:
@@ -285,7 +285,7 @@ class DefaultTensor(Device):
         self._method = method
         self._dtype = dtype
 
-        # options both for MPS and TNS
+        # options both for MPS and TN
         # TODO: add options
 
         # options for MPS
@@ -340,10 +340,10 @@ class DefaultTensor(Device):
                 cutoff=self._cutoff,
             )
 
-        elif self.method == "tns":
+        elif self.method == "tn":
             self._quimb_circuit = qtn.Circuit(
-                psi0=self._initial_tns(wires),
-                # TODO: add options for TNS
+                psi0=self._initial_tn(wires),
+                # TODO: add options for TN
             )
 
         else:
@@ -367,7 +367,7 @@ class DefaultTensor(Device):
             tags=[str(l) for l in wires.labels] if wires else None,
         )
 
-    def _initial_tns(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
+    def _initial_tn(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
         r"""
         Return an initial tensor network state to :math:`\ket{0}`.
 
@@ -714,3 +714,4 @@ class DefaultTensor(Device):
         raise NotImplementedError(
             "The computation of vector-Jacobian product has yet to be implemented for the default.tensor device."
         )
+

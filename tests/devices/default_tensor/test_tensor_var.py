@@ -34,9 +34,9 @@ pytestmark = pytest.mark.external
 @pytest.fixture(
     params=[
         (np.complex64, "mps"),
-        (np.complex64, "tns"),
+        (np.complex64, "tn"),
         (np.complex128, "mps"),
-        (np.complex128, "tns"),
+        (np.complex128, "tn"),
     ]
 )
 def dev(request):
@@ -107,7 +107,7 @@ class TestVar:
         assert np.allclose(0.0, result, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("wires", [([0, 1]), (["a", 1]), (["b", "a"]), ([-1, 2.5])])
-    @pytest.mark.parametrize("method", ["mps", "tns"])
+    @pytest.mark.parametrize("method", ["mps", "tn"])
     def test_custom_wires(self, theta, phi, wires, method):
         """Tests custom wires."""
         device = qml.device("default.tensor", wires=wires, method=method)
@@ -371,7 +371,7 @@ class TestTensorVar:
 # in the tape computation with `default.qubit`, that we use as reference.
 @pytest.mark.usefixtures("new_opmath_only")
 @pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
-@pytest.mark.parametrize("method", ["mps", "tns"])
+@pytest.mark.parametrize("method", ["mps", "tn"])
 def test_multi_qubit_gates(theta, phi, method):
     """Tests a simple circuit with multi-qubit gates."""
 

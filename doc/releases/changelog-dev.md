@@ -4,7 +4,11 @@
 
 <h3>New features since last release</h3>
 
-* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+* The `default.tensor` device now supports the `tn` method to simulate quantum circuits using exact tensor networks.
+  [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
+
+* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit using the `mps`
+  (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
 <h3>Improvements 🛠</h3>
