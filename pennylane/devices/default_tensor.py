@@ -42,6 +42,7 @@ from pennylane.measurements import (
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import WireError
@@ -107,6 +108,7 @@ _operations = frozenset(
         "QFT",
         "ECR",
         "BlockEncode",
+        "TrotterProduct",
     }
 )
 # The set of supported operations.
@@ -699,6 +701,20 @@ def apply_operation_core(ops: Operation, device):
     device._quimb_mps.apply_gate(
         qml.matrix(ops).astype(device._dtype), *ops.wires, parametrize=None
     )
+
+
+@apply_operation_core.register
+def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
+    """Dispatcher for _apply_operation."""
+    time = ops.data[-1]
+    n = ops._hyperparameters["n"]
+    order = ops._hyperparameters["order"]
+    ops = ops._hyperparameters["base"].operands
+    decomp = _recursive_expression(time / n, order, ops)[::-1] * n
+    for o in decomp:
+        device._quimb_mps.apply_gate(
+            qml.matrix(o).astype(device._dtype), *o.wires, parametrize=None
+        )
 
 
 @singledispatch
