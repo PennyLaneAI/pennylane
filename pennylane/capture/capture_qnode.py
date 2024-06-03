@@ -145,8 +145,10 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
 
     """
-    shots = kwargs.pop("shots", _get_device_shots(qnode.device))
-    shots = qml.measurements.Shots(shots)
+    if "shots" in kwargs:
+        shots = qml.measurements.Shots(kwargs.pop("shots"))
+    else:
+        shots = _get_device_shots(qnode.device)
     if shots.has_partitioned_shots:
         # Questions over the pytrees and the nested result object shape
         raise NotImplementedError("shot vectors are not yet supported with plxpr capture.")
