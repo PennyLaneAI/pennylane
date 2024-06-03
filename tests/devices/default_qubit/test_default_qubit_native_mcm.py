@@ -16,7 +16,7 @@ from typing import Sequence
 
 import numpy as np
 import pytest
-from conftest import validate_measurements
+import utils
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
@@ -123,7 +123,7 @@ def test_single_mcm_single_measure_mcm(shots, postselect, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 # pylint: disable=unused-argument
@@ -171,7 +171,7 @@ def test_single_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 @pytest.mark.parametrize("postselect", [None, 0, 1])
@@ -195,7 +195,7 @@ def test_single_mcm_multiple_measure_obs(postselect, reset):
     results2 = func2(*params)
 
     for measure_f, res1, res2 in zip([qml.counts, qml.expval], results1, results2):
-        validate_measurements(measure_f, 5000, res1, res2)
+        utils.validate_measurements(measure_f, 5000, res1, res2)
 
 
 @pytest.mark.parametrize("shots", [None, 3000, [3000, 3001]])
@@ -226,7 +226,7 @@ def test_single_mcm_single_measure_wires(shots, postselect, reset, measure_f, wi
     results1 = func1(*params)
     results2 = func2(*params)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 @pytest.mark.parametrize("postselect", [None, 0, 1])
@@ -255,11 +255,11 @@ def test_single_mcm_multiple_measurements(postselect, reset, measure_f):
     if isinstance(shots, Sequence):
         for s, r1, r2 in zip(shots, results1, results2):
             for _r1, _r2 in zip(r1, r2):
-                validate_measurements(measure_f, s, _r1, _r2)
+                utils.validate_measurements(measure_f, s, _r1, _r2)
         return
 
     for r1, r2 in zip(results1, results2):
-        validate_measurements(measure_f, shots, r1, r2)
+        utils.validate_measurements(measure_f, shots, r1, r2)
 
 
 @pytest.mark.parametrize(
@@ -299,7 +299,7 @@ def test_simple_composite_mcm(mcm_f, measure_f):
     results1 = func1(param)
     results2 = func2(param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
@@ -341,7 +341,7 @@ def test_composite_mcm_measure_composite_mcm(shots, postselect, reset, measure_f
     results1 = func1(param)
     results2 = func2(param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
@@ -372,7 +372,7 @@ def test_composite_mcm_single_measure_obs(shots, postselect, reset, measure_f):
     results1 = func1(*params)
     results2 = func2(*params)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 @pytest.mark.parametrize("shots", [7500, [5000, 5001]])
@@ -403,7 +403,7 @@ def test_composite_mcm_measure_value_list(shots, postselect, reset, measure_f):
     results1 = func1(param)
     results2 = func2(param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 @pytest.mark.parametrize("shots", [5000])
@@ -435,7 +435,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
 
     grad1 = qml.grad(func)(*param)
     grad2 = qml.grad(func2)(*param)
@@ -467,7 +467,7 @@ def test_broadcasting_qnode(shots, postselect, reset, measure_fn):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
+    utils.validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
 
     if measure_fn is qml.sample and postselect is None:
         for i in range(2):  # batch_size
@@ -524,7 +524,7 @@ def test_sample_with_prng_key(shots, postselect, reset):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    validate_measurements(qml.sample, shots, results1, results2, batch_size=None)
+    utils.validate_measurements(qml.sample, shots, results1, results2, batch_size=None)
 
     evals = obs.eigvals()
     for eig in evals:
@@ -688,4 +688,4 @@ def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
     results1 = func1(param)
     results2 = func2(param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    utils.validate_measurements(measure_f, shots, results1, results2)
