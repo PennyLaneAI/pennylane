@@ -14,10 +14,10 @@
 """
 This submodule provides a decorator for binding a qfunc transform as a PLXPR primitive.
 """
+from functools import partial, wraps
 from typing import Callable
-from functools import wraps, partial
 
-from .switches import plxpr_enabled
+from .switches import enabled
 
 has_jax = True
 try:
@@ -118,7 +118,7 @@ def bind_nested_plxpr(fn: QFuncTransform) -> QFuncTransform:
 
     @wraps(fn)
     def new_fn(qfunc: QFunc, *fn_args, **fn_kwargs) -> QFunc:
-        if not plxpr_enabled():
+        if not enabled():
             return fn(qfunc, *fn_args, **fn_kwargs)
 
         @wraps(qfunc)
@@ -128,5 +128,7 @@ def bind_nested_plxpr(fn: QFuncTransform) -> QFuncTransform:
             return prim.bind(*args, *fn_args, jaxpr=jaxpr, n_args=n_args, fn_kwargs=fn_kwargs)
 
         return new_qfunc
+
+    new_fn.primitive = prim
 
     return new_fn
