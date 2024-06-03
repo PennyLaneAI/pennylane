@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
+  [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
+
 * Added `packaging` in the required list of packages.
   [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
 
@@ -105,9 +108,10 @@
   `m = measure(0); qml.sample(m)`.
   [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
 
-* PennyLane operators and measurements can now automatically be captured as instructions in JAXPR.
+* PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+  [(#5708)](https://github.com/PennyLaneAI/pennylane/pull/5708)
   [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
