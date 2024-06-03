@@ -14,8 +14,10 @@
 """
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
+# pylint: disable=protected-access
 import copy
 from dataclasses import replace
+from functools import singledispatch
 from numbers import Number
 from typing import Callable, Optional, Sequence, Tuple, Union
 
@@ -30,7 +32,15 @@ from pennylane.devices.preprocess import (
     validate_measurements,
     validate_observables,
 )
-from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMeasurement, VarianceMP
+from pennylane.measurements import (
+    ExpectationMP,
+    MeasurementProcess,
+    StateMeasurement,
+    StateMP,
+    VarianceMP,
+)
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
@@ -57,7 +67,6 @@ _operations = frozenset(
         "PauliX",
         "PauliY",
         "PauliZ",
-        "MultiRZ",
         "GlobalPhase",
         "Hadamard",
         "S",
@@ -469,8 +478,7 @@ class DefaultTensor(Device):
         Args:
             op (Operator): The operation to apply.
         """
-
-        self._quimb_mps.apply_gate(qml.matrix(op).astype(self._dtype), *op.wires, parametrize=None)
+        apply_operation_core(op, self)
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
         """Measure the measurement required by the circuit over the MPS.
@@ -499,6 +507,9 @@ class DefaultTensor(Device):
             if isinstance(measurementprocess, ExpectationMP):
                 return self.expval
 
+            if isinstance(measurementprocess, StateMP):
+                return self.state
+
             if isinstance(measurementprocess, VarianceMP):
                 return self.var
 
@@ -515,10 +526,13 @@ class DefaultTensor(Device):
         """
 
         obs = measurementprocess.obs
+        return expval_core(obs, self)
 
-        result = self._local_expectation(qml.matrix(obs), tuple(obs.wires))
-
-        return result
+    def state(self, measurementprocess: MeasurementProcess):
+        """Returns the MPS state in vector form."""
+        if measurementprocess.wires and measurementprocess.wires != self.wires:
+            raise ValueError("Only the full state can be returned.")
+        return self._quimb_mps.psi.to_dense().ravel()
 
     def var(self, measurementprocess: MeasurementProcess) -> float:
         """Variance of the supplied observable contained in the MeasurementProcess.
@@ -677,3 +691,56 @@ class DefaultTensor(Device):
         raise NotImplementedError(
             "The computation of vector-Jacobian product has yet to be implemented for the default.tensor device."
         )
+
+
+@singledispatch
+def apply_operation_core(ops: Operation, device):
+    """Dispatcher for _apply_operation."""
+    device._quimb_mps.apply_gate(
+        qml.matrix(ops).astype(device._dtype), *ops.wires, parametrize=None
+    )
+
+
+@singledispatch
+def expval_core(obs: Observable, device) -> float:
+    """Dispatcher for expval."""
+    return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
+
+
+@expval_core.register
+def expval_core_hamiltonian(obs: Hamiltonian, device) -> float:
+    """Computes the expval of a Hamiltonian."""
+    return sum(expval_core(m, device) for m in obs)
+
+
+@expval_core.register
+def expval_core_tensor(obs: Tensor, device) -> float:
+    """Computes the expval of a Tensor."""
+    return expval_core(Prod(obs), device)
+
+
+@expval_core.register
+def expval_core_prod(obs: Prod, device) -> float:
+    """Computes the expval of a Prod."""
+    ket = copy.deepcopy(device._quimb_mps)
+    for op in obs:
+        ket.apply_gate(qml.matrix(op).astype(device._dtype), *op.wires, parametrize=None)
+    return np.real((device._quimb_mps.psi.H & ket.psi).contract(all, output_inds=()))
+
+
+@expval_core.register
+def expval_core_sprod(obs: SProd, device) -> float:
+    """Computes the expval of a SProd."""
+    return obs.scalar * expval_core(obs.base, device)
+
+
+@expval_core.register
+def expval_core_sum(obs: Sum, device) -> float:
+    """Computes the expval of a Sum."""
+    return sum(expval_core(m, device) for m in obs)
+
+
+@expval_core.register
+def expval_core_linear_combination(obs: LinearCombination, device) -> float:
+    """Computes the expval of a LinearCombination."""
+    return sum(expval_core(m, device) for m in obs)

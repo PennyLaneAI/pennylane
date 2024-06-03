@@ -32,10 +32,10 @@ operations_list = {
     "Identity": qml.Identity(wires=[0]),
     "BlockEncode": qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
     "CNOT": qml.CNOT(wires=[0, 1]),
-    "CRX": qml.CRX(0, wires=[0, 1]),
-    "CRY": qml.CRY(0, wires=[0, 1]),
-    "CRZ": qml.CRZ(0, wires=[0, 1]),
-    "CRot": qml.CRot(0, 0, 0, wires=[0, 1]),
+    "CRX": qml.CRX(0.1, wires=[0, 1]),
+    "CRY": qml.CRY(0.1, wires=[0, 1]),
+    "CRZ": qml.CRZ(0.1, wires=[0, 1]),
+    "CRot": qml.CRot(0.1, 0, 0, wires=[0, 1]),
     "CSWAP": qml.CSWAP(wires=[0, 1, 2]),
     "CZ": qml.CZ(wires=[0, 1]),
     "CCZ": qml.CCZ(wires=[0, 1, 2]),
@@ -43,33 +43,33 @@ operations_list = {
     "CH": qml.CH(wires=[0, 1]),
     "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
-    "MultiRZ": qml.MultiRZ(0, wires=[0]),
+    "MultiRZ": qml.MultiRZ(0.1, wires=[0, 1]),
     "PauliX": qml.X(0),
     "PauliY": qml.Y(0),
     "PauliZ": qml.Z(0),
     "X": qml.X([0]),
     "Y": qml.Y([0]),
     "Z": qml.Z([0]),
-    "PhaseShift": qml.PhaseShift(0, wires=[0]),
-    "PCPhase": qml.PCPhase(0, 1, wires=[0, 1]),
-    "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
-    "CPhaseShift00": qml.CPhaseShift00(0, wires=[0, 1]),
-    "CPhaseShift01": qml.CPhaseShift01(0, wires=[0, 1]),
-    "CPhaseShift10": qml.CPhaseShift10(0, wires=[0, 1]),
+    "PhaseShift": qml.PhaseShift(0.1, wires=[0]),
+    "PCPhase": qml.PCPhase(0.1, 1, wires=[0, 1]),
+    "ControlledPhaseShift": qml.ControlledPhaseShift(0.1, wires=[0, 1]),
+    "CPhaseShift00": qml.CPhaseShift00(0.1, wires=[0, 1]),
+    "CPhaseShift01": qml.CPhaseShift01(0.1, wires=[0, 1]),
+    "CPhaseShift10": qml.CPhaseShift10(0.1, wires=[0, 1]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "SpecialUnitary": qml.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
     "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
     "MultiControlledX": qml.MultiControlledX(wires=[1, 2, 0]),
     "IntegerComparator": qml.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
-    "RX": qml.RX(0, wires=[0]),
-    "RY": qml.RY(0, wires=[0]),
-    "RZ": qml.RZ(0, wires=[0]),
-    "Rot": qml.Rot(0, 0, 0, wires=[0]),
+    "RX": qml.RX(0.1, wires=[0]),
+    "RY": qml.RY(0.1, wires=[0]),
+    "RZ": qml.RZ(0.1, wires=[0]),
+    "Rot": qml.Rot(0.1, 0, 0, wires=[0]),
     "S": qml.S(wires=[0]),
     "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "ISWAP": qml.ISWAP(wires=[0, 1]),
-    "PSWAP": qml.PSWAP(0, wires=[0, 1]),
+    "PSWAP": qml.PSWAP(0.1, wires=[0, 1]),
     "ECR": qml.ECR(wires=[0, 1]),
     "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
     "T": qml.T(wires=[0]),
@@ -78,24 +78,24 @@ operations_list = {
     "Adjoint(SX)": qml.adjoint(qml.SX(wires=[0])),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.templates.QFT(wires=[0, 1, 2]),
-    "IsingXX": qml.IsingXX(0, wires=[0, 1]),
-    "IsingYY": qml.IsingYY(0, wires=[0, 1]),
-    "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
-    "IsingXY": qml.IsingXY(0, wires=[0, 1]),
-    "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
-    "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
-    "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
-    "DoubleExcitation": qml.DoubleExcitation(0, wires=[0, 1, 2, 3]),
+    "IsingXX": qml.IsingXX(0.1, wires=[0, 1]),
+    "IsingYY": qml.IsingYY(0.1, wires=[0, 1]),
+    "IsingZZ": qml.IsingZZ(0.1, wires=[0, 1]),
+    "IsingXY": qml.IsingXY(0.1, wires=[0, 1]),
+    "SingleExcitation": qml.SingleExcitation(0.1, wires=[0, 1]),
+    "SingleExcitationPlus": qml.SingleExcitationPlus(0.1, wires=[0, 1]),
+    "SingleExcitationMinus": qml.SingleExcitationMinus(0.1, wires=[0, 1]),
+    "DoubleExcitation": qml.DoubleExcitation(0.1, wires=[0, 1, 2, 3]),
     "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
     "QubitSum": qml.QubitSum(wires=[0, 1, 2]),
-    "PauliRot": qml.PauliRot(0, "XXYY", wires=[0, 1, 2, 3]),
-    "U1": qml.U1(0, wires=0),
-    "U2": qml.U2(0, 0, wires=0),
-    "U3": qml.U3(0, 0, 0, wires=0),
+    "PauliRot": qml.PauliRot(0.1, "XXYY", wires=[0, 1, 2, 3]),
+    "U1": qml.U1(0.1, wires=0),
+    "U2": qml.U2(0.1, 0.2, wires=0),
+    "U3": qml.U3(0.1, 0.2, 0.3, wires=0),
     "SISWAP": qml.SISWAP(wires=[0, 1]),
     "Adjoint(SISWAP)": qml.adjoint(qml.SISWAP(wires=[0, 1])),
-    "OrbitalRotation": qml.OrbitalRotation(0, wires=[0, 1, 2, 3]),
-    "FermionicSWAP": qml.FermionicSWAP(0, wires=[0, 1]),
+    "OrbitalRotation": qml.OrbitalRotation(0.1, wires=[0, 1, 2, 3]),
+    "FermionicSWAP": qml.FermionicSWAP(0.1, wires=[0, 1]),
     "GlobalPhase": qml.GlobalPhase(0.123, wires=[0, 1]),
 }
 
@@ -225,6 +225,27 @@ class TestSupportedGatesAndObservables:
 
         result = dev.execute(circuits=tape)
         assert np.allclose(result, 1.0)
+
+    @pytest.mark.parametrize("operation", all_ops)
+    def test_supported_gates_yield_correct_state(self, operation):
+        """Test that the device can implement all its supported gates."""
+        print(operations_list[operation])
+        dq = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.tensor", wires=4, method="mps")
+
+        state = np.random.rand(2**4) + 1j * np.random.rand(2**4)
+        state /= np.linalg.norm(state)
+        wires = qml.wires.Wires(range(4))
+        tape = qml.tape.QuantumScript(
+            qml.MottonenStatePreparation.compute_decomposition(state, wires)
+            + [operations_list[operation]],
+            [qml.state()],
+        )
+
+        result = dev.execute(circuits=[tape])[0]
+        ref = dq.execute(circuits=[tape])[0]
+
+        assert np.allclose(result, ref)
 
     @pytest.mark.parametrize("observable", all_obs)
     def test_supported_observables_can_be_implemented(self, observable):
