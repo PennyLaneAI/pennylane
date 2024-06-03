@@ -17,6 +17,8 @@
 # pylint: disable=consider-using-generator, protected-access
 import os
 from functools import singledispatch
+import datetime;
+
 
 import numpy as np
 
@@ -722,7 +724,9 @@ def meanfield(
         )
         raise TypeError(error_message)
 
-    filename = name + "_" + package.lower() + "_" + basis.strip()
+    ct = datetime.datetime.now()
+    filename = name + "_" + package.lower() + "_" + basis.strip() + "_" + ct.timestamp()
+
     path_to_file = os.path.join(outpath.strip(), filename)
 
     geometry = [
@@ -1064,7 +1068,10 @@ def _molecular_hamiltonian(
     elif len(coordinates) == len(symbols):
         geometry_dhf = qml.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
-
+    else:
+        raise ValueError(
+            f"Length of coordinates should be {len(symbols)} or {len(symbols)*3}, received {len(coordinates)}"
+        )
     wires_map = None
 
     if wires:
