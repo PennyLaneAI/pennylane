@@ -249,7 +249,7 @@ def parse_native_mid_circuit_measurements(
 
     interface = qml.math.get_deep_interface(circuit.data)
     interface = "numpy" if interface == "builtins" else interface
-    active_jit = qml.compiler.active_compiler()
+    active_qjit = qml.compiler.active()
 
     all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
     n_mcms = len(all_mcms)
