@@ -31,7 +31,7 @@
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 * Added compute_sparse_matrix for BasisStateProjector.
-  [(#5752)](https://github.com/PennyLaneAI/pennylane/pull/5752)
+  [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
 
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
