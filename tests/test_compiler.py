@@ -17,9 +17,9 @@ Unit tests for the compiler subpackage.
 # pylint: disable=import-outside-toplevel
 from unittest.mock import patch
 
+import mcm_utils
 import numpy as np
 import pytest
-import utils
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -810,4 +810,4 @@ class TestCatalystMCMs:
         if measure_f == qml.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]
-        utils.validate_measurements(measure_f, shots, results1, results0)
+        mcm_utils.validate_measurements(measure_f, shots, results1, results0)
