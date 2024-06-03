@@ -74,7 +74,7 @@ def specs(qnode, **kwargs):
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
-        returns a dictionary of information about qnode structure.
+        returns a dictionary (or a list of dictionaries) of information about qnode structure.
 
     .. note::
 
@@ -170,6 +170,23 @@ def specs(qnode, **kwargs):
     However, if we apply all transforms, ``RandomLayers`` would be decomposed to an ``RY`` and an ``RX``, giving us two trainable objects:
 
     >>> qml.specs(circuit, level=None)(0.1)["num_trainable_params"]
+    2
+
+    If a ``QNode`` with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
+    would be returned for each resulting tapes:
+
+    .. code-block:: python3
+
+        H = qml.Hamiltonian([0.2, -0.543], [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)])
+
+
+        @qml.transforms.hamiltonian_expand
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+        def circuit():
+            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+            return qml.expval(H)
+
+    >>> len(qml.specs(circuit, level="user")())
     2
     """
 
