@@ -222,11 +222,16 @@ class TestDifferentiability:
         assert qml.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
+    # TODO: Allow the following cases once their underlying issues are fixed:
+    #  (True, 50000): jax.jit on jax.grad does not work with AmplitudeEmbedding currently
+    #  (False, 50000): Since #5774, the decomposition of AmplitudeEmbedding triggered by
+    #                  param-shift includes a GlobalPhase always. GlobalPhase will only be
+    #                  param-shift-compatible again once #5620 is merged in.
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "use_jit , shots",
-        ((False, None), (True, None), (False, 50000)),
-    )  # TODO: (True, 50000) fails because jax.jit on jax.grad does not work with AmplitudeEmbedding
+        ((False, None), (True, None)),
+    )
     def test_qnode_jax(self, shots, use_jit):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
