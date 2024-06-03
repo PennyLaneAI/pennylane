@@ -687,7 +687,7 @@ def molecular_dipole(
         d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
 
     and :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
-    respectively. The contribution of the core orbitals and nuclei are denoted by
+    respectively. The contribution of the core orbitals and nuclei is denoted by
     :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}`, respectively, which are computed as
 
     .. math::
