@@ -20,7 +20,7 @@ from importlib import metadata, reload
 from sys import version_info
 from typing import List, Optional
 
-from semantic_version import Version
+from packaging.version import Version
 
 PL_CATALYST_MIN_VERSION = Version("0.6.0")
 

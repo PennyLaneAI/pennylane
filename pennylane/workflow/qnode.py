@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1086,7 +1086,7 @@ class QNode:
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots
         )
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+    def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
 
         old_interface = self.interface
         if old_interface == "auto":
@@ -1117,6 +1117,11 @@ class QNode:
             _, self.gradient_kwargs, self.device = original_grad_fn
 
         return res
+
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+        if qml.capture.enabled():
+            return qml.capture.qnode_call(self, *args, **kwargs)
+        return self._impl_call(*args, **kwargs)
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)

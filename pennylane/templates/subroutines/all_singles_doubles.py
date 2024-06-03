@@ -145,7 +145,7 @@ class AllSinglesDoubles(Operation):
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
         if hf_state[0].dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
+            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state[0].dtype}")
 
         singles = tuple(tuple(s) for s in singles)
         doubles = tuple(tuple(d) for d in doubles)
