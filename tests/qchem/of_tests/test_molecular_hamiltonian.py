@@ -1331,7 +1331,8 @@ def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdi
 
 
 def test_unit_error_molecular_hamiltonian():
-    r"""Test that an error is raised if a wrong/not-supported unit for coordinates is entered."""
+    r"""Test that an error is raised if a wrong/not-supported unit for coordinates is entered.
+    """
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
@@ -1340,7 +1341,9 @@ def test_unit_error_molecular_hamiltonian():
         qchem.molecular_hamiltonian(symbols, geometry, unit="degrees")
 
 
-def partial_h(coordinates, symbols=['N', 'H', 'H', 'H']):
+def _partial_h(coordinates, symbols=['N', 'H', 'H', 'H']):
+    r""" Return a partial of molecular hamiltonian, only wait coordinates
+    The function has to be moved outside of the caller so that it cal be pickled"""
     return qchem.molecular_hamiltonian(symbols, coordinates, method="pyscf")
 
 
@@ -1352,11 +1355,10 @@ def test_parallel_hamiltonian():
     np.random.seed(5)
     coordinates_list = np.random.random((3, 3*len(symbols)))
 
-    # Call the parallel_build_hamiltonian function
     start_parallel = time.time()
     with Pool(os.cpu_count()) as pool:
         # Map the build_hamiltonian function to the list of coordinates
-        parallel_hs = pool.map(partial_h, coordinates_list)
+        parallel_hs = pool.map(_partial_h, coordinates_list)
     done_parallel = time.time()
 
     start_serial = time.time()
@@ -1365,6 +1367,5 @@ def test_parallel_hamiltonian():
 
     # Check the results
     assert done_parallel - start_parallel <  0.6*(done_serial - start_serial)
-    # assert correct hamiltonians and num qubits
     for i in range(len(parallel_hs)):
         assert parallel_hs[i] == expected_hs[i]

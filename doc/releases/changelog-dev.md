@@ -152,6 +152,9 @@
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
+* It is now possible to build Hamiltonians in a parallel fashion. It would greatly speed up VQE, especially when optimizing for the coordinates 
+  of a molecule [(#5792)](https://github.com/PennyLaneAI/pennylane/pull/5792)
+ 
 <h3>Breaking changes 💔</h3>
 
 * A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
@@ -269,6 +272,7 @@ This release contains contributions from (in alphabetical order):
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,
+Minh Triet Chau,
 Ahmed Darwish,
 Isaac De Vlugt,
 Diksha Dhawan,
