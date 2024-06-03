@@ -85,6 +85,7 @@ class TestSpecsTransform:
             ("top", 0),
             (0, slice(0, 0)),
             ("user", 3),
+            ("user", slice(0, 3)),
             (None, slice(0, None)),
             (-1, slice(0, -1)),
             ("device", slice(0, None)),
