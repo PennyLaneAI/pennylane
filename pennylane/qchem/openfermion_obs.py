@@ -747,7 +747,7 @@ def molecular_dipole(
     symbols = molecule.symbols
     coordinates = molecule.coordinates
 
-    if len(coordinates) == len(symbols) * 3:
+    if qml.math.shape(coordinates)[0] == len(symbols) * 3:
         geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
