@@ -1079,9 +1079,7 @@ class QNode:
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots
         )
 
-
     def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
-
         old_interface = self.interface
         if old_interface == "auto":
             interface = qml.math.get_interface(*args, *list(kwargs.values()))

@@ -263,7 +263,6 @@ class DefaultTensor(Device):
         dtype=np.complex128,
         **kwargs,
     ) -> None:
-      
         if wires is None:
             raise TypeError("Wires must be provided for the default.tensor device.")
 

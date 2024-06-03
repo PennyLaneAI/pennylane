@@ -453,7 +453,6 @@ def _split_using_wires_grouping(
     num_groups = 0
 
     for smp, (mp_indices, coeffs) in single_term_obs_mps.items():
-
         if len(smp.wires) == 0:  # measurement acting on all wires
             mp_groups.append([smp])
             wires_for_each_group.append(tape.wires)
@@ -578,7 +577,6 @@ def _processing_fn_no_grouping(
     coeffs_for_each_mp = [[] for _ in offsets]
 
     for smp_idx, (_, (mp_indices, coeffs)) in enumerate(single_term_obs_mps.items()):
-
         for mp_idx, coeff in zip(mp_indices, coeffs):
             res_batch_for_each_mp[mp_idx].append(res[smp_idx])
             coeffs_for_each_mp[mp_idx].append(coeff)
@@ -636,7 +634,6 @@ def _processing_fn_with_grouping(
     coeffs_for_each_mp = [[] for _ in offsets]
 
     for _, (mp_indices, coeffs, group_idx, mp_idx_in_group) in single_term_obs_mps.items():
-
         res_group = res[group_idx]  # ([n_shots] [,n_mps] [,batch_size])
         group_size = group_sizes[group_idx]
 
