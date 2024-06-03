@@ -703,7 +703,7 @@ def molecular_dipole(
 
         \hat{D} = \sum_{j} c_j P_j,
 
-    where :math:`c_j` is a numerical coefficient and :math:`P_j` is a ternsor product of
+    where :math:`c_j` is a numerical coefficient and :math:`P_j` is a tensor product of
     single-qubit Pauli operators :math:`X, Y, Z, I`.
 
     Args:
