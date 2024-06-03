@@ -27,6 +27,11 @@ from pennylane.transforms import TransformError
 from pennylane.typing import TensorLike
 
 
+def catalyst_qjit(qnode):
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
+
+
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
@@ -177,6 +182,9 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             wires specified, and this is the order in which wires appear in ``circuit()``.
 
     """
+    if catalyst_qjit(op):
+        op = op.user_function
+
     if not isinstance(op, Operator):
 
         if isinstance(op, (PauliWord, PauliSentence)):

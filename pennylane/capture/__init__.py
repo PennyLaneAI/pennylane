@@ -33,6 +33,7 @@ quantum-classical programs.
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
+    ~qnode_call
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -81,7 +82,7 @@ But an operator developer may need to override custom behavior for calling ``cls
 (where ``cls`` indicates the class) if:
 
 * The operator does not accept wires, like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
-* The operator needs to enforce a data/ metadata distinction, like :class:`~.PauliRot`.
+* The operator needs to enforce a data / metadata distinction, like :class:`~.PauliRot`.
 
 In such cases, the operator developer can override ``cls._primitive_bind_call``, which
 will be called when constructing a new class instance instead of ``type.__call__``.  For example,
@@ -132,6 +133,7 @@ from .primitives import (
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
 )
+from .capture_qnode import qnode_call
 
 
 def __getattr__(key):
