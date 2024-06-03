@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Removed `semantic_version` from the list of required packages in PennyLane. 
+  [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
+
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
