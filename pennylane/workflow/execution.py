@@ -267,7 +267,15 @@ def _make_inner_execute(
     """
 
     if isinstance(device, qml.devices.LegacyDevice):
-        device_execution = set_shots(device, override_shots)(device.batch_execute)
+        dev_execute = (
+            device.batch_execute
+            if execution_config is None
+            else partial(
+                device.batch_execute,
+                postselect_mode=execution_config.mcm_config.postselect_mode,
+            )
+        )
+        device_execution = set_shots(device, override_shots)(dev_execute)
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
