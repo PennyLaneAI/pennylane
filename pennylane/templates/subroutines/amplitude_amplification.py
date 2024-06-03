@@ -108,6 +108,10 @@ class AmplitudeAmplification(Operation):
         return data, metadata
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 

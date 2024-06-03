@@ -125,6 +125,10 @@ class ApproxTimeEvolution(Operation):
         return data, (self.hyperparameters["n"],)
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], n=metadata[0])
 
