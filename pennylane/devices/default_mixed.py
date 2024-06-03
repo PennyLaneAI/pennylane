@@ -21,6 +21,7 @@ qubit-based quantum circuits.
 
 import functools
 import itertools
+import logging
 from collections import defaultdict
 from string import ascii_letters as ABC
 
@@ -29,6 +30,7 @@ import numpy as np
 import pennylane as qml
 import pennylane.math as qnp
 from pennylane import BasisState, DeviceError, QubitDensityMatrix, QubitDevice, Snapshot, StatePrep
+from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -46,6 +48,9 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
 
 from .._version import __version__
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
@@ -181,6 +186,7 @@ class DefaultMixed(QubitDevice):
         res = qnp.cast(array, dtype=dtype)
         return res
 
+    @debug_logger_init
     def __init__(
         self,
         wires,
@@ -252,6 +258,7 @@ class DefaultMixed(QubitDevice):
         # User obtains state as a matrix
         return qnp.reshape(self._pre_rotated_state, (dim, dim))
 
+    @debug_logger
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.
 
@@ -266,12 +273,14 @@ class DefaultMixed(QubitDevice):
         wires = self.map_wires(wires)
         return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
+    @debug_logger
     def purity(self, mp, **kwargs):  # pylint: disable=unused-argument
         """Returns the purity of the final state"""
         state = getattr(self, "state", None)
         wires = self.map_wires(mp.wires)
         return qml.math.purity(state, indices=wires, c_dtype=self.C_DTYPE)
 
+    @debug_logger
     def reset(self):
         """Resets the device"""
         super().reset()
@@ -279,6 +288,7 @@ class DefaultMixed(QubitDevice):
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
+    @debug_logger
     def analytic_probability(self, wires=None):
         if self._state is None:
             return None
@@ -706,6 +716,7 @@ class DefaultMixed(QubitDevice):
 
     # pylint: disable=arguments-differ
 
+    @debug_logger
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
@@ -760,6 +771,7 @@ class DefaultMixed(QubitDevice):
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
 
+    @debug_logger
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 

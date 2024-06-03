@@ -25,6 +25,7 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
+from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
 
@@ -584,6 +585,7 @@ class QNode:
         """The transform program used by the QNode."""
         return self._transform_program
 
+    @debug_logger
     def add_transform(self, transform_container):
         """Add a transform (container) to the transform program.
 
@@ -608,7 +610,7 @@ class QNode:
         ):
             diff_method = "parameter-shift"
 
-        self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
+        self.gradient_fn, self.gradient_kwargs, self.device = QNode.get_gradient_fn(
             self._original_device, self.interface, diff_method, tape=tape
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})
@@ -632,6 +634,7 @@ class QNode:
 
     # pylint: disable=too-many-return-statements
     @staticmethod
+    @debug_logger
     def get_gradient_fn(
         device, interface, diff_method="best", tape: Optional["qml.tape.QuantumTape"] = None
     ):
@@ -703,6 +706,7 @@ class QNode:
         )
 
     @staticmethod
+    @debug_logger
     def get_best_method(device, interface, tape=None):
         """Returns the 'best' differentiation method
         for a particular device and interface combination.
@@ -749,6 +753,7 @@ class QNode:
                     return qml.gradients.finite_diff, {}, device
 
     @staticmethod
+    @debug_logger
     def best_method_str(device, interface):
         """Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
@@ -787,6 +792,7 @@ class QNode:
         return transform
 
     @staticmethod
+    @debug_logger
     def _validate_backprop_method(device, interface, tape=None):
         if isinstance(device, qml.devices.Device):
             raise ValueError(
@@ -919,6 +925,7 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
+    @debug_logger
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
