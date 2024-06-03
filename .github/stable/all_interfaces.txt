@@ -28,7 +28,7 @@ fsspec==2024.5.0
 future==1.0.0
 gast==0.5.4
 google-pasta==0.2.0
-grpcio==1.64.0
+grpcio==1.64.1
 h5py==3.11.0
 identify==2.5.36
 idna==3.7
