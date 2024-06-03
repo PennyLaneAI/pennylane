@@ -228,10 +228,7 @@ class TestDifferentiability:
     #                  param-shift includes a GlobalPhase always. GlobalPhase will only be
     #                  param-shift-compatible again once #5620 is merged in.
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "use_jit , shots",
-        ((False, None), (True, None)),
-    )
+    @pytest.mark.parametrize("use_jit , shots", ((False, None), (True, None)))
     def test_qnode_jax(self, shots, use_jit):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
@@ -255,10 +252,9 @@ class TestDifferentiability:
         assert jac.shape == (4,)
         assert np.allclose(jac, self.exp_grad, atol=0.01)
 
+    # TODO: finite shots fails because Prod is not currently differentiable.
     @pytest.mark.torch
-    @pytest.mark.parametrize(
-        "shots", [None]
-    )  # TODO: finite shots fails because Prod is not currently differentiable.
+    @pytest.mark.parametrize("shots", [None])
     def test_qnode_torch(self, shots):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
