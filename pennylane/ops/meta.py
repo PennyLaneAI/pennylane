@@ -204,7 +204,7 @@ class Snapshot(Operation):
     @classmethod
     def _primitive_bind_call(cls, tag=None, measurement=None):
         # TODO: make measurements dynamic
-        return cls._primitive.bind(measurement=measurement, tag=tag)
+        return cls._primitive.bind(measurement, tag=tag)
 
     def __init__(self, tag=None, measurement=None):
         self.tag = tag
@@ -239,3 +239,13 @@ class Snapshot(Operation):
 
     def adjoint(self):
         return Snapshot(tag=self.tag)
+
+
+# Since measurements are captured as variables in plxpr with the capture module,
+# the measurement is treated as a traceable argument.
+# This step is mandatory for fixing the order of arguments overwritten by ``Snapshot._primitive_bind_call``.
+if Snapshot._primitive:  # pylint: disable=protected-access
+
+    @Snapshot._primitive.def_impl  # pylint: disable=protected-access
+    def _(measurement, tag=None):
+        return type.__call__(Snapshot, tag=tag, measurement=measurement)

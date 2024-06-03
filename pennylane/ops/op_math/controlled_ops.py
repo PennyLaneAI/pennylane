@@ -1063,6 +1063,7 @@ class MultiControlledX(ControlledOp):
     def _unflatten(cls, _, metadata):
         return cls(wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
 
+    # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, wires, control_values=None, work_wires=None, id=None):
         return cls._primitive.bind(
