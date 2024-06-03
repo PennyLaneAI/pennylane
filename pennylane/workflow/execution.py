@@ -270,6 +270,7 @@ def _make_inner_execute(
         dev_execute = (
             device.batch_execute
             if execution_config is None
+            or not device.capabilities().get("supports_mid_measure", False)
             else partial(
                 device.batch_execute,
                 postselect_mode=execution_config.mcm_config.postselect_mode,
