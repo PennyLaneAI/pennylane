@@ -621,6 +621,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.QuantumMonteCarlo(probs, **kwargs)
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_qubitization(self):
         """Test the primitive bind call of Qubitization."""
 
