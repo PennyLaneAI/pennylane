@@ -14,11 +14,13 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
+import copy
 
 import pennylane as qml
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.wires import Wires
 
 
 def _scalar(order):
@@ -235,7 +237,14 @@ class TrotterProduct(ErrorOperation):
             "check_hermitian": check_hermitian,
         }
 
-        super().__init__(time, wires=hamiltonian.wires, id=id)
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["base"])
@@ -288,7 +297,7 @@ class TrotterProduct(ErrorOperation):
             SpectralNormError: The spectral norm error.
         """
         base_unitary = self.hyperparameters["base"]
-        t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
+        t, p, n = (self.parameters[-1], self.hyperparameters["order"], self.hyperparameters["n"])
 
         parameters = [t] + base_unitary.parameters
         if any(
@@ -343,10 +352,10 @@ class TrotterProduct(ErrorOperation):
         (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
         """
         hamiltonian = self.hyperparameters["base"]
-        time = self.parameters[0]
+        time = self.data[-1]
 
         hashable_hyperparameters = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "base"
+            item for item in self.hyperparameters.items() if item[0] != "base"
         )
         return (hamiltonian, time), hashable_hyperparameters
 
@@ -375,8 +384,7 @@ class TrotterProduct(ErrorOperation):
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
 
         """
-        hyperparameters_dict = dict(metadata)
-        return cls(*data, **hyperparameters_dict)
+        return cls(*data, **dict(metadata))
 
     @staticmethod
     def compute_decomposition(*args, **kwargs):
@@ -399,7 +407,7 @@ class TrotterProduct(ErrorOperation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        time = args[0]
+        time = args[-1]
         n = kwargs["n"]
         order = kwargs["order"]
         ops = kwargs["base"].operands

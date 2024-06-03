@@ -15,6 +15,7 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
+import contextlib
 import os
 import pathlib
 
@@ -215,6 +216,12 @@ def use_new_opmath():
 def use_legacy_and_new_opmath(request):
     with request.param() as cm:
         yield cm
+
+
+@pytest.fixture
+def new_opmath_only():
+    if not qml.operation.active_new_opmath():
+        pytest.skip("This feature only works with new opmath enabled")
 
 
 #######################################################################

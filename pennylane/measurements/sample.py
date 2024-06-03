@@ -28,7 +28,7 @@ from .mid_measure import MeasurementValue
 
 
 def sample(
-    op: Optional[Union[Operator, MeasurementValue]] = None,
+    op: Optional[Union[Operator, MeasurementValue, Sequence[MeasurementValue]]] = None,
     wires=None,
 ) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
@@ -41,9 +41,9 @@ def sample(
 
     Args:
         op (Observable or MeasurementValue): a quantum observable object. To get samples
-            for mid-circuit measurements, ``op`` should be a``MeasurementValue``.
+            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
-            op is ``None``
+            op is ``None``.
 
     Returns:
         SampleMP: Measurement process instance
@@ -182,22 +182,42 @@ class SampleMP(SampleMeasurement):
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
-    @property
-    def return_type(self):
-        return Sample
+    return_type = Sample
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        if shots is None:
+            raise ValueError("finite shots are required to use SampleMP")
+        sample_eigvals = n_wires is None or has_eigvals
+        dtype = float if sample_eigvals else int
+
+        if n_wires == 0:
+            dim = num_device_wires
+        elif sample_eigvals:
+            dim = 1
+        else:
+            dim = n_wires
+
+        shape = []
+        if shots != 1:
+            shape.append(shots)
+        if dim != 1:
+            shape.append(dim)
+        return tuple(shape), dtype
 
     @property
     @functools.lru_cache()
     def numeric_type(self):
-        # Note: we only assume an integer numeric type if the observable is a
-        # built-in observable with integer eigenvalues or a tensor product thereof
         if self.obs is None:
             # Computational basis samples
             return int
-        int_eigval_obs = {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
-        tensor_terms = self.obs.obs if isinstance(self.obs, qml.operation.Tensor) else [self.obs]
-        every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
-        return int if every_term_standard else float
+        return float
 
     def shape(self, device, shots):
         if not shots:
@@ -239,7 +259,6 @@ class SampleMP(SampleMeasurement):
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        name = self.obs.name if self.obs is not None else None
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -259,24 +278,28 @@ class SampleMP(SampleMeasurement):
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
         # If we're sampling observables
-        if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
-            # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * qml.math.squeeze(samples, axis=-1)
+        try:
+            eigvals = self.eigvals()
+        except qml.operation.EigvalsUndefinedError as e:
+            # if observable has no info on eigenvalues, we cannot return this measurement
+            raise qml.operation.EigvalsUndefinedError(
+                f"Cannot compute samples of {self.obs.name}."
+            ) from e
+
+        if np.array_equal(eigvals, [1.0, -1.0]):
+            # special handling for observables with eigvals +1/-1
+            # (this is JIT-compatible, the next block is not)
+            # type should be float
+            samples = 1.0 - 2 * qml.math.squeeze(samples, axis=-1)
         else:
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
             indices = samples @ powers_of_two
             indices = qml.math.array(indices)  # Add np.array here for Jax support.
-            try:
-                # This also covers statistics for mid-circuit measurements manipulated using
-                # arithmetic operators
-                samples = self.eigvals()[indices]
-            except qml.operation.EigvalsUndefinedError as e:
-                # if observable has no info on eigenvalues, we cannot return this measurement
-                raise qml.operation.EigvalsUndefinedError(
-                    f"Cannot compute samples of {self.obs.name}."
-                ) from e
+            # This also covers statistics for mid-circuit measurements manipulated using
+            # arithmetic operators
+            samples = eigvals[indices]
 
         return samples if bin_size is None else samples.reshape((bin_size, -1))
 
