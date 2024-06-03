@@ -385,6 +385,7 @@ def gather_mcm(measurement, samples, is_valid):
     Args:
         measurement (MeasurementProcess): measurement
         samples (List[dict]): Mid-circuit measurement samples
+        is_valid (TensorLike): Mask of valid samples
 
     Returns:
         TensorLike: The combined measurement outcome
