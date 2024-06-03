@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ from sys import version_info
 
 
 import numpy as _np
+
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
@@ -222,6 +223,9 @@ def device(name, *args, **kwargs):
 
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
       simulator of Clifford circuits.
+
+    * :mod:`'default.tensor' <pennylane.devices.default_tensor>`: a simulator
+      of quantum circuits based on tensor networks.
 
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more

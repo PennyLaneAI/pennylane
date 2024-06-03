@@ -31,7 +31,7 @@ def test_flatten_unflatten_standard_checks(op_type):
 
     v_wires = qml.wires.Wires((0, 1))
     op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u_tape=u_tape)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_wire_mapping=True)
 
     data, metadata = op._flatten()
 
@@ -55,6 +55,16 @@ def test_flatten_unflatten_standard_checks(op_type):
 
 class TestHilbertSchmidt:
     """Tests for the Hilbert-Schmidt template."""
+
+    @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
+    def test_map_wires_errors_out(self, op_type):
+        """Test that map_wires raises an error."""
+        u_tape = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
+
+        v_wires = qml.wires.Wires((0, 1))
+        op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u_tape=u_tape)
+        with pytest.raises(NotImplementedError, match="Mapping the wires of HilbertSchmidt"):
+            op.map_wires({0: "a", 1: "b"})
 
     def test_hs_decomposition_1_qubit(self):
         """Test if the HS operation is correctly decomposed for a 1 qubit unitary."""

@@ -369,6 +369,11 @@ new_hamiltonian = qml.Hamiltonian(
             [10, 0.4, 0.5, 0.6],
             qml.CommutingEvolution(new_hamiltonian, 10),
         ),
+        (
+            qml.QDrift(old_hamiltonian, 5, n=4, seed=251),
+            [0.4, 0.5, 0.6, 10],
+            qml.QDrift(new_hamiltonian, 10, n=4, seed=251),
+        ),
     ],
 )
 def test_evolution_template_ops(op, new_params, expected_op):
