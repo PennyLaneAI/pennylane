@@ -56,6 +56,17 @@ def test_error_if_shot_vector(dev_name):
     res = circuit(shots=50)
     assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
+
+@pytest.mark.parametrize("dev_name", ("default.qubit", "default.qubit.legacy"))
+def test_error_if_overridden_shot_vector(dev_name):
+    """Test that a NotImplementedError is raised if a shot vector is provided on call."""
+
+    dev = qml.device(dev_name, wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        return qml.sample()
+
     with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
         jax.make_jaxpr(partial(circuit, shots=(1, 1, 1)))()
 
