@@ -23,7 +23,7 @@ class NoiseModel:
     defines noise operations using some optional metadata.
 
     Args:
-        model_map (dict[~.BooleanFn -> Callable]): Data for the
+        model_map (dict[BooleanFn -> Callable]): Data for the
             noise model as a ``{conditional: noise_fn}`` dictionary. The signature of
             ``noise_fn`` must be ``noise_fn(op: Operation, **kwargs) -> None``, where
             ``op`` is the operation that the conditional evaluates and ``kwargs`` are
@@ -38,7 +38,7 @@ class NoiseModel:
           a callable object built via the constructor functions (:func:`~.pennylane.noise.op_eq`,
           :func:`~.pennylane.noise.op_in`, :func:`~.pennylane.noise.wires_eq`, and
           :func:`~.pennylane.noise.wires_in`), or their bit-wise combination.
-        - Defintion of ``noise_fn(op, **kwargs)`` should have the operations in same the order
+        - The definition of ``noise_fn(op, **kwargs)`` should have the operations in same the order
           in which they are to be queued for an operation ``op``, whenever the corresponding
           ``conditional`` evaluates to ``True``.
 
