@@ -16,10 +16,11 @@
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
 * Added `packaging` in the required list of packages.
-  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769)
+  [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
 
 * Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
-  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528)
 
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
