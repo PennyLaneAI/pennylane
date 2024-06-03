@@ -697,7 +697,7 @@ def molecular_dipole(
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
     nuclear coordinates of the :math:`i`-th atom of the molecule.
 
-    The fermonic dipole operator is then transformed to the qubit basis which gives
+    The fermionic dipole operator is then transformed to the qubit basis, which gives
 
     .. math::
 
