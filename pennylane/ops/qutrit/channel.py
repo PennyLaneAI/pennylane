@@ -125,7 +125,7 @@ class QutritDepolarizingChannel(Channel):
 
     Args:
         p (float): Each qutrit Pauli operator is applied with probability :math:`\frac{p}{8}`
-        wires (Sequence[int] or int): the wire the channel acts on
+        wires (Sequence[int] or int): The wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
 
@@ -142,7 +142,7 @@ class QutritDepolarizingChannel(Channel):
         r"""Kraus matrices representing the qutrit depolarizing channel.
 
          Args:
-             p (float): each qutrit Pauli gate is applied with probability :math:`\frac{p}{8}`
+             p (float): Each qutrit Pauli gate is applied with probability :math:`\frac{p}{8}`
 
          Returns:
              list (array): list of Kraus matrices
@@ -278,7 +278,7 @@ class QutritAmplitudeDamping(Channel):
         gamma_01 (float): :math:`|1 \rangle \rightarrow |0 \rangle` amplitude damping probability.
         gamma_02 (float): :math:`|2 \rangle \rightarrow |0 \rangle` amplitude damping probability.
         gamma_12 (float): :math:`|2 \rangle \rightarrow |1 \rangle` amplitude damping probability.
-        wires (Sequence[int] or int): the wire the channel acts on
+        wires (Sequence[int] or int): The wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
 
@@ -344,7 +344,7 @@ class QutritAmplitudeDamping(Channel):
 
 class TritFlip(Channel):
     r"""
-    Single-qutrit parameter flipping error channel, similar to (GellMann :math:`\{\lambda_1, \lambda_4, \lambda_6\}`).
+    Single-qutrit trit flip error channel. Applying "bit flips" on each qutrit subspace.
 
     This channel is modelled by the following Kraus matrices:
 
@@ -372,14 +372,15 @@ class TritFlip(Channel):
                 0 & 1 & 0
                 \end{bmatrix}
 
-    where :math:`p_{01}, p_{02}, p_{12} \in [0, 1]` is the probability of a parameter flipping for subspaces (0,1),
-    (0,2), and (1,2) respectively.
+    where :math:`p_{01}, p_{02}, p_{12} \in [0, 1]` is the probability of two qutrit state-coefficients
+    flipping for subspaces (0,1), (0,2), and (1,2) respectively.
 
     .. note::
-        The Kraus operators :math:`\{K_0, K_1, K_2, K_3\}` are adapted from The BitFlip channel's Kraus operators.
+        The Kraus operators :math:`\{K_0, K_1, K_2, K_3\}` are adapted from the
+        `BitFlip <https://docs.pennylane.ai/en/stable/code/api/pennylane.BitFlip.html>`_ channel's Kraus operators.
 
-        This channel is primarily meant to characterize the misclassification inherent to measurements on some platforms.
-        An example of of a measurement with misclassification can be seen in [`1 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
+        This channel is primarily meant to simulate the misclassification inherent to measurements on some platforms.
+        An example of a measurement with misclassification can be seen in [`1 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
 
         To maintain normalization :math:`p_{01} + p_{02} + p_{12} \leq 1`.
 
@@ -390,10 +391,10 @@ class TritFlip(Channel):
     * Number of parameters: 3
 
     Args:
-        p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` parameter flip error occurs.
-        p_02 (float): The probability that a :math:`|0 \rangle \leftrightarrow |2 \rangle` parameter flip error occurs.
-        p_12 (float): The probability that a :math:`|1 \rangle \leftrightarrow |2 \rangle` parameter flip error occurs.
-        wires (Sequence[int] or int): the wire the channel acts on
+        p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` trit flip error occurs.
+        p_02 (float): The probability that a :math:`|0 \rangle \leftrightarrow |2 \rangle` trit flip error occurs.
+        p_12 (float): The probability that a :math:`|1 \rangle \leftrightarrow |2 \rangle` trit flip error occurs.
+        wires (Sequence[int] or int): The wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
 
@@ -418,9 +419,9 @@ class TritFlip(Channel):
         r"""Kraus matrices representing the TritFlip channel.
 
         Args:
-            p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` parameter flip error occurs.
-            p_02 (float): The probability that a :math:`|0 \rangle \leftrightarrow |2 \rangle` parameter flip error occurs.
-            p_12 (float): The probability that a :math:`|1 \rangle \leftrightarrow |2 \rangle` parameter flip error occurs.
+            p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` trit flip error occurs.
+            p_02 (float): The probability that a :math:`|0 \rangle \leftrightarrow |2 \rangle` trit flip error occurs.
+            p_12 (float): The probability that a :math:`|1 \rangle \leftrightarrow |2 \rangle` trit flip error occurs.
 
         Returns:
             list (array): list of Kraus matrices

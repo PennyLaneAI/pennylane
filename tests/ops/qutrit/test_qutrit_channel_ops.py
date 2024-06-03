@@ -292,7 +292,7 @@ class TestQutritAmplitudeDamping:
 
 
 class TestTritFlip:
-    """Tests for the quantum channel TritFlipChannel"""
+    """Tests for the quantum channel TritFlip"""
 
     @pytest.mark.parametrize(
         "ps", [(0, 0, 0), (0.1, 0.12, 0.3), (0.5, 0.4, 0.1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]

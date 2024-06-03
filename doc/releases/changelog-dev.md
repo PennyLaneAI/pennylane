@@ -156,7 +156,8 @@
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
   
-* `qml.TritFlip` has been added, allowing for parameter flipping errors, such as misclassification, to be simulated on the `default.qutrit.mixed` device.
+* `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
+  to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
 
