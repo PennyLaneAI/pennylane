@@ -15,17 +15,16 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
-from typing import Sequence, Callable
 from functools import partial
+
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
+from typing import Callable, Sequence
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import VarianceMP
 from pennylane import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.measurements import VarianceMP
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
@@ -36,12 +35,16 @@ from .general_shift_rules import (
 )
 from .gradient_transform import (
     _all_zero_grad,
-    assert_no_state_returns,
-    assert_no_tape_batching,
+    _contract_qjac_with_cjac,
+    _move_first_axis_to_third_pos,
+    _no_trainable_grad,
+    _swap_first_two_axes,
     assert_multimeasure_not_broadcasted,
+    assert_no_state_returns,
+    assert_no_trainable_tape_batching,
+    assert_shot_vector_not_broadcasted,
     choose_trainable_params,
     find_and_validate_gradient_methods,
-    _no_trainable_grad,
     reorder_grads,
 )
 
@@ -151,7 +154,7 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
 
     If an unshifted term exists, its contribution is added to the gradient.
     """
-    if isinstance(result, list) and result == []:
+    if isinstance(result, tuple) and result == ():
         if unshifted_coeff is None:
             raise ValueError(
                 "This gradient component neither has a shifted nor an unshifted component. "
@@ -172,19 +175,14 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
 def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     """Compute the gradient for multiple measurements by taking the linear combination of
     the coefficients and each measurement result."""
-    g = []
     if r0 is None:
         r0 = [None] * num_measurements
-    for meas_idx in range(num_measurements):
-        # Gather the measurement results
-        meas_result = [param_result[meas_idx] for param_result in res]
-        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0[meas_idx])
-        g.append(g_component)
-
-    return tuple(g)
+    if res == ():
+        res = tuple(() for _ in range(num_measurements))
+    return tuple(_single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0))
 
 
-def _evaluate_gradient(tape, res, data, r0):
+def _evaluate_gradient(tape_specs, res, data, r0, batch_size):
     """Use shifted tape evaluations and parameter-shift rule coefficients to evaluate
     a gradient result. If res is an empty list, ``r0`` and ``data[3]``, which is the
     coefficient for the unshifted term, must be given and not None.
@@ -196,42 +194,46 @@ def _evaluate_gradient(tape, res, data, r0):
     if fn is not None:
         res = fn(res)
 
-    num_measurements = len(tape.measurements)
+    *_, num_measurements, shots = tape_specs
+    scalar_shots, len_shot_vec = not shots.has_partitioned_shots, shots.num_copies
+
+    if r0 is None and not scalar_shots:
+        r0 = [None] * int(len_shot_vec)
 
     if num_measurements == 1:
-        if not tape.shots.has_partitioned_shots:
+        if scalar_shots:
+            # Res has axes (parameters,)
             return _single_meas_grad(res, coeffs, unshifted_coeff, r0)
-        g = []
-        len_shot_vec = tape.shots.num_copies
-        # Res has order of axes:
-        # 1. Number of parameters
-        # 2. Shot vector
-        if r0 is None:
-            r0 = [None] * int(len_shot_vec)
-        for i in range(len_shot_vec):
-            shot_comp_res = [r[i] for r in res]
-            shot_comp_res = _single_meas_grad(shot_comp_res, coeffs, unshifted_coeff, r0[i])
-            g.append(shot_comp_res)
-        return tuple(g)
+        # Res has axes (parameters, shots) or with broadcasting (shots, parameters)
+        if batch_size is None:
+            # Move shots to first position
+            res = _swap_first_two_axes(res, len(res), len_shot_vec, squeeze=False)
+        # _single_meas_grad expects axis (parameters,), iterate over shot vector
+        return tuple(_single_meas_grad(r, coeffs, unshifted_coeff, r0_) for r, r0_ in zip(res, r0))
 
-    g = []
-    if not tape.shots.has_partitioned_shots:
+    if scalar_shots:
+        # Res has axes (parameters, measurements) or with broadcasting (measurements, parameters)
+        if batch_size is None and len(res) > 0:
+            # Move measurements to first position
+            res = _swap_first_two_axes(res, len(res), num_measurements, squeeze=False)
+        # _multi_meas_grad expects axes (measurements, parameters)
         return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
 
-    # Res has order of axes:
-    # 1. Number of parameters
-    # 2. Shot vector
-    # 3. Number of measurements
-    for idx_shot_comp in range(tape.shots.num_copies):
-        single_shot_component_result = [
-            result_for_each_param[idx_shot_comp] for result_for_each_param in res
-        ]
-        multi_meas_grad = _multi_meas_grad(
-            single_shot_component_result, coeffs, r0, unshifted_coeff, num_measurements
-        )
-        g.append(multi_meas_grad)
-
-    return tuple(g)
+    # Res has axes (parameters, shots, measurements)
+    # or with broadcasting (shots, measurements, parameters)
+    if batch_size is None:
+        if len(res) > 0:
+            # Move first axis (parameters) to last position
+            res = _move_first_axis_to_third_pos(
+                res, len(res), len_shot_vec, num_measurements, squeeze=False
+            )
+        else:
+            res = (() for _ in range(len_shot_vec))
+    # _multi_meas_grad expects (measurements, parameters), so we iterate over shot vector
+    return tuple(
+        _multi_meas_grad(r, coeffs, r0_, unshifted_coeff, num_measurements)
+        for r, r0_ in zip(res, r0)
+    )
 
 
 def _get_operation_recipe(tape, t_idx, shifts, order=1):
@@ -423,14 +425,14 @@ def expval_param_shift(
                     grads.append(None)
                     continue
                 # The gradient for this parameter is computed from r0 alone.
-                g = _evaluate_gradient(tape, [], data, r0)
+                g = _evaluate_gradient(tape_specs, (), data, r0, batch_size)
                 grads.append(g)
                 continue
 
             res = results[start : start + num_tapes] if batch_size is None else results[start]
             start = start + num_tapes
 
-            g = _evaluate_gradient(tape, res, data, r0)
+            g = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
             grads.append(g)
 
         # g will have been defined at least once (because otherwise all gradients would have
@@ -727,7 +729,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 
     pdA2_fn = None
     if non_involutory_indices:
-
         new_measurements = list(tape.measurements)
         for i in non_involutory_indices:
             # We need to calculate d<A^2>/dp; to do so, we replace the
@@ -755,6 +756,16 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     return gradient_tapes, processing_fn
 
 
+def _param_shift_stopping_condition(op) -> bool:
+    if not op.has_decomposition:
+        # let things without decompositions through without error
+        # error will happen when calculating parameter shift tapes
+        return True
+    if isinstance(op, qml.operation.Operator) and any(qml.math.requires_grad(p) for p in op.data):
+        return op.grad_method is not None
+    return True
+
+
 def _expand_transform_param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,
@@ -765,15 +776,18 @@ def _expand_transform_param_shift(
     broadcast=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Expand function to be applied before parameter shift."""
-    expanded_tape = expand_invalid_trainable(tape)
-
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
-
-    return [expanded_tape], null_postprocessing
+    [new_tape], postprocessing = qml.devices.preprocess.decompose(
+        tape,
+        stopping_condition=_param_shift_stopping_condition,
+        skip_initial_state_prep=False,
+        name="param_shift",
+        error=qml.operation.DecompositionUndefinedError,
+    )
+    if new_tape is tape:
+        return [tape], postprocessing
+    params = new_tape.get_parameters(trainable_only=False)
+    new_tape.trainable_params = qml.math.get_trainable_indices(params)
+    return [new_tape], postprocessing
 
 
 @partial(
@@ -893,7 +907,7 @@ def param_shift(
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
@@ -910,7 +924,7 @@ def param_shift(
     post-processing.
 
     >>> import jax
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
@@ -919,7 +933,8 @@ def param_shift(
     ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32), Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
+    (Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64),
+     Array([0.69916862, 0.34072424, 0.69202359], dtype=float64))
 
     .. note::
 
@@ -965,10 +980,8 @@ def param_shift(
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> qml.gradients.param_shift(circuit)(params)
-        ((tensor(-0.38751724, requires_grad=True),
-          tensor(-0.18884792, requires_grad=True),
-          tensor(-0.38355709, requires_grad=True)),
-         (array(0.69916862), array(0.34072424), array(0.69202359)))
+        (Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64),
+         Array([0.69916862, 0.34072424, 0.69202359], dtype=float64))
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -980,12 +993,13 @@ def param_shift(
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
         >>> gradient_tapes
-        [<QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[0, 1], params=3>]
+        [<QuantumScript: wires=[0], params=3>,
+         <QuantumScript: wires=[0], params=3>,
+         <QuantumScript: wires=[0], params=3>,
+         <QuantumScript: wires=[0], params=3>,
+         <QuantumScript: wires=[0], params=3>,
+         <QuantumScript: wires=[0], params=3>,
+         <QuantumScript: wires=[0], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
@@ -1005,17 +1019,19 @@ def param_shift(
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        ((tensor(-0.3875172, requires_grad=True),
-          tensor(-0.18884787, requires_grad=True),
-          tensor(-0.38355704, requires_grad=True)),
-         (array(0.69916862), array(0.34072424), array(0.69202359)))
+        ((Array(-0.3875172, dtype=float64),
+          Array(-0.18884787, dtype=float64),
+          Array(-0.38355704, dtype=float64)),
+         (Array(0.69916862, dtype=float64),
+          Array(0.34072424, dtype=float64),
+          Array(0.69202359, dtype=float64)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", wires=2, shots=shots)
+        >>> dev = qml.device("default.qubit", shots=shots)
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
@@ -1024,12 +1040,9 @@ def param_shift(
         ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.param_shift(circuit)(params)
-        (((array(-0.6), array(-0.1), array(-0.1)),
-          (array(1.2), array(0.2), array(0.2))),
-         ((array(-0.39), array(-0.24), array(-0.49)),
-          (array(0.7488), array(0.4608), array(0.9408))),
-         ((array(-0.36), array(-0.191), array(-0.37)),
-          (array(0.65808), array(0.349148), array(0.67636))))
+        ((array([-0.2, -0.1, -0.4]), array([0.4, 0.2, 0.8])),
+         (array([-0.4 , -0.24, -0.43]), array([0.672 , 0.4032, 0.7224])),
+         (array([-0.399, -0.179, -0.387]), array([0.722988, 0.324348, 0.701244])))
 
         The outermost tuple contains results corresponding to each element of the shot vector.
 
@@ -1038,7 +1051,7 @@ def param_shift(
         broadcasted tapes:
 
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
         >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
@@ -1050,11 +1063,14 @@ def param_shift(
         The postprocessing function will know that broadcasting is used and handle the results accordingly:
 
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        (array(-0.3875172), array(-0.18884787), array(-0.38355704))
+        (tensor(-0.3875172, requires_grad=True),
+         tensor(-0.18884787, requires_grad=True),
+         tensor(-0.38355704, requires_grad=True))
 
         An advantage of using ``broadcast=True`` is a speedup:
 
-        >>> @qml.qnode(dev)
+        >>> import timeit
+        >>> @qml.qnode(qml.device("default.qubit"))
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
@@ -1078,7 +1094,8 @@ def param_shift(
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
-    assert_no_tape_batching(tape, transform_name)
+    assert_shot_vector_not_broadcasted(tape.shots, broadcast)
+    assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)

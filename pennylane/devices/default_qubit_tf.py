@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
 reference plugin.
 """
 import itertools
+
 import numpy as np
-import semantic_version
+from packaging.version import Version
 
 import pennylane as qml
 
@@ -28,13 +29,14 @@ try:
 
     from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
-    SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
+    SUPPORTS_APPLY_OPS = Version(tf.__version__) >= Version("2.3.0")
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
 
 
 from pennylane.math.single_dispatch import _ndim_tf
+
 from . import DefaultQubitLegacy
 from .default_qubit_legacy import tolerance
 

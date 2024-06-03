@@ -21,13 +21,12 @@ from itertools import product
 
 import numpy as np
 from scipy.linalg import fractional_matrix_power
-from pennylane.math import norm, cast, eye, zeros, transpose, conj, sqrt, sqrt_matrix
-from pennylane import numpy as pnp
 
 import pennylane as qml
+from pennylane import numpy as pnp
+from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
 from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
 from pennylane.wires import Wires
-
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 
@@ -397,10 +396,13 @@ class DiagonalQubitUnitary(Operation):
         ops = [QubitUnitary(qml.math.tensordot(global_phase, qml.math.eye(2), axes=0), wires[0])]
         for wire0 in range(n):
             # Single PauliZ generators correspond to the coeffs at powers of two
-            ops.append(qml.RZ(coeffs[1 << wire0], n - 1 - wire0))
+            ops.append(qml.RZ(coeffs[1 << wire0], wires[n - 1 - wire0]))
             # Double PauliZ generators correspond to the coeffs at the sum of two powers of two
             ops.extend(
-                qml.IsingZZ(coeffs[(1 << wire0) + (1 << wire1)], [n - 1 - wire0, n - 1 - wire1])
+                qml.IsingZZ(
+                    coeffs[(1 << wire0) + (1 << wire1)],
+                    [wires[n - 1 - wire0], wires[n - 1 - wire1]],
+                )
                 for wire1 in range(wire0)
             )
 

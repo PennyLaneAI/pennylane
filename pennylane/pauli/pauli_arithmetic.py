@@ -14,19 +14,17 @@
 """The Pauli arithmetic abstract reduced representation classes"""
 # pylint:disable=protected-access
 from copy import copy
-from functools import reduce, lru_cache
-from typing import Iterable
+from functools import lru_cache, reduce
 
 import numpy as np
 from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
-from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 from pennylane.operation import Tensor
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
-
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 I = "I"
 X = "X"
@@ -226,7 +224,7 @@ class PauliWord(dict):
     def _matmul(self, other):
         """Private matrix multiplication that returns (pauli_word, coeff) tuple for more lightweight processing"""
         base, iterator, swapped = (
-            (self, other, False) if len(self) > len(other) else (other, self, True)
+            (self, other, False) if len(self) >= len(other) else (other, self, True)
         )
         result = copy(dict(base))
         coeff = 1
@@ -455,6 +453,8 @@ class PauliWord(dict):
         full_word = [self[wire] for wire in wire_order]
 
         matrix_size = 2 ** len(wire_order)
+        if len(self) == 0:
+            return np.full(matrix_size, coeff, dtype=np.complex128)
         data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
         current_size = 2
         data[:current_size], _ = _cached_sparse_data(full_word[-1])
@@ -486,6 +486,8 @@ class PauliWord(dict):
         """Computes the sparse matrix indices of the Pauli word times a coefficient, given a wire order."""
         full_word = [self[wire] for wire in wire_order]
         matrix_size = 2 ** len(wire_order)
+        if len(self) == 0:
+            return _cached_arange(matrix_size)
         indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
         current_size = 2
         _, indices[:current_size] = _cached_sparse_data(full_word[-1])
@@ -528,6 +530,9 @@ class PauliWord(dict):
     def map_wires(self, wire_map: dict) -> "PauliWord":
         """Return a new PauliWord with the wires mapped."""
         return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
+
+
+pw_id = PauliWord({})  # empty pauli word to be re-used
 
 
 class PauliSentence(dict):
@@ -596,6 +601,21 @@ class PauliSentence(dict):
         """If the PauliWord is not in the sentence then the coefficient
         associated with it should be 0."""
         return 0.0
+
+    def trace(self):
+        r"""Return the normalized trace of the ``PauliSentence`` instance
+
+        .. math:: \frac{1}{2^n} \text{tr}\left( P \right).
+
+        The normalized trace does not scale with the number of qubits :math:`n`.
+
+        >>> PauliSentence({PauliWord({0:"I", 1:"I"}): 0.5}).trace()
+        0.5
+        >>> PauliSentence({PauliWord({}): 0.5}).trace()
+        0.5
+
+        """
+        return self.get(pw_id, 0.0)
 
     def __add__(self, other):
         """Add a PauliWord, scalar or other PauliSentence to a PauliSentence.
@@ -820,51 +840,15 @@ class PauliSentence(dict):
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
         wire_order = self.wires if wire_order is None else Wires(wire_order)
-        if not wire_order.contains_wires(self.wires):
-            raise ValueError(
-                "Can't get the matrix for the specified wire order because it "
-                f"does not contain all the Pauli sentence's wires {self.wires}"
-            )
-
-        def _pw_wires(w: Iterable) -> Wires:
-            """Return the native Wires instance for a list of wire labels.
-            w represents the wires of the PauliWord being processed. In case
-            the PauliWord is empty ({}), choose any arbitrary wire from the
-            PauliSentence it is composed in.
-            """
-            if w:
-                # PauliWord is not empty, so we can use its wires
-                return Wires(w)
-
-            if wire_order:
-                # PauliWord is empty, treat it as Identity operator on any wire
-                # Pick any arbitrary wire from wire_order
-                return Wires(wire_order[0])
-
-            return wire_order
-
         if len(self) == 0:
             n = len(wire_order) if wire_order is not None else 0
             if format == "dense":
                 return np.zeros((2**n, 2**n))
             return sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
-        if format != "dense":
-            return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
-
-        mats_and_wires_gen = (
-            (
-                coeff * pw.to_mat(wire_order=_pw_wires(pw.wires), format=format),
-                _pw_wires(pw.wires),
-            )
-            for pw, coeff in self.items()
-        )
-
-        reduced_mat, result_wire_order = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
-
-        return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
+        if format == "dense":
+            return self._to_dense_mat(wire_order)
+        return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
 
     def _to_sparse_mat(self, wire_order, buffer_size=None):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
@@ -903,6 +887,31 @@ class PauliSentence(dict):
         )
         matrix.eliminate_zeros()
         return matrix
+
+    def _to_dense_mat(self, wire_order):
+        """Compute the dense matrix of the Pauli sentence by efficiently adding the Pauli words
+        that it is composed of. See pauli_sparse_matrices.md for the technical details."""
+        pauli_words = list(self)  # Ensure consistent ordering
+
+        try:
+            op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
+        except qml.wires.WireError as e:
+            raise ValueError(
+                "Can't get the matrix for the specified wire order because it "
+                f"does not contain all the Pauli sentence's wires {self.wires}"
+            ) from e
+        _, unique_sparse_structures, unique_invs = np.unique(
+            op_sparse_idx, axis=0, return_index=True, return_inverse=True
+        )
+        pw_sparse_structures = unique_sparse_structures[unique_invs]
+
+        full_matrix = None
+        for sparse_structure in unique_sparse_structures:
+            indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
+            mat = self._sum_same_structure_pws_dense([pauli_words[i] for i in indices], wire_order)
+
+            full_matrix = mat if full_matrix is None else qml.math.add(full_matrix, mat)
+        return full_matrix
 
     def dot(self, vector, wire_order=None):
         """Computes the matrix-vector product of the Pauli sentence with a state vector.
@@ -945,6 +954,32 @@ class PauliSentence(dict):
             )
         data = outer.T @ inner
         return indices, data.ravel()
+
+    def _sum_same_structure_pws_dense(self, pauli_words, wire_order):
+        matrix_size = 2 ** (len(wire_order))
+        base_matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
+
+        data0 = pauli_words[0]._get_csr_data(wire_order, 1)
+        base_matrix.data = np.ones_like(data0)
+        base_matrix.indices = pauli_words[0]._get_csr_indices(wire_order)
+        base_matrix.indptr = _cached_arange(
+            matrix_size + 1
+        )  # Non-zero entries by row (starting from 0)
+        base_matrix = base_matrix.toarray()
+        coeff = self[pauli_words[0]]
+        ml_interface = qml.math.get_interface(coeff)
+        if ml_interface == "torch":
+            data0 = qml.math.convert_like(data0, coeff)
+        data = coeff * data0
+        for pw in pauli_words[1:]:
+            coeff = self[pw]
+            csr_data = pw._get_csr_data(wire_order, 1)
+            ml_interface = qml.math.get_interface(coeff)
+            if ml_interface == "torch":
+                csr_data = qml.math.convert_like(csr_data, coeff)
+            data += self[pw] * csr_data
+
+        return qml.math.einsum("ij,i->ij", base_matrix, data)
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""

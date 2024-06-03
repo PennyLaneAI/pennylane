@@ -17,21 +17,15 @@ that they are supported for execution by a device."""
 # pylint: disable=protected-access, too-many-arguments
 
 import os
-from typing import Generator, Callable, Union, Sequence, Optional
-from copy import copy
 import warnings
+from copy import copy
+from typing import Callable, Generator, Optional, Sequence, Union
 
 import pennylane as qml
-from pennylane import Snapshot
-from pennylane.operation import Tensor, StatePrepBase
-from pennylane.measurements import (
-    MeasurementProcess,
-    StateMeasurement,
-    SampleMeasurement,
-)
-from pennylane.typing import ResultBatch, Result
-from pennylane import DeviceError
-from pennylane import transform
+from pennylane import DeviceError, Snapshot, transform
+from pennylane.measurements import SampleMeasurement, StateMeasurement
+from pennylane.operation import StatePrepBase, Tensor
+from pennylane.typing import Result, ResultBatch
 from pennylane.wires import WireError
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
@@ -51,6 +45,7 @@ def _operator_decomposition_gen(
     max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
+    error: Exception = DeviceError,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     max_depth_reached = False
@@ -63,8 +58,8 @@ def _operator_decomposition_gen(
             decomp = decomposer(op)
             current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
-            raise DeviceError(
-                f"Operator {op} not supported on {name} and does not provide a decomposition."
+            raise error(
+                f"Operator {op} not supported with {name} and does not provide a decomposition."
             ) from e
 
         for sub_op in decomp:
@@ -75,6 +70,7 @@ def _operator_decomposition_gen(
                 max_expansion=max_expansion,
                 current_depth=current_depth,
                 name=name,
+                error=error,
             )
 
 
@@ -157,7 +153,7 @@ def mid_circuit_measurements(
     and use the ``qml.defer_measurements`` transform otherwise.
     """
 
-    if tape.shots and tape.batch_size is None:
+    if tape.shots:
         return qml.dynamic_one_shot(tape)
     return qml.defer_measurements(tape, device=device)
 
@@ -236,16 +232,13 @@ def validate_adjoint_trainable_params(
                 "Differentiating with respect to the input parameters of state-prep operations "
                 "is not supported with the adjoint differentiation method."
             )
-    for k in tape.trainable_params:
-        mp_or_op = tape[tape._par_info[k]["op_idx"]]
-        if isinstance(mp_or_op, MeasurementProcess):
+    for m in tape.measurements:
+        if m.obs and qml.operation.is_trainable(m.obs):
             warnings.warn(
-                "Differentiating with respect to the input parameters of "
-                f"{mp_or_op.obs.name} is not supported with the "
-                "adjoint differentiation method. Gradients are computed "
-                "only with regards to the trainable parameters of the circuit.\n\n Mark "
-                "the parameters of the measured observables as non-trainable "
-                "to silence this warning.",
+                f"Differentiating with respect to the input parameters of {m.obs.name} "
+                "is not supported with the adjoint differentiation method. Gradients are computed "
+                "only with regards to the trainable parameters of the circuit.\n\n Mark the "
+                "parameters of the measured observables as non-trainable to silence this warning.",
                 UserWarning,
             )
     return (tape,), null_postprocessing
@@ -262,6 +255,7 @@ def decompose(
     ] = None,
     max_expansion: Union[int, None] = None,
     name: str = "device",
+    error: Exception = DeviceError,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
 
@@ -269,14 +263,20 @@ def decompose(
         tape (QuantumTape or QNode or Callable): a quantum circuit.
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            a ``DecompositionUndefinedError`` will be raised.
+            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg).
+
+    Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            a ``DecompositionUndefinedError`` will be raised. This replaces stopping_condition if and only if the tape has shots.
-        skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
+            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg). This replaces stopping_condition if and only if the tape has shots.
+        skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if it inherits
+            from :class:`~.StatePrepBase`. Defaults to ``True``.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
-        max_expansion (int): The maximum depth of the expansion.
+        max_expansion (int): The maximum depth of the expansion. Defaults to None.
+        name (str): The name of the transform, process or device using decompose. Used in the error message. Defaults to "device".
+        error (Error): An error type to raise if it is not possible to obtain a decomposition that fulfills
+            the ``stopping_condition``. Defaults to ``DeviceError``.
 
 
     Returns:
@@ -285,9 +285,9 @@ def decompose(
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        DecompositionUndefinedError: if an operator is not accepted and does not define a decomposition
-
-        DeviceError: If the decomposition enters and infinite loop and raises a ``RecursionError``.
+        Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument. Raised if
+            an operator is not accepted and does not define a decomposition, or if the decomposition
+            enters an infinite loop and raises a ``RecursionError``.
 
     **Example:**
 
@@ -334,30 +334,33 @@ def decompose(
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    if not all(stopping_condition(op) for op in tape.operations):
-        try:
-            # don't decompose initial operations if its StatePrepBase
-            prep_op = (
-                [tape[0]] if isinstance(tape[0], StatePrepBase) and skip_initial_state_prep else []
-            )
+    if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
+        prep_op = [tape[0]]
+    else:
+        prep_op = []
 
-            new_ops = [
-                final_op
-                for op in tape.operations[bool(prep_op) :]
-                for final_op in _operator_decomposition_gen(
-                    op,
-                    stopping_condition,
-                    decomposer=decomposer,
-                    max_expansion=max_expansion,
-                    name=name,
-                )
-            ]
-        except RecursionError as e:
-            raise DeviceError(
-                "Reached recursion limit trying to decompose operations. "
-                "Operator decomposition may have entered an infinite loop."
-            ) from e
-        tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
+    if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
+        return (tape,), null_postprocessing
+    try:
+
+        new_ops = [
+            final_op
+            for op in tape.operations[len(prep_op) :]
+            for final_op in _operator_decomposition_gen(
+                op,
+                stopping_condition,
+                decomposer=decomposer,
+                max_expansion=max_expansion,
+                name=name,
+                error=error,
+            )
+        ]
+    except RecursionError as e:
+        raise error(
+            "Reached recursion limit trying to decompose operations. "
+            "Operator decomposition may have entered an infinite loop."
+        ) from e
+    tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
 
     return (tape,), null_postprocessing
 
@@ -389,7 +392,7 @@ def validate_observables(
     ...    return obj.name in {"PauliX", "PauliY", "PauliZ"}
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0) + qml.Y(0))])
     >>> validate_observables(tape, accepted_observable)
-    DeviceError: Observable <Hamiltonian: terms=2, wires=[0]> not supported on device
+    DeviceError: Observable Z(0) + Y(0) not supported on device
 
     Note that if the observable is a :class:`~.Tensor`, the validation is run on each object in the
     ``Tensor`` instead.

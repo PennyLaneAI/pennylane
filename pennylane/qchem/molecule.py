@@ -16,15 +16,19 @@ This module contains functions and classes to create a
 :class:`~pennylane.qchem.molecule.Molecule` object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
+import collections
+
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import itertools
-import collections
 
 from pennylane import numpy as pnp
 
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
+
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+bohr_angs = 0.529177210903
 
 
 class Molecule:
@@ -40,16 +44,17 @@ class Molecule:
             where ``N`` is the number of atoms.
         charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
-            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Currently,
-            openshell systems are not supported; ``mult`` must be equal to :math:`1`.
+            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
-            only supported basis sets are 'STO-3G', '6-31G', '6-311G' and 'CC-PVDZ'.
+            only supported basis sets are ``STO-3G``, ``6-31G``, ``6-311G`` and ``CC-PVDZ``. Other
+            basis sets can be loaded from the basis-set-exchange library using ``load_data``.
         load_data (bool): flag to load data from the basis-set-exchange library
         l (tuple[int]): angular momentum quantum numbers of the basis function
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
         normalize (bool): if True, the basis functions get normalized
+        unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
 
     **Example**
 
@@ -68,11 +73,13 @@ class Molecule:
         charge=0,
         mult=1,
         basis_name="sto-3g",
+        name="molecule",
         load_data=False,
         l=None,
         alpha=None,
         coeff=None,
         normalize=True,
+        unit="bohr",
     ):
         if (
             basis_name.lower()
@@ -95,21 +102,26 @@ class Molecule:
 
         self.symbols = symbols
         self.coordinates = coordinates
+        self.unit = unit.strip().lower()
         self.charge = charge
         self.mult = mult
         self.basis_name = basis_name.lower()
-
+        self.name = name
+        self.load_data = load_data
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
+
+        if self.unit not in ("angstrom", "bohr"):
+            raise ValueError(
+                f"The provided unit '{unit}' is not supported. "
+                f"Please set 'unit' to 'bohr' or 'angstrom'."
+            )
+
+        if self.unit == "angstrom":
+            self.coordinates = self.coordinates / bohr_angs
 
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
         self.n_electrons = sum(self.nuclear_charges) - self.charge
-
-        if self.n_electrons % 2 == 1 or self.mult != 1:
-            raise ValueError(
-                "Openshell systems are not supported. Change the charge or spin "
-                "multiplicity of the molecule."
-            )
 
         if l is None:
             l = [i[0] for i in self.basis_data]

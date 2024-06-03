@@ -15,8 +15,9 @@
 Tests for the AmplitudeAmplification template.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
 
@@ -62,6 +63,13 @@ class TestInitialization:
 
         with pytest.raises(ValueError, match="work_wire must be different from the wires of O."):
             qml.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
+
+    def test_standard_validity(self):
+        """Test standard validity using assert_valid."""
+        U = generator(wires=range(3))
+        O = oracle([0, 2], wires=range(3))
+        op = qml.AmplitudeAmplification(U, O, iters=3, fixed_point=False)
+        qml.ops.functions.assert_valid(op)
 
 
 @pytest.mark.parametrize(
@@ -156,7 +164,6 @@ class TestDifferentiability:
 
         params = qml.numpy.array(self.params, requires_grad=True)
         res = qml.grad(qnode)(params)
-        print(res)
         assert qml.math.shape(res) == (2,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
@@ -255,23 +262,6 @@ def test_correct_queueing():
 
     assert np.allclose(circuit1(), circuit2())
     assert np.allclose(circuit1(), circuit3())
-
-
-# pylint: disable=protected-access
-def test_flatten_and_unflatten():
-    """Test the _flatten and _unflatten methods for AmplitudeAmplification."""
-
-    op = qml.AmplitudeAmplification(qml.RX(0.25, wires=0), qml.PauliZ(0))
-    data, metadata = op._flatten()
-
-    assert len(data) == 2
-    assert len(metadata) == 5
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
-
-    assert hash(metadata)
 
 
 def test_amplification():

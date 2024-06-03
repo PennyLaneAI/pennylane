@@ -17,6 +17,7 @@ Tests for the CommutingEvolution template.
 # pylint: disable=too-few-public-methods
 import pytest
 from scipy.linalg import expm
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -29,28 +30,6 @@ def test_standard_validity():
     shifts = (1, 0.5)
     op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
     qml.ops.functions.assert_valid(op)
-
-
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Unit tests for the flatten and unflatten methods."""
-    H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
-    time = 0.5
-    frequencies = (2, 4)
-    shifts = (1, 0.5)
-    op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    data, metadata = op._flatten()
-
-    assert hash(metadata)
-
-    assert len(data) == 2
-    assert data[1] is H
-    assert data[0] == time
-    assert metadata == (frequencies, shifts)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
 
 
 def test_adjoint():
@@ -83,6 +62,17 @@ def test_adjoint():
 
     assert res1 == res2
     assert all(np.isclose(state1, state2))
+
+
+def test_queuing():
+    """Test that CommutingEvolution de-queues the input hamiltonian."""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        H = qml.X(0) + qml.Y(1)
+        op = qml.CommutingEvolution(H, 0.1, (2,))
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is op
 
 
 def test_decomposition_expand():

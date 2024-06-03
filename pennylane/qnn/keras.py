@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@ API."""
 import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
-from semantic_version import Version
 
+from packaging.version import Version
 
 try:
     import tensorflow as tf

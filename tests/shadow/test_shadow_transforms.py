@@ -15,6 +15,7 @@
 # pylint: disable=too-few-public-methods
 
 from functools import partial
+
 import pytest
 
 import pennylane as qml
@@ -282,7 +283,7 @@ class TestStateBackward:
         sub_wires = [[0, 1], [1, 2]]
         shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
 
-        x = tf.Variable(self.x)
+        x = tf.Variable(self.x, dtype="float64")
 
         with tf.GradientTape() as tape:
             out = qml.math.stack(shadow_circuit(x))

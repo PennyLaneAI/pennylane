@@ -19,29 +19,25 @@ from functools import partial
 import numpy as np
 import pytest
 from gate_data import (
+    CCZ,
+    CH,
     CNOT,
     CSWAP,
     CY,
     CZ,
-    CCZ,
-    CH,
+    ControlledPhaseShift,
     CRot3,
     CRotx,
     CRoty,
     CRotz,
     Toffoli,
-    ControlledPhaseShift,
 )
 from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError, Operation, Operator
-from pennylane.ops.op_math.controlled import (
-    Controlled,
-    ControlledOp,
-    ctrl,
-)
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
 from pennylane.tape.tape import expand_tape
 from pennylane.wires import Wires
@@ -136,7 +132,7 @@ class TestControlledInit:
         assert op.base is self.temp_op
         assert op.hyperparameters["base"] is self.temp_op
 
-        assert op.wires == Wires((0, 1, "a", "aux"))
+        assert op.wires == Wires((0, 1, "a"))
 
         assert op.control_wires == Wires((0, 1))
         assert op.hyperparameters["control_wires"] == Wires((0, 1))
@@ -155,7 +151,7 @@ class TestControlledInit:
         assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert op.data == ()
 
-        assert op.num_wires == 4
+        assert op.num_wires == 3
 
     def test_default_control_values(self):
         """Test assignment of default control_values."""
@@ -165,6 +161,17 @@ class TestControlledInit:
     def test_zero_one_control_values(self):
         """Test assignment of provided control_values."""
         op = Controlled(self.temp_op, (0, 1), control_values=[0, 1])
+        assert op.control_values == [False, True]
+
+    @pytest.mark.parametrize("control_values", [True, False, 0, 1])
+    def test_scalar_control_values(self, control_values):
+        """Test assignment of provided control_values."""
+        op = Controlled(self.temp_op, 0, control_values=control_values)
+        assert op.control_values == [control_values]
+
+    def test_tuple_control_values(self):
+        """Test assignment of provided control_values."""
+        op = Controlled(self.temp_op, (0, 1), control_values=(0, 1))
         assert op.control_values == [False, True]
 
     def test_non_boolean_control_values(self):
@@ -348,7 +355,7 @@ class TestControlledProperties:
         base = qml.IsingXX(1.234, wires=(0, 1))
         op = Controlled(base, (3, 4), work_wires="aux")
 
-        assert op.wires == Wires((3, 4, 0, 1, "aux"))
+        assert op.wires == Wires((3, 4, 0, 1))
 
         op = op.map_wires(wire_map={3: "a", 4: "b", 0: "c", 1: "d", "aux": "extra"})
 
@@ -733,7 +740,7 @@ class TestMatrix:
             work_wires="aux",
         )
         mat = op.matrix()
-        assert mat.shape == (8, 8)
+        assert mat.shape == (4, 4)
 
     def test_wire_order(self):
         """Test that the ``wire_order`` keyword argument alters the matrix as expected."""

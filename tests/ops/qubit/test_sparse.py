@@ -14,9 +14,10 @@
 """
 Unit tests for the SparseHamiltonian observable.
 """
-import pytest
 import numpy as np
+import pytest
 from scipy.sparse import coo_matrix, csr_matrix
+
 import pennylane as qml
 
 SPARSEHAMILTONIAN_TEST_MATRIX = np.array(

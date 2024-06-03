@@ -221,7 +221,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+    numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
 
     tapes = tuple(tapes)
 

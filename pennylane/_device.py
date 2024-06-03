@@ -16,7 +16,6 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
 import abc
-import copy
 import types
 import warnings
 from collections import OrderedDict
@@ -27,10 +26,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
-    MeasurementProcess,
     CountsMP,
     Expectation,
     ExpectationMP,
+    MeasurementProcess,
     MidMeasureMP,
     Probability,
     ProbabilityMP,
@@ -40,12 +39,11 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-
-from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
-from pennylane.ops import Hamiltonian, Sum, LinearCombination
+from pennylane.operation import Observable, Operation, Operator, StatePrepBase, Tensor
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
-from pennylane.queuing import QueuingManager
 
 
 def _local_tape_expand(tape, depth, stop_at):
@@ -82,7 +80,7 @@ def _local_tape_expand(tape, depth, stop_at):
             if isinstance(obj, Operator):
                 if obj.has_decomposition:
                     with QueuingManager.stop_recording():
-                        obj = QuantumScript(obj.decomposition(), _update=False)
+                        obj = QuantumScript(obj.decomposition())
                 else:
                     new_queue.append(obj)
                     continue
@@ -95,11 +93,9 @@ def _local_tape_expand(tape, depth, stop_at):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots)
 
     # Update circuit info
-    new_tape.wires = copy.copy(tape.wires)
-    new_tape.num_wires = tape.num_wires
     new_tape._batch_size = tape._batch_size
     new_tape._output_dim = tape._output_dim
     return new_tape
@@ -676,9 +672,9 @@ class Device(abc.ABC):
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
         )
-        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
+        obs_on_same_wire = len(circuit.obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
-            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit._obs_sharing_wires
+            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit.obs_sharing_wires
         )
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
@@ -689,7 +685,6 @@ class Device(abc.ABC):
             circuit = _local_tape_expand(
                 circuit, depth=max_expansion, stop_at=self.stopping_condition
             )
-            circuit._update()
 
         return circuit
 
@@ -744,7 +739,6 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
-
         supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
         grouping_known = all(
@@ -758,8 +752,10 @@ class Device(abc.ABC):
         hamiltonian_in_obs = any(
             isinstance(obs, (Hamiltonian, LinearCombination)) for obs in circuit.observables
         )
-        expval_sum_in_obs = any(
-            isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
+
+        expval_sum_or_prod_in_obs = any(
+            isinstance(m.obs, (Sum, Prod, SProd)) and isinstance(m, ExpectationMP)
+            for m in circuit.measurements
         )
 
         is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
@@ -773,15 +769,14 @@ class Device(abc.ABC):
             # split tape into multiple tapes of diagonalizable known observables.
             try:
                 circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-            except ValueError as e:
-                raise ValueError(
-                    "Can only return the expectation of a single Hamiltonian observable"
-                ) from e
-        elif expval_sum_in_obs and not is_shadow and not supports_sum:
+            except ValueError:
+                circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
+
+        elif expval_sum_or_prod_in_obs and not is_shadow and not supports_sum:
             circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 
         elif (
-            len(circuit._obs_sharing_wires) > 0
+            len(circuit.obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
                 not isinstance(m, (SampleMP, ProbabilityMP, CountsMP)) for m in circuit.measurements
@@ -1007,6 +1002,21 @@ class Device(abc.ABC):
                         raise DeviceError(
                             f"Observable {i.name} not supported on device {self.short_name}"
                         )
+
+            elif isinstance(o, qml.ops.Prod):
+
+                supports_prod = self.supports_observable(o.name)
+                if not supports_prod:
+                    raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
+
+                simplified_op = o.simplify()
+                if isinstance(simplified_op, qml.ops.Prod):
+                    for i in o.simplify().operands:
+                        if not self.supports_observable(i.name):
+                            raise DeviceError(
+                                f"Observable {i.name} not supported on device {self.short_name}"
+                            )
+
             else:
                 observable_name = o.name
 

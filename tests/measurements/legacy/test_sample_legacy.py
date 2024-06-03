@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample, Shots, MeasurementValue
+from pennylane.measurements import MeasurementShapeError, MeasurementValue, Sample, Shots
 from pennylane.operation import Operator
 
 # pylint: disable=protected-access, no-member
@@ -223,7 +223,7 @@ class TestSample:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)
         assert len(result) == 3
-        assert result[0].dtype == np.dtype("int")
+        assert result[0].dtype == np.dtype("float")
 
         custom_measurement_process(dev, spy)
 
@@ -246,24 +246,8 @@ class TestSample:
         assert len(result) == 3
         assert isinstance(result[0], np.ndarray)
         assert isinstance(result[1], np.ndarray)
-        assert result[2].dtype == np.dtype("int")
+        assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
-
-        custom_measurement_process(dev, spy)
-
-    def test_not_an_observable(self, mocker):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
-        spy = mocker.spy(qml.QubitDevice, "sample")
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.sample(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
 
         custom_measurement_process(dev, spy)
 

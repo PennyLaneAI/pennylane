@@ -16,22 +16,19 @@ This submodule contains controlled operators based on the ControlledOp class.
 """
 # pylint: disable=no-value-for-parameter
 import warnings
-from typing import Iterable
 from functools import lru_cache
+from typing import Iterable
 
 import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import (
-    AnyWires,
-    Wires,
-)
+from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
+
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
-
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -47,8 +44,7 @@ class ControlledQubitUnitary(ControlledOp):
     * ``control_wires``: wires that act as control for the operation
     * ``control_values``: the state on which to apply the controlled operation (see below)
     * ``target_wires``: the wires the unitary matrix will be applied to
-    * ``active_wires``: Wires modified by the operator. This is the control wires followed
-        by the target wires.
+    * ``work_wires``: wires made use of during the decomposition of the operation into native operations
 
     **Details:**
 
@@ -69,6 +65,8 @@ class ControlledQubitUnitary(ControlledOp):
             control on (default is the all 1s state)
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False)
+        work_wires (Union[Wires, Sequence[int], or int]): ancillary wire(s) that may be utilized in during
+            the decomposition of the operator into native operations.
 
     **Example**
 
@@ -1031,7 +1029,7 @@ class MultiControlledX(ControlledOp):
     name = "MultiControlledX"
 
     def _flatten(self):
-        return (), (self.active_wires, tuple(self.control_values), self.work_wires)
+        return (), (self.wires, tuple(self.control_values), self.work_wires)
 
     @classmethod
     def _unflatten(cls, _, metadata):
@@ -1082,11 +1080,13 @@ class MultiControlledX(ControlledOp):
         )
 
     def __repr__(self):
-        return f"MultiControlledX(wires={self.active_wires.tolist()}, control_values={self.control_values})"
+        return (
+            f"MultiControlledX(wires={self.wires.tolist()}, control_values={self.control_values})"
+        )
 
     @property
     def wires(self):
-        return self.active_wires
+        return self.control_wires + self.target_wires
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
@@ -1129,9 +1129,7 @@ class MultiControlledX(ControlledOp):
     def matrix(self, wire_order=None):
         canonical_matrix = self.compute_matrix(self.control_wires, self.control_values)
         wire_order = wire_order or self.wires
-        return qml.math.expand_matrix(
-            canonical_matrix, wires=self.active_wires, wire_order=wire_order
-        )
+        return qml.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     # pylint: disable=unused-argument, arguments-differ
     @staticmethod
@@ -1192,7 +1190,7 @@ class MultiControlledX(ControlledOp):
         return flips1 + decomp + flips2
 
     def decomposition(self):
-        return self.compute_decomposition(self.active_wires, self.work_wires, self.control_values)
+        return self.compute_decomposition(self.wires, self.work_wires, self.control_values)
 
 
 class CRX(ControlledOp):

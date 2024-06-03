@@ -15,11 +15,9 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
-import warnings
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
-import pennylane as qml
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -37,71 +35,6 @@ __plugin_devices = (
     else metadata.entry_points(group="pennylane.io")  # pylint:disable=unexpected-keyword-arg
 )
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
-
-
-def load(quantum_circuit_object, format: str, **load_kwargs):
-    r"""Load external quantum assembly and quantum circuits from supported frameworks
-    into PennyLane templates.
-
-    .. warning::
-        ``qml.load`` is deprecated. Instead, please use the functions outlined in the
-        :ref:`Importing Circuits <intro_ref_importing_circuits>` quickstart guide, such as ``qml.from_qiskit``.
-
-    .. note::
-
-        For more details on which formats are supported
-        please consult the corresponding plugin documentation:
-        https://pennylane.ai/plugins.html
-
-    **Example:**
-
-    >>> qc = qiskit.QuantumCircuit(2)
-    >>> qc.rz(0.543, [0])
-    >>> qc.cx(0, 1)
-    >>> my_circuit = qml.load(qc, format='qiskit')
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
-
-    Args:
-        quantum_circuit_object: the quantum circuit that will be converted
-            to a PennyLane template
-        format (str): the format of the quantum circuit object to convert from
-        **load_kwargs: keyword arguments to pass when converting the quantum circuit
-            using the plugin. See below for details about supported keyword arguments.
-
-    Keyword Args:
-        measurements (list[MeasurementProcess]): the list of PennyLane measurements that
-            overrides the terminal measurements that may be present in the imput circuit.
-            Currently, only supported for Qiskit's `QuantumCircuit <https://docs.pennylane.ai/projects/qiskit>`_.
-
-    Returns:
-        function: the PennyLane template created from the quantum circuit object
-
-    """
-
-    _format = "pyquil" if format == "pyquil_program" else format
-    warnings.warn(
-        f"qml.load() is deprecated. Instead, please use the more specific qml.from_{_format}()",
-        qml.PennyLaneDeprecationWarning,
-    )
-
-    if format in plugin_converters:
-        # loads the plugin load function
-        plugin_converter = plugin_converters[format].load()
-        # calls the load function of the converter on the quantum circuit object
-        return plugin_converter(quantum_circuit_object, **load_kwargs)
-
-    raise ValueError(
-        "Converter does not exist. Make sure the required plugin is installed "
-        "and supports conversion."
-    )
 
 
 def from_qiskit(quantum_circuit, measurements=None):
@@ -512,43 +445,6 @@ def from_qasm(quantum_circuit: str):
     """
     plugin_converter = plugin_converters["qasm"].load()
     return plugin_converter(quantum_circuit)
-
-
-def from_qasm_file(qasm_filename: str):
-    """Loads quantum circuits from a QASM file using the converter in the
-    PennyLane-Qiskit plugin.
-
-    **Example:**
-
-    >>> my_circuit = qml.from_qasm_file("hadamard_circuit.qasm")
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
-
-    Args:
-        qasm_filename (str): path to a QASM file containing a valid quantum circuit
-
-    Returns:
-        function: the PennyLane template created based on the QASM file
-
-    .. warning::
-        qml.from_qasm_file is deprecated and will be removed in a future release.
-        Please use qml.from_qasm instead.
-
-    """
-    warnings.warn(
-        "qml.from_qasm_file is deprecated and will be removed in a future release. "
-        "Please use qml.from_qasm instead.",
-        qml.PennyLaneDeprecationWarning,
-    )
-    plugin_converter = plugin_converters["qasm_file"].load()
-    return plugin_converter(qasm_filename)
 
 
 def from_pyquil(pyquil_program):

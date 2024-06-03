@@ -14,12 +14,11 @@
 """
 This module contains the transform dispatcher and the transform container.
 """
+import copy
 import functools
 import os
-import copy
-import warnings
 import types
-
+import warnings
 from typing import Sequence
 
 import pennylane as qml
@@ -120,7 +119,7 @@ class TransformDispatcher:
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(obj, targs, tkwargs)
         # TODO: Remove with the previous device generation
-        if isinstance(obj, qml.Device):
+        if isinstance(obj, qml.devices.LegacyDevice):
             return self._old_device_transform(obj, targs, tkwargs)
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
@@ -325,13 +324,13 @@ class TransformDispatcher:
         return TransformedDevice(original_device, self._transform)
 
     def _batch_transform(self, original_batch, targs, tkwargs):
-        """Apply the transform on a batch of tapes"""
+        """Apply the transform on a batch of tapes."""
         execution_tapes = []
         batch_fns = []
         tape_counts = []
 
         for t in original_batch:
-            # Preprocess the tapes by applying batch transforms
+            # Preprocess the tapes by applying transforms
             # to each tape, and storing corresponding tapes
             # for execution, processing functions, and list of tape lengths.
             new_tapes, fn = self(t, *targs, **tkwargs)
@@ -343,14 +342,14 @@ class TransformDispatcher:
             """Applies a batch of post-processing functions to results.
 
             Args:
-                res (ResultBatch): the results of executing a batch of circuits
+                res (ResultBatch): the results of executing a batch of circuits.
 
             Returns:
-                ResultBatch : results that have undergone classical post processing
+                ResultBatch: results that have undergone classical post processing.
 
             Closure variables:
-                tape_counts: the number of tapes outputted from each application of the transform
-                batch_fns: the post processing functions to apply to each sub-batch
+                tape_counts: the number of tapes outputted from each application of the transform.
+                batch_fns: the post processing functions to apply to each sub-batch.
 
             """
             count = 0

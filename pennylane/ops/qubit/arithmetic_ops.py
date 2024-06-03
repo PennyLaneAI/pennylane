@@ -22,8 +22,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires
 from pennylane.ops import Identity
+from pennylane.wires import Wires
 
 
 class QubitCarry(Operation):
@@ -513,7 +513,7 @@ class IntegerComparator(Operation):
         small_val = not geq and value == 0
         large_val = geq and value > 2 ** len(control_wires) - 1
         if small_val or large_val:
-            gates = [Identity(0)]
+            gates = [Identity(wires[0])]
 
         else:
             values = range(value, 2 ** (len(control_wires))) if geq else range(value)

@@ -18,9 +18,10 @@ Contains the Select template.
 
 import copy
 import itertools
+
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane import math
+from pennylane.operation import Operation
 
 
 class Select(Operation):
@@ -67,6 +68,10 @@ class Select(Operation):
 
     def _flatten(self):
         return (self.ops), (self.control)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":

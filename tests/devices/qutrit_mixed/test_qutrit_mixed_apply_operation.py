@@ -14,13 +14,15 @@
 """Unit tests for apply_operation in devices/qutrit_mixed/apply_operation."""
 
 from functools import reduce
-import pytest
+
 import numpy as np
+import pytest
 from scipy.stats import unitary_group
+
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Channel
 from pennylane.devices.qutrit_mixed import apply_operation, measure
+from pennylane.operation import Channel
 
 ml_frameworks_list = [
     "numpy",
@@ -353,8 +355,8 @@ class TestTRXCalcGrad:
         trx_adj = qml.TRX.compute_matrix(-phi, subspace)
         state = math.reshape(state, (9, 9))
 
-        expected_probs = math.diagonal(
-            np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3))
+        expected_probs = math.real(
+            math.diagonal(np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3)))
         )
         assert qml.math.allclose(probs, expected_probs)
 
@@ -369,7 +371,7 @@ class TestTRXCalcGrad:
         expected_derivative_state = (
             np.kron(trx_derivative, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3))
         ) + (np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj_derivative, np.eye(3)))
-        expected_derivative = np.diagonal(expected_derivative_state)
+        expected_derivative = np.real(np.diagonal(expected_derivative_state))
         assert qml.math.allclose(jacobian, expected_derivative)
 
     @pytest.mark.autograd
@@ -441,8 +443,8 @@ class TestTRXCalcGrad:
         """Tests the application and differentiation of a trx gate with tensorflow"""
         import tensorflow as tf
 
-        state = tf.Variable(two_qutrit_state)
-        phi = tf.Variable(0.8589, trainable=True)
+        state = tf.Variable(two_qutrit_state, dtype="complex128")
+        phi = tf.Variable(0.8589, trainable=True, dtype="float64")
 
         with tf.GradientTape() as grad_tape:
             op = qml.TRX(phi, wires=0, subspace=subspace)
@@ -545,8 +547,8 @@ class TestChannelCalcGrad:
         """Tests the application and differentiation of a channel with tensorflow"""
         import tensorflow as tf
 
-        state = tf.Variable(two_qutrit_state)
-        p = tf.Variable(0.8589 + 0j, trainable=True)
+        state = tf.Variable(two_qutrit_state, dtype="complex128")
+        p = tf.Variable(0.8589, trainable=True, dtype="complex128")
 
         with tf.GradientTape() as grad_tape:
             op = CustomChannel(p, wires=1)

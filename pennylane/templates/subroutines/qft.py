@@ -17,6 +17,7 @@ This submodule contains the template for QFT.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 
 import functools
+
 import numpy as np
 
 import pennylane as qml
@@ -61,7 +62,70 @@ class QFT(Operation):
             qml.QFT(wires=range(wires))
             return qml.state()
 
-        circuit_qft(np.array([1.0, 0.0, 0.0], requires_grad=False))
+    .. code-block:: pycon
+
+        >>> circuit_qft(np.array([1.0, 0.0, 0.0]))
+        [ 0.35355339+0.j -0.35355339+0.j  0.35355339+0.j -0.35355339+0.j
+          0.35355339+0.j -0.35355339+0.j  0.35355339+0.j -0.35355339+0.j]
+
+    .. details::
+        :title: Semiclassical Quantum Fourier transform
+
+        If the QFT is the last subroutine applied within a circuit, it can be
+        replaced by a
+        `semiclassical Fourier transform <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.76.3228>`_.
+        It makes use of mid-circuit measurements and dynamic circuit control based
+        on the measurement values, allowing to reduce the number of two-qubit gates.
+
+        As an example, consider the following circuit implementing addition between two
+        numbers with ``n_wires`` bits (modulo ``2**n_wires``):
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", shots=1)
+
+            @qml.qnode(dev)
+            def qft_add(m, k, n_wires):
+                qml.BasisEmbedding(m, wires=range(n_wires))
+                qml.adjoint(qml.QFT)(wires=range(n_wires))
+                for j in range(n_wires):
+                    qml.RZ(-k * np.pi / (2**j), wires=j)
+                qml.QFT(wires=range(n_wires))
+                return qml.sample()
+
+        .. code-block:: pycon
+
+            >>> qft_add(7, 3, n_wires=4)
+            [1 0 1 0]
+
+        The last building block of this circuit is a QFT, so we may replace it by its
+        semiclassical counterpart:
+
+        .. code-block:: python
+
+            def scFT(n_wires):
+                '''semiclassical Fourier transform'''
+                for w in range(n_wires-1):
+                    qml.Hadamard(w)
+                    mcm = qml.measure(w)
+                    for m in range(w + 1, n_wires):
+                        qml.cond(mcm, qml.PhaseShift)(np.pi / 2 ** (m + 1), wires=m)
+                qml.Hadamard(n_wires-1)
+
+            @qml.qnode(dev)
+            def scFT_add(m, k, n_wires):
+                qml.BasisEmbedding(m, wires=range(n_wires))
+                qml.adjoint(qml.QFT)(wires=range(n_wires))
+                for j in range(n_wires):
+                    qml.RZ(-k * np.pi / (2**j), wires=j)
+                scFT(n_wires)
+                # Revert wire order because of PL's QFT convention
+                return qml.sample(wires=list(range(n_wires-1, -1, -1)))
+
+        .. code-block:: pycon
+
+            >>> scFT_add(7, 3, n_wires=4)
+            [1 0 1 0]
     """
 
     num_wires = AnyWires

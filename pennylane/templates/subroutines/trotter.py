@@ -14,11 +14,13 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
+import copy
 
 import pennylane as qml
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.wires import Wires
 
 
 def _scalar(order):
@@ -127,21 +129,30 @@ class TrotterProduct(ErrorOperation):
 
     .. warning::
 
-        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two mathematically identical :class:`~.Hamiltonian` objects may undergo different time evolutions
-        due to the order in which those observables are stored.
+        The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
+        mathematically identical :class:`~.Hamiltonian` objects may undergo different time
+        evolutions due to the order in which those observables are stored. The order of observables
+        can be queried using the :meth:`~.Sum.terms` method.
+
+    .. warning::
+
+        ``TrotterProduct`` does not automatically simplify the input Hamiltonian, allowing
+        for a more fine-grained control over the decomposition but also risking an increased
+        runtime and number of gates required. Simplification can be performed manually by
+        applying :func:`~.simplify` to your Hamiltonian before using it in ``TrotterProduct``.
 
     .. details::
         :title: Usage Details
 
         An *upper-bound* for the error in approximating time-evolution using this operator can be
         computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different methods; the
-        "one-norm" scaling method and the "commutator" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
+        "one-norm-bound" scaling method and the "commutator-bound" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
 
         >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
         >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm")
+        >>> op.error(method="one-norm-bound")
         SpectralNormError(8.039062500000003e-06)
-        >>> op.error(method="commutator")
+        >>> op.error(method="commutator-bound")
         SpectralNormError(6.166666666666668e-06)
 
         This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
@@ -175,6 +186,7 @@ class TrotterProduct(ErrorOperation):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        # accepts no wires, so bypasses the wire processing.
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -193,9 +205,13 @@ class TrotterProduct(ErrorOperation):
                 raise ValueError(
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = qml.dot(coeffs, ops)
 
         if isinstance(hamiltonian, SProd):
+            if qml.QueuingManager.recording():
+                qml.QueuingManager.remove(hamiltonian)
             hamiltonian = hamiltonian.simplify()
             if len(hamiltonian.terms()[0]) < 2:
                 raise ValueError(
@@ -221,7 +237,14 @@ class TrotterProduct(ErrorOperation):
             "check_hermitian": check_hermitian,
         }
 
-        super().__init__(time, wires=hamiltonian.wires, id=id)
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["base"])
@@ -229,7 +252,7 @@ class TrotterProduct(ErrorOperation):
         return self
 
     def error(
-        self, method: str = "commutator", fast: bool = True
+        self, method: str = "commutator-bound", fast: bool = True
     ):  # pylint: disable=arguments-differ
         # pylint: disable=protected-access
         r"""Compute an *upper-bound* on the spectral norm error for approximating the
@@ -245,26 +268,26 @@ class TrotterProduct(ErrorOperation):
 
         **Example:**
 
-        The "one-norm" error bound can be computed by passing the kwarg :code:`method="one-norm"`, and
+        The "one-norm" error bound can be computed by passing the kwarg :code:`method="one-norm-bound"`, and
         is defined according to Section 2.3 (lemma 6, equation 22 and 23) of
         `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
 
         >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
         >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm")
+        >>> op.error(method="one-norm-bound")
         SpectralNormError(8.039062500000003e-06)
 
-        The "commutator" error bound can be computed by passing the kwarg :code:`method="commutator"`, and
+        The "commutator" error bound can be computed by passing the kwarg :code:`method="commutator-bound"`, and
         is defined according to Appendix C (equation 189) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
 
         >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
         >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="commutator")
+        >>> op.error(method="commutator-bound")
         SpectralNormError(6.166666666666668e-06)
 
         Args:
-            method (str, optional): Options include "one-norm" and "commutator" and specify the
-                method with which the error is computed. Defaults to "commutator".
+            method (str, optional): Options include "one-norm-bound" and "commutator-bound" and specify the
+                method with which the error is computed. Defaults to "commutator-bound".
             fast (bool, optional): Uses more approximations to speed up computation. Defaults to True.
 
         Raises:
@@ -274,7 +297,7 @@ class TrotterProduct(ErrorOperation):
             SpectralNormError: The spectral norm error.
         """
         base_unitary = self.hyperparameters["base"]
-        t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
+        t, p, n = (self.parameters[-1], self.hyperparameters["order"], self.hyperparameters["n"])
 
         parameters = [t] + base_unitary.parameters
         if any(
@@ -285,10 +308,10 @@ class TrotterProduct(ErrorOperation):
             )
 
         terms = base_unitary.operands
-        if method == "one-norm":
+        if method == "one-norm-bound":
             return SpectralNormError(qml.resource.error._one_norm_error(terms, t, p, n, fast=fast))
 
-        if method == "commutator":
+        if method == "commutator-bound":
             return SpectralNormError(
                 qml.resource.error._commutator_error(terms, t, p, n, fast=fast)
             )
@@ -329,10 +352,10 @@ class TrotterProduct(ErrorOperation):
         (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
         """
         hamiltonian = self.hyperparameters["base"]
-        time = self.parameters[0]
+        time = self.data[-1]
 
         hashable_hyperparameters = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "base"
+            item for item in self.hyperparameters.items() if item[0] != "base"
         )
         return (hamiltonian, time), hashable_hyperparameters
 
@@ -361,8 +384,7 @@ class TrotterProduct(ErrorOperation):
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
 
         """
-        hyperparameters_dict = dict(metadata)
-        return cls(*data, **hyperparameters_dict)
+        return cls(*data, **dict(metadata))
 
     @staticmethod
     def compute_decomposition(*args, **kwargs):
@@ -385,7 +407,7 @@ class TrotterProduct(ErrorOperation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        time = args[0]
+        time = args[-1]
         n = kwargs["n"]
         order = kwargs["order"]
         ops = kwargs["base"].operands

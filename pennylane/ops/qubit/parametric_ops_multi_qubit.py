@@ -19,6 +19,7 @@ core parameterized gates.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
 from operator import matmul
+
 import numpy as np
 
 import pennylane as qml
@@ -28,7 +29,7 @@ from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
-from .parametric_ops_single_qubit import _can_replace, stack_last, RX, RY, RZ, PhaseShift
+from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last
 
 
 class MultiRZ(Operation):
@@ -262,9 +263,7 @@ class PauliRot(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, theta, pauli_word, wires=None, id=None):
-        return qml.capture.PLXPRMeta._primitive_bind_call(
-            cls, theta, pauli_word=pauli_word, wires=wires, id=id
-        )
+        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires, id=id)
 
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)

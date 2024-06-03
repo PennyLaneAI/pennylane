@@ -41,12 +41,10 @@ hermitian_ops = [
 
 pauli_ops = [
     op_cls(wires)
-    for op_cls, wires in itertools.product(
-        [qml.PauliX, qml.PauliY, qml.PauliZ], [0, 1, "q", None, [1]]
-    )
+    for op_cls, wires in itertools.product([qml.PauliX, qml.PauliY, qml.PauliZ], [0, 1, "q", [1]])
 ]
 
-identity = [qml.Identity(wires) for wires in [0, 1, "q", None, [1, "a"]]]
+identity = [qml.Identity(wires) for wires in [0, 1, "q", [1, "a"]]]
 
 hamiltonians = [
     qml.Hamiltonian(*args)
@@ -83,6 +81,9 @@ class TestDatasetOperatorObservable:
         """Test that a DatasetOperator can be value-initialized
         from an observable, and that the deserialized operator
         is equivalent."""
+        if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
+            obs_in = qml.operation.convert_to_legacy_H(obs_in)
+
         dset_op = DatasetOperator(obs_in)
 
         assert dset_op.info["type_id"] == "operator"
@@ -95,6 +96,9 @@ class TestDatasetOperatorObservable:
     def test_bind_init(self, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
         that contains a operator attribute."""
+        if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
+            obs_in = qml.operation.convert_to_legacy_H(obs_in)
+
         bind = DatasetOperator(obs_in).bind
 
         dset_op = DatasetOperator(bind=bind)
@@ -124,6 +128,9 @@ class TestDatasetArithmeticOperators:
         """Test that a DatasetOperator can be value-initialized
         from an observable, and that the deserialized operator
         is equivalent."""
+        if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
+            obs_in = qml.operation.convert_to_legacy_H(obs_in)
+
         dset_op = DatasetOperator(obs_in)
 
         assert dset_op.info["type_id"] == "operator"
@@ -135,6 +142,9 @@ class TestDatasetArithmeticOperators:
     def test_bind_init(self, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
         that contains an operator attribute."""
+        if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
+            obs_in = qml.operation.convert_to_legacy_H(obs_in)
+
         bind = DatasetOperator(obs_in).bind
 
         dset_op = DatasetOperator(bind=bind)
@@ -160,6 +170,9 @@ class TestDatasetOperator:
         """Test that a DatasetOperator can be value-initialized
         from an operator, and that the deserialized operator
         is equivalent."""
+        if not qml.operation.active_new_opmath() and isinstance(op_in, qml.ops.LinearCombination):
+            op_in = qml.operation.convert_to_legacy_H(op_in)
+
         dset_op = DatasetOperator(op_in)
 
         assert dset_op.info["type_id"] == "operator"
@@ -172,7 +185,9 @@ class TestDatasetOperator:
     def test_value_init_not_supported(self):
         """Test that a ValueError is raised if attempting to serialize an unsupported operator."""
 
-        class NotSupported(Operator):  # pylint: disable=too-few-public-methods
+        class NotSupported(
+            Operator
+        ):  # pylint: disable=too-few-public-methods, unnecessary-ellipsis
             """An operator."""
 
             ...
@@ -195,6 +210,9 @@ class TestDatasetOperator:
         """Test that a DatasetOperator can be bind-initialized
         from an operator, and that the deserialized operator
         is equivalent."""
+        if not qml.operation.active_new_opmath() and isinstance(op_in, qml.ops.LinearCombination):
+            op_in = qml.operation.convert_to_legacy_H(op_in)
+
         bind = DatasetOperator(op_in).bind
 
         dset_op = DatasetOperator(bind=bind)

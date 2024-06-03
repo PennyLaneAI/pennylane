@@ -21,10 +21,11 @@ from functools import lru_cache
 
 import autograd
 import autoray as ar
+
 import pennylane as qml
 
-from .utils import cast
 from .quantum import _check_density_matrix, _check_state_vector
+from .utils import cast
 
 
 def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"):
@@ -148,6 +149,15 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    batch_size0 = qml.math.shape(state0)[0] if qml.math.ndim(state0) > 2 else None
+    batch_size1 = qml.math.shape(state1)[0] if qml.math.ndim(state1) > 2 else None
+
+    if qml.math.get_interface(state0) == "jax" or qml.math.get_interface(state1) == "jax":
+        if batch_size0 and not batch_size1:
+            state1 = qml.math.broadcast_to(state1, (batch_size0, *qml.math.shape(state1)))
+        elif not batch_size0 and batch_size1:
+            state0 = qml.math.broadcast_to(state0, (batch_size1, *qml.math.shape(state0)))
 
     # Two mixed states
     _register_vjp(state0, state1)

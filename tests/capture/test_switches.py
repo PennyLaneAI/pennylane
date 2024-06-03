@@ -14,15 +14,28 @@
 """
 Unit tests for the backbone of the :mod:`pennylane.capture` module.
 """
+import pytest
 
 import pennylane as qml
 
 
-def test_switches():
+@pytest.mark.jax
+def test_switches_with_jax():
     """Test switches and status reporting function."""
 
-    assert qml.capture.plxpr_enabled() is False
-    assert qml.capture.enable_plxpr() is None
-    assert qml.capture.plxpr_enabled() is True
-    assert qml.capture.disable_plxpr() is None
-    assert qml.capture.plxpr_enabled() is False
+    assert qml.capture.enabled() is False
+    assert qml.capture.enable() is None
+    assert qml.capture.enabled() is True
+    assert qml.capture.disable() is None
+    assert qml.capture.enabled() is False
+
+
+def test_switches_without_jax():
+    """Test switches and status reporting function."""
+
+    assert qml.capture.enabled() is False
+    with pytest.raises(ImportError, match="plxpr requires JAX to be installed."):
+        qml.capture.enable()
+    assert qml.capture.enabled() is False
+    assert qml.capture.disable() is None
+    assert qml.capture.enabled() is False

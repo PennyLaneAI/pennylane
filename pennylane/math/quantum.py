@@ -22,10 +22,11 @@ from autoray import numpy as np
 from numpy import float64
 
 import pennylane as qml
+
 from . import single_dispatch  # pylint:disable=unused-import
 from .matrix_manipulation import _permute_dense_matrix
-from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
-from .utils import is_abstract, allclose, cast, convert_like, cast_like
+from .multi_dispatch import diag, dot, einsum, get_interface, scatter_element_add
+from .utils import allclose, cast, cast_like, convert_like, is_abstract
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -731,6 +732,83 @@ def _compute_mutual_info(
     )
 
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
+
+
+# pylint: disable=too-many-arguments
+def vn_entanglement_entropy(
+    state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
+):
+    r"""Compute the Von Neumann entanglement entropy between two subsystems in a given state.
+
+    .. math::
+
+        S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
+
+    where :math:`S` is the von Neumann entropy, and :math:`\rho_A = \text{Tr}_B [\rho_{AB}]` and
+    :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
+
+    The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
+    two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
+    Von Neumann entropy of the reduced density matrix for any of the subsystems. If it is non-zero,
+    it indicates the two subsystems are entangled.
+
+    Each state must be given as a density matrix. To find the mutual information given
+    a pure state, call :func:`~.math.dm_from_state_vector` first.
+
+    Args:
+        state (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        indices0 (list[int]): Indices of the qubits in the first subsystem.
+        indices1 (list[int]): Indices of the qubits in the second subsystem.
+        base (float): Base for the logarithm. If ``None``, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: The von Neumann entanglement entropy of the bipartite state.
+
+    **Examples**
+
+    The entanglement entropy between subsystems for a state vector can be returned as follows:
+
+    >>> x = np.array([0, -1, 1, 0]) / np.sqrt(2)
+    >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1])
+    0.6931471805599453
+
+    It is also possible to change the logarithm base:
+
+    >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1], base=2)
+    1
+
+    Similarly, the quantum state can be provided as a density matrix:
+
+    >>> y = np.array([[1, 1, -1, -1], [1, 1, -1, -1], [-1, -1, 1, 1], [-1, -1, 1, 1]]) * 0.25
+    >>> qml.math.vn_entanglement_entropy(y, indices0=[0], indices1=[1])
+    0
+
+    """
+
+    # The subsystems cannot overlap
+    if len([index for index in indices0 if index in indices1]) > 0:
+        raise ValueError("Subsystems for computing the entanglement entropy must not overlap.")
+
+    return _compute_vn_entanglement_entropy(
+        state, indices0, indices1, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+
+
+def _compute_vn_entanglement_entropy(
+    state, indices0, _, base=None, check_state=False, c_dtype="complex128"
+):
+    """Computes the Von Neumann entanglement entropy between the subsystems."""
+
+    vn_entropy_1 = vn_entropy(
+        state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+
+    # The Von Neumann entropy of the two subsystems should be the same if the overall state is a
+    # pure state. Here we trust that the user only uses this function for pure states, and do not
+    # perform any checks so that the code is compatible with jax.jit
+    return vn_entropy_1
 
 
 def sqrt_matrix(density_matrix):

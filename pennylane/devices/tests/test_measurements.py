@@ -51,13 +51,18 @@ obs = {
     ],
     "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
     "Hamiltonian": qml.Hamiltonian([1, 1], [qml.Z(0), qml.X(0)]),
+    "Prod": qml.prod(qml.X(0), qml.Z(1)),
+    "SProd": qml.s_prod(0.1, qml.Z(0)),
+    "Sum": qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
     "LinearCombination": qml.ops.LinearCombination([1, 1], [qml.Z(0), qml.X(0)]),
 }
 
 all_obs = obs.keys()
 
 # All qubit observables should be available to test in the device test suite
-all_available_obs = qml.ops._qubit__obs__.copy()  # pylint: disable=protected-access
+all_available_obs = qml.ops._qubit__obs__.copy().union(  # pylint: disable=protected-access
+    {"Prod", "SProd", "Sum"}
+)
 # Note that the identity is not technically a qubit observable
 all_available_obs |= {"Identity"}
 
@@ -155,8 +160,10 @@ class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
     @pytest.mark.parametrize("ham_constructor", [qml.ops.Hamiltonian, qml.ops.LinearCombination])
+    @pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
     def test_hamiltonian_diff(self, ham_constructor, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
+
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         coeffs = np.array([-0.05, 0.17])
@@ -407,6 +414,30 @@ class TestExpval:
         )
 
         assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    @pytest.mark.parametrize(
+        "o",
+        [
+            qml.prod(qml.X(0), qml.Z(1)),
+            qml.s_prod(0.1, qml.Z(0)),
+            qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
+        ],
+    )
+    def test_op_arithmetic_matches_default_qubit(self, o, device, tol):
+        """Test that devices (which support the observable) match default.qubit results."""
+        dev = device(2)
+        if isinstance(dev, qml.Device) and o.name not in dev.observables:
+            pytest.skip(f"Skipped because device does not support the {o.name} observable.")
+
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            return qml.expval(o)
+
+        res_dq = qml.QNode(circuit, qml.device("default.qubit"))()
+        res = qml.QNode(circuit, dev)()
+        assert qml.math.shape(res) == ()
+        assert np.isclose(res, res_dq, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -1188,6 +1219,23 @@ class TestTensorSample:
         assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol(False))
         assert np.allclose(np.mean(res), expected_mean, atol=tol(False))
         assert np.allclose(np.var(res), expected_var, atol=tol(False))
+
+
+@flaky(max_runs=10)
+class TestSumExpval:
+    """Test expectation values of Sum observables."""
+
+    def test_sum_containing_identity_on_no_wires(self, device, tol):
+        """Test that the device can handle Identity on no wires."""
+        dev = device(1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            return qml.expval(qml.sum(qml.Z(0) + 3 * qml.I()))
+
+        res = circuit()
+        assert qml.math.allclose(res, 2.0, atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)

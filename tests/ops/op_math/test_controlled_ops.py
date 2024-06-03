@@ -17,14 +17,13 @@ Unit tests for Operators inheriting from ControlledOp.
 
 import numpy as np
 import pytest
+from gate_data import CY, CZ, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz
 from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
-from gate_data import CY, CZ, CRotx, CRoty, CRotz, CRot3, ControlledPhaseShift
-
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
+from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.CY, CY),
@@ -738,3 +737,15 @@ def test_controlled_method(base, cbase):
     """Tests the _controlled method for parametric ops."""
     # pylint: disable=protected-access
     assert qml.equal(base._controlled("a"), cbase)
+
+
+@pytest.mark.parametrize(
+    "control, control_values",
+    [([0, 1], [True, False]), ([10, "a"], (0, 0)), ([2], 1), (2, (True,))],
+)
+@pytest.mark.parametrize(
+    "base_op", [qml.CRX(0.2, [21, 22]), qml.CNOT([21, 22]), qml.CPhase(0.6, [21, 22])]
+)
+def test_controlling_a_controlled_operation(control, control_values, base_op):
+    """Test that a controlled op can be controlled again."""
+    qml.ctrl(base_op, control=control, control_values=control_values)

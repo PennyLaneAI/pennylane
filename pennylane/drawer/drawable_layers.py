@@ -15,8 +15,9 @@
 This module contains a helper function to sort operations into layers.
 """
 
+from pennylane.measurements import MeasurementProcess, MidMeasureMP
 from pennylane.ops import Conditional
-from pennylane.measurements import MidMeasureMP, MeasurementProcess
+
 from .utils import default_wire_map
 
 

@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ from sys import version_info
 
 
 import numpy as _np
+
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
@@ -33,7 +34,7 @@ import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose
+from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
@@ -223,6 +224,9 @@ def device(name, *args, **kwargs):
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
       simulator of Clifford circuits.
 
+    * :mod:`'default.tensor' <pennylane.devices.default_tensor>`: a simulator
+      of quantum circuits based on tensor networks.
+
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
     details. To list all currently installed devices, run
@@ -395,7 +399,7 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
-            if isinstance(dev, pennylane.Device):
+            if isinstance(dev, pennylane.devices.LegacyDevice):
                 custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
                     custom_decomps, dev, decomp_depth=decomp_depth
                 )
