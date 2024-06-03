@@ -506,9 +506,22 @@ class TestPLDB:
             ops=[qml.Hadamard(0), qml.X(1)],
             measurements=[qml.expval(qml.Z(1))],
         ),
+        qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
+            measurements=[qml.probs()],
+        ),
+        qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
+            measurements=[qml.probs(wires=[0])],
+        ),
     )
 
-    results = (qnp.array([1 / qnp.sqrt(2), 0, 0, 1 / qnp.sqrt(2)], dtype=complex), qnp.array(-1))
+    results = (
+        qnp.array([1 / qnp.sqrt(2), 0, 0, 1 / qnp.sqrt(2)], dtype=complex),
+        qnp.array(-1),
+        qnp.array([1 / 2, 0, 0, 1 / 2]),
+        qnp.array([1 / 2, 1 / 2]),
+    )
 
     @pytest.mark.parametrize("tape, expected_result", zip(tapes, results))
     @pytest.mark.parametrize(
@@ -519,6 +532,7 @@ class TestPLDB:
         PLDB.add_device(dev)
         executed_results = PLDB._execute((tape,))
         assert qnp.allclose(expected_result, executed_results)
+        PLDB.reset_active_dev()
 
 
 def test_tape():
@@ -564,7 +578,7 @@ def test_state(_mock_method):
     with qml.queuing.AnnotatedQueue() as queue:
         qml.RX(1.23, 0)
         qml.RY(0.45, 2)
-        qml.probs()
+        qml.sample()
 
         _ = qml.debugging.state()
 
@@ -578,12 +592,43 @@ def test_expval(_mock_method):
         with qml.queuing.AnnotatedQueue() as queue:
             qml.RX(1.23, 0)
             qml.RY(0.45, 2)
-            qml.probs()
+            qml.sample()
 
             _ = qml.debugging.expval(op)
 
         assert op not in queue
         assert qml.expval(op) not in queue
+
+
+@patch.object(PLDB, "_execute")
+def test_probs_with_op(_mock_method):
+    """Test that the probs function works as expected."""
+
+    for op in [None, qml.X(0), qml.Y(1), qml.Z(2)]:
+        with qml.queuing.AnnotatedQueue() as queue:
+            qml.RX(1.23, 0)
+            qml.RY(0.45, 2)
+            qml.sample()
+
+            _ = qml.debugging.probs(op=op)
+
+        assert op not in queue
+        assert qml.probs(op=op) not in queue
+
+
+@patch.object(PLDB, "_execute")
+def test_probs_with_wires(_mock_method):
+    """Test that the probs function works as expected."""
+
+    for wires in [None, [0, 1], [2]]:
+        with qml.queuing.AnnotatedQueue() as queue:
+            qml.RX(1.23, 0)
+            qml.RY(0.45, 2)
+            qml.sample()
+
+            _ = qml.debugging.probs(wires=wires)
+
+        assert qml.probs(wires=wires) not in queue
 
 
 @pytest.mark.parametrize("device_name", ("default.qubit", "lightning.qubit"))

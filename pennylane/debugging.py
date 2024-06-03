@@ -239,6 +239,28 @@ def expval(op):
     return _measure(m)
 
 
+def probs(wires=None, op=None):
+    """Compute the probability distribution for the state.
+    Args:
+        wires (Union[Iterable, int, str, list]): the wires the operation acts on
+        op (Union[Observable, MeasurementValue]): Observable (with a ``diagonalizing_gates``
+            attribute) that rotates the computational basis, or a  ``MeasurementValue``
+            corresponding to mid-circuit measurements.
+
+    Returns:
+        Array(float): The probability distribution of the bitstrings for the wires.
+    """
+    if op:
+        qml.queuing.QueuingManager.active_context().remove(
+            op
+        )  # ensure we didn't accidentally queue op
+
+    with qml.queuing.QueuingManager.stop_recording():
+        m = qml.probs(wires, op)
+
+    return _measure(m)
+
+
 def _measure(measurement):
     """Perform the measurement.
 
