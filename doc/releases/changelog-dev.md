@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
+  [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
+
 * Added `packaging` in the required list of packages.
   [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
 
