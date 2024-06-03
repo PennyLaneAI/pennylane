@@ -691,13 +691,7 @@ def molecular_dipole(
     :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}`, respectively, which are computed as
 
     .. math::
-
-        \hat{D}_\mathrm{c} = 2 \sum_{i=1}^{N_\mathrm{core}} d_{ii},
-
-    and
-
-    .. math::
-
+        \hat{D}_\mathrm{c} = 2 \sum_{i=1}^{N_\mathrm{core}} d_{ii} \quad \text{and} \quad 
         \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i,
 
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
