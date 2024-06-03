@@ -6,10 +6,10 @@ autograd==1.6.2
 autoray==0.6.12
 black==24.4.2
 cachetools==5.3.3
-certifi==2024.2.2
+certifi==2024.6.2
 cfgv==3.4.0
 charset-normalizer==3.3.2
-clarabel==0.8.1
+clarabel==0.9.0
 click==8.1.7
 contourpy==1.2.1
 coverage==7.5.3
@@ -92,7 +92,7 @@ termcolor==2.4.0
 tf_keras==2.16.0
 toml==0.10.2
 tomli==2.0.1
-typing_extensions==4.12.0
+typing_extensions==4.12.1
 urllib3==2.2.1
 virtualenv==20.26.2
 Werkzeug==3.0.3
