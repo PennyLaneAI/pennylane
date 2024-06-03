@@ -112,6 +112,7 @@
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
   [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
+  [(#5686)](https://github.com/PennyLaneAI/pennylane/pull/5686)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
