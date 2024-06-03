@@ -592,9 +592,6 @@ class BasisStateProjector(Projector, Operation):
         Args:
             basis_state (Iterable): The basis state as an iterable of integers (0 or 1).
 
-        Raises:
-            ValueError: If basis_state contains values other than 0 or 1.
-
         Returns:
             scipy.sparse.csr_matrix: The sparse CSR matrix representation of the projector.
         """
