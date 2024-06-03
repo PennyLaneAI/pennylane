@@ -277,7 +277,7 @@ def parse_native_mid_circuit_measurements(
         if interface != "jax" and m.mv and not has_valid:
             meas = measurement_with_no_shots(m)
         elif m.mv and active_qjit:
-            meas = gather_mcm_jit(m, mcm_samples, is_valid)
+            meas = gather_mcm_qjit(m, mcm_samples, is_valid)
         elif m.mv:
             meas = gather_mcm(m, mcm_samples, is_valid)
         elif interface != "jax" and not has_valid:
@@ -307,7 +307,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_mcm_jit(measurement, samples, is_valid):
+def gather_mcm_qjit(measurement, samples, is_valid):
     """Process MCM measurements when the Catalyst compiler is active.
 
     Args:
