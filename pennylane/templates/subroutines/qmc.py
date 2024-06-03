@@ -345,6 +345,10 @@ class QuantumMonteCarlo(Operation):
     grad_method = None
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
         new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access

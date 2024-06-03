@@ -505,6 +505,10 @@ class FermionicDoubleExcitation(Operation):
         return self.data, (self.hyperparameters["wires1"], self.hyperparameters["wires2"])
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
         return cls(data[0], wires1=metadata[0], wires2=metadata[1])
 
