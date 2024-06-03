@@ -439,7 +439,7 @@ class TestTransformProgram:
         assert isinstance(transform_program[1], TransformContainer)
         assert transform_program[1].transform is first_valid_transform
 
-    def test_pop_front(self):
+    def test_pop(self):
         """Test the pop front method of the transform program."""
         transform_program = TransformProgram()
 
@@ -451,7 +451,7 @@ class TestTransformProgram:
         assert isinstance(transform_program[0], TransformContainer)
         assert transform_program[0].transform is first_valid_transform
 
-        transform_container = transform_program.pop_front()
+        transform_container = transform_program.popleft()
 
         assert transform_program.is_empty()
         assert transform_container is transform1

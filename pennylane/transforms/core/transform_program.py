@@ -16,6 +16,7 @@ This module contains the ``TransformProgram`` class.
 """
 from collections import deque
 from functools import partial
+from itertools import islice
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -152,7 +153,7 @@ class TransformProgram:
     """
 
     def __init__(self, initial_program: Optional[Sequence] = None):
-        self._transform_program = list(initial_program) if initial_program else []
+        self._transform_program = deque(initial_program) if initial_program else deque()
         self._classical_jacobians = None
         self._argnums = None
 
@@ -168,7 +169,13 @@ class TransformProgram:
         """(TransformContainer, List[TransformContainer]): Return the indexed transform container from underlying
         transform program"""
         if isinstance(idx, slice):
-            return TransformProgram(self._transform_program[idx])
+            if idx.step == None or idx.step > 0:
+                return TransformProgram(
+                    islice(self._transform_program, idx.start, idx.stop, idx.step)
+                )
+            return TransformProgram(
+                islice(reversed(self._transform_program), idx.stop, idx.start, -idx.step)
+            )
         return self._transform_program[idx]
 
     def __bool__(self):
@@ -178,9 +185,11 @@ class TransformProgram:
         if self.has_final_transform and other.has_final_transform:
             raise TransformError("The transform program already has a terminal transform.")
 
-        transforms = self._transform_program + other._transform_program
+        tform_fin = deque()
         if self.has_final_transform:
-            transforms.append(transforms.pop(len(self) - 1))
+            tform_fin.append(self._transform_program.pop())
+
+        transforms = self._transform_program + other._transform_program + tform_fin
 
         return TransformProgram(transforms)
 
@@ -291,13 +300,13 @@ class TransformProgram:
         if transform.expand_transform:
             self.appendleft(TransformContainer(transform.expand_transform, targs, tkwargs))
 
-    def pop_front(self):
+    def popleft(self):
         """Pop the transform container at the beginning of the program.
 
         Returns:
             TransformContainer: The transform container at the beginning of the program.
         """
-        return self._transform_program.pop(0)
+        return self._transform_program.popleft()
 
     def get_last(self):
         """Get the last transform container.
