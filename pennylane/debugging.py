@@ -183,7 +183,8 @@ class PLDB(pdb.Pdb):
         program, new_config = dev.preprocess()
         new_batch, fn = program(batch_tapes)
 
-        return fn(dev.execute(new_batch, new_config))
+        # TODO: remove [0] index once compatible with transforms
+        return fn(dev.execute(new_batch, new_config))[0]
 
 
 @contextmanager
