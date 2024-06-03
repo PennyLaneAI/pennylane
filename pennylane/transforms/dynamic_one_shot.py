@@ -327,13 +327,11 @@ def gather_mcm_jit(circuit_measurement, measurement, is_valid):
     if not found:
         raise LookupError("MCM not found")
     meas = qml.math.squeeze(meas)
+    sum_valid = qml.math.sum(is_valid)
+    count_1 = qml.math.sum(meas * is_valid)
     if isinstance(circuit_measurement, CountsMP):
-        sum_valid = qml.math.sum(is_valid)
-        count_1 = qml.math.sum(meas * is_valid)
         return {0: sum_valid - count_1, 1: count_1}
     if isinstance(circuit_measurement, ProbabilityMP):
-        sum_valid = qml.math.sum(is_valid)
-        count_1 = qml.math.sum(meas * is_valid)
         counts = qml.math.array(
             [sum_valid - count_1, count_1], like=qml.math.get_deep_interface(is_valid)
         )
