@@ -787,7 +787,7 @@ def molecular_dipole(
         requires_grad = args is not None
         dip = (
             qml.qchem.dipole_moment(mol, cutoff=cutoff, core=core, active=active, mapping=mapping)(
-                *args
+                *(args or [])
             )
             if requires_grad
             else qml.qchem.dipole_moment(
