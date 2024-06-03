@@ -28,6 +28,9 @@ def is_pow2(n):
     """Returns true if n is a power of 2, false otherwise"""
     return ((n & (n - 1) == 0) and n != 0)
 
+def normalize(n):
+    return qml.math.sqrt(n) / qml.math.norm(qml.math.sqrt(n))
+
 class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
     using the Prepare, Select, Prepare method"""
@@ -76,36 +79,50 @@ class PrepSelPrep(Operation):
         return self.compute_decomposition(self.lcu, self.control, self.jit)
 
     @staticmethod
-    def preprocess_lcu(lcu):
-        """Convert LCU into an equivalent form with positive real coefficients,
-        and a power of 2 number of terms"""
+    def get_new_terms(lcu):
+        """Compute a new sum of unitaries with positive coefficients"""
+
         new_coeffs = []
         new_ops = []
 
         for coeff, op in zip(*lcu.terms()):
+            if qml.math.allclose(coeff, 0):
+                new_coeffs.append(coeff)
+                new_ops.append(op)
+                continue
+
             real = qml.math.real(coeff)
-            sign = qml.math.sign(real)
-            new_coeffs.append(sign * real)
-            new_op = qml.ops.LinearCombination([sign], [op])
-            new_ops.append(new_op)
+            if not qml.math.allclose(real, 0):
+                sign = qml.math.sign(real)
+                new_coeffs.append(sign*real)
+                new_ops.append(sign*op)
 
             imag = qml.math.imag(coeff)
-            sign = qml.math.sign(imag)
-            new_coeffs.append(sign * imag)
-            new_op = qml.ops.LinearCombination([1j * sign], [op])
-            new_ops.append(new_op)
+            if not qml.math.allclose(imag, 0):
+                sign = qml.math.sign(imag)
+                new_coeffs.append(sign*imag)
+                new_ops.append(1j*sign*op)
 
-        keep_coeffs = []
-        keep_ops = []
+        return new_coeffs, new_ops
 
-        for coeff, op in zip(new_coeffs, new_ops):
-            if not qml.math.allclose(op.terms()[0], 0):
-                keep_coeffs.append(coeff)
-                keep_ops.append(op)
+    @staticmethod
+    def normalization_factor(lcu):
+        """Return the normalization factor lambda such that
+        A/lambda is in the upper left of the block encoding"""
 
-        all_op_wires = qml.wires.Wires.all_wires([op.wires for op in keep_ops])
+        new_coeffs, _ = PrepSelPrep.get_new_terms(lcu)
+        return qml.math.sum(new_coeffs)
+
+    @staticmethod
+    def preprocess_lcu(lcu):
+        """Convert LCU into an equivalent form with positive real coefficients,
+        and a power of 2 number of terms"""
+
+        new_coeffs, new_ops = PrepSelPrep.get_new_terms(lcu)
+
+        all_op_wires = qml.wires.Wires.all_wires([op.wires for op in new_ops])
         final_ops = []
-        for op in keep_ops:
+        for op in new_ops:
             if len(op.wires) == 0:
                 unitary = op
             else:
@@ -113,18 +130,21 @@ class PrepSelPrep(Operation):
 
             final_ops.append(unitary)
 
-        if is_pow2(len(keep_coeffs)):
-            pow2 = len(keep_coeffs)
+        if is_pow2(len(new_coeffs)):
+            pow2 = len(new_coeffs)
         else:
-            pow2 = 2 ** math.ceil(math.log2(len(keep_coeffs)))
+            pow2 = 2 ** math.ceil(math.log2(len(new_coeffs)))
 
-        pad_zeros = list(itertools.repeat(0, pow2 - len(keep_coeffs)))
+        pad_zeros = list(itertools.repeat(0, pow2 - len(new_coeffs)))
         with qml.QueuingManager.stop_recording():
-            pad_ident = list(itertools.repeat(qml.Identity(all_op_wires), pow2-len(keep_ops)))
+            pad_ident = list(itertools.repeat(qml.Identity(all_op_wires), pow2-len(new_ops)))
 
         interface_coeffs = qml.math.get_interface(lcu.terms()[0])
-        final_coeffs = qml.math.array(keep_coeffs + pad_zeros, like=interface_coeffs)
+        final_coeffs = qml.math.array(new_coeffs + pad_zeros, like=interface_coeffs)
         final_ops = final_ops + pad_ident
+
+        if not qml.math.allclose(qml.math.norm(final_coeffs), 1):
+            final_coeffs = qml.math.sqrt(final_coeffs) / qml.math.norm(qml.math.sqrt(final_coeffs))
 
         return final_coeffs, final_ops
 
@@ -137,6 +157,10 @@ class PrepSelPrep(Operation):
                 if x < 0:
                     raise ValueError("Coefficients must be positive real numbers.")
 
+            def raiseIfNotOne(x):
+                if not qml.math.allclose(x, 1):
+                    raise ValueError("Coefficients must have norm 1.")
+
             coeffs, ops = lcu.terms()
 
             if not is_pow2(len(coeffs)):
@@ -147,16 +171,16 @@ class PrepSelPrep(Operation):
 
             smallest = jax.numpy.min(coeffs)
             jax.debug.callback(raiseIfNegative, smallest)
+            jax.debug.callback(raiseIfNotOne, qml.math.norm(coeffs))
+
         else:
             coeffs, ops = PrepSelPrep.preprocess_lcu(lcu)
 
-        normalized_coeffs = qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs))
-
         with qml.QueuingManager.stop_recording():
-            prep_ops = qml.StatePrep.compute_decomposition(normalized_coeffs, control)
+            prep_ops = qml.StatePrep.compute_decomposition(coeffs, control)
             select_ops = qml.Select.compute_decomposition(ops, control)
             adjoint_prep_ops = qml.adjoint(
-                qml.StatePrep(normalized_coeffs, control)
+                qml.StatePrep(coeffs, control)
             ).decomposition()
 
         ops = prep_ops + select_ops + adjoint_prep_ops

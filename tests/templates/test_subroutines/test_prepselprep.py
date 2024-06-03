@@ -16,6 +16,7 @@ Tests for the PrepSelPrep template.
 """
 # pylint: disable=protected-access,import-outside-toplevel
 import copy
+import itertools
 import numpy as np
 import pytest
 
@@ -69,25 +70,22 @@ class TestPrepSelPrep:
     lcu5 = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)])
     lcu6 = qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)])
     lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
+    lcu8 = qml.dot([0.5, 0.5j], [qml.X(1), qml.Z(1)])
 
     @staticmethod
     def manual_circuit(lcu, control):
         """Circuit equivalent to decomposition of PrepSelPrep"""
         coeffs, ops = qml.PrepSelPrep.preprocess_lcu(lcu)
-        normalized_coeffs = qml.math.sqrt(qml.math.abs(coeffs)) / qml.math.norm(
-            qml.math.sqrt(qml.math.abs(coeffs))
-        )
 
-        qml.StatePrep(normalized_coeffs, wires=control)
+        qml.StatePrep(coeffs, wires=control)
         qml.Select(ops, control=control)
-        qml.adjoint(qml.StatePrep(normalized_coeffs, wires=control))
+        qml.adjoint(qml.StatePrep(coeffs, wires=control))
 
         return qml.state()
 
     @staticmethod
     def prepselprep_circuit(lcu, control):
         """PrepSelPrep circuit used for testing"""
-
         qml.PrepSelPrep(lcu, control)
         return qml.state()
 
@@ -141,12 +139,18 @@ class TestPrepSelPrep:
                 qml.matrix(prepselprep, wire_order=[0, 1, 2]),
                 qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
+            (
+                lcu8,
+                [0],
+                qml.matrix(prepselprep, wire_order=[0, 1]),
+                qml.matrix(manual, wire_order=[0, 1])
+            )
         ],
     )
     def test_decomposition(self, lcu, control, produced_matrix, expected_matrix):
         """Test that the template produces the corrent decomposition"""
 
-        assert np.array_equal(
+        assert qml.math.allclose(
             produced_matrix(lcu, control),
             expected_matrix(lcu, control),
         )
@@ -157,7 +161,10 @@ class TestPrepSelPrep:
             (qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.5j, -0.5j], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]), "ancilla", ["ancilla", 0], 2),
-            (qml.dot([0.5, 0.5, 0.5], [qml.PauliX(2), qml.PauliY(2), qml.PauliZ(2)]), [0, 1], [0, 1, 2], 2)
+            (qml.dot([0.5, 0.5, 0.5], [qml.PauliX(2), qml.PauliY(2), qml.PauliZ(2)]), [0, 1], [0, 1, 2], 2),
+            (qml.dot([0.5, 0.5 + 0.5j], [qml.PauliX(2), qml.PauliY(2)]), [0, 1], [0, 1, 2], 2),
+            (qml.dot([1., 0.], [qml.PauliY(1), qml.PauliZ(1)]), [0], [0, 1], 2),
+            (qml.dot([0.5, 0.5j], [qml.X(1), qml.Z(1)]), [0], [0, 1], 2)
         ],
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
@@ -165,10 +172,8 @@ class TestPrepSelPrep:
         dev = qml.device("default.qubit")
         prepselprep = qml.QNode(TestPrepSelPrep.prepselprep_circuit, dev)
         matrix = qml.matrix(lcu)
+        normalization_factor = qml.PrepSelPrep.normalization_factor(lcu)
         block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
-
-        coeffs, _ = qml.PrepSelPrep.preprocess_lcu(lcu)
-        normalization_factor = qml.math.sum(qml.math.abs(coeffs))
 
         assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
@@ -291,132 +296,136 @@ class TestErrors:
         with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
             qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
 
+    def test_jit_not_normalized(self):
+        """Test that calling jit without normalized coefficients results in an error"""
+        import jax.numpy as jnp
+
+        coeffs = jnp.array([1., 1.])
+        lcu = qml.ops.LinearCombination(coeffs, [qml.PauliZ(1), qml.PauliX(1)])
+        with pytest.raises(ValueError, match="Coefficients must have norm 1."):
+            qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
+
 class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
 
+    @pytest.mark.parametrize(
+        ("coeffs"),
+        [(pnp.array([1., 1.], requires_grad=True)),
+         (pnp.array([0.5, -0.5], requires_grad=True)),
+         (pnp.array([0.5, 0.5j], requires_grad=True))])
     @pytest.mark.autograd
-    def test_autograd(self):
+    def test_autograd(self, coeffs):
         """Test the autograd interface"""
 
         dev = qml.device("default.qubit")
-
-        coeffs = pnp.array([1., 1.], requires_grad=True)
-        ops = [qml.X(1), qml.Z(1)]
+        ops = [qml.Y(1), qml.Z(1)]
+        preprocessed_coeffs, preprocessed_ops = qml.PrepSelPrep.preprocess_lcu(qml.ops.LinearCombination(coeffs, ops))
 
         @qml.qnode(dev, diff_method="finite-diff")
         def prepselprep(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, ops)
+            lcu = qml.ops.LinearCombination(coeffs, preprocessed_ops)
             qml.PrepSelPrep(lcu, control=0)
             return qml.expval(qml.Z(1))
 
         @qml.qnode(dev)
         def manual(coeffs):
-            normalized_coeffs = qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs))
-
-            qml.StatePrep(normalized_coeffs, wires=0)
-            qml.Select(ops, control=0)
-            qml.adjoint(qml.StatePrep(normalized_coeffs, wires=0))
+            qml.StatePrep(coeffs, wires=0)
+            qml.Select(preprocessed_ops, control=0)
+            qml.adjoint(qml.StatePrep(coeffs, wires=0))
             return qml.expval(qml.Z(1))
 
-        grad_prepselprep = qml.grad(prepselprep)(coeffs)
-        grad_manual = qml.grad(manual)(coeffs)
+        grad_prepselprep = qml.grad(prepselprep)(preprocessed_coeffs)
+        grad_manual = qml.grad(manual)(preprocessed_coeffs)
 
-        assert not qml.math.allclose(grad_prepselprep, pnp.array([0, 0]))
+        assert not any(qml.math.isnan(grad_prepselprep))
+        assert not any(qml.math.isnan(grad_manual))
+        assert qml.math.get_interface(qml.matrix(prepselprep, wire_order=[0, 1])(preprocessed_coeffs)) == "autograd"
+
         assert qml.math.allclose(grad_prepselprep, grad_manual)
 
-        fd_prepselprep = qml.jacobian(prepselprep)(coeffs)
+        fd_prepselprep = qml.jacobian(prepselprep)(preprocessed_coeffs)
         assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
 
+    @pytest.mark.parametrize(
+        ("coeffs"),
+        [([1., 1.]),
+         ([0.5, -0.5]),
+         ([0.5, 0.5j]),
+         ])
     @pytest.mark.jax
-    def test_jax(self):
+    def test_jax(self, coeffs):
         """Test the jax interface"""
         import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit")
-        coeffs = jnp.array([1., 1.])
-        ops = [qml.X(1), qml.Z(1)]
+        coeffs = jnp.array(coeffs)
+        ops = [qml.Y(1), qml.Z(1)]
+        preprocessed_coeffs, preprocessed_ops = qml.PrepSelPrep.preprocess_lcu(qml.ops.LinearCombination(coeffs, ops))
 
         @qml.qnode(dev, diff_method="finite-diff")
         def prepselprep(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, ops)
+            lcu = qml.ops.LinearCombination(coeffs, preprocessed_ops)
             qml.PrepSelPrep(lcu, control=0)
             return qml.expval(qml.Z(1))
 
         @qml.qnode(dev)
         def manual(coeffs):
-            normalized_coeffs = qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs))
-
-            qml.StatePrep(normalized_coeffs, wires=0)
+            qml.StatePrep(coeffs, wires=0)
             qml.Select(ops, control=0)
-            qml.adjoint(qml.StatePrep(normalized_coeffs, wires=0))
+            qml.adjoint(qml.StatePrep(coeffs, wires=0))
             return qml.expval(qml.Z(1))
 
-        grad_prepselprep = jax.grad(prepselprep)(coeffs)
-        grad_manual = jax.grad(manual)(coeffs)
+        grad_prepselprep = jax.grad(prepselprep)(preprocessed_coeffs)
+        grad_manual = jax.grad(manual)(preprocessed_coeffs)
 
-        assert not qml.math.allclose(grad_prepselprep, jnp.array([0, 0]))
+        assert not any(qml.math.isnan(grad_prepselprep))
+        assert not any(qml.math.isnan(grad_manual))
+        assert qml.math.get_interface(qml.matrix(prepselprep, wire_order=[0, 1])(preprocessed_coeffs)) == "jax"
         assert qml.math.allclose(grad_prepselprep, grad_manual)
 
-        fd_prepselprep = jax.jacobian(prepselprep)(coeffs)
+        fd_prepselprep = jax.jacobian(prepselprep)(preprocessed_coeffs)
         assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
 
+    @pytest.mark.parametrize(
+        ("coeffs","ops", "control"),
+        [([1., 1.], [qml.Y(2), qml.Z(2)], [0]),
+         ([0.5, -0.5], [qml.Y(2), qml.Z(2)], [0]),
+         ([0.5, 0.5j], [qml.Y(2), qml.Z(2)], [0]),
+         ])
     @pytest.mark.jax
-    def test_jax_jit(self):
-        """Test the jax interface with jit"""
-        import jax
-        import jax.numpy as jnp
-
-        dev = qml.device("default.qubit")
-        coeffs = jnp.array([1., 1.])
-        ops = [qml.X(1), qml.Z(1)]
-
-        @jax.jit
-        @qml.qnode(dev)
-        def prepselprep(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, ops)
-            qml.PrepSelPrep(lcu, control=0, jit=True)
-            return qml.expval(qml.Z(1))
-
-        @jax.jit
-        @qml.qnode(dev)
-        def manual(coeffs):
-            normalized_coeffs = qml.math.sqrt(coeffs) / qml.math.norm(qml.math.sqrt(coeffs))
-
-            qml.StatePrep(normalized_coeffs, wires=0)
-            qml.Select(ops, control=0)
-            qml.adjoint(qml.StatePrep(normalized_coeffs, wires=0))
-            return qml.expval(qml.Z(1))
-
-        grad_prepselprep = jax.grad(prepselprep)(coeffs)
-        grad_manual = jax.grad(manual)(coeffs)
-
-        assert not qml.math.allclose(grad_prepselprep, jnp.array([0, 0]))
-        assert qml.math.allclose(grad_prepselprep, grad_manual)
-
-        fd_prepselprep = jax.jacobian(prepselprep)(coeffs)
-        assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
-
-    @pytest.mark.jax
-    def test_jit_with_preprocessing(self):
+    def test_jit(self, coeffs, ops, control):
         """Test that jit works with the preprocessed output"""
         import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit")
-        coeffs = jnp.array([0.5, -0.5, 0.5j])
-        ops = [qml.I(2), qml.Y(2), qml.Z(2)]
+        coeffs = jnp.array(coeffs)
         lcu = qml.ops.LinearCombination(coeffs, ops)
-
         preprocessed_coeffs, preprocessed_ops = qml.PrepSelPrep.preprocess_lcu(lcu)
         assert len(preprocessed_coeffs) == len(preprocessed_ops)
 
         @jax.jit
         @qml.qnode(dev)
-        def circuit(coeffs):
-
+        def prepselprep(coeffs):
             lcu = qml.ops.LinearCombination(coeffs, preprocessed_ops)
-            qml.PrepSelPrep(lcu, control=[0, 1], jit=True)
-            return qml.state()
+            qml.PrepSelPrep(lcu, control=control, jit=True)
+            return qml.expval(qml.Z(2))
 
-        circuit(preprocessed_coeffs)
+        @jax.jit
+        @qml.qnode(dev)
+        def manual(coeffs):
+            qml.StatePrep(coeffs, wires=control)
+            qml.Select(preprocessed_ops, control=control)
+            qml.adjoint(qml.StatePrep(coeffs, wires=control))
+            return qml.expval(qml.Z(2))
+
+        grad_prepselprep = jax.grad(prepselprep)(preprocessed_coeffs)
+        grad_manual = jax.grad(manual)(preprocessed_coeffs)
+
+        assert not any(qml.math.isnan(grad_prepselprep))
+        assert not any(qml.math.isnan(grad_manual))
+        assert qml.math.allclose(grad_prepselprep, grad_manual)
+
+        fd_prepselprep = jax.jacobian(prepselprep)(preprocessed_coeffs)
+        assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
