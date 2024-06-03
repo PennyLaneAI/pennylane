@@ -123,7 +123,7 @@ _observables = frozenset(
 )
 # The set of supported observables.
 
-_methods = frozenset({"mps"})
+_methods = frozenset({"mps", "tns"})
 # The set of supported methods.
 
 
@@ -247,7 +247,6 @@ class DefaultTensor(Device):
 
     # pylint: disable=too-many-instance-attributes
 
-    # So far we just consider the options for MPS simulator
     _device_options = (
         "contract",
         "cutoff",
@@ -272,7 +271,7 @@ class DefaultTensor(Device):
 
         if not accepted_methods(method):
             raise ValueError(
-                f"Unsupported method: {method}. The only currently supported method is mps."
+                f"Unsupported method: {method}. Supported methods are 'mps' (Matrix Product State) and 'tns' (Exact Tensor Network)."
             )
 
         if dtype not in [np.complex64, np.complex128]:
@@ -285,16 +284,21 @@ class DefaultTensor(Device):
         self._method = method
         self._dtype = dtype
 
+        # options both for MPS and TNS
+        # TODO: add options
+
         # options for MPS
         self._max_bond_dim = kwargs.get("max_bond_dim", None)
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
         self._contract = kwargs.get("contract", "auto-mps")
 
-        # The `quimb` state is a class attribute so that we can implement methods
-        # that access it as soon as the device is created without running a circuit.
+        # The `quimb` circuit is a class attribute so that we can implement methods
+        # that access it as soon as the device is created before running a circuit.
         # The state is reset every time a new circuit is executed, and number of wires
-        # can be established at runtime to match the circuit.
-        self._quimb_mps = qtn.CircuitMPS(psi0=self._initial_mps(self.wires))
+        # can be established at runtime to match the circuit if not provided.
+        self._quimb_circuit = None
+
+        self._initialize_quimb_circuit(self.wires)
 
         for arg in kwargs:
             if arg not in self._device_options:
@@ -303,39 +307,50 @@ class DefaultTensor(Device):
                 )
 
     @property
-    def name(self):
+    def name(self) -> str:
         """The name of the device."""
         return "default.tensor"
 
     @property
-    def method(self):
+    def method(self) -> str:
         """Supported method."""
         return self._method
 
     @property
-    def dtype(self):
+    def dtype(self) -> type:
         """Tensor complex data type."""
         return self._dtype
 
-    def _reset_mps(self, wires: qml.wires.Wires) -> None:
+    def _initialize_quimb_circuit(self, wires: qml.wires.Wires) -> None:
         """
-        Reset the MPS associated with the circuit.
+        Initialize the quimb circuit according to the method chosen.
 
-        Internally, it uses `quimb`'s `CircuitMPS` class.
+        Internally, it uses `quimb`'s `CircuitMPS` or `Circuit` class.
 
         Args:
-            wires (Wires): The wires to reset the MPS.
+            wires (Wires): The wires to initialize the quimb circuit.
         """
-        self._quimb_mps = qtn.CircuitMPS(
-            psi0=self._initial_mps(wires),
-            max_bond=self._max_bond_dim,
-            gate_contract=self._contract,
-            cutoff=self._cutoff,
-        )
+
+        if self.method == "mps":
+            self._quimb_circuit = qtn.CircuitMPS(
+                psi0=self._initial_mps(wires),
+                max_bond=self._max_bond_dim,
+                gate_contract=self._contract,
+                cutoff=self._cutoff,
+            )
+
+        elif self.method == "tns":
+            self._quimb_circuit = qtn.Circuit(
+                psi0=self._initial_tns(wires),
+                # TODO: add options for TNS
+            )
+
+        else:
+            raise NotImplementedError  # pragma: no cover
 
     def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
         r"""
-        Return an initial state to :math:`\ket{0}`.
+        Return an initial mps to :math:`\ket{0}`.
 
         Internally, it uses `quimb`'s `MPS_computational_state` method.
 
@@ -349,6 +364,23 @@ class DefaultTensor(Device):
             binary="0" * (len(wires) if wires else 1),
             dtype=self._dtype.__name__,
             tags=[str(l) for l in wires.labels] if wires else None,
+        )
+
+    def _initial_tns(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
+        r"""
+        Return an initial tensor network state to :math:`\ket{0}`.
+
+        Internally, it uses `quimb`'s `TN_from_sites_computational_state` method.
+
+        Args:
+            wires (Wires): The wires to initialize the tensor network.
+
+        Returns:
+            TensorNetwork: The initial tensor network of a circuit.
+        """
+        return qtn.TN_from_sites_computational_state(
+            site_map={i: "0" for i in range(len(wires) if wires else 1)},
+            dtype=self._dtype.__name__,
         )
 
     def _setup_execution_config(
@@ -449,7 +481,7 @@ class DefaultTensor(Device):
 
         wires = circuit.wires if self.wires is None else self.wires
 
-        self._reset_mps(wires)
+        self._initialize_quimb_circuit(wires)
 
         for op in circuit.operations:
             self._apply_operation(op)
@@ -470,7 +502,9 @@ class DefaultTensor(Device):
             op (Operator): The operation to apply.
         """
 
-        self._quimb_mps.apply_gate(qml.matrix(op).astype(self._dtype), *op.wires, parametrize=None)
+        self._quimb_circuit.apply_gate(
+            qml.matrix(op).astype(self._dtype), *op.wires, parametrize=None
+        )
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
         """Measure the measurement required by the circuit over the MPS.
@@ -552,7 +586,7 @@ class DefaultTensor(Device):
         """
 
         # We need to copy the MPS since `local_expectation` modifies the state
-        qc = copy.deepcopy(self._quimb_mps)
+        qc = copy.deepcopy(self._quimb_circuit)
 
         exp_val = qc.local_expectation(
             matrix,

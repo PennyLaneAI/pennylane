@@ -162,15 +162,21 @@ def test_wires_runtime_error():
 @pytest.mark.parametrize("max_bond_dim", [None, 10])
 @pytest.mark.parametrize("cutoff", [1e-16, 1e-12])
 @pytest.mark.parametrize("contract", ["auto-mps", "nonlocal"])
-def test_kwargs(max_bond_dim, cutoff, contract):
+@pytest.mark.parametrize("method", ["mps", "tns"])
+def test_kwargs(method, max_bond_dim, cutoff, contract):
     """Test the class initialization with different arguments and returned properties."""
 
-    kwargs = {"max_bond_dim": max_bond_dim, "cutoff": cutoff, "contract": contract}
+    kwargs = {
+        "method": method,
+        "max_bond_dim": max_bond_dim,
+        "cutoff": cutoff,
+        "contract": contract,
+    }
 
     dev = qml.device("default.tensor", wires=0, **kwargs)
 
     _, config = dev.preprocess()
-    assert config.device_options["method"] == "mps"
+    assert config.device_options["method"] == method
     assert config.device_options["max_bond_dim"] == max_bond_dim
     assert config.device_options["cutoff"] == cutoff
     assert config.device_options["contract"] == contract
@@ -185,9 +191,10 @@ def test_invalid_kwarg():
         qml.device("default.tensor", wires=0, fake_arg=None)
 
 
-def test_method():
+@pytest.mark.parametrize("method", ["mps", "tns"])
+def test_method(method):
     """Test the device method."""
-    assert qml.device("default.tensor").method == "mps"
+    assert qml.device("default.tensor", method=method).method == method
 
 
 def test_invalid_method():
@@ -209,14 +216,15 @@ def test_ivalid_data_type():
         qml.device("default.tensor", wires=0, dtype=float)
 
 
+@pytest.mark.parametrize("method", ["mps", "tns"])
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
 
     @pytest.mark.parametrize("operation", all_ops)
-    def test_supported_gates_can_be_implemented(self, operation):
+    def test_supported_gates_can_be_implemented(self, operation, method):
         """Test that the device can implement all its supported gates."""
 
-        dev = qml.device("default.tensor", wires=4, method="mps")
+        dev = qml.device("default.tensor", wires=4, method=method)
 
         tape = qml.tape.QuantumScript(
             [operations_list[operation]],
@@ -227,10 +235,10 @@ class TestSupportedGatesAndObservables:
         assert np.allclose(result, 1.0)
 
     @pytest.mark.parametrize("observable", all_obs)
-    def test_supported_observables_can_be_implemented(self, observable):
+    def test_supported_observables_can_be_implemented(self, observable, method):
         """Test that the device can implement all its supported observables."""
 
-        dev = qml.device("default.tensor", wires=3, method="mps")
+        dev = qml.device("default.tensor", wires=3, method=method)
 
         if observable == "Projector":
             for o in observables_list[observable]:
@@ -249,7 +257,7 @@ class TestSupportedGatesAndObservables:
             result = dev.execute(circuits=tape)
             assert isinstance(result, (float, np.ndarray))
 
-    def test_not_implemented_meas(self):
+    def test_not_implemented_meas(self, method):
         """Tests that support only exists for `qml.expval` and `qml.var` so far."""
 
         op = [qml.Identity(0)]
@@ -311,12 +319,17 @@ class TestSupportsDerivatives:
         ):
             dev.execute_and_compute_vjp(circuits=None, cotangents=None)
 
+
+@pytest.mark.parametrize("method", ["mps", "tns"])
+class TestJaxSupport:
+    """Test the JAX support for the DefaultTensor device."""
+
     @pytest.mark.jax
-    def test_jax(self):
+    def test_jax(self, method):
         """Test the device with JAX."""
 
         jax = pytest.importorskip("jax")
-        dev = qml.device("default.tensor", wires=1)
+        dev = qml.device("default.tensor", wires=1, method=method)
         ref_dev = qml.device("default.qubit.jax", wires=1)
 
         def circuit(x):
@@ -331,11 +344,11 @@ class TestSupportsDerivatives:
         assert np.allclose(qnode(weights), ref_qnode(weights))
 
     @pytest.mark.jax
-    def test_jax_jit(self):
+    def test_jax_jit(self, method):
         """Test the device with JAX's JIT compiler."""
 
         jax = pytest.importorskip("jax")
-        dev = qml.device("default.tensor", wires=1)
+        dev = qml.device("default.tensor", wires=1, method=method)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
