@@ -104,9 +104,7 @@ def test_simple_qnode(x64_mode):
 
     assert eqn0.primitive == qnode_prim
     assert eqn0.invars[0].aval == jaxpr.in_avals[0]
-    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
-    )
+    assert jaxpr.out_avals[0] == jax.core.ShapedArray((), fdtype)
 
     assert eqn0.params["device"] == dev
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
