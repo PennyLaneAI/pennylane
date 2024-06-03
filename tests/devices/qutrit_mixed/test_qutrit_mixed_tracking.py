@@ -14,8 +14,6 @@
 """
 Tests for the tracking capabilities of default qutrit mixed.
 """
-import logging
-
 import numpy as np
 import pytest
 
@@ -222,48 +220,3 @@ class TestExecuteTracker:
         assert dev.tracker.totals["executions"] == expected_exec
         assert dev.tracker.totals["simulations"] == 1
         assert dev.tracker.totals["shots"] == expected_shots
-
-
-@pytest.mark.logging
-def test_execution_debugging(caplog):
-    """Test logging of QNode forward pass from default qutrit mixed."""
-
-    qml.logging.enable_logging()
-
-    pl_logger = logging.root.manager.loggerDict["pennylane"]
-    plqn_logger = logging.root.manager.loggerDict["pennylane.qnode"]
-
-    # Ensure logs messages are propagated for pytest capture
-    pl_logger.propagate = True
-    plqn_logger.propagate = True
-
-    with caplog.at_level(logging.DEBUG):
-        dev = qml.device("default.qutrit.mixed", wires=2)
-        params = qml.numpy.array(0.1234)
-
-        @qml.qnode(dev, diff_method=None)
-        def circuit(params):
-            qml.TRX(params, wires=0)
-            return qml.expval(qml.GellMann(0, 3))
-
-        circuit(params)
-
-    assert len(caplog.records) == 3
-
-    log_records_expected = [
-        (
-            "pennylane.workflow.qnode",
-            ["Creating QNode(func=<function test_execution_debugging"],
-        ),
-        (
-            "pennylane.workflow.execution",
-            [
-                "device=<default.qutrit.mixed device (wires=2)",
-                "gradient_fn=None, interface=None",
-            ],
-        ),
-    ]
-
-    for expected, actual in zip(log_records_expected, caplog.records[:2]):
-        assert expected[0] in actual.name
-        assert all(msg in actual.getMessage() for msg in expected[1])

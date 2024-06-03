@@ -180,6 +180,10 @@ class QDrift(Operation):
 
     """
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     def _flatten(self):
         h = self.hyperparameters["base"]
         hashable_hyperparameters = tuple(
