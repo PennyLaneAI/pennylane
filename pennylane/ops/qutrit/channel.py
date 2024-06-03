@@ -266,7 +266,7 @@ class QutritAmplitudeDamping(Channel):
         The Kraus operator :math:`K_3` represents the :math:`|2 \rangle \rightarrow |1 \rangle` transition which is more
         likely on some devices [`2 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
 
-        To maintain normalization :math:`\gamma_2 + \gamma_3 \leq 1`
+        To maintain normalization :math:`\gamma_2 + \gamma_3 \leq 1`.
 
 
     **Details:**
