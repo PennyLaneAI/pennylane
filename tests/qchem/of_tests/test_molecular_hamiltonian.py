@@ -14,7 +14,11 @@
 """
 Unit tests for molecular Hamiltonians.
 """
+import os
 # pylint: disable=too-many-arguments, protected-access
+import time
+from multiprocessing import Pool
+
 import pytest
 
 import pennylane as qml
@@ -1334,3 +1338,33 @@ def test_unit_error_molecular_hamiltonian():
 
     with pytest.raises(ValueError, match="The provided unit 'degrees' is not supported."):
         qchem.molecular_hamiltonian(symbols, geometry, unit="degrees")
+
+
+def partial_h(coordinates, symbols=['N', 'H', 'H', 'H']):
+    return qchem.molecular_hamiltonian(symbols, coordinates, method="pyscf")
+
+
+def test_parallel_hamiltonian():
+    r""" This test passes for relatively large molecules, but fails for the case of H2 due to overhead costs"""
+    assert os.cpu_count() > 1, "The number of cpus must be larger than 1"
+    symbols = ['N', 'H', 'H', 'H']
+
+    np.random.seed(5)
+    coordinates_list = np.random.random((3, 3*len(symbols)))
+
+    # Call the parallel_build_hamiltonian function
+    start_parallel = time.time()
+    with Pool(os.cpu_count()) as pool:
+        # Map the build_hamiltonian function to the list of coordinates
+        parallel_hs = pool.map(partial_h, coordinates_list)
+    done_parallel = time.time()
+
+    start_serial = time.time()
+    expected_hs = [qchem.molecular_hamiltonian(symbols, coordinates, method='pyscf') for coordinates in coordinates_list]
+    done_serial = time.time()
+
+    # Check the results
+    assert done_parallel - start_parallel <  0.6*(done_serial - start_serial)
+    # assert correct hamiltonians and num qubits
+    for i in range(len(parallel_hs)):
+        assert parallel_hs[i] == expected_hs[i]
