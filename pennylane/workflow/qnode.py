@@ -489,7 +489,6 @@ class QNode:
                 warnings.warn(
                     "It appears you may be trying to set the method of differentiation via the "
                     f"keyword argument {kwarg}. This is not supported in qnode and will default to "
-
                     "backpropogation. Use diff_method instead."
                 )
             elif kwarg == "shots":
