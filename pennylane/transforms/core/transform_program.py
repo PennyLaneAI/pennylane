@@ -14,6 +14,7 @@
 """
 This module contains the ``TransformProgram`` class.
 """
+from collections import deque
 from functools import partial
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
@@ -201,7 +202,7 @@ class TransformProgram:
             return any(obj.transform == t.transform for t in self)
         return False
 
-    def push_back(self, transform_container: TransformContainer):
+    def append(self, transform_container: TransformContainer):
         """Add a transform (container) to the end of the program.
 
         Args:
@@ -218,7 +219,7 @@ class TransformProgram:
             return
         self._transform_program.append(transform_container)
 
-    def insert_front(self, transform_container: TransformContainer):
+    def appendleft(self, transform_container: TransformContainer):
         """Insert the transform container at the beginning of the program.
 
         Args:
@@ -248,8 +249,8 @@ class TransformProgram:
             raise TransformError("Only transform dispatcher can be added to the transform program.")
 
         if transform.expand_transform:
-            self.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
-        self.push_back(
+            self.append(TransformContainer(transform.expand_transform, targs, tkwargs))
+        self.append(
             TransformContainer(
                 transform.transform,
                 targs,
@@ -260,7 +261,7 @@ class TransformProgram:
             )
         )
 
-    def insert_front_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+    def appendleft_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
         """Add a transform (dispatcher) to the beginning of the program.
 
         Args:
@@ -276,7 +277,7 @@ class TransformProgram:
                 "Informative transforms can only be added at the end of the program."
             )
 
-        self.insert_front(
+        self.appendleft(
             TransformContainer(
                 transform.transform,
                 targs,
@@ -288,7 +289,7 @@ class TransformProgram:
         )
 
         if transform.expand_transform:
-            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
+            self.appendleft(TransformContainer(transform.expand_transform, targs, tkwargs))
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.

@@ -313,7 +313,7 @@ class TransformDispatcher:
             ):
                 """This function updates the original device transform program to be applied."""
                 program, config = self.original_device.preprocess(execution_config)
-                program.push_back(TransformContainer(self.transform, targs, tkwargs))
+                program.append(TransformContainer(self.transform, targs, tkwargs))
                 return program, config
 
             @property

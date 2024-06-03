@@ -126,7 +126,7 @@ class TestTransformProgramDunders:
         transform1 = TransformContainer(transform=first_valid_transform)
 
         for _ in range(10):
-            transform_program.push_back(transform1)
+            transform_program.append(transform1)
 
         assert len(transform_program) == 10
 
@@ -175,11 +175,11 @@ class TestTransformProgramDunders:
         """Test adding two transform programs"""
         transform_program1 = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform)
-        transform_program1.push_back(transform1)
+        transform_program1.append(transform1)
 
         transform_program2 = TransformProgram()
         transform2 = TransformContainer(transform=second_valid_transform)
-        transform_program2.push_back(transform2)
+        transform_program2.append(transform2)
 
         transform_program = transform_program1 + transform_program2
 
@@ -207,13 +207,13 @@ class TestTransformProgramDunders:
         transform2 = TransformContainer(transform=second_valid_transform)
 
         transform_program1 = TransformProgram()
-        transform_program1.push_back(transform1)
-        transform_program1.push_back(transform1)
-        transform_program1.push_back(transform1)
+        transform_program1.append(transform1)
+        transform_program1.append(transform1)
+        transform_program1.append(transform1)
 
         transform_program2 = TransformProgram()
-        transform_program1.push_back(transform2)
-        transform_program1.push_back(transform2)
+        transform_program1.append(transform2)
+        transform_program1.append(transform2)
 
         transform_program = transform_program1 + transform_program2
 
@@ -241,12 +241,12 @@ class TestTransformProgramDunders:
         transform2 = TransformContainer(transform=second_valid_transform, final_transform=True)
 
         transform_program1 = TransformProgram()
-        transform_program1.push_back(transform1)
-        transform_program1.push_back(transform2)
+        transform_program1.append(transform1)
+        transform_program1.append(transform2)
 
         transform_program2 = TransformProgram()
-        transform_program2.push_back(transform1)
-        transform_program2.push_back(transform2)
+        transform_program2.append(transform1)
+        transform_program2.append(transform2)
 
         with pytest.raises(
             TransformError, match="The transform program already has a terminal transform"
@@ -260,11 +260,11 @@ class TestTransformProgramDunders:
         transform2 = TransformContainer(transform=second_valid_transform, final_transform=True)
 
         transform_program1 = TransformProgram()
-        transform_program1.push_back(transform1)
+        transform_program1.append(transform1)
 
         transform_program2 = TransformProgram()
-        transform_program2.push_back(transform1)
-        transform_program2.push_back(transform2)
+        transform_program2.append(transform1)
+        transform_program2.append(transform2)
 
         merged_program1 = transform_program1 + transform_program2
         assert len(merged_program1) == 3
@@ -297,8 +297,8 @@ class TestTransformProgramDunders:
         transform1 = TransformContainer(transform=first_valid_transform)
         transform2 = TransformContainer(transform=second_valid_transform)
 
-        transform_program.push_back(transform1)
-        transform_program.push_back(transform2)
+        transform_program.append(transform1)
+        transform_program.append(transform2)
 
         str_program = repr(transform_program)
         assert (
@@ -356,12 +356,12 @@ class TestTransformProgram:
         ):
             program.get_last()
 
-    def test_push_back(self):
-        """Test to push back multiple transforms into a program and also the different methods of a program."""
+    def test_append(self):
+        """Test to append multiple transforms into a program and also the different methods of a program."""
         transform_program = TransformProgram()
 
         transform1 = TransformContainer(transform=first_valid_transform)
-        transform_program.push_back(transform1)
+        transform_program.append(transform1)
 
         assert not transform_program.is_empty()
         assert len(transform_program) == 1
@@ -369,15 +369,15 @@ class TestTransformProgram:
         assert transform_program[0].transform is first_valid_transform
 
         transform2 = TransformContainer(transform=second_valid_transform)
-        transform_program.push_back(transform2)
+        transform_program.append(transform2)
 
         assert not transform_program.is_empty()
         assert len(transform_program) == 2
         assert isinstance(transform_program[1], TransformContainer)
         assert transform_program[1].transform is second_valid_transform
 
-        transform_program.push_back(transform1)
-        transform_program.push_back(transform2)
+        transform_program.append(transform1)
+        transform_program.append(transform2)
 
         sub_program_transforms = transform_program[2:]
         assert len(sub_program_transforms) == 2
@@ -388,7 +388,7 @@ class TestTransformProgram:
             TransformError,
             match="Only transform container can be added to the transform program.",
         ):
-            transform_program.push_back(10.0)
+            transform_program.append(10.0)
 
     def test_add_transform(self):
         """Test to add multiple transforms into a program and also the different methods of a program."""
@@ -444,7 +444,7 @@ class TestTransformProgram:
         transform_program = TransformProgram()
 
         transform1 = TransformContainer(transform=first_valid_transform)
-        transform_program.push_back(transform1)
+        transform_program.append(transform1)
 
         assert not transform_program.is_empty()
         assert len(transform_program) == 1
@@ -456,12 +456,12 @@ class TestTransformProgram:
         assert transform_program.is_empty()
         assert transform_container is transform1
 
-    def test_insert_front(self):
+    def test_appendleft(self):
         """Test to insert a transform (container) at the beginning of a transform program."""
         transform_program = TransformProgram()
 
         transform1 = TransformContainer(transform=first_valid_transform)
-        transform_program.push_back(transform1)
+        transform_program.append(transform1)
 
         assert not transform_program.is_empty()
         assert len(transform_program) == 1
@@ -469,7 +469,7 @@ class TestTransformProgram:
         assert transform_program[0].transform is first_valid_transform
 
         transform2 = TransformContainer(transform=second_valid_transform)
-        transform_program.insert_front(transform2)
+        transform_program.appendleft(transform2)
 
         assert not transform_program.is_empty()
         assert len(transform_program) == 2
@@ -484,14 +484,14 @@ class TestTransformProgram:
             TransformError,
             match="Informative transforms can only be added at the end of the program.",
         ):
-            transform_program.insert_front(transform3)
+            transform_program.appendleft(transform3)
 
     def test_insert_transform(self):
         """Test to insert a transform (dispatcher) at the beginning of a transform program."""
         transform_program = TransformProgram()
 
         transform1 = transform(first_valid_transform)
-        transform_program.insert_front_transform(transform1)
+        transform_program.appendleft_transform(transform1)
 
         assert not transform_program.is_empty()
         assert len(transform_program) == 1
@@ -499,7 +499,7 @@ class TestTransformProgram:
         assert transform_program[0].transform is first_valid_transform
 
         transform2 = transform(second_valid_transform)
-        transform_program.insert_front_transform(transform2)
+        transform_program.appendleft_transform(transform2)
 
         assert not transform_program.is_empty()
         assert len(transform_program) == 2
@@ -514,14 +514,14 @@ class TestTransformProgram:
             TransformError,
             match="Informative transforms can only be added at the end of the program.",
         ):
-            transform_program.insert_front_transform(transform3)
+            transform_program.appendleft_transform(transform3)
 
     def test_insert_transform_with_expand(self):
         """Test to insert front a transform with expand into a program."""
         transform_program = TransformProgram()
 
         transform1 = transform(first_valid_transform, expand_transform=expand_transform)
-        transform_program.insert_front_transform(transform1)
+        transform_program.appendleft_transform(transform1)
 
         assert not transform_program.is_empty()
         assert len(transform_program) == 2
@@ -535,17 +535,17 @@ class TestTransformProgram:
         """Test adding transforms to a program with a terminal transform."""
         transform_program = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform, is_informative=True)
-        transform_program.push_back(transform1)
+        transform_program.append(transform1)
 
         t_normal = TransformContainer(transform=second_valid_transform)
-        transform_program.push_back(t_normal)
+        transform_program.append(t_normal)
         print(transform_program)
         assert len(transform_program) == 2
         assert transform_program[0] is t_normal
         assert transform_program[1] is transform1
 
         t_normal2 = TransformContainer(transform=first_valid_transform)
-        transform_program.push_back(t_normal2)
+        transform_program.append(t_normal2)
         assert transform_program[0] is t_normal
         assert transform_program[1] is t_normal2
         assert transform_program[2] is transform1
@@ -553,14 +553,14 @@ class TestTransformProgram:
         with pytest.raises(
             TransformError, match="The transform program already has a terminal transform."
         ):
-            transform_program.push_back(transform1)
+            transform_program.append(transform1)
 
         transform2 = TransformContainer(transform=second_valid_transform, final_transform=True)
 
         with pytest.raises(
             TransformError, match="The transform program already has a terminal transform."
         ):
-            transform_program.push_back(transform2)
+            transform_program.append(transform2)
 
 
 class TestTransformProgramCall:

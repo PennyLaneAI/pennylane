@@ -584,7 +584,7 @@ class QNode:
 
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
-        self._transform_program.push_back(transform_container=transform_container)
+        self._transform_program.append(transform_container=transform_container)
 
     def _update_gradient_fn(self, shots=None, tape=None):
         if self.diff_method is None:
@@ -1047,7 +1047,7 @@ class QNode:
 
         # Add the gradient expand to the program if necessary
         if getattr(self.gradient_fn, "expand_transform", False):
-            full_transform_program.insert_front_transform(
+            full_transform_program.appendleft_transform(
                 qml.transform(self.gradient_fn.expand_transform),
                 **self.gradient_kwargs,
             )
