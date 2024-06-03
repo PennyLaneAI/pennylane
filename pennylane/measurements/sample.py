@@ -28,7 +28,7 @@ from .mid_measure import MeasurementValue
 
 
 def sample(
-    op: Optional[Union[Operator, MeasurementValue]] = None,
+    op: Optional[Union[Operator, MeasurementValue, Sequence[MeasurementValue]]] = None,
     wires=None,
 ) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
@@ -181,9 +181,34 @@ class SampleMP(SampleMeasurement):
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
-    @property
-    def return_type(self):
-        return Sample
+    return_type = Sample
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        if shots is None:
+            raise ValueError("finite shots are required to use SampleMP")
+        sample_eigvals = n_wires is None or has_eigvals
+        dtype = float if sample_eigvals else int
+
+        if n_wires == 0:
+            dim = num_device_wires
+        elif sample_eigvals:
+            dim = 1
+        else:
+            dim = n_wires
+
+        shape = []
+        if shots != 1:
+            shape.append(shots)
+        if dim != 1:
+            shape.append(dim)
+        return tuple(shape), dtype
 
     @property
     @functools.lru_cache()

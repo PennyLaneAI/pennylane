@@ -774,8 +774,9 @@ class Hamiltonian(Observable):
         ops1 = self.ops.copy()
 
         if isinstance(H, (Tensor, Observable)):
+            qml.QueuingManager.remove(H)
+            qml.QueuingManager.remove(self)
             terms = [copy(H) @ op for op in ops1]
-
             return qml.simplify(Hamiltonian(coeffs1, terms))
 
         return NotImplemented
@@ -789,11 +790,15 @@ class Hamiltonian(Observable):
             return self
 
         if isinstance(H, Hamiltonian):
+            qml.QueuingManager.remove(H)
+            qml.QueuingManager.remove(self)
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
             return qml.simplify(Hamiltonian(coeffs, ops))
 
         if isinstance(H, (Tensor, Observable)):
+            qml.QueuingManager.remove(H)
+            qml.QueuingManager.remove(self)
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )

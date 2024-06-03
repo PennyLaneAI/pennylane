@@ -62,31 +62,18 @@ class TestInitialization:
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
 
-        qml.ops.functions.assert_valid(op)
+        if seed is not None:
+            # For seed = None, decomposition and compute_decomposition do not match because
+            # compute_decomposition is stochastic
+            qml.ops.functions.assert_valid(op)
 
         assert op.wires == h.wires
-        assert op.parameters == [time]
-        assert op.data == (time,)
+        assert op.parameters == [*h.data, time]
+        assert op.data == (*h.data, time)
 
         assert op.hyperparameters["n"] == n
         assert op.hyperparameters["seed"] == seed
         assert op.hyperparameters["base"] == h
-
-        for term in op.hyperparameters["decomposition"]:
-            # the decomposition is solely made up of exponentials of ops sampled from hamiltonian terms
-            assert term.base in ops
-
-    def test_set_decomp(self):
-        """Test that setting the decomposition works correctly."""
-        h = qml.dot([1.23, -0.45], [qml.PauliX(0), qml.PauliY(0)])
-        decomposition = [
-            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
-            qml.exp(qml.PauliY(0), -0.5j * 1.68 / 3),
-            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
-        ]
-        op = qml.QDrift(h, 0.5, n=3, decomposition=decomposition)
-
-        assert op.hyperparameters["decomposition"] == decomposition
 
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
@@ -127,33 +114,11 @@ class TestInitialization:
                 assert False  # test should fail if an error was raised when we expect it not to
 
     def test_error_hamiltonian(self):
-        """Test that a hamiltonian must have atleast 2 terms to be supported."""
-        msg = "There should be atleast 2 terms in the Hamiltonian."
+        """Test that a hamiltonian must have at least 2 terms to be supported."""
+        msg = "There should be at least 2 terms in the Hamiltonian."
         with pytest.raises(ValueError, match=msg):
             h = qml.Hamiltonian([1.0], [qml.PauliX(0)])
             qml.QDrift(h, 1.23, n=2, seed=None)
-
-    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_flatten_and_unflatten(self, coeffs, ops):
-        """Test that the flatten and unflatten methods work correctly."""
-        time, n, seed = (0.5, 2, 1234)
-        hamiltonian = qml.dot(coeffs, ops)
-        op = qml.QDrift(hamiltonian, time, n=n, seed=seed)
-        decomp = op.decomposition()
-
-        data, metadata = op._flatten()  # pylint: disable=protected-access
-        assert data[0] == time
-        assert metadata[0] == op.wires
-        assert dict(metadata[1]) == {
-            "n": n,
-            "seed": seed,
-            "base": hamiltonian,
-            "decomposition": tuple(decomp),
-        }
-
-        new_op = type(op)._unflatten(data, metadata)  # pylint: disable=protected-access
-        assert qml.equal(op, new_op)
-        assert new_op is not op
 
 
 class TestDecomposition:
@@ -205,6 +170,13 @@ class TestDecomposition:
 
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
         assert decomp == list(expected_decomp)  # sample the same ops
+
+        # Decompositions of an instance are maintained across calls to `compute_decomposition`
+        with qml.tape.QuantumTape() as second_tape:
+            second_decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+
+        assert second_tape.operations == tape.operations
+        assert second_decomp == decomp
 
 
 class TestIntegration:

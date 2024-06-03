@@ -78,6 +78,20 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match expansion"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
+    def test_decomposition_wires_must_be_mapped(self):
+        """Test that the operators in decomposition have mapped wires after mapping the op."""
+
+        class BadDecompositionWireMap(Operator):
+            @staticmethod
+            def compute_decomposition(*args, **kwargs):
+                if kwargs["wires"][0] == 0:
+                    return [qml.RX(0.2, wires=0)]
+                return [qml.RX(0.2, wires="not the ops wire")]
+
+        with pytest.raises(AssertionError, match=r"Operators in decomposition of wire\-mapped"):
+            assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True)
+        assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True, skip_wire_mapping=True)
+
     def test_error_not_raised(self):
         """Test if has_decomposition is False but decomposition defined."""
 
@@ -158,7 +172,7 @@ def test_mismatched_mat_decomp():
             return np.eye(2)
 
         def decomposition(self):
-            return [qml.PauliX(0)]
+            return [qml.PauliX(self.wires)]
 
     with pytest.raises(AssertionError, match=r"matrix and matrix from decomposition must match"):
         assert_valid(MisMatchedMatDecomp(0), skip_pickle=True)
