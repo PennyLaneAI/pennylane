@@ -30,6 +30,7 @@ def test_standard_checks():
     control = [1]
 
     op = qml.Select(ops, control)
+    assert op.target_wires == qml.wires.Wires(0)
     qml.ops.functions.assert_valid(op)
 
 
