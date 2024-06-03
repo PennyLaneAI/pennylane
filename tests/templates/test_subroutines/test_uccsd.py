@@ -22,84 +22,101 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 
+test_data_decomposition = [
+    (
+        [[0, 1, 2]],
+        [],
+        np.array([3.815]),
+        [
+            [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+            [1, qml.RX, [0], [-np.pi / 2]],
+            [5, qml.RZ, [2], [1.9075]],
+            [6, qml.CNOT, [1, 2], []],
+        ],
+    ),
+    (
+        [[0, 1, 2], [1, 2, 3]],
+        [],
+        np.array([3.815, 4.866]),
+        [
+            [2, qml.Hadamard, [2], []],
+            [8, qml.RX, [0], [np.pi / 2]],
+            [12, qml.CNOT, [0, 1], []],
+            [23, qml.RZ, [3], [2.433]],
+            [24, qml.CNOT, [2, 3], []],
+            [26, qml.RX, [1], [np.pi / 2]],
+        ],
+    ),
+    (
+        [],
+        [[[0, 1], [2, 3, 4, 5]]],
+        np.array([3.815]),
+        [
+            [3, qml.RX, [2], [-np.pi / 2]],
+            [29, qml.RZ, [5], [0.476875]],
+            [73, qml.Hadamard, [0], []],
+            [150, qml.RX, [1], [np.pi / 2]],
+            [88, qml.CNOT, [3, 4], []],
+            [121, qml.CNOT, [2, 3], []],
+        ],
+    ),
+    (
+        [],
+        [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
+        np.array([3.815, 4.866]),
+        [
+            [4, qml.Hadamard, [3], []],
+            [16, qml.RX, [0], [-np.pi / 2]],
+            [38, qml.RZ, [3], [0.476875]],
+            [78, qml.Hadamard, [2], []],
+            [107, qml.RX, [1], [-np.pi / 2]],
+            [209, qml.Hadamard, [4], []],
+            [218, qml.RZ, [5], [-0.60825]],
+            [82, qml.CNOT, [2, 3], []],
+            [159, qml.CNOT, [4, 5], []],
+        ],
+    ),
+    (
+        [[0, 1, 2, 3, 4], [1, 2, 3]],
+        [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
+        np.array([3.815, 4.866, 1.019, 0.639]),
+        [
+            [16, qml.RX, [0], [-np.pi / 2]],
+            [47, qml.Hadamard, [1], []],
+            [74, qml.Hadamard, [2], []],
+            [83, qml.RZ, [3], [-0.127375]],
+            [134, qml.RX, [4], [np.pi / 2]],
+            [158, qml.RZ, [5], [0.079875]],
+            [188, qml.RZ, [5], [-0.079875]],
+            [96, qml.CNOT, [1, 2], []],
+            [235, qml.CNOT, [1, 4], []],
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize("s_wires, d_wires, weights, _", test_data_decomposition)
+def test_standard_validity(s_wires, d_wires, weights, _):
+    """Test standard validity criteria using assert_valid."""
+    cnots = 0
+    for s_wires_ in s_wires:
+        cnots += 4 * (len(s_wires_) - 1)
+
+    for d_wires_ in d_wires:
+        cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
+    N = 6
+    wires = range(N)
+
+    ref_state = np.array([1, 1, 0, 0, 0, 0])
+
+    op = qml.UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state)
+    qml.ops.functions.assert_valid(op)
+
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize(
-        ("s_wires", "d_wires", "weights", "ref_gates"),
-        [
-            (
-                [[0, 1, 2]],
-                [],
-                np.array([3.815]),
-                [
-                    [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
-                    [1, qml.RX, [0], [-np.pi / 2]],
-                    [5, qml.RZ, [2], [1.9075]],
-                    [6, qml.CNOT, [1, 2], []],
-                ],
-            ),
-            (
-                [[0, 1, 2], [1, 2, 3]],
-                [],
-                np.array([3.815, 4.866]),
-                [
-                    [2, qml.Hadamard, [2], []],
-                    [8, qml.RX, [0], [np.pi / 2]],
-                    [12, qml.CNOT, [0, 1], []],
-                    [23, qml.RZ, [3], [2.433]],
-                    [24, qml.CNOT, [2, 3], []],
-                    [26, qml.RX, [1], [np.pi / 2]],
-                ],
-            ),
-            (
-                [],
-                [[[0, 1], [2, 3, 4, 5]]],
-                np.array([3.815]),
-                [
-                    [3, qml.RX, [2], [-np.pi / 2]],
-                    [29, qml.RZ, [5], [0.476875]],
-                    [73, qml.Hadamard, [0], []],
-                    [150, qml.RX, [1], [np.pi / 2]],
-                    [88, qml.CNOT, [3, 4], []],
-                    [121, qml.CNOT, [2, 3], []],
-                ],
-            ),
-            (
-                [],
-                [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
-                np.array([3.815, 4.866]),
-                [
-                    [4, qml.Hadamard, [3], []],
-                    [16, qml.RX, [0], [-np.pi / 2]],
-                    [38, qml.RZ, [3], [0.476875]],
-                    [78, qml.Hadamard, [2], []],
-                    [107, qml.RX, [1], [-np.pi / 2]],
-                    [209, qml.Hadamard, [4], []],
-                    [218, qml.RZ, [5], [-0.60825]],
-                    [82, qml.CNOT, [2, 3], []],
-                    [159, qml.CNOT, [4, 5], []],
-                ],
-            ),
-            (
-                [[0, 1, 2, 3, 4], [1, 2, 3]],
-                [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
-                np.array([3.815, 4.866, 1.019, 0.639]),
-                [
-                    [16, qml.RX, [0], [-np.pi / 2]],
-                    [47, qml.Hadamard, [1], []],
-                    [74, qml.Hadamard, [2], []],
-                    [83, qml.RZ, [3], [-0.127375]],
-                    [134, qml.RX, [4], [np.pi / 2]],
-                    [158, qml.RZ, [5], [0.079875]],
-                    [188, qml.RZ, [5], [-0.079875]],
-                    [96, qml.CNOT, [1, 2], []],
-                    [235, qml.CNOT, [1, 4], []],
-                ],
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("s_wires, d_wires, weights, ref_gates", test_data_decomposition)
     def test_uccsd_operations(self, s_wires, d_wires, weights, ref_gates):
         """Test the correctness of the UCCSD template including the gate count
         and order, the wires the operation acts on and the correct use of parameters

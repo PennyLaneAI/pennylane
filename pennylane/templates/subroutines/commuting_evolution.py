@@ -15,8 +15,11 @@ r"""
 Contains the CommutingEvolution template.
 """
 # pylint: disable-msg=too-many-arguments,import-outside-toplevel
+import copy
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.wires import Wires
 
 
 class CommutingEvolution(Operation):
@@ -112,6 +115,10 @@ class CommutingEvolution(Operation):
         return data, (self.hyperparameters["frequencies"], self.hyperparameters["shifts"])
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
         return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
 
@@ -138,6 +145,15 @@ class CommutingEvolution(Operation):
         }
 
         super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
+            new_op._hyperparameters["hamiltonian"], wire_map
+        )
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["hamiltonian"])
