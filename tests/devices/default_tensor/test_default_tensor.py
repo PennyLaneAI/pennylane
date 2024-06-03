@@ -264,7 +264,7 @@ class TestSupportedGatesAndObservables:
         measurements = [qml.probs(qml.PauliZ(0))]
         tape = qml.tape.QuantumScript(op, measurements)
 
-        dev = qml.device("default.tensor", wires=tape.wires)
+        dev = qml.device("default.tensor", wires=tape.wires, method=method)
 
         with pytest.raises(NotImplementedError):
             dev.execute(tape)

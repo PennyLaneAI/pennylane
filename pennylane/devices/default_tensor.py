@@ -160,7 +160,7 @@ class DefaultTensor(Device):
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
-        method (str): Supported method. Currently, only ``"mps"`` is supported.
+        method (str): Supported method. Currently, the supported methods are 'mps' (Matrix Product State) and 'tns' (Exact Tensor Network).
         dtype (type): Data type for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
@@ -172,7 +172,8 @@ class DefaultTensor(Device):
         contract (str): The contraction method for applying gates in the MPS method. It can be either ``auto-mps`` or ``nonlocal``.
             ``nonlocal`` turns each gate into a Matrix Product Operator (MPO) and applies it directly to the MPS,
             while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next to each other before applying the gate,
-            then swaps them back. Default is ``auto-mps``.
+            then swaps them back. Default is ``auto-mps``. TODO: change this
+        # TODO: add options for TNS
 
     **Example:**
 
@@ -536,7 +537,9 @@ class DefaultTensor(Device):
             if isinstance(measurementprocess, VarianceMP):
                 return self.var
 
-        raise NotImplementedError
+        raise NotImplementedError(
+            f"Measurement process {measurementprocess} currently not supported by default.tensor."
+        )
 
     def expval(self, measurementprocess: MeasurementProcess) -> float:
         """Expectation value of the supplied observable contained in the MeasurementProcess.
