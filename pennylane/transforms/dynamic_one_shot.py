@@ -207,15 +207,16 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(m)
     new_operations = []
     for op in circuit.operations:
-        if isinstance(op, MidMeasureMP):
-            new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
         if "MidCircuitMeasure" in str(type(op)):
-            new_measurements.append(qml.sample(op.out_classical_tracers[0]))
             new_op = op
             new_op.bypass_postselect = True
             new_operations.append(new_op)
         else:
             new_operations.append(op)
+        if isinstance(op, MidMeasureMP):
+            new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
+        elif "MidCircuitMeasure" in str(type(op)):
+            new_measurements.append(qml.sample(op.out_classical_tracers[0]))
     return qml.tape.QuantumScript(
         new_operations,
         new_measurements,
@@ -327,14 +328,16 @@ def gather_mcm_jit(circuit_measurement, measurement, is_valid):
         raise LookupError("MCM not found")
     meas = qml.math.squeeze(meas)
     if isinstance(circuit_measurement, CountsMP):
-        count1 = qml.math.sum(meas * is_valid)
-        return {0: qml.math.sum(is_valid) - count1, 1: count1}
+        sum_valid = qml.math.sum(is_valid)
+        count_1 = qml.math.sum(meas * is_valid)
+        return {0: sum_valid - count_1, 1: count_1}
     if isinstance(circuit_measurement, ProbabilityMP):
-        count1 = qml.math.sum(meas * is_valid)
+        sum_valid = qml.math.sum(is_valid)
+        count_1 = qml.math.sum(meas * is_valid)
         counts = qml.math.array(
-            [qml.math.sum(is_valid) - count1, count1], like=qml.math.get_deep_interface(is_valid)
+            [sum_valid - count_1, count_1], like=qml.math.get_deep_interface(is_valid)
         )
-        return counts / qml.math.sum(is_valid)
+        return counts / sum_valid
     return gather_non_mcm(circuit_measurement, meas, is_valid)
 
 
