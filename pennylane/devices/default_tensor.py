@@ -34,6 +34,7 @@ from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMeasu
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
+from pennylane.wires import WireError
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -257,15 +258,11 @@ class DefaultTensor(Device):
 
     def __init__(
         self,
-        wires,
-        *,
+        wires=None,
         method="mps",
         dtype=np.complex128,
         **kwargs,
     ) -> None:
-
-        if wires is None:
-            raise TypeError("Wires must be provided for the default.tensor device.")
 
         if not has_quimb:
             raise ImportError(
@@ -293,28 +290,11 @@ class DefaultTensor(Device):
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
         self._contract = kwargs.get("contract", "auto-mps")
 
-        device_options = self._setup_execution_config().device_options
-
-        self._init_state_opts = {
-            "binary": "0" * (len(self._wires) if self._wires else 1),
-            "dtype": self._dtype.__name__,
-            "tags": [str(l) for l in self._wires.labels] if self._wires else None,
-        }
-
-        self._gate_opts = {
-            "parametrize": None,
-            "contract": device_options["contract"],
-            "cutoff": device_options["cutoff"],
-            "max_bond": device_options["max_bond_dim"],
-        }
-
-        self._expval_opts = {
-            "dtype": self._dtype.__name__,
-            "simplify_sequence": "ADCRS",
-            "simplify_atol": 0.0,
-        }
-
-        self._circuitMPS = qtn.CircuitMPS(psi0=self._initial_mps())
+        # The `quimb` state is a class attribute so that we can implement methods
+        # that access it as soon as the device is created without running a circuit.
+        # The state is reset every time a new circuit is executed, and number of wires
+        # can be established at runtime to match the circuit.
+        self._quimb_mps = qtn.CircuitMPS(psi0=self._initial_mps(self.wires))
 
         for arg in kwargs:
             if arg not in self._device_options:
@@ -337,24 +317,39 @@ class DefaultTensor(Device):
         """Tensor complex data type."""
         return self._dtype
 
-    def _reset_state(self) -> None:
+    def _reset_mps(self, wires: qml.wires.Wires) -> None:
         """
-        Reset the MPS.
+        Reset the MPS associated with the circuit.
 
-        This method modifies the tensor state of the device.
+        Internally, it uses `quimb`'s `CircuitMPS` class.
+
+        Args:
+            wires (Wires): The wires to reset the MPS.
         """
-        self._circuitMPS = qtn.CircuitMPS(psi0=self._initial_mps())
+        self._quimb_mps = qtn.CircuitMPS(
+            psi0=self._initial_mps(wires),
+            max_bond=self._max_bond_dim,
+            gate_contract=self._contract,
+            cutoff=self._cutoff,
+        )
 
-    def _initial_mps(self) -> "qtn.MatrixProductState":
+    def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
         r"""
         Return an initial state to :math:`\ket{0}`.
 
         Internally, it uses `quimb`'s `MPS_computational_state` method.
 
+        Args:
+            wires (Wires): The wires to initialize the MPS.
+
         Returns:
             MatrixProductState: The initial MPS of a circuit.
         """
-        return qtn.MPS_computational_state(**self._init_state_opts)
+        return qtn.MPS_computational_state(
+            binary="0" * (len(wires) if wires else 1),
+            dtype=self._dtype.__name__,
+            tags=[str(l) for l in wires.labels] if wires else None,
+        )
 
     def _setup_execution_config(
         self, config: Optional[ExecutionConfig] = DefaultExecutionConfig
@@ -429,10 +424,11 @@ class DefaultTensor(Device):
 
         results = []
         for circuit in circuits:
-            # we need to check if the wires of the circuit are compatible with the wires of the device
-            # since the initial tensor state is created with the wires of the device
-            if not self.wires.contains_wires(circuit.wires):
-                raise AttributeError(
+            if self.wires is not None and not self.wires.contains_wires(circuit.wires):
+                # quimb raises a cryptic error if the circuit has wires that are not in the device,
+                # so we raise a more informative error here
+                raise WireError(
+                    "Mismatch between circuit and device wires. "
                     f"Circuit has wires {circuit.wires.tolist()}. "
                     f"Tensor on device has wires {self.wires.tolist()}"
                 )
@@ -451,7 +447,9 @@ class DefaultTensor(Device):
             Tuple[TensorLike]: The results of the simulation.
         """
 
-        self._reset_state()
+        wires = circuit.wires if self.wires is None else self.wires
+
+        self._reset_mps(wires)
 
         for op in circuit.operations:
             self._apply_operation(op)
@@ -472,9 +470,7 @@ class DefaultTensor(Device):
             op (Operator): The operation to apply.
         """
 
-        self._circuitMPS.apply_gate(
-            qml.matrix(op).astype(self._dtype), *op.wires, **self._gate_opts
-        )
+        self._quimb_mps.apply_gate(qml.matrix(op).astype(self._dtype), *op.wires, parametrize=None)
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
         """Measure the measurement required by the circuit over the MPS.
@@ -555,13 +551,15 @@ class DefaultTensor(Device):
             Local expectation value of the matrix on the MPS.
         """
 
-        # We need to copy the MPS to avoid modifying the original state
-        qc = copy.deepcopy(self._circuitMPS)
+        # We need to copy the MPS since `local_expectation` modifies the state
+        qc = copy.deepcopy(self._quimb_mps)
 
         exp_val = qc.local_expectation(
             matrix,
             wires,
-            **self._expval_opts,
+            dtype=self._dtype.__name__,
+            simplify_sequence="ADCRS",
+            simplify_atol=0.0,
         )
 
         return float(np.real(exp_val))
