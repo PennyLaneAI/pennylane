@@ -16,7 +16,7 @@ Contains the PrepSelPrep template.
 This template contains a decomposition for performing a block-encoding on a
 linear combination of unitaries using the Prepare, Select, Prepare method.
 """
-# pylint: disable=arguments-differ,import-outside-toplevel
+# pylint: disable=arguments-differ,import-outside-toplevel,too-many-arguments
 import copy
 import itertools
 import math
@@ -28,12 +28,13 @@ def is_pow2(n):
     """Returns true if n is a power of 2, false otherwise"""
     return ((n & (n - 1) == 0) and n != 0)
 
-def normalize(n):
-    return qml.math.sqrt(n) / qml.math.norm(qml.math.sqrt(n))
-
 class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
     using the Prepare, Select, Prepare method"""
+
+
+    num_wires = qml.operation.AnyWires
+    grad_method = "A"
 
     def __init__(self, lcu, control=None, jit=False, id=None):
         coeffs, ops = lcu.terms()
@@ -72,11 +73,11 @@ class PrepSelPrep(Operation):
     def map_wires(self, wire_map: dict) -> "PrepSelPrep":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
-        new_lcu = qml.dot(self.hyperparameters["coeffs"], new_ops)
+        new_lcu = qml.ops.LinearCombination(self.hyperparameters["coeffs"], new_ops)
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
-        return self.compute_decomposition(self.lcu, self.control, self.jit)
+        return self.compute_decomposition(self.lcu, self.control, jit=self.jit)
 
     @staticmethod
     def get_new_terms(lcu):
@@ -149,7 +150,7 @@ class PrepSelPrep(Operation):
         return final_coeffs, final_ops
 
     @staticmethod
-    def compute_decomposition(lcu, control, jit):
+    def compute_decomposition(lcu, control, jit=False):
         if jit:
             import jax
 
@@ -176,18 +177,8 @@ class PrepSelPrep(Operation):
         else:
             coeffs, ops = PrepSelPrep.preprocess_lcu(lcu)
 
-        with qml.QueuingManager.stop_recording():
-            prep_ops = qml.StatePrep.compute_decomposition(coeffs, control)
-            select_ops = qml.Select.compute_decomposition(ops, control)
-            adjoint_prep_ops = qml.adjoint(
-                qml.StatePrep(coeffs, control)
-            ).decomposition()
-
-        ops = prep_ops + select_ops + adjoint_prep_ops
-
-        for op in ops:
-            if qml.QueuingManager.recording():
-                qml.apply(op)
+        ops = [qml.StatePrep(coeffs, control), qml.Select(ops, control),
+               qml.adjoint(qml.StatePrep(coeffs, control))]
 
         return ops
 
