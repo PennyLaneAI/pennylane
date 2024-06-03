@@ -17,7 +17,7 @@
 # pylint: disable=consider-using-generator, protected-access
 import os
 from functools import singledispatch
-import datetime;
+import datetime
 
 
 import numpy as np
