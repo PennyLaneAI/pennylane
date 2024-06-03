@@ -493,7 +493,7 @@ class QubitDevice(Device):
             )
 
         if self.capabilities().get("supports_mid_measure", False):
-            kwargs.setdefault("postselect_mode", "hw-like")
+            kwargs.setdefault("postselect_mode", None)
 
         results = []
         for circuit in circuits:

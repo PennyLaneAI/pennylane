@@ -1752,9 +1752,9 @@ class TestMCMConfiguration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", [None, "best"])
-    def test_defer_measurements_hw_like_with_jit(self, diff_method, mocker):
-        """Test that using mcm_method="deferred" with postselect_mode="hw-like" defaults
-        to behaviour like postselect_mode="fill-shots" when using jax jit."""
+    def test_defer_measurements_with_jit(self, diff_method, mocker):
+        """Test that using mcm_method="deferred" defaults to behaviour like
+        postselect_mode="fill-shots" when using jax jit."""
         import jax  # pylint: disable=import-outside-toplevel
 
         shots = 100
@@ -1765,7 +1765,7 @@ class TestMCMConfiguration:
 
         dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
 
-        @qml.qnode(dev, diff_method=diff_method, postselect_mode="hw-like", mcm_method="deferred")
+        @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred")
         def f(x):
             qml.RX(x, 0)
             qml.measure(0, postselect=postselect)
@@ -1782,6 +1782,36 @@ class TestMCMConfiguration:
         assert len(res_jit) == shots
         assert qml.math.allclose(res, postselect)
         assert qml.math.allclose(res_jit, postselect)
+
+    @pytest.mark.jax
+    # @pytest.mark.parametrize("diff_method", [None, "best"])
+    @pytest.mark.parametrize("diff_method", ["best"])
+    def test_hw_like_error_with_jit(self, diff_method):
+        """Test that an error is raised if attempting to use postselect_mode="hw-like"
+        with jax jit."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        shots = 100
+        postselect = 1
+        param = jax.numpy.array(np.pi / 2)
+
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
+
+        @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred", postselect_mode="hw-like")
+        def f(x):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=postselect)
+            return qml.sample(wires=0)
+
+        f_jit = jax.jit(f)
+
+        # Checking that an error is not raised without jit
+        _ = f(param)
+
+        with pytest.raises(
+            ValueError, match="Using postselect_mode='hw-like' is not supported with jax-jit."
+        ):
+            _ = f_jit(param)
 
 
 class TestTapeExpansion:

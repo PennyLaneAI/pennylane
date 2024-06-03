@@ -30,11 +30,11 @@ class MCMConfig:
     for each shot separately. If not specified, the device will decide which method to
     use."""
 
-    postselect_mode: str = "hw-like"
+    postselect_mode: Optional[str] = None
     """Configuration for handling shots with mid-circuit measurement postselection. If
     ``"hw-like"``, invalid shots will be discarded and only results for valid shots will
     be returned. If ``"fill-shots"``, results corresponding to the original number of
-    shots will be returned."""
+    shots will be returned. If not specified, the device will decide which mode to use."""
 
 
 # pylint: disable=too-many-instance-attributes

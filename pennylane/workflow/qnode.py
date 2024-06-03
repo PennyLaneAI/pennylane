@@ -222,8 +222,8 @@ class QNode:
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
-            default is ``"hw-like"``. For usage details, please refer to the
-            :doc:`main measurements page </introduction/measurements>`.
+            default is ``None``, in which case the device will automatically choose the best configuration. For
+            usage details, please refer to the :doc:`main measurements page </introduction/measurements>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
             or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately. If not provided,
@@ -452,7 +452,7 @@ class QNode:
         cachesize=10000,
         max_diff=1,
         device_vjp=False,
-        postselect_mode="hw-like",
+        postselect_mode=None,
         mcm_method=None,
         **gradient_kwargs,
     ):
@@ -520,10 +520,9 @@ class QNode:
         self.max_expansion = max_expansion
         cache = (max_diff > 1) if cache == "auto" else cache
 
-        postselect_mode = postselect_mode or "hw-like"
         if mcm_method not in ("deferred", "one-shot", None):
             raise ValueError(f"Invalid mid-circuit measurements method '{mcm_method}'.")
-        if postselect_mode not in ("hw-like", "fill-shots"):
+        if postselect_mode not in ("hw-like", "fill-shots", None):
             raise ValueError(f"Invalid postselection mode '{postselect_mode}'.")
 
         # execution keyword arguments

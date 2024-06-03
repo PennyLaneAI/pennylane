@@ -561,6 +561,8 @@ def execute(
     if interface == "jax-jit" and config.mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
+        if config.mcm_config.postselect_mode == "hw-like":
+            raise ValueError("Using postselect_mode='hw-like' is not supported with jax-jit.")
         config.mcm_config.postselect_mode = "fill-shots"
 
     if transform_program is None:
