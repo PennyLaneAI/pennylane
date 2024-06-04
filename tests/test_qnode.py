@@ -1718,11 +1718,10 @@ class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
-    def test_one_shot_warning_without_shots(self, dev_name, mocker):
-        """Test that a warning is raised if mcm_method="one-shot" with no shots"""
+    def test_one_shot_error_without_shots(self, dev_name):
+        """Test that an error is raised if mcm_method="one-shot" with no shots"""
         dev = qml.device(dev_name, wires=3)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
-        one_shot_spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+        param = np.pi / 4
 
         @qml.qnode(dev, mcm_method="one-shot")
         def f(x):
@@ -1730,15 +1729,10 @@ class TestMCMConfiguration:
             _ = qml.measure(0)
             return qml.probs(wires=[0, 1])
 
-        param = np.pi / 4
-
-        with pytest.warns(
-            UserWarning, match="Cannot use the 'one-shot' method for mid-circuit measurements with"
+        with pytest.raises(
+            ValueError, match="Cannot use the 'one-shot' method for mid-circuit measurements with"
         ):
             _ = f(param)
-
-        assert spy.call_count != 0
-        one_shot_spy.assert_not_called()
 
     def test_invalid_mcm_method_error(self):
         """Test that an error is raised if the requested mcm_method is invalid"""

@@ -1884,7 +1884,12 @@ class TestPostselection:
 
     @pytest.mark.parametrize(
         "mp, expected_shape",
-        [(qml.sample(wires=[0, 2]), (5, 2)), (qml.classical_shadow(wires=[0, 2]), (2, 5, 2))],
+        [
+            (qml.sample(wires=[0, 2]), (5, 2)),
+            (qml.classical_shadow(wires=[0, 2]), (2, 5, 2)),
+            (qml.sample(wires=[0]), (5,)),
+            (qml.classical_shadow(wires=[0]), (2, 5, 1)),
+        ],
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
     @pytest.mark.parametrize("shots", [10, (10, 10)])

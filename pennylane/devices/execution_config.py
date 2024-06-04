@@ -36,6 +36,17 @@ class MCMConfig:
     be returned. If ``"fill-shots"``, results corresponding to the original number of
     shots will be returned. If not specified, the device will decide which mode to use."""
 
+    def __post_init__(self):
+        """
+        Validate the configured mid-circuit measurement options.
+
+        Note that this hook is automatically called after init via the dataclass integration.
+        """
+        if self.mcm_method not in ("deferred", "one-shot", None):
+            raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
+        if self.postselect_mode not in ("hw-like", "fill-shots", None):
+            raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+
 
 # pylint: disable=too-many-instance-attributes
 @dataclass

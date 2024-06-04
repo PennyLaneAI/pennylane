@@ -36,7 +36,7 @@ def test_default_values():
 def test_mcm_config_default_values():
     """Test that the default values of MCMConfig are correct"""
     mcm_config = MCMConfig()
-    assert mcm_config.postselect_mode == "hw-like"
+    assert mcm_config.postselect_mode is None
     assert mcm_config.mcm_method is None
 
 
@@ -62,7 +62,7 @@ def test_invalid_grad_on_execution():
 @pytest.mark.parametrize(
     "option", [MCMConfig(mcm_method="deferred"), {"mcm_method": "deferred"}, None]
 )
-def test_valid_mcm_config(option):
+def test_valid_execution_config_mcm_config(option):
     """Test that the mcm_config attribute is set correctly"""
     config = ExecutionConfig(mcm_config=option) if option else ExecutionConfig()
     if option is None:
@@ -71,8 +71,22 @@ def test_valid_mcm_config(option):
         assert config.mcm_config == MCMConfig(mcm_method="deferred")
 
 
-def test_invalid_mcm_config():
+def test_invalid_execution_config_mcm_config():
     """Test that an error is raised if mcm_config is set incorrectly"""
     option = "foo"
     with pytest.raises(ValueError, match="Got invalid type"):
         _ = ExecutionConfig(mcm_config=option)
+
+
+def test_mcm_config_invalid_mcm_method():
+    """Test that an error is raised if creating MCMConfig with invalid mcm_method"""
+    option = "foo"
+    with pytest.raises(ValueError, match="Invalid mid-circuit measurements method"):
+        _ = MCMConfig(mcm_method=option)
+
+
+def test_mcm_config_invalid_postselect_mode():
+    """Test that an error is raised if creating MCMConfig with invalid postselect_mode"""
+    option = "foo"
+    with pytest.raises(ValueError, match="Invalid postselection mode"):
+        _ = MCMConfig(postselect_mode=option)

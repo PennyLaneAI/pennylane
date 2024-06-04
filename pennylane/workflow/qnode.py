@@ -1042,12 +1042,9 @@ class QNode:
 
         finite_shots = _get_device_shots if override_shots is False else override_shots
         if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
-            warnings.warn(
-                "Cannot use the 'one-shot' method for mid-circuit measurements with "
-                "analytic mode. Using deferred measurements.",
-                UserWarning,
+            raise ValueError(
+                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
             )
-            self.execute_kwargs["mcm_config"]["mcm_method"] = "deferred"
 
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):

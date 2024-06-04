@@ -270,7 +270,7 @@ def _make_inner_execute(
         dev_execute = (
             device.batch_execute
             # If this condition is not met, then dev.batch_execute likely also doesn't include
-            # any kwargs in its signature, hence why we use partial
+            # any kwargs in its signature, hence why we use partial conditionally
             if execution_config is None
             or not device.capabilities().get("supports_mid_measure", False)
             else partial(
@@ -576,11 +576,7 @@ def execute(
     )
 
     # Mid-circuit measurement configuration validation
-    if interface is None:
-        mcm_interface = "auto"
-        mcm_interface = _get_interface_name(tapes, mcm_interface)
-    else:
-        mcm_interface = interface
+    mcm_interface = _get_interface_name(tapes, "auto") if interface is None else interface
     if mcm_interface == "jax-jit" and config.mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
