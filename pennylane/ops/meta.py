@@ -203,6 +203,8 @@ class Snapshot(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, tag=None, measurement=None):
+        if measurement is None:
+            return cls._primitive.bind(measurement=measurement, tag=tag)
         return cls._primitive.bind(measurement, tag=tag)
 
     def __init__(self, tag=None, measurement=None):
