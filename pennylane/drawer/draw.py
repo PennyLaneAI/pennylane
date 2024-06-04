@@ -18,7 +18,6 @@ Contains the drawing function.
 """
 import warnings
 from functools import wraps
-from importlib.metadata import distribution
 
 import pennylane as qml
 
@@ -27,12 +26,8 @@ from .tape_text import tape_text
 
 
 def catalyst_qjit(qnode):
-    """The ``catalyst.while`` wrapper method"""
-    try:
-        distribution("pennylane_catalyst")
-        return qnode.__class__.__name__ == "QJIT"
-    except ImportError:
-        return False
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
 def draw(
