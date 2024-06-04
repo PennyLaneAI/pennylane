@@ -488,6 +488,10 @@ class Controlled(SymbolicOp):
     def ndim_params(self):
         return self.base.ndim_params
 
+    @property
+    def grad_method(self):
+        return self.base.grad_method
+
     # Properties on the control values ######################
     @property
     def control_values(self):
@@ -730,7 +734,6 @@ class Controlled(SymbolicOp):
             work_wires=self.work_wires,
         )
 
-
 def _is_single_qubit_special_unitary(op):
     if not op.has_matrix or len(op.wires) != 1:
         return False
@@ -848,10 +851,6 @@ class ControlledOp(Controlled, operation.Operation):
     @property
     def name(self):
         return self._name
-
-    @property
-    def grad_method(self):
-        return self.base.grad_method
 
     @property
     def parameter_frequencies(self):

@@ -20,15 +20,17 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as pnp
 
 
 @pytest.mark.parametrize(
     ("lcu", "control"),
     [
         (qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
-        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
-        (qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1]),
+        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1]),
+        (
+            qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(4)]),
+            [0, 1, 2, 3],
+        ),
     ],
 )
 def test_standard_checks(lcu, control):
@@ -69,16 +71,16 @@ class TestPrepSelPrep:
     lcu5 = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)])
     lcu6 = qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)])
     lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
-    lcu8 = qml.dot([0.5, 0.5j], [qml.X(1), qml.Z(1)])
+    lcu8 = qml.dot([0.5, 0.5j], [qml.X(2), qml.Z(2)])
 
     @staticmethod
     def manual_circuit(lcu, control):
         """Circuit equivalent to decomposition of PrepSelPrep"""
         coeffs, ops = qml.PrepSelPrep.preprocess_lcu(lcu)
 
-        qml.StatePrep(coeffs, wires=control)
+        qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control)
         qml.Select(ops, control=control)
-        qml.adjoint(qml.StatePrep(coeffs, wires=control))
+        qml.adjoint(qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control))
 
         return qml.state()
 
@@ -97,40 +99,40 @@ class TestPrepSelPrep:
         ("lcu", "control", "produced_matrix", "expected_matrix"),
         [
             (
-               lcu1,
-               0,
-               qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-               qml.matrix(manual, wire_order=[0, 1, 2]),
+                lcu1,
+                0,
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
             (
-               lcu2,
-               'ancilla',
-               qml.matrix(prepselprep, wire_order=['ancilla', 0]),
-               qml.matrix(manual, wire_order=['ancilla', 0]),
+                lcu2,
+                "ancilla",
+                qml.matrix(prepselprep, wire_order=["ancilla", 0]),
+                qml.matrix(manual, wire_order=["ancilla", 0]),
             ),
             (
-               lcu3,
-               [0],
-               qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-               qml.matrix(manual, wire_order=[0, 1, 2]),
+                lcu3,
+                [0],
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
             (
-               lcu4,
-               [0],
-               qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-               qml.matrix(manual, wire_order=[0, 1, 2]),
+                lcu4,
+                [0],
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
             (
-               lcu5,
-               [0, 1],
-               qml.matrix(prepselprep, wire_order=[0, 1, 2, 3]),
-               qml.matrix(manual, wire_order=[0, 1, 2, 3]),
+                lcu5,
+                [0, 1],
+                qml.matrix(prepselprep, wire_order=[0, 1, 2, 3]),
+                qml.matrix(manual, wire_order=[0, 1, 2, 3]),
             ),
             (
-               lcu6,
-               [0],
-               qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-               qml.matrix(manual, wire_order=[0, 1, 2]),
+                lcu6,
+                [0],
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
             ),
             (
                 lcu7,
@@ -140,10 +142,10 @@ class TestPrepSelPrep:
             ),
             (
                 lcu8,
-                [0],
-                qml.matrix(prepselprep, wire_order=[0, 1]),
-                qml.matrix(manual, wire_order=[0, 1])
-            )
+                [0, 1],
+                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
+                qml.matrix(manual, wire_order=[0, 1, 2]),
+            ),
         ],
     )
     def test_decomposition(self, lcu, control, produced_matrix, expected_matrix):
@@ -158,13 +160,18 @@ class TestPrepSelPrep:
         ("lcu", "control", "wire_order", "dim"),
         [
             (qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
-            (qml.dot([0.5j, -0.5j], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
+            (qml.dot([0.5j, -0.5j], [qml.Z(2), qml.X(2)]), [0, 1], [0, 1, 2], 2),
             (qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]), "ancilla", ["ancilla", 0], 2),
-            (qml.dot([0.5, 0.5, 0.5], [qml.PauliX(2), qml.PauliY(2), qml.PauliZ(2)]), [0, 1], [0, 1, 2], 2),
+            (
+                qml.dot([0.5, 0.5, 0.5], [qml.PauliX(2), qml.PauliY(2), qml.PauliZ(2)]),
+                [0, 1],
+                [0, 1, 2],
+                2,
+            ),
             (qml.dot([0.5, 0.5 + 0.5j], [qml.PauliX(2), qml.PauliY(2)]), [0, 1], [0, 1, 2], 2),
-            (qml.dot([1., 0.], [qml.PauliY(1), qml.PauliZ(1)]), [0], [0, 1], 2),
-            (qml.dot([0.5, 0.5j], [qml.X(1), qml.Z(1)]), [0], [0, 1], 2),
-            (qml.dot([1., 1., 1.], [qml.X(2), qml.Y(2), qml.Z(2)]), [0, 1], [0, 1, 2], 2)
+            (qml.dot([1.0, 0.0], [qml.PauliY(1), qml.PauliZ(1)]), [0], [0, 1], 2),
+            (qml.dot([0.5, 0.5j], [qml.X(2), qml.Z(2)]), [0, 1], [0, 1, 2], 2),
+            (qml.dot([1.0, 1.0, 1.0], [qml.X(2), qml.Y(2), qml.Z(2)]), [0, 1], [0, 1, 2], 2),
         ],
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
@@ -188,21 +195,30 @@ class TestPrepSelPrep:
                 lcu1,
                 [0],
                 [
-                    qml.StatePrep(normalized1, wires=[0]),
+                    qml.AmplitudeEmbedding(normalized1, normalize=True, pad_with=0, wires=[0]),
                     qml.Select(
                         [
-                        qml.ops.QubitUnitary(
-                            qml.math.array([[0.0 + 0j, 0.0 + 0.0j], [0.0 + 0.0j, -1.0 + 0.0j]]), wires=1),
-                        qml.ops.QubitUnitary(
-                            qml.math.array(
-                                [
-                                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j],
-                                    [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j],
-                                    [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                                    [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                                ]), wires=[1, 2])
-                        ], control=[0]),
-                    qml.ops.Adjoint(qml.StatePrep(normalized1, wires=[0])),
+                            qml.ops.QubitUnitary(
+                                qml.math.array([[0.0 + 0j, 0.0 + 0.0j], [0.0 + 0.0j, -1.0 + 0.0j]]),
+                                wires=1,
+                            ),
+                            qml.ops.QubitUnitary(
+                                qml.math.array(
+                                    [
+                                        [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j],
+                                        [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j],
+                                        [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                                        [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                                    ]
+                                ),
+                                wires=[1, 2],
+                            ),
+                        ],
+                        control=[0],
+                    ),
+                    qml.ops.Adjoint(
+                        qml.AmplitudeEmbedding(normalized1, normalize=True, pad_with=0, wires=[0])
+                    ),
                 ],
             )
         ],
@@ -256,188 +272,75 @@ class TestPrepSelPrep:
         assert op is not new_op
 
 
-class TestErrors:
-    """Tests that the template propertly raises errors"""
+def test_control_in_ops():
+    """Test that using an operation wire as a control wire results in an error"""
 
-    def test_control_in_ops(self):
-        """Test that using an operation wire as a control wire results in an error"""
+    lcu = qml.dot([1 / 2, 1 / 2], [qml.Identity(0), qml.PauliZ(0)])
+    with pytest.raises(ValueError, match="Control wires should be different from operation wires."):
+        qml.PrepSelPrep(lcu, control=0)
 
-        lcu = qml.dot([1 / 2, 1 / 2], [qml.Identity(0), qml.PauliZ(0)])
-        with pytest.raises(ValueError, match="Control wires should be different from operation wires."):
-            qml.PrepSelPrep(lcu, control=0)
-
-    def test_jit_not_power_2(self):
-        """Test that calling jit with a non-power of 2 number of terms results in an error"""
-
-        lcu = qml.dot([1, 2, 3], [qml.Identity(1), qml.PauliZ(1), qml.PauliX(1)])
-        with pytest.raises(ValueError, match="Number of terms must be a power of 2."):
-            qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
-
-    def test_jit_complex_coeff(self):
-        """Test that calling jit with complex coefficients results in an error"""
-        lcu = qml.dot([0.5j, 1], [qml.PauliZ(1), qml.PauliX(1)])
-        with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
-            qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
-
-    def test_jit_negative_coeff(self):
-        """Test that calling jit with complex coefficients results in an error"""
-        import jax.numpy as jnp
-
-        coeffs = jnp.array([0.5, -1])
-        lcu = qml.ops.LinearCombination(coeffs, [qml.PauliZ(1), qml.PauliX(1)])
-        with pytest.raises(ValueError, match="Coefficients must be positive real numbers."):
-            qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
-
-    def test_jit_not_normalized(self):
-        """Test that calling jit without normalized coefficients results in an error"""
-        import jax.numpy as jnp
-
-        coeffs = jnp.array([1., 1.])
-        lcu = qml.ops.LinearCombination(coeffs, [qml.PauliZ(1), qml.PauliX(1)])
-        with pytest.raises(ValueError, match="Coefficients must have norm 1."):
-            qml.PrepSelPrep(lcu, control=0, jit=True).decomposition()
 
 class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
 
-    @pytest.mark.parametrize(
-        ("coeffs", "ops", "control", "wire_order"),
-        [(pnp.array([1., 1.], requires_grad=True), [qml.Y(1), qml.Z(1)], [0], [0, 1]),
-         (pnp.array([0.5, -0.5], requires_grad=True), [qml.Y(1), qml.Z(1)], [0], [0, 1]),
-         (pnp.array([0.5, 0.5j], requires_grad=True), [qml.Y(1), qml.Z(1)], [0], [0, 1]),
-         ])
+    @staticmethod
+    def circuit(coeffs):
+        """A circuit to test the gradients on"""
+        H = qml.ops.LinearCombination(
+            coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+        )
+        qml.PrepSelPrep(H, control=(3, 4))
+        return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
+
+    params = np.array([0.4, 0.5, 0.1, 0.3])
+
+    # computed with finite differnces
+    exp_grad = [0.59156084, 0.29806366, 1.73106814, -1.86254326]
+
     @pytest.mark.autograd
-    def test_autograd(self, coeffs, ops, control, wire_order):
+    def test_autograd(self):
         """Test the autograd interface"""
-
         dev = qml.device("default.qubit")
-        preprocessed_coeffs, preprocessed_ops = qml.PrepSelPrep.preprocess_lcu(qml.ops.LinearCombination(coeffs, ops))
-        print(preprocessed_coeffs.requires_grad)
+        qnode = qml.QNode(self.circuit, dev, diff_method="finite-diff", interface="autograd")
 
-        @qml.qnode(dev, diff_method="finite-diff")
-        def prepselprep(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, preprocessed_ops)
-            qml.PrepSelPrep(lcu, control=control)
-            return qml.expval(qml.Z(1))
+        params = qml.numpy.array(self.params, requires_grad=True)
+        res = qml.grad(qnode)(params)
 
-        @qml.qnode(dev)
-        def manual(coeffs):
-            qml.StatePrep(coeffs, wires=control)
-            qml.Select(preprocessed_ops, control=control)
-            qml.adjoint(qml.StatePrep(coeffs, wires=control))
-            return qml.expval(qml.Z(1))
+        assert qml.math.shape(res) == (4,)
+        assert np.allclose(res, self.exp_grad, atol=1e-5)
 
-        grad_prepselprep = qml.grad(prepselprep)(preprocessed_coeffs)
-        grad_manual = qml.grad(manual)(preprocessed_coeffs)
-
-        assert not any(qml.math.isnan(grad_prepselprep))
-        assert not any(qml.math.isnan(grad_manual))
-        assert qml.math.get_interface(qml.matrix(prepselprep, wire_order=wire_order)(preprocessed_coeffs)) == "autograd"
-
-        assert qml.math.allclose(grad_prepselprep, grad_manual)
-
-        fd_prepselprep = qml.jacobian(prepselprep)(preprocessed_coeffs)
-        assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
-
-    @pytest.mark.parametrize(
-        ("coeffs", "ops", "control", "wire_order"),
-        [([1., 1.], [qml.Y(1), qml.Z(1)], [0], [0, 1]),
-         ([0.5, -0.5], [qml.Y(1), qml.Z(1)], [0], [0, 1]),
-         ([0.5, 0.5j], [qml.Y(1), qml.Z(1)], [0], [0, 1]),
-         ])
     @pytest.mark.jax
-    def test_jax(self, coeffs, ops, control, wire_order):
+    def test_jax(self):
         """Test the jax interface"""
         import jax
-        import jax.numpy as jnp
 
         dev = qml.device("default.qubit")
-        coeffs = jnp.array(coeffs)
-        preprocessed_coeffs, preprocessed_ops = qml.PrepSelPrep.preprocess_lcu(qml.ops.LinearCombination(coeffs, ops))
+        qnode = qml.QNode(self.circuit, dev, diff_method="finite-diff", interface="jax")
 
-        @qml.qnode(dev, diff_method="finite-diff")
-        def prepselprep(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, preprocessed_ops)
-            qml.PrepSelPrep(lcu, control=0)
-            return qml.expval(qml.Z(1))
+        params = jax.numpy.array(self.params)
+        res = jax.grad(qnode)(params)
 
-        @qml.qnode(dev)
-        def manual(coeffs):
-            qml.StatePrep(coeffs, wires=control)
-            qml.Select(ops, control=control)
-            qml.adjoint(qml.StatePrep(coeffs, wires=control))
-            return qml.expval(qml.Z(1))
+        assert qml.math.shape(res) == (4,)
+        assert np.allclose(res, self.exp_grad, atol=1e-5)
 
-        grad_prepselprep = jax.grad(prepselprep)(preprocessed_coeffs)
-        grad_manual = jax.grad(manual)(preprocessed_coeffs)
-
-        assert not any(qml.math.isnan(grad_prepselprep))
-        assert not any(qml.math.isnan(grad_manual))
-        assert qml.math.get_interface(qml.matrix(prepselprep, wire_order=wire_order)(preprocessed_coeffs)) == "jax"
-        assert qml.math.allclose(grad_prepselprep, grad_manual)
-
-        fd_prepselprep = jax.jacobian(prepselprep)(preprocessed_coeffs)
-        assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
-
-    @pytest.mark.parametrize(
-        ("coeffs","ops", "control"),
-        [([1., 1.], [qml.Y(2), qml.Z(2)], [0]),
-         ([0.5, -0.5], [qml.Y(2), qml.Z(2)], [0]),
-         ([0.5, 0.5j], [qml.Y(2), qml.Z(2)], [0]),
-         ])
     @pytest.mark.jax
-    def test_jit(self, coeffs, ops, control):
+    def test_jit(self):
         """Test that jit works with the preprocessed output"""
         import jax
-        import jax.numpy as jnp
 
         dev = qml.device("default.qubit")
-        coeffs = jnp.array(coeffs)
-        lcu = qml.ops.LinearCombination(coeffs, ops)
-        preprocessed_coeffs, preprocessed_ops = qml.PrepSelPrep.preprocess_lcu(lcu)
-        assert len(preprocessed_coeffs) == len(preprocessed_ops)
-
-        @jax.jit
-        @qml.qnode(dev)
-        def prepselprep(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs, preprocessed_ops)
-            qml.PrepSelPrep(lcu, control=control, jit=True)
-            return qml.expval(qml.Z(2))
-
-        @jax.jit
-        @qml.qnode(dev)
-        def manual(coeffs):
-            qml.StatePrep(coeffs, wires=control)
-            qml.Select(preprocessed_ops, control=control)
-            qml.adjoint(qml.StatePrep(coeffs, wires=control))
-            return qml.expval(qml.Z(2))
-
-        grad_prepselprep = jax.grad(prepselprep)(preprocessed_coeffs)
-        grad_manual = jax.grad(manual)(preprocessed_coeffs)
-
-        print(grad_prepselprep, grad_manual)
-        assert not any(qml.math.isnan(grad_prepselprep))
-        assert not any(qml.math.isnan(grad_manual))
-        assert qml.math.allclose(grad_prepselprep, grad_manual)
-
-        fd_prepselprep = jax.jacobian(prepselprep)(preprocessed_coeffs)
-        assert qml.math.allclose(grad_prepselprep, fd_prepselprep)
-
-    @pytest.mark.jax
-    def test_jit2(self):
-        """Test the example in the PR"""
-        import jax
-        coeffs = jax.numpy.array([-1., 1., 1.])
-        ops = [qml.Z(1), qml.X(1), qml.Y(1)]
-        dev = qml.device('default.qubit')
-        lcu = qml.ops.LinearCombination(coeffs,ops)
-        coeffs, ops = qml.PrepSelPrep.preprocess_lcu(lcu)
 
         @jax.jit
         @qml.qnode(dev)
         def circuit(coeffs):
-            lcu = qml.ops.LinearCombination(coeffs,ops)
-            qml.PrepSelPrep(lcu, control = [0,2], jit=True)
-            return qml.state()
+            H = qml.ops.LinearCombination(
+                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+            )
+            qml.PrepSelPrep(H, control=(3, 4))
+            return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
-        circuit(coeffs)
+        params = jax.numpy.array(self.params)
+        res = jax.grad(circuit)(params)
+
+        assert qml.math.shape(res) == (4,)
+        assert np.allclose(res, self.exp_grad, atol=1e-5)

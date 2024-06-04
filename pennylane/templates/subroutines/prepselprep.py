@@ -18,32 +18,73 @@ linear combination of unitaries using the Prepare, Select, Prepare method.
 """
 # pylint: disable=arguments-differ,import-outside-toplevel,too-many-arguments
 import copy
-import itertools
-import math
 
 import pennylane as qml
 from pennylane.operation import Operation
 
-def is_pow2(n):
-    """Returns true if n is a power of 2, false otherwise"""
-    return ((n & (n - 1) == 0) and n != 0)
+
+def get_new_terms(lcu):
+    """Compute a new sum of unitaries with positive coefficients"""
+
+    coeffs, _ = lcu.terms()
+
+    if qml.math.iscomplexobj(coeffs):
+        new_coeffs, new_ops = new_terms_is_complex(lcu)
+    else:
+        new_coeffs, new_ops = new_terms_is_real(lcu)
+
+    interface = qml.math.get_interface(lcu.terms()[0])
+    new_coeffs = qml.math.array(new_coeffs, like=interface)
+
+    return new_coeffs, new_ops
+
+
+def new_terms_is_complex(lcu):
+    """Computes new terms when the coefficients are complex.
+    This doubles the number of terms."""
+
+    new_coeffs = []
+    new_ops = []
+    for coeff, op in zip(*lcu.terms()):
+        real = qml.math.real(coeff)
+        imag = qml.math.imag(coeff)
+
+        sign = qml.math.sign(real)
+        new_coeffs.append(sign * real)
+        new_ops.append(qml.ops.LinearCombination([sign], [op]))
+
+        sign = qml.math.sign(imag)
+        new_coeffs.append(sign * imag)
+        new_ops.append(qml.ops.LinearCombination([1j * sign], [op]))
+
+    return new_coeffs, new_ops
+
+
+def new_terms_is_real(lcu):
+    """Computes new terms when the coefficients are real.
+    This preserves the number of terms."""
+
+    new_coeffs = []
+    new_ops = []
+    for coeff, op in zip(*lcu.terms()):
+        sign = qml.math.sign(coeff)
+        new_coeffs.append(sign * coeff)
+        new_ops.append(qml.ops.LinearCombination([sign], [op]))
+
+    return new_coeffs, new_ops
+
 
 class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
     using the Prepare, Select, Prepare method"""
 
-
-    num_wires = qml.operation.AnyWires
-    grad_method = "A"
-
-    def __init__(self, lcu, control=None, jit=False, id=None):
+    def __init__(self, lcu, control=None, id=None):
         coeffs, ops = lcu.terms()
         control = qml.wires.Wires(control)
         self.hyperparameters["lcu"] = lcu
         self.hyperparameters["coeffs"] = coeffs
         self.hyperparameters["ops"] = ops
         self.hyperparameters["control"] = control
-        self.hyperparameters["jit"] = jit
 
         if any(
             control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
@@ -77,110 +118,46 @@ class PrepSelPrep(Operation):
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
-        return self.compute_decomposition(self.lcu, self.control, jit=self.jit)
-
-    @staticmethod
-    def get_new_terms(lcu):
-        """Compute a new sum of unitaries with positive coefficients"""
-
-        new_coeffs = []
-        new_ops = []
-
-        for coeff, op in zip(*lcu.terms()):
-            if qml.math.allclose(coeff, 0):
-                new_coeffs.append(coeff)
-                new_ops.append(op)
-                continue
-
-            real = qml.math.real(coeff)
-            if not qml.math.allclose(real, 0):
-                sign = qml.math.sign(real)
-                new_coeffs.append(sign*real)
-                new_ops.append(sign*op)
-
-            imag = qml.math.imag(coeff)
-            if not qml.math.allclose(imag, 0):
-                sign = qml.math.sign(imag)
-                new_coeffs.append(sign*imag)
-                new_ops.append(1j*sign*op)
-
-        return new_coeffs, new_ops
+        return self.compute_decomposition(self.lcu, self.control)
 
     @staticmethod
     def normalization_factor(lcu):
         """Return the normalization factor lambda such that
         A/lambda is in the upper left of the block encoding"""
 
-        new_coeffs, _ = PrepSelPrep.get_new_terms(lcu)
+        new_coeffs, _ = get_new_terms(lcu)
         return qml.math.sum(new_coeffs)
 
     @staticmethod
     def preprocess_lcu(lcu):
-        """Convert LCU into an equivalent form with positive real coefficients,
-        and a power of 2 number of terms"""
+        """Convert LCU into an equivalent form with positive real coefficients"""
 
-        new_coeffs, new_ops = PrepSelPrep.get_new_terms(lcu)
+        new_coeffs, new_ops = get_new_terms(lcu)
 
-        all_op_wires = qml.wires.Wires.all_wires([op.wires for op in new_ops])
-        final_ops = []
+        new_unitaries = []
         for op in new_ops:
             if len(op.wires) == 0:
                 unitary = op
             else:
                 unitary = qml.QubitUnitary(qml.matrix(op), wires=op.wires)
 
-            final_ops.append(unitary)
+            new_unitaries.append(unitary)
 
-        if is_pow2(len(new_coeffs)):
-            pow2 = len(new_coeffs)
-        else:
-            pow2 = 2 ** math.ceil(math.log2(len(new_coeffs)))
-
-        pad_zeros = list(itertools.repeat(0, pow2 - len(new_coeffs)))
-        with qml.QueuingManager.stop_recording():
-            pad_ident = list(itertools.repeat(qml.Identity(all_op_wires), pow2-len(new_ops)))
-
-        interface_coeffs = qml.math.get_interface(lcu.terms()[0])
-        final_coeffs = qml.math.array(new_coeffs + pad_zeros, like=interface_coeffs)
-        final_ops = final_ops + pad_ident
-
-        if not qml.math.allclose(qml.math.norm(final_coeffs), 1):
-            final_coeffs = qml.math.sqrt(final_coeffs) / qml.math.norm(qml.math.sqrt(final_coeffs))
-
-        return final_coeffs, final_ops
+        return new_coeffs, new_unitaries
 
     @staticmethod
-    def compute_decomposition(lcu, control, jit=False):
-        if jit:
-            import jax
+    def compute_decomposition(lcu, control):
+        coeffs, ops = get_new_terms(lcu)
+        print([type(op) for op in ops])
 
-            def raiseIfNegative(x):
-                if x < 0:
-                    raise ValueError("Coefficients must be positive real numbers.")
+        decomp_ops = []
+        decomp_ops.append(qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control))
+        decomp_ops.append(qml.Select(ops, control))
+        decomp_ops.append(
+            qml.adjoint(qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control))
+        )
 
-            def raiseIfNotOne(x):
-                if not qml.math.allclose(x, 1):
-                    raise ValueError("Coefficients must have norm 1.")
-
-            coeffs, ops = lcu.terms()
-
-            if not is_pow2(len(coeffs)):
-                raise ValueError("Number of terms must be a power of 2.")
-
-            if jax.numpy.iscomplexobj(coeffs):
-                raise ValueError("Coefficients must be positive real numbers.")
-
-            smallest = jax.numpy.min(coeffs)
-            jax.debug.callback(raiseIfNegative, smallest)
-            jax.debug.callback(raiseIfNotOne, qml.math.norm(coeffs))
-
-        else:
-            coeffs, ops = PrepSelPrep.preprocess_lcu(lcu)
-
-        ops = [qml.StatePrep(coeffs, control), qml.Select(ops, control),
-               qml.adjoint(qml.StatePrep(coeffs, control))]
-
-        return ops
+        return decomp_ops
 
     def __copy__(self):
         """Copy this op"""
@@ -205,7 +182,7 @@ class PrepSelPrep(Operation):
     @data.setter
     def data(self, new_data):
         """Set the data property"""
-        self.hyperparameters['lcu'].data = new_data
+        self.hyperparameters["lcu"].data = new_data
 
     @property
     def coeffs(self):
@@ -236,8 +213,3 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
-
-    @property
-    def jit(self):
-        """Prevent preprocessing to enable Jax Jit"""
-        return self.hyperparameters["jit"]
