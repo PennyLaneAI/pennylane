@@ -364,6 +364,7 @@ def create_op_instance(c):
     return c(*params, wires=wires) if wires else c(*params)
 
 
+@pytest.mark.jax
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[14:20] == "qutrit":
@@ -386,6 +387,7 @@ def test_generated_list_of_ops(class_to_validate):
     assert_valid(op)
 
 
+@pytest.mark.jax
 def test_explicit_list_of_ops(valid_instance):
     """Test the validity of operators that could not be auto-generated."""
     if valid_instance.name == "Hamiltonian":
@@ -395,6 +397,7 @@ def test_explicit_list_of_ops(valid_instance):
         assert_valid(valid_instance)
 
 
+@pytest.mark.jax
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error
