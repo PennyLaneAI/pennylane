@@ -160,7 +160,7 @@ class DefaultTensor(Device):
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
-        method (str): Supported method. Currently, the supported methods are 'mps' (Matrix Product State) and 'tn' (Exact Tensor Network).
+        method (str): Supported method. Currently, the supported methods are ``'mps'``(Matrix Product State) and ``'tn'`` (Exact Tensor Network).
         dtype (type): Data type for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
@@ -173,7 +173,13 @@ class DefaultTensor(Device):
             ``nonlocal`` turns each gate into a Matrix Product Operator (MPO) and applies it directly to the MPS,
             while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next to each other before applying the gate,
             then swaps them back. Default is ``auto-mps``. TODO: update description with new choices
-        # TODO: add kwargs for TN
+        contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
+            Default is ``auto-hq``. For more information on available optimizers, see the
+            `quimb documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
+        local_simplify (str): The simplification sequence to apply to the tensor network used for the computation of local expectation values.
+            Default is ``ADCRS``. For a complete list of available sequences, see the
+            `quimb documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
+
 
     **Example:**
 
@@ -250,10 +256,12 @@ class DefaultTensor(Device):
 
     _device_options = (
         "contract",
+        "contraction_optimizer",
         "cutoff",
         "dtype",
-        "method",
+        "local_simplify",
         "max_bond_dim",
+        "method",
     )
 
     def __init__(
@@ -285,13 +293,14 @@ class DefaultTensor(Device):
         self._method = method
         self._dtype = dtype
 
-        # options both for MPS and TN
-        # TODO: add options
-
         # options for MPS
         self._max_bond_dim = kwargs.get("max_bond_dim", None)
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
         self._contract = kwargs.get("contract", "auto-mps")
+
+        # options both for MPS and TN
+        self._local_simplify = kwargs.get("local_simplify", "ADCRS")
+        self._contraction_optimizer = kwargs.get("contraction_optimizer", "auto-hq")
 
         # The `quimb` circuit is a class attribute so that we can implement methods
         # that access it as soon as the device is created before running a circuit.
@@ -595,7 +604,8 @@ class DefaultTensor(Device):
             matrix,
             wires,
             dtype=self._dtype.__name__,
-            simplify_sequence="ADCRS",
+            optimize=self._contraction_optimizer,
+            simplify_sequence=self._local_simplify,
             simplify_atol=0.0,
         )
 
