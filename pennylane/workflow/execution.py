@@ -600,16 +600,21 @@ def execute(
         # If gradient_fn is a gradient transform, device preprocessing should happen in
         # inner execute (inside the ml boundary).
         if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
-            inner_transform = inner_transform or device.preprocess(config)[0]
-            transform_program = transform_program or qml.transforms.core.TransformProgram()
+            if inner_transform is None:
+                inner_transform = device.preprocess(config)[0]
+            if transform_program is None:
+                transform_program = qml.transforms.core.TransformProgram()
         else:
-            inner_transform = inner_transform or qml.transforms.core.TransformProgram()
-            transform_program = transform_program or device.preprocess(config)[0]
+            if inner_transform is None:
+                inner_transform = qml.transforms.core.TransformProgram()
+            if transform_program is None:
+                transform_program = device.preprocess(config)[0]
 
     else:
-
-        transform_program = transform_program or qml.transforms.core.TransformProgram()
-        inner_transform = inner_transform or qml.transforms.core.TransformProgram()
+        if transform_program is None:
+            transform_program = qml.transforms.core.TransformProgram()
+        if inner_transform is None:
+            inner_transform = qml.transforms.core.TransformProgram()
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache is True:
