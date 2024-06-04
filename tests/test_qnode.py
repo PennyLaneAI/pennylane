@@ -1233,6 +1233,22 @@ class TestShots:
         assert len(ansatz1(0.8, shots=0)) == 10
         assert ansatz1.qtape.operations[0].wires.labels == (0,)
 
+    def test_shots_passed_as_unrecognized_kwarg(self):
+        """Test that an error is raised if shots are passed to QNode initialization."""
+        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
+
+        def ansatz0():
+            return qml.expval(qml.X(0))
+
+        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
+            qml.QNode(ansatz0, dev, shots=100)
+
+        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
+
+            @qml.qnode(dev, shots=100)
+            def _():
+                return qml.expval(qml.X(0))
+
     # pylint: disable=unexpected-keyword-arg
     def test_shots_setting_does_not_mutate_device(self):
         """Tests that per-call shots setting does not change the number of shots in the device."""
