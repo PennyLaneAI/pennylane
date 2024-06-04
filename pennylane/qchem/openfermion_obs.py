@@ -736,7 +736,33 @@ def molecular_dipole(
         list[pennylane.Hamiltonian]: The qubit observables corresponding to the components
         :math:`\hat{D}_x`, :math:`\hat{D}_y` and :math:`\hat{D}_z` of the dipole operator.
 
+    **Example**
 
+    >>> symbols = ["H", "H", "H"]
+    >>> coordinates = np.array([[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]])
+    >>> mol = qml.qchem.Molecule(symbols, coordinates, charge=1)
+    >>> dipole_obs = qml.qchem.molecular_dipole(mol, method="openfermion")
+    >>> dipole_obs[0] # x-component of D
+    (
+        0.4781123173263876 * Z(0)
+      + 0.4781123173263876 * Z(1)
+      + -0.3913638489489803 * (Y(0) @ Z(1) @ Y(2))
+      + -0.3913638489489803 * (X(0) @ Z(1) @ X(2))
+      + -0.3913638489489803 * (Y(1) @ Z(2) @ Y(3))
+      + -0.3913638489489803 * (X(1) @ Z(2) @ X(3))
+      + 0.2661114704527088 * (Y(0) @ Z(1) @ Z(2) @ Z(3) @ Y(4))
+      + 0.2661114704527088 * (X(0) @ Z(1) @ Z(2) @ Z(3) @ X(4))
+      + 0.2661114704527088 * (Y(1) @ Z(2) @ Z(3) @ Z(4) @ Y(5))
+      + 0.2661114704527088 * (X(1) @ Z(2) @ Z(3) @ Z(4) @ X(5))
+      + 0.7144779061810713 * Z(2)
+      + 0.7144779061810713 * Z(3)
+      + -0.11734958781031017 * (Y(2) @ Z(3) @ Y(4))
+      + -0.11734958781031017 * (X(2) @ Z(3) @ X(4))
+      + -0.11734958781031017 * (Y(3) @ Z(4) @ Y(5))
+      + -0.11734958781031017 * (X(3) @ Z(4) @ X(5))
+      + 0.24190977644645698 * Z(4)
+      + 0.24190977644645698 * Z(5)
+    )
     """
 
     if method not in ["dhf", "openfermion"]:
