@@ -203,7 +203,6 @@ class Snapshot(Operation):
 
     @classmethod
     def _primitive_bind_call(cls, tag=None, measurement=None):
-        # TODO: make measurements dynamic
         return cls._primitive.bind(measurement, tag=tag)
 
     def __init__(self, tag=None, measurement=None):
@@ -217,17 +216,18 @@ class Snapshot(Operation):
                     f"an instance of {qml.measurements.StateMeasurement}"
                 )
         self.hyperparameters["measurement"] = measurement
+        self.hyperparameters["tag"] = tag
         super().__init__(wires=[])
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"
 
     def _flatten(self):
-        return (), (self.tag, self.hyperparameters["measurement"])
+        return (self.hyperparameters["measurement"],), (self.tag,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(tag=metadata[0], measurement=metadata[1])
+        return cls(tag=metadata[0], measurement=data[0])
 
     # pylint: disable=W0613
     @staticmethod
