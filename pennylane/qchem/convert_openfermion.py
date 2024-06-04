@@ -34,7 +34,7 @@ import openfermion
 
 
 def from_openfermion(of_qubit_operator, wires=None, tol=None, return_sum=False):
-    r"""Convert OpenFermion ``QubitOperator`` to a ``LinearCombination`` object in PennyLane representing a linear combination of qubit operators.
+    r"""Convert OpenFermion ``QubitOperator`` to a :class:`~.LinearCombination` object in PennyLane representing a linear combination of qubit operators.
 
     Args:
         qubit_operator (QubitOperator): fermionic-to-qubit transformed operator in terms of
