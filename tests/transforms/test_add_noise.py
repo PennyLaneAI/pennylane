@@ -324,6 +324,8 @@ def test_add_noise_template():
 
     w1 = np.random.random(2)
     w2 = np.random.random((1, 1, 2))
+    f1(w1, w2)
+    print(f1.tape.operations)
 
     assert np.allclose(f1(w1, w2), f2(w1, w2))
 
@@ -381,7 +383,7 @@ def test_add_noise_with_non_qwc_obs_and_mid_meas():
         ("device", slice(0, -1)),
     ],
 )
-def test_add_level_template(level1, level2):
+def test_add_noise_level(level1, level2):
     """Test that ops are inserted correctly into a decomposed template"""
     dev = qml.device("default.mixed", wires=2)
 
