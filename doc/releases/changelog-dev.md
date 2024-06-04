@@ -158,6 +158,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
+  [(#5748)](https://github.com/PennyLaneAI/pennylane/pull/5748)
+
 * A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
   operation directly with `qml.apply`.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
