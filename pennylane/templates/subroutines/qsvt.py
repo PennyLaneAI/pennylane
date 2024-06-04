@@ -269,6 +269,10 @@ class QSVT(Operation):
         return data, tuple()
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, _) -> "QSVT":
         return cls(*data)
 
