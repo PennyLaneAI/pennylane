@@ -652,67 +652,70 @@ class TestProjector:
     def test_single_qubit_basis_state_0(self):
         """Tests the function with a single-qubit basis state |0>."""
         basis_state = [0]
-        expected_matrix = csr_matrix(([], ([], [])), shape=(2, 2))
-        expected_matrix.data = [1]
-        expected_matrix.rows = [0]
-        expected_matrix.cols = [0]
+        data = [1]
+        row_indices = [0]
+        col_indices = [0]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(2, 2))
+
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_single_qubit_basis_state_1(self):
         """Tests the function with a single-qubit basis state |1>."""
         basis_state = [1]
-        expected_matrix = csr_matrix(([], ([], [])), shape=(2, 2))
-        expected_matrix.data = [1]
-        expected_matrix.rows = [1]
-        expected_matrix.cols = [1]
+        data = [1]
+        row_indices = [1]
+        col_indices = [1]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(2, 2))
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_two_qubit_basis_state_10(self):
         """Tests the function with a two-qubits basis state |10>."""
         basis_state = [1, 0]
-        expected_matrix = csr_matrix(([], ([], [])), shape=(4, 4))
-        expected_matrix.data = [1]
-        expected_matrix.rows = [2]
-        expected_matrix.cols = [2]
+        data = [1]
+        row_indices = [2]
+        col_indices = [2]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_two_qubit_basis_state_01(self):
         """Tests the function with a two-qubits basis state |01>."""
         basis_state = [0, 1]
-        expected_matrix = csr_matrix(([], ([], [])), shape=(4, 4))
-        expected_matrix.data = [1]
-        expected_matrix.rows = [1]
-        expected_matrix.cols = [1]
+        data = [1]
+        row_indices = [1]
+        col_indices = [1]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_two_qubit_basis_state_11(self):
         """Tests the function with a two-qubits basis state |11>."""
         basis_state = [1, 1]
-        expected_matrix = csr_matrix(([], ([], [])), shape=(4, 4))
-        expected_matrix.data = [1]
-        expected_matrix.rows = [3]
-        expected_matrix.cols = [3]
+        data = [1]
+        row_indices = [3]
+        col_indices = [3]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_three_qubit_basis_state_101(self):
         """Tests the function with a three-qubits basis state |101>."""
         basis_state = [1, 1]
-        expected_matrix = csr_matrix(([], ([], [])), shape=(8, 8))
-        expected_matrix.data = [1]
-        expected_matrix.rows = [5]
-        expected_matrix.cols = [5]
+        data = [1]
+        row_indices = [5]
+        col_indices = [5]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(8, 8))
         actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        self.assertEqual(expected_matrix.toarray(), actual_matrix.toarray())
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
 
     def test_invalid_basis_state(self):
         """Tests the function with an invalid state."""
         basis_state = [0, 2]  # Invalid basis state
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             BasisStateProjector.compute_sparse_matrix(basis_state)
 
 
