@@ -270,6 +270,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,
