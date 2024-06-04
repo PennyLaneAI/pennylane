@@ -1067,7 +1067,7 @@ class QNode:
             and self.device.capabilities().get("supports_mid_measure", False)
         )
         if has_mcm_support:
-            full_transform_program.add_transform(
+            inner_transform_program.add_transform(
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
                 mcm_config=self.execute_kwargs["mcm_config"],
