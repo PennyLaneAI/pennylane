@@ -180,8 +180,14 @@ class PLDB(pdb.Pdb):
         """Execute tape on the active device"""
         dev = cls.get_active_device()
 
+        valid_batch, _ = (
+            (batch_tapes, None)
+            if not dev.wires
+            else qml.devices.preprocess.validate_device_wires(batch_tapes, wires=dev.wires)
+        )
+
         program, new_config = dev.preprocess()
-        new_batch, fn = program(batch_tapes)
+        new_batch, fn = program(valid_batch)
 
         # TODO: remove [0] index once compatible with transforms
         return fn(dev.execute(new_batch, new_config))[0]
