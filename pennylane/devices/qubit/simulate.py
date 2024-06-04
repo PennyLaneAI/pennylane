@@ -85,9 +85,6 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     prng_key = execution_kwargs.get("prng_key", None)
     postselect_mode = execution_kwargs.get("postselect_mode", None)
 
-    if postselect_mode == "hw-like" and qml.math.is_abstract(state):
-        raise ValueError("Using postselect_mode='hw-like' is not supported with jax-jit.")
-
     # The floor function is being used here so that a norm very close to zero becomes exactly
     # equal to zero so that the state can become invalid. This way, execution can continue, and
     # bad postselection gives results that are invalid rather than results that look valid but

@@ -1188,10 +1188,7 @@ class TestNativeMidCircuitMeasurements:
 
         def new_apply(*args, **kwargs):  # pylint: disable=unused-argument
             nonlocal pm_propagated
-            if kwargs.get("postselect_mode", -1) == postselect_mode:
-                pm_propagated = True
-            else:
-                pm_propagated = False
+            pm_propagated = kwargs.get("postselect_mode", -1) == postselect_mode
 
         @qml.qnode(dev, postselect_mode=postselect_mode)
         def func():

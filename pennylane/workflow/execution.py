@@ -389,7 +389,7 @@ def _get_interface_name(tapes, interface):
         interface = "tf-autograph"
     if interface == "jax":
         try:  # pragma: no-cover
-            from .interfaces.jax import get_jax_interface_name
+            from .interfaces.jax import get_jax_interface_name  # pragma: no-cover
         except ImportError as e:  # pragma: no-cover
             raise qml.QuantumFunctionError(  # pragma: no-cover
                 "jax not found. Please install the latest "  # pragma: no-cover
