@@ -19,7 +19,7 @@ quantum channels supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Channel, AnyWires
+from pennylane.operation import AnyWires, Channel
 
 QUDIT_DIM = 3
 
