@@ -51,12 +51,17 @@ class Conditional(SymbolicOp):
     num_wires = AnyWires
 
     def __init__(self, expr, then_op: Type[Operation], id=None):
-        self.meas_val = expr
+        self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
+
+    @property
+    def meas_val(self):
+        "the measurement outcome value to consider from `expr` argument"
+        return self.hyperparameters["meas_val"]
 
     @property
     def num_params(self):
