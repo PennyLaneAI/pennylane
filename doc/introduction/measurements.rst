@@ -604,10 +604,10 @@ PennyLane. For ease of use, we provide the following configuration options to us
                -1.0000000e+00, -2.1474836e+09, -1.0000000e+00, -2.1474836e+09,
                -1.0000000e+00, -1.0000000e+00], dtype=float32, weak_type=True)
 
-      * When using ``jax.jit``, using ``mcm_method="deferred"`` is not supported with ``postselect_mode="hw-like"``.
-        Therefore, the default behaviour will be to use ``postselect_mode="fill-shots"``. This is due to limitations
-        of the :func:`~pennylane.defer_measurements` transform, and this behaviour will change in the future to be
-        more consistent with ``mcm_method="one-shot"``.
+      * When using ``jax.jit``, using ``mcm_method="deferred"`` is not supported with ``postselect_mode="hw-like"`` and
+        an error will be raised if this configuration is requested. This is due to limitations of the
+        :func:`~pennylane.defer_measurements` transform, and this behaviour will change in the future to be more
+        consistent with ``mcm_method="one-shot"``.
 
 Changing the number of shots
 ----------------------------
