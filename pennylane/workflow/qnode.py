@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -222,8 +222,8 @@ class QNode:
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
-            default is ``"hw-like"``. For usage details, please refer to the
-            :doc:`main measurements page </introduction/measurements>`.
+            default is ``None``, in which case the device will automatically choose the best configuration. For
+            usage details, please refer to the :doc:`main measurements page </introduction/measurements>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
             or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately. If not provided,
@@ -452,7 +452,7 @@ class QNode:
         cachesize=10000,
         max_diff=1,
         device_vjp=False,
-        postselect_mode="hw-like",
+        postselect_mode=None,
         mcm_method=None,
         **gradient_kwargs,
     ):
@@ -501,14 +501,20 @@ class QNode:
         for kwarg in gradient_kwargs:
             if kwarg in ["gradient_fn", "grad_method"]:
                 warnings.warn(
-                    f"It appears you may be trying to set the method of differentiation via the kwarg "
-                    f"{kwarg}. This is not supported in qnode and will default to backpropogation. Use "
-                    f"diff_method instead."
+                    "It appears you may be trying to set the method of differentiation via the "
+                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
+                    "backpropogation. Use diff_method instead."
+                )
+            elif kwarg == "shots":
+                raise ValueError(
+                    "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
+                    "argument 'shots' or if you want to set the number of shots with which the "
+                    "QNode is executed, pass it to the QNode call, not its definition."
                 )
             elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
                 warnings.warn(
-                    f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
-                    f"gradient kwargs."
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of "
+                    "standard qnode gradient kwargs."
                 )
 
         # input arguments
@@ -520,10 +526,9 @@ class QNode:
         self.max_expansion = max_expansion
         cache = (max_diff > 1) if cache == "auto" else cache
 
-        postselect_mode = postselect_mode or "hw-like"
         if mcm_method not in ("deferred", "one-shot", None):
             raise ValueError(f"Invalid mid-circuit measurements method '{mcm_method}'.")
-        if postselect_mode not in ("hw-like", "fill-shots"):
+        if postselect_mode not in ("hw-like", "fill-shots", None):
             raise ValueError(f"Invalid postselection mode '{postselect_mode}'.")
 
         # execution keyword arguments
@@ -1037,12 +1042,9 @@ class QNode:
 
         finite_shots = _get_device_shots if override_shots is False else override_shots
         if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
-            warnings.warn(
-                "Cannot use the 'one-shot' method for mid-circuit measurements with "
-                "analytic mode. Using deferred measurements.",
-                UserWarning,
+            raise ValueError(
+                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
             )
-            self.execute_kwargs["mcm_config"]["mcm_method"] = "deferred"
 
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
@@ -1064,6 +1066,7 @@ class QNode:
                 device=self.device,
                 mcm_config=self.execute_kwargs["mcm_config"],
             )
+            override_shots = 1
         elif hasattr(self.device, "capabilities"):
             full_transform_program.add_transform(
                 qml.defer_measurements,
@@ -1106,7 +1109,7 @@ class QNode:
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots
         )
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+    def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
 
         old_interface = self.interface
         if old_interface == "auto":
@@ -1137,6 +1140,11 @@ class QNode:
             _, self.gradient_kwargs, self.device = original_grad_fn
 
         return res
+
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+        if qml.capture.enabled():
+            return qml.capture.qnode_call(self, *args, **kwargs)
+        return self._impl_call(*args, **kwargs)
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)

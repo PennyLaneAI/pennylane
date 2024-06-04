@@ -83,7 +83,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
-    postselect_mode = execution_kwargs.get("postselect_mode", "hw-like")
+    postselect_mode = execution_kwargs.get("postselect_mode", None)
 
     # The floor function is being used here so that a norm very close to zero becomes exactly
     # equal to zero so that the state can become invalid. This way, execution can continue, and
@@ -138,7 +138,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             If None, a ``numpy.random.default_rng`` will be used for sampling.
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
-            keep the same number of shots. Default is ``"hw-like"``.
+            keep the same number of shots. Default is ``None``.
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -276,7 +276,7 @@ def simulate(
         interface (str): The machine learning interface to create the initial state with
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
-            keep the same number of shots. Default is ``"hw-like"``.
+            keep the same number of shots. Default is ``None``.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -351,7 +351,7 @@ def simulate_one_shot_native_mcm(
         interface (str): The machine learning interface to create the initial state with
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
-            keep the same number of shots. Default is ``"hw-like"``.
+            keep the same number of shots. Default is ``None``.
 
     Returns:
         tuple(TensorLike): The results of the simulation

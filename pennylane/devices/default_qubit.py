@@ -184,11 +184,12 @@ def adjoint_observables(obs: qml.operation.Operator) -> bool:
     return obs.has_matrix
 
 
-def _supports_adjoint(circuit):
+def _supports_adjoint(circuit, device_wires, device_name):
     if circuit is None:
         return True
 
     prog = TransformProgram()
+    prog.add_transform(validate_device_wires, device_wires, name=device_name)
     _add_adjoint_transforms(prog)
 
     try:
@@ -474,7 +475,7 @@ class DefaultQubit(Device):
             )
 
         if execution_config.gradient_method in {"adjoint", "best"}:
-            return _supports_adjoint(circuit=circuit)
+            return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
         return False
 
     @debug_logger

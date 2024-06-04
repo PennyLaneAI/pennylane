@@ -293,7 +293,7 @@ def gather_non_mcm(measurement, samples, is_valid):
 
     Args:
         measurement (MeasurementProcess): measurement
-        samples (TensorLike): measurement samples
+        samples (TensorLike): Post-processed measurement samples
         is_valid (TensorLike): Boolean array with the same shape as ``samples`` where the value at
             each index specifies whether or not the respective sample is valid.
 

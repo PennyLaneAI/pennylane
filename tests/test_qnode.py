@@ -1230,6 +1230,22 @@ class TestShots:
         assert len(ansatz1(0.8, shots=0)) == 10
         assert ansatz1.qtape.operations[0].wires.labels == (0,)
 
+    def test_shots_passed_as_unrecognized_kwarg(self):
+        """Test that an error is raised if shots are passed to QNode initialization."""
+        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
+
+        def ansatz0():
+            return qml.expval(qml.X(0))
+
+        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
+            qml.QNode(ansatz0, dev, shots=100)
+
+        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
+
+            @qml.qnode(dev, shots=100)
+            def _():
+                return qml.expval(qml.X(0))
+
     # pylint: disable=unexpected-keyword-arg
     def test_shots_setting_does_not_mutate_device(self):
         """Tests that per-call shots setting does not change the number of shots in the device."""
@@ -1702,11 +1718,10 @@ class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
-    def test_one_shot_warning_without_shots(self, dev_name, mocker):
-        """Test that a warning is raised if mcm_method="one-shot" with no shots"""
+    def test_one_shot_error_without_shots(self, dev_name):
+        """Test that an error is raised if mcm_method="one-shot" with no shots"""
         dev = qml.device(dev_name, wires=3)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
-        one_shot_spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+        param = np.pi / 4
 
         @qml.qnode(dev, mcm_method="one-shot")
         def f(x):
@@ -1714,15 +1729,10 @@ class TestMCMConfiguration:
             _ = qml.measure(0)
             return qml.probs(wires=[0, 1])
 
-        param = np.pi / 4
-
-        with pytest.warns(
-            UserWarning, match="Cannot use the 'one-shot' method for mid-circuit measurements with"
+        with pytest.raises(
+            ValueError, match="Cannot use the 'one-shot' method for mid-circuit measurements with"
         ):
             _ = f(param)
-
-        assert spy.call_count != 0
-        one_shot_spy.assert_not_called()
 
     def test_invalid_mcm_method_error(self):
         """Test that an error is raised if the requested mcm_method is invalid"""
@@ -1752,9 +1762,9 @@ class TestMCMConfiguration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", [None, "best"])
-    def test_defer_measurements_hw_like_with_jit(self, diff_method, mocker):
-        """Test that using mcm_method="deferred" with postselect_mode="hw-like" defaults
-        to behaviour like postselect_mode="fill-shots" when using jax jit."""
+    def test_defer_measurements_with_jit(self, diff_method, mocker):
+        """Test that using mcm_method="deferred" defaults to behaviour like
+        postselect_mode="fill-shots" when using jax jit."""
         import jax  # pylint: disable=import-outside-toplevel
 
         shots = 100
@@ -1765,7 +1775,7 @@ class TestMCMConfiguration:
 
         dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
 
-        @qml.qnode(dev, diff_method=diff_method, postselect_mode="hw-like", mcm_method="deferred")
+        @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred")
         def f(x):
             qml.RX(x, 0)
             qml.measure(0, postselect=postselect)
@@ -1782,6 +1792,36 @@ class TestMCMConfiguration:
         assert len(res_jit) == shots
         assert qml.math.allclose(res, postselect)
         assert qml.math.allclose(res_jit, postselect)
+
+    @pytest.mark.jax
+    # @pytest.mark.parametrize("diff_method", [None, "best"])
+    @pytest.mark.parametrize("diff_method", ["best"])
+    def test__deferred_hw_like_error_with_jit(self, diff_method):
+        """Test that an error is raised if attempting to use postselect_mode="hw-like"
+        with jax jit with mcm_method="deferred"."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        shots = 100
+        postselect = 1
+        param = jax.numpy.array(np.pi / 2)
+
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
+
+        @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred", postselect_mode="hw-like")
+        def f(x):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=postselect)
+            return qml.sample(wires=0)
+
+        f_jit = jax.jit(f)
+
+        # Checking that an error is not raised without jit
+        _ = f(param)
+
+        with pytest.raises(
+            ValueError, match="Using postselect_mode='hw-like' is not supported with jax-jit."
+        ):
+            _ = f_jit(param)
 
 
 class TestTapeExpansion:

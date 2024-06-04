@@ -172,7 +172,7 @@ def apply_operation(
         interface (str): The machine learning interface of the state
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
-            keep the same number of shots. ``"hw-like"`` by default.
+            keep the same number of shots. ``None`` by default.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
@@ -302,7 +302,7 @@ def apply_mid_measure(
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
-            keep the same number of shots. ``"hw-like"`` by default.
+            keep the same number of shots. ``None`` by default.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
@@ -314,7 +314,7 @@ def apply_mid_measure(
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
-    postselect_mode = execution_kwargs.get("postselect_mode", "hw-like")
+    postselect_mode = execution_kwargs.get("postselect_mode", None)
 
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")

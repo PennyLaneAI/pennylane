@@ -263,6 +263,8 @@ outcome of such mid-circuit measurements:
         qml.cond(m_0, qml.RY)(y, wires=0)
         return qml.probs(wires=[0])
 
+.. _deferred_measurements:
+
 Deferred measurements
 *********************
 
@@ -311,6 +313,8 @@ tensor([0.90165331, 0.09834669], requires_grad=True)
     measurement, limiting the number of measurements that can be used both on classical simulators
     and quantum hardware. The one-shot transform below does not have this limitation, but has
     computational cost that scales with the number of shots used.
+
+.. _one_shot_transform:
 
 The one-shot transform
 **********************
@@ -532,9 +536,9 @@ PennyLane. For ease of use, we provide the following configuration options to us
 :class:`~pennylane.QNode`:
 
 * ``mcm_method``: To set the method used for applying mid-circuit measurements. Use ``mcm_method="deferred"``
-  to use the deferred measurements principle or ``mcm_method="one-shot"`` to use the one-shot transform as
-  described above. When executing with finite shots, ``mcm_method="one-shot"`` will be the default, and
-  ``mcm_method="deferred"`` otherwise.
+  to use the :ref:`deferred measurements principle <deferred_measurements>` or ``mcm_method="one-shot"`` to use
+  the :ref:`one-shot transform <one_shot_transform>`. When executing with finite shots, ``mcm_method="one-shot"``
+  will be the default, and ``mcm_method="deferred"`` otherwise.
 
   .. warning::
 
@@ -600,9 +604,10 @@ PennyLane. For ease of use, we provide the following configuration options to us
                -1.0000000e+00, -2.1474836e+09, -1.0000000e+00, -2.1474836e+09,
                -1.0000000e+00, -1.0000000e+00], dtype=float32, weak_type=True)
 
-      * If ``mcm_method="deferred"``, then using ``postselect_mode="hw-like"`` will have the same behaviour as when
-        ``postselect_mode="fill-shots"``. This is due to the limitations of the :func:`~pennylane.defer_measurements`
-        transform, and this behaviour will change in the future to be more consistent with ``mcm_method="one-shot"``.
+      * When using ``jax.jit``, using ``mcm_method="deferred"`` is not supported with ``postselect_mode="hw-like"`` and
+        an error will be raised if this configuration is requested. This is due to limitations of the
+        :func:`~pennylane.defer_measurements` transform, and this behaviour will change in the future to be more
+        consistent with ``mcm_method="one-shot"``.
 
 Changing the number of shots
 ----------------------------
