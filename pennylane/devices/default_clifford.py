@@ -575,9 +575,9 @@ class DefaultClifford(Device):
                 # Note: This is a lot faster than doing `stim_ct.append(gate, wires)`
                 stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
             else:
-                if op.name == "GlobalPhase":
+                if isinstance(op, qml.GlobalPhase):
                     global_phase_ops.append(op)
-                if op.name == "Snapshot":
+                if isinstance(op, qml.Snapshot):
                     self._apply_snapshot(circuit, stim_circuit, op, global_phase_ops, debugger)
 
         tableau_simulator.do_circuit(stim_circuit)
@@ -620,18 +620,20 @@ class DefaultClifford(Device):
     def _apply_snapshot(
         self,
         circuit: qml.tape.QuantumScript,
-        stim_circuit: stim.Circuit,
-        operation,
-        global_phase_ops,
+        stim_circuit,
+        operation: qml.Snapshot,
+        global_phase_ops: Sequence[qml.GlobalPhase],
         debugger=None,
     ):
+        """Apply a snapshot operation to the stim circuit."""
         if debugger is not None and debugger.active:
             meas = operation.hyperparameters["measurement"]
             meas = StateMP() if meas is None else meas
             measurement_func = self._analytical_measurement_map.get(type(meas), None)
+
             if measurement_func is None:  # pragma: no cover
                 raise DeviceError(
-                    f"Snapshots of {type(meas)} are not yet supported on default.mixed"
+                    f"Snapshots of {type(meas)} are not yet supported on default.clifford."
                 )
 
             # Build a temporary simulator for obtaining state

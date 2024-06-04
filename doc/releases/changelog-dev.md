@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
+
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
