@@ -25,6 +25,15 @@
 
 <h3>Improvements 🛠</h3>
 
+* The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
+  [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
+
+* Added `packaging` in the required list of packages.
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
+
+* Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
+
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
@@ -36,6 +45,9 @@
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+
+* `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
+  [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
@@ -112,9 +124,11 @@
   `m = measure(0); qml.sample(m)`.
   [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
 
-* PennyLane operators and measurements can now automatically be captured as instructions in JAXPR.
+* PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+  [(#5708)](https://github.com/PennyLaneAI/pennylane/pull/5708)
+  [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
@@ -154,7 +168,14 @@
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
+* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
+  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
+  [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
+
 <h3>Breaking changes 💔</h3>
+
+* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
+  [(#5748)](https://github.com/PennyLaneAI/pennylane/pull/5748)
 
 * A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
   operation directly with `qml.apply`.
@@ -179,9 +200,6 @@
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
   Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
   [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
-  
-* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
-  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
 
 <h3>Deprecations 👋</h3>
 
@@ -201,6 +219,12 @@
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
 <h3>Bug fixes 🐛</h3>
+
+* Disable Docker builds on PR merge.
+  [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
+
+* The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
+  [(#5761)](https://github.com/PennyLaneAI/pennylane/pull/5761)
 
 * `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
@@ -255,6 +279,9 @@
 * Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
+* `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
+  [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -276,4 +303,5 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Haochen Paul Wang,
 David Wierichs.
