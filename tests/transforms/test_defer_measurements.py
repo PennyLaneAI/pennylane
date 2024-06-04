@@ -105,6 +105,30 @@ def test_postselection_error_with_wrong_device():
         _ = circ()
 
 
+@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+def test_postselect_mode(postselect_mode, mocker):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    postselect_value = 1
+    dev = qml.device("default.qubit", shots=shots)
+    spy = mocker.spy(qml.defer_measurements, "_transform")
+
+    @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method="deferred")
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=postselect_value)
+        return qml.sample(wires=[0])
+
+    res = f(np.pi / 4)
+    spy.assert_called_once()
+
+    if postselect_mode == "hw-like":
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+    assert np.allclose(res, postselect_value)
+
+
 @pytest.mark.parametrize(
     "mp, err_msg",
     [
@@ -1063,7 +1087,7 @@ class TestConditionalOperations:
     )
     def test_cond_qfunc(self, device):
         """Test that a qfunc can also used with qml.cond."""
-        dev = qml.device(device, wires=3)
+        dev = qml.device(device, wires=4)
 
         r = 2.324
 
@@ -1074,12 +1098,14 @@ class TestConditionalOperations:
             qml.CNOT(wires=[0, 1])
             qml.CRY(rads, wires=[0, 1])
             qml.CZ(wires=[0, 1])
-            return qml.probs(wires=1)
+            qml.ctrl(qml.CRX, control=0, control_values=[1])(0.5, [1, 2])
+            return qml.probs(wires=[1, 2])
 
         def f(x):
             qml.PauliX(1)
             qml.RY(x, wires=1)
             qml.PauliZ(1)
+            qml.CRX(0.5, [1, 2])
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -1087,7 +1113,7 @@ class TestConditionalOperations:
             qml.Hadamard(0)
             m_0 = qml.measure(0)
             qml.cond(m_0, f)(r)
-            return qml.probs(wires=1)
+            return qml.probs(wires=[1, 2])
 
         exp = normal_circuit(r)
         cond_probs = quantum_control_circuit(r)
