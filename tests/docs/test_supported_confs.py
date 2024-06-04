@@ -412,7 +412,7 @@ class TestSupportedConfs:
         # with pytest.raises(ValueError, match=msg):
         circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs, complex=complex)
-        if shots is not None:
+        if shots is not None and interface != "jax":
             with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
                 compute_gradient(x, interface, circuit, return_type, complex=complex)
         else:
