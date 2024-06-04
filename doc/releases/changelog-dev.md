@@ -8,21 +8,23 @@
   [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
 
   ```python
+  # a list of bitstrings is defined
   bitstrings = ["010", "111", "110", "000"]
 
   dev = qml.device("default.qubit", shots = 1)
+
   @qml.qnode(dev)
   def circuit():
 
-    # third index
-    qml.BasisEmbedding(2, wires = [0,1])
+      # the third index is encoded in the control wires [0, 1]
+      qml.BasisEmbedding(2, wires = [0,1])
 
-    qml.QROM(bitstrings = bitstrings,
-            control_wires = [0,1],
-            target_wires = [2,3,4],
-            work_wires = [5,6,7])
+      qml.QROM(bitstrings = bitstrings,
+              control_wires = [0,1],
+              target_wires = [2,3,4],
+              work_wires = [5,6,7])
 
-    return qml.sample(wires = [2,3,4])
+      return qml.sample(wires = [2,3,4])
   ```
    ```pycon
   >>> print(circuit())

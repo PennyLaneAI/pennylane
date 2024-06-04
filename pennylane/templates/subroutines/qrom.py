@@ -97,7 +97,7 @@ class QROM(Operation):
         Then, :math:`k = l \cdot (\lambda-1)` work wires are needed,
         where :math:`l` is the length of the bitstrings.
 
-        The QROM template has two variants. The first one (``clean = False``) is based on the previous paper that alterates the state in the ``work_wires``.
+        The QROM template has two variants. The first one (``clean = False``) is based on `arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__ that alterates the state in the ``work_wires``.
         The second one (``clean = True``), based on `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, solves that issue by
         returning ``work_wires`` to their initial state. This technique can be applied when the ``work_wires`` are not
         initialized to zero.
@@ -120,7 +120,7 @@ class QROM(Operation):
         self.hyperparameters["clean"] = clean
 
         if work_wires:
-            if Wires.shared_wires([work_wires, control_wires, target_wires]):
+            if any(wire in work_wires for wire in control_wires):
                 raise ValueError("Control wires should be different from work wires.")
 
             if any(wire in work_wires for wire in target_wires):
@@ -128,6 +128,16 @@ class QROM(Operation):
 
         if any(wire in control_wires for wire in target_wires):
             raise ValueError("Target wires should be different from control wires.")
+
+        if 2 ** len(control_wires) < len(bitstrings):
+            raise ValueError(
+                f"Not enough control wires ({len(control_wires)}) for the desired number of "
+                + f"bitstrings ({len(bitstrings)}). At least {int(math.ceil(math.log2(len(bitstrings))))} control "
+                + "wires required."
+            )
+
+        if len(bitstrings[0]) != len(target_wires):
+            raise ValueError(f"Bitstring length must match the number of target wires.")
 
         all_wires = target_wires + control_wires + work_wires
         super().__init__(wires=all_wires, id=id)
@@ -146,7 +156,7 @@ class QROM(Operation):
         return cls(bitstrings, **hyperparams_dict)
 
     def __repr__(self):
-        return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires})"
+        return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
 
     def map_wires(self, wire_map: dict):
         new_target_wires = [
@@ -172,7 +182,7 @@ class QROM(Operation):
         copied_op = cls.__new__(cls)
 
         for attr, value in vars(self).items():
-                setattr(copied_op, attr, value)
+            setattr(copied_op, attr, value)
 
         return copied_op
 

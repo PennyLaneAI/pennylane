@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def test_standard_checks():
+def test_assert_valid_qrom():
     """Run standard validity tests."""
     bitstrings = ["000", "001", "111", "011", "000", "101", "110", "111"]
 
@@ -30,7 +30,7 @@ def test_standard_checks():
 
 
 class TestQROM:
-    """Tests that the template defines the correct decomposition."""
+    """Test the qml.QROM template."""
 
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires", "clean"),
@@ -85,15 +85,8 @@ class TestQROM:
             qml.QROM(bitstrings, control_wires, target_wires, work_wires, clean)
             return qml.sample(wires=target_wires)
 
-        @qml.qnode(dev)
-        def circuit_test(j):
-            for ind, bit in enumerate(bitstrings[j]):
-                if bit == "1":
-                    qml.PauliX(wires=target_wires[ind])
-            return qml.sample(wires=target_wires)
-
         for j in range(2 ** len(control_wires)):
-            assert np.allclose(circuit(j), circuit_test(j))
+            assert np.allclose(circuit(j), [int(bit) for bit in bitstrings[j]])
 
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires"),
@@ -178,6 +171,19 @@ class TestQROM:
 
         assert all(qml.equal(op1, op2) for op1, op2 in zip(qrom_decomposition, expected_gates))
 
+    def test_jit_compatible(self):
+        """Test that the template is compatible with the JIT compiler."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit():
+            qml.QROM(["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3])
+            return qml.probs(wires=3)
+
+        assert np.allclose(circuit(), np.array([1.0, 0.0]))
+
 
 @pytest.mark.parametrize(
     ("control_wires", "target_wires", "work_wires", "msg_match"),
@@ -215,5 +221,28 @@ def test_repr():
         ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
     )
     res = op.__repr__()
-    expected = "QROM(control_wires=<Wires = [0, 1]>, target_wires=<Wires = [2]>,  work_wires=<Wires = [3]>)"
+    expected = "QROM(control_wires=<Wires = [0, 1]>, target_wires=<Wires = [2]>,  work_wires=<Wires = [3]>, clean=True)"
     assert res == expected
+
+
+@pytest.mark.parametrize(
+    ("bitstrings", "control_wires", "target_wires", "msg_match"),
+    [
+        (
+            ["1", "0", "0", "1"],
+            [0],
+            [2],
+            r"Not enough control wires \(1\) for the desired number of bitstrings \(4\). At least 2 control wires required.",
+        ),
+        (
+            ["1", "0", "0", "1"],
+            [0, 1],
+            [2, 3],
+            r"Bitstring length must match the number of target wires.",
+        ),
+    ],
+)
+def test_wrong_wires_error(bitstrings, control_wires, target_wires, msg_match):
+    """Test that error is raised if more ops are requested than can fit in control wires"""
+    with pytest.raises(ValueError, match=msg_match):
+        qml.QROM(bitstrings, control_wires, target_wires, work_wires=None)
