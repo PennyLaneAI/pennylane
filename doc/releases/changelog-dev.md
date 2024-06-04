@@ -12,6 +12,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
+  [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
+
 * Added `packaging` in the required list of packages.
   [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
 
@@ -108,9 +111,10 @@
   `m = measure(0); qml.sample(m)`.
   [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
 
-* PennyLane operators and measurements can now automatically be captured as instructions in JAXPR.
+* PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+  [(#5708)](https://github.com/PennyLaneAI/pennylane/pull/5708)
   [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
@@ -151,7 +155,14 @@
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
+* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
+  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
+  [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
+
 <h3>Breaking changes 💔</h3>
+
+* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
+  [(#5748)](https://github.com/PennyLaneAI/pennylane/pull/5748)
 
 * A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
   operation directly with `qml.apply`.
@@ -176,9 +187,6 @@
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
   Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
   [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
-  
-* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
-  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
 
 <h3>Deprecations 👋</h3>
 
