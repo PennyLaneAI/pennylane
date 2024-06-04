@@ -148,7 +148,6 @@ class PrepSelPrep(Operation):
     @staticmethod
     def compute_decomposition(lcu, control):
         coeffs, ops = get_new_terms(lcu)
-        print([type(op) for op in ops])
 
         decomp_ops = []
         decomp_ops.append(qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control))
