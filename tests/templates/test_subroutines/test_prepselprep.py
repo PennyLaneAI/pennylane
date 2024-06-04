@@ -51,6 +51,21 @@ def test_repr():
         == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=<Wires = [0]>)"
     )
 
+# Use these circuits in tests
+def manual_circuit(lcu, control):
+    """Circuit equivalent to decomposition of PrepSelPrep"""
+    coeffs, ops = qml.PrepSelPrep.preprocess_lcu(lcu)
+
+    qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control)
+    qml.Select(ops, control=control)
+    qml.adjoint(qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control))
+
+    return qml.state()
+
+def prepselprep_circuit(lcu, control):
+    """PrepSelPrep circuit used for testing"""
+    qml.PrepSelPrep(lcu, control)
+    return qml.state()
 
 class TestPrepSelPrep:
     """Test the correctness of the decomposition"""
@@ -73,24 +88,6 @@ class TestPrepSelPrep:
     lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
     lcu8 = qml.dot([0.5, 0.5j], [qml.X(2), qml.Z(2)])
 
-    @staticmethod
-    def manual_circuit(lcu, control):
-        """Circuit equivalent to decomposition of PrepSelPrep"""
-        coeffs, ops = qml.PrepSelPrep.preprocess_lcu(lcu)
-
-        qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control)
-        qml.Select(ops, control=control)
-        qml.adjoint(qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control))
-
-        return qml.state()
-
-    @staticmethod
-    def prepselprep_circuit(lcu, control):
-        """PrepSelPrep circuit used for testing"""
-        qml.PrepSelPrep(lcu, control)
-        return qml.state()
-
-    # Use these circuits in tests
     dev = qml.device("default.qubit")
     manual = qml.QNode(manual_circuit, dev)
     prepselprep = qml.QNode(prepselprep_circuit, dev)
@@ -177,7 +174,7 @@ class TestPrepSelPrep:
     def test_block_encoding(self, lcu, control, wire_order, dim):
         """Test that the decomposition is a block-encoding"""
         dev = qml.device("default.qubit")
-        prepselprep = qml.QNode(TestPrepSelPrep.prepselprep_circuit, dev)
+        prepselprep = qml.QNode(prepselprep_circuit, dev)
         matrix = qml.matrix(lcu)
         normalization_factor = qml.PrepSelPrep.normalization_factor(lcu)
         block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
