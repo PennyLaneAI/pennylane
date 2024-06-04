@@ -540,7 +540,7 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if return_type in (VnEntropy, MutualInfo):
-            if shots:
+            if shots and interface != "jax":
                 err_cls = qml.DeviceError
                 msg = "not accepted with finite shots"
             else:
