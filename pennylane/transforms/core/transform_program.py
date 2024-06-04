@@ -354,25 +354,6 @@ class TransformProgram:
             self._set_all_classical_jacobians(qnode, args, kwargs, argnums)
             self._set_all_argnums(qnode, args, kwargs, argnums)
 
-    def prune_dynamic_transform(self):
-        """Ensure a single ``dynamic_one_shot`` transform is applied."""
-        trans_type = np.zeros(len(self._transform_program), dtype=np.int32)
-        for i, t in enumerate(self._transform_program):
-            if "dynamic_one_shot" in str(t):
-                trans_type[i] = 1
-            if "mid_circuit_measurements" in str(t):
-                trans_type[i] = 2
-        if sum(trans_type) < 2:
-            return
-        keep = 2 if 2 in trans_type else 1
-        found = False
-        for i, ttype in enumerate(reversed(trans_type)):
-            if not found and ttype == keep:
-                found = True
-                continue
-            if found and ttype in [1, 2]:
-                self._transform_program.pop(len(self._transform_program) - 1 - i)
-
     def _set_all_classical_jacobians(
         self, qnode, args, kwargs, argnums
     ):  # pylint: disable=too-many-statements
@@ -545,3 +526,41 @@ class TransformProgram:
         # Reset classical jacobians
         self._classical_jacobians = []
         return tuple(tapes), postprocessing_fn
+
+
+# pylint: disable=protected-access
+def prune_dynamic_transform(outer_transform, inner_transform):
+    """Ensure a single ``dynamic_one_shot`` transform is applied."""
+
+    trans_type_inner = [0 for _ in inner_transform]
+    trans_type_outer = [0 for _ in outer_transform]
+
+    for i, t in enumerate(outer_transform):
+        if "dynamic_one_shot" in str(t):
+            trans_type_outer[i] = 1
+        if "mid_circuit_measurements" in str(t):
+            trans_type_outer[i] = 2
+
+    for i, t in enumerate(inner_transform):
+        if "dynamic_one_shot" in str(t):
+            trans_type_inner[i] = 1
+        if "mid_circuit_measurements" in str(t):
+            trans_type_inner[i] = 2
+
+    if sum(trans_type_inner) + sum(trans_type_outer) < 2:
+        return
+
+    keep = 2 if 2 in trans_type_inner + trans_type_outer else 1
+    found = False
+    for i, ttype in enumerate(reversed(trans_type_inner)):
+        if not found and ttype == keep:
+            found = True
+            continue
+        if found and ttype in [1, 2]:
+            inner_transform._transform_program.pop(len(inner_transform) - 1 - i)
+    for i, ttype in enumerate(reversed(trans_type_outer)):
+        if not found and ttype == keep:
+            found = True
+            continue
+        if found and ttype in [1, 2]:
+            outer_transform._transform_program.pop(len(outer_transform) - 1 - i)

@@ -28,6 +28,7 @@ from pennylane import Device
 from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms.core.transform_program import prune_dynamic_transform
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
 
@@ -1087,7 +1088,7 @@ class QNode:
 
         # Calculate the classical jacobians if necessary
         full_transform_program.set_classical_component(self, args, kwargs)
-        full_transform_program.prune_dynamic_transform()
+        prune_dynamic_transform(full_transform_program, inner_transform_program)
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
