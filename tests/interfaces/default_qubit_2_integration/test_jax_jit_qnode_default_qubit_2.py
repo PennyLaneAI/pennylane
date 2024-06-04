@@ -930,6 +930,9 @@ class TestQubitIntegration:
         if diff_method in {"adjoint", "backprop"}:
             pytest.xfail("adjoint and backprop incompatible with finite shots.")
 
+        if dev.name == "default.qubit.legacy":
+            pytest.xfail("default.qubit.legacy cannot sample in more than one basis.")
+
         @qml.qnode(
             dev,
             diff_method=diff_method,
@@ -1670,7 +1673,7 @@ class TestTapeExpansion:
         """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
         vectorized=True is specified for the callback when caching is disabled."""
         if (
-            dev.name == "default.qubit"
+            dev.name in {"default.qubit", "default.qubit.legacy"}
             and diff_method == "adjoint"
             and grad_on_execution
             and not device_vjp
@@ -1709,7 +1712,7 @@ class TestTapeExpansion:
         vectorized=True is specified for the callback when caching is disabled and when multiple output values
         are returned."""
         if (
-            dev.name == "default.qubit"
+            dev.name in {"default.qubit", "default.qubit.legacy"}
             and diff_method == "adjoint"
             and grad_on_execution
             and not device_vjp
@@ -1749,7 +1752,7 @@ class TestTapeExpansion:
         vectorized=True is specified for the callback when caching is disabled and when multiple output values
         are returned."""
         if (
-            dev.name == "default.qubit"
+            dev.name in {"default.qubit", "default.qubit.legacy"}
             and diff_method == "adjoint"
             and grad_on_execution
             and not device_vjp

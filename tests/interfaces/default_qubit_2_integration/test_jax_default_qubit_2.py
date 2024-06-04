@@ -777,9 +777,12 @@ class TestHamiltonianWorkflows:
     def test_multiple_hamiltonians_not_trainable(self, device, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
 
-        print(device)
         if execute_kwargs["gradient_fn"] == "adjoint" and not qml.operation.active_new_opmath():
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
+        if device.name == "default.qubit.legacy" and shots:
+            pytest.xfail(
+                "default.qubit.legacy cannot measure multiple hamiltonians with finite shots."
+            )
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])

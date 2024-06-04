@@ -1643,8 +1643,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if device_vjp is True and jacobian is jax.jacfwd:
             pytest.xfail("cant use device_vjp=True and jax.jacfwd")
 
-        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
-            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
+        if dev.name in {"default.qubit.legacy", "lightning.qubit"} and diff_method == "adjoint":
+            pytest.xfail(f"{dev.name} does not support probs with adjoint.")
 
         @qnode(
             dev,
@@ -1671,8 +1671,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
-            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
+        if dev.name in {"default.qubit.legacy", "lightning.qubit"} and diff_method == "adjoint":
+            pytest.xfail(f"{dev.name} does not support probs with adjoint.")
         if device_vjp is True and jacobian is jax.jacfwd:
             pytest.xfail("cant use device_vjp=True and jax.jacfwd")
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -1709,8 +1709,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
-            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
+        if dev.name in {"default.qubit.legacy", "lightning.qubit"} and diff_method == "adjoint":
+            pytest.xfail(f"{dev.name} does not support probs with adjoint.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if device_vjp is True and jacobian is jax.jacfwd:
