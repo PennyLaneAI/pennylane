@@ -31,7 +31,7 @@ class WiresIn(BooleanFn):
     """A conditional for evaluating if a given wire exist in a specified set of wires.
 
     Args:
-        wires (Union[list[int, str], Wires]): sequence of wires for building the wire set.
+        wires (Union[Iterable[int, str], Wires]): sequence of wires for building the wire set.
 
     .. seealso:: Users are advised to use :func:`~.wires_in` for a functional construction.
     """
@@ -48,7 +48,7 @@ class WiresEq(BooleanFn):
     """A conditional for evaluating if a given wire is equal to a specified set of wires.
 
     Args:
-        wires (Union[list[int, str], Wires]): sequence of wires for building the wire set.
+        wires (Union[Iterable[int, str], Wires]): sequence of wires for building the wire set.
 
     .. seealso:: Users are advised to use :func:`~.wires_eq` for a functional construction.
     """
@@ -88,7 +88,7 @@ def wires_in(wires):
     if a given wire exist in a specified set of wires.
 
     Args:
-        wires (Union(list[int, str], Wires, Operation)): object to be used
+        wires (Union(Iterable[int, str], Wires, Operation)): object to be used
             for building the wire set.
 
     Returns:
@@ -127,7 +127,7 @@ def wires_eq(wires):
     if a given wire is equal to specified set of wires.
 
     Args:
-        wires (Union(list[int, str], Wires, Operation)): object to be used
+        wires (Union(Iterable[int, str], Wires, Operation)): object to be used
             for building the wire set.
 
     Returns:

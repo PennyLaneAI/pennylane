@@ -92,6 +92,10 @@ class Qubitization(Operation):
         eigenvalue: 0.7
     """
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     def __init__(self, hamiltonian, control, id=None):
         wires = hamiltonian.wires + qml.wires.Wires(control)
 

@@ -12,15 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.gradient_transform module."""
+import inspect
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
+    SUPPORTED_GRADIENT_KWARGS,
     _find_gradient_methods,
     _validate_gradient_methods,
     choose_trainable_params,
 )
+from pennylane.transforms.core import TransformDispatcher
+
+
+def test_supported_gradient_kwargs():
+    """Test that all keyword arguments of gradient transforms are
+    registered as supported gradient kwargs, and no others."""
+    # Collect all gradient transforms
+    grad_transforms = []
+    for attr in qml.gradients.__dir__():
+        if attr == "metric_tensor":
+            # Skip metric_tensor because it is not a diff_method
+            continue
+        obj = getattr(qml.gradients, attr)
+        if isinstance(obj, TransformDispatcher):
+            grad_transforms.append(obj)
+
+    # Collect arguments of all gradient transforms
+    grad_kwargs = set()
+    for tr in grad_transforms:
+        grad_kwargs |= set(inspect.signature(tr).parameters)
+
+    # Remove arguments that are not keyword arguments
+    grad_kwargs -= {"tape"}
+    # Remove "dev", because we decided against supporting this kwarg, although
+    # it is an argument to param_shift_cv, to avoid confusion.
+    grad_kwargs -= {"dev"}
+
+    # Check equality of required and supported gradient kwargs
+    assert grad_kwargs == SUPPORTED_GRADIENT_KWARGS
+    # Shots should never be used as a gradient kwarg
+    assert "shots" not in grad_kwargs
 
 
 def test_repr():
