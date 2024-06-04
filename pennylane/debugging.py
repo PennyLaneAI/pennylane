@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functionality for debugging quantum programs on simulator devices.
+This module contains functions for debugging quantum programs on simulator devices.
 """
 import copy
 import pdb
