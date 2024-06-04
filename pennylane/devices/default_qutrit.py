@@ -91,6 +91,7 @@ class DefaultQutrit(QutritDevice):
         "TRY",
         "TRZ",
         "QutritBasisState",
+        "QutritChannel",
     }
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
