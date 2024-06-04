@@ -224,12 +224,14 @@ class TransformProgram:
         if self.has_final_transform:
             if transform_container.final_transform:
                 raise TransformError("The transform program already has a terminal transform.")
-            self._transform_program.insert(-1, transform_container)
+            t_fin = self._transform_program.pop()
+            self._transform_program.append(transform_container)
+            self._transform_program.append(t_fin)
             return
         self._transform_program.append(transform_container)
 
     def appendleft(self, transform_container: TransformContainer):
-        """Insert the transform container at the beginning of the program.
+        """Append the transform container to the beginning of the program.
 
         Args:
             transform_container(TransformContainer): A transform represented by its container.
@@ -238,7 +240,7 @@ class TransformProgram:
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
-        self._transform_program.insert(0, transform_container)
+        self._transform_program.appendleft(transform_container)
 
     def add_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
         """Add a transform (dispatcher) to the end of the program.
