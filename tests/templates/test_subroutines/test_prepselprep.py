@@ -51,6 +51,7 @@ def test_repr():
         == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=<Wires = [0]>)"
     )
 
+
 # Use these circuits in tests
 def manual_circuit(lcu, control):
     """Circuit equivalent to decomposition of PrepSelPrep"""
@@ -62,10 +63,12 @@ def manual_circuit(lcu, control):
 
     return qml.state()
 
+
 def prepselprep_circuit(lcu, control):
     """PrepSelPrep circuit used for testing"""
     qml.PrepSelPrep(lcu, control)
     return qml.state()
+
 
 class TestPrepSelPrep:
     """Test the correctness of the decomposition"""
