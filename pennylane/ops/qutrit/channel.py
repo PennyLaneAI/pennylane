@@ -235,8 +235,10 @@ class QutritAmplitudeDamping(Channel):
         K_0 = \begin{bmatrix}
                 1 & 0 & 0\\
                 0 & \sqrt{1-\gamma_1} & 0 \\
-                0 & 0 & \sqrt{1-\gamma_2}
-                \end{bmatrix}, \quad
+                0 & 0 & \sqrt{1-(\gamma_2+\gamma_3)}
+                \end{bmatrix}
+
+    .. math::
         K_1 = \begin{bmatrix}
                 0 & \sqrt{\gamma_1} & 0 \\
                 0 & 0 & 0 \\
@@ -246,73 +248,98 @@ class QutritAmplitudeDamping(Channel):
                 0 & 0 & \sqrt{\gamma_2} \\
                 0 & 0 & 0 \\
                 0 & 0 & 0
+                \end{bmatrix}, \quad
+        K_3 = \begin{bmatrix}
+                0 & 0 & 0 \\
+                0 & 0 & \sqrt{\gamma_3} \\
+                0 & 0 & 0
                 \end{bmatrix}
 
-    where :math:`\gamma_1 \in [0, 1]` and :math:`\gamma_2 \in [0, 1]` are the amplitude damping
-    probabilities for subspaces (0,1) and (0,2) respectively.
+    where :math:`\gamma_1, \gamma_2, \gamma_3 \in [0, 1]` are the amplitude damping
+    probabilities for subspaces (0,1), (0,2), and (1,2) respectively.
 
     .. note::
 
-        The Kraus operators :math:`\{K_0, K_1, K_2\}` are adapted from [`1 <https://doi.org/10.48550/arXiv.1905.10481>`_] (Eq. 8).
+        When :math:`\gamma_3=0` then Kraus operators :math:`\{K_0, K_1, K_2\}` are adapted from
+        [`1 <https://doi.org/10.48550/arXiv.1905.10481>`_] (Eq. 8).
+
+        The Kraus operator :math:`K_3` represents the :math:`|2 \rangle \rightarrow |1 \rangle` transition which is more
+        likely on some devices [`2 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
+
+        To maintain normalization :math:`\gamma_2 + \gamma_3 \leq 1`.
+
 
     **Details:**
 
     * Number of wires: 1
-    * Number of parameters: 2
+    * Number of parameters: 3
 
     Args:
         gamma_1 (float): :math:`|1 \rangle \rightarrow |0 \rangle` amplitude damping probability.
         gamma_2 (float): :math:`|2 \rangle \rightarrow |0 \rangle` amplitude damping probability.
+        gamma_3 (float): :math:`|2 \rangle \rightarrow |1 \rangle` amplitude damping probability.
         wires (Sequence[int] or int): the wire the channel acts on
         id (str or None): String representing the operation (optional)
     """
 
-    num_params = 2
+    num_params = 3
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma_1, gamma_2, wires, id=None):
-        # Verify gamma_1 and gamma_2
-        for gamma in (gamma_1, gamma_2):
-            if not (math.is_abstract(gamma_1) or math.is_abstract(gamma_2)):
+    def __init__(self, gamma_1, gamma_2, gamma_3, wires, id=None):
+        # Verify input
+        for gamma in (gamma_1, gamma_2, gamma_3):
+            if not math.is_abstract(gamma):
                 if not 0.0 <= gamma <= 1.0:
                     raise ValueError("Each probability must be in the interval [0,1]")
-        super().__init__(gamma_1, gamma_2, wires=wires, id=id)
+        if not (math.is_abstract(gamma_2) or math.is_abstract(gamma_3)):
+            if not 0.0 <= gamma_2 + gamma_3 <= 1.0:
+                raise ValueError(r"\gamma_2+\gamma_3 must be in the interval [0,1]")
+        super().__init__(gamma_1, gamma_2, gamma_3, wires=wires, id=id)
 
     @staticmethod
-    def compute_kraus_matrices(gamma_1, gamma_2):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(gamma_1, gamma_2, gamma_3):  # pylint:disable=arguments-differ
         r"""Kraus matrices representing the ``QutritAmplitudeDamping`` channel.
 
         Args:
             gamma_1 (float): :math:`|1\rangle \rightarrow |0\rangle` amplitude damping probability.
             gamma_2 (float): :math:`|2\rangle \rightarrow |0\rangle` amplitude damping probability.
+            gamma_3 (float): :math:`|2\rangle \rightarrow |1\rangle` amplitude damping probability.
 
         Returns:
             list(array): list of Kraus matrices
 
         **Example**
 
-        >>> qml.QutritAmplitudeDamping.compute_kraus_matrices(0.5, 0.25)
+        >>> qml.QutritAmplitudeDamping.compute_kraus_matrices(0.5, 0.25, 0.36)
         [
         array([ [1.        , 0.        , 0.        ],
                 [0.        , 0.70710678, 0.        ],
-                [0.        , 0.        , 0.8660254 ]]),
+                [0.        , 0.        , 0.6244998 ]]),
         array([ [0.        , 0.70710678, 0.        ],
                 [0.        , 0.        , 0.        ],
                 [0.        , 0.        , 0.        ]]),
         array([ [0.        , 0.        , 0.5       ],
                 [0.        , 0.        , 0.        ],
                 [0.        , 0.        , 0.        ]])
+        array([ [0.        , 0.        , 0.        ],
+                [0.        , 0.        , 0.6       ],
+                [0.        , 0.        , 0.        ]])
         ]
         """
-        K0 = math.diag([1, math.sqrt(1 - gamma_1 + math.eps), math.sqrt(1 - gamma_2 + math.eps)])
+        K0 = math.diag(
+            [1, math.sqrt(1 - gamma_1 + math.eps), math.sqrt(1 - gamma_2 - gamma_3 + math.eps)]
+        )
         K1 = math.sqrt(gamma_1 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 1, 0], [0, 0, 0], [0, 0, 0]]), gamma_1), gamma_1
         )
         K2 = math.sqrt(gamma_2 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 0, 1], [0, 0, 0], [0, 0, 0]]), gamma_2), gamma_2
         )
-        return [K0, K1, K2]
+        K3 = math.sqrt(gamma_3 + math.eps) * math.convert_like(
+            math.cast_like(math.array([[0, 0, 0], [0, 0, 1], [0, 0, 0]]), gamma_3), gamma_3
+        )
+        return [K0, K1, K2, K3]
 
 
 class QutritChannel(Channel):
