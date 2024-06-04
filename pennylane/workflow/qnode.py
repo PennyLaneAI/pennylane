@@ -487,14 +487,20 @@ class QNode:
         for kwarg in gradient_kwargs:
             if kwarg in ["gradient_fn", "grad_method"]:
                 warnings.warn(
-                    f"It appears you may be trying to set the method of differentiation via the kwarg "
-                    f"{kwarg}. This is not supported in qnode and will default to backpropogation. Use "
-                    f"diff_method instead."
+                    "It appears you may be trying to set the method of differentiation via the "
+                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
+                    "backpropogation. Use diff_method instead."
+                )
+            elif kwarg == "shots":
+                raise ValueError(
+                    "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
+                    "argument 'shots' or if you want to set the number of shots with which the "
+                    "QNode is executed, pass it to the QNode call, not its definition."
                 )
             elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
                 warnings.warn(
-                    f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
-                    f"gradient kwargs."
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of "
+                    "standard qnode gradient kwargs."
                 )
 
         # input arguments
