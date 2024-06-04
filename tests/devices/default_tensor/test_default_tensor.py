@@ -21,6 +21,7 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane.devices.default_tensor import _gate_contract_mps, _gate_contract_tn
 from pennylane.wires import WireError
 
 quimb = pytest.importorskip("quimb")
@@ -161,25 +162,31 @@ def test_wires_runtime_error():
 
 @pytest.mark.parametrize("max_bond_dim", [None, 10])
 @pytest.mark.parametrize("cutoff", [1e-16, 1e-12])
-@pytest.mark.parametrize("contract", ["auto-mps", "nonlocal"])
-@pytest.mark.parametrize("method", ["mps", "tn"])
-def test_kwargs(method, max_bond_dim, cutoff, contract):
-    """Test the class initialization with different arguments and returned properties."""
+def test_kwargs_mps(max_bond_dim, cutoff):
+    """Test the class initialization with different arguments and returned properties for the MPS method."""
 
-    kwargs = {
-        "method": method,
-        "max_bond_dim": max_bond_dim,
-        "cutoff": cutoff,
-        "contract": contract,
-    }
+    max_bond_dim = 10
+    cutoff = 1e-16
+    method = "mps"
 
-    dev = qml.device("default.tensor", wires=0, **kwargs)
+    dev = qml.device("default.tensor", method=method, max_bond_dim=max_bond_dim, cutoff=cutoff)
 
     _, config = dev.preprocess()
     assert config.device_options["method"] == method
     assert config.device_options["max_bond_dim"] == max_bond_dim
     assert config.device_options["cutoff"] == cutoff
-    assert config.device_options["contract"] == contract
+    assert config.device_options["contract"] == "auto-mps"
+
+
+def test_kwargs_tn():
+    """Test the class initialization with different arguments and returned properties for the TN method."""
+
+    method = "tn"
+    dev = qml.device("default.tensor", method=method)
+
+    _, config = dev.preprocess()
+    assert config.device_options["method"] == method
+    assert config.device_options["contract"] == "auto-split-gate"
 
 
 def test_invalid_kwarg():
@@ -188,7 +195,7 @@ def test_invalid_kwarg():
         TypeError,
         match="Unexpected argument: fake_arg during initialization of the default.tensor device.",
     ):
-        qml.device("default.tensor", wires=0, fake_arg=None)
+        qml.device("default.tensor", fake_arg=None)
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
@@ -201,19 +208,19 @@ def test_invalid_method():
     """Test an invalid method."""
     method = "invalid_method"
     with pytest.raises(ValueError, match=f"Unsupported method: {method}"):
-        qml.device("default.tensor", wires=0, method=method)
+        qml.device("default.tensor", method=method)
 
 
 @pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
 def test_data_type(dtype):
     """Test the data type."""
-    assert qml.device("default.tensor", wires=0, dtype=dtype).dtype == dtype
+    assert qml.device("default.tensor", dtype=dtype).dtype == dtype
 
 
 def test_ivalid_data_type():
     """Test that data type can only be np.complex64 or np.complex128."""
     with pytest.raises(TypeError):
-        qml.device("default.tensor", wires=0, dtype=float)
+        qml.device("default.tensor", dtype=float)
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])

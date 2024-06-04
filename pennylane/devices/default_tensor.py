@@ -127,6 +127,18 @@ _methods = frozenset({"mps", "tn"})
 # The set of supported methods.
 
 
+# The following sets are used to determine if a gate contraction method is supported by the device.
+# These should be updated if `quimb` adds new options or changes the existing ones.
+
+_gate_contract_mps = frozenset({"auto-mps", "swap+split", "nonlocal"})
+# The set of supported gate contraction methods for the MPS method.
+
+_gate_contract_tn = frozenset(
+    {"auto-split-gate", "split-gate", "reduce-split", "swap-split-gate", "split", "True", "False"}
+)
+# The set of supported gate contraction methods for the TN method.
+
+
 def accepted_methods(method: str) -> bool:
     """A function that determines whether or not a method is supported by ``default.tensor``."""
     return method in _methods
@@ -140,6 +152,15 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
 def accepted_observables(obs: qml.operation.Operator) -> bool:
     """A function that determines if an observable is supported by ``default.tensor``."""
     return obs.name in _observables
+
+
+def accepted_gate_contract(contract: str, method: str) -> bool:
+    """A function that determines if a gate contraction option is supported by the device."""
+    if method == "mps":
+        return contract in _gate_contract_mps
+    if method == "tn":
+        return contract in _gate_contract_tn
+    return False
 
 
 @simulator_tracking
@@ -300,7 +321,14 @@ class DefaultTensor(Device):
         # options for MPS
         self._max_bond_dim = kwargs.get("max_bond_dim", None)
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
-        self._contract = kwargs.get("contract", "auto-mps")
+        self._contract = None
+
+        if method == "mps":
+            self._contract = kwargs.get("contract", "auto-mps")
+        elif method == "tn":
+            self._contract = kwargs.get("contract", "auto-split-gate")
+        else:
+            raise ValueError  # pragma: no cover
 
         # options both for MPS and TN
         self._local_simplify = kwargs.get("local_simplify", "ADCRS")
@@ -345,6 +373,13 @@ class DefaultTensor(Device):
             wires (Wires): The wires to initialize the quimb circuit.
         """
 
+        if not accepted_gate_contract(self._contract, self.method):
+            raise ValueError(
+                f"Unsupported gate contraction option: '{self._contract}' for '{self.method}' method. "
+                f"Supported options for 'mps' are {', '.join(_gate_contract_mps)}. "
+                f"Supported options for 'tn' are {', '.join(_gate_contract_tn)}."
+            )
+
         if self.method == "mps":
             self._quimb_circuit = qtn.CircuitMPS(
                 psi0=self._initial_mps(wires),
@@ -356,7 +391,8 @@ class DefaultTensor(Device):
         elif self.method == "tn":
             self._quimb_circuit = qtn.Circuit(
                 psi0=self._initial_tn(wires),
-                # gate_contract=self._contract,
+                gate_contract=self._contract,
+                tags=[str(l) for l in wires.labels] if wires else None,
             )
 
         else:
