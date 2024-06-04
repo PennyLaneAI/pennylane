@@ -734,6 +734,7 @@ class Controlled(SymbolicOp):
             work_wires=self.work_wires,
         )
 
+
 def _is_single_qubit_special_unitary(op):
     if not op.has_matrix or len(op.wires) != 1:
         return False
