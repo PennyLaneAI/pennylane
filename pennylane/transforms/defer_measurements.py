@@ -104,7 +104,7 @@ def null_postprocessing(results):
 @transform
 def defer_measurements(
     tape: QuantumTape, reduce_postselected: bool = True, **kwargs
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[Sequence[QuantumTape], Callable]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
