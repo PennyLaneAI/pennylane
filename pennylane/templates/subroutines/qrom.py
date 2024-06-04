@@ -15,7 +15,6 @@
 This submodule contains the template for QROM.
 """
 
-
 import copy
 import math
 
@@ -50,10 +49,11 @@ class QROM(Operation):
 
     **Example**
 
-    In this example the QROM is applied and the target wires are measured to get the third bitstring.
+    In this example, the QROM operator is applied to encode the third bitstring, associated with index 2, in the target wires.
 
     .. code-block::
 
+        # a list of bitstrings is defined
         bitstrings = ["010", "111", "110", "000"]
 
         dev = qml.device("default.qubit", shots = 1)
@@ -61,7 +61,7 @@ class QROM(Operation):
         @qml.qnode(dev)
         def circuit():
 
-            # third index
+            # the third index is encoded in the control wires [0, 1]
             qml.BasisEmbedding(2, wires = [0,1])
 
             qml.QROM(bitstrings = bitstrings,
@@ -80,26 +80,26 @@ class QROM(Operation):
     .. details::
         :title: Usage Details
 
-        This template takes as input three different sets of wires. The first one in ``control_wires``. This register
-        makes reference to the wires where we will introduce the index. Therefore, if we have :math:`m` bitstrings, we need
-        at least :math:`\lceil \log_2(m)\rceil` wires.
+        This template takes as input three different sets of wires. The first one is ``control_wires`` which is used
+        to encode the desired index. Therefore, if we have :math:`m` bitstrings, we need
+        at least :math:`\lceil \log_2(m)\rceil` control wires.
 
-        The second set of wires is ``target_wires``. These are the wires where the bitstrings will be stored.
-        For instance, if the bitstring is "0110", we will need four target wires. Internally the bitstrings are
+        The second set of wires is ``target_wires`` which store the bitstrings.
+        For instance, if the bitstring is "0110", we will need four target wires. Internally, the bitstrings are
         encoded using the :class:`~.BasisEmbedding` template.
 
 
         The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
         Let :math:`k` be the number of work wires. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
         Following the idea in `arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__, auxiliary qubits can be used to
-        load in parallel more than one bit string. Let :math:`\lambda` be
-        the number of bitstrings we want to store in parallel, which it is assumed to be a power of :math:`2`.
+        load more than one bitstring in parallel . Let :math:`\lambda` be
+        the number of bitstrings we want to store in parallel, assumed to be a power of :math:`2`.
         Then, :math:`k = l \cdot (\lambda-1)` work wires are needed,
         where :math:`l` is the length of the bitstrings.
 
         The QROM template has two variants. The first one (``clean = False``) is based on the previous paper that alterates the state in the ``work_wires``.
         The second one (``clean = True``), based on `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, solves that issue by
-        returning ``work_wires`` to their initial state. This technique is able to work with ``work_wires`` that are not
+        returning ``work_wires`` to their initial state. This technique can be applied when the ``work_wires`` are not
         initialized to zero.
 
     """
@@ -111,8 +111,7 @@ class QROM(Operation):
         control_wires = qml.wires.Wires(control_wires)
         target_wires = qml.wires.Wires(target_wires)
 
-        if work_wires:
-            work_wires = qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(work_wires) if work_wires else qml.wires.Wires([])
 
         self.hyperparameters["bitstrings"] = bitstrings
         self.hyperparameters["control_wires"] = control_wires
@@ -121,7 +120,7 @@ class QROM(Operation):
         self.hyperparameters["clean"] = clean
 
         if work_wires:
-            if any(wire in work_wires for wire in control_wires):
+            if Wires.shared_wires([work_wires, control_wires, target_wires]):
                 raise ValueError("Control wires should be different from work wires.")
 
             if any(wire in work_wires for wire in target_wires):
@@ -172,13 +171,8 @@ class QROM(Operation):
         cls = self.__class__
         copied_op = cls.__new__(cls)
 
-        new_data = copy.copy(self.data)
-
         for attr, value in vars(self).items():
-            if attr != "data":
                 setattr(copied_op, attr, value)
-
-        copied_op.data = new_data
 
         return copied_op
 
@@ -198,10 +192,7 @@ class QROM(Operation):
     ):  # pylint: disable=arguments-differ
         with qml.QueuingManager.stop_recording():
 
-            if work_wires:
-                swap_wires = target_wires + work_wires
-            else:
-                swap_wires = target_wires
+            swap_wires = target_wires + work_wires
 
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
@@ -253,7 +244,6 @@ class QROM(Operation):
 
             else:
                 # Based on this paper (Fig 4): https://arxiv.org/abs/1902.02134
-
                 adjoint_swap_ops = swap_ops[::-1]
                 hadamard_ops = [qml.Hadamard(wires=w) for w in target_wires]
 
@@ -296,5 +286,5 @@ class QROM(Operation):
 
     @property
     def clean(self):
-        """Boolean that choose the version ussed."""
+        """Boolean to select the version of QROM."""
         return self.hyperparameters["clean"]
