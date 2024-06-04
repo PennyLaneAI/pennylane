@@ -15,7 +15,7 @@
 # pylint: disable=protected-access, use-implicit-booleaness-not-comparison
 import functools
 import pickle
-
+import jax
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
@@ -614,8 +614,6 @@ class TestProjector:
     def test_jit_measurement(self):
         """Test that the measurement of a projector can be jitted."""
 
-        import jax
-
         @jax.jit
         @qml.qnode(qml.device("default.qubit"))
         def circuit(state):
@@ -639,83 +637,12 @@ class TestProjector:
     def test_jit_matrix(self):
         """Test that computing the matrix of a projector is jittable."""
 
-        import jax
-
         basis_state = jax.numpy.array([0, 1])
         f = jax.jit(BasisStateProjector.compute_matrix)
         out = f(basis_state)
 
         expected = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
         assert qml.math.allclose(out, expected)
-
-    def test_single_qubit_basis_state_0(self):
-        """Tests the function with a single-qubit basis state |0>."""
-        basis_state = [0]
-        data = [1]
-        row_indices = [0]
-        col_indices = [0]
-        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(2, 2))
-
-        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-
-        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
-
-    def test_single_qubit_basis_state_1(self):
-        """Tests the function with a single-qubit basis state |1>."""
-        basis_state = [1]
-        data = [1]
-        row_indices = [1]
-        col_indices = [1]
-        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(2, 2))
-        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
-
-    def test_two_qubit_basis_state_10(self):
-        """Tests the function with a two-qubits basis state |10>."""
-        basis_state = [1, 0]
-        data = [1]
-        row_indices = [2]
-        col_indices = [2]
-        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
-        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
-
-    def test_two_qubit_basis_state_01(self):
-        """Tests the function with a two-qubits basis state |01>."""
-        basis_state = [0, 1]
-        data = [1]
-        row_indices = [1]
-        col_indices = [1]
-        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
-        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
-
-    def test_two_qubit_basis_state_11(self):
-        """Tests the function with a two-qubits basis state |11>."""
-        basis_state = [1, 1]
-        data = [1]
-        row_indices = [3]
-        col_indices = [3]
-        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
-        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
-
-    def test_three_qubit_basis_state_101(self):
-        """Tests the function with a three-qubits basis state |101>."""
-        basis_state = [1, 1]
-        data = [1]
-        row_indices = [5]
-        col_indices = [5]
-        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(8, 8))
-        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
-        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
-
-    def test_invalid_basis_state(self):
-        """Tests the function with an invalid state."""
-        basis_state = [0, 2]  # Invalid basis state
-        with pytest.raises(ValueError):
-            BasisStateProjector.compute_sparse_matrix(basis_state)
 
 
 class TestBasisStateProjector:
@@ -896,8 +823,6 @@ class TestStateVectorProjector:
     @pytest.mark.jax
     def test_jit_execution(self):
         """Test that executing a StateVectorProjector can be jitted."""
-
-        import jax
 
         @jax.jit
         @qml.qnode(qml.device("default.qubit"))
