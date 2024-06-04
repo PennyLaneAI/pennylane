@@ -33,6 +33,7 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
+from pennylane.typing import TensorLike
 
 from .core import transform
 
@@ -49,7 +50,7 @@ def null_postprocessing(results):
 @transform
 def dynamic_one_shot(
     tape: qml.tape.QuantumTape, **kwargs
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:
@@ -227,14 +228,14 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
 
 # pylint: disable=too-many-branches,too-many-statements
 def parse_native_mid_circuit_measurements(
-    circuit: qml.tape.QuantumScript, aux_tapes: qml.tape.QuantumScript, results
+    circuit: qml.tape.QuantumScript, aux_tapes: qml.tape.QuantumScript, results: TensorLike
 ):
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
 
     Args:
-        circuit (QuantumTape): The original tape
-        aux_tapes tuple[QuantumTape]: A tuple of transformed tapes
-        results tuple[Sequence[Any]]: A tuple of results with length n-shots
+        circuit (QuantumTape): The original ``QuantumScript``
+        aux_tapes (List[QuantumTape]): List of auxiliary ``QuantumScript`` objects
+        results (TensorLike): Array of measurement results
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -313,7 +314,8 @@ def gather_mcm_qjit(measurement, samples, is_valid):
     Args:
         measurement (MeasurementProcess): measurement
         samples (dict): Mid-circuit measurement samples
-        is_valid (TensorLike): Mask of valid samples
+        is_valid (TensorLike): Boolean array with the same shape as ``samples`` where the value at
+            each index specifies whether or not the respective sample is valid.
 
     Returns:
         TensorLike: The combined measurement outcome
@@ -339,44 +341,43 @@ def gather_mcm_qjit(measurement, samples, is_valid):
     return gather_non_mcm(measurement, meas, is_valid)
 
 
-def gather_non_mcm(circuit_measurement, measurements, is_valid):
-    """Combines, gathers and normalizes an array of terminal measurements.
+def gather_non_mcm(measurement, samples, is_valid):
+    """Combines, gathers and normalizes several measurements with trivial measurement values.
 
     Args:
-        circuit_measurement (MeasurementProcess): Measurement
-        measurements (TensorLike): Stacked measurement results
-        is_valid (TensorLike): Mask of valid samples
+        measurement (MeasurementProcess): measurement
+        samples (TensorLike): Post-processed measurement samples
+        is_valid (TensorLike): Boolean array with the same shape as ``samples`` where the value at
+            each index specifies whether or not the respective sample is valid.
 
     Returns:
         TensorLike: The combined measurement outcome
     """
-    if isinstance(circuit_measurement, CountsMP):
+    if isinstance(measurement, CountsMP):
         tmp = Counter()
-        for i, d in enumerate(measurements):
+        for i, d in enumerate(samples):
             tmp.update(
                 dict((k if isinstance(k, str) else float(k), v * is_valid[i]) for k, v in d.items())
             )
-        if not circuit_measurement.all_outcomes:
+        if not measurement.all_outcomes:
             tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
-    if isinstance(circuit_measurement, ExpectationMP):
-        return qml.math.sum(measurements * is_valid) / qml.math.sum(is_valid)
-    if isinstance(circuit_measurement, ProbabilityMP):
-        return qml.math.sum(measurements * is_valid.reshape((-1, 1)), axis=0) / qml.math.sum(
-            is_valid
-        )
-    if isinstance(circuit_measurement, SampleMP):
+    if isinstance(measurement, ExpectationMP):
+        return qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
+    if isinstance(measurement, ProbabilityMP):
+        return qml.math.sum(samples * is_valid.reshape((-1, 1)), axis=0) / qml.math.sum(is_valid)
+    if isinstance(measurement, SampleMP):
         is_interface_jax = qml.math.get_deep_interface(is_valid) == "jax"
-        if is_interface_jax and measurements.ndim == 2:
+        if is_interface_jax and samples.ndim == 2:
             is_valid = is_valid.reshape((-1, 1))
         return (
-            qml.math.where(is_valid, measurements, fill_in_value)
+            qml.math.where(is_valid, samples, fill_in_value)
             if is_interface_jax
-            else measurements[is_valid]
+            else samples[is_valid]
         )
     # VarianceMP
-    expval = qml.math.sum(measurements * is_valid) / qml.math.sum(is_valid)
-    return qml.math.sum((measurements - expval) ** 2 * is_valid) / qml.math.sum(is_valid)
+    expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
+    return qml.math.sum((samples - expval) ** 2 * is_valid) / qml.math.sum(is_valid)
 
 
 def gather_mcm(measurement, samples, is_valid):
@@ -385,7 +386,8 @@ def gather_mcm(measurement, samples, is_valid):
     Args:
         measurement (MeasurementProcess): measurement
         samples (List[dict]): Mid-circuit measurement samples
-        is_valid (TensorLike): Mask of valid samples
+        is_valid (TensorLike): Boolean array with the same shape as ``samples`` where the value at
+            each index specifies whether or not the respective sample is valid.
 
     Returns:
         TensorLike: The combined measurement outcome
