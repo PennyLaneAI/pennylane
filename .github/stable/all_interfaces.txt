@@ -24,7 +24,7 @@ filelock==3.14.0
 flaky==3.8.1
 flatbuffers==24.3.25
 fonttools==4.53.0
-fsspec==2024.5.0
+fsspec==2024.6.0
 future==1.0.0
 gast==0.5.4
 google-pasta==0.2.0

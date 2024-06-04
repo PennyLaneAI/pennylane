@@ -21,7 +21,7 @@ execnet==2.1.1
 filelock==3.14.0
 flaky==3.8.1
 fonttools==4.53.0
-fsspec==2024.5.0
+fsspec==2024.6.0
 future==1.0.0
 identify==2.5.36
 idna==3.7
