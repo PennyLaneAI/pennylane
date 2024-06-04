@@ -514,6 +514,10 @@ class TestPLDB:
             ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
             measurements=[qml.probs(wires=[0])],
         ),
+        qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0)],
+            measurements=[qml.state()],
+        ),  # Test that state expands to number of device wires
     )
 
     results = (
@@ -521,6 +525,7 @@ class TestPLDB:
         qnp.array(-1),
         qnp.array([1 / 2, 0, 0, 1 / 2]),
         qnp.array([1 / 2, 1 / 2]),
+        qnp.array([1 / qnp.sqrt(2), 0, 1 / qnp.sqrt(2), 0], dtype=complex),
     )
 
     @pytest.mark.parametrize("tape, expected_result", zip(tapes, results))
