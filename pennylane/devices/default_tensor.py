@@ -160,7 +160,7 @@ class DefaultTensor(Device):
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
-        method (str): Supported method. Currently, the supported methods are ``'mps'``(Matrix Product State) and ``'tn'`` (Exact Tensor Network).
+        method (str): Supported method. Currently, the supported methods are ``"mps"``(Matrix Product State) and ``"tn"`` (Exact Tensor Network).
         dtype (type): Data type for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
@@ -174,11 +174,11 @@ class DefaultTensor(Device):
             while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next to each other before applying the gate,
             then swaps them back. Default is ``auto-mps``. TODO: update description with new choices
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
-            Default is ``auto-hq``. For more information on available optimizers, see the `quimb's ``local_expectation`` documentation
-            <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
+            Default is ``auto-hq``. For more information on available optimizers, see the
+            `quimb's ``local_expectation`` documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
         local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
-            Default is ``ADCRS``. For a complete list of available sequences, see the `quimb's ``full_simplify`` documentation
-            <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
+            Default is ``ADCRS``. For a complete list of available sequences, see the
+            `quimb's ``full_simplify`` documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
 
 
     **Example:**
