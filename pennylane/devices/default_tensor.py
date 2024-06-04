@@ -352,7 +352,7 @@ class DefaultTensor(Device):
         elif self.method == "tn":
             self._quimb_circuit = qtn.Circuit(
                 psi0=self._initial_tn(wires),
-                # TODO: add options for TN
+                # gate_contract=self._contract,
             )
 
         else:
