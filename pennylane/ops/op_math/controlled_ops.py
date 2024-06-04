@@ -757,8 +757,6 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    arithmetic_depth = 0
-
     name = "CNOT"
 
     def _flatten(self):
@@ -838,8 +836,6 @@ class Toffoli(ControlledOp):
 
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    arithmetic_depth = 0
 
     name = "Toffoli"
 
