@@ -14,16 +14,22 @@
 """
 This module contains the qml.matrix function.
 """
-# pylint: disable=protected-access,too-many-branches
-from typing import Sequence, Callable, Union
 from functools import partial
 
+# pylint: disable=protected-access,too-many-branches
+from typing import Callable, Sequence, Union
+
 import pennylane as qml
-from pennylane.transforms import TransformError
 from pennylane import transform
-from pennylane.typing import TensorLike
 from pennylane.operation import Operator
-from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.transforms import TransformError
+from pennylane.typing import TensorLike
+
+
+def catalyst_qjit(qnode):
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
@@ -176,6 +182,9 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             wires specified, and this is the order in which wires appear in ``circuit()``.
 
     """
+    if catalyst_qjit(op):
+        op = op.user_function
+
     if not isinstance(op, Operator):
 
         if isinstance(op, (PauliWord, PauliSentence)):

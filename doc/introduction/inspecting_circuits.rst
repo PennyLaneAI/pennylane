@@ -47,7 +47,7 @@ For example:
         qml.Toffoli(wires=(0, 1, 2))
         qml.CRY(x[1], wires=(0, 1))
         qml.Rot(x[2], x[3], y, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+        return qml.expval(qml.Z(0)), qml.expval(qml.X(1))
 
 
 We can now use the :func:`~pennylane.specs` transform to generate a function that returns
@@ -85,17 +85,20 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+    dev = qml.device('default.qubit')
 
     @qml.qnode(dev)
     def circuit(x, z):
         qml.QFT(wires=(0,1,2,3))
         qml.IsingXX(1.234, wires=(0,2))
         qml.Toffoli(wires=(0,1,2))
+        mcm = qml.measure(1)
+        mcm_out = qml.measure(2)
         qml.CSWAP(wires=(0,2,3))
         qml.RX(x, wires=0)
+        qml.cond(mcm, qml.RY)(np.pi / 4, wires=3)
         qml.CRZ(z, wires=(3,0))
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0)), qml.probs(op=mcm_out)
 
 
     fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
@@ -107,10 +110,12 @@ For example:
     :target: javascript:void(0);
 
 >>> print(qml.draw(circuit)(1.2345,1.2345))
-0: ─╭QFT─╭IsingXX(1.23)─╭●─╭●─────RX(1.23)─╭RZ(1.23)─┤  <Z>
-1: ─├QFT─│──────────────├●─│───────────────│─────────┤     
-2: ─├QFT─╰IsingXX(1.23)─╰X─├SWAP───────────│─────────┤     
-3: ─╰QFT───────────────────╰SWAP───────────╰●────────┤     
+0: ─╭QFT─╭IsingXX(1.23)─╭●───────────╭●─────RX(1.23)─╭RZ(1.23)─┤  <Z>
+1: ─├QFT─│──────────────├●──┤↗├──────│───────────────│─────────┤
+2: ─├QFT─╰IsingXX(1.23)─╰X───║───┤↗├─├SWAP───────────│─────────┤
+3: ─╰QFT─────────────────────║────║──╰SWAP──RY(0.79)─╰●────────┤
+                             ╚════║═════════╝
+                                  ╚════════════════════════════╡  Probs[MCM]
 
 More information, including various fine-tuning options, can be found in
 the :doc:`drawing module <../code/qml_drawer>`.
@@ -128,7 +133,7 @@ Currently supported devices include:
 * ``default.mixed``: each snapshot saves the density matrix
 * ``default.gaussian``: each snapshot saves the covariance matrix and vector of means
 
-During normal execution, the snapshots are ignored:
+A :class:`~pennylane.Snapshot` can be used in a QNode like any other operation:
 
 .. code-block:: python
 
@@ -136,12 +141,17 @@ During normal execution, the snapshots are ignored:
 
     @qml.qnode(dev, interface=None)
     def circuit():
-        qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
+        qml.Snapshot(measurement=qml.expval(qml.Z(0)))
         qml.Hadamard(wires=0)
         qml.Snapshot("very_important_state")
         qml.CNOT(wires=[0, 1])
         qml.Snapshot()
-        return qml.expval(qml.PauliX(0))
+        return qml.expval(qml.X(0))
+
+During normal execution, the snapshots are ignored:
+
+>>> circuit()
+0.0
 
 However, when using the :func:`~pennylane.snapshots`
 transform, intermediate device states will be stored and returned alongside the
@@ -152,6 +162,9 @@ results.
 'very_important_state': array([0.707+0.j, 0.+0.j, 0.707+0.j, 0.+0.j]),
 2: array([0.707+0.j, 0.+0.j, 0.+0.j, 0.707+0.j]),
 'execution_results': 0.0}
+
+All snapshots are numbered with consecutive integers, and if no tag was provided,
+the number of a snapshot is used as a key in the output dictionary instead.
 
 Graph representation
 --------------------
@@ -185,7 +198,7 @@ or to check whether two gates causally influence each other.
         qml.CNOT([1, 2])
         qml.CNOT([2, 3])
         qml.CNOT([3, 1])
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.Z(0))
 
 
     circuit()
@@ -197,7 +210,7 @@ or to check whether two gates causally influence each other.
 Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``rustworkx`` graph object.
 
 >>> type(g.graph)
-<class 'rustworkx.PyDiGraph'>
+rustworkx.PyDiGraph
 
 There is no edge between the ``Hadamard`` and the first ``CNOT``, but between consecutive ``CNOT`` gates:
 
@@ -252,7 +265,7 @@ pairwise commutation:
 ...     qml.Hadamard(wires=2)
 ...     qml.CRZ(z, wires=[2, 0])
 ...     qml.RY(-y, wires=1)
-...     return qml.expval(qml.PauliZ(0))
+...     return qml.expval(qml.Z(0))
 >>> dag_fn = qml.commutation_dag(circuit)
 >>> dag = dag_fn(np.pi / 4, np.pi / 3, np.pi / 2)
 

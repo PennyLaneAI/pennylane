@@ -16,11 +16,12 @@ Unit tests for computing Autograd gradients of quantum functions.
 """
 # pylint: disable=no-value-for-parameter
 
-import pytest
 import autograd
 import numpy as np
-import pennylane.numpy as anp  # only to be used inside classical computational nodes
+import pytest
+
 import pennylane as qml
+import pennylane.numpy as anp  # only to be used inside classical computational nodes
 
 alpha = 0.5  # displacement in tests
 hbar = 2

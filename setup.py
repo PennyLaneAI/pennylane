@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy",
+    "numpy<2.0",
     "scipy",
     "networkx",
     "rustworkx",
@@ -29,11 +29,12 @@ requirements = [
     "toml",
     "appdirs",
     "semantic-version>=2.7",
-    "autoray>=0.6.1",
+    "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.35",
+    "pennylane-lightning>=0.36",
     "requests",
     "typing_extensions",
+    "packaging",
 ]
 
 info = {
@@ -59,6 +60,8 @@ info = {
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
+            "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
+            "default.tensor = pennylane.devices.default_tensor:DefaultTensor",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },

@@ -15,7 +15,7 @@ To enable logging support in your PennyLane work-flow simply run the following l
 This will ensure all levels of the execution pipeline log function entries and
 outputs. These are logged to handlers pointing to the standard output. Note, since Python's logging framework configuration functions overwrite previous logger configurations, it is expected that :func:`~pennylane.logging.enable_logging()` is called only when not using external logging configurations.
 
-If you are defining custom logging configurations, you can extend the logging configuration options as defined in the section :ref:`Customizing the logging configuration <logging-config>`, or avoid calling :func:`~pennylane.logging.enable_logging()` in favour of tour custom configuration options.
+If you are defining custom logging configurations, you can extend the logging configuration options as defined in the section :ref:`Customizing the logging configuration <logging-config>`, or avoid calling :func:`~pennylane.logging.enable_logging()` in favour of your custom configuration options.
 
 Adding logging supports during development
 ------------------------------------------
@@ -29,24 +29,36 @@ To add logging support to components of PennyLane, we must define a module logge
 
 which will be used within the given module, and track directories,
 filenames and function names, as we have defined the appropriate types
-within the formatter configuration (see :class:`pennylane.logging.DefaultFormatter`). With the logger defined, we can selectively add to the logger by if-else statements, which compare the given module’s log-level to any log record
-message it receives. This step is not necessary, as the message will
-only output if the level is enabled, though if an expensive function
-call is required to build the string for the log-message, it can be
-faster to perform this check:
+within the formatter configuration (see :class:`pennylane.logging.DefaultFormatter`). With the logger defined, we can selectively add to the logger via two methods: 
 
-.. code:: python
+#. Using decorators on the required functions and methods in a given module:
 
-   if logger.isEnabledFor(logging.DEBUG):
-       logger.debug(
-           """Entry with args=(arg_name_1=%s, arg_name_2=%s, ..., arg_name_n=%s)""",
-           arg_name_1, arg_name_2, ..., arg_name_n,
-       )
+   .. code:: python
 
-The above line can be added below the function/method entry point,
-and the provided arguments can be used to populate the log message. This
-allows us a way to track the inputs and calls through the stack in the
-order they are executed, as is the basis for following a trail of
+      # debug_logger can be used to decorate any method or free function
+      # debug_logger_init can be used to decorate class __init__ methods.
+      from pennylane.logging import debug_logger, debug_logger_init
+
+      @debug_logger
+      def my_func(arg1, arg2):
+         return arg1 + arg2
+
+#. Explicitly by if-else statements, which compare the given module’s log-level to any log record message it receives. This step is not necessary, as the message will
+   only output if the level is enabled, though if an expensive function
+   call is required to build the string for the log-message, it can be
+   faster to perform this check:
+
+   .. code:: python
+
+      if logger.isEnabledFor(logging.DEBUG):
+         logger.debug(
+            """Entry with args=(arg_name_1=%s, arg_name_2=%s, ..., arg_name_n=%s)""",
+            arg_name_1, arg_name_2, ..., arg_name_n,
+         )
+
+Both versions provide similar functionality, though the explicit logger call allows more custom message-formatting, such as expanding functions as string representation, filtering of data, and other useful processing for a valid record.
+
+These logging options allow us a way to track the inputs and calls through the stack in the order they are executed, as is the basis for following a trail of
 execution as needed.
 
 All debug log-statements currently added to the PennyLane execution
@@ -81,6 +93,8 @@ adjust these through the ``[formatters]`` section. If we want to filter
 messages based on some criteria, we can add these to the respective
 handlers. As an example, we can go through the configuration file and
 explore the options.
+
+For ease-of-development, the function :func:`pennylane.logging.edit_system_config` opens an editor (if the ``EDITOR`` environment variable is set), or a viewer of the existing file configuration, which can be used to modify the existing options.
 
 Modifying the configuration options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

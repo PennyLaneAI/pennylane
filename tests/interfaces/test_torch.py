@@ -17,9 +17,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import execute
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.typing import TensorLike
-from pennylane import execute
 
 pytestmark = pytest.mark.torch
 torch = pytest.importorskip("torch")
@@ -974,7 +974,7 @@ class TestTorchExecuteIntegration:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
-            qml.sample(qml.PauliZ(0))
+            qml.sample()
 
         tape = qml.tape.QuantumScript.from_queue(q)
 

@@ -20,8 +20,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import (
-    AnyWires,
     AllWires,
+    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
@@ -805,11 +805,11 @@ class TestIntegration:
             res = circ(phi)
 
         phi_grad = tape.gradient(res, phi)
+        phi_real = qml.math.cast(phi, tf.float64)
 
-        assert qml.math.allclose(res, tf.cos(phi))
-        assert qml.math.allclose(
-            phi_grad, -tf.sin(phi)  # pylint: disable=invalid-unary-operand-type
-        )
+        assert qml.math.allclose(res, tf.cos(phi_real))
+        # pylint: disable=invalid-unary-operand-type
+        assert qml.math.allclose(phi_grad, -tf.sin(phi))
 
     @pytest.mark.torch
     def test_torch_qnode(self):

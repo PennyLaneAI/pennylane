@@ -14,7 +14,8 @@
 """Tests for the gradients.parameter_shift_cv module."""
 # pylint: disable=protected-access, no-self-use, not-callable, no-value-for-parameter
 
-import unittest.mock as mock
+from unittest import mock
+
 import pytest
 
 import pennylane as qml
@@ -22,8 +23,8 @@ from pennylane import numpy as np
 from pennylane.gradients import param_shift_cv
 from pennylane.gradients.gradient_transform import choose_trainable_params
 from pennylane.gradients.parameter_shift_cv import (
-    _grad_method_cv,
     _find_gradient_methods_cv,
+    _grad_method_cv,
     _transform_observable,
 )
 

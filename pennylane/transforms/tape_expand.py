@@ -18,8 +18,8 @@ import contextlib
 
 import pennylane as qml
 from pennylane.operation import (
-    has_gen,
     gen_is_multi_term_hamiltonian,
+    has_gen,
     has_grad_method,
     has_nopar,
     has_unitary_gen,
@@ -171,7 +171,7 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
         return expand_trainable_multipar
 
     # pylint: disable=protected-access
-    trainable_par_info = [tape._par_info[i] for i in tape.trainable_params]
+    trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainable_ops = [info["op"] for info in trainable_par_info]
 
     @qml.BooleanFn
@@ -502,7 +502,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
-    if isinstance(dev, qml.Device):
+    if isinstance(dev, qml.devices.LegacyDevice):
         original_custom_expand_fn = dev.custom_expand_fn
 
         # Create a new expansion function; stop at things that do not have

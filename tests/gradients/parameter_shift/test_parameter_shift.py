@@ -12,18 +12,228 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types."""
+# pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
+    _evaluate_gradient,
     _get_operation_recipe,
-    _put_zeros_in_pdA2_involutory,
     _make_zero_rep,
+    _put_zeros_in_pdA2_involutory,
 )
-from pennylane.devices import DefaultQubitLegacy
-from pennylane.operation import Observable, AnyWires
+from pennylane.measurements.shots import Shots
+from pennylane.operation import AnyWires, Observable
+
+# Constants for TestEvaluateGradient
+# Coefficients and expectation values
+X = np.arange(1, 5)
+# Expected "shift rule" result
+Z = np.sum(-np.arange(1, 5) ** 2)
+# Single coefficient/expectation value that leads to the same result as X
+w = np.sqrt(30)
+# Prefactors to emulate a shot vector
+shv = np.array([0.1, 0.4, 0.7])
+# Fake probability vector (just a 1d array)
+p = np.array([0.01, 0.06, -0.2, 0.5, -0.1, 0.7, -0.09])
+# Second fake probability vector (just a 1d array)
+p2 = p[1:5]
+# shifted probability evaluations
+P = np.outer(X, p)
+# shifted probability evaluations for p2
+P2 = np.outer(X, p2)
+# Single unshifted result that lead to the same result as P
+v = w * p
+# Single unshifted result that lead to the same result as P2
+v2 = w * p2
+# Prefactors to emulate different shot values and multi measurement
+shv_m = np.outer([0.1, 0.4, 0.7], [1, 2])
+
+
+class TestEvaluateGradient:
+    """Test _evaluate_gradient."""
+
+    # pylint: disable=too-many-arguments
+
+    # We could theoretically compute the required res, r0 and expected from the parametrization of coeffs,
+    # unshifted_coeff and batch_size, but that turned out to take lots of effort and edge case logic
+
+    test_cases_single_shots_single_meas = [
+        # Expectation value
+        (X, None, None, tuple(-X), None, Z),
+        (X, None, 4, -X, None, Z),
+        (X[:-1], X[-1], None, tuple(-X[:-1]), -X[-1], Z),
+        (X[:-1], X[-1], 4, -X[:-1], -X[-1], Z),
+        (np.ones(0), w, None, (), -w, Z),
+        (np.ones(0), w, 4, (), -w, Z),
+        # Probability
+        (X, None, None, tuple(-P), None, p * Z),
+        (X, None, 4, -P, None, p * Z),
+        (X[:-1], X[-1], None, tuple(-P[:-1]), -P[-1], p * Z),
+        (X[:-1], X[-1], 4, -P[:-1], -P[-1], p * Z),
+        (np.ones(0), w, None, (), -v, p * Z),
+        (np.ones(0), w, 4, (), -v, p * Z),
+    ]
+
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff, batch_size, res, r0, expected",
+        test_cases_single_shots_single_meas,
+    )
+    def test_single_shots_single_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
+        """Test that a single shots, single measurement gradient is evaluated correctly."""
+
+        shots = Shots(100)
+        tape_specs = (None, None, 1, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, np.ndarray)
+        assert grad.shape == expected.shape
+        assert np.allclose(grad, expected)
+
+    exp_probs = (p2 * Z, 2 * p * Z)
+    test_cases_single_shots_multi_meas = [
+        # Expectation values
+        (X, None, None, tuple(zip(-X, -2 * X)), None, (Z, 2 * Z)),
+        (X, None, 4, (-X, -2 * X), None, (Z, 2 * Z)),
+        (X[:-1], X[-1], None, tuple(zip(-X[:-1], -2 * X[:-1])), (-X[-1], -2 * X[-1]), (Z, 2 * Z)),
+        (X[:-1], X[-1], 4, (-X[:-1], -2 * X[:-1]), (-X[-1], -2 * X[-1]), (Z, 2 * Z)),
+        (np.ones(0), w, None, (), (-w, -2 * w), (Z, 2 * Z)),
+        (np.ones(0), w, 4, (), (-w, -2 * w), (Z, 2 * Z)),
+        # Expval and Probability
+        (X, None, None, tuple(zip(-X, -2 * P)), None, (Z, 2 * p * Z)),
+        (X, None, 4, (-X, -2 * P), None, (Z, 2 * p * Z)),
+        (X[:-1], X[-1], None, tuple(zip(-X, -2 * P))[:-1], (-X[-1], -2 * P[-1]), (Z, 2 * p * Z)),
+        (X[:-1], X[-1], 4, (-X[:-1], -2 * P[:-1]), (-X[-1], -2 * P[-1]), (Z, 2 * p * Z)),
+        (np.ones(0), w, None, (), (-w, -2 * v), (Z, 2 * p * Z)),
+        (np.ones(0), w, 4, (), (-w, -2 * v), (Z, 2 * p * Z)),
+        # Probabilities
+        (X, None, None, tuple(zip(-P2, -2 * P)), None, exp_probs),
+        (X, None, 4, (-P2, -2 * P), None, exp_probs),
+        (X[:-1], X[-1], None, tuple(zip(-P2, -2 * P))[:-1], (-P2[-1], -2 * P[-1]), exp_probs),
+        (X[:-1], X[-1], 4, (-P2[:-1], -2 * P[:-1]), (-P2[-1], -2 * P[-1]), exp_probs),
+        (np.ones(0), w, None, (), (-v2, -2 * v), exp_probs),
+        (np.ones(0), w, 4, (), (-v2, -2 * v), exp_probs),
+    ]
+
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff, batch_size, res, r0, expected",
+        test_cases_single_shots_multi_meas,
+    )
+    def test_single_shots_multi_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
+        """Test that a single shots, multiple measurements gradient is evaluated correctly."""
+
+        shots = Shots(100)
+        tape_specs = (None, None, 2, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, tuple) and len(grad) == 2
+        for g, e in zip(grad, expected):
+            assert isinstance(g, np.ndarray) and g.shape == e.shape
+            assert np.allclose(g, e)
+
+    shot_vec_X = tuple(zip(*(-c * X for c in shv)))
+    shot_vec_P = tuple(zip(*(-c * P for c in shv)))
+    shot_vec_P_partial = tuple(-c * P[:-1] for c in shv)
+
+    exp_shot_vec_prob = np.outer(shv, p) * Z
+    test_cases_multi_shots_single_meas = [
+        # Expectation value
+        (X, None, None, shot_vec_X, None, shv * Z),
+        (X, None, 4, tuple(-c * X for c in shv), None, shv * Z),
+        (X[:-1], X[-1], None, shot_vec_X[:-1], shot_vec_X[-1], shv * Z),
+        (X[:-1], X[-1], 4, tuple(-c * X[:-1] for c in shv), tuple(-shv * X[-1]), shv * Z),
+        (np.ones(0), w, None, (), tuple(-c * w for c in shv), shv * Z),
+        (np.ones(0), w, 4, ((), (), ()), tuple(-c * w for c in shv), shv * Z),
+        # Probability
+        (X, None, None, shot_vec_P, None, exp_shot_vec_prob),
+        (X, None, 4, tuple(-c * P for c in shv), None, exp_shot_vec_prob),
+        (X[:-1], X[-1], None, shot_vec_P[:-1], shot_vec_P[-1], exp_shot_vec_prob),
+        (X[:-1], X[-1], 4, shot_vec_P_partial, tuple(np.outer(-shv, P[-1])), exp_shot_vec_prob),
+        (np.ones(0), w, None, (), tuple(-c * v for c in shv), exp_shot_vec_prob),
+        (np.ones(0), w, 4, ((), (), ()), tuple(-c * v for c in shv), exp_shot_vec_prob),
+    ]
+
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff, batch_size, res, r0, expected",
+        test_cases_multi_shots_single_meas,
+    )
+    def test_multi_shots_single_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
+        """Test that a shot vector, single measurements gradient is evaluated correctly."""
+
+        shots = Shots((100, 101, 102))
+        tape_specs = (None, None, 1, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, tuple) and len(grad) == 3
+        for g, e in zip(grad, expected):
+            assert isinstance(g, np.ndarray) and g.shape == e.shape
+            assert np.allclose(g, e)
+
+    multi_X = tuple(tuple((-c * x, -2 * c * x) for c in shv) for x in X)
+    batched_multi_X = tuple((-c * X, -2 * c * X) for c in shv)
+    partial_multi_X = tuple((-c * X[:-1], -2 * c * X[:-1]) for c in shv)
+    expvals_r0 = tuple((-c * w, -2 * c * w) for c in shv)
+
+    multi_X_P = tuple(tuple((-c * _p, -2 * c * x) for c in shv) for x, _p in zip(X, P))
+    batched_multi_X_P = tuple((-c * P, -2 * c * X) for c in shv)
+    partial_multi_X_P = tuple((-c * P[:-1], -2 * c * X[:-1]) for c in shv)
+    prob_expval_r0 = tuple((-c * v, -2 * c * w) for c in shv)
+
+    multi_P_P = tuple(tuple((-c * _p, -2 * c * _q) for c in shv) for _q, _p in zip(P2, P))
+    batched_multi_P_P = tuple((-c * P, -2 * c * P2) for c in shv)
+    partial_multi_P_P = tuple((-c * P[:-1], -2 * c * P2[:-1]) for c in shv)
+    probs_r0 = tuple((-c * v, -2 * c * v2) for c in shv)
+
+    exp_shot_vec_prob_expval = tuple((c * p * Z, 2 * c * Z) for c in shv)
+    exp_shot_vec_probs = tuple((c * p * Z, 2 * c * p2 * Z) for c in shv)
+    test_cases_multi_shots_multi_meas = [
+        # Expectation values
+        (X, None, None, multi_X, None, shv_m * Z),
+        (X, None, 4, batched_multi_X, None, shv_m * Z),
+        (X[:-1], X[-1], None, multi_X[:-1], multi_X[-1], shv_m * Z),
+        (X[:-1], X[-1], 4, partial_multi_X, multi_X[-1], shv_m * Z),
+        (np.ones(0), w, None, (), expvals_r0, shv_m * Z),
+        (np.ones(0), w, 4, ((), (), ()), expvals_r0, shv_m * Z),
+        # Probability and expectation
+        (X, None, None, multi_X_P, None, exp_shot_vec_prob_expval),
+        (X, None, 4, batched_multi_X_P, None, exp_shot_vec_prob_expval),
+        (X[:-1], X[-1], None, multi_X_P[:-1], multi_X_P[-1], exp_shot_vec_prob_expval),
+        (X[:-1], X[-1], 4, partial_multi_X_P, multi_X_P[-1], exp_shot_vec_prob_expval),
+        (np.ones(0), w, None, (), prob_expval_r0, exp_shot_vec_prob_expval),
+        (np.ones(0), w, 4, ((), (), ()), prob_expval_r0, exp_shot_vec_prob_expval),
+        # Probabilities
+        (X, None, None, multi_P_P, None, exp_shot_vec_probs),
+        (X, None, 4, batched_multi_P_P, None, exp_shot_vec_probs),
+        (X[:-1], X[-1], None, multi_P_P[:-1], multi_P_P[-1], exp_shot_vec_probs),
+        (X[:-1], X[-1], 4, partial_multi_P_P, multi_P_P[-1], exp_shot_vec_probs),
+        (np.ones(0), w, None, (), probs_r0, exp_shot_vec_probs),
+        (np.ones(0), w, 4, ((), (), ()), probs_r0, exp_shot_vec_probs),
+    ]
+
+    @pytest.mark.parametrize(
+        "coeffs, unshifted_coeff, batch_size, res, r0, expected",
+        test_cases_multi_shots_multi_meas,
+    )
+    def test_multi_shots_multi_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
+        """Test that a shot vector, multiple measurements gradient is evaluated correctly."""
+
+        shots = Shots((100, 101, 102))
+        tape_specs = (None, None, 2, shots)
+        data = [None, coeffs, None, unshifted_coeff, None]
+        grad = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
+
+        assert isinstance(grad, tuple) and len(grad) == 3
+        for g, e in zip(grad, expected):
+            assert isinstance(g, tuple) and len(g) == 2
+            for _g, _e in zip(g, e):
+                assert isinstance(_g, np.ndarray) and _g.shape == _e.shape
+                assert np.allclose(_g, _e)
 
 
 # pylint: disable=too-few-public-methods
@@ -341,6 +551,20 @@ class TestParamShift:
         tapes, _ = qml.gradients.param_shift(tape)
         assert not tapes
 
+    def test_parameter_shift_non_commuting_observables(self):
+        """Test that parameter shift works even if the measurements do not commute with each other."""
+
+        ops = (qml.RX(0.5, wires=0),)
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Z(0)))
+        tape = qml.tape.QuantumScript(ops, ms, trainable_params=[0])
+
+        batch, _ = qml.gradients.param_shift(tape)
+        assert len(batch) == 2
+        tape0 = qml.tape.QuantumScript((qml.RX(0.5 + np.pi / 2, 0),), ms, trainable_params=[0])
+        tape1 = qml.tape.QuantumScript((qml.RX(0.5 - np.pi / 2, 0),), ms, trainable_params=[0])
+        assert qml.equal(batch[0], tape0)
+        assert qml.equal(batch[1], tape1)
+
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a state"""
@@ -536,7 +760,8 @@ class TestParamShift:
     #     tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
     #     assert tapes == []
 
-    def test_with_gradient_recipes(self):
+    @pytest.mark.parametrize("broadcast", [True, False])
+    def test_with_gradient_recipes(self, broadcast):
         """Test that the function behaves as expected"""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -549,18 +774,34 @@ class TestParamShift:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
         gradient_recipes = ([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]])
-        tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, _ = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
-        assert len(tapes) == 5
-        assert [t.batch_size for t in tapes] == [None] * 5
-        assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
-        assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
-        assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
-        assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
-        assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
+        if broadcast:
+            assert len(tapes) == 2
+            assert [t.batch_size for t in tapes] == [2, 3]
 
+            shifted_batch = [0.2 * 1.0 + 0.3, 0.5 * 1.0 + 0.6]
+            tape_par = tapes[0].get_parameters(trainable_only=False)
+            assert np.allclose(tape_par[0], shifted_batch)
+            assert tape_par[1:] == [2.0, 3.0, 4.0]
+
+            shifted_batch = [1 * 3.0 + 1, 2 * 3.0 + 2, 3 * 3.0 + 3]
+            tape_par = tapes[1].get_parameters(trainable_only=False)
+            assert tape_par[:2] == [1.0, 2.0]
+            assert np.allclose(tape_par[2], shifted_batch)
+            assert tape_par[3:] == [4.0]
+        else:
+            assert len(tapes) == 5
+            assert [t.batch_size for t in tapes] == [None] * 5
+            assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
+            assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
+            assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
+            assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
+            assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
+
+    @pytest.mark.parametrize("broadcast", [True, False])
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
-    def test_recycled_unshifted_tape(self, ops_with_custom_recipe):
+    def test_recycled_unshifted_tape(self, ops_with_custom_recipe, broadcast):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -577,23 +818,28 @@ class TestParamShift:
             [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None
             for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
-        # two tapes per parameter that doesn't use a custom recipe,
+        # two (one with broadcast) tapes per parameter that doesn't use a custom recipe,
         # one tape per parameter that uses custom recipe,
         # plus one global call if at least one uses the custom recipe
-        num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
-        assert len(tapes) == 2 * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
+        num_custom = len(ops_with_custom_recipe)
+        num_ops_standard_recipe = tape.num_params - num_custom
+        tapes_per_param = 1 if broadcast else 2
+        assert len(tapes) == tapes_per_param * num_ops_standard_recipe + num_custom + 1
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
 
+    @pytest.mark.parametrize("broadcast", [False, True])
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
     @pytest.mark.parametrize("multi_measure", [False, True])
-    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure):
+    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure, broadcast):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
+        if multi_measure and broadcast:
+            pytest.skip("Multiple measurements are not supported with `broadcast=True` yet.")
         dev = qml.device("default.qubit", wires=2)
         x = [0.543, -0.654]
 
@@ -608,12 +854,13 @@ class TestParamShift:
         gradient_recipes = tuple(
             [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
         )
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, broadcast=broadcast)
 
-        # two tapes per parameter that doesn't use a custom recipe,
+        # two (one with broadcast) tapes per parameter that doesn't use a custom recipe,
         # plus one global (unshifted) call if at least one uses the custom recipe
         num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
-        assert len(tapes) == 2 * num_ops_standard_recipe + int(
+        tapes_per_param = 1 if broadcast else 2
+        assert len(tapes) == tapes_per_param * num_ops_standard_recipe + int(
             tape.num_params != num_ops_standard_recipe
         )
         # Test that executing the tapes and the postprocessing function works
@@ -662,8 +909,9 @@ class TestParamShift:
         assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)
         assert qml.math.allclose(grad[1], 0, atol=1e-5)
 
+    @pytest.mark.parametrize("broadcast", [True, False])
     @pytest.mark.parametrize("y_wire", [0, 1])
-    def test_f0_provided(self, y_wire):
+    def test_f0_provided(self, y_wire, broadcast):
         """Test that if the original tape output is provided, then
         the tape is not executed additionally at the current parameter
         values."""
@@ -677,7 +925,7 @@ class TestParamShift:
         tape = qml.tape.QuantumScript.from_queue(q)
         gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
         f0 = dev.execute(tape)
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, f0=f0)
+        tapes, fn = param_shift(tape, gradient_recipes=gradient_recipes, f0=f0, broadcast=broadcast)
 
         # one tape per parameter that impacts the expval
         assert len(tapes) == 2 if y_wire == 0 else 1
@@ -830,24 +1078,25 @@ class TestParamShiftRaisesWithBroadcasted:
     """Test that an error is raised with broadcasted tapes."""
 
     def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape."""
+        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the parameter-shift rule"
+        _match = r"Computing the gradient of broadcasted tapes .* using the parameter-shift rule"
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.param_shift(tape)
 
 
-# Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
-# See #4462 for details.
-@pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
 class TestParamShiftWithBroadcasted:
     """Tests for the `param_shift` transform on already broadcasted tapes.
     The tests for `param_shift` using broadcasting itself can be found
     further below."""
 
+    # Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
+    # See #4462 for details.
+    @pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
     @pytest.mark.parametrize("dim", [1, 3])
     @pytest.mark.parametrize("pos", [0, 1])
-    def test_with_single_parameter_broadcasted(self, dim, pos):
+    def test_with_single_trainable_parameter_broadcasted(self, dim, pos):
         """Test that the parameter-shift transform works with a tape that has
         one of its parameters broadcasted already."""
         x = np.array([0.23, 9.1, 2.3])
@@ -875,6 +1124,9 @@ class TestParamShiftWithBroadcasted:
         assert res[0].shape == (dim,)
         assert res[1].shape == (dim,)
 
+    # Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
+    # See #4462 for details.
+    @pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
     @pytest.mark.parametrize("argnum", [(0, 2), (0, 1), (1,), (2,)])
     @pytest.mark.parametrize("dim", [1, 3])
     def test_with_multiple_parameters_broadcasted(self, dim, argnum):
@@ -901,6 +1153,33 @@ class TestParamShiftWithBroadcasted:
         assert len(res) == 3
 
         assert res[0].shape == res[1].shape == res[2].shape == (dim,)
+
+    @pytest.mark.parametrize("dim", [1, 3])
+    @pytest.mark.parametrize("pos", [0, 1])
+    def test_with_single_nontrainable_parameter_broadcasted(self, dim, pos):
+        """Test that the parameter-shift transform works with a tape that has
+        one of its nontrainable parameters broadcasted."""
+        x = np.array([0.23, 9.1, 2.3])
+        x = x[:dim]
+        y = -0.654
+        if pos == 1:
+            x, y = y, x
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[0])  # does not have any impact on the expval
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [1 - pos]
+        assert tape.batch_size == dim
+        tapes, fn = qml.gradients.param_shift(tape, argnum=[0])
+        assert len(tapes) == 2
+        assert np.allclose([t.batch_size for t in tapes], dim)
+
+        dev = qml.device("default.qubit", wires=2)
+        res = fn(dev.execute(tapes))
+        assert res.shape == (dim,)
 
 
 class TestParamShiftUsingBroadcasting:
@@ -2186,7 +2465,7 @@ class TestParameterShiftRule:
 
     def cost1(x):
         """Perform rotation and return a scalar expectation value."""
-        qml.Rot(*x, wires=0)
+        qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
         return qml.expval(qml.PauliZ(0))
 
     def cost2(x):
@@ -2197,7 +2476,7 @@ class TestParameterShiftRule:
     def cost3(x):
         """Perform rotation and return two expectation value in a 1d array."""
         qml.Rot(*x, wires=0)
-        return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+        return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
 
     def cost4(x):
         """Perform rotation and return probabilities."""
@@ -2212,17 +2491,53 @@ class TestParameterShiftRule:
     def cost6(x):
         """Perform rotation and return two sets of probabilities in a 2d object."""
         qml.Rot(*x, wires=0)
-        return [qml.probs([0, 1]), qml.probs([2, 3])]
+        return (qml.probs([0, 1]), qml.probs([2, 3]))
+
+    def cost7(x):
+        """Perform rotation and return a scalar expectation value."""
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def cost8(x):
+        """Perform rotation and return an expectation value in a 1d array."""
+        qml.RX(x, wires=0)
+        return [qml.expval(qml.PauliZ(0))]
+
+    def cost9(x):
+        """Perform rotation and return two expectation value in a 1d array."""
+        qml.RX(x, wires=0)
+        return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
+
+    costs_and_expected_expval_scalar = [
+        (cost7, (), np.ndarray),
+        (cost8, (1,), list),
+        (cost9, (2,), tuple),
+    ]
+
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_scalar)
+    def test_output_shape_matches_qnode_expval_scalar(self, cost, exp_shape, exp_type):
+        """Test that the transform output shape matches that of the QNode for
+        expectation values and a scalar parameter."""
+        dev = qml.device("default.qubit", wires=4)
+
+        x = np.array(0.419)
+        circuit = qml.QNode(cost, dev)
+
+        res_parshift = qml.gradients.param_shift(circuit)(x)
+
+        assert isinstance(res_parshift, exp_type)
+        assert np.array(res_parshift).shape == exp_shape
 
     costs_and_expected_expval = [
-        (cost1, [3]),
-        (cost2, [1, 3]),
-        (cost3, [2, 3]),
+        (cost1, [3], np.ndarray),
+        (cost2, [3], list),
+        (cost3, [2, 3], tuple),
     ]
 
-    @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_expval)
-    def test_output_shape_matches_qnode_expval(self, cost, expected_shape):
-        """Test that the transform output shape matches that of the QNode."""
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval)
+    def test_output_shape_matches_qnode_expval_array(self, cost, exp_shape, exp_type):
+        """Test that the transform output shape matches that of the QNode for
+        expectation values and an array-valued parameter."""
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
@@ -2230,44 +2545,40 @@ class TestParameterShiftRule:
 
         res = qml.gradients.param_shift(circuit)(x)
 
-        assert len(res) == expected_shape[0]
+        assert isinstance(res, exp_type)
+        if len(res) == 1:
+            res = res[0]
+        assert len(res) == exp_shape[0]
 
-        if len(expected_shape) > 1:
+        if len(exp_shape) > 1:
             for r in res:
-                assert isinstance(r, tuple)
-                assert len(r) == expected_shape[1]
+                assert isinstance(r, np.ndarray)
+                assert len(r) == exp_shape[1]
 
     costs_and_expected_probs = [
-        (cost4, [3, 4]),
-        (cost5, [1, 3, 4]),
-        (cost6, [2, 3, 4]),
+        (cost4, [4, 3], np.ndarray),
+        (cost5, [4, 3], list),
+        (cost6, [2, 4, 3], tuple),
     ]
 
-    @pytest.mark.parametrize("cost, expected_shape", costs_and_expected_probs)
-    def test_output_shape_matches_qnode_probs(self, cost, expected_shape):
+    @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
+    def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type):
         """Test that the transform output shape matches that of the QNode."""
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
         circuit = qml.QNode(cost, dev)
 
-        res = qml.gradients.param_shift(circuit)(x)
+        res_parshift = qml.gradients.param_shift(circuit)(x)
 
-        assert len(res) == expected_shape[0]
+        # Check data types
+        assert isinstance(res_parshift, exp_type)
+        if len(exp_shape) > 1:
+            for r in res_parshift:
+                assert isinstance(r, np.ndarray)
 
-        if len(expected_shape) > 2:
-            for r in res:
-                assert isinstance(r, tuple)
-                assert len(r) == expected_shape[1]
-
-                for _r in r:
-                    assert isinstance(_r, qml.numpy.ndarray)
-                    assert len(_r) == expected_shape[2]
-
-        elif len(expected_shape) > 1:
-            for r in res:
-                assert isinstance(r, qml.numpy.ndarray)
-                assert len(r) == expected_shape[1]
+        # Check shape, result can be put into a single array by assumption
+        assert np.allclose(np.squeeze(np.array(res_parshift)).shape, exp_shape)
 
     # TODO: revisit the following test when the Autograd interface supports
     # parameter-shift with the new return type system
@@ -2997,7 +3308,7 @@ class TestParameterShiftRuleBroadcast:
 
         def cost1(x):
             """Perform rotation and return a scalar expectation value."""
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
         def cost2(x):
@@ -3029,7 +3340,7 @@ class TestParameterShiftRuleBroadcast:
         single_measure_circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost4, cost5)]
         multi_measure_circuits = [qml.QNode(cost, dev) for cost in (cost3, cost6)]
 
-        for c, exp_shape in zip(single_measure_circuits, [(3,), (1, 3), (3, 4), (1, 3, 4)]):
+        for c, exp_shape in zip(single_measure_circuits, [(3,), (1, 3), (4, 3), (1, 4, 3)]):
             grad = qml.gradients.param_shift(c, broadcast=True)(x)
             assert qml.math.shape(grad) == exp_shape
 
@@ -4559,7 +4870,7 @@ class TestJaxArgnums:
             qml.QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
-            qml.gradients.hadamard_grad(circuit, argnum=argnums)(x, y)
+            qml.gradients.param_shift(circuit, argnum=argnums)(x, y)
 
     def test_single_expectation_value(self, argnums, interface):
         """Test for single expectation value."""
@@ -4633,7 +4944,6 @@ class TestJaxArgnums:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
         x = jax.numpy.array([0.543, -0.654])
@@ -4644,12 +4954,11 @@ class TestJaxArgnums:
         )
         res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
 
-        if argnums == [0]:
-            assert np.allclose(res[0][0], res_expected[0][0][0])
-            assert np.allclose(res[1][0], res_expected[0][0][1])
+        if len(argnums) == 1:
+            # jax.hessian produces an additional tuple axis, which we have to index away here
+            assert np.allclose(res, res_expected[0])
         else:
-            if len(argnums) != 1:
-                res = res[0]
-
-            for r, r_e in zip(res, res_expected[0]):
-                assert np.allclose(r, r_e)
+            # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]
+            for r, r_e in zip(res, res_expected):
+                for r_, r_e_ in zip(r, r_e):
+                    assert np.allclose(r_, r_e_)

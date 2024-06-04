@@ -16,9 +16,11 @@ Contains the TTN template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 def compute_indices(wires, n_block_wires):
@@ -143,6 +145,19 @@ class TTN(Operation):
     @property
     def num_params(self):
         return 1
+
+    @classmethod
+    def _primitive_bind_call(
+        cls, wires, n_block_wires, block, n_params_block, template_weights=None, id=None
+    ):  # pylint: disable=arguments-differ
+        return super()._primitive_bind_call(
+            wires=wires,
+            n_block_wires=n_block_wires,
+            block=block,
+            n_params_block=n_params_block,
+            template_weights=template_weights,
+            id=id,
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):

@@ -14,8 +14,8 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-import warnings
 import functools
+import warnings
 from copy import copy
 from functools import wraps
 from inspect import signature
@@ -25,14 +25,14 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import operation
 from pennylane import math as qmlmath
+from pennylane import operation
+from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-from pennylane.compiler import compiler
 
-from .symbolicop import SymbolicOp
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
+from .symbolicop import SymbolicOp
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -127,6 +127,8 @@ def ctrl(op, control, control_values=None, work_wires=None):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(op, control, control_values=control_values, work_wires=work_wires)
+    if qml.math.is_abstract(op):
+        return Controlled(op, control, control_values=control_values, work_wires=work_wires)
     return create_controlled_op(op, control, control_values=control_values, work_wires=work_wires)
 
 
@@ -138,6 +140,8 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
         control_values = [control_values]
     elif control_values is None:
         control_values = [True] * len(control)
+    elif isinstance(control_values, tuple):
+        control_values = list(control_values)
 
     ctrl_op = _try_wrap_in_custom_ctrl_op(
         op, control, control_values=control_values, work_wires=work_wires
@@ -395,6 +399,16 @@ class Controlled(SymbolicOp):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
 
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(
+        cls, base, control_wires, control_values=None, work_wires=None, id=None
+    ):
+        control_wires = Wires(control_wires)
+        return cls._primitive.bind(
+            base, *control_wires, control_values=control_values, work_wires=work_wires
+        )
+
     # pylint: disable=too-many-function-args
     def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
         control_wires = Wires(control_wires)
@@ -504,13 +518,8 @@ class Controlled(SymbolicOp):
         return self.hyperparameters["work_wires"]
 
     @property
-    def active_wires(self):
-        """Wires modified by the operator. This is the control wires followed by the target wires."""
-        return self.control_wires + self.target_wires
-
-    @property
     def wires(self):
-        return self.control_wires + self.target_wires + self.work_wires
+        return self.control_wires + self.target_wires
 
     def map_wires(self, wire_map: dict):
         new_base = self.base.map_wires(wire_map=wire_map)
@@ -570,9 +579,7 @@ class Controlled(SymbolicOp):
             canonical_matrix = self._compute_matrix_from_base()
 
         wire_order = wire_order or self.wires
-        return qml.math.expand_matrix(
-            canonical_matrix, wires=self.active_wires, wire_order=wire_order
-        )
+        return qml.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -729,16 +736,16 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     """Decomposes a PauliX-based operation"""
 
     if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 1:
-        return [qml.CNOT(wires=op.active_wires)]
+        return [qml.CNOT(wires=op.wires)]
 
     if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 2:
-        return qml.Toffoli.compute_decomposition(wires=op.active_wires)
+        return qml.Toffoli.compute_decomposition(wires=op.wires)
 
     if isinstance(op.base, qml.CNOT) and len(op.control_wires) == 1:
-        return qml.Toffoli.compute_decomposition(wires=op.active_wires)
+        return qml.Toffoli.compute_decomposition(wires=op.wires)
 
     return qml.MultiControlledX.compute_decomposition(
-        wires=op.active_wires,
+        wires=op.wires,
         work_wires=op.work_wires,
     )
 
@@ -752,7 +759,7 @@ def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
         custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
-        return custom_op_cls.compute_decomposition(*op.data, op.active_wires)
+        return custom_op_cls.compute_decomposition(*op.data, op.wires)
     if isinstance(op.base, pauli_x_based_ctrl_ops):
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
@@ -820,7 +827,7 @@ class ControlledOp(Controlled, operation.Operation):
     """
 
     def __new__(cls, *_, **__):
-        # overrides dispatch behavior of ``Controlled``
+        # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
     # pylint: disable=too-many-function-args
@@ -866,3 +873,25 @@ class ControlledOp(Controlled, operation.Operation):
             "and parameter frequencies can not be computed via generator for more than one "
             "parameter."
         )
+
+
+# Program capture with controlled ops needs to unpack and re-pack the control wires to support dynamic wires
+# See capture module for more information on primitives
+# If None, jax isn't installed so the class never got a primitive.
+if Controlled._primitive is not None:  # pylint: disable=protected-access
+
+    @Controlled._primitive.def_impl  # pylint: disable=protected-access
+    def _(base, *control_wires, control_values=None, work_wires=None, id=None):
+        return type.__call__(
+            Controlled,
+            base,
+            control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            id=id,
+        )
+
+
+# easier to just keep the same primitive for both versions
+# dispatch between the two types happens inside instance creation anyway
+ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-access

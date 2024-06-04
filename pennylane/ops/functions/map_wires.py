@@ -15,15 +15,15 @@
 This module contains the qml.map_wires function.
 """
 from functools import partial
-from typing import Callable, Union, Sequence
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
+from pennylane import transform
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
-from pennylane.workflow import QNode
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane import transform
+from pennylane.workflow import QNode
 
 
 def map_wires(

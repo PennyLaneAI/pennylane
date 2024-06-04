@@ -333,8 +333,8 @@ class TestInitialization:
             hamiltonian = hamiltonian.simplify()
 
         assert op.wires == hamiltonian.wires
-        assert op.parameters == [time]
-        assert op.data == (time,)
+        assert op.parameters == [*hamiltonian.data, time]
+        assert op.data == (*hamiltonian.data, time)
         assert op.hyperparameters == {
             "base": hamiltonian,
             "n": n,
@@ -358,22 +358,11 @@ class TestInitialization:
         assert op is not new_op
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_flatten_and_unflatten(self, hamiltonian):
-        """Test that the flatten and unflatten methods work correctly."""
+    def test_standard_validity(self, hamiltonian):
+        """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-
-        if isinstance(hamiltonian, qml.ops.op_math.SProd):
-            hamiltonian = hamiltonian.simplify()
-
-        data, metadata = op._flatten()
-        assert qml.equal(data[0], hamiltonian)
-        assert data[1] == time
-        assert dict(metadata) == {"n": n, "order": order, "check_hermitian": True}
-
-        new_op = type(op)._unflatten(data, metadata)
-        assert qml.equal(op, new_op)
-        assert new_op is not op
+        qml.ops.functions.assert_valid(op)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
@@ -398,6 +387,24 @@ class TestInitialization:
             qml.matrix(op1, wire_order=hamiltonian.wires),
             qml.matrix(op2, wire_order=hamiltonian.wires),
         )
+
+    @pytest.mark.parametrize(
+        "make_H",
+        [
+            lambda: qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)]),
+            lambda: qml.sum(qml.PauliX(0), qml.PauliY(1)),
+            lambda: qml.s_prod(1.2, qml.PauliX(0) + qml.PauliY(1)),
+        ],
+    )
+    def test_queuing(self, make_H):
+        """Test that the target operator is removed from the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            H = make_H()
+            op = qml.TrotterProduct(H, time=2)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] is op
 
 
 class TestPrivateFunctions:
@@ -495,8 +502,8 @@ class TestError:
         expected_error = ((10**5 + 1) / 120) * (0.1**5)
 
         for computed_error in (
-            op.error(method="one-norm"),
-            op.error(method="one-norm", fast=False),
+            op.error(method="one-norm-bound"),
+            op.error(method="one-norm-bound", fast=False),
         ):
             assert isinstance(computed_error, SpectralNormError)
             assert qnp.isclose(computed_error.error, expected_error)
@@ -507,15 +514,15 @@ class TestError:
         expected_error = (32 / 3) * (0.05**3) * (1 / 100)
 
         for computed_error in (
-            op.error(method="commutator"),
-            op.error(method="commutator", fast=False),
+            op.error(method="commutator-bound"),
+            op.error(method="commutator-bound", fast=False),
         ):
             assert isinstance(computed_error, SpectralNormError)
             assert qnp.isclose(computed_error.error, expected_error)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
-        "method, expected_error", (("one-norm", 0.001265625), ("commutator", 0.001))
+        "method, expected_error", (("one-norm-bound", 0.001265625), ("commutator-bound", 0.001))
     )
     @pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
     def test_error_interfaces(self, method, interface, expected_error):

@@ -34,7 +34,9 @@ to verify and test quantum gradient computations.
     default_gaussian
     default_mixed
     default_qutrit
+    default_qutrit_mixed
     default_clifford
+    default_tensor
     null_qubit
     tests
 
@@ -55,6 +57,7 @@ accessible from the ``pennylane.devices`` submodule.
     Device
     DefaultQubit
     NullQubit
+    DefaultQutritMixed
     LegacyDeviceFacade
 
 Preprocessing Transforms
@@ -91,7 +94,7 @@ Other transforms that may be relevant to device preprocessing include:
 Modifiers
 ---------
 
-The ``modifiers`` allow for the easy addition of default behavior to a device.
+The ``modifiers`` allow for the easy addition of default behaviour to a device.
 
 .. currentmodule:: pennylane.devices.modifiers
 .. autosummary::
@@ -151,9 +154,13 @@ from .legacy_facade import LegacyDeviceFacade
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
-# not PennyLane core dependencies
+# not PennyLane core dependencies.
+# DefaultTensor is not imported here to avoid warnings
+# from quimb in case it is installed on the system.
 from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
+from .default_qutrit_mixed import DefaultQutritMixed
+from .._device import Device as LegacyDevice

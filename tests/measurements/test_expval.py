@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the expval module"""
 import copy
+
 import numpy as np
 import pytest
 
@@ -73,19 +74,6 @@ class TestExpval:
         else:
             assert res.dtype == r_dtype
 
-    def test_not_an_observable(self):
-        """Test that a warning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
-
     def test_observable_return_type_is_expectation(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
         dev = qml.device("default.qubit", wires=2)
@@ -125,7 +113,7 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        np.random.seed(478437894)
+        np.random.seed(0)
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -156,6 +144,16 @@ class TestExpval:
         for func in [circuit, qml.defer_measurements(circuit)]:
             res = func(phi, shots=shots)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+    def test_eigvals_instead_of_observable(self):
+        """Tests process samples with eigvals instead of observables"""
+
+        shots = 100
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        expected = qml.expval(qml.PauliZ(0)).process_samples(samples, [0, 1])
+        assert (
+            ExpectationMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
+        )
 
     def test_measurement_value_list_not_allowed(self):
         """Test that measuring a list of measurement values raises an error."""

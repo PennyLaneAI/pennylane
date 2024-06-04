@@ -15,11 +15,12 @@
 This module contains the tests for the clifford simulator based on stim
 """
 import os
-import pytest
-import numpy as np
-import scipy as sp
-import pennylane as qml
 
+import numpy as np
+import pytest
+import scipy as sp
+
+import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
 
 stim = pytest.importorskip("stim")
@@ -484,6 +485,7 @@ def test_tracker():
         "batches": [1, 1],
         "simulations": [1, 1],
         "executions": [1, 1],
+        "errors": [{}, {}],
     }
 
 
@@ -630,7 +632,7 @@ def test_clifford_error(check):
 
     with pytest.raises(
         qml.DeviceError,
-        match=r"Operator RX\(1.0, wires=\[0\]\) not supported on default.clifford and does not provide a decomposition",
+        match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
         circuit()
 
@@ -658,7 +660,7 @@ def test_meas_error_noisy():
 
     with pytest.raises(
         qml.DeviceError,
-        match=r"Operator AmplitudeDamping\(0.2, wires=\[0\]\) not supported on default.clifford",
+        match=r"Operator AmplitudeDamping\(0.2, wires=\[0\]\) not supported with default.clifford",
     ):
         circ_2()
 

@@ -16,7 +16,7 @@ Contains the StronglyEntanglingLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class StronglyEntanglingLayers(Operation):
@@ -200,7 +200,7 @@ class StronglyEntanglingLayers(Operation):
         CNOT(wires=['a', 'a']),
         CNOT(wires=['b', 'b'])]
         """
-        n_layers = qml.math.shape(weights)[0]
+        n_layers = qml.math.shape(weights)[-3]
         wires = qml.wires.Wires(wires)
         op_list = []
 

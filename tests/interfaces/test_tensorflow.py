@@ -17,8 +17,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.gradients import finite_diff, param_shift
 from pennylane import execute
+from pennylane.gradients import finite_diff, param_shift
 
 pytestmark = pytest.mark.tf
 
@@ -179,7 +179,7 @@ class TestCaching:
         cache = spy.call_args.kwargs["cache"]
         assert cache is custom_cache
 
-        unwrapped_tape = qml.transforms.convert_to_numpy_parameters(tape)
+        unwrapped_tape = qml.transforms.convert_to_numpy_parameters(tape)[0][0]
         h = unwrapped_tape.hash
 
         assert h in cache

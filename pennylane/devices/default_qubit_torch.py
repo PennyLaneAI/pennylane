@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,15 +14,18 @@
 """This module contains a PyTorch implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
-import warnings
 import inspect
 import logging
-import semantic_version
+import warnings
+
+from packaging.version import Version
 
 try:
     import torch
 
-    VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
+    VERSION_SUPPORT = Version(torch.__version__) >= Version(
+        "1.8.1",
+    )
     if not VERSION_SUPPORT:  # pragma: no cover
         raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
@@ -30,7 +33,9 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
+
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
 from . import DefaultQubitLegacy
 
 logger = logging.getLogger(__name__)

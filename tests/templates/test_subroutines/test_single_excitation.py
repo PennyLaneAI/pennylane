@@ -14,10 +14,18 @@
 """
 Tests for the FermionicSingleExcitation template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
+
+
+def test_standard_validity():
+    """Test standard validity criteria using assert_valid."""
+    weight = np.pi / 3
+    op = qml.FermionicSingleExcitation(weight, wires=[0, 1, 2])
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:

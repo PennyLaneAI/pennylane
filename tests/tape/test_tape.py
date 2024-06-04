@@ -22,8 +22,8 @@ import pytest
 import pennylane as qml
 from pennylane import CircuitGraph
 from pennylane.measurements import (
-    MeasurementProcess,
     ExpectationMP,
+    MeasurementProcess,
     ProbabilityMP,
     counts,
     expval,
@@ -31,7 +31,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.tape import QuantumTape, QuantumScript, expand_tape_state_prep
+from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 
 
 def TestOperationMonkeypatching():
@@ -551,7 +551,7 @@ class TestResourceEstimation:
         assert tape.specs["num_diagonalizing_gates"] == 0
         assert tape.specs["num_trainable_params"] == 0
 
-        assert len(tape.specs) == 4
+        assert len(tape.specs) == 5
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -559,7 +559,7 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 4
+        assert len(specs) == 5
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -577,7 +577,7 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 4
+        assert len(specs1) == 5
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -599,7 +599,7 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 4
+        assert len(specs2) == 5
 
         gate_sizes = defaultdict(int, {1: 4, 2: 2})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
@@ -720,7 +720,7 @@ class TestParameters:
 
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape.par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters() == new_params
@@ -735,7 +735,7 @@ class TestParameters:
         new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
 
         count = 0
-        for idx, pinfo in enumerate(new_tape._par_info):
+        for idx, pinfo in enumerate(new_tape.par_info):
             if idx in tape.trainable_params:
                 assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
                 count += 1
@@ -778,7 +778,7 @@ class TestParameters:
         tape.trainable_params = [1, 3]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape.par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters(trainable_only=False) == new_params
@@ -1207,8 +1207,8 @@ class TestExpand:
 
         assert len(tape.operations) == 1
         assert qml.equal(tape.operations[0], ops[0])
-        assert len(tape._obs_sharing_wires) == 2
-        assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape._obs_sharing_wires)
+        assert len(tape.obs_sharing_wires) == 2
+        assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape.obs_sharing_wires)
         assert qml.equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
         assert qml.equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
         assert tape.shots == qml.measurements.Shots(None)
@@ -1216,8 +1216,8 @@ class TestExpand:
         assert len(expanded.operations) == 2
         assert qml.equal(expanded.operations[0], ops[0])
         assert qml.equal(expanded.operations[1], qml.RY(-np.pi / 2, 0))  # new rotation
-        assert len(expanded._obs_sharing_wires) == 2
-        assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded._obs_sharing_wires)
+        assert len(expanded.obs_sharing_wires) == 2
+        assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded.obs_sharing_wires)
         assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
         assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
         assert expanded.shots is tape.shots
@@ -2166,17 +2166,15 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, complex)
         assert circuit.qtape.numeric_type is complex
 
-    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
-    def test_sample_int_eigvals(self, ret):
+    def test_sample_int(self):
         """Test that the tape can correctly determine the output domain for a
-        sampling measurement with a Hermitian observable with integer
-        eigenvalues."""
+        sampling measurement with no observable."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         @qml.qnode(dev)
         def circuit():
             qml.RY(0.4, wires=[0])
-            return qml.apply(ret)
+            return qml.sample()
 
         result = circuit()
 
@@ -2215,7 +2213,7 @@ class TestNumericType:
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real
-        eigenvalues and another one with integer eigenvalues."""
+        eigenvalues and another sample with integer values."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         arr = np.array(
@@ -2230,7 +2228,7 @@ class TestNumericType:
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
-            return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))
+            return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample()
 
         result = circuit(0, 3)
         assert isinstance(result, tuple)

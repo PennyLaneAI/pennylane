@@ -19,19 +19,26 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 from dataclasses import dataclass
 from typing import Optional
+
 import pennylane as qml
 from pennylane.measurements import (
+    Counts,
     Expectation,
+    MidMeasureMP,
     Probability,
     Sample,
-    Variance,
     State,
-    Counts,
-    MidMeasureMP,
+    Variance,
 )
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
+from .utils import (
+    convert_wire_order,
+    cwire_connections,
+    default_bit_map,
+    transform_deferred_measurements_tape,
+    unwrap_controls,
+)
 
 
 @dataclass
@@ -142,7 +149,8 @@ def _add_op(op, layer_str, config):
 
     label = op.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
     if len(op.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
-        for i, s in enumerate(layer_str):
+        n_wires = len(config.wire_map)
+        for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + label
     else:
         for w in op.wires:
@@ -225,7 +233,8 @@ def _add_measurement(m, layer_str, config):
         meas_label = m.return_type.value
 
     if len(m.wires) == 0:  # state or probability across all wires
-        for i, s in enumerate(layer_str):
+        n_wires = len(config.wire_map)
+        for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + meas_label
 
     for w in m.wires:
@@ -423,6 +432,7 @@ def tape_text(
         New tape offset:  4
 
     """
+    tape = transform_deferred_measurements_tape(tape)
     cache = cache or {}
     cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])

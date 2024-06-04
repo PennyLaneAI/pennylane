@@ -18,7 +18,6 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 import pytest
 
 import pennylane as qml
-
 from pennylane.devices import Device
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
@@ -44,7 +43,7 @@ def test_chained_modifiers():
     # result unwrapped
     assert out == 0.0
 
-    assert len(dev.tracker.history) == 6
+    assert len(dev.tracker.history) == 7
     assert dev.tracker.history["batches"] == [1]
     assert dev.tracker.history["simulations"] == [1]
     assert dev.tracker.history["executions"] == [1]

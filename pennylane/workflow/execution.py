@@ -22,25 +22,25 @@ differentiation support.
 # pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args
 
 import inspect
+import logging
 import warnings
 from functools import partial
-from typing import Callable, MutableMapping, Sequence, Optional, Union, Tuple
-import logging
+from typing import Callable, MutableMapping, Optional, Sequence, Tuple, Union
 
-from cachetools import LRUCache, Cache
+from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
 from pennylane.typing import ResultBatch
 
-from .set_shots import set_shots
 from .jacobian_products import (
-    TransformJacobianProducts,
     DeviceDerivatives,
     DeviceJacobianProducts,
     LightningVJPs,
+    TransformJacobianProducts,
 )
+from .set_shots import set_shots
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -259,14 +259,14 @@ def _make_inner_execute(
     for the 1st order derivatives.
 
     Steps in between the ml framework execution and the device are:
-    - caching
-    - conversion to numpy
     - device expansion (old device)
+    - conversion to numpy
+    - caching
 
     For higher order derivatives, the "inner execute" will be another ml framework execute.
     """
 
-    if isinstance(device, qml.Device):
+    if isinstance(device, qml.devices.LegacyDevice):
         device_execution = set_shots(device, override_shots)(device.batch_execute)
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
@@ -282,14 +282,15 @@ def _make_inner_execute(
         """
         transform_program = qml.transforms.core.TransformProgram()
 
+        if numpy_only:
+            transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
+
         if cache is not None:
             transform_program.add_transform(_cache_transform, cache=cache)
 
-        # TODO: Apply expand_fn() and convert_to_numpy_parameters() as transforms.
+        # TODO: Apply expand_fn() as transform.
         if expand_fn:
             tapes = tuple(expand_fn(t) for t in tapes)
-        if numpy_only:
-            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
 
         transformed_tapes, transform_post_processing = transform_program(tapes)
 
@@ -534,8 +535,8 @@ def execute(
 
     if (
         device_vjp
-        and isinstance(device, qml.Device)
-        and "lightning" not in getattr(device, "short_name", "")
+        and isinstance(device, qml.devices.LegacyDevice)
+        and "lightning" not in getattr(device, "short_name", "").lower()
     ):
         raise qml.QuantumFunctionError(
             "device provided jacobian products are not compatible with the old device interface."
@@ -620,9 +621,9 @@ def execute(
 
     if (
         device_vjp
-        and "lightning" in getattr(device, "short_name", "")
+        and getattr(device, "short_name", "") in ("lightning.gpu", "lightning.kokkos")
         and interface in jpc_interfaces
-    ):  # pragma: no cover
+    ):
         if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
             gradient_kwargs["use_device_state"] = False
         tapes = [expand_fn(t) for t in tapes]
@@ -652,9 +653,8 @@ def execute(
                     device: The device to execute on
                     config: the ExecutionConfig that specifies how to perform the simulations.
                 """
-                numpy_tapes = tuple(
-                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
-                )
+                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
+
                 return device.execute_and_compute_derivatives(numpy_tapes, config)
 
             gradient_fn = None
@@ -668,9 +668,7 @@ def execute(
                     device: the device to execute on
                     config: the ExecutionConfig that specifies how to perform the simulations.
                 """
-                numpy_tapes = tuple(
-                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
-                )
+                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return (device.execute(numpy_tapes, config), tuple())
 
             def gradient_fn(internal_tapes):
@@ -680,9 +678,7 @@ def execute(
                     device: the device to execute on
                     config: the ExecutionConfig that specifies how to take the derivative.
                 """
-                numpy_tapes = tuple(
-                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
-                )
+                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return device.compute_derivatives(numpy_tapes, config)
 
     elif gradient_fn == "device":
@@ -708,9 +704,7 @@ def execute(
             # replace the forward execution function to return
             # both results and gradients
             def device_execute_and_gradients(internal_tapes, **gradient_kwargs):
-                numpy_tapes = tuple(
-                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
-                )
+                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return set_shots(device, override_shots)(device.execute_and_gradients)(
                     numpy_tapes, **gradient_kwargs
                 )
@@ -732,9 +726,7 @@ def execute(
             cached_gradient_fn = _apply_cache_transform(fn=gradient_fn_with_shots, cache=cache)
 
             def device_gradient_fn(inner_tapes, **gradient_kwargs):
-                numpy_tapes = tuple(
-                    qml.transforms.convert_to_numpy_parameters(t) for t in inner_tapes
-                )
+                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(inner_tapes)
                 return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
 
             gradient_fn = device_gradient_fn

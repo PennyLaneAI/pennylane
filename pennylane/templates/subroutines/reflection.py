@@ -15,18 +15,22 @@
 """
 This submodule contains the template for the Reflection operation.
 """
+import copy
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 
 class Reflection(Operation):
     r"""Apply a reflection about a state :math:`|\Psi\rangle`.
 
-    Given an operator :math:`U` such that :math:`|\Psi\rangle = U|0\rangle`  and a reflection angle :math:`\alpha`,
-    this template creates the operation:
+    This operator works by providing an operation, :math:`U`, that prepares the desired state, :math:`\vert \Psi \rangle`,
+    that we want to reflect about. We can also provide a reflection angle :math:`\alpha`
+    to define the operation in a more generic form:
 
     .. math::
 
@@ -38,7 +42,8 @@ class Reflection(Operation):
     Args:
         U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float): the angle of the operator, default is :math:`\pi`
-        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the default is ``None`` and the reflection will be applied on the ``U`` wires
+        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the
+            default is ``None`` and the reflection will be applied on the ``U`` wires.
 
     **Example**
 
@@ -46,28 +51,37 @@ class Reflection(Operation):
 
     .. code-block::
 
-        @qml.prod
-        def generator(wires):
-            qml.Hadamard(wires=wires)
+        U = qml.Hadamard(wires=0)
+        dev = qml.device(‘default.qubit’)
 
-        U = generator(wires=0)
-
-        dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit():
-
-            # Initialize to the state |1>
             qml.PauliX(wires=0)
-
-            # Apply the reflection
             qml.Reflection(U)
-
             return qml.state()
 
     >>> circuit()
     tensor([1.+6.123234e-17j, 0.-6.123234e-17j], requires_grad=True)
 
+    For cases when :math:`U` comprises many operations, you can create a quantum
+    function containing each operation, one per line, then decorate the quantum
+    function with ``@qml.prod``:
 
+    .. code-block::
+
+        @qml.prod
+        def U(wires):
+            qml.Hadamard(wires=wires[0])
+            qml.RY(0.1, wires=wires[1])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Reflection(U([0, 1]))
+            return qml.state()
+
+    >>> circuit()
+    tensor([-0.00249792-6.13852933e-17j,  0.04991671+3.05651685e-18j,
+         0.99750208+6.10793866e-17j,  0.04991671+3.05651685e-18j], requires_grad=True)
 
     .. details::
         :title: Theory
@@ -90,14 +104,17 @@ class Reflection(Operation):
 
     """
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
-        metadata = tuple(value for key, value in self.hyperparameters.items() if key != "base")
-        return data, metadata
+        return data, (self.hyperparameters["reflection_wires"],)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        U, alpha = (data[0], data[1])
+        U, alpha = data
         return cls(U, alpha=alpha, reflection_wires=metadata[0])
 
     def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
@@ -112,10 +129,21 @@ class Reflection(Operation):
 
         self._hyperparameters = {
             "base": U,
-            "reflection_wires": reflection_wires,
+            "reflection_wires": tuple(reflection_wires),
         }
 
         super().__init__(alpha, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["reflection_wires"] = tuple(
+            wire_map.get(w, w) for w in new_op._hyperparameters["reflection_wires"]
+        )
+
+        return new_op
 
     @property
     def alpha(self):

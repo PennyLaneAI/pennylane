@@ -14,12 +14,12 @@
 """
 Unit and integration tests for creating the :mod:`pennylane` :attr:`QNode.qtape.graph.hash` attribute.
 """
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane.operation import Tensor
 from pennylane.circuit_graph import CircuitGraph
+from pennylane.operation import Tensor
 from pennylane.wires import Wires
 
 

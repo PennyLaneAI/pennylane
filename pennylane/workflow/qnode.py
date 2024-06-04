@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,15 +18,16 @@ This module contains the QNode class and qnode decorator.
 import copy
 import functools
 import inspect
+import logging
 import warnings
 from collections.abc import Sequence
-from typing import Union, Optional
-import logging
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
+from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
 
@@ -54,7 +55,7 @@ def _convert_to_interface(res, interface):
 
 # pylint: disable=protected-access
 def _get_device_shots(device) -> Shots:
-    if isinstance(device, Device):
+    if isinstance(device, qml.devices.LegacyDevice):
         if device._shot_vector:
             return Shots(device._raw_shot_sequence)
         return Shots(device.shots)
@@ -86,6 +87,10 @@ def _make_execution_config(
 def _to_qfunc_output_type(
     results: qml.typing.Result, qfunc_output, has_partitioned_shots
 ) -> qml.typing.Result:
+
+    if has_partitioned_shots:
+        return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
+
     # Special case of single Measurement in a list
     if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
         results = [results]
@@ -93,8 +98,7 @@ def _to_qfunc_output_type(
     # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
         return results
-    if has_partitioned_shots:
-        return tuple(type(qfunc_output)(r) for r in results)
+
     return type(qfunc_output)(results)
 
 
@@ -464,7 +468,7 @@ class QNode:
                 f"one of {SUPPORTED_INTERFACES}."
             )
 
-        if not isinstance(device, (Device, qml.devices.Device)):
+        if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
@@ -524,9 +528,9 @@ class QNode:
         self.gradient_kwargs = {}
         self._tape_cached = False
 
+        self._transform_program = qml.transforms.core.TransformProgram()
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
-        self._transform_program = qml.transforms.core.TransformProgram()
 
     def __copy__(self):
         copied_qnode = QNode.__new__(QNode)
@@ -574,6 +578,7 @@ class QNode:
         """The transform program used by the QNode."""
         return self._transform_program
 
+    @debug_logger
     def add_transform(self, transform_container):
         """Add a transform (container) to the transform program.
 
@@ -589,8 +594,17 @@ class QNode:
             return
         if tape is None and shots:
             tape = qml.tape.QuantumScript([], [], shots=shots)
-        self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
-            self._original_device, self.interface, self.diff_method, tape=tape
+
+        diff_method = self.diff_method
+        if (
+            self.device.name == "lightning.qubit"
+            and qml.metric_tensor in self.transform_program
+            and self.diff_method == "best"
+        ):
+            diff_method = "parameter-shift"
+
+        self.gradient_fn, self.gradient_kwargs, self.device = QNode.get_gradient_fn(
+            self._original_device, self.interface, diff_method, tape=tape
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})
 
@@ -613,6 +627,7 @@ class QNode:
 
     # pylint: disable=too-many-return-statements
     @staticmethod
+    @debug_logger
     def get_gradient_fn(
         device, interface, diff_method="best", tape: Optional["qml.tape.QuantumTape"] = None
     ):
@@ -646,7 +661,7 @@ class QNode:
         if diff_method == "best":
             return QNode.get_best_method(device, interface, tape=tape)
 
-        if isinstance(device, qml.Device):
+        if isinstance(device, qml.devices.LegacyDevice):
             # handled by device.supports_derivatives with new device interface
             if diff_method == "backprop":
                 return QNode._validate_backprop_method(device, interface, tape=tape)
@@ -684,6 +699,7 @@ class QNode:
         )
 
     @staticmethod
+    @debug_logger
     def get_best_method(device, interface, tape=None):
         """Returns the 'best' differentiation method
         for a particular device and interface combination.
@@ -711,6 +727,7 @@ class QNode:
         """
         config = _make_execution_config(None, "best")
         if isinstance(device, qml.devices.Device):
+
             if device.supports_derivatives(config, circuit=tape):
                 new_config = device.preprocess(config)[1]
                 return new_config.gradient_method, {}, device
@@ -729,6 +746,7 @@ class QNode:
                     return qml.gradients.finite_diff, {}, device
 
     @staticmethod
+    @debug_logger
     def best_method_str(device, interface):
         """Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
@@ -767,6 +785,7 @@ class QNode:
         return transform
 
     @staticmethod
+    @debug_logger
     def _validate_backprop_method(device, interface, tape=None):
         if isinstance(device, qml.devices.Device):
             raise ValueError(
@@ -899,6 +918,7 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
+    @debug_logger
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
@@ -1061,7 +1081,7 @@ class QNode:
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots
         )
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+    def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
 
         old_interface = self.interface
         if old_interface == "auto":
@@ -1092,6 +1112,11 @@ class QNode:
             _, self.gradient_kwargs, self.device = original_grad_fn
 
         return res
+
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+        if qml.capture.enabled():
+            return qml.capture.qnode_call(self, *args, **kwargs)
+        return self._impl_call(*args, **kwargs)
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)

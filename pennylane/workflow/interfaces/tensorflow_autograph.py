@@ -24,11 +24,7 @@ import tensorflow as tf
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP
 
-from .tensorflow import (
-    _res_restructured,
-    _to_tensors,
-    set_parameters_on_copy,
-)
+from .tensorflow import _res_restructured, _to_tensors, set_parameters_on_copy
 
 
 def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
@@ -152,7 +148,10 @@ def execute(
         o_types = []
         for m in tape.measurements:
             if isinstance(m, SampleMP):
-                o_types.append(tf.int64)
+                if m.obs:
+                    o_types.append(tf.float64)  # obs has float eigvals
+                else:
+                    o_types.append(tf.int64)  # raw samples are ints
             elif isinstance(m, StateMP):
                 o_types.append(tf.complex128)
             else:

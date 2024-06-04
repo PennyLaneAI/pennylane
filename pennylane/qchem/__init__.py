@@ -14,68 +14,66 @@
 """
 This subpackage provides the functionality to perform quantum chemistry calculations.
 """
-from .openfermion_obs import (
-    observable,
-    one_particle,
-    two_particle,
-    dipole_of,
-    meanfield,
-    decompose,
-    molecular_hamiltonian,
-)
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
-from .dipole import dipole_integrals, fermionic_dipole, dipole_moment
+from .dipole import dipole_integrals, dipole_moment, fermionic_dipole
 from .factorization import basis_rotation, factorize
-from .hamiltonian import electron_integrals, fermionic_hamiltonian, diff_hamiltonian
-from .hartree_fock import scf, nuclear_energy, hf_energy
+from .givens_decomposition import givens_decomposition
+from .hamiltonian import diff_hamiltonian, electron_integrals, fermionic_hamiltonian
+from .hartree_fock import hf_energy, nuclear_energy, scf
 from .integrals import (
-    primitive_norm,
-    contracted_norm,
-    expansion,
-    gaussian_overlap,
-    overlap_integral,
-    hermite_moment,
-    gaussian_moment,
-    moment_integral,
-    gaussian_kinetic,
-    kinetic_integral,
-    nuclear_attraction,
     attraction_integral,
+    contracted_norm,
     electron_repulsion,
+    expansion,
+    gaussian_kinetic,
+    gaussian_moment,
+    gaussian_overlap,
+    hermite_moment,
+    kinetic_integral,
+    moment_integral,
+    nuclear_attraction,
+    overlap_integral,
+    primitive_norm,
     repulsion_integral,
 )
 from .matrices import (
-    mol_density_matrix,
-    overlap_matrix,
-    moment_matrix,
-    kinetic_matrix,
     attraction_matrix,
-    repulsion_tensor,
     core_matrix,
+    kinetic_matrix,
+    mol_density_matrix,
+    moment_matrix,
+    overlap_matrix,
+    repulsion_tensor,
 )
 from .molecule import Molecule
-from .observable_hf import fermionic_observable, qubit_observable
 from .number import particle_number
+from .observable_hf import fermionic_observable, qubit_observable
+from .openfermion_obs import (
+    decompose,
+    dipole_of,
+    meanfield,
+    molecular_hamiltonian,
+    observable,
+    one_particle,
+    two_particle,
+)
 from .spin import spin2, spinz
 from .structure import (
-    read_structure,
     active_space,
     excitations,
-    hf_state,
     excitations_to_wires,
+    hf_state,
     mol_data,
+    read_structure,
 )
 from .tapering import (
     clifford,
+    optimal_sector,
     paulix_ops,
     symmetry_generators,
-    optimal_sector,
     taper,
     taper_hf,
     taper_operation,
-)
-from .givens_decomposition import (
-    givens_decomposition,
 )
