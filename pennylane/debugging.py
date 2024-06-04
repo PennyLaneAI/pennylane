@@ -177,7 +177,7 @@ class PLDB(pdb.Pdb):
 
     @classmethod
     def _execute(cls, batch_tapes):
-        """Execute tape on the active device"""
+        """Execute the batch of tapes on the active device"""
         dev = cls.get_active_device()
 
         program, new_config = dev.preprocess()
@@ -203,7 +203,92 @@ def pldb_device_manager(device):
 
 
 def breakpoint():
-    """Launch the custom PennyLane debugger."""
+    """A function which freezes execution and launches the PennyLane debugger (PLDB).
+
+    This function marks a location in a quantum function (QNode). When it is encountered during
+    execution of the quantum circuit, an interactive debugging prompt is launched to step
+    throught the circuit execution using Pdb like commands (:code:`list`, :code:`next`,
+    :code:`continue`, :code:`quit`).
+
+    **Example**
+
+    Consider the following python script containing the quantum circuit with breakpoints.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.breakpoint()
+
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+
+            qml.breakpoint()
+
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(0))
+
+        circuit(1.23)
+
+    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    The prompt specifies the path to the script along with the next line to be executed after the breakpoint.
+
+    .. code-block:: bash
+
+        > /Users/your/path/to/script.py(8)circuit()
+        -> qml.RX(x, wires=0)
+        [pldb]:
+
+    We can interact with the prompt using the commands: :code:`list` , :code:`next`,
+    :code:`continue`, and :code:`quit`. Additionally, we can also access any variables defined in the function.
+
+    .. code-block:: bash
+
+        [pldb]: x
+        1.23
+
+    The :code:`list` command will print a section of code around the breakpoint, highlighting the next line
+    to be executed.
+
+    .. code-block:: bash
+
+        [pldb]: list
+          3
+          4  	@qml.qnode(dev)
+          5  	def circuit(x):
+          6  	    qml.breakpoint()
+          7
+          8  ->	    qml.RX(x, wires=0)
+          9  	    qml.Hadamard(wires=1)
+         10
+         11  	    qml.breakpoint()
+         12
+         13  	    qml.CNOT(wires=[0, 1])
+        [pldb]:
+
+    The :code:`next` command will execute the next line of code, and print the new line to be executed.
+
+    .. code-block:: bash
+
+        [pldb]: next
+        > /Users/your/path/to/script.py(9)circuit()
+        -> qml.Hadamard(wires=1)
+        [pldb]:
+
+    The :code:`continue` command will resume code execution until another breakpoint is reached. It will
+    then print the new line to be executed. Finally, :code:`quit` will resume execution of the file and
+    terminate the debugging prompt.
+
+    .. code-block:: bash
+
+        [pldb]: continue
+        > /Users/your/path/to/script.py(13)circuit()
+        -> qml.CNOT(wires=[0, 1])
+        [pldb]: quit
+
+    """
     PLDB.valid_context()  # Ensure its being executed in a valid context
 
     debugger = PLDB(skip=["pennylane.*"])  # skip internals when stepping through trace
@@ -211,10 +296,50 @@ def breakpoint():
 
 
 def state():
-    """Compute the state of the quantum circuit.
+    """Compute the quantum state at the current point in the quantum circuit.
 
     Returns:
         Array(complex): Quantum state of the circuit.
+
+    **Example**
+
+    While in a "debugging context", we can query the state as we would at the end of a circuit.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+
+            qml.breakpoint()
+
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(0))
+
+        circuit(1.23)
+
+    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    We can query the state:
+
+    .. code-block:: bash
+
+        [pldb]: longlist
+          4  	@qml.qnode(dev)
+          5  	def circuit(x):
+          6  	    qml.RX(x, wires=0)
+          7  	    qml.Hadamard(wires=1)
+          8
+          9  	    qml.breakpoint()
+         10
+         11  ->	    qml.CNOT(wires=[0, 1])
+         12  	    return qml.expval(qml.Z(0))
+        [pldb]: qml.debugging.state()
+        array([0.57754604+0.j        , 0.57754604+0.j        ,
+        0.        -0.40797128j, 0.        -0.40797128j])
+
     """
     with qml.queuing.QueuingManager.stop_recording():
         m = qml.state()
@@ -223,13 +348,53 @@ def state():
 
 
 def expval(op):
-    """Compute the expectation value of an observable.
+    """Compute the expectation value of an observable at the
+    current state of the quantum circuit.
 
     Args:
         op (Operator): The observable to compute the expectation value for.
 
     Returns:
         complex: Quantum state of the circuit.
+
+    **Example**
+
+    While in a "debugging context", we can query the expectation value of an observable
+    as we would at the end of a circuit.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+
+            qml.breakpoint()
+
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        circuit(1.23)
+
+    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    We can query the expectation value:
+
+    .. code-block:: bash
+
+        [pldb]: longlist
+          4  	@qml.qnode(dev)
+          5  	def circuit(x):
+          6  	    qml.RX(x, wires=0)
+          7  	    qml.Hadamard(wires=1)
+          8
+          9  	    qml.breakpoint()
+         10
+         11  ->	    qml.CNOT(wires=[0, 1])
+         12  	    return qml.state()
+        [pldb]: qml.debugging.expval(qml.Z(0))
+        0.33423772712450256
     """
 
     qml.queuing.QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
@@ -241,7 +406,9 @@ def expval(op):
 
 
 def probs(wires=None, op=None):
-    """Compute the probability distribution for the state.
+    """Compute the probability distribution for the state at the current
+    point in the quantum circuit.
+
     Args:
         wires (Union[Iterable, int, str, list]): the wires the operation acts on
         op (Union[Observable, MeasurementValue]): Observable (with a ``diagonalizing_gates``
@@ -250,6 +417,45 @@ def probs(wires=None, op=None):
 
     Returns:
         Array(float): The probability distribution of the bitstrings for the wires.
+
+    **Example**
+
+    While in a "debugging context", we can query the probability distribution
+    as we would at the end of a circuit.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+
+            qml.breakpoint()
+
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        circuit(1.23)
+
+    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    We can query the probability distribution:
+
+    .. code-block:: bash
+
+        [pldb]: longlist
+          4  	@qml.qnode(dev)
+          5  	def circuit(x):
+          6  	    qml.RX(x, wires=0)
+          7  	    qml.Hadamard(wires=1)
+          8
+          9  	    qml.breakpoint()
+         10
+         11  ->	    qml.CNOT(wires=[0, 1])
+         12  	    return qml.state()
+        [pldb]: qml.debugging.probs()
+        array([0.33355943, 0.33355943, 0.16644057, 0.16644057])
     """
     if op:
         qml.queuing.QueuingManager.active_context().remove(
@@ -282,8 +488,43 @@ def _measure(measurement):
 def tape():
     """Access the tape of the quantum circuit.
 
+    The tape can then be drawn to visualize the gates that have
+    been applied from the quantum circuit so far.
+
     Returns:
-        QuantumScript: The quantum script representing the circuit.
+        QuantumTape: The quantum tape representing the circuit.
+
+    **Example**
+
+    While in a "debugging context", we can access the :code:`QuantumTape` representing the
+    operations we have applied so far:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+
+            qml.breakpoint()
+
+            return qml.expval(qml.Z(0))
+
+        circuit(1.23)
+
+    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    We can access the tape and draw it as follows:
+
+    .. code-block:: bash
+
+        [pldb]: t = qml.debugging.tape()
+        [pldb]: print(t.draw())
+        0: ──RX─╭●─┤
+        1: ──H──╰X─┤
+
     """
     active_queue = qml.queuing.QueuingManager.active_context()
     return qml.tape.QuantumScript.from_queue(active_queue)
