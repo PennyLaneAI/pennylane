@@ -372,7 +372,7 @@ class TritFlip(Channel):
                 0 & 1 & 0
                 \end{bmatrix}
 
-    where :math:`p_{01}, p_{02}, p_{12} \in [0, 1]` is the probability of a "trit flip" occurring 
+    where :math:`p_{01}, p_{02}, p_{12} \in [0, 1]` is the probability of a "trit flip" occurring
     within subspaces (0,1), (0,2), and (1,2) respectively.
 
     .. note::
