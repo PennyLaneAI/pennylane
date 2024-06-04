@@ -300,3 +300,47 @@ class TestQutritChannel:
         K_list = [0.75 * np.eye(3), 0.35j * np.eye(3)]
         with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
             channel.QutritChannel(K_list, wires=0)
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
+    def test_integrations(self, diff_method):
+        """Test integration"""
+        kraus = [
+            np.array([[1, 0, 0], [0, 0.70710678, 0], [0, 0, 0.8660254]]),
+            np.array([[0, 0.70710678, 0], [0, 0, 0], [0, 0, 0]]),
+            np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
+        ]
+
+        dev = qml.device("default.qutrit.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func():
+            channel.QutritChannel(kraus, 0)
+            return qml.expval(qml.GellMann(wires=0, index=1))
+
+        func()
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
+    def test_integration_grad(self, diff_method):
+        """Test integration with grad"""
+        dev = qml.device("default.qutrit.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func(p):
+            kraus = qml.QutritDepolarizingChannel.compute_kraus_matrices(p)
+            channel.QutritChannel(kraus, 0)
+            return qml.expval(qml.GellMann(wires=0, index=1))
+
+        qml.grad(func)(0.5)
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
+    def test_integration_jacobian(self, diff_method):
+        """Test integration with grad"""
+        dev = qml.device("default.qutrit.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func(p):
+            kraus = qml.QutritDepolarizingChannel.compute_kraus_matrices(p)
+            channel.QutritChannel(kraus, 0)
+            return qml.expval(qml.GellMann(wires=0, index=1))
+
+        qml.jacobian(func)(0.5)

@@ -48,9 +48,6 @@ __obs__ = {
     "THermitian",
     "GellMann",
 }
-__channels__ = {
-    "QutritDepolarizingChannel",
-    "QutritAmplitudeDamping",
-}
+__channels__ = {"QutritDepolarizingChannel", "QutritAmplitudeDamping", "QutritChannel"}
 
 __all__ = list(__ops__ | __obs__ | __channels__)
