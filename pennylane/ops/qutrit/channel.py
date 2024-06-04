@@ -344,7 +344,7 @@ class QutritAmplitudeDamping(Channel):
 
 class TritFlip(Channel):
     r"""
-    Single-qutrit trit flip error channel. Applying "bit flips" on each qutrit subspace.
+    Single-qutrit trit flip error channel, used for applying "bit flips" on each qutrit subspace.
 
     This channel is modelled by the following Kraus matrices:
 
@@ -372,8 +372,8 @@ class TritFlip(Channel):
                 0 & 1 & 0
                 \end{bmatrix}
 
-    where :math:`p_{01}, p_{02}, p_{12} \in [0, 1]` is the probability of two qutrit state-coefficients
-    flipping for subspaces (0,1), (0,2), and (1,2) respectively.
+    where :math:`p_{01}, p_{02}, p_{12} \in [0, 1]` is the probability of a "trit flip" occurring 
+    within subspaces (0,1), (0,2), and (1,2) respectively.
 
     .. note::
         The Kraus operators :math:`\{K_0, K_1, K_2, K_3\}` are adapted from the
