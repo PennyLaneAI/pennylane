@@ -235,7 +235,7 @@ def breakpoint():
     Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
     The prompt specifies the path to the script along with the next line to be executed after the breakpoint.
 
-    .. code-block:: bash
+    .. code-block:: console
 
         > /Users/your/path/to/script.py(8)circuit()
         -> qml.RX(x, wires=0)
@@ -244,7 +244,7 @@ def breakpoint():
     We can interact with the prompt using the commands: :code:`list` , :code:`next`,
     :code:`continue`, and :code:`quit`. Additionally, we can also access any variables defined in the function.
 
-    .. code-block:: bash
+    .. code-block:: console
 
         [pldb]: x
         1.23
@@ -252,7 +252,7 @@ def breakpoint():
     The :code:`list` command will print a section of code around the breakpoint, highlighting the next line
     to be executed.
 
-    .. code-block:: bash
+    .. code-block:: console
 
         [pldb]: list
           3
@@ -270,7 +270,7 @@ def breakpoint():
 
     The :code:`next` command will execute the next line of code, and print the new line to be executed.
 
-    .. code-block:: bash
+    .. code-block:: console
 
         [pldb]: next
         > /Users/your/path/to/script.py(9)circuit()
@@ -281,7 +281,7 @@ def breakpoint():
     then print the new line to be executed. Finally, :code:`quit` will resume execution of the file and
     terminate the debugging prompt.
 
-    .. code-block:: bash
+    .. code-block:: console
 
         [pldb]: continue
         > /Users/your/path/to/script.py(13)circuit()
@@ -324,7 +324,7 @@ def state():
     Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
     We can query the state:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         [pldb]: longlist
           4  	@qml.qnode(dev)
@@ -381,7 +381,7 @@ def expval(op):
     Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
     We can query the expectation value:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         [pldb]: longlist
           4  	@qml.qnode(dev)
@@ -442,7 +442,7 @@ def probs(wires=None, op=None):
     Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
     We can query the probability distribution:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         [pldb]: longlist
           4  	@qml.qnode(dev)
@@ -518,7 +518,7 @@ def tape():
     Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
     We can access the tape and draw it as follows:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         [pldb]: t = qml.debugging.tape()
         [pldb]: print(t.draw())
