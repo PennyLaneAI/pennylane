@@ -161,7 +161,7 @@ class DefaultTensor(Device):
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
         method (str): Supported method. Currently, the supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Exact Tensor Network).
-        dtype (type): Data type for the tensor representation. Must be one of ``np.complex64`` or ``np.complex128``.
+        dtype (type): Data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
     Keyword Args:
@@ -169,16 +169,21 @@ class DefaultTensor(Device):
             It corresponds to the maximum number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
         cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is the machine limit for the given tensor data type,
             retrieved with the ``numpy.finfo`` function.
-        contract (str): The contraction method for applying gates in the MPS method. It can be either ``auto-mps`` or ``nonlocal``.
-            ``nonlocal`` turns each gate into a Matrix Product Operator (MPO) and applies it directly to the MPS,
-            while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next to each other before applying the gate,
-            then swaps them back. Default is ``auto-mps``. TODO: update description with new choices
+        contract (str): The contraction method for applying gates. The possible options depend on the method chosen.
+            For the MPS method, the options are ``"auto-mps"``, ``"swap+split"`` and ``"nonlocal"``. For details, see the
+            `quimb's CircuitMPS documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/index.html#quimb.tensor.CircuitMPS>`_.
+            Default is ``"auto-mps"``.
+            For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``"True"``, and ``"False"``.
+            For details, see the `quimb's source code <https://github.com/jcmgray/quimb/blob/fb744f3f6aebd60db68fc31af097304a0790ab57/quimb/tensor/tensor_core.py#L3410-L3589>`_.
+            Default is ``"auto-split-gate"``.
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
-            Default is ``auto-hq``. For more information on available optimizers, see the
+            For more information on available optimizers, see the
             `quimb's local_expectation documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
+            Default is ``auto-hq``
         local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
-            Default is ``ADCRS``. For a complete list of available sequences, see the
+            For a complete list of available sequences, see the
             `quimb's full_simplify documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
+            Default is ``ADCRS``.
 
 
     **Example:**
