@@ -117,6 +117,30 @@ class FermiWord(dict):
         )
         return string
 
+    def to_openfermion_string(self):
+        r"""Return a compact string representation of a FermiWord in the same style as OpenFermion using
+        the shorthand: 'q^' = a^\dagger_q 'q' = a_q. Each operator in the word is represented by the number
+        of the wire it operates on.
+
+        >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w.to_openfermion_string()
+        0^ 1
+        """
+        if len(self) == 0:
+            return "I"
+        # The order of the operator string is based on the first values in the tuples of the keys.
+        sq_ops = sorted(self.keys())
+        # Write operator using the shorthand: 'q^' = a^\dagger_q 'q' = a_q.
+        fermion_op_string = ""
+        for sq_op in sq_ops:
+            fermion_op_string += str(sq_op[1])
+            if self[sq_op] == "+":
+                fermion_op_string += "^ "
+            else:
+                fermion_op_string += " "
+
+        return fermion_op_string.rstrip()
+
     def __str__(self):
         r"""String representation of a FermiWord."""
         return f"{self.to_string()}"
