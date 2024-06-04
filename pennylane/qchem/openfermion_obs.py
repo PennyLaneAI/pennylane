@@ -687,11 +687,11 @@ def molecular_dipole(
         d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
 
     and :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
-    respectively. The contribution of the core orbitals and nuclei is denoted by
+    respectively. The contribution of the core orbitals and nuclei are denoted by
     :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}`, respectively, which are computed as
 
     .. math::
-        \hat{D}_\mathrm{c} = 2 \sum_{i=1}^{N_\mathrm{core}} d_{ii} \quad \text{and} \quad 
+        \hat{D}_\mathrm{c} = 2 \sum_{i=1}^{N_\mathrm{core}} d_{ii} \quad \text{and} \quad
         \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i,
 
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
@@ -704,10 +704,12 @@ def molecular_dipole(
         \hat{D} = \sum_{j} c_j P_j,
 
     where :math:`c_j` is a numerical coefficient and :math:`P_j` is a tensor product of
-    single-qubit Pauli operators :math:`X, Y, Z, I`.
+    single-qubit Pauli operators :math:`X, Y, Z, I`. The qubit observables corresponding
+    to the components :math:`\hat{D}_x`, :math:`\hat{D}_y`, and :math:`\hat{D}_z` of the
+    dipole operator are then computed separately.
 
     Args:
-        molecule (~qchem.molecule.Molecule): the molecule object
+        molecule (~qchem.molecule.Molecule): The molecule object
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
             to specify the built-in differentiable Hartree-Fock solver, or ``method="openfermion"`` to
@@ -716,20 +718,22 @@ def molecular_dipole(
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
             are considered to be active.
-        mapping (str): transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian. Input values can be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
-        outpath (str): path to the directory containing output files
-        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+        mapping (str): Transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian.
+            Input values can be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
+        outpath (str): Path to the directory containing output files
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator to
+            an observable measurable in a Pennylane ansatz.
             For types ``Wires``/``list``/``tuple``, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping. If None, will use identity map.
-        args (array[array[float]]): initial values of the differentiable parameters
+        args (array[array[float]]): Initial values of the differentiable parameters
         cutoff (float): Cutoff value for including the matrix elements
             :math:`\langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle`. The matrix elements
             with absolute value less than ``cutoff`` are neglected.
 
     Returns:
-        list[pennylane.Hamiltonian]: the qubit observables corresponding to the components
+        list[pennylane.Hamiltonian]: The qubit observables corresponding to the components
         :math:`\hat{D}_x`, :math:`\hat{D}_y` and :math:`\hat{D}_z` of the dipole operator.
 
 
