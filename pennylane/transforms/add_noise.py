@@ -11,10 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for adding a noise model to a quantum circuit or device"""
+from copy import copy
 from functools import lru_cache
 
 import pennylane as qml
-from pennylane.transforms.core import transform
+from pennylane.transforms.core import TransformContainer, transform
 
 
 @transform
@@ -22,12 +23,13 @@ def add_noise(tape, noise_model, level=None):
     """Insert operations according to a provided noise model.
 
     Circuits passed through this transform will be updated to have the operation,
-    specified by the ``noise_model`` argument.
+    specified by the ``noise_model`` argument after appyling the transforms specified
+    by the ``level`` keyword argument.
 
     Args:
         tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit to be transformed.
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
-        level (None, str, int, slice): An indication of a stage in the transform program.
+        level (None, str, int, slice): An indication of a stage in the transform program, when transforming a ``QNode``.
 
             * ``None``: expands the tape to have no ``Adjoint`` and ``Templates``.
             * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
@@ -85,20 +87,18 @@ def add_noise(tape, noise_model, level=None):
             f"Argument noise_model must be an instance of NoiseModel, got {noise_model}."
         )
 
-    if level is not None:
-        raise NotImplementedError("Support for level argument is not currently present.")
+    if level is None or level == "user":  # decompose templates and their adjoints
 
-    # decompose templates and their adjoints
-    def stop_at(obj):
-        if not isinstance(obj, qml.operation.Operator):
-            return True
-        if not obj.has_decomposition:
-            return True
-        return not (hasattr(qml.templates, obj.name) or isinstance(obj, qml.ops.Adjoint))
+        def stop_at(obj):
+            if not isinstance(obj, qml.operation.Operator):
+                return True
+            if not obj.has_decomposition:
+                return True
+            return not (hasattr(qml.templates, obj.name) or isinstance(obj, qml.ops.Adjoint))
 
-    error_type = (qml.operation.DecompositionUndefinedError,)
-    decompose = qml.devices.preprocess.decompose
-    [tape], _ = decompose(tape, stopping_condition=stop_at, name="add_noise", error=error_type)
+        error_type = (qml.operation.DecompositionUndefinedError,)
+        decompose = qml.devices.preprocess.decompose
+        [tape], _ = decompose(tape, stopping_condition=stop_at, name="add_noise", error=error_type)
 
     conditions, noises = [], []
     metadata = noise_model.metadata
@@ -139,3 +139,27 @@ def _check_queue_op(operation, noise_func, metadata):
     ).operations
 
     return test_id in [getattr(o, "id", "") for o in test_queue]
+
+
+# pylint:disable = protected-access
+@add_noise.custom_qnode_transform
+def custom_qnode_wrapper(self, qnode, targs, tkwargs):
+    """QNode execution wrapper for supporting ``add_noise`` with levels"""
+    qnode = copy(qnode)
+    level = tkwargs.get("level", "user")
+
+    transform_program = qml.workflow.get_transform_program(qnode, level=level)
+    qnode._transform_program = transform_program
+
+    qnode.add_transform(
+        TransformContainer(
+            self._transform,
+            targs,
+            {**tkwargs},
+            self._classical_cotransform,
+            self._is_informative,
+            self._final_transform,
+        )
+    )
+
+    return qnode
