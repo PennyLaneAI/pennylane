@@ -174,11 +174,11 @@ class DefaultTensor(Device):
             while ``auto-mps`` swaps nonlocal qubits in 2-qubit gates to be next to each other before applying the gate,
             then swaps them back. Default is ``auto-mps``. TODO: update description with new choices
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
-            Default is ``auto-hq``. For more information on available optimizers, see the
-            `quimb documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
-        local_simplify (str): The simplification sequence to apply to the tensor network used for the computation of local expectation values.
-            Default is ``ADCRS``. For a complete list of available sequences, see the
-            `quimb documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
+            Default is ``auto-hq``. For more information on available optimizers, see the `quimb's ``local_expectation`` documentation
+            <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
+        local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
+            Default is ``ADCRS``. For a complete list of available sequences, see the `quimb's ``full_simplify`` documentation
+            <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
 
 
     **Example:**
