@@ -19,15 +19,28 @@ Unit tests for the available conditional utitlities for noise models.
 import pytest
 
 import pennylane as qml
+from pennylane.noise import op_eq, op_in, partial_wires, wires_eq, wires_in
 
 
 class TestNoiseModels:
     """Test for Noise Models class and its methods"""
 
-    def test_building_noise_model(self):
+    @pytest.mark.parametrize(
+        ("fcond", "noise"),
+        [
+            (op_eq(qml.X) | op_eq(qml.Y), partial_wires(qml.AmplitudeDamping, 0.4)),
+            (op_eq(qml.X) & op_eq(qml.Y), partial_wires(qml.RX, 0.4)),
+            (wires_eq(qml.X(0)) & op_eq(qml.X(0)), partial_wires(qml.PauliRot(1.2, "XY", [0, 1]))),
+            (~wires_eq(qml.X(0)) ^ op_eq(qml.X(0)), lambda op, **kwargs: qml.RZ(0.2, op.wires)),
+            (
+                wires_in(qml.CNOT([0, 1])) | ~op_in(["RY", "RZ"]),
+                lambda op, **kwargs: qml.RX(0.2, op.wires),
+            ),
+            (wires_in(["a", "b"]) & op_eq("RY"), lambda op, **kwargs: qml.RX(0.2, op.wires)),
+        ],
+    )
+    def test_building_noise_model(self, fcond, noise):
         """Test that noise models are built correctly using NoiseModels"""
-        fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
-        noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
         noise_model = qml.NoiseModel({fcond: noise}, t1=0.04, t2=0.02)
 
@@ -37,7 +50,7 @@ class TestNoiseModels:
         assert list(noise_model.metadata.values()) == [0.04, 0.02]
         assert (
             repr(noise_model) == "NoiseModel({\n"
-            "    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)\n"
+            f"    {fcond}: {noise.__name__}" + "\n"
             "}, t1 = 0.04, t2 = 0.02)"
         )
 
@@ -84,6 +97,39 @@ class TestNoiseModels:
 
         sub_model1 = noise_model - qml.NoiseModel({fcond1: noise1}, t2=0.02)
         assert qml.NoiseModel({fcond: noise}, t1=0.04) == sub_model1
+
+    # pylint: disable=comparison-with-callable, unused-argument
+    def test_eq_noise_models(self):
+        """Test that noise models can be subtracted and manipulated"""
+
+        fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
+
+        def noise(op, **kwargs):
+            qml.RX(op.parameters[0] * 0.05, op.wires)
+
+        # explicit construction
+        noise_model = qml.NoiseModel({fcond: noise})
+        noise_model2 = qml.NoiseModel({fcond: noise})
+        assert noise_model == noise_model2
+
+        # implicit construction
+        noise_model = qml.NoiseModel({qml.noise.op_eq(qml.X): noise})
+        noise_model2 = qml.NoiseModel({qml.noise.op_eq(qml.X): noise})
+        assert noise_model == noise_model2
+
+        # check inequality
+        @qml.BooleanFn
+        def fcond1(op):
+            return isinstance(op, qml.RY) and op.parameters[0] >= 0.5
+
+        noise_model = qml.NoiseModel({fcond1: noise})
+        noise_model2 = qml.NoiseModel({fcond: noise})
+        assert noise_model != noise_model2
+
+        noise1 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+        noise_model = qml.NoiseModel({fcond: noise})
+        noise_model2 = qml.NoiseModel({fcond: noise1})
+        assert noise_model != noise_model2
 
     def test_build_model_errors(self):
         """Test for checking building noise models raise correct error when signatures are not proper"""

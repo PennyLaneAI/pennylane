@@ -127,10 +127,14 @@ class TestNoiseFunctions:
         [
             (0, 0, True),
             ([1, 2, 3], 0, False),
-            (qml.wires.Wires(["street", "fighter"]), "fighter", True),
+            (qml.wires.Wires(["aurora", "borealis"]), "borealis", True),
             (qml.wires.Wires(1), [0], False),
             (qml.Y(2), 2, True),
             (qml.CNOT(["a", "c"]), "b", False),
+            (qml.CZ(["a", "c"]), "c", True),
+            (qml.DoubleExcitation(1.2, ["alpha", "beta", "gamma", "delta"]), "alpha", True),
+            (qml.TrotterProduct(qml.Z(0) + qml.Z(1), -3j), 2, False),
+            (qml.TrotterProduct(qml.Z("a") + qml.Z("b"), -3j), "b", True),
         ],
     )
     def test_wires_in(self, obj, wires, result):
@@ -152,6 +156,8 @@ class TestNoiseFunctions:
             (qml.Y(2), 2, True),
             (qml.CNOT(["a", "c"]), "b", False),
             (qml.CNOT(["c", "d"]), ["c", "d"], True),
+            (qml.TrotterProduct(qml.Z(0) + qml.Z(1), -3j), 2, False),
+            (qml.TrotterProduct(qml.Z("b") + qml.Z("a"), -3j), ["b", "a"], True),
         ],
     )
     def test_wires_eq(self, obj, wires, result):
@@ -198,6 +204,7 @@ class TestNoiseFunctions:
     @pytest.mark.parametrize(
         ("obj", "op", "result"),
         [
+            ("I", qml.I(wires=[0, 1]), True),
             (qml.Y(1), qml.RY(1.0, 1), False),
             (qml.CNOT(["a", "c"]), qml.CNOT([0, 1]), True),
             (qml.RX(0, 1), qml.RY(1.0, 1), False),
@@ -207,7 +214,11 @@ class TestNoiseFunctions:
             (["CZ", "RY"], [qml.CZ([0, 1]), qml.RY(1.0, [1])], True),
             (qml.Z(0) @ qml.Z(1), qml.Z("b") @ qml.Z("a"), True),
             (qml.Z(0) + qml.Z(1), qml.Z("b") + qml.Z("a"), True),
+            (qml.Z(0) + 1.2 * qml.Z(1), 2.4 * qml.Z("b") + qml.Z("a"), False),
             (qml.Z(0) + 1.2 * qml.Z(1), qml.Z("b") + qml.Z("a"), False),
+            (qml.exp(qml.RX(1.2, 0), 1.2, 1), qml.exp(qml.RX(2.3, "a"), 1.2, 1), True),
+            (qml.exp(qml.Z(0) + qml.Z(1), 1.2, 2), qml.exp(qml.Z("b") + qml.Z("a"), 1.2, 2), True),
+            (qml.exp(qml.Z(0) @ qml.Z(1), 2j), qml.exp(qml.Z("b") @ qml.Z("a"), 1j), False),
         ],
     )
     def test_op_eq(self, obj, op, result):

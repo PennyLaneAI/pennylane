@@ -103,12 +103,14 @@ class BooleanFn:
 
     @property
     def bitwise(self):
-        """Determine whether wrapped callable is for a bitwise operation or not."""
+        """Determine whether wrapped callable performs a bit-wise operation or not.
+        This checks for the ``operands`` attribute that should be defined by it."""
         return bool(getattr(self, "operands", tuple()))
 
     @property
     def conditional(self):
-        """Determine whether wrapped callable is for a conditional or not."""
+        """Determine whether wrapped callable is for a conditional or not.
+        This checks for the ``condition`` attribute that should be defined by it."""
         return bool(getattr(self, "condition", None))
 
 
@@ -185,12 +187,11 @@ class Xor(BooleanFn):
 
 
 class Not(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``OR`` for callables
+    """Developer facing class for implemeting bit-wise ``NOT`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
         left (~.BooleanFn): Left operand in the bit-wise expression.
-        right (~.BooleanFn): Right operand in the bit-wise expression.
     """
 
     def __init__(self, left):

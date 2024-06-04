@@ -19,18 +19,34 @@ import pennylane as qml
 
 
 class NoiseModel:
-    """Build a noise model based on ``Conditional``, ``Callable`` and some ``metadata``.
+    """Builds a noise model based on a mapping of conditionals to callables that
+    defines noise operations using some optional metadata.
 
     Args:
-        model_map (dict[Union[~.BooleanFn]->Union[Operation, Channel]]): Model
-            data for the noise model as a ``{conditional: noise_op}`` dictionary.
-        kwargs: Keyword arguments for specifying metadata related to noise model.
+        model_map (dict[BooleanFn -> Callable]): Data for the
+            noise model as a ``{conditional: noise_fn}`` dictionary. The signature of
+            ``noise_fn`` must be ``noise_fn(op: Operation, **kwargs) -> None``, where
+            ``op`` is the operation that the conditional evaluates and ``kwargs`` are
+            the specified metadata arguments.
+        **kwargs: Keyword arguments for specifying metadata related to noise model.
+
+    .. note::
+
+        For each key-value pair of ``model_map``:
+
+        - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
+          a callable object built via the constructor functions (:func:`~.pennylane.noise.op_eq`,
+          :func:`~.pennylane.noise.op_in`, :func:`~.pennylane.noise.wires_eq`, and
+          :func:`~.pennylane.noise.wires_in`), or their bit-wise combination.
+        - The definition of ``noise_fn(op, **kwargs)`` should have the operations in same the order
+          in which they are to be queued for an operation ``op``, whenever the corresponding
+          ``conditional`` evaluates to ``True``.
 
     **Example**
 
     .. code-block:: python
 
-        # Set up the conditions
+        # Set up the conditionals
         c0 = qml.noise.op_eq(qml.PauliX) | qml.noise.op_eq(qml.PauliY)
         c1 = qml.noise.op_eq(qml.Hadamard) & qml.noise.wires_in([0, 1])
         c2 = qml.noise.op_eq(qml.RX)
@@ -39,11 +55,11 @@ class NoiseModel:
         def c3(op, **kwargs):
             return isinstance(op, qml.RY) and op.parameters[0] >= 0.5
 
-        # Set up noisy ops
+        # Set up the noise functions
         n0 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
         def n1(op, **kwargs):
-            ThermalRelaxationError(0.4, kwargs["t1"], 0.2, 0.6, op.wires)
+            qml.ThermalRelaxationError(0.4, kwargs["t1"], 0.2, 0.6, op.wires)
 
         def n2(op, **kwargs):
             qml.RX(op.parameters[0] * 0.05, op.wires)
@@ -64,7 +80,7 @@ class NoiseModel:
     """
 
     def __init__(self, model_map, **kwargs):
-        self._check_model(model_map)
+        self.check_model(model_map)
         self._model_map = model_map
         self._metadata = kwargs
 
@@ -101,12 +117,18 @@ class NoiseModel:
         )
 
     def __eq__(self, other):
-        return self.model_map == other.model_map and self.metadata == other.metadata
+        for model1, model2 in zip(self.model_map.items(), other.model_map.items()):
+            (fcond1, noise1), (fcond2, noise2) = model1, model2
+            if getattr(fcond1, "condition", fcond1.fn) != getattr(fcond2, "condition", fcond2.fn):
+                return False
+            if noise1 != noise2:
+                return False
+        return self.metadata == other.metadata
 
     def __repr__(self):
         model_str = "NoiseModel({\n"
         for key, val in self.model_map.items():
-            model_str += "    " + f"{key} = {val.__name__}" + "\n"
+            model_str += "    " + f"{key}: {val.__name__}" + "\n"
         model_str += "}, "
         for key, val in self._metadata.items():
             model_str += f"{key} = {val}, "
@@ -114,8 +136,9 @@ class NoiseModel:
 
         return model_str
 
-    @classmethod
-    def _check_model(cls, model):
+    @staticmethod
+    def check_model(model):
+        """Method to validate the ``model`` map for constructing a NoiseModel."""
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
                 raise ValueError(
@@ -123,8 +146,8 @@ class NoiseModel:
                     "BooleanFn or one of its subclasses."
                 )
 
-            parameters = inspect.signature(noise).parameters.values()
-            if not any(p for p in reversed(parameters) if p.kind == p.VAR_KEYWORD):
+            final_parameter = list(inspect.signature(noise).parameters.values())[-1]
+            if final_parameter.kind != final_parameter.VAR_KEYWORD:
                 raise ValueError(
                     f"{noise} provided for {condition} must accept **kwargs "
                     "as the last argument in its signature."
