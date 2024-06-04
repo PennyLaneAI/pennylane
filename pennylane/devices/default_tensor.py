@@ -151,10 +151,9 @@ class DefaultTensor(Device):
     This device is designed to simulate large-scale quantum circuits using tensor networks. For small circuits, other devices like ``default.qubit`` may be more suitable.
 
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
-    Currently, only the Matrix Product State (MPS) method is supported, based on ``quimb``'s ``CircuitMPS`` class.
+    Currently, the supported methods are Matrix Product State (MPS), based on the ``quimb``'s ``CircuitMPS`` class, and Exact Tensor Network (TN), based on the ``quimb``'s ``Circuit`` class.
 
-    This device does not currently support finite shots or differentiation.
-    The currently supported measurement types are expectation values and variances.
+    This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values and variances.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -227,9 +226,9 @@ class DefaultTensor(Device):
                 theta = 0.5
                 phi = 0.1
                 num_qubits = 50
-                device_kwargs = {"max_bond_dim": 100, "cutoff": 1e-16, "contract": "auto-mps"}
+                device_kwargs_mps = {"max_bond_dim": 100, "cutoff": 1e-16, "contract": "auto-mps"}
 
-                dev = qml.device("default.tensor", wires=num_qubits, **device_kwargs)
+                dev = qml.device("default.tensor", wires=num_qubits, method="mps", **device_kwargs_mps)
 
                 @qml.qnode(dev)
                 def circuit(theta, phi, num_qubits):
@@ -290,7 +289,7 @@ class DefaultTensor(Device):
 
         if dtype not in [np.complex64, np.complex128]:
             raise TypeError(
-                f"Unsupported type: {dtype}. Supported types are np.complex64 and np.complex128."
+                f"Unsupported type: {dtype}. Supported types are numpy.complex64 and numpy.complex128."
             )
 
         super().__init__(wires=wires, shots=None)
@@ -509,7 +508,7 @@ class DefaultTensor(Device):
         raise NotImplementedError  # pragma: no cover
 
     def _apply_operation(self, op: qml.operation.Operator) -> None:
-        """Apply a single operator to the circuit, keeping the state always in a MPS form.
+        """Apply a single operator to the circuit.
 
         Internally it uses `quimb`'s `apply_gate` method. This method modifies the tensor state of the device.
 
@@ -522,7 +521,7 @@ class DefaultTensor(Device):
         )
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
-        """Measure the measurement required by the circuit over the MPS.
+        """Measure the measurement required by the circuit.
 
         Args:
             measurementprocess (MeasurementProcess): measurement to apply to the state.
@@ -539,10 +538,10 @@ class DefaultTensor(Device):
         """Get the appropriate method for performing a measurement.
 
         Args:
-            measurementprocess (MeasurementProcess): measurement process to apply to the state
+            measurementprocess (MeasurementProcess): measurement process to apply to the state.
 
         Returns:
-            Callable: function that returns the measurement result
+            Callable: function that returns the measurement result.
         """
         if isinstance(measurementprocess, StateMeasurement):
             if isinstance(measurementprocess, ExpectationMP):
@@ -559,7 +558,7 @@ class DefaultTensor(Device):
         """Expectation value of the supplied observable contained in the MeasurementProcess.
 
         Args:
-            measurementprocess (StateMeasurement): measurement to apply to the MPS.
+            measurementprocess (StateMeasurement): measurement to apply.
 
         Returns:
             Expectation value of the observable.
@@ -575,7 +574,7 @@ class DefaultTensor(Device):
         """Variance of the supplied observable contained in the MeasurementProcess.
 
         Args:
-            measurementprocess (StateMeasurement): measurement to apply to the MPS.
+            measurementprocess (StateMeasurement): measurement to apply.
 
         Returns:
             Variance of the observable.
@@ -590,7 +589,7 @@ class DefaultTensor(Device):
         return expect_squar_op - np.square(expect_op)
 
     def _local_expectation(self, matrix, wires) -> float:
-        """Compute the local expectation value of a matrix on the MPS.
+        """Compute the local expectation value of a matrix.
 
         Internally, it uses `quimb`'s `local_expectation` method.
 
@@ -599,10 +598,10 @@ class DefaultTensor(Device):
             wires (tuple[int]): the wires the matrix acts on.
 
         Returns:
-            Local expectation value of the matrix on the MPS.
+            Local expectation value of the matrix.
         """
 
-        # We need to copy the MPS since `local_expectation` modifies the state
+        # We need to copy the quimb circuit since `local_expectation` modifies it.
         qc = copy.deepcopy(self._quimb_circuit)
 
         exp_val = qc.local_expectation(
@@ -724,7 +723,7 @@ class DefaultTensor(Device):
             execution_config (ExecutionConfig): a data structure with all additional information required for execution.
 
         Returns:
-            Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector-Jacobian product
+            Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector-Jacobian product.
         """
         raise NotImplementedError(
             "The computation of vector-Jacobian product has yet to be implemented for the default.tensor device."
