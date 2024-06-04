@@ -288,7 +288,7 @@ class TestQutritAmplitudeDamping:
 
         jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(gamma_1, gamma_2, gamma_3)
         assert math.allclose(jac, self.expected_jac_fn(gamma_1, gamma_2, gamma_3))
-        
+
 
 class TestQutritChannel:
     """Tests for the quantum channel QubitChannel"""
