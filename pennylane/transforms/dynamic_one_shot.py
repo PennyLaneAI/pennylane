@@ -329,13 +329,13 @@ def gather_mcm_qjit(measurement, samples, is_valid):
     if isinstance(measurement, (CountsMP, ProbabilityMP)):
         sum_valid = qml.math.sum(is_valid)
         count_1 = qml.math.sum(meas * is_valid)
-    if isinstance(measurement, CountsMP):
-        return {0: sum_valid - count_1, 1: count_1}
-    if isinstance(measurement, ProbabilityMP):
-        counts = qml.math.array(
-            [sum_valid - count_1, count_1], like=qml.math.get_deep_interface(is_valid)
-        )
-        return counts / sum_valid
+        if isinstance(measurement, CountsMP):
+            return {0: sum_valid - count_1, 1: count_1}
+        if isinstance(measurement, ProbabilityMP):
+            counts = qml.math.array(
+                [sum_valid - count_1, count_1], like=qml.math.get_deep_interface(is_valid)
+            )
+            return counts / sum_valid
     return gather_non_mcm(measurement, meas, is_valid)
 
 
