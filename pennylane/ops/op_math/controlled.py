@@ -490,6 +490,7 @@ class Controlled(SymbolicOp):
 
     @property
     def grad_method(self):
+        """Returns the grad method of the operator being controlled"""
         return self.base.grad_method
 
     # Properties on the control values ######################
