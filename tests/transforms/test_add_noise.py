@@ -24,6 +24,8 @@ from pennylane.measurements import Expectation
 from pennylane.tape import QuantumScript
 from pennylane.transforms.add_noise import add_noise
 
+# pylint:disable = no-member
+
 
 class TestAddNoise:
     """Tests for the insert function using input tapes"""
@@ -75,13 +77,6 @@ class TestAddNoise:
             ValueError, match="Argument noise_model must be an instance of NoiseModel"
         ):
             add_noise(self.tape, {})
-
-    def test_level_error(self):
-        """Tests if a NotImplementedError is raised when level is given"""
-        with pytest.raises(
-            NotImplementedError, match="Support for level argument is not currently present"
-        ):
-            add_noise(self.tape, qml.NoiseModel({}), level="device")
 
     def test_noise_tape(self):
         """Test if the expected tape is returned with the transform"""
@@ -372,3 +367,49 @@ def test_add_noise_with_non_qwc_obs_and_mid_meas():
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
     assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
+
+
+@pytest.mark.parametrize(
+    "level1, level2",
+    [
+        ("top", 0),
+        (0, slice(0, 0)),
+        ("user", 4),
+        ("user", slice(0, 4)),
+        (None, slice(0, None)),
+        (-1, slice(0, -1)),
+        ("device", slice(0, -1)),
+    ],
+)
+def test_add_level_template(level1, level2):
+    """Test that ops are inserted correctly into a decomposed template"""
+    dev = qml.device("default.mixed", wires=2)
+
+    @qml.metric_tensor
+    @qml.transforms.undo_swaps
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses
+    @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+    def f(w, x, y, z):
+        qml.RX(w, wires=0)
+        qml.RY(x, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=0)
+        qml.RX(z, wires=1)
+        return qml.expval(qml.Z(0) @ qml.Z(1))
+
+    fcond = qml.noise.op_eq(qml.RX)
+    fcall = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+    noise_model = qml.NoiseModel({fcond: fcall})
+
+    noisy_qnode = add_noise(f, noise_model=noise_model, level=level1)
+
+    transform_level1 = noisy_qnode.transform_program
+    transform_level2 = qml.workflow.get_transform_program(f, level=level2)
+    transform_level2.add_transform(add_noise, noise_model=noise_model, level=level1)
+
+    assert len(transform_level1) == len(transform_level2)
+    for t1, t2 in zip(transform_level1, transform_level2):
+        if t1.transform.__name__ == t2.transform.__name__ == "expand_fn":
+            continue
+        assert t1 == t2
