@@ -34,6 +34,7 @@ quantum-classical programs.
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
     ~qnode_call
+    ~to_catalyst
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -141,4 +142,11 @@ def __getattr__(key):
         from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
 
         return _get_abstract_operator()
+
+    if key == "to_catalyst":
+        # lazy import to prevent circular dependency issues
+        from .to_catalyst import to_catalyst  # pylint: disable=import-outside-toplevel
+
+        return to_catalyst
+
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")

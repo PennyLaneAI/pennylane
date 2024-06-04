@@ -15,26 +15,24 @@
 This submodule defines a utility for converting plxpr into catalyst jaxpr.
 """
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
-
-has_catalyst = True
-try:
-    from catalyst import jax_primitives as cat_p
-except ImportError:
-    cat_p = None
-    has_catalyst = False
+import catalyst
+import jax
+from catalyst import jax_primitives as cat_p
 
 from .capture_qnode import _get_qnode_prim, _get_shapes_for
 from .primitives import _get_abstract_measurement, _get_abstract_operator
 
-if has_catalyst:
-    measurement_map = {"expval_obs": cat_p.expval_p, "probs_wires": cat_p.probs_p}
-else:
-    measurement_map = {}
+AbstractOperator = _get_abstract_operator()
+AbstractMeasurement = _get_abstract_measurement()
+
+measurement_map = {"expval_obs": cat_p.expval_p, "probs_wires": cat_p.probs_p}
+
+
+def _get_device_kwargs(device: "pennylane.devices.Device") -> dict:
+    features = catalyst.utils.toml.ProgramFeatures(device.shots is not None)
+    capabilities = catalyst.utils.toml.get_device_capabilities(device, features)
+    info = catalyst.device.extract_backend_info(device, capabilities)
+    return {"rtd_kwargs": info.kwargs, "rtd_lib": info.lpath, "rtd_name": info.c_interface_name}
 
 
 def _get_jaxpr_count(jaxpr) -> int:
@@ -46,7 +44,61 @@ def _get_jaxpr_count(jaxpr) -> int:
     return count
 
 
-def to_catalyst(jaxpr):
+def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
+    """Convert pennylane variant jaxpr to catalyst variant jaxpr.
+
+    Args:
+        jaxpr (jax.core.Jaxpr): pennylane variant jaxpr
+
+    Returns:
+        jax.core.Jaxpr: catalyst variant jaxpr
+
+
+    Note that the input jaxpr should be workflow level and contain qnode primitives, rather than
+    qfunc level with individual operators.  See ``plxpr_to_catalyst`` for converting the quantum
+    function plxpr.
+
+    .. code-block:: python
+
+        qml.capture.enable()
+
+        @qml.qnode(qml.device('lightning.qubit', wires=2))
+        def circuit(x):
+            qml.RX(x,0)
+            return qml.probs(wires=(0,1))
+
+        def f(x):
+            return circuit(2* x) ** 2
+
+        jaxpr = jax.make_jaxpr(circuit)(0.5)
+
+        print(qml.capture.to_catalyst(jaxpr))
+
+    .. code-block:: none
+
+        { lambda ; a:f64[]. let
+            b:f64[4] = func[
+            call_jaxpr={ lambda ; c:f64[]. let
+                qdevice[
+                    rtd_kwargs={'shots': 0, 'mcmc': False}
+                    rtd_lib=something something
+                    rtd_name=lightning.qubit
+                ]
+                d:AbstractQreg() = qalloc 2
+                e:AbstractQbit() = qextract d 0
+                f:AbstractQbit() = qinst[ctrl_len=0 op=RX params_len=1 qubits_len=1] e
+                    c
+                g:AbstractQbit() = qextract d 1
+                h:AbstractObs(num_qubits=None,primitive=None) = compbasis f g
+                i:f64[4] = probs[shots=0] h
+                j:AbstractQreg() = qinsert d 0 f
+                qdealloc j
+                in (i,) }
+            fn=TODO
+            ] a
+        in (b,) }
+
+    """
     new_xpr = jax.core.Jaxpr(
         constvars=jaxpr.jaxpr.constvars,
         invars=jaxpr.jaxpr.invars,  # + qreg var?
@@ -70,7 +122,9 @@ def to_catalyst(jaxpr):
     return new_xpr
 
 
-def plxpr_to_catalyst(plxpr, device):
+def plxpr_to_catalyst(plxpr: jax.core.Jaxpr, device: "pennylane.devices.Device") -> jax.core.Jaxpr:
+    """Convert"""
+
     converter = CatalystConverter(plxpr)
     converter.add_device_eqn(device)
     converter.add_qreg_eqn(len(device.wires))
@@ -81,8 +135,6 @@ def plxpr_to_catalyst(plxpr, device):
 
 class CatalystConverter:
     def __init__(self, plxpr):
-        if not has_catalyst:
-            raise ImportError("catalyst is required to convert plxpr to catalyst xpr.")
 
         self.plxpr = plxpr
 
@@ -90,7 +142,7 @@ class CatalystConverter:
 
         self.catalyst_xpr = jax.core.Jaxpr(
             constvars=plxpr.constvars,
-            invars=plxpr.invars,  # + qreg var?
+            invars=plxpr.invars,
             outvars=[],
             eqns=[],
         )
@@ -105,11 +157,7 @@ class CatalystConverter:
         self.num_device_wires = len(device.wires)
         shots = device.shots.total_shots
         self.shots = 0 if shots is None else shots
-        params = {
-            "rtd_kwargs": {"shots": self.shots, "mcmc": device._mcmc},
-            "rtd_lib": "something something",
-            "rtd_name": device.name,
-        }
+        params = _get_device_kwargs(device)
         device_eqn = jax.core.JaxprEqn(
             [], [], cat_p.qdevice_p, params, effects=jax.core.no_effects, source_info=None
         )
@@ -253,12 +301,12 @@ class CatalystConverter:
 
     def convert_plxpr_eqns(self):
         for eqn in self.plxpr.eqns:
-            if isinstance(eqn.outvars[0].aval, _get_abstract_operator()):
+            if isinstance(eqn.outvars[0].aval, AbstractOperator):
                 if isinstance(eqn.outvars[0], jax.core.DropVar):
                     self._add_operator_eqn(eqn)
                 else:
                     self._op_math_cache[eqn.outvars[0]] = eqn
-            elif isinstance(eqn.outvars[0].aval, _get_abstract_measurement()):
+            elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
                 mp_outaval = self._add_measurement_eqn(eqn)
                 self.catalyst_xpr.outvars.extend(mp_outaval)
             else:
