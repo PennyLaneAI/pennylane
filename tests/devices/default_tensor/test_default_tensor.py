@@ -21,7 +21,6 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.devices.default_tensor import _gate_contract_mps, _gate_contract_tn
 from pennylane.wires import WireError
 
 quimb = pytest.importorskip("quimb")
@@ -223,9 +222,18 @@ def test_ivalid_data_type():
         qml.device("default.tensor", dtype=float)
 
 
+# def test_draw():
+#    """Test the draw method."""
+#    dev = qml.device("default.tensor", wires=10)
+#    dev.draw(title="test")
+
+
 @pytest.mark.parametrize("method", ["mps", "tn"])
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
+
+    # Note: we could potentially test each 'contract' option for both methods, but this would significantly
+    # increase the number of tests. Furthermore, the 'contract' option is tested in the quimb library itself.
 
     @pytest.mark.parametrize("operation", all_ops)
     def test_supported_gates_can_be_implemented(self, operation, method):

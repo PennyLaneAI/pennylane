@@ -201,7 +201,7 @@ class DefaultTensor(Device):
             `quimb's local_expectation documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
             Default is ``auto-hq``
         local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
-            For a complete list of available sequences, see the
+            For a complete list of available simplification options, see the
             `quimb's full_simplify documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
             Default is ``ADCRS``.
 
@@ -414,6 +414,33 @@ class DefaultTensor(Device):
             binary="0" * (len(wires) if wires else 1),
             dtype=self._dtype.__name__,
             tags=[str(l) for l in wires.labels] if wires else None,
+        )
+
+    def draw(self, color="auto", **draw_opts):
+        """
+        Draw the current quantum circuit using `quimb`'s functionality.
+
+        Internally, it uses `quimb`'s `draw` method.
+
+        Args:
+            color (str): The color of the tensor network diagram. Default is ``"auto"``.
+            **draw_opts: Additional keyword arguments for the `quimb`'s `draw` method. For more information, see the
+                `quimb's draw documentation <https://quimb.readthedocs.io/en/latest/tensor-drawing.html>`_.
+        """
+
+        color = draw_opts.pop(
+            "color", [f"I{w}" for w in range(len(self._quimb_circuit.psi.tensors))]
+        )
+        edge_color = draw_opts.pop("edge_color", "black")
+        show_tags = draw_opts.pop("show_tags", False)
+        show_inds = draw_opts.pop("show_inds", False)
+
+        self._quimb_circuit.psi.draw(
+            color=color,
+            edge_color=edge_color,
+            show_tags=show_tags,
+            show_inds=show_inds,
+            **draw_opts,
         )
 
     def _initial_tn(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
