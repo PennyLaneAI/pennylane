@@ -288,8 +288,6 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    transform_program = qml.transforms.core.TransformProgram(inner_transform)
-
     def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
 
@@ -300,11 +298,15 @@ def _make_inner_execute(
             cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
 
+        transform_program = qml.transforms.core.TransformProgram()
+
         if numpy_only:
-            transform_program.insert_front_transform(qml.transforms.convert_to_numpy_parameters)
+            transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
 
         if cache is not None:
             transform_program.add_transform(_cache_transform, cache=cache)
+
+        transform_program += inner_transform
 
         transformed_tapes, transform_post_processing = transform_program(tapes)
 
