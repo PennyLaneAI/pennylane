@@ -14,7 +14,7 @@
 """
 Contains the :class:`ExecutionConfig` data class.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Union
 
 from pennylane.workflow import SUPPORTED_INTERFACES
@@ -95,7 +95,7 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
-    mcm_config: Union[MCMConfig, dict] = MCMConfig()
+    mcm_config: Union[MCMConfig, dict] = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
     def __post_init__(self):
