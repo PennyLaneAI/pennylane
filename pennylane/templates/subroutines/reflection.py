@@ -138,7 +138,7 @@ class Reflection(Operation):
             "reflection_wires": tuple(reflection_wires),
         }
 
-        super().__init__(alpha, wires=wires, id=id)
+        super().__init__(alpha, *U.data, wires=wires, id=id)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
