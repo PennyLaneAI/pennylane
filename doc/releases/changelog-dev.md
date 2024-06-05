@@ -216,6 +216,8 @@
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
+* Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fix of incorrectly set up commands) [(#5804)](https://github.com/PennyLaneAI/pennylane/pull/5804)
+
 <h3>Bug fixes 🐛</h3>
 
 * Disable Docker builds on PR merge.
@@ -301,4 +303,5 @@ Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
 Haochen Paul Wang,
-David Wierichs.
+David Wierichs,
+Rohan Jain.
