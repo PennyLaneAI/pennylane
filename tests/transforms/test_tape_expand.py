@@ -931,7 +931,6 @@ class TestCreateCustomDecompExpandFn:
         _ = circuit()
         decomp_ops = circuit.tape.operations
 
-        print(decomp_ops)
         assert len(decomp_ops) == 4 if shots is None else 5
 
         assert decomp_ops[0].name == "RZ"
@@ -940,5 +939,10 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[1].name == "RY"
         assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
 
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[3].name == "CNOT"
+        if shots:
+            assert decomp_ops[2].name == "MidMeasureMP"
+            assert decomp_ops[3].name == "CNOT"
+            assert decomp_ops[4].name == "MidMeasureMP"
+        else:
+            assert decomp_ops[2].name == "CNOT"
+            assert decomp_ops[3].name == "CNOT"
