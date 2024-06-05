@@ -48,7 +48,9 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
-* Rationalize MCM tests.
+* Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
+  but keeping one that validates multiple mid-circuit measurements with any allowed return
+  and interface end-to-end tests.
   [(#5787)](https://github.com/PennyLaneAI/pennylane/pull/5787)
 
 * The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
