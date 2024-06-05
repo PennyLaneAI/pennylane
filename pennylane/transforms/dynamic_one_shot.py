@@ -50,7 +50,7 @@ def null_postprocessing(results):
 @transform
 def dynamic_one_shot(
     tape: qml.tape.QuantumTape, **kwargs
-) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:
