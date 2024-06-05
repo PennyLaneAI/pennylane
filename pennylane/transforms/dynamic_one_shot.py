@@ -19,7 +19,7 @@ import itertools
 
 # pylint: disable=import-outside-toplevel
 from collections import Counter
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence
 
 import numpy as np
 
