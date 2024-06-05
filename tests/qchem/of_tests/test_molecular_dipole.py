@@ -24,6 +24,7 @@ from pennylane import qchem
 
 h2 = ["H", "H"]
 x_h2 = np.array([0.0, 0.0, -0.661, 0.0, 0.0, 0.661])
+# Reference dipole operator
 coeffs_h2 = []
 coeffs_h2.append([0.0])
 coeffs_h2.append([0.0])
@@ -42,6 +43,7 @@ ops_h2.append(
     ]
 )
 
+# Reference dipole operator
 coeffs_h2_parity = []
 coeffs_h2_parity.append([0.0])
 coeffs_h2_parity.append([0.0])
@@ -60,6 +62,7 @@ ops_h2_parity.append(
     ]
 )
 
+# Reference eigenvalues
 eig_h2 = []
 eig_h2.append([0.0, 0.0])
 eig_h2.append([0.0, 0.0])
@@ -68,6 +71,7 @@ eig_h2.append([-1.81780062, -0.90890031, -0.90890031])
 
 h3p = ["H", "H", "H"]
 x_h3p = np.array([[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]])
+# Reference dipole operator
 coeffs_h3p = []
 coeffs_h3p.append(
     [
@@ -162,6 +166,7 @@ ops_h3p.append(
 )
 ops_h3p.append([I(0)])
 
+# Reference eigenvalues
 eig_h3p = []
 eig_h3p.append([-3.15687028, -3.01293514, -3.01293514])
 eig_h3p.append([-2.00177188, -1.96904253, -1.96904253])
@@ -171,6 +176,7 @@ eig_h3p.append([0.0, 0.0])
 h2o = ["H", "H", "O"]
 x_h2o = np.array([0.0, 1.431, -0.887, 0.0, -1.431, -0.887, 0.0, 0.0, 0.222])
 
+# Reference dipole operator
 coeffs_h2o = []
 coeffs_h2o.append([-0.03700797, 0.03700797, 0.03700797, -0.03700797])
 coeffs_h2o.append([0.0])
@@ -196,6 +202,7 @@ ops_h2o.append(
     ]
 )
 
+# Reference eigenvalues
 eig_h2o = []
 eig_h2o.append([-0.14803188, -0.07401594, -0.07401594])
 eig_h2o.append([0.0, 0.0])
