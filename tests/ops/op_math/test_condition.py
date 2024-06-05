@@ -369,6 +369,8 @@ class TestOtherTransforms:
 class TestProperties:
     """Test Conditional properties"""
 
+    BASE_OP = [qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0)]
+
     def test_data(self):
         """Test base data can be get and set through Conditional class."""
         x = np.array(1.234)
@@ -428,18 +430,14 @@ class TestProperties:
 
         assert cond_op.has_diagonalizing_gates is value
 
-    @pytest.mark.parametrize(
-        "base", (qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0))
-    )
+    @pytest.mark.parametrize("base", BASE_OP)
     def test_ndim_params(self, base):
         """Test that Conditional defers to base ndim_params"""
         m = qml.measure(0)
         op = Conditional(m, base)
         assert op.ndim_params == base.ndim_params
 
-    @pytest.mark.parametrize(
-        "base", (qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0))
-    )
+    @pytest.mark.parametrize("base", BASE_OP)
     def test_num_params(self, base):
         """Test that Conditional defers to base num_params"""
         m = qml.measure(0)
@@ -449,8 +447,6 @@ class TestProperties:
 
 class TestMethods:
     """Test Conditional methods"""
-
-    BASE_OP = [qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0)]
 
     def test_diagonalizing_gates(self):
         """Test that Conditional defers to base diagonalizing_gates"""
