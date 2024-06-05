@@ -171,18 +171,23 @@ class TestQROM:
 
         assert all(qml.equal(op1, op2) for op1, op2 in zip(qrom_decomposition, expected_gates))
 
+    @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qjit
+        @jax.jit
         @qml.qnode(dev)
         def circuit():
             qml.QROM(["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3])
             return qml.probs(wires=3)
 
-        assert np.allclose(circuit(), np.array([1.0, 0.0]))
+        assert jax.numpy.allclose(circuit(), jax.numpy.array([1.0, 0.0]))
 
 
 @pytest.mark.parametrize(

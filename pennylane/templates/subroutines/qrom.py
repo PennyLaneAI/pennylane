@@ -15,7 +15,6 @@
 This submodule contains the template for QROM.
 """
 
-import copy
 import math
 
 import numpy as np
@@ -137,7 +136,7 @@ class QROM(Operation):
             )
 
         if len(bitstrings[0]) != len(target_wires):
-            raise ValueError(f"Bitstring length must match the number of target wires.")
+            raise ValueError("Bitstring length must match the number of target wires.")
 
         all_wires = target_wires + control_wires + work_wires
         super().__init__(wires=all_wires, id=id)
