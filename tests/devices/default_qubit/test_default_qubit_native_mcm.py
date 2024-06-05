@@ -259,7 +259,6 @@ def test_simple_dynamic_circuit(shots, measure_f, postselect, meas_obj):
 
     func1 = func
     results1 = func1(*params)
-    print(results1, postselect, meas_obj)
 
     func2 = qml.defer_measurements(func)
     results2 = func2(*params)
