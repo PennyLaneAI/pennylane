@@ -105,7 +105,6 @@ _operations = frozenset(
         "QubitCarry",
         "QubitSum",
         "OrbitalRotation",
-        "QFT",
         "ECR",
         "BlockEncode",
         "PauliRot",
@@ -346,7 +345,7 @@ class DefaultTensor(Device):
             cutoff=self._cutoff,
         )
 
-    def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
+    def _initial_mps(self, wires: qml.wires.Wires, basis_state=None) -> "qtn.MatrixProductState":
         r"""
         Return an initial state to :math:`\ket{0}`.
 
@@ -354,12 +353,17 @@ class DefaultTensor(Device):
 
         Args:
             wires (Wires): The wires to initialize the MPS.
+            basis_state (str, None): prepares the basis state :math:`\ket{n}`, where ``n`` is a
+                string of integers from the set :math:`\{0, 1\}`, i.e.,
+                if ``n = "010"``, prepares the state :math:`|010\rangle`.
 
         Returns:
             MatrixProductState: The initial MPS of a circuit.
         """
+        if basis_state is None:
+            basis_state = "0" * (len(wires) if wires else 1)
         return qtn.MPS_computational_state(
-            binary="0" * (len(wires) if wires else 1),
+            binary=basis_state,
             dtype=self._dtype.__name__,
             tags=[str(l) for l in wires.labels] if wires else None,
         )
@@ -464,7 +468,25 @@ class DefaultTensor(Device):
 
         self._reset_mps(wires)
 
-        for op in circuit.operations:
+        for i, op in enumerate(circuit.operations):
+            if i == 0 and isinstance(op, qml.BasisState):
+                self._quimb_mps = qtn.CircuitMPS(
+                    psi0=self._initial_mps(
+                        wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
+                    ),
+                    max_bond=self._max_bond_dim,
+                    gate_contract=self._contract,
+                    cutoff=self._cutoff,
+                )
+                continue
+            if i == 0 and isinstance(op, qml.StatePrep):
+                self._quimb_mps = qtn.CircuitMPS(
+                    psi0=qtn.MatrixProductState.from_dense(op.parameters[0]),
+                    max_bond=self._max_bond_dim,
+                    gate_contract=self._contract,
+                    cutoff=self._cutoff,
+                )
+                continue
             self._apply_operation(op)
 
         if not circuit.shots:
@@ -715,7 +737,7 @@ def apply_operation_core_multirz(ops: qml.MultiRZ, device):
 def apply_operation_core_paulirot(ops: qml.PauliRot, device):
     """Dispatcher for _apply_operation."""
     theta = ops.parameters[0]
-    wire_map = dict((i, w) for i, w in enumerate(ops.wires))
+    wire_map = dict((w, i) for i, w in enumerate(ops.wires))
     pw = qml.pauli.string_to_pauli_word(ops._hyperparameters["pauli_word"], wire_map)
     cospsi = qml.math.cos(0.5 * theta) * copy.deepcopy(device._quimb_mps.psi)
     for o in pw:
