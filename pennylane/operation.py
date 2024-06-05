@@ -723,7 +723,6 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
-
         iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
 
         # process wires so that we can handle them either as a final argument or as a keyword argument.
@@ -2091,6 +2090,10 @@ class Tensor(Observable):
     @classmethod
     def _unflatten(cls, data, _):
         return cls(*data)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None

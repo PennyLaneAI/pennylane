@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
+import copy
 from random import random
 
 import numpy as np
@@ -1145,6 +1146,62 @@ class TestCapabilities:
             "supports_broadcasting": False,
         }
         assert capabilities == QubitDevice.capabilities()
+
+
+class TestNativeMidCircuitMeasurements:
+    """Unit tests for mid-circuit measurements related functionality"""
+
+    class MCMDevice(qml.devices.DefaultQubitLegacy):
+        def apply(self, *args, **kwargs):
+            for op in args[0]:
+                if isinstance(op, qml.measurements.MidMeasureMP):
+                    kwargs["mid_measurements"][op] = 0
+
+        @classmethod
+        def capabilities(cls):
+            default_capabilities = copy.copy(qml.devices.DefaultQubitLegacy.capabilities())
+            default_capabilities["supports_mid_measure"] = True
+            return default_capabilities
+
+    def test_qnode_native_mcm(self, mocker):
+        """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
+
+        dev = self.MCMDevice(wires=1, shots=100)
+        dev.operations.add("MidMeasureMP")
+        spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def func():
+            _ = qml.measure(0)
+            return qml.expval(op=qml.PauliZ(0))
+
+        res = func()
+        assert spy.call_count == 1
+        assert isinstance(res, float)
+
+    @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+    def test_postselect_mode_propagates_to_execute(self, monkeypatch, postselect_mode):
+        """Test that the specified postselect mode propagates to execution as expected."""
+        dev = self.MCMDevice(wires=1, shots=100)
+        dev.operations.add("MidMeasureMP")
+        pm_propagated = False
+
+        def new_apply(*args, **kwargs):  # pylint: disable=unused-argument
+            nonlocal pm_propagated
+            pm_propagated = kwargs.get("postselect_mode", -1) == postselect_mode
+
+        @qml.qnode(dev, postselect_mode=postselect_mode)
+        def func():
+            _ = qml.measure(0, postselect=1)
+            return qml.expval(op=qml.PauliZ(0))
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "apply", new_apply)
+            with pytest.raises(Exception):
+                # Error expected as mocked apply method does not adhere to expected output.
+                func()
+
+        assert pm_propagated is True
 
 
 class TestExecution:
