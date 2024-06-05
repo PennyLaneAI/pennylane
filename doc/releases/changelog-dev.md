@@ -297,6 +297,9 @@
 * `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
   [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
 
+* `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
+  [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
