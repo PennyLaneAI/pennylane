@@ -878,7 +878,7 @@ def _openfermion_hamiltonian(
     wires=None,
     convert_tol=1e012,
 ):
-
+    r"""Compute openfermion Hamiltonian."""
     openfermion, _ = _import_of()
 
     hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, "pyscf", outpath)
