@@ -300,6 +300,40 @@ def test_differentiable_molecular_dipole(
             eig = qml.eigvals(qml.SparseHamiltonian(dip.sparse_matrix(), wires=wires), k=3)
         assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+@pytest.mark.parametrize(
+    ("wiremap"),
+    [
+        ["a", "b", "c", "d"],
+        [0, "z", 3, "ancilla"],
+    ],
+)
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
+def test_custom_wiremap_dipole(wiremap, tmpdir):
+    r"""Test that the generated dipole operator has the correct wire labels given by a custom wiremap."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+    method = "dhf"
+
+    mol = qchem.Molecule(symbols, geometry)
+    dipole_dhf = qchem.molecular_dipole(
+        mol,
+        method=method,
+        wires=wiremap,
+        outpath=tmpdir.strpath,
+    )
+
+    method = "openfermion"
+    dipole_of = qchem.molecular_dipole(
+        mol,
+        method=method,
+        wires=wiremap,
+        outpath=tmpdir.strpath,
+    )
+
+    assert all(set(dip.wires).issubset(set(wiremap)) for dip in dipole_dhf)
+    assert all(set(dip.wires).issubset(set(wiremap)) for dip in dipole_of)
 
 def test_molecular_dipole_error():
     r"""Test that molecular_dipole raises an error with unsupported backend and open-shell systems."""

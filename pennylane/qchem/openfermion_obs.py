@@ -824,6 +824,9 @@ def molecular_dipole(
                 mol, cutoff=cutoff, core=core, active=active, mapping=mapping
             )()
         )
+        if wires:
+            dip = [qml.map_wires(op, wires_map) for op in dip]
+
         return dip
 
     dip = qml.qchem.dipole_of(
