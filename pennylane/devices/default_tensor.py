@@ -15,6 +15,7 @@
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
 import copy
+import warnings
 from dataclasses import replace
 from numbers import Number
 from typing import Callable, Optional, Sequence, Tuple, Union
@@ -154,7 +155,7 @@ def accepted_observables(obs: qml.operation.Operator) -> bool:
     return obs.name in _observables
 
 
-def accepted_gate_contract(contract: str, method: str) -> bool:
+def _accepted_gate_contract(contract: str, method: str) -> bool:
     """A function that determines if a gate contraction option is supported by the device."""
     if method == "mps":
         return contract in _gate_contract_mps
@@ -163,6 +164,11 @@ def accepted_gate_contract(contract: str, method: str) -> bool:
     raise ValueError(
         f"Unsupported method {method}. Supported methods are {', '.join(_methods)}."
     )  # pragma: no cover
+
+
+def _warn_useless_kwarg(kwarg: str, method: str) -> None:
+    """A function that warns the user that a specific option is not used by the chosen method."""
+    warnings.warn(f"The keyword argument '{kwarg}' is not used by the '{method}' method.")
 
 
 @simulator_tracking
@@ -192,11 +198,11 @@ class DefaultTensor(Device):
         cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is the machine limit for the given tensor data type,
             retrieved with the ``numpy.finfo`` function.
         contract (str): The contraction method for applying gates. The possible options depend on the method chosen.
-            For the MPS method, the options are ``"auto-mps"``, ``"swap+split"`` and ``"nonlocal"``. For details, see the
+            For the MPS method, the options are ``"auto-mps"``, ``"swap+split"`` and ``"nonlocal"``. For a description of these options, see the
             `quimb's CircuitMPS documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/index.html#quimb.tensor.CircuitMPS>`_.
             Default is ``"auto-mps"``.
             For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``"True"``, and ``"False"``.
-            For details, see the `quimb's source code <https://github.com/jcmgray/quimb/blob/fb744f3f6aebd60db68fc31af097304a0790ab57/quimb/tensor/tensor_core.py#L3410-L3589>`_.
+            For details, see the `quimb's documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_network_gate_inds>`_.
             Default is ``"auto-split-gate"``.
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
             For more information on available optimizers, see the
@@ -239,7 +245,11 @@ class DefaultTensor(Device):
             We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
             In the following example, we consider a slightly more complex circuit. We use the ``default.tensor`` device with the MPS method,
-            setting the maximum bond dimension to 100 and the cutoff to 1e-16. We set ``"auto-mps"`` as the contraction technique to apply gates.
+            setting the maximum bond dimension to 100 and the cutoff to 1e-16.
+
+            We set ``"auto-mps"`` as the contraction technique to apply gates. With this option, ``quimb`` turns 3-qubit gates and 4-qubit gates
+            into Matrix Product Operators (MPO) and applies them directly to the MPS. On the other hand, qubits in 2-qubit gates are possibly
+            swapped to be adjacent before applying the gate, then swapped back.
 
             .. code-block:: python
 
@@ -277,6 +287,48 @@ class DefaultTensor(Device):
 
             The time complexity and the accuracy of the results also depend on the chosen keyword arguments for the device, such as the maximum bond dimension.
             The specific structure of the circuit significantly affects how the time complexity and accuracy of the simulation scale with these parameters.
+
+
+
+            We can also simulate quantum circuits using the Tensor Network (TN) method.
+
+            This can be particularly useful for circuits that build up entanglement.
+            Using the ``quimb`` backend, the exact tensor network method can be faster than the MPS method in some cases.
+
+            The following example shows how to execute a quantum circuit with the TN method and configurable depth using the ``default.tensor`` device.
+
+            We set the contraction technique to ``"auto-split-gate"``. With this option, TODO: to be completed.
+
+
+            .. code-block:: python
+
+                import pennylane as qml
+                import numpy as np
+
+                phi = 0.1
+                dept = 10
+                num_qubits = 20
+
+                dev = qml.device("default.tensor", method="tn", contract="auto-split-gate")
+
+                @qml.qnode(dev)
+                def circuit(phi, depth, num_qubits):
+                    for qubit in range(num_qubits):
+                        qml.X(wires=qubit)
+                    for _ in range(depth):
+                        for qubit in range(num_qubits - 1):
+                            qml.CNOT(wires=[qubit, qubit + 1])
+                        for qubit in range(num_qubits):
+                            qml.RX(phi, wires=qubit)
+                    for qubit in range(num_qubits - 1):
+                        qml.CNOT(wires=[qubit, qubit + 1])
+                    return qml.expval(qml.Z(0))
+
+            >>> circuit(phi, dept, num_qubits)
+            -0.9511499466743278
+
+            The execution time for this circuit with the above parameters is around 0.2 seconds, depending on the machine.
+            As a comparison, the time for the exact calculation of the same circuit with the MPS method is about one order of magnitude slower.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -323,18 +375,22 @@ class DefaultTensor(Device):
         # options for MPS
         self._max_bond_dim = kwargs.get("max_bond_dim", None)
         self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
+
+        # options both for MPS and TN
+        self._local_simplify = kwargs.get("local_simplify", "ADCRS")
+        self._contraction_optimizer = kwargs.get("contraction_optimizer", "auto-hq")
         self._contract = None
 
         if method == "mps":
             self._contract = kwargs.get("contract", "auto-mps")
         elif method == "tn":
             self._contract = kwargs.get("contract", "auto-split-gate")
+            if self._max_bond_dim is not None:
+                _warn_useless_kwarg("max_bond_dim", method)
+            if self._cutoff != np.finfo(self._dtype).eps:
+                _warn_useless_kwarg("cutoff", method)
         else:
             raise ValueError  # pragma: no cover
-
-        # options both for MPS and TN
-        self._local_simplify = kwargs.get("local_simplify", "ADCRS")
-        self._contraction_optimizer = kwargs.get("contraction_optimizer", "auto-hq")
 
         # The `quimb` circuit is a class attribute so that we can implement methods
         # that access it as soon as the device is created before running a circuit.
@@ -375,7 +431,7 @@ class DefaultTensor(Device):
             wires (Wires): The wires to initialize the quimb circuit.
         """
 
-        if not accepted_gate_contract(self._contract, self.method):
+        if not _accepted_gate_contract(self._contract, self.method):
             raise ValueError(
                 f"Unsupported gate contraction option: '{self._contract}' for '{self.method}' method. "
                 f"Supported options for 'mps' are {', '.join(_gate_contract_mps)}. "
@@ -426,7 +482,7 @@ class DefaultTensor(Device):
 
         Args:
             color (str): The color of the tensor network diagram. Default is ``"auto"``.
-            **draw_opts: Additional keyword arguments for the `quimb`'s `draw` method. For more information, see the
+            **draw_opts: Additional keyword arguments for the ``quimb``'s ``draw`` function. For more information, see the
                 `quimb's draw documentation <https://quimb.readthedocs.io/en/latest/tensor-drawing.html>`_.
         """
 

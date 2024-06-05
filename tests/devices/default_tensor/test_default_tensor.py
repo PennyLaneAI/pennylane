@@ -241,6 +241,14 @@ def test_draw(method):
     assert fig is not None
 
 
+def test_warning_useless_kwargs():
+    """Test that a warning is raised if the user provides a combination of arguments that are not used."""
+
+    with pytest.warns():
+        qml.device("default.tensor", method="tn", max_bond_dim=10)
+        qml.device("default.tensor", method="tn", cutoff=1e-16)
+
+
 @pytest.mark.parametrize("method", ["mps", "tn"])
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
