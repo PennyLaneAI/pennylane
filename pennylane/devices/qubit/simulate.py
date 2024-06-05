@@ -73,13 +73,15 @@ class _FlexShots(qml.measurements.Shots):
         if isinstance(shots, int):
             self.total_shots = shots
             self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
+        elif isinstance(shots, self.__class__):
+            return  # self already _is_ shots as defined by __new__
         else:
             self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
 
         self._frozen = True
 
 
-def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_key=None):
+def _postselection_postprocess(state, is_state_batched, shots, **execution_kwargs):
     """Update state after projector is applied."""
     if is_state_batched:
         raise ValueError(
@@ -88,6 +90,10 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_ke
             "tape into multiple non-broadcasted tapes before executing if "
             "postselection is used."
         )
+
+    rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
+    postselect_mode = execution_kwargs.get("postselect_mode", None)
 
     # The floor function is being used here so that a norm very close to zero becomes exactly
     # equal to zero so that the state can become invalid. This way, execution can continue, and
@@ -110,9 +116,9 @@ def _postselection_postprocess(state, is_state_batched, shots, rng=None, prng_ke
             binomial_fn = np.random.binomial if rng is None else rng.binomial
 
         postselected_shots = (
-            [int(binomial_fn(s, float(norm**2))) for s in shots]
-            if not qml.math.is_abstract(norm)
-            else shots
+            shots
+            if postselect_mode == "fill-shots" or qml.math.is_abstract(norm)
+            else [int(binomial_fn(s, float(norm**2))) for s in shots]
         )
 
         # _FlexShots is used here since the binomial distribution could result in zero
@@ -131,7 +137,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
-        circuit (.QuantumScript): The single circuit to simulate
+        circuit (.QuantumScript): The single circuit to simulate. This circuit is assumed to have
+            non-negative integer wire labels
         debugger (._Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
         initial_state (TensorLike): Initial state vector
@@ -139,17 +146,18 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            If None, a ``numpy.random.default_rng`` will be for sampling.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. Default is ``None``.
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
             whether the state has a batch dimension.
 
     """
-    rng = execution_kwargs.get("rng", None)
-    prng_key = execution_kwargs.get("prng_key", None)
+    prng_key = execution_kwargs.pop("prng_key", None)
     interface = execution_kwargs.get("interface", None)
-    mid_measurements = execution_kwargs.get("mid_measurements", None)
     initial_state = execution_kwargs.get("initial_state", None)
 
     if initial_state is None:
@@ -177,16 +185,16 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             state,
             is_state_batched=is_state_batched,
             debugger=debugger,
-            mid_measurements=mid_measurements,
-            rng=rng,
             prng_key=key,
+            **execution_kwargs,
         )
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
             prng_key, key = jax_random_split(prng_key)
-            state, circuit._shots = _postselection_postprocess(
-                state, is_state_batched, circuit.shots, rng=rng, prng_key=key
+            state, new_shots = _postselection_postprocess(
+                state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
             )
+            circuit._shots = new_shots
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or (op.batch_size is not None)
@@ -211,7 +219,8 @@ def measure_final_state(
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
-        circuit (.QuantumScript): The single circuit to simulate
+        circuit (.QuantumScript): The single circuit to simulate. This circuit is assumed to have
+            non-negative integer wire labels
         state (TensorLike): The state to perform measurement on
         is_state_batched (bool): Whether the state has a batch dimension or not.
         initial_state (TensorLike): Initial state vector
@@ -221,7 +230,7 @@ def measure_final_state(
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
-            will be for sampling.
+            will be used for sampling.
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
@@ -292,6 +301,9 @@ def simulate(
             the key to the JAX pseudo random number generator. If None, a random key will be
             generated. Only for simulation using JAX.
         interface (str): The machine learning interface to create the initial state with
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. Default is ``None``.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -306,13 +318,12 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    rng = execution_kwargs.get("rng", None)
-    prng_key = execution_kwargs.get("prng_key", None)
-    interface = execution_kwargs.get("interface", None)
+    prng_key = execution_kwargs.pop("prng_key", None)
+    circuit = circuit.map_to_standard_wires()
 
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
-        if circuit.shots.total_shots != circuit.shots.num_copies:
+        if execution_kwargs.get("tree-traversal", None):
             n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
             if 2 * n_mcms + 100 > sys.getrecursionlimit():
                 sys.setrecursionlimit(2 * n_mcms + 100)
@@ -332,7 +343,7 @@ def simulate(
 
             def simulate_partial(k):
                 return simulate_one_shot_native_mcm(
-                    aux_circ, debugger=debugger, rng=rng, prng_key=k, interface=interface
+                    aux_circ, debugger=debugger, prng_key=k, **execution_kwargs
                 )
 
             results = jax.vmap(simulate_partial, in_axes=(0,))(keys)
@@ -341,18 +352,20 @@ def simulate(
             for i in range(circuit.shots.total_shots):
                 results.append(
                     simulate_one_shot_native_mcm(
-                        aux_circ, debugger=debugger, rng=rng, prng_key=keys[i], interface=interface
+                        aux_circ, debugger=debugger, prng_key=keys[i], **execution_kwargs
                     )
                 )
         return tuple(results)
 
     ops_key, meas_key = jax_random_split(prng_key)
     state, is_state_batched = get_final_state(
-        circuit, debugger=debugger, rng=rng, prng_key=ops_key, interface=interface
+        circuit, debugger=debugger, prng_key=ops_key, **execution_kwargs
     )
     if state_cache is not None:
         state_cache[circuit.hash] = state
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=meas_key)
+    return measure_final_state(
+        circuit, state, is_state_batched, prng_key=meas_key, **execution_kwargs
+    )
 
 
 # pylint: disable=too-many-arguments, dangerous-default-value
@@ -712,32 +725,32 @@ def simulate_one_shot_native_mcm(
             the key to the JAX pseudo random number generator. If None, a random key will be
             generated. Only for simulation using JAX.
         interface (str): The machine learning interface to create the initial state with
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. Default is ``None``.
 
     Returns:
         tuple(TensorLike): The results of the simulation
         dict: The mid-circuit measurement results of the simulation
     """
-    rng = execution_kwargs.get("rng", None)
-    prng_key = execution_kwargs.get("prng_key", None)
-    interface = execution_kwargs.get("interface", None)
+    prng_key = execution_kwargs.pop("prng_key", None)
 
     ops_key, meas_key = jax_random_split(prng_key)
     mid_measurements = {}
     state, is_state_batched = get_final_state(
         circuit,
         debugger=debugger,
-        interface=interface,
         mid_measurements=mid_measurements,
-        rng=rng,
         prng_key=ops_key,
+        **execution_kwargs,
     )
     return measure_final_state(
         circuit,
         state,
         is_state_batched,
-        rng=rng,
         prng_key=meas_key,
         mid_measurements=mid_measurements,
+        **execution_kwargs,
     )
 
 
