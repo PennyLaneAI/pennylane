@@ -367,7 +367,7 @@ class TestOtherTransforms:
 
 
 class TestProperties:
-    """Test Conditional properties"""
+    """Test Conditional properties."""
 
     BASE_OP = [qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0)]
 
@@ -393,7 +393,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_matrix(self, value):
-        """Test that Conditional defers has_matrix to base operator"""
+        """Test that Conditional defers has_matrix to base operator."""
 
         # pylint:disable=too-few-public-methods
         class DummyOp(Operator):
@@ -407,7 +407,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_adjoint(self, value):
-        """Test that Conditional defers has_adjoint to base operator"""
+        """Test that Conditional defers has_adjoint to base operator."""
 
         # pylint:disable=too-few-public-methods
         class DummyOp(Operator):
@@ -421,7 +421,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_diagonalizing_gates(self, value):
-        """Test that Conditional defers has_adjoint to base operator"""
+        """Test that Conditional defers has_adjoint to base operator."""
 
         # pylint:disable=too-few-public-methods
         class DummyOp(Operator):
@@ -435,24 +435,24 @@ class TestProperties:
 
     @pytest.mark.parametrize("base", BASE_OP)
     def test_ndim_params(self, base):
-        """Test that Conditional defers to base ndim_params"""
+        """Test that Conditional defers to base ndim_params."""
         m = qml.measure(0)
         op = Conditional(m, base)
         assert op.ndim_params == base.ndim_params
 
     @pytest.mark.parametrize("base", BASE_OP)
     def test_num_params(self, base):
-        """Test that Conditional defers to base num_params"""
+        """Test that Conditional defers to base num_params."""
         m = qml.measure(0)
         op = Conditional(m, base)
         assert op.num_params == base.num_params
 
 
 class TestMethods:
-    """Test Conditional methods"""
+    """Test Conditional methods."""
 
     def test_diagonalizing_gates(self):
-        """Test that Conditional defers to base diagonalizing_gates"""
+        """Test that Conditional defers to base diagonalizing_gates."""
         base = qml.PauliX(0)
         m = qml.measure(0)
         op = Conditional(m, base)
@@ -460,7 +460,7 @@ class TestMethods:
         assert op.diagonalizing_gates() == base.diagonalizing_gates()
 
     def test_eigvals(self):
-        """Test that Conditional defers to base eigvals"""
+        """Test that Conditional defers to base eigvals."""
         base = qml.PauliX(0)
         m = qml.measure(0)
         op = Conditional(m, base)
@@ -468,14 +468,14 @@ class TestMethods:
         assert qml.math.allclose(op.eigvals(), base.eigvals())
 
     def test_matrix_value(self):
-        """Test that Conditional defers to base matrix"""
+        """Test that Conditional defers to base matrix."""
         base = qml.PauliX(0)
         m = qml.measure(0)
         op = Conditional(m, base)
         assert qml.math.allclose(op.matrix(), op.base.matrix())
 
     def test_matrix_wire_oder(self):
-        """Test that `wire_order` in `matrix` method behaves as expected"""
+        """Test that `wire_order` in `matrix` method behaves as expected."""
         m = qml.measure(0)
         base = qml.RX(-4.432, wires=1)
         op = Conditional(m, base)
@@ -486,7 +486,7 @@ class TestMethods:
         assert qml.math.allclose(method_order, function_order)
 
     def test_adjoint(self):
-        """Test adjoint method for Conditional"""
+        """Test adjoint method for Conditional."""
         base = qml.RX(np.pi / 2, 0)
         m = qml.measure(0)
         op = Conditional(m, base)
