@@ -72,7 +72,7 @@ class Tracker:
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'batches': 2, 'simulations': 3, 'executions': 3, 'shots': 300}
+    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': 1.18, 'shots': 300}
     >>> tracker.latest
     {'simulations': 1,
      'executions': 1,
