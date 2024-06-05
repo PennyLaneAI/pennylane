@@ -17,8 +17,10 @@ Code relevant for performing measurements on a qutrit mixed state.
 
 from string import ascii_letters as alphabet
 from typing import Callable
+import warnings
 
 from pennylane import math
+from pennylane import queuing
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -36,7 +38,10 @@ from .utils import QUDIT_DIM, get_num_wires, reshape_state_as_matrix
 
 
 def calculate_expval(
-    measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: ExpectationMP,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    measurement_error=None,
 ) -> TensorLike:
     """Measure the expectation value of an observable.
 
@@ -44,18 +49,22 @@ def calculate_expval(
         measurementprocess (ExpectationMP): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
+        measurement_error (function): TODO
 
     Returns:
         TensorLike: expectation value of observable wrt the state.
     """
-    probs = calculate_probability(measurementprocess, state, is_state_batched)
+    probs = calculate_probability(measurementprocess, state, is_state_batched, measurement_error)
     eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
     # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
     return math.dot(probs, eigvals)
 
 
 def calculate_reduced_density_matrix(
-    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: StateMeasurement,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    measurement_error=None,
 ) -> TensorLike:
     """Get the state or reduced density matrix.
 
@@ -63,10 +72,15 @@ def calculate_reduced_density_matrix(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
+        measurement_error (function): TODO
 
     Returns:
         TensorLike: state or reduced density matrix.
     """
+    # TODO: what to do? Should I throw error in preprocessing??
+    if measurement_error is not None:
+        warnings.warn("Measurement error and density matrix, weird TODO")
+
     wires = measurementprocess.wires
     if not wires:
         return reshape_state_as_matrix(state, get_num_wires(state, is_state_batched))
@@ -91,7 +105,10 @@ def calculate_reduced_density_matrix(
 
 
 def calculate_probability(
-    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: StateMeasurement,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    measurement_error=None,
 ) -> TensorLike:
     """Find the probability of measuring states.
 
@@ -99,6 +116,7 @@ def calculate_probability(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
+        measurement_error (function): TODO
 
     Returns:
         TensorLike: the probability of the state being in each measurable state.
@@ -106,9 +124,18 @@ def calculate_probability(
     for op in measurementprocess.diagonalizing_gates():
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
+    wires = measurementprocess.wires
     num_state_wires = get_num_wires(state, is_state_batched)
     wire_order = Wires(range(num_state_wires))
-    wires = measurementprocess.wires
+
+    with queuing.QueuingManager.stop_recording():  # TODO: Do I need this???
+        for (
+            wire
+        ) in (
+            wires
+        ):  # TODO: Should it be all wires or just wires being measured? Definite;y just those being measured.
+            for op in measurement_error(wire):
+                state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     # probs are diagonal elements
     # stacking list since diagonal function axis selection parameter names
@@ -158,7 +185,10 @@ def calculate_probability(
 
 
 def calculate_variance(
-    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: StateMeasurement,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    measurement_error=None,
 ) -> TensorLike:
     """Find variance of observable.
 
@@ -166,11 +196,12 @@ def calculate_variance(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
+        measurement_error (function): TODO
 
     Returns:
         TensorLike: the variance of the observable wrt the state.
     """
-    probs = calculate_probability(measurementprocess, state, is_state_batched)
+    probs = calculate_probability(measurementprocess, state, is_state_batched, measurement_error)
     eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
     # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
     return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
@@ -180,6 +211,7 @@ def calculate_expval_sum_of_terms(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
+    measurement_error=None,
 ) -> TensorLike:
     """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
@@ -188,6 +220,7 @@ def calculate_expval_sum_of_terms(
         measurementprocess (ExpectationMP): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
+        measurement_error (function): TODO
 
     Returns:
         TensorLike: the expectation value of the sum of Hamiltonian observable wrt the state.
@@ -196,12 +229,23 @@ def calculate_expval_sum_of_terms(
         # Recursively call measure on each term, so that the best measurement method can
         # be used for each term
         return sum(
-            measure(ExpectationMP(term), state, is_state_batched=is_state_batched)
+            measure(
+                ExpectationMP(term),
+                state,
+                is_state_batched=is_state_batched,
+                measurement_error=measurement_error,
+            )
             for term in measurementprocess.obs
         )
     # else hamiltonian
     return sum(
-        c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
+        c
+        * measure(
+            ExpectationMP(t),
+            state,
+            is_state_batched=is_state_batched,
+            measurement_error=measurement_error,
+        )
         for c, t in zip(*measurementprocess.obs.terms())
     )
 
@@ -238,7 +282,10 @@ def get_measurement_function(
 
 
 def measure(
-    measurementprocess: MeasurementProcess, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: MeasurementProcess,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    measurement_error=None,
 ) -> TensorLike:
     """Apply a measurement process to a state.
 
@@ -246,8 +293,11 @@ def measure(
         measurementprocess (MeasurementProcess): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
+        measurement_error (function): TODO
 
     Returns:
         Tensorlike: the result of the measurement process being applied to the state.
     """
-    return get_measurement_function(measurementprocess)(measurementprocess, state, is_state_batched)
+    return get_measurement_function(measurementprocess)(
+        measurementprocess, state, is_state_batched, measurement_error
+    )

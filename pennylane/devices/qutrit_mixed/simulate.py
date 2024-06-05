@@ -91,7 +91,9 @@ def get_final_state(circuit, debugger=None, interface=None):
     return state, is_state_batched
 
 
-def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
+def measure_final_state(  # pylint: disable=too-many-arguments
+    circuit, state, is_state_batched, rng=None, prng_key=None, measurement_error=None
+) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -108,6 +110,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
+        measurement_error (function): TODO
 
     Returns:
         Tuple[TensorLike]: The measurement results
@@ -116,12 +119,14 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     circuit = circuit.map_to_standard_wires()
 
     if not circuit.shots:
+
         # analytic case
-
         if len(circuit.measurements) == 1:
-            return measure(circuit.measurements[0], state, is_state_batched)
+            return measure(circuit.measurements[0], state, is_state_batched, measurement_error)
 
-        return tuple(measure(mp, state, is_state_batched) for mp in circuit.measurements)
+        return tuple(
+            measure(mp, state, is_state_batched, measurement_error) for mp in circuit.measurements
+        )
 
     # finite-shot case
     rng = default_rng(rng)
@@ -133,6 +138,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
             is_state_batched=is_state_batched,
             rng=rng,
             prng_key=prng_key,
+            measurement_error=measurement_error,
         )
         for mp in circuit.measurements
     )
@@ -144,8 +150,13 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     return results
 
 
-def simulate(
-    circuit: qml.tape.QuantumScript, rng=None, prng_key=None, debugger=None, interface=None
+def simulate(  # pylint: disable=too-many-arguments
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+    measurement_error=None,
 ) -> Result:
     """Simulate a single quantum script.
 
@@ -161,6 +172,7 @@ def simulate(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        measurement_error (function): TODO
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -176,4 +188,11 @@ def simulate(
 
     """
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+    return measure_final_state(
+        circuit,
+        state,
+        is_state_batched,
+        rng=rng,
+        prng_key=prng_key,
+        measurement_error=measurement_error,
+    )

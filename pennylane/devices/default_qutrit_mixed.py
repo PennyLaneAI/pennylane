@@ -177,11 +177,13 @@ class DefaultQutritMixed(Device):
         return "default.qutrit.mixed"
 
     @debug_logger_init
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
         seed="global",
+        damping_measurement_gammas=None,
+        trit_flip_measurement_probs=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
@@ -192,6 +194,22 @@ class DefaultQutritMixed(Device):
             self._prng_key = None
             self._rng = np.random.default_rng(seed)
         self._debugger = None
+
+        if None not in (damping_measurement_gammas, trit_flip_measurement_probs):
+            self.measurment_error = lambda wire: (
+                qml.QutritAmplitudeDamping(*damping_measurement_gammas, wires=wire),
+                qml.BitFlip(*trit_flip_measurement_probs, wires=wire),
+            )  # TODO change to tritflip
+        if damping_measurement_gammas is not None:
+            self.measurment_error = lambda wire: (
+                qml.QutritAmplitudeDamping(*damping_measurement_gammas, wires=wire),
+            )
+        if trit_flip_measurement_probs is not None:
+            self.measurment_error = lambda wire: (
+                qml.BitFlip(*trit_flip_measurement_probs, wires=wire),
+            )  # TODO change to tritflip
+        else:
+            self.measurment_error = None
 
     @debug_logger
     def supports_derivatives(
@@ -241,7 +259,7 @@ class DefaultQutritMixed(Device):
         return replace(execution_config, **updated_values)
 
     @debug_logger
-    def preprocess(
+    def preprocess(  # TODO: How do I deal with param-shift when measurement_error applied.???
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[TransformProgram, ExecutionConfig]:
@@ -279,6 +297,9 @@ class DefaultQutritMixed(Device):
         )
         transform_program.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
+        transform_program.add_transform(
+            TODO, stopping_condition=measurement_error_stopping_condition, name=self.name
         )
 
         if config.gradient_method == "backprop":
