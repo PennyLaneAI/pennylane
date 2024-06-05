@@ -201,6 +201,27 @@ def test_unsupported_measurement():
         func(*params)
 
 
+@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+def test_tree_traversal_postselect_mode(postselect_mode):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    dev = qml.device("default.qubit", shots=shots)
+
+    @qml.qnode(dev, mcm_method="tree-traversal", postselect_mode=postselect_mode)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    res = f(np.pi / 2)
+
+    if postselect_mode == "hw-like":
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+    assert np.all(res != np.iinfo(np.int32).min)
+
+
 # pylint: disable=unused-argument
 def obs_tape(x, y, z, reset=False, postselect=None):
     qml.RX(x, 0)

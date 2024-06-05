@@ -323,7 +323,7 @@ def simulate(
 
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
-        if execution_kwargs.get("tree-traversal", None):
+        if execution_kwargs.get("mcm_method", None) == "tree-traversal":
             n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
             if 2 * n_mcms + 100 > sys.getrecursionlimit():
                 sys.setrecursionlimit(2 * n_mcms + 100)
@@ -397,6 +397,7 @@ def simulate_tree_mcm(
         tuple(TensorLike): The results of the simulation
     """
     interface = execution_kwargs.get("interface", None)
+    postselect_mode = execution_kwargs.get("postselect_mode", None)
 
     samples_present = any(isinstance(mp, SampleMP) for mp in circuit.measurements)
     postselect_present = any(
@@ -452,7 +453,10 @@ def simulate_tree_mcm(
         return measurements
 
     # For 1-shot measurements as 1-D arrays
-    samples = qml.math.atleast_1d(measurements)
+    if op.postselect is not None and postselect_mode == "fill-shots":
+        samples = op.postselect * qml.math.ones_like(measurements)
+    else:
+        samples = qml.math.atleast_1d(measurements)
     update_mcm_samples(op, samples, mcm_active, mcm_samples)
 
     # Define ``branch_measurement`` here to capture ``op``, ``rng``, ``prng_key``, ``debugger``, ``interface``

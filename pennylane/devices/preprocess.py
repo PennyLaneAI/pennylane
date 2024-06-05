@@ -163,6 +163,8 @@ def mid_circuit_measurements(
 
     if mcm_method == "one-shot":
         return qml.dynamic_one_shot(tape)
+    if mcm_method == "tree-traversal":
+        return (tape,), null_postprocessing
     return qml.defer_measurements(tape, device=device)
 
 
