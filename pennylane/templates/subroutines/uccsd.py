@@ -63,7 +63,7 @@ class UCCSD(Operation):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
+        weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(reps, len(s_wires) + len(d_wires),)`` (see usage details below) tensor containing the parameters
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
             :func:`~.FermionicSingleExcitation`
             and
@@ -100,9 +100,10 @@ class UCCSD(Operation):
         #. The single and double excitations can be generated with the function
            :func:`~.excitations`. See example below.
 
-        #. The vector of parameters ``weights`` is a one-dimensional array of size
-           ``len(s_wires)+len(d_wires)`` if ```reps=1``. ``weights`` is a two-dimensional array of size
-           ``(reps, len(s_wires)+len(d_wires))`` if ```reps>1``.
+        #. The vector of parameters ``weights`` can be a one-dimensional array of size
+           ``len(s_wires)+len(d_wires)`` or a two-dimensional array of size
+           ``(1, len(s_wires)+len(d_wires))``  if ``reps=1``. ``weights`` is a two-dimensional array of size
+           ``(reps, len(s_wires)+len(d_wires))`` if ``reps>1``.
 
 
         An example of how to use this template is shown below:
@@ -256,7 +257,8 @@ class UCCSD(Operation):
         .. seealso:: :meth:`~.UCCSD.decomposition`.
 
         Args:
-            weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
+            weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(reps, len(s_wires) + len(d_wires),)``
+                depending on ``reps`` (see usage details above) tensor containing the parameters
                 entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             wires (Any or Iterable[Any]): wires that the operator acts on
             s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
