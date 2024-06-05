@@ -46,6 +46,9 @@
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
 
+* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
+  [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,

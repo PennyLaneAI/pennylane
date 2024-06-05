@@ -48,7 +48,7 @@ fqdn==1.5.1
 future==1.0.0
 gast==0.5.4
 google-pasta==0.2.0
-grpcio==1.64.0
+grpcio==1.64.1
 h11==0.14.0
 h5py==3.11.0
 httpcore==1.0.5
@@ -104,7 +104,7 @@ nbconvert==7.16.4
 nbformat==5.10.4
 nest-asyncio==1.6.0
 networkx==3.2.1
-nodeenv==1.9.0
+nodeenv==1.9.1
 notebook==7.2.0
 notebook_shim==0.2.4
 numba==0.59.1
@@ -125,7 +125,7 @@ platformdirs==4.2.2
 pluggy==1.5.0
 pre-commit==3.7.1
 prometheus_client==0.20.0
-prompt_toolkit==3.0.45
+prompt_toolkit==3.0.46
 protobuf==4.25.3
 psutil==5.9.8
 ptyprocess==0.7.0
@@ -137,7 +137,7 @@ Pygments==2.18.0
 pylint==2.7.4
 pyparsing==3.1.2
 pyperclip==1.8.2
-pytest==8.2.1
+pytest==8.2.2
 pytest-benchmark==4.0.0
 pytest-cov==5.0.0
 pytest-forked==1.6.0
@@ -193,4 +193,4 @@ websocket-client==1.8.0
 Werkzeug==3.0.3
 widgetsnbextension==3.6.6
 wrapt==1.12.1
-zipp==3.19.1
+zipp==3.19.2
