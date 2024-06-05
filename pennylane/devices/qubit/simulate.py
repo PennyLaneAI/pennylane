@@ -428,85 +428,101 @@ def simulate_tree_mcm(
     # main implementation #
     #######################
 
-    def init_dict(d):
-        return {} if d is None else d
+    mcms = tuple(op for op in circuit.operations if isinstance(op, MidMeasureMP))
+    n_mcms = len(mcms)
+    mcm_current = qml.math.zeros(n_mcms + 1, dtype=bool)
+    mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
+    mcm_samples = dict((k, qml.math.empty(circuit.shots.total_shots, dtype=int)) for k in mcms)
+    circuit_wires = circuit.wires
+    depth = 0
+    circuits = []
+    circuit_right = circuit
+    for _ in mcms:
+        circuit_left, circuit_right, op = circuit_up_to_first_mcm(circuit_right)
+        circuits.append(circuit_left)
+    circuits.append(circuit_right)
+    states = [prep_initial_state(circuit_left, interface, None, circuit_wires)] + [None] * n_mcms
+    initial_state = states[0]
+    results_0 = [None] * (n_mcms + 1)
+    results_1 = [None] * (n_mcms + 1)
+    counts = [None] * (n_mcms + 1)
 
-    mcm_active = init_dict(mcm_active)
-    mcm_samples = init_dict(mcm_samples)
+    while not mcm_current[0]:
 
-    circuit_base, circuit_next, op = circuit_up_to_first_mcm(circuit)
-    # we need to make sure the state is the all-wire state
-    initial_state = prep_initial_state(circuit_base, interface, initial_state, circuit.wires)
-    state, is_state_batched = get_final_state(
-        circuit_base,
-        debugger=debugger,
-        initial_state=initial_state,
-        mid_measurements=mcm_active,
-        **execution_kwargs,
-    )
-    measurements = measure_final_state(
-        circuit_base, state, is_state_batched, initial_state=initial_state, **execution_kwargs
-    )
+        if results_0[depth] is not None and results_1[depth] is not None:
+            measurements = [{} for _ in circuits[-1].measurements]
+            single_measurement = len(circuits[-1].measurements) == 1
+            for branch, count in counts[depth].items():
+                # if op.postselect is not None and branch != op.postselect:
+                #     prune_mcm_samples(op, branch, mcm_active, mcm_samples)
+                #     continue
+                meas = results_0[depth] if branch == 0 else results_1[depth]
+                if single_measurement:
+                    meas = [meas]
+                for i, m in enumerate(meas):
+                    measurements[i][branch] = (count, m)
+            counts[depth] = None
+            results_0[depth] = None
+            results_1[depth] = None
+            mcm_current[depth] = False
+            measurements = combine_measurements(circuit, measurements, mcm_samples)
+            depth -= 1
+            if not mcm_current[depth]:
+                results_0[depth] = measurements
+                mcm_current[depth] = True
+            else:
+                results_1[depth] = measurements
+                mcm_current[depth] = False
+                # depth -= 1
+            initial_state = branch_state(
+                states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
+            )
+            continue
 
-    # Simply return measurements when ``circuit_base`` does not have an MCM
-    if circuit_next is None:
-        return measurements
-
-    # For 1-shot measurements as 1-D arrays
-    if op.postselect is not None and postselect_mode == "fill-shots":
-        samples = op.postselect * qml.math.ones_like(measurements)
-    else:
-        samples = qml.math.atleast_1d(measurements)
-    update_mcm_samples(op, samples, mcm_active, mcm_samples)
-
-    # Define ``branch_measurement`` here to capture ``op``, ``rng``, ``prng_key``, ``debugger``, ``interface``
-    def branch_measurement(circuit_next, state, branch, mcm_active, mcm_samples):
-        """Returns the measurements of the specified branch by executing ``circuit_next``."""
-
-        def branch_state(state, branch, wire):
-            state = apply_operation(qml.Projector([branch], wire), state)
-            state = state / qml.math.norm(state)
-            if op.reset and branch == 1:
-                state = apply_operation(qml.PauliX(wire), state)
-            return state
-
-        new_state = branch_state(state, branch, op.wires)
-        return simulate_tree_mcm(
-            circuit_next,
+        # we need to make sure the state is the all-wire state
+        circtmp = circuits[depth]
+        if counts[depth]:
+            shots = counts[depth][int(mcm_current[depth])]
+            circtmp._shots = qml.measurements.shots.Shots(shots)
+        state, is_state_batched = get_final_state(
+            circtmp,
             debugger=debugger,
-            initial_state=new_state,
-            mcm_active=mcm_active,
-            mcm_samples=mcm_samples,
+            initial_state=initial_state,
             **execution_kwargs,
         )
-
-    counts = samples_to_counts(samples)
-    measurements = [{} for _ in circuit_next.measurements]
-    single_measurement = len(circuit_next.measurements) == 1
-    for branch, count in counts.items():
-        if op.postselect is not None and branch != op.postselect:
-            prune_mcm_samples(op, branch, mcm_active, mcm_samples)
+        measurements = measure_final_state(
+            circtmp, state, is_state_batched, initial_state=initial_state, **execution_kwargs
+        )
+        if depth < n_mcms:
+            samples = qml.math.atleast_1d(measurements)
+            mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
+            update_mcm_samples(mcms[depth], samples, mcm_active, mcm_samples)
+            initial_state = branch_state(
+                state, mcm_current[depth], mcms[depth].wires, mcms[depth].reset
+            )
+            depth += 1
+            states[depth] = state
+            counts[depth] = samples_to_counts(samples)
             continue
-        mcm_active[op] = branch
-        circuit_branch = qml.tape.QuantumScript(
-            circuit_next.operations,
-            circuit_next.measurements,
-            shots=qml.measurements.Shots(count),
-            trainable_params=circuit_next.trainable_params,
-        )
-        meas = branch_measurement(
-            circuit_branch,
-            state,
-            branch,
-            mcm_active=mcm_active,
-            mcm_samples=mcm_samples,
-        )
-        if single_measurement:
-            meas = [meas]
-        for i, m in enumerate(meas):
-            measurements[i][branch] = (count, m)
 
-    return combine_measurements(circuit, measurements, mcm_samples)
+        if not mcm_current[depth]:
+            results_0[depth] = measurements
+            mcm_current[depth] = True
+            initial_state = branch_state(
+                states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
+            )
+            continue
+        results_1[depth] = measurements
+
+    return results_0[0]
+
+
+def branch_state(state, branch, wire, reset):
+    state = apply_operation(qml.Projector([branch], wire), state)
+    state = state / qml.math.norm(state)
+    if reset and branch == 1:
+        state = apply_operation(qml.PauliX(wire), state)
+    return state
 
 
 def samples_to_counts(samples):
@@ -549,6 +565,21 @@ def prune_mcm_samples(op, branch, mcm_active, mcm_samples):
         mask = np.logical_and(mask, mcm_samples[k] == v)
     for k in mcm_samples.keys():
         mcm_samples[k] = mcm_samples[k][np.logical_not(mask)]
+
+
+def get_active_sample_mask(op, mcm_active, mcm_samples):
+    shape = next(iter(mcm_samples.values())).shape
+    mask = np.ones(shape, dtype=bool)
+    for k, v in mcm_active.items():
+        if k == op:
+            break
+        mask = np.logical_and(mask, mcm_samples[k] == v)
+    return mask
+
+
+def get_active_samples(op, mcm_active, mcm_samples):
+    mask = get_active_sample_mask(op, mcm_active, mcm_samples)
+    return mcm_samples[op][mask]
 
 
 def update_mcm_samples(op, samples, mcm_active, mcm_samples):
