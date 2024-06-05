@@ -216,7 +216,7 @@
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
-* A small error in the one of the examples for `qml.Tracker` has been fixed.
+* An error in one of the examples for `qml.Tracker` has been fixed.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
 <h3>Bug fixes 🐛</h3>
