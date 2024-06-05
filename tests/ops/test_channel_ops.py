@@ -982,6 +982,74 @@ class TestQubitChannel:
         noise_channel(0.1)
 
 
+class TestQutritChannel:
+    """Tests for the quantum channel QutritChannel"""
+
+    def test_input_correctly_handled(self, tol):
+        """Test that Kraus matrices are correctly processed"""
+        K_list1 = [
+            np.array([[1.0, 0.0, 0.0],
+                    [0.0, 0.70710678, 0.0],
+                    [0.0, 0.0, 0.8660254]]),
+            np.array([[0.0, 0.70710678, 0.0],
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0]]),
+            np.array([[0.0, 0.0, 0.5],
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0]])
+        ]
+        out = channel.QutritChannel(K_list1, wires=0).kraus_matrices()
+
+        # verify equivalent to input matrices
+        assert np.allclose(out, K_list1, atol=tol, rtol=0)
+
+    def test_kraus_matrices_valid(self):
+        """Tests that the given Kraus matrices are valid"""
+
+        # check all Kraus matrices are square matrices
+        K_list1 = [np.zeros((3, 3)), np.zeros((3, 4))]
+        with pytest.raises(
+            ValueError, match="Only channels with the same input and output Hilbert space"
+        ):
+            channel.QutritChannel(K_list1, wires=0)
+
+        # check all Kraus matrices have the same shape
+        K_list2 = [np.eye(3), np.eye(5)]
+        with pytest.raises(ValueError, match="All Kraus matrices must have the same shape."):
+            channel.QutritChannel(K_list2, wires=0)
+
+        # check the dimension of all Kraus matrices are valid
+        K_list3 = [np.array([np.eye(3), np.eye(3), np.eye(3)]),
+                    np.array([np.eye(3), np.eye(3), np.eye(3)]),
+                    np.array([np.eye(3), np.eye(3), np.eye(3)])]
+        with pytest.raises(ValueError, match="Dimension of all Kraus matrices must be "):
+            channel.QutritChannel(K_list3, wires=0)
+
+    def test_channel_trace_preserving(self):
+        """Tests that the channel represents a trace-preserving map"""
+
+        # real Kraus matrices
+        K_list1 = [
+            np.array([[1.0, 0.0, 0.0],
+                    [0.0, 0.70710678, 0.0],
+                    [0.0, 0.0, 0.8660254]]),
+            np.array([[0.0, 0.70710678, 0.0],
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0]]),
+            np.array([[0.0, 0.0, 0.5],
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0]])
+        ]
+        with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
+            channel.QutritChannel(K_list1 * 2, wires=0)
+
+        # complex Kraus matrices
+        p = 0.1
+        K_list2 = [np.sqrt(p) * qml.GellMann.compute_matrix(2), np.sqrt(1 - p) * np.eye(3)]
+        with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
+            channel.QutritChannel(K_list2 * 2, wires=0)
+
+
 class TestThermalRelaxationError:
     """Tests for the quantum channel ThermalRelaxationError"""
 

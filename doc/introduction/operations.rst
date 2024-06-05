@@ -318,6 +318,7 @@ Noisy channels
     ~pennylane.ResetError
     ~pennylane.PauliError
     ~pennylane.QubitChannel
+    ~pennylane.QutritChannel
     ~pennylane.ThermalRelaxationError
 
 :html:`</div>`

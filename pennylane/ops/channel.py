@@ -693,7 +693,7 @@ class PhaseFlip(Channel):
 
 class QuditChannel(Channel):
     r"""
-    Create noise channel for a Hilbert Space of arbitrary size.
+    Noise channel for a Hilbert Space of arbitrary size.
 
     **Details:**
 
@@ -703,7 +703,7 @@ class QuditChannel(Channel):
 
     Args:
         K_list (list[array[complex]]): list of Kraus matrices
-        dim (int): the number of dimensions of the Hilbert Space
+        dim (int): the dimension of the Hilbert Space the operation acts on
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
     """
@@ -713,7 +713,6 @@ class QuditChannel(Channel):
 
     def __init__(self, K_list, dim=2, wires=None, id=None):
         super().__init__(*K_list, wires=wires, id=id)
-
         # check all Kraus matrices are square matrices
         if any(K.shape[0] != K.shape[1] for K in K_list):
             raise ValueError(
@@ -725,7 +724,7 @@ class QuditChannel(Channel):
             raise ValueError("All Kraus matrices must have the same shape.")
 
         # check the dimension of all Kraus matrices are valid
-        if any(K.shape != (dim,dim) for K in K_list):
+        if any(K.ndim != 2 for K in K_list):
             raise ValueError(
                 f"Dimension of all Kraus matrices must be ({dim}**num_wires, {dim}**num_wires)."
             )
@@ -761,6 +760,8 @@ class QubitChannel(QuditChannel):
     Kraus matrices that represent the fixed channel are provided
     as a list of NumPy arrays.
 
+    QubitChannel is a 2-dimensional :class:`QuditChannel`.
+
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
@@ -783,6 +784,8 @@ class QutritChannel(QuditChannel):
 
     Kraus matrices that represent the fixed channel are provided
     as a list of NumPy arrays.
+
+    QutritChannel is a 3-dimensional :class:`QuditChannel`.
 
     **Details:**
 
