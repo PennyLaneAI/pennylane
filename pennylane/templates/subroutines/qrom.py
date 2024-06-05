@@ -154,18 +154,7 @@ class QROM(Operation):
         return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
 
     def map_wires(self, wire_map: dict):
-        new_target_wires = [
-            wire_map.get(wire, wire) for wire in self.hyperparameters["target_wires"]
-        ]
-        new_control_wires = [
-            wire_map.get(wire, wire) for wire in self.hyperparameters["control_wires"]
-        ]
-
-        new_work_wires = []
-        if self.hyperparameters["work_wires"]:
-            new_work_wires = [
-                wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]
-            ]
+        new_dict = {key: [wire_map.get(w, w) for w  in self.hyperparameters[key]] for key in ["target_wires", "control_wires", "work_wires"]}
 
         return QROM(
             self.bitstrings, new_control_wires, new_target_wires, new_work_wires, self.clean
