@@ -160,10 +160,9 @@ def accepted_gate_contract(contract: str, method: str) -> bool:
         return contract in _gate_contract_mps
     if method == "tn":
         return contract in _gate_contract_tn
-    else:
-        raise ValueError(
-            f"Unsupported method {method}. Supported methods are {', '.join(_methods)}."
-        )  # pragma: no cover
+    raise ValueError(
+        f"Unsupported method {method}. Supported methods are {', '.join(_methods)}."
+    )  # pragma: no cover
 
 
 @simulator_tracking
