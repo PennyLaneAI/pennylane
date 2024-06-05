@@ -383,7 +383,7 @@ def test_composite_mcms(mcm_method, mcm_f, measure_f):
 )
 def test_counts_return_type(mcm_method, mcm_f):
     """Tests that DefaultQubit returns the same keys for ``qml.counts`` measurements with ``dynamic_one_shot`` and ``defer_measurements``."""
-    shots = 20
+    shots = 500
 
     dev = get_device(shots=shots)
     param = np.pi / 3
