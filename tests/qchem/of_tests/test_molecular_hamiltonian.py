@@ -18,6 +18,7 @@ import os
 # pylint: disable=too-many-arguments, protected-access
 import time
 from multiprocessing import Pool
+import itertools
 
 import pytest
 
@@ -1341,30 +1342,29 @@ def test_unit_error_molecular_hamiltonian():
         qchem.molecular_hamiltonian(symbols, geometry, unit="degrees")
 
 
-def _partial_h(coordinates, symbols=['N', 'H', 'H', 'H']):
+def _partial_h(coordinates, symbols):
     r""" Return a partial of molecular hamiltonian, only wait coordinates
-    The function has to be moved outside of the caller so that it cal be pickled"""
+    The function has to be moved outside the caller so that it cal be pickled"""
     return qchem.molecular_hamiltonian(symbols, coordinates, method="pyscf")
 
-
-def test_parallel_hamiltonian():
+@pytest.mark.parametrize("symbols", [['N', 'H', 'H', 'H'], ['H', 'H'], ['Li', 'H'], ['H', 'H', 'O'], ['N', 'N']])
+def test_parallel_hamiltonian(symbols):
     r""" This test passes for relatively large molecules, but fails for the case of H2 due to overhead costs"""
     assert os.cpu_count() > 1, "The number of cpus must be larger than 1"
-    symbols = ['N', 'H', 'H', 'H']
-
+    repeat = 4
     np.random.seed(5)
-    coordinates_list = np.random.random((3, 3*len(symbols)))
-
+    coordinates_list = np.random.random((repeat, 3*len(symbols)))
+    print(symbols)
     start_parallel = time.time()
     with Pool(os.cpu_count()) as pool:
         # Map the build_hamiltonian function to the list of coordinates
-        parallel_hs = pool.map(_partial_h, coordinates_list)
+        parallel_hs = pool.starmap(_partial_h, zip(coordinates_list, itertools.repeat(symbols, repeat)))
     done_parallel = time.time()
-
+    print(f"Parallel: {done_parallel - start_parallel}")
     start_serial = time.time()
     expected_hs = [qchem.molecular_hamiltonian(symbols, coordinates, method='pyscf') for coordinates in coordinates_list]
     done_serial = time.time()
-
+    print(f"Serial: {done_serial - start_serial}")
     # Check the results
     assert done_parallel - start_parallel <  0.6*(done_serial - start_serial)
     for i in range(len(parallel_hs)):
