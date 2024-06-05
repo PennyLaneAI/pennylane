@@ -170,6 +170,8 @@
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
 
+* `qml.UCCSD` now accepts an additional optional argument `reps` which is an integer and defines the number of times the UCCSD template is repeated. This can improve the accuracy of the UCCSD template by reducing the Trotter-error but results in deeper circuits. The provided weights should have the shape `(reps, len(s_wires) + len(d_wires),)`. If `reps=1`, which is the default value, the weights can also have the shape `(len(s_wires) + len(d_wires),)`. Therefore, already existing code using the UCCSD template does not break.
+
 <h3>Breaking changes 💔</h3>
 
 * Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
