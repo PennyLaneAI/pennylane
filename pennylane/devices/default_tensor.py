@@ -275,7 +275,6 @@ class DefaultTensor(Device):
         dtype=np.complex128,
         **kwargs,
     ) -> None:
-
         if not has_quimb:
             raise ImportError(
                 "This feature requires quimb, a library for tensor network manipulations. "
@@ -472,7 +471,7 @@ class DefaultTensor(Device):
             if i == 0 and isinstance(op, qml.BasisState):
                 self._quimb_mps = qtn.CircuitMPS(
                     psi0=self._initial_mps(
-                        wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
+                        op.wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
                     ),
                     max_bond=self._max_bond_dim,
                     gate_contract=self._contract,
@@ -744,8 +743,7 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
         device._quimb_mps.apply_gate(
             qml.matrix(o).astype(device._dtype), *o.wires, parametrize=None
         )
-    sinpsi = -1j * qml.math.sin(0.5 * theta) * copy.deepcopy(device._quimb_mps.psi)
-    device._quimb_mps._psi = cospsi + sinpsi
+    device._quimb_mps._psi = cospsi - 1j * qml.math.sin(0.5 * theta) * device._quimb_mps.psi
 
 
 @apply_operation_core.register
@@ -777,7 +775,7 @@ def expval_core_hamiltonian(obs: Hamiltonian, device) -> float:
 @expval_core.register
 def expval_core_tensor(obs: Tensor, device) -> float:
     """Computes the expval of a Tensor."""
-    return expval_core(Prod(obs), device)
+    return expval_core(Prod(*obs._args), device)
 
 
 @expval_core.register

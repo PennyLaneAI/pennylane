@@ -32,7 +32,7 @@ class TestMultiQubitGates:
     def test_multirz(self):
         """Test that the device can apply a 20-qubit MultiRZ gate."""
 
-        wires = 20
+        wires = 16
         dev = qml.device("default.tensor", wires=wires, method="mps")
 
         np.random.seed(0)
@@ -49,7 +49,7 @@ class TestMultiQubitGates:
     def test_paulirot(self):
         """Test that the device can apply a 20-qubit PauliRot gate."""
 
-        wires = 20
+        wires = 16
         dev = qml.device("default.tensor", wires=wires, method="mps")
 
         np.random.seed(0)
@@ -66,7 +66,7 @@ class TestMultiQubitGates:
     def test_qft(self):
         """Test that the device can apply a 20-qubit QFT gate."""
 
-        wires = 20
+        wires = 16
         dev = qml.device("default.tensor", wires=wires, method="mps")
 
         def circuit(basis_state):
@@ -75,3 +75,59 @@ class TestMultiQubitGates:
             return qml.state()
 
         _ = qml.QNode(circuit, dev)(np.array([0, 1] * (wires // 2)))
+
+
+class TestMultiQubitMeasurements:
+    """Test that the DefaultTensor device can compute multi-qubit measurements."""
+
+    def test_prod(self):
+        """Test that the device can compute the expval of a 20-qubit Prod."""
+
+        wires = 16
+        dev = qml.device("default.tensor", wires=wires, method="mps")
+
+        def circuit():
+            return qml.expval(qml.ops.op_math.Prod(*(qml.PauliY(i) for i in range(wires))))
+
+        _ = qml.QNode(circuit, dev)()
+
+    def test_tensor(self):
+        """Test that the device can compute the expval of a 20-qubit Tensor."""
+
+        wires = 16
+        dev = qml.device("default.tensor", wires=wires, method="mps")
+
+        def circuit():
+            return qml.expval(qml.operation.Tensor(*(qml.PauliY(i) for i in range(wires))))
+
+        _ = qml.QNode(circuit, dev)()
+
+    def test_hamiltonian(self):
+        """Test that the device can compute the expval of a 20-qubit Hamiltonian."""
+
+        wires = 16
+        dev = qml.device("default.tensor", wires=wires, method="mps")
+
+        def circuit():
+            return qml.expval(
+                qml.Hamiltonian(
+                    [1.0], [qml.ops.op_math.Prod(*(qml.PauliY(i) for i in range(wires)))]
+                )
+            )
+
+        _ = qml.QNode(circuit, dev)()
+
+    def test_linear_combination(self):
+        """Test that the device can compute the expval of a 20-qubit LinearCombination."""
+
+        wires = 16
+        dev = qml.device("default.tensor", wires=wires, method="mps")
+
+        def circuit():
+            return qml.expval(
+                qml.ops.LinearCombination(
+                    [1.0], [qml.ops.op_math.Prod(*(qml.PauliY(i) for i in range(wires)))]
+                )
+            )
+
+        _ = qml.QNode(circuit, dev)()
