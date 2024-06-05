@@ -789,12 +789,6 @@ def molecular_dipole(
             "Open-shell systems are not supported. Change the charge or spin multiplicity of the molecule."
         )
 
-    wires_map = None
-
-    if wires:
-        wires_new = qml.qchem.convert._process_wires(wires)
-        wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
-
     core, active = qml.qchem.active_space(
         molecule.n_electrons, molecule.n_orbitals, molecule.mult, active_electrons, active_orbitals
     )
@@ -824,7 +818,10 @@ def molecular_dipole(
                 mol, cutoff=cutoff, core=core, active=active, mapping=mapping
             )()
         )
+        wires_map = None
         if wires:
+            wires_new = qml.qchem.convert._process_wires(wires)
+            wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
             dip = [qml.map_wires(op, wires_map) for op in dip]
 
         return dip
@@ -1001,7 +998,6 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 def molecular_hamiltonian(*args, **kwargs):
     """molecular_hamiltonian(molecule, method="dhf", active_electrons=None, active_orbitals=None,\
     mapping="jordan_wigner", outpath=".", wires=None, args=None, convert_tol=1e12)
-
     Generate the qubit Hamiltonian of a molecule.
 
     This function drives the construction of the second-quantized electronic Hamiltonian
@@ -1056,7 +1052,6 @@ def molecular_hamiltonian(*args, **kwargs):
     .. note::
         The ``molecular_hamiltonian`` function accepts a ``Molecule`` object as its first argument.
         Look at the `Usage Details` for more details on the old interface.
-
 
     **Example**
 

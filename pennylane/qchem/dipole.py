@@ -277,7 +277,7 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None, mapping="jordan_w
         cutoff (float): cutoff value for discarding the negligible dipole moment integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
-        mapping (str): Specifies the transformation to map the fermionic Hamiltonian to the
+        mapping (str): Specifies the transformation to map the fermionic dipole operator to the
             Pauli basis. Input values can be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
     Returns:
