@@ -56,6 +56,17 @@ def test_error_if_shot_vector(dev_name):
     res = circuit(shots=50)
     assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
+
+@pytest.mark.parametrize("dev_name", ("default.qubit", "default.qubit.legacy"))
+def test_error_if_overridden_shot_vector(dev_name):
+    """Test that a NotImplementedError is raised if a shot vector is provided on call."""
+
+    dev = qml.device(dev_name, wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        return qml.sample()
+
     with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
         jax.make_jaxpr(partial(circuit, shots=(1, 1, 1)))()
 
@@ -104,14 +115,13 @@ def test_simple_qnode(x64_mode):
 
     assert eqn0.primitive == qnode_prim
     assert eqn0.invars[0].aval == jaxpr.in_avals[0]
-    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
-    )
+    assert jaxpr.out_avals[0] == jax.core.ShapedArray((), fdtype)
 
     assert eqn0.params["device"] == dev
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
     expected_kwargs = {"diff_method": "best"}
     expected_kwargs.update(circuit.execute_kwargs)
+    expected_kwargs.update(expected_kwargs.pop("mcm_config"))
     assert eqn0.params["qnode_kwargs"] == expected_kwargs
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
@@ -285,5 +295,7 @@ def test_capture_qnode_kwargs():
         "max_diff": 2,
         "max_expansion": 10,
         "device_vjp": False,
+        "mcm_method": None,
+        "postselect_mode": None,
     }
     assert jaxpr.eqns[0].params["qnode_kwargs"] == expected

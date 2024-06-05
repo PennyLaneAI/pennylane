@@ -15,6 +15,7 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
+import contextlib
 import os
 import pathlib
 

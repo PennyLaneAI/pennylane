@@ -25,6 +25,7 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
+from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
 
@@ -68,18 +69,20 @@ def _make_execution_config(
         _gradient_method = diff_method
     else:
         _gradient_method = "gradient-transform"
-    grad_on_execution = getattr(circuit, "execute_kwargs", {}).get("grad_on_execution")
+    execute_kwargs = getattr(circuit, "execute_kwargs", {})
+    grad_on_execution = execute_kwargs.get("grad_on_execution")
     if getattr(circuit, "interface", "") == "jax":
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
+    mcm_config = execute_kwargs.get("mcm_config", {})
+
     return qml.devices.ExecutionConfig(
         interface=getattr(circuit, "interface", None),
         gradient_method=_gradient_method,
         grad_on_execution=grad_on_execution,
-        use_device_jacobian_product=getattr(circuit, "execute_kwargs", {"device_vjp": False})[
-            "device_vjp"
-        ],
+        use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
+        mcm_config=mcm_config,
     )
 
 
@@ -216,6 +219,16 @@ class QNode:
             (classical) computational overhead during the backwards pass.
         device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement postselection. If
+            ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
+            If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
+            default is ``None``, in which case the device will automatically choose the best configuration. For
+            usage details, please refer to the :doc:`main measurements page </introduction/measurements>`.
+        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
+            to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
+            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately. If not provided,
+            the device will determine the best choice automatically. For usage details, please refer to the
+            :doc:`main measurements page </introduction/measurements>`.
 
     Keyword Args:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
@@ -439,6 +452,8 @@ class QNode:
         cachesize=10000,
         max_diff=1,
         device_vjp=False,
+        postselect_mode=None,
+        mcm_method=None,
         **gradient_kwargs,
     ):
         if logger.isEnabledFor(logging.DEBUG):
@@ -486,14 +501,20 @@ class QNode:
         for kwarg in gradient_kwargs:
             if kwarg in ["gradient_fn", "grad_method"]:
                 warnings.warn(
-                    f"It appears you may be trying to set the method of differentiation via the kwarg "
-                    f"{kwarg}. This is not supported in qnode and will default to backpropogation. Use "
-                    f"diff_method instead."
+                    "It appears you may be trying to set the method of differentiation via the "
+                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
+                    "backpropogation. Use diff_method instead."
+                )
+            elif kwarg == "shots":
+                raise ValueError(
+                    "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
+                    "argument 'shots' or if you want to set the number of shots with which the "
+                    "QNode is executed, pass it to the QNode call, not its definition."
                 )
             elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
                 warnings.warn(
-                    f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
-                    f"gradient kwargs."
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of "
+                    "standard qnode gradient kwargs."
                 )
 
         # input arguments
@@ -505,6 +526,11 @@ class QNode:
         self.max_expansion = max_expansion
         cache = (max_diff > 1) if cache == "auto" else cache
 
+        if mcm_method not in ("deferred", "one-shot", None):
+            raise ValueError(f"Invalid mid-circuit measurements method '{mcm_method}'.")
+        if postselect_mode not in ("hw-like", "fill-shots", None):
+            raise ValueError(f"Invalid postselection mode '{postselect_mode}'.")
+
         # execution keyword arguments
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
@@ -513,6 +539,7 @@ class QNode:
             "max_diff": max_diff,
             "max_expansion": max_expansion,
             "device_vjp": device_vjp,
+            "mcm_config": {"postselect_mode": postselect_mode, "mcm_method": mcm_method},
         }
 
         if self.expansion_strategy == "device":
@@ -577,6 +604,7 @@ class QNode:
         """The transform program used by the QNode."""
         return self._transform_program
 
+    @debug_logger
     def add_transform(self, transform_container):
         """Add a transform (container) to the transform program.
 
@@ -601,7 +629,7 @@ class QNode:
         ):
             diff_method = "parameter-shift"
 
-        self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
+        self.gradient_fn, self.gradient_kwargs, self.device = QNode.get_gradient_fn(
             self._original_device, self.interface, diff_method, tape=tape
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})
@@ -625,6 +653,7 @@ class QNode:
 
     # pylint: disable=too-many-return-statements
     @staticmethod
+    @debug_logger
     def get_gradient_fn(
         device, interface, diff_method="best", tape: Optional["qml.tape.QuantumTape"] = None
     ):
@@ -696,6 +725,7 @@ class QNode:
         )
 
     @staticmethod
+    @debug_logger
     def get_best_method(device, interface, tape=None):
         """Returns the 'best' differentiation method
         for a particular device and interface combination.
@@ -742,6 +772,7 @@ class QNode:
                     return qml.gradients.finite_diff, {}, device
 
     @staticmethod
+    @debug_logger
     def best_method_str(device, interface):
         """Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
@@ -780,6 +811,7 @@ class QNode:
         return transform
 
     @staticmethod
+    @debug_logger
     def _validate_backprop_method(device, interface, tape=None):
         if isinstance(device, qml.devices.Device):
             raise ValueError(
@@ -912,6 +944,7 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
+    @debug_logger
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
@@ -972,20 +1005,6 @@ class QNode:
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
-        # Apply the deferred measurement principle if the device doesn't
-        # support mid-circuit measurements natively.
-        # Only apply transform with old device API as postselection with
-        # broadcasting will split tapes.
-        expand_mid_measure = (
-            any(isinstance(op, MidMeasureMP) for op in self.tape.operations)
-            and not isinstance(self.device, qml.devices.Device)
-            and not self.device.capabilities().get("supports_mid_measure", False)
-        )
-        if expand_mid_measure or self.expansion_strategy == "device":
-            # Assume that tapes are not split if old device is used since postselection is not supported.
-            tapes, _ = qml.defer_measurements(self._tape, device=self.device)
-            self._tape = tapes[0]
-
         if self.expansion_strategy == "device":
             if isinstance(self.device, qml.devices.Device):
                 tape, _ = self.device.preprocess()[0]([self.tape])
@@ -1021,6 +1040,12 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        finite_shots = _get_device_shots if override_shots is False else override_shots
+        if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
+            raise ValueError(
+                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+            )
+
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
             config = _make_execution_config(self, self.gradient_fn)
@@ -1029,14 +1054,24 @@ class QNode:
         else:
             config = None
             full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+
         has_mcm_support = (
             any(isinstance(op, MidMeasureMP) for op in self._tape)
             and hasattr(self.device, "capabilities")
             and self.device.capabilities().get("supports_mid_measure", False)
         )
         if has_mcm_support:
-            full_transform_program.add_transform(qml.dynamic_one_shot)
+            full_transform_program.add_transform(
+                qml.devices.preprocess.mid_circuit_measurements,
+                device=self.device,
+                mcm_config=self.execute_kwargs["mcm_config"],
+            )
             override_shots = 1
+        elif hasattr(self.device, "capabilities"):
+            full_transform_program.add_transform(
+                qml.defer_measurements,
+                device=self.device,
+            )
 
         # Add the gradient expand to the program if necessary
         if getattr(self.gradient_fn, "expand_transform", False):

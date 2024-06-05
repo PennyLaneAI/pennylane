@@ -14,6 +14,8 @@
 """
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
+import string
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods, unused-argument
@@ -332,7 +334,7 @@ def test_data_is_tuple():
         assert_valid(BadData(2.0, wires=0))
 
 
-def create_op_instance(c):
+def create_op_instance(c, str_wires=False):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
     if n_wires == qml.operation.AllWires:
@@ -341,6 +343,8 @@ def create_op_instance(c):
         n_wires = 1
 
     wires = qml.wires.Wires(range(n_wires))
+    if str_wires and len(wires) < 26:
+        wires = qml.wires.Wires([string.ascii_lowercase[i] for i in wires])
     if (num_params := c.num_params) == 0:
         return c(wires) if wires else c()
     if isinstance(num_params, property):
@@ -364,7 +368,9 @@ def create_op_instance(c):
     return c(*params, wires=wires) if wires else c(*params)
 
 
-def test_generated_list_of_ops(class_to_validate):
+@pytest.mark.jax
+@pytest.mark.parametrize("str_wires", (True, False))
+def test_generated_list_of_ops(class_to_validate, str_wires):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[14:20] == "qutrit":
         pytest.xfail(reason="qutrit ops fail matrix validation")
@@ -375,7 +381,7 @@ def test_generated_list_of_ops(class_to_validate):
     #   2. Improve `create_op_instance` so it can create an instance of your op (it is quite hacky)
     #   3. Add an instance of your class to `_INSTANCES_TO_TEST` in ./conftest.py
     #       Note: if it then fails validation, move it to `_INSTANCES_TO_FAIL` as described below.
-    op = create_op_instance(class_to_validate)
+    op = create_op_instance(class_to_validate, str_wires)
 
     # If you defined a new Operator and this call to `assert_valid` failed, the Operator doesn't
     # follow PL standards. Please do one of the following things:
@@ -386,6 +392,7 @@ def test_generated_list_of_ops(class_to_validate):
     assert_valid(op)
 
 
+@pytest.mark.jax
 def test_explicit_list_of_ops(valid_instance):
     """Test the validity of operators that could not be auto-generated."""
     if valid_instance.name == "Hamiltonian":
@@ -395,6 +402,7 @@ def test_explicit_list_of_ops(valid_instance):
         assert_valid(valid_instance)
 
 
+@pytest.mark.jax
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error
