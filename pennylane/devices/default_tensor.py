@@ -158,7 +158,7 @@ def accepted_gate_contract(contract: str, method: str) -> bool:
     """A function that determines if a gate contraction option is supported by the device."""
     if method == "mps":
         return contract in _gate_contract_mps
-    elif method == "tn":
+    if method == "tn":
         return contract in _gate_contract_tn
     else:
         raise ValueError(
