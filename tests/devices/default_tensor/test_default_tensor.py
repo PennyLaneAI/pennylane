@@ -197,6 +197,16 @@ def test_invalid_kwarg():
         qml.device("default.tensor", fake_arg=None)
 
 
+def test_invalid_contract():
+    """Test an invalid combination of method and contract."""
+
+    with pytest.raises(ValueError):
+        qml.device("default.tensor", method="mps", contract="auto-split-gate")
+
+    with pytest.raises(ValueError):
+        qml.device("default.tensor", method="tn", contract="auto-mps")
+
+
 @pytest.mark.parametrize("method", ["mps", "tn"])
 def test_method(method):
     """Test the device method."""
@@ -222,10 +232,13 @@ def test_ivalid_data_type():
         qml.device("default.tensor", dtype=float)
 
 
-# def test_draw():
-#    """Test the draw method."""
-#    dev = qml.device("default.tensor", wires=10)
-#    dev.draw(title="test")
+@pytest.mark.parametrize("method", ["mps", "tn"])
+def test_draw(method):
+    """Test the draw method."""
+
+    dev = qml.device("default.tensor", wires=10, method=method)
+    fig = dev.draw(color="auto", title="Test", return_fig=True)
+    assert fig is not None
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])

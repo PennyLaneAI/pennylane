@@ -158,9 +158,12 @@ def accepted_gate_contract(contract: str, method: str) -> bool:
     """A function that determines if a gate contraction option is supported by the device."""
     if method == "mps":
         return contract in _gate_contract_mps
-    if method == "tn":
+    elif method == "tn":
         return contract in _gate_contract_tn
-    return False
+    else:
+        raise ValueError(
+            f"Unsupported method {method}. Supported methods are {', '.join(_methods)}."
+        )  # pragma: no cover
 
 
 @simulator_tracking
@@ -435,7 +438,7 @@ class DefaultTensor(Device):
         show_tags = draw_opts.pop("show_tags", False)
         show_inds = draw_opts.pop("show_inds", False)
 
-        self._quimb_circuit.psi.draw(
+        return self._quimb_circuit.psi.draw(
             color=color,
             edge_color=edge_color,
             show_tags=show_tags,
