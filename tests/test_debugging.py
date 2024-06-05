@@ -562,7 +562,7 @@ def test_tape():
     assert qml.equal(expected_tape, executed_tape)
 
 
-@pytest.mark.parametrize("measurement_process", (qml.expval(qml.Z(0)), qml.state()))
+@pytest.mark.parametrize("measurement_process", (qml.expval(qml.Z(0)), qml.state(), qml.probs()))
 @patch.object(PLDB, "_execute")
 def test_measure(mock_method, measurement_process):
     """Test that the private measure function doesn't modify the active queue"""
