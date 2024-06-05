@@ -92,7 +92,8 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 def warn_measurement_error_state(
     tape: qml.tape.QuantumTape,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
-    """TODO.
+    """Warns if a measurement is an analytic State or density_matrix measurement that measurement
+    error is not applied.
 
     Args:
         tape (QuantumTape, .QNode, Callable): a quantum circuit.
@@ -101,23 +102,50 @@ def warn_measurement_error_state(
         qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
 
         The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
-
-    Warns:
-        TODO if a measurement process is not supported.
-
     """
     if not tape.shots:
         for m in tape.measurements:
             if isinstance(m, qml.measurements.StateMP):
-                warnings.warn(f"Measurement {m} not accepted with finite shots on TODO")
+                warnings.warn(f"Measurement {m} is not affected by measurement error.")
 
     return (tape,), null_postprocessing
+
+
+# PR-comment: separate function so that you can use this to redefine the measurment error without needing new function
+def get_measurement_errors(damping_measurement_gammas, trit_flip_measurement_probs):
+    r"""Get the list of measurement errors that should be applied to each
+
+    Args:
+        damping_measurement_gammas (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+            of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
+            amplitude damping from longer measurements with shorter relaxation time associated with
+            transmon based qudits. # PR-comment: should I add a citation.
+        trit_flip_measurement_probs (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+            of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
+            in measurement.
+
+    Returns:
+        measurement_errors (List[Callable]): List of measurement errors functions that should be
+        applied to each measured wire.
+    """
+    measure_funcs = []
+    if damping_measurement_gammas is not None:
+        if len(damping_measurement_gammas) != 3:
+            raise ValueError("You must input 3 gammas for the qml.QutritAmplitudeDamping channel")
+        measure_funcs.append(partial(qml.QutritAmplitudeDamping, *damping_measurement_gammas))
+    if trit_flip_measurement_probs is not None:
+        if len(trit_flip_measurement_probs) != 3:
+            raise ValueError("You must input 3 probabilities for the qml.TritFlip channel")
+        measure_funcs.append(partial(qml.BitFlip, *trit_flip_measurement_probs))
+        # TODO: TritFlip
+
+    return None if len(measure_funcs) == 0 else measure_funcs
 
 
 @simulator_tracking
 @single_tape_support
 class DefaultQutritMixed(Device):
-    """A PennyLane Python-based device for mixed-state qutrit simulation.
+    r"""A PennyLane Python-based device for mixed-state qutrit simulation.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -133,8 +161,13 @@ class DefaultQutritMixed(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        damping_measurement_gammas (List[float]): TODO
-        trit_flip_measurement_probs (List[float]): TODO
+        damping_measurement_gammas (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+            of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
+            amplitude damping from longer measurements with shorter relaxation time associated with
+            transmon based qudits. # PR-comment: should I add a citation.
+        trit_flip_measurement_probs (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+            of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
+            in measurement.
 
 
     **Example:**
@@ -194,10 +227,10 @@ class DefaultQutritMixed(Device):
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
         * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
-        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
+        * ``simulations``: the number of simulations performed. One simulation can cover multiple
+            QPU executions, such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
-
 
     """
 
@@ -214,7 +247,7 @@ class DefaultQutritMixed(Device):
         wires=None,
         shots=None,
         seed="global",
-        damping_measurement_gammas=None,
+        damping_measurement_gammas=None,  # PR-comment: do you prefer this or together?
         trit_flip_measurement_probs=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
@@ -227,20 +260,9 @@ class DefaultQutritMixed(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
-        measure_funcs = []
-        if damping_measurement_gammas is not None:
-            if len(damping_measurement_gammas) != 3:
-                raise ValueError("You must specify")  # TODO
-            measure_funcs.append(partial(qml.QutritAmplitudeDamping, *damping_measurement_gammas))
-
-        if trit_flip_measurement_probs is not None:
-            if len(trit_flip_measurement_probs) != 3:
-                raise ValueError("TODO")  # TODO
-            measure_funcs.append(
-                partial(qml.BitFlip, *trit_flip_measurement_probs)
-            )  # TODO: TritFlip
-
-        self.measurement_errors = None if len(measure_funcs) == 0 else measure_funcs
+        self.measurement_errors = get_measurement_errors(
+            damping_measurement_gammas, trit_flip_measurement_probs
+        )
 
     @debug_logger
     def supports_derivatives(
@@ -290,7 +312,7 @@ class DefaultQutritMixed(Device):
         return replace(execution_config, **updated_values)
 
     @debug_logger
-    def preprocess(  # TODO: How do I deal with param-shift when measurement_error applied.???
+    def preprocess(  # PR-comment: How do I deal with param-shift when measurement_error applied.???
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[TransformProgram, ExecutionConfig]:

@@ -122,9 +122,9 @@ def calculate_probability(
     num_state_wires = get_num_wires(state, is_state_batched)
     wire_order = Wires(range(num_state_wires))
 
-    with queuing.QueuingManager.stop_recording():  # TODO: Do I need this???
+    with queuing.QueuingManager.stop_recording():  # PR-comment: Do I need this???
         for wire in wires:
-            # TODO: Should it be all wires or just wires being measured? Definitely just those being measured.
+            # PR-comment: Should it be all wires or just wires being measured? Definitely just those being measured.
             for m_error in measurement_errors:
                 state = apply_operation(m_error(wire), state, is_state_batched=is_state_batched)
 
