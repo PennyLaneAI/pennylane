@@ -765,12 +765,6 @@ def expval_core(obs: Observable, device) -> float:
 
 
 @expval_core.register
-def expval_core_hamiltonian(obs: qml.Hamiltonian, device) -> float:
-    """Computes the expval of a Hamiltonian."""
-    return sum(expval_core(m, device) for m in obs)
-
-
-@expval_core.register
 def expval_core_tensor(obs: Tensor, device) -> float:
     """Computes the expval of a Tensor."""
     return expval_core(Prod(*obs._args), device)
