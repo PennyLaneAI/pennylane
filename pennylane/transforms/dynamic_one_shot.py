@@ -19,7 +19,7 @@ import itertools
 
 # pylint: disable=import-outside-toplevel
 from collections import Counter
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Tuple
 
 import numpy as np
 
@@ -50,7 +50,7 @@ def null_postprocessing(results):
 @transform
 def dynamic_one_shot(
     tape: qml.tape.QuantumTape, **kwargs
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:
@@ -208,13 +208,13 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(m)
     new_operations = []
     for op in circuit.operations:
-        if "MidCircuitMeasure" in str(type(op)):
+        if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
             new_op = op
             new_op.bypass_postselect = True
             new_operations.append(new_op)
         else:
             new_operations.append(op)
-        if "MidCircuitMeasure" in str(type(op)):
+        if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
         elif isinstance(op, MidMeasureMP):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
@@ -278,7 +278,7 @@ def parse_native_mid_circuit_measurements(
         if interface != "jax" and m.mv and not has_valid:
             meas = measurement_with_no_shots(m)
         elif m.mv and active_qjit:
-            meas = gather_mcm_qjit(m, mcm_samples, is_valid)
+            meas = gather_mcm_qjit(m, mcm_samples, is_valid)  # pragma: no cover
         elif m.mv:
             meas = gather_mcm(m, mcm_samples, is_valid)
         elif interface != "jax" and not has_valid:
@@ -291,7 +291,7 @@ def parse_native_mid_circuit_measurements(
                 # as it assumes all elements of the input are of builtin python types and not belonging
                 # to any particular interface
                 result = qml.math.array(result, like=interface)
-            if active_qjit:
+            if active_qjit:  # pragma: no cover
                 if isinstance(m, CountsMP):
                     normalized_meas.append(
                         (result[0][0], qml.math.sum(result[1] * is_valid.reshape((-1, 1)), axis=0))
@@ -308,7 +308,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_mcm_qjit(measurement, samples, is_valid):
+def gather_mcm_qjit(measurement, samples, is_valid):  # pragma: no cover
     """Process MCM measurements when the Catalyst compiler is active.
 
     Args:
