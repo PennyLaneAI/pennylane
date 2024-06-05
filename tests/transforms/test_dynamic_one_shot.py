@@ -61,6 +61,55 @@ def test_postselection_error_with_wrong_device():
             return qml.probs(wires=[0])
 
 
+@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+def test_postselect_mode(postselect_mode, mocker):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    dev = qml.device("default.qubit", shots=shots)
+    spy = mocker.spy(qml, "dynamic_one_shot")
+
+    @qml.qnode(dev, postselect_mode=postselect_mode)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    res = f(np.pi / 2)
+    spy.assert_called_once()
+
+    if postselect_mode == "hw-like":
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+    assert np.all(res != np.iinfo(np.int32).min)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("use_jit", [True, False])
+@pytest.mark.parametrize("diff_method", [None, "best"])
+def test_hw_like_with_jax(use_jit, diff_method):
+    """Test that invalid shots are replaced with INTEGER_MIN_VAL if
+    postselect_mode="hw-like" with JAX"""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    shots = 10
+    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(123))
+
+    @qml.qnode(dev, postselect_mode="hw-like", diff_method=diff_method)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    if use_jit:
+        f = jax.jit(f)
+
+    res = f(jax.numpy.array(np.pi / 2))
+
+    assert len(res) == shots
+    assert np.any(res == np.iinfo(np.int32).min)
+
+
 def test_unsupported_measurements():
     """Test that using unsupported measurements raises an error."""
     tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.state()])

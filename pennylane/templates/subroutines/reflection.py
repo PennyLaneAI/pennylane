@@ -113,6 +113,10 @@ class Reflection(Operation):
         return data, (self.hyperparameters["reflection_wires"],)
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         U, alpha = data
         return cls(U, alpha=alpha, reflection_wires=metadata[0])
