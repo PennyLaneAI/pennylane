@@ -112,7 +112,7 @@ class QROM(Operation):
 
         work_wires = qml.wires.Wires(work_wires) if work_wires else qml.wires.Wires([])
 
-        self.hyperparameters["bitstrings"] = bitstrings
+        self.hyperparameters["bitstrings"] = tuple(bitstrings)
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["target_wires"] = target_wires
         self.hyperparameters["work_wires"] = work_wires
@@ -142,17 +142,13 @@ class QROM(Operation):
         super().__init__(wires=all_wires, id=id)
 
     def _flatten(self):
-        data = (self.hyperparameters["bitstrings"],)
-        metadata = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "bitstrings"
-        )
-        return data, metadata
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
+        return tuple(), metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        bitstrings = data[0]
         hyperparams_dict = dict(metadata)
-        return cls(bitstrings, **hyperparams_dict)
+        return cls(**hyperparams_dict)
 
     def __repr__(self):
         return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
@@ -263,6 +259,10 @@ class QROM(Operation):
                 qml.apply(op)
 
         return decomp_ops
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     @property
     def bitstrings(self):
