@@ -21,34 +21,31 @@ from functools import partial
 import pennylane as qml
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 
-SUPPORTED_GRADIENT_KWARGS = [
+SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
     "argnum",
+    "atol",
     "aux_wire",
     "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
     "device_wires",
     "diagonal_shifts",
+    "fallback_fn",
     "f0",
     "force_order2",
     "gradient_recipes",
-    "gradient_kwargs",
     "h",
     "n",
-    "num",
     "num_directions",
     "num_split_times",
     "off_diagonal_shifts",
-    "order",
-    "reduction",
     "sampler",
     "sampler_rng",
     "sampler_seed",
     "shifts",
-    "shots",
     "strategy",
     "use_broadcasting",
     "validate_params",
-]
+}
 
 
 def assert_multimeasure_not_broadcasted(measurements, broadcast):
