@@ -292,6 +292,12 @@ class DefaultQubitLegacy(QubitDevice):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             elif isinstance(operation, Snapshot):
                 if self._debugger and self._debugger.active:
+                    if not isinstance(
+                        operation.hyperparameters["measurement"], qml.measurements.StateMP
+                    ):
+                        raise NotImplementedError(
+                            f"{self.__class__.__name__} only supports `qml.state` measurements."
+                        )
                     state_vector = np.array(self._flatten(self._state))
                     if operation.tag:
                         self._debugger.snapshots[operation.tag] = state_vector

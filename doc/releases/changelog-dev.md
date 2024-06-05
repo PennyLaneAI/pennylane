@@ -158,6 +158,12 @@
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
 
+* The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot for unsupported devices.
+  [()]()
+
+* The `qml.Snapshot` operator now accepts sample-based measurements for finite-shot devices.
+  [()]()
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -198,6 +204,9 @@
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
   Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
   [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
+
+* `qml.Snapshot` now only accepts measurements that can be executed on the given device and the shots configuration. This means
+  that the default instantiation which returns `qml.state` would fail on finite-shot devices.
 
 <h3>Deprecations 👋</h3>
 
@@ -279,6 +288,12 @@
 
 * `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
   [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
+
+* `qml.snapshots` raises an error when a measurement other than `qml.state` is requested from `default.qubit.legacy` instead of silently returning the statevector.
+
+* Fixes a bug where `default.qutrit` is falsely determined to be natively compatible with `qml.snapshots`.
+
+* Fixes a bug where the measurement of a `qml.Snapshot` instance is not passed on during the `qml.adjoint` and `qml.ctrl` operations.
 
 <h3>Contributors ✍️</h3>
 

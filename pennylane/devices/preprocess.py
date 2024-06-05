@@ -19,6 +19,7 @@ that they are supported for execution by a device."""
 import os
 import warnings
 from copy import copy
+from itertools import chain
 from typing import Callable, Generator, Optional, Sequence, Union
 
 import pennylane as qml
@@ -461,13 +462,17 @@ def validate_measurements(
         def sample_measurements(m):
             return isinstance(m, SampleMeasurement)
 
+    snapshot_measurements = [
+        op.hyperparameters["measurement"] for op in tape.operations if isinstance(op, qml.Snapshot)
+    ]
+
     if tape.shots:
-        for m in tape.measurements:
+        for m in chain(snapshot_measurements, tape.measurements):
             if not sample_measurements(m):
                 raise DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
 
     else:
-        for m in tape.measurements:
+        for m in chain(snapshot_measurements, tape.measurements):
             if not analytic_measurements(m):
                 raise DeviceError(
                     f"Measurement {m} not accepted for analytic simulation on {name}."
