@@ -302,5 +302,6 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Erik Schultheis,
 Haochen Paul Wang,
 David Wierichs.
