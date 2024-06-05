@@ -297,17 +297,17 @@ class TestConstruction:
         assert tape.circuit[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(tape.circuit[1], qml.ops.Conditional)
-        assert isinstance(tape.circuit[1].then_op, qml.PauliX)
-        assert tape.circuit[1].then_op.wires == target_wire
+        assert isinstance(tape.circuit[1].base, qml.PauliX)
+        assert tape.circuit[1].base.wires == target_wire
 
         assert isinstance(tape.circuit[2], qml.ops.Conditional)
-        assert isinstance(tape.circuit[2].then_op, qml.RY)
-        assert tape.circuit[2].then_op.wires == target_wire
-        assert tape.circuit[2].then_op.data == (r,)
+        assert isinstance(tape.circuit[2].base, qml.RY)
+        assert tape.circuit[2].base.wires == target_wire
+        assert tape.circuit[2].base.data == (r,)
 
         assert isinstance(tape.circuit[3], qml.ops.Conditional)
-        assert isinstance(tape.circuit[3].then_op, qml.PauliZ)
-        assert tape.circuit[3].then_op.wires == target_wire
+        assert isinstance(tape.circuit[3].base, qml.PauliZ)
+        assert tape.circuit[3].base.wires == target_wire
 
         assert tape.circuit[4] is terminal_measurement
 
