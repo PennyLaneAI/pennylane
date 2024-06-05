@@ -258,6 +258,7 @@ tested_modified_templates = [
     qml.MERA,
     qml.MPS,
     qml.TTN,
+    qml.QROM,
 ]
 
 
