@@ -347,7 +347,6 @@ class TestProperties:
         """Test that if an error occurs with a batched exponent, has_decomposition is False."""
 
         class MyOp(qml.operation.Operator):
-
             def pow(self, z):
                 return super().pow(z % 2)
 
@@ -361,7 +360,6 @@ class TestProperties:
         """Test that if Operator.pow raises an error and no batching is present, the erorr is raised."""
 
         class MyOp(qml.operation.Operator):
-
             def pow(self, z):
                 raise ValueError
 

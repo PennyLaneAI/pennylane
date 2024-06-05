@@ -239,7 +239,6 @@ class PauliVSpace:
     """
 
     def __init__(self, generators, dtype=float, tol=None):
-
         self.dtype = dtype
 
         if any(not isinstance(g, PauliSentence) for g in generators):

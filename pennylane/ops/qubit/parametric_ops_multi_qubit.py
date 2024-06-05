@@ -1244,7 +1244,6 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-
         return qml.Hamiltonian(
             [0.25, 0.25],
             [

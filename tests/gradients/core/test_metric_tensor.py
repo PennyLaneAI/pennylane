@@ -1132,7 +1132,6 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_autograd(self, dev_name, ansatz, params, interface):
-
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device(dev_name, wires=self.num_wires + 1)
 

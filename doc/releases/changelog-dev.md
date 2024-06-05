@@ -43,6 +43,9 @@
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
+* Added compute_sparse_matrix for BasisStateProjector.
+  [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
+
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
 
@@ -300,5 +303,7 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+David Wierichs,
+Anurav Modak.
 Haochen Paul Wang,
 David Wierichs.

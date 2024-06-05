@@ -116,7 +116,6 @@ class Qubitization(Operation):
         return cls(*data, **dict(metadata))
 
     def __copy__(self):
-
         clone = Qubitization.__new__(Qubitization)
 
         # Ensure the operators in the hyper-parameters are copied instead of aliased.

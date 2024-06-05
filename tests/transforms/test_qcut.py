@@ -1587,12 +1587,10 @@ class TestGetMeasurements:
         assert obs[1].wires.tolist() == [1, 0]
 
         if qml.operation.active_new_opmath():
-
             assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
             assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
 
         else:
-
             assert [get_name(o) for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
             assert [get_name(o) for o in obs[1].obs] == ["PauliZ", "PauliX"]
 

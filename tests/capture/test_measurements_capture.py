@@ -359,7 +359,6 @@ class TestExpvalVar:
 
 @pytest.mark.parametrize("x64_mode", (True, False))
 class TestProbs:
-
     @pytest.mark.parametrize("wires, shape", [([0, 1, 2], 8), ([], 16)])
     def test_wires(self, wires, shape, x64_mode):
         """Tests capturing probabilities on wires."""
@@ -452,7 +451,6 @@ class TestProbs:
 
 @pytest.mark.parametrize("x64_mode", (True, False))
 class TestSample:
-
     @pytest.mark.parametrize("wires, dim1_len", [([0, 1, 2], 3), ([], 4)])
     def test_wires(self, wires, dim1_len, x64_mode):
         """Tests capturing samples on wires."""

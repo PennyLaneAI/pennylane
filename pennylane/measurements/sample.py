@@ -156,7 +156,6 @@ class SampleMP(SampleMeasurement):
     """
 
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
-
         if isinstance(obs, MeasurementValue):
             super().__init__(obs=obs)
             return

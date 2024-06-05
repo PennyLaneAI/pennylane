@@ -287,7 +287,6 @@ class Hamiltonian(Observable):
         self._grouping_indices = _grouping_indices
 
         if simplify:
-
             warn(
                 "The simplify argument in qml.Hamiltonian and qml.ops.LinearCombination is deprecated. "
                 "Instead, you can call qml.simplify on the constructed operator.",

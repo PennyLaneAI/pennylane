@@ -997,7 +997,6 @@ def _(
     load_data=False,
     convert_tol=1e12,
 ):
-
     if (coord_unit := unit.strip().lower()) not in ("angstrom", "bohr"):
         raise ValueError(
             f"The provided unit '{unit}' is not supported. "
@@ -1081,7 +1080,6 @@ def _molecular_hamiltonian(
             )
 
     if method == "dhf":
-
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(

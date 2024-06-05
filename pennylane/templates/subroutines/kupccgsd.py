@@ -208,7 +208,6 @@ class kUpCCGSD(Operation):
     grad_method = None
 
     def _flatten(self):
-
         # Do not need to flatten s_wires or d_wires because they are derived hyperparameters
         hyperparameters = tuple(
             (key, self.hyperparameters[key]) for key in ["k", "delta_sz", "init_state"]

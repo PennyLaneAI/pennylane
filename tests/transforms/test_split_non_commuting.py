@@ -724,7 +724,6 @@ class TestIntegration:
         if isinstance(shots, list):
             assert len(res) == 3
             for i in range(3):
-
                 prob_res_0 = res[i][0]
                 prob_res_1 = res[i][1]
                 counts_res = res[i][2]
