@@ -83,7 +83,7 @@ class QROM(Operation):
         to encode the desired index. Therefore, if we have :math:`m` bitstrings, we need
         at least :math:`\lceil \log_2(m)\rceil` control wires.
 
-        The second set of wires is ``target_wires`` which store the bitstrings.
+        The second set of wires is ``target_wires`` which stores the bitstrings.
         For instance, if the bitstring is "0110", we will need four target wires. Internally, the bitstrings are
         encoded using the :class:`~.BasisEmbedding` template.
 
@@ -132,7 +132,7 @@ class QROM(Operation):
             raise ValueError(
                 f"Not enough control wires ({len(control_wires)}) for the desired number of "
                 + f"bitstrings ({len(bitstrings)}). At least {int(math.ceil(math.log2(len(bitstrings))))} control "
-                + "wires required."
+                + "wires are required."
             )
 
         if len(bitstrings[0]) != len(target_wires):
