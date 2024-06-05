@@ -121,6 +121,7 @@ def test_simple_qnode(x64_mode):
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
     expected_kwargs = {"diff_method": "best"}
     expected_kwargs.update(circuit.execute_kwargs)
+    expected_kwargs.update(expected_kwargs.pop("mcm_config"))
     assert eqn0.params["qnode_kwargs"] == expected_kwargs
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
@@ -294,5 +295,7 @@ def test_capture_qnode_kwargs():
         "max_diff": 2,
         "max_expansion": 10,
         "device_vjp": False,
+        "mcm_method": None,
+        "postselect_mode": None,
     }
     assert jaxpr.eqns[0].params["qnode_kwargs"] == expected

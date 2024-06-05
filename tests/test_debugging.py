@@ -246,12 +246,12 @@ class TestSnapshot:
 
         assert result == expected
 
-    @pytest.mark.parametrize("shots", [None, 0, 1, 100])
+    @pytest.mark.parametrize("shots", [None, 1, 1000000])
     def test_different_shots(self, shots):
         """Test that snapshots are returned correctly with different QNode shot values."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.qnode(dev, shots=shots)
+        @qml.qnode(dev)
         def circuit():
             qml.Snapshot()
             qml.Hadamard(wires=0)
@@ -269,7 +269,18 @@ class TestSnapshot:
         }
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
-        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+        for v1, v2 in zip(result.values(), expected.values()):
+            if v1.shape == ():
+                # Expectation value comparison
+                assert v2.shape == ()
+                if shots != 1:
+                    # If many shots or analytic mode, we can compare the result
+                    assert np.allclose(v1, v2, atol=0.006)
+                else:
+                    # If a single shot, it must be in the eigvals of qml.Z
+                    assert v1.item() in {-1.0, 1.0}
+            else:
+                assert np.allclose(v1, v2)
 
     @pytest.mark.parametrize(
         "m,expected_result",
@@ -434,7 +445,7 @@ class TestPLDB:
 
     def test_add_device(self):
         """Test that we can add a device to the global active device list."""
-        assert getattr(PLDB, "_PLDB__active_dev") is None
+        assert not PLDB.has_active_dev()
 
         dev1, dev2, dev3 = (
             qml.device("default.qubit", wires=3),
@@ -443,12 +454,12 @@ class TestPLDB:
         )
 
         PLDB.add_device(dev1)
-        assert getattr(PLDB, "_PLDB__active_dev") == dev1
+        assert PLDB.get_active_device() == dev1
 
         PLDB.add_device(dev2)  # overwrites dev1
         PLDB.add_device(dev3)  # overwrites dev2
 
-        assert getattr(PLDB, "_PLDB__active_dev") == dev3
+        assert PLDB.get_active_device() == dev3
 
         PLDB.reset_active_dev()  # clean up the debugger active devices
 
@@ -459,19 +470,15 @@ class TestPLDB:
 
     @pytest.mark.parametrize("device_name", dev_names)
     def test_get_active_device(self, device_name):
-        """Test that we can accses the active device."""
+        """Test that we can access the active device."""
         dev = qml.device(device_name, wires=2)
-        PLDB.add_device(dev)
-
-        debugger_dev = PLDB.get_active_device()
-        assert debugger_dev is dev
-
-        PLDB.reset_active_dev()
+        with pldb_device_manager(dev) as _:
+            assert PLDB.get_active_device() is dev
 
     def test_get_active_device_error_when_no_active_device(self):
         """Test that an error is raised if we try to get
         the active device when there are no active devices."""
-        assert getattr(PLDB, "_PLDB__active_dev") == None
+        assert not PLDB.has_active_dev()
 
         with pytest.raises(RuntimeError, match="No active device to get"):
             _ = PLDB.get_active_device()
@@ -481,21 +488,21 @@ class TestPLDB:
         """Test that we can rest the global active device list."""
         dev = qml.device(device_name, wires=2)
         PLDB.add_device(dev)
-        assert getattr(PLDB, "_PLDB__active_dev") == dev
+        assert PLDB.get_active_device() == dev
 
         PLDB.reset_active_dev()
-        assert getattr(PLDB, "_PLDB__active_dev") == None
+        assert not PLDB.has_active_dev()
 
-    def test_is_active_device(self):
+    def test_has_active_device(self):
         """Test that we can determine if there is an active device."""
-        assert getattr(PLDB, "_PLDB__active_dev") == None
+        assert getattr(PLDB, "_PLDB__active_dev") is None
 
         dev = qml.device("default.qubit")
         PLDB.add_device(dev)
-        assert PLDB.is_active_dev() is True
+        assert PLDB.has_active_dev()
 
         PLDB.reset_active_dev()
-        assert PLDB.is_active_dev() is False
+        assert not PLDB.has_active_dev()
 
     tapes = (
         qml.tape.QuantumScript(
@@ -555,7 +562,7 @@ def test_tape():
     assert qml.equal(expected_tape, executed_tape)
 
 
-@pytest.mark.parametrize("measurement_process", (qml.expval(qml.Z(0)), qml.state()))
+@pytest.mark.parametrize("measurement_process", (qml.expval(qml.Z(0)), qml.state(), qml.probs()))
 @patch.object(PLDB, "_execute")
 def test_measure(mock_method, measurement_process):
     """Test that the private measure function doesn't modify the active queue"""
@@ -639,18 +646,18 @@ def test_probs_with_wires(_mock_method):
 @pytest.mark.parametrize("device_name", ("default.qubit", "lightning.qubit"))
 def test_pldb_device_manager(device_name):
     """Test that the context manager works as expected."""
-    assert getattr(PLDB, "_PLDB__active_dev") == None
+    assert not PLDB.has_active_dev()
     dev = qml.device(device_name, wires=2)
 
     with pldb_device_manager(dev) as _:
-        assert getattr(PLDB, "_PLDB__active_dev") == dev
+        assert PLDB.get_active_device() == dev
 
-    assert getattr(PLDB, "_PLDB__active_dev") == None
+    assert not PLDB.has_active_dev()
 
 
 @patch.object(PLDB, "set_trace")
 def test_breakpoint_integration(mock_method):
-    """Test that qml.breakpoint behaves as execpted"""
+    """Test that qml.breakpoint behaves as expected"""
     dev = qml.device("default.qubit")
 
     @qml.qnode(dev)
