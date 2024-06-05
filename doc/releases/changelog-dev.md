@@ -51,9 +51,14 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
+  but keeping one that validates multiple mid-circuit measurements with any allowed return
+  and interface end-to-end tests.
+  [(#5787)](https://github.com/PennyLaneAI/pennylane/pull/5787)
+
 * The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
   [(#5617)](https://github.com/PennyLaneAI/pennylane/pull/5617)
-  
+
 * The `dynamic_one_shot` transform can be compiled with `jax.jit`.
   [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
 
@@ -111,9 +116,9 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
-* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them 
-  consistent with the other observables. The `dtype` of the returned values when sampling these observables 
-  (e.g. `qml.sample(X(0))`) is also changed to `float`. 
+* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them
+  consistent with the other observables. The `dtype` of the returned values when sampling these observables
+  (e.g. `qml.sample(X(0))`) is also changed to `float`.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
@@ -131,7 +136,7 @@
   [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
   [(#5686)](https://github.com/PennyLaneAI/pennylane/pull/5686)
 
-* The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
+* The `decompose` transform has an `error` kwarg to specify the type of error that should be raised,
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
@@ -165,7 +170,7 @@
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
-  
+
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
@@ -204,7 +209,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated. 
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated.
   Instead, `qml.simplify()` can be called on the constructed operator.
   [(#5677)](https://github.com/PennyLaneAI/pennylane/pull/5677)
 
@@ -249,7 +254,7 @@
 * The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
   [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
 
-* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
+* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that
   returned samples of observables containing the `qml.Identity` operator.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
@@ -264,7 +269,7 @@
 
 * Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
   [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
-  
+
 * `param_shift`, `finite_diff`, `compile`, `insert`, `merge_rotations`, and `transpile` now
   all work with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
@@ -273,7 +278,7 @@
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
 
-* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors, 
+* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors,
   multiple measurements, and parameter broadcasting.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
