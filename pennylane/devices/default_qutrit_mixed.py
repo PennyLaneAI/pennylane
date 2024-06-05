@@ -14,7 +14,9 @@
 """The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
 computations."""
 import logging
+import warnings
 from dataclasses import replace
+from functools import partial
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -33,6 +35,7 @@ from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     no_sampling,
+    null_postprocessing,
     validate_device_wires,
     validate_measurements,
     validate_observables,
@@ -85,6 +88,32 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     return isinstance(m, qml.measurements.SampleMeasurement)
 
 
+@qml.transform
+def warn_measurement_error_state(
+    tape: qml.tape.QuantumTape,
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    """TODO.
+
+    Args:
+        tape (QuantumTape, .QNode, Callable): a quantum circuit.
+
+    Returns:
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+
+    Warns:
+        TODO if a measurement process is not supported.
+
+    """
+    if not tape.shots:
+        for m in tape.measurements:
+            if isinstance(m, qml.measurements.StateMP):
+                warnings.warn(f"Measurement {m} not accepted with finite shots on TODO")
+
+    return (tape,), null_postprocessing
+
+
 @simulator_tracking
 @single_tape_support
 class DefaultQutritMixed(Device):
@@ -104,6 +133,9 @@ class DefaultQutritMixed(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
+        damping_measurement_gammas (List[float]): TODO
+        trit_flip_measurement_probs (List[float]): TODO
+
 
     **Example:**
 
@@ -195,21 +227,20 @@ class DefaultQutritMixed(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
-        if None not in (damping_measurement_gammas, trit_flip_measurement_probs):
-            self.measurment_error = lambda wire: (
-                qml.QutritAmplitudeDamping(*damping_measurement_gammas, wires=wire),
-                qml.BitFlip(*trit_flip_measurement_probs, wires=wire),
-            )  # TODO change to tritflip
+        measure_funcs = []
         if damping_measurement_gammas is not None:
-            self.measurment_error = lambda wire: (
-                qml.QutritAmplitudeDamping(*damping_measurement_gammas, wires=wire),
-            )
+            if len(damping_measurement_gammas) != 3:
+                raise ValueError("You must specify")  # TODO
+            measure_funcs.append(partial(qml.QutritAmplitudeDamping, *damping_measurement_gammas))
+
         if trit_flip_measurement_probs is not None:
-            self.measurment_error = lambda wire: (
-                qml.BitFlip(*trit_flip_measurement_probs, wires=wire),
-            )  # TODO change to tritflip
-        else:
-            self.measurment_error = None
+            if len(trit_flip_measurement_probs) != 3:
+                raise ValueError("TODO")  # TODO
+            measure_funcs.append(
+                partial(qml.BitFlip, *trit_flip_measurement_probs)
+            )  # TODO: TritFlip
+
+        self.measurement_errors = None if len(measure_funcs) == 0 else measure_funcs
 
     @debug_logger
     def supports_derivatives(
@@ -298,12 +329,12 @@ class DefaultQutritMixed(Device):
         transform_program.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
-        transform_program.add_transform(
-            TODO, stopping_condition=measurement_error_stopping_condition, name=self.name
-        )
 
         if config.gradient_method == "backprop":
             transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
+
+        if self.measurement_errors is not None:
+            transform_program.add_transform(warn_measurement_error_state)
 
         return transform_program, config
 
@@ -313,7 +344,6 @@ class DefaultQutritMixed(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}
@@ -327,6 +357,7 @@ class DefaultQutritMixed(Device):
                 prng_key=self._prng_key,
                 debugger=self._debugger,
                 interface=interface,
+                measurement_errors=self.measurement_errors,
             )
             for c in circuits
         )
