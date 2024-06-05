@@ -4,6 +4,19 @@
 
 <h3>New features since last release</h3>
 
+* `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
+  These keyword arguments can be used to configure how the device should behave when running circuits with
+  mid-circuit measurements.
+  [(#5679)](https://github.com/PennyLaneAI/pennylane/pull/5679)
+
+  * `postselect_mode="hw-like"` will indicate to devices to discard invalid shots when postselecting
+    mid-circuit measurements. Use `postselect_mode="fill-shots"` to unconditionally sample the postselected
+    value, thus making all samples valid. This is equivalent to sampling until the number of valid samples
+    matches the total number of shots.
+  * `mcm_method` will indicate which strategy to use for running circuits with mid-circuit measurements.
+    Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
+    to execute once for each shot.
+
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
@@ -36,6 +49,9 @@
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
 
+* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
+  [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
@@ -43,7 +59,7 @@
   
 * The `dynamic_one_shot` transform can be compiled with `jax.jit`.
   [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
-  
+
 * When using `defer_measurements` with postselecting mid-circuit measurements, operations
   that will never be active due to the postselected state are skipped in the transformed
   quantum circuit. In addition, postselected controls are skipped, as they are evaluated
@@ -111,10 +127,12 @@
   `m = measure(0); qml.sample(m)`.
   [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
 
-* PennyLane operators and measurements can now automatically be captured as instructions in JAXPR.
+* PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
+  [(#5708)](https://github.com/PennyLaneAI/pennylane/pull/5708)
   [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
+  [(#5686)](https://github.com/PennyLaneAI/pennylane/pull/5686)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
   allowing error types to be more consistent with the context the `decompose` function is used in.
@@ -154,7 +172,14 @@
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
+* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
+  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
+  [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
+
 <h3>Breaking changes 💔</h3>
+
+* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
+  [(#5748)](https://github.com/PennyLaneAI/pennylane/pull/5748)
 
 * A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
   operation directly with `qml.apply`.
@@ -179,9 +204,6 @@
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
   Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
   [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
-  
-* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
-  [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
 
 <h3>Deprecations 👋</h3>
 

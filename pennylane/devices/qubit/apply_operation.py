@@ -165,7 +165,18 @@ def apply_operation(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         **execution_kwargs (Optional[dict]): Optional keyword arguments needed for applying
-            some operations
+            some operations described below.
+
+    Keyword Arguments:
+        mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        interface (str): The machine learning interface of the state
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. ``None`` by default.
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
         ndarray: output state
@@ -233,6 +244,11 @@ def apply_conditional(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        interface (str): The machine learning interface of the state
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
         ndarray: output state
@@ -284,10 +300,13 @@ def apply_mid_measure(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. ``None`` by default.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            If None, a ``numpy.random.default_rng`` will be for sampling.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
         ndarray: output state
@@ -295,24 +314,31 @@ def apply_mid_measure(
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
+    postselect_mode = execution_kwargs.get("postselect_mode", None)
+
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
-    axis = wire.toarray()[0]
-    slices = [slice(None)] * qml.math.ndim(state)
-    slices[axis] = 0
-    prob0 = qml.math.norm(state[tuple(slices)]) ** 2
     interface = qml.math.get_deep_interface(state)
-    if prng_key is not None:
-        # pylint: disable=import-outside-toplevel
-        from jax.random import binomial
 
-        def binomial_fn(n, p):
-            return binomial(prng_key, n, p).astype(int)
-
+    if postselect_mode == "fill-shots" and op.postselect is not None:
+        sample = op.postselect
     else:
-        binomial_fn = np.random.binomial if rng is None else rng.binomial
-    sample = binomial_fn(1, 1 - prob0)
+        axis = wire.toarray()[0]
+        slices = [slice(None)] * qml.math.ndim(state)
+        slices[axis] = 0
+        prob0 = qml.math.norm(state[tuple(slices)]) ** 2
+
+        if prng_key is not None:
+            # pylint: disable=import-outside-toplevel
+            from jax.random import binomial
+
+            def binomial_fn(n, p):
+                return binomial(prng_key, n, p).astype(int)
+
+        else:
+            binomial_fn = np.random.binomial if rng is None else rng.binomial
+        sample = binomial_fn(1, 1 - prob0)
     mid_measurements[op] = sample
 
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
