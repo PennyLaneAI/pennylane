@@ -494,7 +494,7 @@ class TestPLDB:
 
     def test_has_active_device(self):
         """Test that we can determine if there is an active device."""
-        assert getattr(PLDB, "_PLDB__active_dev") == None
+        assert getattr(PLDB, "_PLDB__active_dev") is None
 
         dev = qml.device("default.qubit")
         PLDB.add_device(dev)
