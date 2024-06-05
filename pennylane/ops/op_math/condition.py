@@ -95,7 +95,7 @@ class Conditional(SymbolicOp):
         return self.base.has_adjoint
 
     def adjoint(self):
-        return self.base.adjoint()
+        return Conditional(self.meas_val, self.base.adjoint())
 
 
 def cond(condition, true_fn, false_fn=None, elifs=()):

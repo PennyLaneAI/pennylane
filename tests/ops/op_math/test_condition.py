@@ -23,10 +23,12 @@ are located in the:
 files.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import ConditionalTransformError
+from pennylane.operation import Operator
+from pennylane.ops.op_math.condition import Conditional, ConditionalTransformError
 
 terminal_meas = [
     qml.probs(wires=[1, 0]),
@@ -41,7 +43,7 @@ terminal_meas = [
 
 @pytest.mark.parametrize("terminal_measurement", terminal_meas)
 class TestCond:
-    """Tests that verify that the cond transform works as expect."""
+    """Tests that the cond transform works as expect."""
 
     def test_cond_ops(self, terminal_measurement):
         """Test that qml.cond creates conditional operations as expected."""
@@ -362,3 +364,135 @@ class TestOtherTransforms:
         assert tape[1] == mp
         assert isinstance(tape[2], qml.ops.Conditional)
         assert tape[3] == terminal_measurement
+
+
+class TestProperties:
+    """Test Conditional properties"""
+
+    def test_data(self):
+        """Test base data can be get and set through Conditional class."""
+        x = np.array(1.234)
+        m = qml.measure("a")
+        base = qml.RX(x, wires="a")
+        cond_op = Conditional(m, base)
+
+        assert cond_op.data == (x,)
+
+        # update parameters through Conditional
+        x_new = np.array(2.3456)
+        cond_op.data = (x_new,)
+        assert base.data == (x_new,)
+        assert cond_op.data == (x_new,)
+
+        # update base data updates Conditional data
+        x_new2 = np.array(3.456)
+        base.data = (x_new2,)
+        assert cond_op.data == (x_new2,)
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_matrix(self, value):
+        """Test that Conditional defers has_matrix to base operator"""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_matrix = value
+
+        m = qml.measure(0)
+        cond_op = Conditional(m, DummyOp(1))
+
+        assert cond_op.has_matrix is value
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_adjoint(self, value):
+        """Test that Conditional defers has_adjoint to base operator"""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_adjoint = value
+
+        m = qml.measure(0)
+        cond_op = Conditional(m, DummyOp(1))
+
+        assert cond_op.has_adjoint is value
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value):
+        """Test that Conditional defers has_adjoint to base operator"""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        m = qml.measure(0)
+        cond_op = Conditional(m, DummyOp(1))
+
+        assert cond_op.has_diagonalizing_gates is value
+
+    @pytest.mark.parametrize(
+        "base", (qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0))
+    )
+    def test_ndim_params(self, base):
+        """Test that Conditional defers to base ndim_params"""
+        m = qml.measure(0)
+        op = Conditional(m, base)
+        assert op.ndim_params == base.ndim_params
+
+    @pytest.mark.parametrize(
+        "base", (qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0))
+    )
+    def test_num_params(self, base):
+        """Test that Conditional defers to base num_params"""
+        m = qml.measure(0)
+        op = Conditional(m, base)
+        assert op.num_params == base.num_params
+
+
+class TestMethods:
+    """Test Conditional methods"""
+
+    BASE_OP = [qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0)]
+
+    def test_diagonalizing_gates(self):
+        """Test that Conditional defers to base diagonalizing_gates"""
+        base = qml.PauliX(0)
+        m = qml.measure(0)
+        op = Conditional(m, base)
+
+        assert op.diagonalizing_gates() == base.diagonalizing_gates()
+
+    def test_eigvals(self):
+        """Test that Conditional defers to base eigvals"""
+        base = qml.PauliX(0)
+        m = qml.measure(0)
+        op = Conditional(m, base)
+
+        assert qml.math.allclose(op.eigvals(), base.eigvals())
+
+    def test_matrix_value(self):
+        """Test that Conditional defers to base matrix"""
+        base = qml.PauliX(0)
+        m = qml.measure(0)
+        op = Conditional(m, base)
+        assert qml.math.allclose(op.matrix(), op.base.matrix())
+
+    def test_matrix_wire_oder(self):
+        """Test that `wire_order` in `matrix` method behaves as expected"""
+        m = qml.measure(0)
+        base = qml.RX(-4.432, wires=1)
+        op = Conditional(m, base)
+
+        method_order = op.matrix(wire_order=(1, 0))
+        function_order = qml.math.expand_matrix(op.matrix(), op.wires, (1, 0))
+
+        assert qml.math.allclose(method_order, function_order)
+
+    def test_adjoint(self):
+        """Test adjoint method for Conditional"""
+        base = qml.RX(np.pi / 2, 0)
+        m = qml.measure(0)
+        op = Conditional(m, base)
+        adj_op = op.adjoint()
+
+        assert isinstance(adj_op, Conditional)
+        assert adj_op.meas_val == op.meas_val
+        assert adj_op.base == base.adjoint()
