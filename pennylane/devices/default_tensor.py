@@ -108,6 +108,8 @@ _operations = frozenset(
         "QFT",
         "ECR",
         "BlockEncode",
+        "PauliRot",
+        "MultiRZ",
         "TrotterProduct",
     }
 )
@@ -701,6 +703,27 @@ def apply_operation_core(ops: Operation, device):
     device._quimb_mps.apply_gate(
         qml.matrix(ops).astype(device._dtype), *ops.wires, parametrize=None
     )
+
+
+@apply_operation_core.register
+def apply_operation_core_multirz(ops: qml.MultiRZ, device):
+    """Dispatcher for _apply_operation."""
+    apply_operation_core(qml.PauliRot(ops.parameters[0], "Z" * len(ops.wires), ops.wires), device)
+
+
+@apply_operation_core.register
+def apply_operation_core_paulirot(ops: qml.PauliRot, device):
+    """Dispatcher for _apply_operation."""
+    theta = ops.parameters[0]
+    wire_map = dict((i, w) for i, w in enumerate(ops.wires))
+    pw = qml.pauli.string_to_pauli_word(ops._hyperparameters["pauli_word"], wire_map)
+    cospsi = qml.math.cos(0.5 * theta) * copy.deepcopy(device._quimb_mps.psi)
+    for o in pw:
+        device._quimb_mps.apply_gate(
+            qml.matrix(o).astype(device._dtype), *o.wires, parametrize=None
+        )
+    sinpsi = -1j * qml.math.sin(0.5 * theta) * copy.deepcopy(device._quimb_mps.psi)
+    device._quimb_mps._psi = cospsi + sinpsi
 
 
 @apply_operation_core.register
