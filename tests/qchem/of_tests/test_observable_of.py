@@ -173,13 +173,13 @@ def test_import_of(monkeypatch):
         m.setitem(sys.modules, "openfermion", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.openfermion_obs._import_of()
+            qml.qchem.openfermion_pyscf._import_of()
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermionpyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.openfermion_obs._import_of()
+            qml.qchem.openfermion_pyscf._import_of()
 
 
 def test_import_pyscf(monkeypatch):
@@ -190,4 +190,4 @@ def test_import_pyscf(monkeypatch):
         m.setitem(sys.modules, "pyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires pyscf"):
-            qml.qchem.openfermion_obs._import_pyscf()
+            qml.qchem.openfermion_pyscf._import_pyscf()
