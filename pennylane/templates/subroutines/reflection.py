@@ -104,6 +104,8 @@ class Reflection(Operation):
 
     """
 
+    grad_method = None
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
