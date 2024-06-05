@@ -458,7 +458,7 @@ class TestPLDB:
 
     @pytest.mark.parametrize("device_name", dev_names)
     def test_get_active_device(self, device_name):
-        """Test that we can accses the active device."""
+        """Test that we can access the active device."""
         dev = qml.device(device_name, wires=2)
         PLDB.add_device(dev)
 
@@ -511,7 +511,7 @@ def test_pldb_device_manager(device_name):
 
 @patch.object(PLDB, "set_trace")
 def test_breakpoint_integration(mock_method):
-    """Test that qml.breakpoint behaves as execpted"""
+    """Test that qml.breakpoint behaves as expected"""
     dev = qml.device("default.qubit")
 
     @qml.qnode(dev)
