@@ -216,6 +216,9 @@
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
+* A small error in the examples `qml.Tracker` has been fixed.
+  [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
+
 <h3>Bug fixes 🐛</h3>
 
 * Disable Docker builds on PR merge.
@@ -292,6 +295,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
