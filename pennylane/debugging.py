@@ -114,23 +114,26 @@ def snapshots(qnode):
 class PLDB(pdb.Pdb):
     """Custom debugging class integrated with Pdb."""
 
-    __active_dev = None
+    __active_dev: qml.devices.Device | None = None
 
     def __init__(self, *args, **kwargs):
         """Initialize the debugger, and set custom prompt string."""
         super().__init__(*args, **kwargs)
-        self.prompt = "[pldb]: "
+
+    @property
+    def prompt(self):
+        return "[pldb]: "
 
     @classmethod
     def valid_context(cls):
         """Determine if the debugger is called in a valid context.
 
         Raises:
-            RuntimeError: Can't call breakpoint outside of a qnode execution
-            TypeError: Breakpoints not supported on this device
+            RuntimeError: breakpoint is called outside of a qnode execution
+            TypeError: breakpoints not supported on this device
         """
 
-        if not qml.queuing.QueuingManager.recording() or not cls.is_active_dev():
+        if not qml.queuing.QueuingManager.recording() or not cls.has_active_dev():
             raise RuntimeError("Can't call breakpoint outside of a qnode execution")
 
         if cls.get_active_device().name not in ("default.qubit", "lightning.qubit"):
@@ -141,7 +144,7 @@ class PLDB(pdb.Pdb):
         """Update the global active device.
 
         Args:
-            dev (Union[Device, "qml.devices.Device"]): The active device
+            dev (Union[Device, "qml.devices.Device"]): the active device
         """
         cls.__active_dev = dev
 
@@ -155,13 +158,13 @@ class PLDB(pdb.Pdb):
         Returns:
             Union[Device, "qml.devices.Device"]: The active device
         """
-        if not cls.is_active_dev():
+        if not cls.has_active_dev():
             raise RuntimeError("No active device to get")
 
         return cls.__active_dev
 
     @classmethod
-    def is_active_dev(cls):
+    def has_active_dev(cls):
         """Determine if there is currently an active device.
 
         Returns:
@@ -171,7 +174,7 @@ class PLDB(pdb.Pdb):
 
     @classmethod
     def reset_active_dev(cls):
-        """Reset the global active device list (to empty)."""
+        """Reset the global active device variable to None."""
         cls.__active_dev = None
 
 
@@ -181,7 +184,7 @@ def pldb_device_manager(device):
     device on the PLDB debugger.
 
     Args:
-        device (Union[Device, "qml.devices.Device"]): The active device instance
+        device (Union[Device, "qml.devices.Device"]): the active device instance
     """
     try:
         PLDB.add_device(device)
