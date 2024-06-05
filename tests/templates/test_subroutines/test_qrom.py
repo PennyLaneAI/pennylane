@@ -237,7 +237,7 @@ def test_repr():
             ["1", "0", "0", "1"],
             [0],
             [2],
-            r"Not enough control wires \(1\) for the desired number of bitstrings \(4\). At least 2 control wires required.",
+            r"Not enough control wires \(1\) for the desired number of bitstrings \(4\). At least 2 control wires are required.",
         ),
         (
             ["1", "0", "0", "1"],
