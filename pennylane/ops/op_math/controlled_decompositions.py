@@ -29,6 +29,14 @@ from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
 from pennylane.wires import Wires
 
 
+def _is_single_qubit_special_unitary(op):
+    if not op.has_matrix or len(op.wires) != 1:
+        return False
+    mat = op.matrix()
+    det = mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
+    return qml.math.allclose(det, 1)
+
+
 def _convert_to_su2(U, return_global_phase=False):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
@@ -45,7 +53,8 @@ def _convert_to_su2(U, return_global_phase=False):
         :math:`SU(2)` equivalent and the second, the global phase.
     """
     # Compute the determinants
-    dets = math.linalg.det(U)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        dets = math.linalg.det(U)
 
     global_phase = math.cast_like(math.angle(dets), 1j) / 2
     U_SU2 = math.cast_like(U, dets) * math.exp(-1j * global_phase)
@@ -487,9 +496,6 @@ def _decompose_multicontrolled_unitary(op, control_wires):
 
     We are assuming this decomposition is used only in the general cases
     """
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary
-
     if not op.has_matrix or len(op.wires) != 1:
         raise ValueError(
             "The target operation must be a single-qubit operation with a matrix representation"
@@ -512,7 +518,7 @@ def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
     """
     if len(control_wires) == 1:
         with qml.QueuingManager.stop_recording():
-            powered_op = qml.pow(op, power)
+            powered_op = qml.pow(op, power, lazy=True)
         return ctrl_decomp_zyz(powered_op, control_wires)
 
     with qml.QueuingManager.stop_recording():
@@ -522,8 +528,8 @@ def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
             work_wires=work_wires + target_wire,
         )
     with qml.QueuingManager.stop_recording():
-        powered_op = qml.pow(op, 0.5 * power)
-        powered_op_adj = qml.pow(op, -0.5 * power)
+        powered_op = qml.pow(op, 0.5 * power, lazy=True)
+        powered_op_adj = qml.adjoint(powered_op, lazy=True)
 
     if qml.QueuingManager.recording():
         decomposition = [
