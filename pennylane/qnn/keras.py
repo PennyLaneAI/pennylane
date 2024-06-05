@@ -331,8 +331,13 @@ class KerasLayer(Layer):
         self._signature_validation(qnode, weight_shapes)
 
         self.qnode = qnode
-        # self.qnode.interface = "auto"
-        if self.qnode.interface not in ("auto", "tf"):
+        if self.qnode.interface not in (
+            "auto",
+            "tf",
+            "tensorflow",
+            "tensorflow-autograph",
+            "tf-autograph",
+        ):
             raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer")
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]

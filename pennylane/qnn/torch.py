@@ -349,9 +349,9 @@ class TorchLayer(Module):
         # validate the QNode signature, and convert to a Torch QNode.
         # TODO: update the docstring regarding changes to restrictions when tape mode is default.
         self._signature_validation(qnode, weight_shapes)
+
         self.qnode = qnode
-        # self.qnode.interface = "auto"
-        if self.qnode.interface not in ("auto", "torch"):
+        if self.qnode.interface not in ("auto", "torch", "pytorch"):
             raise ValueError(f"Invalid interface '{self.qnode.interface}' for TorchLayer")
 
         self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
