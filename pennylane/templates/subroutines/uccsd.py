@@ -87,6 +87,7 @@ class UCCSD(Operation):
             and unoccupied orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
+        reps (int): Number of times UCCSD unitary is repeated.
 
     .. details::
         :title: Usage Details
@@ -100,7 +101,8 @@ class UCCSD(Operation):
            :func:`~.excitations`. See example below.
 
         #. The vector of parameters ``weights`` is a one-dimensional array of size
-           ``len(s_wires)+len(d_wires)``
+           ``len(s_wires)+len(d_wires)`` if ```reps=1``. ``weights`` is a two-dimensional array of size
+           ``(reps, len(s_wires)+len(d_wires))`` if ```reps>1``.
 
 
         An example of how to use this template is shown below:
@@ -171,7 +173,9 @@ class UCCSD(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, s_wires=None, d_wires=None, init_state=None, id=None):
+    def __init__(
+        self, weights, wires, s_wires=None, d_wires=None, init_state=None, reps=1, id=None
+    ):
         if (not s_wires) and (not d_wires):
             raise ValueError(
                 f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
@@ -183,11 +187,31 @@ class UCCSD(Operation):
                     f"expected entries of d_wires to be of size 2; got {d_wires_} of length {len(d_wires_)}"
                 )
 
+        if reps < 1:
+            raise ValueError(f"Requires reps to be at least 1; got {reps}.")
+
         shape = qml.math.shape(weights)
-        if shape != (len(s_wires) + len(d_wires),):
-            raise ValueError(
-                f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
-            )
+
+        if reps == 1:
+            if (
+                len(shape) == 2
+                and shape
+                != (
+                    reps,
+                    len(s_wires) + len(d_wires),
+                )
+            ) or (len(shape) == 1 and shape != (len(s_wires) + len(d_wires),)):
+                raise ValueError(
+                    f"Weights tensor must be of shape {(reps, len(s_wires) + len(d_wires),)} or  {(len(s_wires) + len(d_wires),)}; got {shape}."
+                )
+        else:
+            if shape != (
+                reps,
+                len(s_wires) + len(d_wires),
+            ):
+                raise ValueError(
+                    f"Weights tensor must be of shape {(reps, len(s_wires) + len(d_wires),)}; got {shape}."
+                )
 
         init_state = qml.math.toarray(init_state)
 
@@ -198,6 +222,7 @@ class UCCSD(Operation):
             "init_state": tuple(init_state),
             "s_wires": tuple(tuple(w) for w in s_wires),
             "d_wires": tuple(tuple(tuple(w) for w in dw) for dw in d_wires),
+            "reps": reps,
         }
 
         super().__init__(weights, wires=wires, id=id)
@@ -220,7 +245,7 @@ class UCCSD(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, s_wires, d_wires, init_state
+        weights, wires, s_wires, d_wires, init_state, reps
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -240,6 +265,7 @@ class UCCSD(Operation):
                 specify the indices ``[s, ...,r]`` and ``[q,..., p]`` defining the double excitation.
             init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 HF state. ``init_state`` is used to initialize the wires.
+            reps (int): Number of times UCCSD unitary is repeated.
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -248,12 +274,18 @@ class UCCSD(Operation):
 
         op_list.append(BasisState(init_state, wires=wires))
 
-        for i, (w1, w2) in enumerate(d_wires):
-            op_list.append(
-                qml.FermionicDoubleExcitation(weights[len(s_wires) + i], wires1=w1, wires2=w2)
-            )
+        if reps == 1 and len(qml.math.shape(weights)) == 1:
+            weights = qml.math.expand_dims(weights, 0)
 
-        for j, s_wires_ in enumerate(s_wires):
-            op_list.append(qml.FermionicSingleExcitation(weights[j], wires=s_wires_))
+        for layer in range(reps):
+            for i, (w1, w2) in enumerate(d_wires):
+                op_list.append(
+                    qml.FermionicDoubleExcitation(
+                        weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
+                    )
+                )
+
+            for j, s_wires_ in enumerate(s_wires):
+                op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list

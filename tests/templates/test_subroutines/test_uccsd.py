@@ -300,6 +300,51 @@ class TestInputs:
         )
         assert template.id == "a"
 
+    def test_reps(self):
+        """Tests the reps parameter"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit_reps_1_1d():
+            qml.UCCSD(
+                [0.1, 0.2],
+                wires=range(4),
+                s_wires=[[0, 1]],
+                d_wires=[[[0, 1], [2, 3]]],
+                init_state=np.array([0, 1, 0, 1]),
+                reps=1,
+            )
+            return qml.expval(qml.Identity(0)), qml.state()
+
+        @qml.qnode(dev)
+        def circuit_reps_1_2d():
+            qml.UCCSD(
+                np.array([[0.1, 0.2]]),
+                wires=range(4),
+                s_wires=[[0, 1]],
+                d_wires=[[[0, 1], [2, 3]]],
+                init_state=np.array([0, 1, 0, 1]),
+                reps=1,
+            )
+            return qml.expval(qml.Identity(0)), qml.state()
+
+        @qml.qnode(dev)
+        def circuit_reps_2():
+            qml.UCCSD(
+                np.array([[0.1, 0.2], [0.3, 0.4]]),
+                wires=range(4),
+                s_wires=[[0, 1]],
+                d_wires=[[[0, 1], [2, 3]]],
+                init_state=np.array([0, 1, 0, 1]),
+                reps=2,
+            )
+            return qml.expval(qml.Identity(0)), qml.state()
+
+        circuit_reps_1_1d()
+        circuit_reps_1_2d()
+        circuit_reps_2()
+
 
 def circuit_template(weights):
     qml.UCCSD(
