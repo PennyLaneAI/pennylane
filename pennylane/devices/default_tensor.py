@@ -40,7 +40,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import Observable, Operation, Tensor
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
@@ -553,10 +553,8 @@ class DefaultTensor(Device):
         obs = measurementprocess.obs
         return expval_core(obs, self)
 
-    def state(self, measurementprocess: MeasurementProcess):
+    def state(self, measurementprocess: MeasurementProcess):  # pylint: disable=unused-argument
         """Returns the MPS state in vector form."""
-        if measurementprocess.wires and measurementprocess.wires != self.wires:
-            raise ValueError("Only the full state can be returned.")
         return self._quimb_mps.psi.to_dense().ravel()
 
     def var(self, measurementprocess: MeasurementProcess) -> float:
@@ -767,7 +765,7 @@ def expval_core(obs: Observable, device) -> float:
 
 
 @expval_core.register
-def expval_core_hamiltonian(obs: Hamiltonian, device) -> float:
+def expval_core_hamiltonian(obs: qml.Hamiltonian, device) -> float:
     """Computes the expval of a Hamiltonian."""
     return sum(expval_core(m, device) for m in obs)
 
