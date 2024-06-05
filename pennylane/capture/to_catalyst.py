@@ -28,11 +28,21 @@ AbstractMeasurement = _get_abstract_measurement()
 measurement_map = {"expval_obs": cat_p.expval_p, "probs_wires": cat_p.probs_p}
 
 
+null_source_info = jax.extend.source_info_util.SourceInfo(
+    None, jax.extend.source_info_util.NameStack()
+)
+
+
 def _get_device_kwargs(device: "pennylane.devices.Device") -> dict:
     features = catalyst.utils.toml.ProgramFeatures(device.shots is not None)
     capabilities = catalyst.utils.toml.get_device_capabilities(device, features)
     info = catalyst.device.extract_backend_info(device, capabilities)
-    return {"rtd_kwargs": info.kwargs, "rtd_lib": info.lpath, "rtd_name": info.c_interface_name}
+    # Note that the value of rtd_kwargs is a string version of the info kwargs, not the info kwargs itself !!!
+    return {
+        "rtd_kwargs": str(info.kwargs),
+        "rtd_lib": info.lpath,
+        "rtd_name": info.c_interface_name,
+    }
 
 
 def _get_jaxpr_count(jaxpr) -> int:
@@ -113,10 +123,15 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
             outvars = eqn.outvars
             primitive = cat_p.func_p
             call_jaxpr = plxpr_to_catalyst(eqn.params["qfunc_jaxpr"].jaxpr, eqn.params["device"])
-            params = {"fn": "TODO", "call_jaxpr": call_jaxpr}
+            params = {"fn": eqn.params["qnode"], "call_jaxpr": call_jaxpr}
 
             new_eqn = jax.core.JaxprEqn(
-                invars, outvars, primitive, params, effects=jax.core.no_effects, source_info=None
+                invars,
+                outvars,
+                primitive,
+                params,
+                effects=jax.core.no_effects,
+                source_info=null_source_info,
             )
             new_xpr.eqns.append(new_eqn)
     return new_xpr
@@ -159,7 +174,12 @@ class CatalystConverter:
         self.shots = 0 if shots is None else shots
         params = _get_device_kwargs(device)
         device_eqn = jax.core.JaxprEqn(
-            [], [], cat_p.qdevice_p, params, effects=jax.core.no_effects, source_info=None
+            [],
+            [],
+            cat_p.qdevice_p,
+            params,
+            effects=jax.core.no_effects,
+            source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(device_eqn)
 
@@ -170,7 +190,12 @@ class CatalystConverter:
         qreg = self._make_var(cat_p.AbstractQreg())
         self._qreg = qreg
         qalloc_eqn = jax.core.JaxprEqn(
-            invars, [qreg], cat_p.qalloc_p, {}, effects=jax.core.no_effects, source_info=None
+            invars,
+            [qreg],
+            cat_p.qalloc_p,
+            {},
+            effects=jax.core.no_effects,
+            source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(qalloc_eqn)
 
@@ -188,7 +213,12 @@ class CatalystConverter:
         wire = self._make_var(cat_p.AbstractQbit())
         outvar = [wire]
         qextract_eqn = jax.core.JaxprEqn(
-            invars, outvar, cat_p.qextract_p, {}, effects=jax.core.no_effects, source_info=None
+            invars,
+            outvar,
+            cat_p.qextract_p,
+            {},
+            effects=jax.core.no_effects,
+            source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(qextract_eqn)
         return wire
@@ -201,14 +231,24 @@ class CatalystConverter:
             outvars = [new_qreg]
 
             eqn = jax.core.JaxprEqn(
-                invars, outvars, cat_p.qinsert_p, {}, effects=jax.core.no_effects, source_info=None
+                invars,
+                outvars,
+                cat_p.qinsert_p,
+                {},
+                effects=jax.core.no_effects,
+                source_info=null_source_info,
             )
             self.catalyst_xpr.eqns.append(eqn)
 
             self._qreg = new_qreg
 
         eqn = jax.core.JaxprEqn(
-            [self._qreg], [], cat_p.qdealloc_p, {}, effects=jax.core.no_effects, source_info=None
+            [self._qreg],
+            [],
+            cat_p.qdealloc_p,
+            {},
+            effects=jax.core.no_effects,
+            source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(eqn)
 
@@ -232,7 +272,12 @@ class CatalystConverter:
             "ctrl_len": 0,
         }
         new_eqn = jax.core.JaxprEqn(
-            invars, outvars, primitive, params, effects=jax.core.no_effects, source_info=None
+            invars,
+            outvars,
+            primitive,
+            params,
+            effects=jax.core.no_effects,
+            source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(new_eqn)
 
@@ -248,7 +293,12 @@ class CatalystConverter:
         params = {"kind": eqn.primitive.name}
 
         new_eqn = jax.core.JaxprEqn(
-            invars, outvars, primitive, params, effects=jax.core.no_effects, source_info=None
+            invars,
+            outvars,
+            primitive,
+            params,
+            effects=jax.core.no_effects,
+            source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(new_eqn)
         return outvars[0]
@@ -262,7 +312,7 @@ class CatalystConverter:
             cat_p.compbasis_p,
             {},
             effects=jax.core.no_effects,
-            source_info=None,
+            source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(wires_eqn)
         return outvars
@@ -294,7 +344,7 @@ class CatalystConverter:
             primitive,
             {"shots": self.shots},
             effects=jax.core.no_effects,
-            source_info=None,
+            source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(new_eqn)
         return outvars

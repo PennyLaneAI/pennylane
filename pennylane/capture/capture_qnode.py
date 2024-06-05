@@ -60,7 +60,7 @@ def _get_qnode_prim():
     qnode_prim.multiple_results = True
 
     @qnode_prim.def_impl
-    def _(*args, shots, device, qnode_kwargs, qfunc_jaxpr):
+    def _(*args, shots, device, qnode_kwargs, qnode, qfunc_jaxpr):
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *inner_args)
 
@@ -69,7 +69,7 @@ def _get_qnode_prim():
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
-    def _(*args, shots, device, qnode_kwargs, qfunc_jaxpr):
+    def _(*args, shots, device, qnode_kwargs, qnode, qfunc_jaxpr):
         mps = qfunc_jaxpr.out_avals
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
 
@@ -166,5 +166,10 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qnode_prim = _get_qnode_prim()
 
     return qnode_prim.bind(
-        *args, shots=shots, device=qnode.device, qnode_kwargs=qnode_kwargs, qfunc_jaxpr=qfunc_jaxpr
+        *args,
+        shots=shots,
+        device=qnode.device,
+        qnode_kwargs=qnode_kwargs,
+        qnode=qnode,
+        qfunc_jaxpr=qfunc_jaxpr,
     )
