@@ -112,17 +112,26 @@ def snapshots(qnode):
 
 
 class PLDB(pdb.Pdb):
-    """Custom debugging class integrated with Pdb."""
+    """Custom debugging class integrated with Pdb.
 
-    __active_dev: qml.devices.Device | None = None
+    This class is responsible for storing and updating a global device to be
+    used for executing quantum circuits while in debugging context. The core
+    debugger functionality is inherited from the native Python debugger (Pdb).
+
+    This class is not directly user-facing, but is interfaced with the
+    ``qml.breakpoint()`` function and ``pldb_device_manager`` context manager.
+    The former is responsible for launching the debugger prompt and the latter
+    is responsible with extracting and storing the ``qnode.device``.
+
+    The device information is used for validation checks and to execute measurements.
+    """
+
+    __active_dev = None
 
     def __init__(self, *args, **kwargs):
         """Initialize the debugger, and set custom prompt string."""
         super().__init__(*args, **kwargs)
-
-    @property
-    def prompt(self):
-        return "[pldb]: "
+        self.prompt = "[pldb]: "
 
     @classmethod
     def valid_context(cls):

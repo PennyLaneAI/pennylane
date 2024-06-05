@@ -453,12 +453,12 @@ class TestPLDB:
         )
 
         PLDB.add_device(dev1)
-        assert PLDB.get_active_device == dev1
+        assert PLDB.get_active_device() == dev1
 
         PLDB.add_device(dev2)  # overwrites dev1
         PLDB.add_device(dev3)  # overwrites dev2
 
-        assert PLDB.get_active_device == dev3
+        assert PLDB.get_active_device() == dev3
 
         PLDB.reset_active_dev()  # clean up the debugger active devices
 
