@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add operation and measurement specific routines in `default.tensor` to improve scalability.
+  [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
+
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
