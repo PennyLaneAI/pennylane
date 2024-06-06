@@ -232,7 +232,7 @@ def state():
     """Compute the state of the quantum circuit.
 
     Returns:
-        Array(complex): Quantum state of the circuit.
+        Array(complex): quantum state of the circuit.
     """
     with qml.queuing.QueuingManager.stop_recording():
         m = qml.state()
@@ -244,10 +244,10 @@ def expval(op):
     """Compute the expectation value of an observable.
 
     Args:
-        op (Operator): The observable to compute the expectation value for.
+        op (Operator): the observable to compute the expectation value for
 
     Returns:
-        complex: Quantum state of the circuit.
+        complex: expectation value of the operator
     """
 
     qml.queuing.QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
@@ -262,12 +262,12 @@ def probs(wires=None, op=None):
     """Compute the probability distribution for the state.
     Args:
         wires (Union[Iterable, int, str, list]): the wires the operation acts on
-        op (Union[Observable, MeasurementValue]): Observable (with a ``diagonalizing_gates``
+        op (Union[Observable, MeasurementValue]): observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
     Returns:
-        Array(float): The probability distribution of the bitstrings for the wires.
+        Array(float): the probability distribution of the bitstrings for the wires
     """
     if op:
         qml.queuing.QueuingManager.active_context().remove(
@@ -284,10 +284,10 @@ def _measure(measurement):
     """Perform the measurement.
 
     Args:
-        measurement (MeasurementProcess): The type of measurement to be performed
+        measurement (MeasurementProcess): the type of measurement to be performed
 
     Returns:
-        tuple(complex): Results from the measurement
+        tuple(complex): results from the measurement
     """
     active_queue = qml.queuing.QueuingManager.active_context()
     copied_queue = copy.deepcopy(active_queue)
@@ -298,10 +298,10 @@ def _measure(measurement):
 
 
 def tape():
-    """Access the tape of the quantum circuit.
+    """Access the quantum tape of the circuit.
 
     Returns:
-        QuantumScript: The quantum script representing the circuit.
+        QuantumScript: the quantum tape representing the circuit
     """
     active_queue = qml.queuing.QueuingManager.active_context()
     return qml.tape.QuantumScript.from_queue(active_queue)
