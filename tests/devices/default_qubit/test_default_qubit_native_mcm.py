@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
+from pennylane.devices.qubit.simulate import combine_measurements_core, measurement_with_no_shots
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
@@ -137,6 +138,26 @@ def validate_measurements(func, shots, results1, results2, batch_size=None):
     validate_expval(shots, results1, results2, batch_size=batch_size)
 
 
+def test_combine_measurements_core():
+    """Test that combine_measurements_core raises for unsupported measurements."""
+    with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
+        _ = combine_measurements_core(qml.classical_shadow(0), None)
+
+
+def test_measurement_with_no_shots():
+    """Test that measurement_with_no_shots returns the correct NaNs."""
+    assert np.isnan(measurement_with_no_shots(qml.expval(0)))
+    probs = measurement_with_no_shots(qml.probs(wires=0))
+    assert probs.shape == (2,)
+    assert all(np.isnan(probs).tolist())
+    probs = measurement_with_no_shots(qml.probs(wires=[0, 1]))
+    assert probs.shape == (4,)
+    assert all(np.isnan(probs).tolist())
+    probs = measurement_with_no_shots(qml.probs(wires=qml.PauliY(0)))
+    assert probs.shape == (2,)
+    assert all(np.isnan(probs).tolist())
+
+
 def test_apply_mid_measure():
     """Test that apply_mid_measure raises if applied to a batched state."""
     with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
@@ -222,6 +243,25 @@ def test_tree_traversal_postselect_mode(postselect_mode):
     assert np.all(res != np.iinfo(np.int32).min)
 
 
+def test_deep_circuit():
+    """Tests that DefaultQubit handles a circuit with more than 1000 mid-circuit measurements."""
+
+    dev = qml.device("default.qubit", shots=10)
+
+    @qml.qnode(dev)
+    def func(x):
+        for _ in range(1234):
+            qml.RX(x, wires=0)
+            m0 = qml.measure(0)
+        return qml.expval(qml.PauliY(0)), qml.expval(m0)
+
+    func1 = func
+    func2 = qml.dynamic_one_shot(func)
+
+    _ = func1(0.1243)
+    _ = func2(0.1243)
+
+
 # pylint: disable=unused-argument
 def obs_tape(x, y, z, reset=False, postselect=None):
     qml.RX(x, 0)
@@ -295,8 +335,11 @@ def test_multiple_measurements_and_reset(mcm_method, postselect, reset):
     dev = get_device(shots=shots)
     params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliY(1)
+    state = qml.math.zeros((4,))
+    state[0] = 1.0
 
     def func(x, y, z):
+        qml.StatePrep(state, wires=[0, 1])
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return (
             qml.counts(op=obs),
@@ -440,10 +483,11 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     assert np.allclose(grad1, grad2, atol=0.01, rtol=0.3)
 
 
+@pytest.mark.parametrize("mcm_method", ["one-shot"])
 @pytest.mark.parametrize("shots", [5000, [5000, 5001]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("measure_fn", [qml.expval, qml.sample, qml.probs, qml.counts])
-def test_broadcasting_qnode(shots, postselect, measure_fn):
+def test_broadcasting_qnode(mcm_method, shots, postselect, measure_fn):
     """Test that executing qnodes with broadcasting works as expected"""
     if measure_fn is qml.sample and postselect is not None:
         pytest.skip("Postselection with samples doesn't work with broadcasting")
@@ -457,24 +501,22 @@ def test_broadcasting_qnode(shots, postselect, measure_fn):
         obs_tape(x, y, None, postselect=postselect)
         return measure_fn(op=obs)
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+    results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*param)
+    results1 = qml.QNode(func, dev, mcm_method="deferred")(*param)
 
-    results1 = func1(*param)
-    results2 = func2(*param)
-
-    validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
+    validate_measurements(measure_fn, shots, results1, results0, batch_size=2)
 
     if measure_fn is qml.sample and postselect is None:
         for i in range(2):  # batch_size
             if isinstance(shots, list):
-                for s, r1, r2 in zip(shots, results1, results2):
+                for s, r1, r2 in zip(shots, results1, results0):
                     assert len(r1[i]) == len(r2[i]) == s
             else:
-                assert len(results1[i]) == len(results2[i]) == shots
+                assert len(results1[i]) == len(results0[i]) == shots
 
 
-def test_sample_with_broadcasting_and_postselection_error():
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+def test_sample_with_broadcasting_and_postselection_error(mcm_method):
     """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
     tape = qml.tape.QuantumScript(
         [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
@@ -484,7 +526,7 @@ def test_sample_with_broadcasting_and_postselection_error():
 
     dev = get_device(shots=10)
 
-    @qml.qnode(dev)
+    @qml.qnode(dev, mcm_method=mcm_method)
     def circuit():
         qml.RX([0.1, 0.2], 0)
         qml.measure(0, postselect=1)

@@ -629,11 +629,11 @@ def circuit_up_to_first_mcm(circuit):
 
 def measurement_with_no_shots(measurement):
     """Returns a NaN scalar or array of the correct size when executing an all-invalid-shot circuit."""
-    return (
-        np.nan * np.ones_like(measurement.eigvals())
-        if isinstance(measurement, ProbabilityMP)
-        else np.nan
-    )
+    if isinstance(measurement, ProbabilityMP):
+        if measurement.obs:
+            return np.nan * np.ones(measurement.eigvals())
+        return np.nan * np.ones(2 ** len(measurement.wires))
+    return np.nan
 
 
 def combine_measurements(circuit, measurements, mcm_samples):
