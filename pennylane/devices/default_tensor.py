@@ -290,14 +290,12 @@ class DefaultTensor(Device):
 
 
 
-            We can also simulate quantum circuits using the Tensor Network (TN) method.
+            We can also simulate quantum circuits using the Tensor Network (TN) method. This can be particularly useful for circuits that build up entanglement.
 
-            This can be particularly useful for circuits that build up entanglement.
-            Using the ``quimb`` backend, the exact tensor network method can be faster than the MPS method in some cases.
+            The following example shows how to execute a quantum circuit with the TN method and configurable depth using ``default.tensor``.
 
-            The following example shows how to execute a quantum circuit with the TN method and configurable depth using the ``default.tensor`` device.
-
-            We set the contraction technique to ``"auto-split-gate"``. With this option, TODO: to be completed.
+            We set the contraction technique to ``"auto-split-gate"``. With this option, each gate is added 'lazily' to the tensor network and nothing is contracted.
+            However, the gate is automatically split if this results in a rank reduction.
 
 
             .. code-block:: python
@@ -328,6 +326,8 @@ class DefaultTensor(Device):
             -0.9511499466743278
 
             The execution time for this circuit with the above parameters is around 0.2 seconds, depending on the machine.
+
+            Using the ``quimb`` backend, the exact tensor network method can be faster than the MPS method in some cases.
             As a comparison, the time for the exact calculation of the same circuit with the MPS method is about one order of magnitude slower.
     """
 
