@@ -7,6 +7,33 @@
 * The `default.tensor` device now supports the `tn` method to simulate quantum circuits using exact tensor networks.
   [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
 
+* QROM template is added. This template allows you to enter classic data in the form of bitstrings.
+  [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
+
+  ```python
+  # a list of bitstrings is defined
+  bitstrings = ["010", "111", "110", "000"]
+
+  dev = qml.device("default.qubit", shots = 1)
+
+  @qml.qnode(dev)
+  def circuit():
+
+      # the third index is encoded in the control wires [0, 1]
+      qml.BasisEmbedding(2, wires = [0,1])
+
+      qml.QROM(bitstrings = bitstrings,
+              control_wires = [0,1],
+              target_wires = [2,3,4],
+              work_wires = [5,6,7])
+
+      return qml.sample(wires = [2,3,4])
+  ```
+   ```pycon
+  >>> print(circuit())
+  [1 1 0]
+  ```
+
 * `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
   These keyword arguments can be used to configure how the device should behave when running circuits with
   mid-circuit measurements.
@@ -234,7 +261,13 @@
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
+* The `qml.Tracker` examples are updated.
+  [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
+
 <h3>Bug fixes 🐛</h3>
+
+* `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
+  [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
 
 * Disable Docker builds on PR merge.
   [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
@@ -305,6 +338,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje,
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,
@@ -313,6 +347,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
