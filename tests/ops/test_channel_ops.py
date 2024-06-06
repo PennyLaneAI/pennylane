@@ -1010,7 +1010,6 @@ class TestQutritChannel:
 
     def test_input_multiple_wires(self, tol):
         """Tests that the operator works on multiple wires"""
-        p = 0.5
         dev1 = qml.device("default.qutrit.mixed", wires=1)
         K_list1 = qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5)
 

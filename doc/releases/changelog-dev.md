@@ -170,6 +170,9 @@
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
 
+* `qml.QuditChannel` has been created as a parent class to generalize `qml.QubitChannel` and `qml.QutritChannel` has also been introduced as a subclass of this parent class to operate on `default.qutrit.mixed` devices.
+  [(#5649)](https://github.com/PennyLaneAI/pennylane/issues/5649)
+
 <h3>Breaking changes 💔</h3>
 
 * Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
@@ -294,6 +297,7 @@ Pietropaolo Frisoni,
 Emiliano Godinez,
 David Ittah,
 Soran Jahangiri,
+Mashhood Khan,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
