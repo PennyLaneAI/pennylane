@@ -333,8 +333,8 @@ class TestInitialization:
             hamiltonian = hamiltonian.simplify()
 
         assert op.wires == hamiltonian.wires
-        assert op.parameters == [time]
-        assert op.data == (time,)
+        assert op.parameters == [*hamiltonian.data, time]
+        assert op.data == (*hamiltonian.data, time)
         assert op.hyperparameters == {
             "base": hamiltonian,
             "n": n,
@@ -358,22 +358,11 @@ class TestInitialization:
         assert op is not new_op
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_flatten_and_unflatten(self, hamiltonian):
-        """Test that the flatten and unflatten methods work correctly."""
+    def test_standard_validity(self, hamiltonian):
+        """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-
-        if isinstance(hamiltonian, qml.ops.op_math.SProd):
-            hamiltonian = hamiltonian.simplify()
-
-        data, metadata = op._flatten()
-        assert qml.equal(data[0], hamiltonian)
-        assert data[1] == time
-        assert dict(metadata) == {"n": n, "order": order, "check_hermitian": True}
-
-        new_op = type(op)._unflatten(data, metadata)
-        assert qml.equal(op, new_op)
-        assert new_op is not op
+        qml.ops.functions.assert_valid(op)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
