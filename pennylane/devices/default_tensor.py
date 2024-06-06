@@ -445,15 +445,14 @@ class DefaultTensor(Device):
                 cutoff=self._cutoff,
             )
 
-        elif self.method == "tn":
+        if self.method == "tn":
             return qtn.Circuit(
                 psi0=self._initial_tn(wires),
                 gate_contract=self._contract,
                 tags=[str(l) for l in wires.labels] if wires else None,
             )
 
-        else:
-            raise NotImplementedError  # pragma: no cover
+        raise NotImplementedError  # pragma: no cover
 
     def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
         r"""
