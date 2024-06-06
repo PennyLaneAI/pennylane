@@ -1202,19 +1202,10 @@ class MultiControlledX(ControlledOp):
             control_values = [True] * len(control_wires)
 
         work_wires = work_wires or []
-        if len(control_wires) > 2 and len(work_wires) == 0:
-            raise ValueError(
-                "At least one work wire is required to decompose operation: MultiControlledX"
-            )
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
-        if len(control_wires) == 1:
-            decomp = [qml.CNOT(wires=wires)]
-        elif len(control_wires) == 2:
-            decomp = qml.Toffoli.compute_decomposition(wires=wires)
-        else:
-            decomp = decompose_mcx(control_wires, target_wire, work_wires)
+        decomp = decompose_mcx(control_wires, target_wire, work_wires)
 
         flips2 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
