@@ -14,10 +14,13 @@
 """
 Unit tests for the debugging module.
 """
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.debugging import PLDB, pldb_device_manager
 
 
 class TestSnapshot:
@@ -387,3 +390,162 @@ class TestSnapshot:
             return qml.expval(qml.PauliZ(0))
 
         qml.snapshots(circuit)()
+
+
+# pylint: disable=protected-access
+class TestPLDB:
+    """Test the interactive debugging integration"""
+
+    def test_pldb_init(self):
+        """Test that PLDB initializes correctly"""
+        debugger = PLDB()
+        assert debugger.prompt == "[pldb]: "
+        assert getattr(debugger, "_PLDB__active_dev") is None
+
+    def test_valid_context_outside_qnode(self):
+        """Test that valid_context raises an error when breakpoint
+        is called outside of a qnode execution."""
+
+        with pytest.raises(
+            RuntimeError, match="Can't call breakpoint outside of a qnode execution"
+        ):
+            with qml.queuing.AnnotatedQueue() as _:
+                qml.X(0)
+                qml.breakpoint()
+                qml.Hadamard(0)
+
+        def my_qfunc():
+            qml.X(0)
+            qml.breakpoint()
+            qml.Hadamard(0)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            RuntimeError, match="Can't call breakpoint outside of a qnode execution"
+        ):
+            _ = my_qfunc()
+
+    def test_valid_context_not_compatible_device(self):
+        """Test that valid_context raises an error when breakpoint
+        is called with an un-supported device."""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.X(0)
+            qml.breakpoint()
+            qml.Hadamard(0)
+            return qml.expva(qml.Z(0))
+
+        with pytest.raises(TypeError, match="Breakpoints not supported on this device"):
+            _ = my_circ()
+
+        PLDB.reset_active_dev()
+
+    def test_add_device(self):
+        """Test that we can add a device to the global active device list."""
+        assert not PLDB.has_active_dev()
+
+        dev1, dev2, dev3 = (
+            qml.device("default.qubit", wires=3),
+            qml.device("default.qubit"),
+            qml.device("lightning.qubit", wires=1),
+        )
+
+        PLDB.add_device(dev1)
+        assert PLDB.get_active_device() == dev1
+
+        PLDB.add_device(dev2)  # overwrites dev1
+        PLDB.add_device(dev3)  # overwrites dev2
+
+        assert PLDB.get_active_device() == dev3
+
+        PLDB.reset_active_dev()  # clean up the debugger active devices
+
+    dev_names = (
+        "default.qubit",
+        "lightning.qubit",
+    )
+
+    @pytest.mark.parametrize("device_name", dev_names)
+    def test_get_active_device(self, device_name):
+        """Test that we can access the active device."""
+        dev = qml.device(device_name, wires=2)
+        with pldb_device_manager(dev) as _:
+            assert PLDB.get_active_device() is dev
+
+    def test_get_active_device_error_when_no_active_device(self):
+        """Test that an error is raised if we try to get
+        the active device when there are no active devices."""
+        assert not PLDB.has_active_dev()
+
+        with pytest.raises(RuntimeError, match="No active device to get"):
+            _ = PLDB.get_active_device()
+
+    @pytest.mark.parametrize("device_name", dev_names)
+    def test_reset_active_device(self, device_name):
+        """Test that we can rest the global active device list."""
+        dev = qml.device(device_name, wires=2)
+        PLDB.add_device(dev)
+        assert PLDB.get_active_device() == dev
+
+        PLDB.reset_active_dev()
+        assert not PLDB.has_active_dev()
+
+    def test_has_active_device(self):
+        """Test that we can determine if there is an active device."""
+        assert getattr(PLDB, "_PLDB__active_dev") is None
+
+        dev = qml.device("default.qubit")
+        PLDB.add_device(dev)
+        assert PLDB.has_active_dev()
+
+        PLDB.reset_active_dev()
+        assert not PLDB.has_active_dev()
+
+
+@pytest.mark.parametrize("device_name", ("default.qubit", "lightning.qubit"))
+def test_pldb_device_manager(device_name):
+    """Test that the context manager works as expected."""
+    assert not PLDB.has_active_dev()
+    dev = qml.device(device_name, wires=2)
+
+    with pldb_device_manager(dev) as _:
+        assert PLDB.get_active_device() == dev
+
+    assert not PLDB.has_active_dev()
+
+
+@patch.object(PLDB, "set_trace")
+def test_breakpoint_integration(mock_method):
+    """Test that qml.breakpoint behaves as expected"""
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def my_circ():
+        qml.Hadamard(0)
+        qml.CNOT([0, 1])
+        qml.breakpoint()
+        return qml.expval(qml.Z(1))
+
+    mock_method.assert_not_called()  # Did not hit breakpoint
+    my_circ()
+    mock_method.assert_called_once()  # Hit breakpoint once.
+
+
+@patch.object(PLDB, "set_trace")
+def test_breakpoint_integration_with_valid_context_error(mock_method):
+    """Test that the PLDB.valid_context() integrates well with qml.breakpoint"""
+    dev = qml.device("default.mixed", wires=2)
+
+    @qml.qnode(dev)
+    def my_circ():
+        qml.Hadamard(0)
+        qml.CNOT([0, 1])
+        qml.breakpoint()
+        return qml.expval(qml.Z(1))
+
+    with pytest.raises(TypeError, match="Breakpoints not supported on this device"):
+        _ = my_circ()
+
+    mock_method.assert_not_called()  # Error was raised before we triggered breakpoint

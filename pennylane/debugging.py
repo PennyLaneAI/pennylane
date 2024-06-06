@@ -14,6 +14,10 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
+import pdb
+import sys
+from contextlib import contextmanager
+
 import pennylane as qml
 from pennylane import DeviceError
 
@@ -105,3 +109,102 @@ def snapshots(qnode):
         return dbg.snapshots
 
     return get_snapshots
+
+
+class PLDB(pdb.Pdb):
+    """Custom debugging class integrated with Pdb.
+
+    This class is responsible for storing and updating a global device to be
+    used for executing quantum circuits while in debugging context. The core
+    debugger functionality is inherited from the native Python debugger (Pdb).
+
+    This class is not directly user-facing, but is interfaced with the
+    ``qml.breakpoint()`` function and ``pldb_device_manager`` context manager.
+    The former is responsible for launching the debugger prompt and the latter
+    is responsible with extracting and storing the ``qnode.device``.
+
+    The device information is used for validation checks and to execute measurements.
+    """
+
+    __active_dev = None
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the debugger, and set custom prompt string."""
+        super().__init__(*args, **kwargs)
+        self.prompt = "[pldb]: "
+
+    @classmethod
+    def valid_context(cls):
+        """Determine if the debugger is called in a valid context.
+
+        Raises:
+            RuntimeError: breakpoint is called outside of a qnode execution
+            TypeError: breakpoints not supported on this device
+        """
+
+        if not qml.queuing.QueuingManager.recording() or not cls.has_active_dev():
+            raise RuntimeError("Can't call breakpoint outside of a qnode execution")
+
+        if cls.get_active_device().name not in ("default.qubit", "lightning.qubit"):
+            raise TypeError("Breakpoints not supported on this device")
+
+    @classmethod
+    def add_device(cls, dev):
+        """Update the global active device.
+
+        Args:
+            dev (Union[Device, "qml.devices.Device"]): the active device
+        """
+        cls.__active_dev = dev
+
+    @classmethod
+    def get_active_device(cls):
+        """Return the active device.
+
+        Raises:
+            RuntimeError: No active device to get
+
+        Returns:
+            Union[Device, "qml.devices.Device"]: The active device
+        """
+        if not cls.has_active_dev():
+            raise RuntimeError("No active device to get")
+
+        return cls.__active_dev
+
+    @classmethod
+    def has_active_dev(cls):
+        """Determine if there is currently an active device.
+
+        Returns:
+            bool: True if there is an active device
+        """
+        return bool(cls.__active_dev)
+
+    @classmethod
+    def reset_active_dev(cls):
+        """Reset the global active device variable to None."""
+        cls.__active_dev = None
+
+
+@contextmanager
+def pldb_device_manager(device):
+    """Context manager to automatically set and reset active
+    device on the PLDB debugger.
+
+    Args:
+        device (Union[Device, "qml.devices.Device"]): the active device instance
+    """
+    try:
+        PLDB.add_device(device)
+        yield
+    finally:
+        PLDB.reset_active_dev()
+
+
+def breakpoint():
+    """Launch the custom PennyLane debugger."""
+    PLDB.valid_context()  # Ensure its being executed in a valid context
+
+    debugger = PLDB(skip=["pennylane.*"])  # skip internals when stepping through trace
+    debugger.set_trace(sys._getframe().f_back)  # pylint: disable=protected-access
