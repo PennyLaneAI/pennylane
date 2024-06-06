@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ def from_openfermion(of_qubit_operator, wires=None, tol=None, return_sum=False):
         return_sum (bool): flag indicating whether a ``Sum`` object is returned
 
     Returns:
-        pennylane.ops.LinearCombination: a linear combination of Pauli matrices
+        pennylane.ops.LinearCombination: a linear combination of Pauli words
 
     **Example**
 
