@@ -67,6 +67,19 @@ class TestDeviceProperties:
             qml.devices.modifiers.simulator_tracking,
         ]
 
+    @pytest.mark.parametrize(
+        "gammas,probs",
+        [
+            [(0.1, 0.2), None],
+            [None, (0.1, 0.2, 0.3, 0.1)],
+            [(0.1, 0.2, 0.3, 0.1), (0.1, 0.2, 0.3)],
+        ],
+    )
+    def test_measurement_error_validation(self, gammas, probs):
+        """Tests error is thrown if the wrong number of arguments inputted for measurement error."""
+        with pytest.raises(qml.DeviceError, match="You must input 3"):
+            DefaultQutritMixed(damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
 
 class TestSupportsDerivatives:
     """Test that DefaultQutritMixed states what kind of derivatives it supports."""
@@ -1270,3 +1283,114 @@ class TestIntegration:
         grad_jit = jax.grad(qnode_jit)(x, y)
 
         assert qml.math.allclose(grad, grad_jit)
+
+
+@pytest.mark.parametrize(
+    "m_error_gammas,m_error_probs",
+    [[(0.1, 0.2, 0.15), None], [None, (0.1, 0.12, 0.15)], [(0.1, 0.2, 0.15), (0.1, 0.12, 0.15)]],
+)
+class TestMeasurementError:
+    expected_state = None
+    num_wires = 3
+
+    @classmethod
+    def matrix_over_wires(cls, matrix, wire):
+        """TODO"""
+        pass
+
+    @classmethod
+    def get_state_with_measurement_error(cls, state, gammas, probs):
+        """TODO"""
+        # Apply amplitude damping to each wire
+        if gammas is not None:
+            Ks = qml.QutritAmplitudeDamping.compute_kraus_matrices(*gammas)
+            for wire in range(cls.num_wires):
+                Ks_over_wires = [cls.matrix_over_wires(K, wire) for K in Ks]
+                state = sum([K @ state @ K.T for K in Ks_over_wires])
+
+        # Apply trit flip to each wire
+        if probs is not None:
+            Ks = qml.BitFlip.compute_kraus_matrices(*probs)
+            for wire in range(cls.num_wires):
+                Ks_over_wires = [cls.matrix_over_wires(K, wire) for K in Ks]
+                state = sum([K @ state @ K.T for K in Ks_over_wires])
+        return state
+
+    @classmethod
+    def get_expected_probs(cls, gammas, probs):
+        """TODO"""
+        state = np.copy(cls.expected_state)
+        measured_state = cls.get_state_with_measurement_error(state, gammas, probs)
+        return math.real(math.diag(measured_state))
+
+    @classmethod
+    def get_expected_expval(cls, gammas, probs):
+        """TODO"""
+        state = np.copy(cls.expected_state)
+        state = None  # TODO
+        measured_state = cls.get_state_with_measurement_error(state, gammas, probs)
+        return math.real(math.diag(measured_state))
+
+    @classmethod
+    def get_expected_var(cls, gammas, probs):
+        """TODO"""
+        state = np.copy(cls.expected_state)
+        state = None  # TODO
+        measured_state = cls.get_state_with_measurement_error(state, gammas, probs)
+        return math.real(math.diag(measured_state))
+
+    @classmethod
+    def get_expected_counts(cls, gammas, probs, shots):
+        """TODO"""
+        state = np.copy(cls.expected_state)
+        measured_state = cls.get_state_with_measurement_error(state, gammas, probs)
+        math.real(math.diag(measured_state))
+
+    @pytest.mark.parameterize(
+        "measurement,exp_fun",
+        [
+            (qml.probs(), get_expected_probs),
+            (qml.expval(), get_expected_expval),
+            (qml.expval(), get_expected_expval),
+            (qml.var(), get_expected_var),
+        ],
+    )
+    def test_measurement_error_analytic(self, m_error_gammas, m_error_probs, measurement, exp_fun):
+        """TODO"""
+        dev = qml.device(
+            "default.qutrit.mixed",
+            damping_measurement_gammas=m_error_gammas,
+            trit_flip_measurement_probs=m_error_probs,
+        )
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            qml.TShift(2)
+            qml.Identity(0)
+            return measurement
+
+        assert np.allclose(circuit(), exp_fun(m_error_gammas, m_error_probs))
+
+    @pytest.mark.parameterize(
+        "measurement,exp_fun",
+        [
+            (qml.expval(), get_expected_expval),
+            (qml.var(), get_expected_var),
+            (qml.counts(), get_expected_counts),
+        ],
+    )
+    def test_measurement_error_shots(self, m_error_gammas, m_error_probs, measurement, exp_fun):
+        """TODO"""
+        pass
+
+    @pytest.mark.parameterize(
+        "measurement,exp_fun",
+        [
+            (qml.expval(), get_expected_expval),
+            (qml.var(), get_expected_var),
+            (qml.counts(), get_expected_counts),
+        ],
+    )
+    def test_measurement_error_jax_shots(self, m_error_gammas, m_error_probs, measurement, exp_fun):
+        """TODO"""
+        pass

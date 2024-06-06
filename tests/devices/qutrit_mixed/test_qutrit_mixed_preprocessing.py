@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for qutrit mixed device preprocessing."""
+import warnings
 import numpy as np
 import pytest
 
@@ -268,3 +269,45 @@ class TestPreprocessingIntegration:
         program, _ = DefaultQutritMixed().preprocess()
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
+
+    @pytest.mark.parametrize(
+        "gammas,probs,req_warn",
+        [
+            [(0.1, 0.2, 0.3), None, True],
+            [None, (0.1, 0.2, 0.3), True],
+            [(0.1, 0.2, 0.3), (0.1, 0.2, 0.3), True],
+            [None, None, False],
+        ],
+    )
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.state()],
+            [qml.density_matrix(0)],
+            [qml.state(), qml.density_matrix([1, 2])],
+            [qml.state(), qml.expval(qml.GellMann(1))],
+        ],
+    )
+    def test_preprocess_warns_measurement_error_state(self, gammas, probs, req_warn, measurements):
+        """Test that preprocess raises a warning if there is an analytic state measurement and
+        measurement error."""
+        tapes = [
+            qml.tape.QuantumScript(ops=[], measurements=measurements),
+            qml.tape.QuantumScript(
+                ops=[qml.THadamard(0), qml.TRZ(0.123, wires=1)], measurements=measurements
+            ),
+        ]
+        device = DefaultQutritMixed(
+            damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs
+        )
+        program, _ = device.preprocess()
+
+        with warnings.catch_warnings(record=True) as warning:
+            program(tapes)
+            if req_warn:
+                assert len(warning) != 0
+                for warn in list(warning):
+                    print(type(warn.message))
+                    assert "is not affected by measurement error" in warn.message.args[0]
+            else:
+                assert len(warning) == 0

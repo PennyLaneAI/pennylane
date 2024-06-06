@@ -131,11 +131,13 @@ def get_measurement_errors(damping_measurement_gammas, trit_flip_measurement_pro
     measure_funcs = []
     if damping_measurement_gammas is not None:
         if len(damping_measurement_gammas) != 3:
-            raise ValueError("You must input 3 gammas for the qml.QutritAmplitudeDamping channel")
+            raise qml.DeviceError(
+                "You must input 3 gammas for the qml.QutritAmplitudeDamping channel"
+            )
         measure_funcs.append(partial(qml.QutritAmplitudeDamping, *damping_measurement_gammas))
     if trit_flip_measurement_probs is not None:
         if len(trit_flip_measurement_probs) != 3:
-            raise ValueError("You must input 3 probabilities for the qml.TritFlip channel")
+            raise qml.DeviceError("You must input 3 probabilities for the qml.TritFlip channel")
         measure_funcs.append(partial(qml.BitFlip, *trit_flip_measurement_probs))
         # TODO: TritFlip
 
