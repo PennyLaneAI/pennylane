@@ -317,7 +317,7 @@ class TestQutritChannel:
     def test_kraus_matrices_are_dimensions(self):
         """Tests that the given Kraus matrices are of right dimension i.e (9,9)"""
         K_list = [np.eye(3), np.eye(3)]
-        with pytest.raises(ValueError, match=r"Dimension of all Kraus matrices must be (9,9)."):
+        with pytest.raises(ValueError, match=r"Dimension of all Kraus matrices must be \(9,9\)."):
             qml.QutritChannel(K_list, wires=[0, 1])
 
     def test_kraus_matrices_are_trace_preserved(self):
