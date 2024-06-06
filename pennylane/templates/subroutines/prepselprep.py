@@ -51,11 +51,15 @@ def new_terms_is_complex(lcu):
 
         sign = qml.math.sign(real)
         new_coeffs.append(sign * real)
-        new_ops.append(qml.ops.LinearCombination([sign], [op]))
+        new_op = qml.simplify(qml.ops.LinearCombination([sign], [op]))
+        new_ops.append(new_op)
 
         sign = qml.math.sign(imag)
         new_coeffs.append(sign * imag)
-        new_ops.append(qml.ops.LinearCombination([1j * sign], [op]))
+        new_op = qml.simplify(qml.ops.LinearCombination([1j * sign], [op]))
+        new_ops.append(new_op)
+
+    print(new_coeffs)
 
     return new_coeffs, new_ops
 
@@ -69,7 +73,8 @@ def new_terms_is_real(lcu):
     for coeff, op in zip(*lcu.terms()):
         sign = qml.math.sign(coeff)
         new_coeffs.append(sign * coeff)
-        new_ops.append(qml.ops.LinearCombination([sign], [op]))
+        new_op = qml.simplify(qml.ops.LinearCombination([sign], [op]))
+        new_ops.append(new_op)
 
     return new_coeffs, new_ops
 
@@ -133,17 +138,7 @@ class PrepSelPrep(Operation):
         """Convert LCU into an equivalent form with positive real coefficients"""
 
         new_coeffs, new_ops = get_new_terms(lcu)
-
-        new_unitaries = []
-        for op in new_ops:
-            if len(op.wires) == 0:
-                unitary = op
-            else:
-                unitary = qml.QubitUnitary(qml.matrix(op), wires=op.wires)
-
-            new_unitaries.append(unitary)
-
-        new_lcu = qml.ops.LinearCombination(new_coeffs, new_unitaries)
+        new_lcu = qml.ops.LinearCombination(new_coeffs, new_ops)
 
         return new_lcu
 

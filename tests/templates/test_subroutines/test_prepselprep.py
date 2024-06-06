@@ -235,6 +235,25 @@ class TestPrepSelPrep:
             assert len(val.parameters) == len(results[idx].parameters)
             assert all([a == b] for a, b in zip(val.parameters, results[idx].parameters))
 
+    def test_preprocessed_queing_ops(self):
+        """Test that preprocessing the LCU queues the same operations"""
+        lcu = qml.ops.LinearCombination([1 + 0.5j, -0.5j], [qml.Z(2), qml.X(2)])
+        preprocessed_lcu = qml.PrepSelPrep.preprocess_lcu(lcu)
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.PrepSelPrep(lcu, control=[0, 1])
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.PrepSelPrep(preprocessed_lcu, control=[0, 1])
+
+        queue1 = tape1.expand().operations
+        queue2 = tape2.expand().operations
+
+        for op1, op2 in zip(queue1, queue2):
+            assert op1.name == op2.name
+            assert len(op1.parameters) == len(op2.parameters)
+            assert all([a == b] for a, b in zip(op1.parameters, op2.parameters))
+
     def test_copy(self):
         """Test the copy function"""
 
