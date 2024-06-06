@@ -91,6 +91,7 @@ def add_noise(tape, noise_model, level=None):
 
     .. details::
         :title: Usage Details: Advanced Examples
+        :href: add-noise-example
 
         ``qml.add_noise`` can also be used to tranform quantum functions, devices or already constructed qnodes.
         To do this, one may construct noise models with various kinds of ``conditionals`` and ``noise_fns`` key-value pairs.
@@ -176,6 +177,7 @@ def add_noise(tape, noise_model, level=None):
 
     .. details::
         :title: Usage Details: Tranform Levels
+        :href: add-noise-levels
 
         By default, ``add_noise`` transform will be added to the end of the "user" transforms,
         i.e., after the transforms that are manually applied to the qnode.
