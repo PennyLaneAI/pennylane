@@ -15,8 +15,6 @@
 This module contains the functions for converting an openfermion fermionic operator to Pennylane FermiWord or FermiSentence operators
 """
 
-import openfermion as of
-import pennylane as qml
 from pennylane import fermi
 
 
@@ -32,8 +30,8 @@ def from_openfermion(of_fermi_op, tol=1e-16):
 
     **Example**
 
-    >>> of_fermi_op = 0.5 * of.FermionOperator('0^ 2') + of.FermionOperator('0 2^')
-    >>> pl_fermi_op = qml.qchem.from_openfermion(of_fermi_op)
+    >>> of_fermi_op = 0.5 * openfermion.FermionOperator('0^ 2') + openfermion.FermionOperator('0 2^')
+    >>> pl_fermi_op = qchem.from_openfermion(of_fermi_op)
     >>> print(pl_ferm_op)
         0.5 * a(0) a⁺(2)
         + 1.0 * a⁺(0) a(2)
