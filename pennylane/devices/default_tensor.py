@@ -392,11 +392,7 @@ class DefaultTensor(Device):
 
         # The `quimb` circuit is a class attribute so that we can implement methods
         # that access it as soon as the device is created before running a circuit.
-        # The state is reset every time a new circuit is executed, and number of wires
-        # can be established at runtime to match the circuit if not provided.
-        self._quimb_circuit = None
-
-        self._initialize_quimb_circuit(self.wires)
+        self._quimb_circuit = self._initial_quimb_circuit(self.wires)
 
         for arg in kwargs:
             if arg not in self._device_options:
@@ -419,7 +415,9 @@ class DefaultTensor(Device):
         """Tensor complex data type."""
         return self._dtype
 
-    def _initialize_quimb_circuit(self, wires: qml.wires.Wires) -> None:
+    def _initial_quimb_circuit(
+        self, wires: qml.wires.Wires
+    ) -> Union["qtn.CircuitMPS", "qtn.Circuit"]:
         """
         Initialize the quimb circuit according to the method chosen.
 
@@ -427,6 +425,9 @@ class DefaultTensor(Device):
 
         Args:
             wires (Wires): The wires to initialize the quimb circuit.
+
+        Returns:
+            CircuitMPS or Circuit: The initial quimb instance of a circuit.
         """
 
         if not _accepted_gate_contract(self._contract, self.method):
@@ -437,7 +438,7 @@ class DefaultTensor(Device):
             )
 
         if self.method == "mps":
-            self._quimb_circuit = qtn.CircuitMPS(
+            return qtn.CircuitMPS(
                 psi0=self._initial_mps(wires),
                 max_bond=self._max_bond_dim,
                 gate_contract=self._contract,
@@ -445,7 +446,7 @@ class DefaultTensor(Device):
             )
 
         elif self.method == "tn":
-            self._quimb_circuit = qtn.Circuit(
+            return qtn.Circuit(
                 psi0=self._initial_tn(wires),
                 gate_contract=self._contract,
                 tags=[str(l) for l in wires.labels] if wires else None,
@@ -612,9 +613,10 @@ class DefaultTensor(Device):
             Tuple[TensorLike]: The results of the simulation.
         """
 
+        # The state is reset every time a new circuit is executed, and number of wires
+        # is established at runtime to match the circuit if not provided.
         wires = circuit.wires if self.wires is None else self.wires
-
-        self._initialize_quimb_circuit(wires)
+        self._quimb_circuit = self._initial_quimb_circuit(wires)
 
         for op in circuit.operations:
             self._apply_operation(op)
