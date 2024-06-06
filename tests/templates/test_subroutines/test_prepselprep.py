@@ -187,8 +187,10 @@ class TestPrepSelPrep:
         assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
     lcu1 = qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-    ops1 = [qml.simplify(qml.ops.LinearCombination([1.0], [qml.Z(2)])),
-            qml.simplify(qml.ops.LinearCombination([1.0], [qml.X(1) @ qml.X(2)]))]
+    ops1 = [
+        qml.simplify(qml.ops.LinearCombination([1.0], [qml.Z(2)])),
+        qml.simplify(qml.ops.LinearCombination([1.0], [qml.X(1) @ qml.X(2)])),
+    ]
     coeffs1 = lcu1.terms()[0]
 
     @pytest.mark.parametrize(
