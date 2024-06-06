@@ -62,10 +62,10 @@ def _validate_computational_basis_sampling(tape):
         for idx, (cb_obs, global_idx) in enumerate(
             zip(comp_basis_sampling_obs, comp_basis_indices)
         ):
-            if cb_obs.wires == empty_wires:
-                all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
-                break
             if global_idx < n_meas - n_mcms:
+                if cb_obs.wires == empty_wires:
+                    all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
+                    break
                 all_wires.append(cb_obs.wires)
             if idx == len(comp_basis_sampling_obs) - 1:
                 all_wires = qml.wires.Wires.all_wires(all_wires)
