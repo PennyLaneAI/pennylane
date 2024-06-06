@@ -40,7 +40,7 @@ _INSTANCES_TO_TEST = [
     qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
     qml.QubitStateVector([0, 1], wires=0),
     qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
-    qml.QutritChannel(np.eye(3), wires=0),
+    qml.QutritChannel([np.eye(3)], wires=0),
     qml.MultiControlledX(wires=[0, 1]),
     qml.Projector([1], 0),  # the state-vector version is already tested
     qml.SpecialUnitary([1, 1, 1], 0),
