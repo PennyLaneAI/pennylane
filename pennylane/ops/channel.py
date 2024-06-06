@@ -759,16 +759,16 @@ class QuditChannel(Channel):
         return list(kraus_matrices)
 
 
-    # The primitive will be None if jax is not installed in the environment
-    # If defined, we need to update the implementation to repack matrices
-    # See capture module for more information
-    if QuditChannel._primitive is not None:  # pylint: disable=protected-access
+# The primitive will be None if jax is not installed in the environment
+# If defined, we need to update the implementation to repack matrices
+# See capture module for more information
+if QuditChannel._primitive is not None:  # pylint: disable=protected-access
 
-        @QuditChannel._primitive.def_impl  # pylint: disable=protected-access
-        def _(*args, n_wires):
-            K_list = args[:-n_wires]
-            wires = args[-n_wires:]
-            return type.__call__(QuditChannel, K_list, wires=wires)
+    @QuditChannel._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, n_wires):
+        K_list = args[:-n_wires]
+        wires = args[-n_wires:]
+        return type.__call__(QuditChannel, K_list, wires=wires)
 
 
 class QubitChannel(QuditChannel):
