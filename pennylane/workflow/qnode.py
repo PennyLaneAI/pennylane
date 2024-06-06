@@ -1071,6 +1071,7 @@ class QNode:
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
                 mcm_config=self.execute_kwargs["mcm_config"],
+                interface=getattr(self, "interface", None),
             )
             override_shots = 1
         elif hasattr(self.device, "capabilities"):
