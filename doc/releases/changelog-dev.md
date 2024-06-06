@@ -174,6 +174,15 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
+* `MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations, and is applicable for any multi controlled unitary gate.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control unitary now includes the correct global phase.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control `GlobalPhase` has now a decomposition, i.e. relative phase on control wire.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
