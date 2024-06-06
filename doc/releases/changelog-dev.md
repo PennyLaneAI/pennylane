@@ -4,6 +4,19 @@
 
 <h3>New features since last release</h3>
 
+* `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
+  These keyword arguments can be used to configure how the device should behave when running circuits with
+  mid-circuit measurements.
+  [(#5679)](https://github.com/PennyLaneAI/pennylane/pull/5679)
+
+  * `postselect_mode="hw-like"` will indicate to devices to discard invalid shots when postselecting
+    mid-circuit measurements. Use `postselect_mode="fill-shots"` to unconditionally sample the postselected
+    value, thus making all samples valid. This is equivalent to sampling until the number of valid samples
+    matches the total number of shots.
+  * `mcm_method` will indicate which strategy to use for running circuits with mid-circuit measurements.
+    Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
+    to execute once for each shot.
+
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
@@ -33,14 +46,22 @@
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
 
+* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
+  [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
+
+* Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
+  but keeping one that validates multiple mid-circuit measurements with any allowed return
+  and interface end-to-end tests.
+  [(#5787)](https://github.com/PennyLaneAI/pennylane/pull/5787)
 
 * The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
   [(#5617)](https://github.com/PennyLaneAI/pennylane/pull/5617)
-  
+
 * The `dynamic_one_shot` transform can be compiled with `jax.jit`.
   [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
-  
+
 * When using `defer_measurements` with postselecting mid-circuit measurements, operations
   that will never be active due to the postselected state are skipped in the transformed
   quantum circuit. In addition, postselected controls are skipped, as they are evaluated
@@ -95,9 +116,9 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
-* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them 
-  consistent with the other observables. The `dtype` of the returned values when sampling these observables 
-  (e.g. `qml.sample(X(0))`) is also changed to `float`. 
+* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them
+  consistent with the other observables. The `dtype` of the returned values when sampling these observables
+  (e.g. `qml.sample(X(0))`) is also changed to `float`.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
@@ -113,8 +134,9 @@
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
   [(#5708)](https://github.com/PennyLaneAI/pennylane/pull/5708)
   [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
+  [(#5686)](https://github.com/PennyLaneAI/pennylane/pull/5686)
 
-* The `decompose` transform has an `error` kwarg to specify the type of error that should be raised, 
+* The `decompose` transform has an `error` kwarg to specify the type of error that should be raised,
   allowing error types to be more consistent with the context the `decompose` function is used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
@@ -127,6 +149,12 @@
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
+
+* `qml.ops.Conditional` now inherits from `qml.ops.SymbolicOp`, thus it inherits several useful common functionalities. Other properties such as adjoint and diagonalizing gates have been added using the `base` properties.
+  [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
+
+* New dispatches for `qml.ops.Conditional` and `qml.MeasurementValue` have been added to `qml.equal`.
+  [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
 
 * The `qml.qchem.Molecule` object is now the central object used by all qchem functions.
   [(#5571)](https://github.com/PennyLaneAI/pennylane/pull/5571)
@@ -148,13 +176,14 @@
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
-  
+
 * ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
+  [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
 
 <h3>Breaking changes 💔</h3>
 
@@ -187,7 +216,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated. 
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated.
   Instead, `qml.simplify()` can be called on the constructed operator.
   [(#5677)](https://github.com/PennyLaneAI/pennylane/pull/5677)
 
@@ -232,7 +261,7 @@
 * The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
   [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
 
-* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that 
+* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that
   returned samples of observables containing the `qml.Identity` operator.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
@@ -247,7 +276,7 @@
 
 * Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
   [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
-  
+
 * `param_shift`, `finite_diff`, `compile`, `insert`, `merge_rotations`, and `transpile` now
   all work with circuits with non-commuting measurements.
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
@@ -256,7 +285,7 @@
 * A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
 
-* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors, 
+* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors,
   multiple measurements, and parameter broadcasting.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
@@ -265,6 +294,9 @@
 
 * `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
   [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
+
+* `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
+  [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
 
 <h3>Contributors ✍️</h3>
 
