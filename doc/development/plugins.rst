@@ -1,7 +1,7 @@
 .. role:: html(raw)
    :format: html
 
-For adding a plugin that inherits from the legacy interface, see :doc:`/development/plugins_legacy`.
+For adding a plugin that inherits from the legacy interface, see :doc:`/development/legacy_plugins`.
 
 .. _plugin_overview:
 
@@ -11,7 +11,7 @@ Building a plugin
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the
 automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we discuss
 the methods and concepts involved in the device interface. For a walkthrough implementing a
-minimal device, see :doc:`/development/minimal_dev_walkthrough`
+minimal device, see :doc:`/development/minimal_dev`.
 
 Creating your device
 --------------------
