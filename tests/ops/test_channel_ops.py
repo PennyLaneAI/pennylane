@@ -927,7 +927,6 @@ class TestQubitChannel:
 
     def test_kraus_matrices_valid(self):
         """Tests that the given Kraus matrices are valid"""
-
         # check all Kraus matrices are square matrices
         K_list1 = [np.zeros((2, 2)), np.zeros((2, 3))]
         with pytest.raises(
@@ -947,7 +946,6 @@ class TestQubitChannel:
 
     def test_channel_trace_preserving(self):
         """Tests that the channel represents a trace-preserving map"""
-
         # real Kraus matrices
         K_list1 = [
             np.array([[1.0, 0.0], [0.0, 0.9486833]]),
@@ -962,10 +960,23 @@ class TestQubitChannel:
         with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
             channel.QubitChannel(K_list2 * 2, wires=0)
 
+    # pylint: disable=protected-access
+    def test_flatten(self):
+        """Test _flatten method works correctly"""
+        K_list1 = [
+            np.array([[1.0, 0.0], [0.0, 0.9486833]]),
+            np.array([[0.0, 0.31622777], [0.0, 0.0]]),
+        ]
+        qubitchannel = qml.QubitChannel(K_list1, 0)
+        data, metadata = qubitchannel._flatten()
+
+        assert len(data) == 1
+        assert np.allclose(K_list1, data)
+        assert metadata == (qml.wires.Wires(0), ())
+
     @pytest.mark.jax
     def test_jit_compatibility(self):
         """Test that QubitChannel can be jitted."""
-
         import jax
 
         dev = qml.device("default.mixed", wires=1)
@@ -988,24 +999,41 @@ class TestQutritChannel:
     def test_input_correctly_handled(self, tol):
         """Test that Kraus matrices are correctly processed"""
         K_list1 = [
-            np.array([[1.0, 0.0, 0.0],
-                    [0.0, 0.70710678, 0.0],
-                    [0.0, 0.0, 0.8660254]]),
-            np.array([[0.0, 0.70710678, 0.0],
-                    [0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0]]),
-            np.array([[0.0, 0.0, 0.5],
-                    [0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0]])
+            np.array([[1.0, 0.0, 0.0], [0.0, 0.70710678, 0.0], [0.0, 0.0, 0.8660254]]),
+            np.array([[0.0, 0.70710678, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+            np.array([[0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
         ]
         out = channel.QutritChannel(K_list1, wires=0).kraus_matrices()
 
         # verify equivalent to input matrices
         assert np.allclose(out, K_list1, atol=tol, rtol=0)
 
+    def test_input_multiple_wires(self, tol):
+        """Tests that the operator works on multiple wires"""
+        p = 0.5
+        dev1 = qml.device("default.qutrit.mixed", wires=1)
+        K_list1 = qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5)
+
+        @qml.qnode(dev1)
+        def circuit1():
+            qml.QutritChannel(K_list1, 0)
+            return qml.expval(qml.GellMann(wires=0, index=3))
+
+        dev2 = qml.device("default.qutrit.mixed", wires=2)
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.QutritChannel(K_list1, 1)
+            return qml.expval(qml.GellMann(wires=1, index=3))
+
+        result1 = circuit1()
+        result2 = circuit2()
+
+        # verify results are equivalent in both circuits
+        assert np.allclose(result1, result2, atol=tol, rtol=0)
+
     def test_kraus_matrices_valid(self):
         """Tests that the given Kraus matrices are valid"""
-
         # check all Kraus matrices are square matrices
         K_list1 = [np.zeros((3, 3)), np.zeros((3, 4))]
         with pytest.raises(
@@ -1019,26 +1047,21 @@ class TestQutritChannel:
             channel.QutritChannel(K_list2, wires=0)
 
         # check the dimension of all Kraus matrices are valid
-        K_list3 = [np.array([np.eye(3), np.eye(3), np.eye(3)]),
-                    np.array([np.eye(3), np.eye(3), np.eye(3)]),
-                    np.array([np.eye(3), np.eye(3), np.eye(3)])]
+        K_list3 = [
+            np.array([np.eye(3), np.eye(3), np.eye(3)]),
+            np.array([np.eye(3), np.eye(3), np.eye(3)]),
+            np.array([np.eye(3), np.eye(3), np.eye(3)]),
+        ]
         with pytest.raises(ValueError, match="Dimension of all Kraus matrices must be "):
             channel.QutritChannel(K_list3, wires=0)
 
     def test_channel_trace_preserving(self):
         """Tests that the channel represents a trace-preserving map"""
-
         # real Kraus matrices
         K_list1 = [
-            np.array([[1.0, 0.0, 0.0],
-                    [0.0, 0.70710678, 0.0],
-                    [0.0, 0.0, 0.8660254]]),
-            np.array([[0.0, 0.70710678, 0.0],
-                    [0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0]]),
-            np.array([[0.0, 0.0, 0.5],
-                    [0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0]])
+            np.array([[1.0, 0.0, 0.0], [0.0, 0.70710678, 0.0], [0.0, 0.0, 0.8660254]]),
+            np.array([[0.0, 0.70710678, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+            np.array([[0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
         ]
         with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
             channel.QutritChannel(K_list1 * 2, wires=0)
@@ -1048,6 +1071,29 @@ class TestQutritChannel:
         K_list2 = [np.sqrt(p) * qml.GellMann.compute_matrix(2), np.sqrt(1 - p) * np.eye(3)]
         with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
             channel.QutritChannel(K_list2 * 2, wires=0)
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
+    def test_grad(self, diff_method, tol):
+        """Tests that the gradient of a parameterized circuit with QutritChannel is correct"""
+        K_list1 = [
+            np.array([[1, 0, 0], [0, 0.70710678, 0], [0, 0, 0.8660254]]),
+            np.array([[0, 0.70710678, 0], [0, 0, 0], [0, 0, 0]]),
+            np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
+        ]
+        dev = qml.device("default.qutrit.mixed", wires=1)
+        p = pnp.array(0.5, requires_grad=True)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(param):
+            qml.TRX(param, wires=0)
+            qml.QutritChannel(K_list1, 0)
+            return qml.expval(qml.GellMann(wires=0, index=3))
+
+        gradient = qml.grad(circuit)(p)
+        # use finite diff to numerically compute gradient
+        expected = 1000 * (circuit(0.5 + 0.001 / 2) - circuit(0.5 - 0.001 / 2))
+
+        assert np.allclose(gradient, expected, atol=tol, rtol=0)
 
 
 class TestThermalRelaxationError:

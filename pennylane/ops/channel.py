@@ -713,6 +713,7 @@ class QuditChannel(Channel):
 
     def __init__(self, K_list, dim=2, wires=None, id=None):
         super().__init__(*K_list, wires=wires, id=id)
+
         # check all Kraus matrices are square matrices
         if any(K.shape[0] != K.shape[1] for K in K_list):
             raise ValueError(
@@ -752,7 +753,7 @@ class QuditChannel(Channel):
         """
         return list(kraus_matrices)
 
-    
+
 class QubitChannel(QuditChannel):
     r"""
     Apply an arbitrary fixed quantum channel on a qubit device.
@@ -773,9 +774,9 @@ class QubitChannel(QuditChannel):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
         id (str or None): String representing the operation (optional)
     """
-    
+
     def __init__(self, K_list, wires=None, id=None):
-                 super().__init__(K_list, dim=2, wires=wires, id=id)
+        super().__init__(K_list, dim=2, wires=wires, id=id)
 
 
 class QutritChannel(QuditChannel):
@@ -800,7 +801,7 @@ class QutritChannel(QuditChannel):
     """
 
     def __init__(self, K_list, wires=None, id=None):
-                 super().__init__(K_list, dim=3, wires=wires, id=id)
+        super().__init__(K_list, dim=3, wires=wires, id=id)
 
 
 class ThermalRelaxationError(Channel):
