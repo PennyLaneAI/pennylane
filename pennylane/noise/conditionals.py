@@ -22,6 +22,8 @@ from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
+from pennylane.ops import Controlled
+from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
 
 # pylint: disable = unnecessary-lambda, too-few-public-methods
@@ -189,9 +191,12 @@ class OpIn(BooleanFn):
                     c in self._cops
                     if isclass(x) or not getattr(x, "arithmetic_depth", 0)
                     else any(
-                        _check_arithmetic_ops(op, x)
-                        for op in self._cond
-                        if getattr(op, "arithmetic_depth", 0)
+                        (
+                            _check_arithmetic_ops(op, x)
+                            if isinstance(op, cp) and getattr(op, "arithmetic_depth", 0)
+                            else cp == _get_ops(x)[0]
+                        )
+                        for op, cp in zip(self._cond, self._cops)
                     )
                 )
                 for x, c in zip(xs, cs)
@@ -271,6 +276,16 @@ def _get_ops(val):
 def _check_arithmetic_ops(op1, op2):
     """Helper method for comparing two arithmetic operators based on type check of the bases"""
     # pylint: disable = unnecessary-lambda-assignment
+
+    if isinstance(op1, (Controlled, ControlledSequence)) or isinstance(
+        op2, (Controlled, ControlledSequence)
+    ):
+        return (
+            isinstance(op1, type(op2))
+            and op1.arithmetic_depth == op2.arithmetic_depth
+            and _get_ops(op1.base) == _get_ops(op2.base)
+        )
+
     lc_cop = lambda op: qml.ops.LinearCombination(*op.terms())
 
     if isinstance(op1, qml.ops.Exp) or isinstance(op2, qml.ops.Exp):
