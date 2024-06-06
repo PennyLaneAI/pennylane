@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import math
 from pennylane.devices import DefaultQutritMixed, ExecutionConfig
+from pennylane.measurements import ExpectationMP, VarianceMP
 
 np.random.seed(0)
 
@@ -1289,9 +1290,19 @@ class TestIntegration:
     "m_error_gammas,m_error_probs",
     [[(0.1, 0.2, 0.15), None], [None, (0.1, 0.12, 0.15)], [(0.1, 0.2, 0.15), (0.1, 0.12, 0.15)]],
 )
-class TestMeasurementError:
+class TestMeasurementError:  # TODO:------------------------------------------------------------------------------------
+    """TODO"""
     expected_state = None
     num_wires = 3
+
+    @staticmethod
+    def get_circuit(measurement_process):
+        """TODO"""
+        def circuit():
+            qml.TShift(2)
+            qml.Identity(0)
+            return measurement_process
+        return circuit
 
     @classmethod
     def matrix_over_wires(cls, matrix, wire):
@@ -1317,17 +1328,17 @@ class TestMeasurementError:
         return state
 
     @classmethod
-    def get_expected_probs(cls, gammas, probs):
+    def get_expected_probs(cls, gammas, probs, obs):
         """TODO"""
         state = np.copy(cls.expected_state)
         measured_state = cls.get_state_with_measurement_error(state, gammas, probs)
         return math.real(math.diag(measured_state))
 
     @classmethod
-    def get_expected_expval(cls, gammas, probs):
+    def get_expected_expval(cls, gammas, probs, obs):
         """TODO"""
         state = np.copy(cls.expected_state)
-        state = None  # TODO
+        state = apply_diagonalizing_gates()
         measured_state = cls.get_state_with_measurement_error(state, gammas, probs)
         return math.real(math.diag(measured_state))
 
@@ -1347,7 +1358,7 @@ class TestMeasurementError:
         math.real(math.diag(measured_state))
 
     @pytest.mark.parameterize(
-        "measurement,exp_fun",
+        "mp,exp_fun",
         [
             (qml.probs(), get_expected_probs),
             (qml.expval(), get_expected_expval),
@@ -1355,42 +1366,78 @@ class TestMeasurementError:
             (qml.var(), get_expected_var),
         ],
     )
-    def test_measurement_error_analytic(self, m_error_gammas, m_error_probs, measurement, exp_fun):
+    def test_measurement_error_analytic(self, m_error_gammas, m_error_probs, mp, exp_fun):
         """TODO"""
         dev = qml.device(
             "default.qutrit.mixed",
             damping_measurement_gammas=m_error_gammas,
             trit_flip_measurement_probs=m_error_probs,
         )
+        circuit = qml.QNode(self.get_circuit(mp), device=dev)
 
-        @qml.qnode(dev, interface=None)
-        def circuit():
-            qml.TShift(2)
-            qml.Identity(0)
-            return measurement
+        if isinstance(mp, ExpectationMP) or isinstance(mp, VarianceMP):
+            expected_res = [exp_fun(m_error_gammas, m_error_probs, obs) for obs in mp.obs]
+        else:
+            expected_res = exp_fun(m_error_gammas, m_error_probs)
+        assert np.allclose(circuit(), expected_res)
 
-        assert np.allclose(circuit(), exp_fun(m_error_gammas, m_error_probs))
-
-    @pytest.mark.parameterize(
-        "measurement,exp_fun",
-        [
+    shots_measurements = [
             (qml.expval(), get_expected_expval),
             (qml.var(), get_expected_var),
             (qml.counts(), get_expected_counts),
-        ],
-    )
-    def test_measurement_error_shots(self, m_error_gammas, m_error_probs, measurement, exp_fun):
-        """TODO"""
-        pass
+        ]
 
+    shots_data = [
+        [10000, 10000],
+        [(10000, 2)],
+        [10000, 20000],
+        [(10000, 2), 20000],
+        [(10000, 3), 20000, (30000, 2)],
+    ]
+    @pytest.mark.parameterize("shots", shots_data)
     @pytest.mark.parameterize(
-        "measurement,exp_fun",
-        [
-            (qml.expval(), get_expected_expval),
-            (qml.var(), get_expected_var),
-            (qml.counts(), get_expected_counts),
-        ],
+        "mp,exp_fun",
+        shots_measurements,
     )
-    def test_measurement_error_jax_shots(self, m_error_gammas, m_error_probs, measurement, exp_fun):
+    def test_measurement_error_shots(self, m_error_gammas, m_error_probs, mp, exp_fun, shots):
         """TODO"""
-        pass
+        shots = qml.measurements.Shots(shots)
+        dev = qml.device(
+            "default.qutrit.mixed",
+            damping_measurement_gammas=m_error_gammas,
+            trit_flip_measurement_probs=m_error_probs,
+        )
+        circuit = qml.QNode(self.get_circuit(mp), device=dev, shots=shots)
+
+        if isinstance(mp, ExpectationMP) or isinstance(mp, VarianceMP):
+            expected_res = [exp_fun(m_error_gammas, m_error_probs, obs) for obs in mp.obs]
+        else:
+            expected_res = exp_fun(m_error_gammas, m_error_probs)
+        # TODO deal with outputs
+        assert np.allclose(circuit(), expected_res, atol=self.atol)
+
+    @pytest.mark.jax
+    @pytest.mark.parameterize("shots", shots_data)
+    @pytest.mark.parameterize(
+        "mp,exp_fun",
+        shots_measurements,
+    )
+    def test_measurement_error_jax_shots(self, m_error_gammas, m_error_probs, mp, exp_fun, shots):
+        """TODO"""
+        import jax
+
+        shots = qml.measurements.Shots(shots)
+        dev = qml.device(
+            "default.qutrit.mixed",
+            seed=jax.random.PRNGKey(123),
+            damping_measurement_gammas=m_error_gammas,
+            trit_flip_measurement_probs=m_error_probs,
+        )
+        circuit = qml.QNode(self.get_circuit(mp), device=dev, shots=shots)
+
+        if isinstance(mp, ExpectationMP) or isinstance(mp, VarianceMP):
+            expected_res = [exp_fun(m_error_gammas, m_error_probs, obs) for obs in mp.obs]
+        else:
+            expected_res = exp_fun(m_error_gammas, m_error_probs)
+        # TODO deal with outputs
+        assert np.allclose(circuit(), expected_res, atol=self.atol)
