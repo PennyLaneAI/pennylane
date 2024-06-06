@@ -203,7 +203,7 @@ class UCCSD(Operation):
             raise ValueError(
                 f"Weights tensor must be of shape {expected_shape_repeats} or {expected_shape_1}; got {shape}."
             )
-        elif n_repeats != 1 and shape != expected_shape_repeats:
+        if n_repeats != 1 and shape != expected_shape_repeats:
             raise ValueError(
                 f"Weights tensor must be of shape {expected_shape_repeats}; got {shape}."
             )
