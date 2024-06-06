@@ -7,7 +7,8 @@ Overview
 --------
 
 In PennyLane, noise models are defined via a mapping of conditions defined as ``Conditionals``
-to functions specified as ``Callables``, along with some additional noise-related metadata.
+to functions specified as ``Callables``, along with some additional noise-related metadata and
+can be attached to a circuit or device via :func:`add_noise <pennylane.transforms.add_noise>`:
 
 ::
 
@@ -17,6 +18,16 @@ Each ``Conditional`` evaluates the gate operations in the quantum circuit based 
 condition of its attributes (e.g., type, parameters, wires, etc.) and use the corresponding
 ``Callable`` to apply the noise operations, using the user-provided metadata (e.g., hardware
 topologies or relaxation times), whenever the condition results true.
+
+Noise Transform
+^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.transforms
+
+.. autosummary::
+    :toctree: api
+
+    ~add_noise
 
 Noise Model
 ^^^^^^^^^^^

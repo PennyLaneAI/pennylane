@@ -483,7 +483,7 @@ def partial_wires(operation, *args, **kwargs):
     op_name = f"{operation.__name__}("
     for key, val in op.keywords.items():
         op_name += f"{key}={val}, "
-    op_name = op_name[:-2] + ")"
+    op_name = op_name[: -2 if len(op.keywords) else -1] + ")"
 
     @_rename(op_name)
     def _partial_op(wires, **model_kwargs):  # pylint: disable = unused-argument
