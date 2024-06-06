@@ -186,9 +186,10 @@ class TestPrepSelPrep:
 
         assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
-    ops1 = lcu1.terms()[1]
+    lcu1 = qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
+    ops1 = [qml.simplify(qml.ops.LinearCombination([1.0], [qml.Z(2)])),
+            qml.simplify(qml.ops.LinearCombination([1.0], [qml.X(1) @ qml.X(2)]))]
     coeffs1 = lcu1.terms()[0]
-    normalized1 = qml.math.sqrt(coeffs1) / qml.math.norm(qml.math.sqrt(coeffs1))
 
     @pytest.mark.parametrize(
         ("lcu", "control", "results"),
@@ -197,29 +198,10 @@ class TestPrepSelPrep:
                 lcu1,
                 [0],
                 [
-                    qml.AmplitudeEmbedding(normalized1, normalize=True, pad_with=0, wires=[0]),
-                    qml.Select(
-                        [
-                            qml.ops.QubitUnitary(
-                                qml.math.array([[0.0 + 0j, 0.0 + 0.0j], [0.0 + 0.0j, -1.0 + 0.0j]]),
-                                wires=1,
-                            ),
-                            qml.ops.QubitUnitary(
-                                qml.math.array(
-                                    [
-                                        [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j],
-                                        [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j],
-                                        [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                                        [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                                    ]
-                                ),
-                                wires=[1, 2],
-                            ),
-                        ],
-                        control=[0],
-                    ),
+                    qml.AmplitudeEmbedding(coeffs1, normalize=True, pad_with=0, wires=[0]),
+                    qml.Select(ops1, control=[0]),
                     qml.ops.Adjoint(
-                        qml.AmplitudeEmbedding(normalized1, normalize=True, pad_with=0, wires=[0])
+                        qml.AmplitudeEmbedding(coeffs1, normalize=True, pad_with=0, wires=[0])
                     ),
                 ],
             )
@@ -233,7 +215,8 @@ class TestPrepSelPrep:
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
             assert len(val.parameters) == len(results[idx].parameters)
-            assert all([a == b] for a, b in zip(val.parameters, results[idx].parameters))
+            for a, b in zip(val.parameters, results[idx].parameters):
+                assert (a == b).all()
 
     def test_preprocessed_queing_ops(self):
         """Test that preprocessing the LCU queues the same operations"""
