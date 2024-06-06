@@ -41,7 +41,7 @@ def add_noise(tape, noise_model, level=None):
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        Transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         ValueError: argument ``noise_model`` is not an instance of :class:`NoiseModel`.
@@ -213,7 +213,7 @@ def add_noise(tape, noise_model, level=None):
         >>> qml.transforms.add_noise(circuit, noise_model, level=None).transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
 
-        Other, acceptable values for the level are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will alow addition
+        Other, acceptable values for the level are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
         to an empty transform program, `"user"` will allow addition at the end of user specified transforms, `"device"` will allow addition at the
         end of device-specific transforms, and `"gradient"` will allow addition at the end of transform that expands trainable operations. For example:
 
@@ -224,8 +224,8 @@ def add_noise(tape, noise_model, level=None):
         >>> qml.transforms.add_noise(circuit, noise_model, level="device").transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise)
 
-        Finally, more precise control over exctraction of the transform program at the end of which the transform is to be inserted can be achieved
-        by specifying an integer or slice for indexing. For example:
+        Finally, more precise control over the insertion of the transform can be achieved by specifying
+        an integer or slice for indexing for extracting the transform program. For example, one can do:
 
         >>> qml.transforms.add_noise(circuit, noise_model, level=2).transform_program
         TransformProgram(cancel_inverses, merge_rotations, add_noise)
@@ -271,14 +271,9 @@ def add_noise(tape, noise_model, level=None):
         new_operations.extend(curr_ops)
 
     new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+    post_processing_fn = qml.devices.preprocess.null_postprocessing
 
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
-
-    return [new_tape], null_postprocessing
+    return [new_tape], post_processing_fn
 
 
 def _check_queue_op(operation, noise_func, metadata):

@@ -324,8 +324,6 @@ def test_add_noise_template():
 
     w1 = np.random.random(2)
     w2 = np.random.random((1, 1, 2))
-    f1(w1, w2)
-    print(f1.tape.operations)
 
     assert np.allclose(f1(w1, w2), f2(w1, w2))
 
@@ -384,7 +382,7 @@ def test_add_noise_with_non_qwc_obs_and_mid_meas():
     ],
 )
 def test_add_noise_level(level1, level2):
-    """Test that ops are inserted correctly into a decomposed template"""
+    """Test that add_noise can be inserted to correct level in the TransformProgram"""
     dev = qml.device("default.mixed", wires=2)
 
     @qml.metric_tensor
@@ -415,3 +413,46 @@ def test_add_noise_level(level1, level2):
         if t1.transform.__name__ == t2.transform.__name__ == "expand_fn":
             continue
         assert t1 == t2
+
+
+@pytest.mark.parametrize(
+    "level1, level2",
+    [
+        ("top", 0),
+        (0, slice(0, 0)),
+        ("user", 4),
+        ("user", slice(0, 4)),
+        (None, slice(0, None)),
+        (-1, slice(0, -1)),
+        ("device", slice(0, -1)),
+    ],
+)
+def test_add_noise_level_with_final(level1, level2):
+    """Test that add_noise can be inserted in the TransformProgram with a final transform"""
+    dev = qml.device("default.mixed", wires=2)
+
+    @qml.metric_tensor
+    @qml.transforms.undo_swaps
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses
+    @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+    def f(w, x, y, z):
+        qml.RX(w, wires=0)
+        qml.RY(x, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=0)
+        qml.RX(z, wires=1)
+        return qml.expval(qml.Z(0) @ qml.Z(1))
+
+    fcond = qml.noise.op_eq(qml.RX)
+    fcall = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+    noise_model = qml.NoiseModel({fcond: fcall})
+
+    noisy_qnode = add_noise(f, noise_model=noise_model)
+
+    transform_level1 = qml.workflow.get_transform_program(f)
+    transform_level2 = qml.workflow.get_transform_program(noisy_qnode)
+
+    assert len(transform_level1) == len(transform_level2) - 1
+    assert transform_level2[4].transform == add_noise.transform
+    assert transform_level2[-1].transform == qml.metric_tensor.transform
