@@ -587,7 +587,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support conditional
         # operations natively
-        with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
+        with pytest.raises(DeviceError, match="Gate Conditional\\(RY\\) not supported on device"):
             dev.check_validity(tape.operations, tape.observables)
 
     @pytest.mark.parametrize(

@@ -201,6 +201,12 @@ class Snapshot(Operation):
     num_params = 0
     grad_method = None
 
+    @classmethod
+    def _primitive_bind_call(cls, tag=None, measurement=None):
+        if measurement is None:
+            return cls._primitive.bind(measurement=measurement, tag=tag)
+        return cls._primitive.bind(measurement, tag=tag)
+
     def __init__(self, tag=None, measurement=None):
         self.tag = tag
         if measurement:
@@ -212,17 +218,18 @@ class Snapshot(Operation):
                     f"an instance of {qml.measurements.StateMeasurement}"
                 )
         self.hyperparameters["measurement"] = measurement
+        self.hyperparameters["tag"] = tag
         super().__init__(wires=[])
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"
 
     def _flatten(self):
-        return (), (self.tag, self.hyperparameters["measurement"])
+        return (self.hyperparameters["measurement"],), (self.tag,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(tag=metadata[0], measurement=metadata[1])
+        return cls(tag=metadata[0], measurement=data[0])
 
     # pylint: disable=W0613
     @staticmethod
@@ -234,3 +241,13 @@ class Snapshot(Operation):
 
     def adjoint(self):
         return Snapshot(tag=self.tag)
+
+
+# Since measurements are captured as variables in plxpr with the capture module,
+# the measurement is treated as a traceable argument.
+# This step is mandatory for fixing the order of arguments overwritten by ``Snapshot._primitive_bind_call``.
+if Snapshot._primitive:  # pylint: disable=protected-access
+
+    @Snapshot._primitive.def_impl  # pylint: disable=protected-access
+    def _(measurement, tag=None):
+        return type.__call__(Snapshot, tag=tag, measurement=measurement)
