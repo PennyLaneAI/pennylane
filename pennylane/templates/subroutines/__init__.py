@@ -45,4 +45,3 @@ from .amplitude_amplification import AmplitudeAmplification
 from .qubitization import Qubitization
 from .prepselprep import PrepSelPrep
 from .qrom import QROM
-
