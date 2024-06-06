@@ -14,9 +14,10 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
-import copy
+
 import pdb
 import sys
+import copy
 from contextlib import contextmanager
 
 import pennylane as qml
