@@ -917,6 +917,7 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
             qml.matrix(o).astype(device._dtype), *o.wires, parametrize=None
         )
     device._quimb_circuit._psi = cospsi - 1j * qml.math.sin(0.5 * theta) * device._quimb_circuit.psi
+    device._quimb_circuit._psi.compress(max_bond=device._max_bond_dim, cutoff=device._cutoff)
 
 
 @apply_operation_core.register
