@@ -104,7 +104,7 @@ def null_postprocessing(results):
 @transform
 def defer_measurements(
     tape: QuantumTape, reduce_postselected: bool = True, **kwargs
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[Sequence[QuantumTape], Callable]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -406,11 +406,11 @@ def _add_control_gate(op, control_wires, reduce_postselected):
         if value:
             # Empty sampling branches can occur when using _postselected_items
             if branch == ():
-                new_ops.append(op.then_op)
+                new_ops.append(op.base)
                 continue
             qscript = qml.tape.make_qscript(
                 ctrl(
-                    lambda: qml.apply(op.then_op),  # pylint: disable=cell-var-from-loop
+                    lambda: qml.apply(op.base),  # pylint: disable=cell-var-from-loop
                     control=Wires(control),
                     control_values=branch,
                 )

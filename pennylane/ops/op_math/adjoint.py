@@ -293,7 +293,11 @@ class Adjoint(SymbolicOp):
 
     def label(self, decimals=None, base_label=None, cache=None):
         base_label = self.base.label(decimals, base_label, cache=cache)
-        return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
+        return (
+            f"({base_label})†"
+            if self.base.arithmetic_depth > 0 and len(base_label) > 1
+            else f"{base_label}†"
+        )
 
     def matrix(self, wire_order=None):
         if isinstance(self.base, qml.ops.Hamiltonian):

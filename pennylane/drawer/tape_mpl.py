@@ -114,7 +114,7 @@ def _(op: ops.Toffoli, drawer, layer, _):
 
 @_add_operation_to_drawer.register
 def _(op: ops.MultiControlledX, drawer, layer, _):
-    drawer.CNOT(layer, op.active_wires, control_values=op.control_values)
+    drawer.CNOT(layer, op.wires, control_values=op.control_values)
 
 
 @_add_operation_to_drawer.register
@@ -167,7 +167,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
     drawer.box_gate(
         layer,
         list(op.wires),
-        op.then_op.label(decimals=config.decimals),
+        op.base.label(decimals=config.decimals),
         box_options={"zorder": 4},
         text_options={"zorder": 5},
     )

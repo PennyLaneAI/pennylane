@@ -20,6 +20,7 @@ import copy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation
+from pennylane.wires import Wires
 
 
 def _positive_coeffs_hamiltonian(hamiltonian):
@@ -91,6 +92,12 @@ class Qubitization(Operation):
         eigenvalue: 0.7
     """
 
+    grad_method = None
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     def __init__(self, hamiltonian, control, id=None):
         wires = hamiltonian.wires + qml.wires.Wires(control)
 
@@ -99,20 +106,16 @@ class Qubitization(Operation):
             "control": qml.wires.Wires(control),
         }
 
-        super().__init__(wires=wires, id=id)
+        super().__init__(*hamiltonian.data, wires=wires, id=id)
 
     def _flatten(self):
         data = (self.hyperparameters["hamiltonian"],)
-        metadata = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "hamiltonian"
-        )
+        metadata = tuple(item for item in self.hyperparameters.items() if item[0] != "hamiltonian")
         return data, metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        hamiltonian = data[0]
-        hyperparams_dict = dict(metadata)
-        return cls(hamiltonian, **hyperparams_dict)
+        return cls(*data, **dict(metadata))
 
     def __copy__(self):
 
@@ -129,6 +132,18 @@ class Qubitization(Operation):
                 setattr(clone, attr, value)
 
         return clone
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(w, w) for w in self.wires])
+        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
+            new_op._hyperparameters["hamiltonian"], wire_map
+        )
+        new_op._hyperparameters["control"] = Wires(
+            [wire_map.get(w, w) for w in self._hyperparameters["control"]]
+        )
+        return new_op
 
     @staticmethod
     def compute_decomposition(*_, **kwargs):  # pylint: disable=arguments-differ

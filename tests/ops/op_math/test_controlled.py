@@ -132,7 +132,7 @@ class TestControlledInit:
         assert op.base is self.temp_op
         assert op.hyperparameters["base"] is self.temp_op
 
-        assert op.wires == Wires((0, 1, "a", "aux"))
+        assert op.wires == Wires((0, 1, "a"))
 
         assert op.control_wires == Wires((0, 1))
         assert op.hyperparameters["control_wires"] == Wires((0, 1))
@@ -151,7 +151,7 @@ class TestControlledInit:
         assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert op.data == ()
 
-        assert op.num_wires == 4
+        assert op.num_wires == 3
 
     def test_default_control_values(self):
         """Test assignment of default control_values."""
@@ -355,7 +355,7 @@ class TestControlledProperties:
         base = qml.IsingXX(1.234, wires=(0, 1))
         op = Controlled(base, (3, 4), work_wires="aux")
 
-        assert op.wires == Wires((3, 4, 0, 1, "aux"))
+        assert op.wires == Wires((3, 4, 0, 1))
 
         op = op.map_wires(wire_map={3: "a", 4: "b", 0: "c", 1: "d", "aux": "extra"})
 
@@ -740,7 +740,7 @@ class TestMatrix:
             work_wires="aux",
         )
         mat = op.matrix()
-        assert mat.shape == (8, 8)
+        assert mat.shape == (4, 4)
 
     def test_wire_order(self):
         """Test that the ``wire_order`` keyword argument alters the matrix as expected."""

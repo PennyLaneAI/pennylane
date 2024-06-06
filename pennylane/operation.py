@@ -723,7 +723,6 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
-
         iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
 
         # process wires so that we can handle them either as a final argument or as a keyword argument.
@@ -2092,6 +2091,10 @@ class Tensor(Observable):
     def _unflatten(cls, data, _):
         return cls(*data)
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args)
+
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
         self.obs: List[Observable] = []
@@ -2319,12 +2322,14 @@ class Tensor(Observable):
             for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
-                    self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))
+                    self._eigvals_cache = qml.math.kron(
+                        self._eigvals_cache, pauli_eigs(len(list(g)))
+                    )
                 else:
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
+                        self._eigvals_cache = qml.math.kron(self._eigvals_cache, ns_ob.eigvals())
 
         return self._eigvals_cache
 
@@ -3015,7 +3020,7 @@ def enable_new_opmath(warn=True):
     """
     if warn:
         warnings.warn(
-            "Re-enabling the new Operator arithmetic system after disabling it is not advised."
+            "Re-enabling the new Operator arithmetic system after disabling it is not advised. "
             "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
             UserWarning,
         )
@@ -3042,8 +3047,8 @@ def disable_new_opmath(warn=True):
     """
     if warn:
         warnings.warn(
-            "Disabling the new Operator arithmetic system for legacy support."
-            "If you need help troubleshooting your code, please visit"
+            "Disabling the new Operator arithmetic system for legacy support. "
+            "If you need help troubleshooting your code, please visit "
             "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
             UserWarning,
         )

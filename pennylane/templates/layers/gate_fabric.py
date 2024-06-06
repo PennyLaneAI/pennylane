@@ -281,7 +281,7 @@ class GateFabric(Operation):
 
         if n_wires < 4:
             raise ValueError(
-                f"This template requires the number of qubits to be greater than four; got 'n_wires' = {n_wires}"
+                f"This template requires the number of qubits to be at least four; got 'n_wires' = {n_wires}"
             )
 
         if n_wires % 2:
