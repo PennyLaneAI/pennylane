@@ -35,7 +35,7 @@ class Conditional(SymbolicOp):
     instead, use the :func:`qml.cond <.cond>` function.
 
     The ``Conditional`` class is a container class that defines an operation
-    that should by applied relative to a single measurement value.
+    that should be applied relative to a single measurement value.
 
     Support for executing ``Conditional`` operations is device-dependent. If a
     device doesn't support mid-circuit measurements natively, then the QNode
@@ -65,7 +65,7 @@ class Conditional(SymbolicOp):
 
     @property
     def meas_val(self):
-        "the measurement outcome value to consider from `expr` argument"
+        """the measurement outcome value to consider from `expr` argument"""
         return self.hyperparameters["meas_val"]
 
     @property
