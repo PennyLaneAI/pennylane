@@ -28,8 +28,8 @@ from pennylane.transforms.core import (
 from pennylane.transforms.core.transform_program import (
     _apply_postprocessing_stack,
     _batch_postprocessing,
-    null_postprocessing,
     _prune_dynamic_transform,
+    null_postprocessing,
 )
 from pennylane.typing import Result, ResultBatch
 
