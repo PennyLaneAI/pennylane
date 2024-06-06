@@ -205,8 +205,8 @@ class DefaultTensor(Device):
             For details, see the `quimb's tensor_core documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_network_gate_inds>`_.
             Default is ``"auto-split-gate"``.
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
-            For more information on available optimizers, see the
-            `quimb's local_expectation documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
+            For more information on the optimizer options accepted by ``quimb``, see the
+            `quimb's tensor_contract documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_contract>`_.
             Default is ``"auto-hq"``
         local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
             For a complete list of available simplification options, see the
@@ -259,7 +259,11 @@ class DefaultTensor(Device):
                 theta = 0.5
                 phi = 0.1
                 num_qubits = 50
-                device_kwargs_mps = {"max_bond_dim": 100, "cutoff": np.finfo(np.complex128).eps, "contract": "auto-mps"}
+                device_kwargs_mps = {
+                    "max_bond_dim": 100,
+                    "cutoff": np.finfo(np.complex128).eps,
+                    "contract": "auto-mps",
+                }
 
                 dev = qml.device("default.tensor", wires=num_qubits, method="mps", **device_kwargs_mps)
 
@@ -292,8 +296,8 @@ class DefaultTensor(Device):
             We can also simulate quantum circuits using the Tensor Network (TN) method. This can be particularly useful for circuits that build up entanglement.
             The following example shows how to execute a quantum circuit with the TN method and configurable depth using ``default.tensor``.
 
-            We set the contraction technique to ``"auto-split-gate"``. With this option, each gate is added 'lazily' to the tensor network and nothing is contracted.
-            However, the gate is automatically split if this results in a rank reduction.
+            We set the contraction technique to ``"auto-split-gate"``. With this option, each gate is lazily added to the tensor network
+            and nothing is initially contracted, but the gate is automatically split if this results in a rank reduction.
 
 
             .. code-block:: python
