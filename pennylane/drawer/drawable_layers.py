@@ -95,7 +95,7 @@ def _get_op_occupied_wires(op, wire_map, bit_map):
         return {mapped_wire}
 
     if isinstance(op, Conditional):
-        mapped_wires = [wire_map[wire] for wire in op.then_op.wires]
+        mapped_wires = [wire_map[wire] for wire in op.base.wires]
         min_wire = min(mapped_wires)
         max_wire = max(wire_map.values())
         return set(range(min_wire, max_wire + 1))
