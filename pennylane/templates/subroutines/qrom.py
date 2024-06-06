@@ -90,14 +90,14 @@ class QROM(Operation):
 
         The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
         Let :math:`k` be the number of work wires. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
-        Following the idea in `arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__, auxiliary qubits can be used to
+        Following the idea in [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__], auxiliary qubits can be used to
         load more than one bitstring in parallel . Let :math:`\lambda` be
         the number of bitstrings we want to store in parallel, assumed to be a power of :math:`2`.
         Then, :math:`k = l \cdot (\lambda-1)` work wires are needed,
         where :math:`l` is the length of the bitstrings.
 
-        The QROM template has two variants. The first one (``clean = False``) is based on `arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__ that alterates the state in the ``work_wires``.
-        The second one (``clean = True``), based on `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, solves that issue by
+        The QROM template has two variants. The first one (``clean = False``) is based on [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__] that alterates the state in the ``work_wires``.
+        The second one (``clean = True``), based on [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__], solves that issue by
         returning ``work_wires`` to their initial state. This technique can be applied when the ``work_wires`` are not
         initialized to zero.
 
