@@ -46,7 +46,7 @@ _INSTANCES_TO_TEST = [
             np.array([[0, 0.70710678, 0], [0, 0, 0], [0, 0, 0]]),
             np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
         ],
-        wires=0,
+        wires=0
     ),
     qml.MultiControlledX(wires=[0, 1]),
     qml.Projector([1], 0),  # the state-vector version is already tested
