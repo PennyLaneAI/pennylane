@@ -170,8 +170,8 @@
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
 
-* `qml.QuditChannel` has been created as a parent class to generalize `qml.QubitChannel` and `qml.QutritChannel` has also been introduced as a subclass of this parent class to operate on `default.qutrit.mixed` devices.
-  [(#5649)](https://github.com/PennyLaneAI/pennylane/issues/5649)
+* `qml.QuditChannel` has been created to generalize `qml.QubitChannel` and `qml.QutritChannel` has been introduced to operate on `default.qutrit.mixed` devices.
+  [(#5807)](https://github.com/PennyLaneAI/pennylane/pull/5807)
 
 <h3>Breaking changes 💔</h3>
 
