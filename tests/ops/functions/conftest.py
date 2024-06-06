@@ -30,9 +30,9 @@ from pennylane.operation import (
     Operator,
     Tensor,
 )
+from pennylane.ops.channel import QuditChannel
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
-from pennylane.ops.channel import QuditChannel
 
 _INSTANCES_TO_TEST = [
     qml.sum(qml.PauliX(0), qml.PauliZ(0)),

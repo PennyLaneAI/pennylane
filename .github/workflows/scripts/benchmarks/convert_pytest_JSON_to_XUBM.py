@@ -2,7 +2,10 @@
 This module includes functionality to convert the provided pytest-benchmark JSON file to
 JSON-XUBM (XanadU BenchMarks) format.
 """
+
 import argparse, json, os, sys
+
+
 ########################################################################
 # Parsing arguments
 ########################################################################
@@ -43,6 +46,7 @@ def parse_args():
 
     return parser.parse_args()
 
+
 def create_benchmark_XUBM(stored_data, data, args):
     """This function converts the JSON file provided by pytest-benchmark to the JSON-XUBM (XanadU BenchMark) format.
 
@@ -54,7 +58,9 @@ def create_benchmark_XUBM(stored_data, data, args):
     Returns:
         JSON-XUBM: JSON data
     """
-    commit_reference = args.github_reference if (args.github_reference != "") else data["commit_info"]["branch"]
+    commit_reference = (
+        args.github_reference if (args.github_reference != "") else data["commit_info"]["branch"]
+    )
     if commit_reference not in stored_data:
         stored_data[commit_reference] = {}
     else:
@@ -64,7 +70,9 @@ def create_benchmark_XUBM(stored_data, data, args):
     hash_commit = hash(data["commit_info"]["time"]) + hash(commit_reference)
     for benchmark in data["benchmarks"]:
         benchmark_xubm = {}
-        benchmark_xubm["uid"] = hash_commit + hash(benchmark["fullname"]) + hash(json.dumps(benchmark["params"]))
+        benchmark_xubm["uid"] = (
+            hash_commit + hash(benchmark["fullname"]) + hash(json.dumps(benchmark["params"]))
+        )
         benchmark_xubm["date"] = data["commit_info"]["time"]
         benchmark_xubm["fullname"] = benchmark["fullname"]
         benchmark_xubm["gitID"] = data["commit_info"]["id"]
@@ -81,24 +89,25 @@ def create_benchmark_XUBM(stored_data, data, args):
         stored_data[commit_reference][benchmark["name"]] = benchmark_xubm
     return stored_data
 
+
 if __name__ == "__main__":
     parsed_args = parse_args()
 
     if os.stat(parsed_args.filename).st_size == 0:
-        print(parsed_args.filename+" is empty. Interrupting program.")
+        print(parsed_args.filename + " is empty. Interrupting program.")
         sys.exit(0)
 
-    with open(parsed_args.filename, 'r', encoding="utf-8") as file:
+    with open(parsed_args.filename, "r", encoding="utf-8") as file:
         pytest_data = json.load(file)
 
     # Check if the JSON-XUBM file already exist, or if we'll start with and empty dictionary.
     if os.path.isfile(parsed_args.filename_XUBM):
-        with open(parsed_args.filename_XUBM, 'r', encoding="utf-8") as file:
+        with open(parsed_args.filename_XUBM, "r", encoding="utf-8") as file:
             xubm_database = json.load(file)
     else:
         xubm_database = {}
 
     XUBM_data = create_benchmark_XUBM(xubm_database, pytest_data, parsed_args)
 
-    with open(parsed_args.filename_XUBM, 'w', encoding="utf-8") as file:
+    with open(parsed_args.filename_XUBM, "w", encoding="utf-8") as file:
         json.dump(XUBM_data, fp=file)
