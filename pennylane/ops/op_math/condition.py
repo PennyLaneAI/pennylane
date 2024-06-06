@@ -55,6 +55,11 @@ class Conditional(SymbolicOp):
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)
 
+    @property
+    def grad_method(self):
+        """Gradient computation method."""
+        return "F" if self.num_params > 0 else None
+
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
