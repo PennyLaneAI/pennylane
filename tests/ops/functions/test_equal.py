@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
+from pennylane.ops import Conditional
 from pennylane.ops.functions.equal import _equal, assert_equal
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
@@ -1286,6 +1287,35 @@ class TestMeasurementsEqual:
             qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id"),
         )
 
+    def test_equal_measurement_value(self):
+        """Test that MeasurementValue's are equal when their measurements are the same."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(0)
+        # qml.equal of MidMeasureMP checks the id
+        mv2.measurements[0].id = mv1.measurements[0].id
+
+        assert qml.equal(mv1, mv1)
+        assert qml.equal(mv1, mv2)
+
+    def test_different_measurement_value(self):
+        """Test that MeasurementValue's are different when their measurements are not the same."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        assert not qml.equal(mv1, mv2)
+
+    def test_composed_measurement_value(self):
+        """Test that composition of MeasurementValue's are checked correctly."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(0)
+        # qml.equal of MidMeasureMP checks the id
+        mv3.measurements[0].id = mv1.measurements[0].id
+
+        assert qml.equal(mv1 * mv2, mv2 * mv1)
+        assert qml.equal(mv1 + mv2, mv3 + mv2)
+        # NOTE: we are deliberatily just checking for measurements and not for processing_fn, such that two MeasurementValue objects composed from the same operators will be qml.equal
+        assert qml.equal(3 * mv1 + 1, 4 * mv3 + 2)
+
     @pytest.mark.parametrize("mp_fn", [qml.probs, qml.sample, qml.counts])
     def test_mv_list_as_op(self, mp_fn):
         """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
@@ -1644,6 +1674,73 @@ class TestSymbolicOpComparison:
         """Test that equal compares the parameters within a provided trainability of the base operator of Adjoint class."""
         op1 = qml.adjoint(qml.RX(npp.array(1.2, requires_grad=False), wires=0))
         op2 = qml.adjoint(qml.RX(npp.array(1.2, requires_grad=True), wires=0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_conditional_base_operator_wire_comparison(self, wire1, wire2, res):
+        """Test that equal compares operator wires for Conditional operators"""
+        m = qml.measure(0)
+        base1 = qml.PauliX(wire1)
+        base2 = qml.PauliX(wire2)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_conditional_measurement_value_wire_comparison(self, wire1, wire2, res):
+        """Test that equal compares operator wires for Conditional operators"""
+        m1 = qml.measure(wire1)
+        m2 = qml.measure(wire2)
+        if wire1 == wire2:
+            # qml.equal checks id for MidMeasureMP, but here we only care about them acting on the same wire
+            m2.measurements[0].id = m1.measurements[0].id
+        base = qml.PauliX(wire2)
+        op1 = Conditional(m1, base)
+        op2 = Conditional(m2, base)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("base1", "base2", "res"), BASES)
+    def test_conditional_base_operator_comparison(self, base1, base2, res):
+        """Test that equal compares base operators for Conditional operators"""
+        m = qml.measure(0)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+        assert qml.equal(op1, op2) == res
+
+    def test_conditional_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance of the Conditional class."""
+        m = qml.measure(0)
+        base1 = qml.RX(1.2, wires=0)
+        base2 = qml.RX(1.2 + 1e-4, wires=0)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=0)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=0)
+        assert qml.equal(op1, op2, atol=0, rtol=1e-3)
+        assert not qml.equal(op1, op2, atol=0, rtol=1e-5)
+
+    def test_conditional_base_op_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the base operator of Conditional class."""
+        m = qml.measure(0)
+        base1 = qml.RX(1.2, wires=0)
+        base2 = qml.RX(npp.array(1.2), wires=0)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_conditional_base_op_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the base operator of Conditional class."""
+
+        m = qml.measure(0)
+        base1 = qml.RX(npp.array(1.2, requires_grad=False), wires=0)
+        base2 = qml.RX(npp.array(1.2, requires_grad=True), wires=0)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)

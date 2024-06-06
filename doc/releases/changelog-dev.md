@@ -153,6 +153,12 @@
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
 
+* `qml.ops.Conditional` now inherits from `qml.ops.SymbolicOp`, thus it inherits several useful common functionalities. Other properties such as adjoint and diagonalizing gates have been added using the `base` properties.
+  [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
+
+* New dispatches for `qml.ops.Conditional` and `qml.MeasurementValue` have been added to `qml.equal`.
+  [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
+
 * The `qml.qchem.Molecule` object is now the central object used by all qchem functions.
   [(#5571)](https://github.com/PennyLaneAI/pennylane/pull/5571)
 
@@ -180,6 +186,7 @@
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
+  [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
 
 <h3>Breaking changes 💔</h3>
 
@@ -226,6 +233,9 @@
 
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
+* The `qml.Tracker` examples are updated.
+  [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -306,6 +316,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
