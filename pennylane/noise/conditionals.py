@@ -191,9 +191,12 @@ class OpIn(BooleanFn):
                     c in self._cops
                     if isclass(x) or not getattr(x, "arithmetic_depth", 0)
                     else any(
-                        _check_arithmetic_ops(op, x)
-                        for op in self._cond
-                        if getattr(op, "arithmetic_depth", 0)
+                        (
+                            _check_arithmetic_ops(op, x)
+                            if isinstance(op, cp) and getattr(op, "arithmetic_depth", 0)
+                            else cp == _get_ops(x)[0]
+                        )
+                        for op, cp in zip(self._cond, self._cops)
                     )
                 )
                 for x, c in zip(xs, cs)
