@@ -21,6 +21,7 @@ from pennylane import DeviceError
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
+    mid_circuit_measurements,
     no_sampling,
     validate_adjoint_trainable_params,
     validate_device_wires,
@@ -438,6 +439,42 @@ class TestDecomposeTransformations:
         new_tape = batch[0]
 
         assert new_tape[0] != prep_op
+
+
+class TestMidCircuitMeasurements:
+    """Unit tests for the mid_circuit_measurements preprocessing transform"""
+
+    @pytest.mark.parametrize(
+        "mcm_method, shots, expected_transform",
+        [
+            ("deferred", 10, qml.defer_measurements),
+            ("deferred", None, qml.defer_measurements),
+            (None, None, qml.defer_measurements),
+            (None, 10, qml.dynamic_one_shot),
+            ("one-shot", 10, qml.dynamic_one_shot),
+        ],
+    )
+    def test_mcm_method(self, mcm_method, shots, expected_transform, mocker):
+        """Test that the preprocessing transform adheres to the specified transform"""
+        dev = qml.device("default.qubit")
+        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        spy = mocker.spy(expected_transform, "_transform")
+
+        _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+        spy.assert_called_once()
+
+    def test_error_incompatible_mcm_method(self):
+        """Test that an error is raised if requesting the one-shot transform without shots"""
+        dev = qml.device("default.qubit")
+        shots = None
+        mcm_config = {"postselect_mode": None, "mcm_method": "one-shot"}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="dynamic_one_shot is only supported with finite shots."
+        ):
+            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 
 
 def test_validate_multiprocessing_workers_None():

@@ -933,7 +933,7 @@ def test_real_hamiltonian_molecule_class(method, args, tmpdir):
 def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     r"""Test that _pyscf_integrals returns correct integrals."""
 
-    core, one, two = qchem.openfermion_obs._pyscf_integrals(symbols, geometry)
+    core, one, two = qchem.openfermion_pyscf._pyscf_integrals(symbols, geometry)
 
     assert np.allclose(core, core_ref)
     assert np.allclose(one, one_ref)
