@@ -238,6 +238,7 @@ class TestCatalyst:
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
+    @pytest.mark.xfail(reason="supported once catalyst #768 is merged")
     def test_qjit_adjoint(self):
         """Test JIT compilation with adjoint support"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -261,21 +262,20 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
+    @pytest.mark.xfail(reason="supported once catalyst #768 is merged")
     def test_qjit_adjoint_lazy(self):
-        """Test that Lazy kwarg is not supported."""
+        """Test that the lazy kwarg is supported."""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit
         @qml.qnode(device=dev)
-        def workflow(theta, wires):
-            def func():
-                qml.RX(theta, wires=wires)
-
-            qml.adjoint(func, lazy=False)()
+        def workflow_pl(theta, wires):
+            qml.Hadamard(wires)
+            qml.adjoint(qml.RX(theta, wires=wires), lazy=False)
             return qml.probs()
 
-        with pytest.raises(CompileError, match="Setting lazy=False is not supported with qjit."):
-            workflow(0.1, [1])
+        workflow_cl = qml.qjit(workflow_pl)
+
+        assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
     def test_control(self):
         """Test that control works with qjit."""
