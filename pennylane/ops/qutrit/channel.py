@@ -378,9 +378,10 @@ class QutritChannel(Channel):
             raise ValueError("All Kraus matrices must have the same shape.")
 
         # check the dimension of all Kraus matrices are valid
-        if any(K.shape[0] != QUDIT_DIM ** (len(self.wires)) for K in K_list):
+        kraus_dim = QUDIT_DIM ** len(self.wires)
+        if any(K.shape[0] != kraus_dim for K in K_list):
             raise ValueError(
-                f"Dimension of all Kraus matrices must be ({QUDIT_DIM}**num_wires, {QUDIT_DIM}**num_wires)."
+                f"Dimension of all Kraus matrices must be ({kraus_dim},{kraus_dim})."
             )
 
         # check that the channel represents a trace-preserving map

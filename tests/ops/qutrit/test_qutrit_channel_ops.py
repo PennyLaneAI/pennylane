@@ -295,8 +295,8 @@ class TestQutritChannel:
 
     def test_input_correctly_handled(self, tol):
         """Test that Kraus matrices are correctly processed"""
-        K_list = channel.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
-        out = channel.QutritChannel(K_list, wires=0).kraus_matrices()
+        K_list = qml.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
+        out = qml.QutritChannel(K_list, wires=0).kraus_matrices()
 
         assert np.allclose(out, K_list, atol=tol, rtol=0)
 
@@ -306,25 +306,25 @@ class TestQutritChannel:
         with pytest.raises(
             ValueError, match="Only channels with the same input and output Hilbert space"
         ):
-            channel.QutritChannel(K_list, wires=0)
+            qml.QutritChannel(K_list, wires=0)
 
     def test_kraus_matrices_are_of_same_shape(self):
         """Tests that the given Kraus matrices are of same shape"""
         K_list = [np.eye(3), np.eye(4)]
         with pytest.raises(ValueError, match="All Kraus matrices must have the same shape."):
-            channel.QutritChannel(K_list, wires=0)
+            qml.QutritChannel(K_list, wires=0)
 
     def test_kraus_matrices_are_dimensions(self):
-        """Tests that the given Kraus matrices are of right dimension i.e (3,3)"""
-        K_list = [np.eye(4), np.eye(4)]
-        with pytest.raises(ValueError, match="Dimension of all Kraus matrices must be "):
-            channel.QutritChannel(K_list, wires=0)
+        """Tests that the given Kraus matrices are of right dimension i.e (9,9)"""
+        K_list = [np.eye(3), np.eye(3)]
+        with pytest.raises(ValueError, match=r"Dimension of all Kraus matrices must be (9,9)."):
+            qml.QutritChannel(K_list, wires=[0, 1])
 
     def test_kraus_matrices_are_trace_preserved(self):
         """Tests that the channel represents a trace-preserving map"""
         K_list = [0.75 * np.eye(3), 0.35j * np.eye(3)]
         with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
-            channel.QutritChannel(K_list, wires=0)
+            qml.QutritChannel(K_list, wires=0)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
     def test_integrations(self, diff_method):
@@ -339,7 +339,7 @@ class TestQutritChannel:
 
         @qml.qnode(dev, diff_method=diff_method)
         def func():
-            channel.QutritChannel(kraus, 0)
+            qml.QutritChannel(kraus, 0)
             return qml.expval(qml.GellMann(wires=0, index=1))
 
         func()
@@ -352,7 +352,7 @@ class TestQutritChannel:
         @qml.qnode(dev, diff_method=diff_method)
         def func(p):
             kraus = qml.QutritDepolarizingChannel.compute_kraus_matrices(p)
-            channel.QutritChannel(kraus, 0)
+            qml.QutritChannel(kraus, 0)
             return qml.expval(qml.GellMann(wires=0, index=1))
 
         qml.grad(func)(0.5)
@@ -365,7 +365,7 @@ class TestQutritChannel:
         @qml.qnode(dev, diff_method=diff_method)
         def func(p):
             kraus = qml.QutritDepolarizingChannel.compute_kraus_matrices(p)
-            channel.QutritChannel(kraus, 0)
+            qml.QutritChannel(kraus, 0)
             return qml.expval(qml.GellMann(wires=0, index=1))
 
         qml.jacobian(func)(0.5)
