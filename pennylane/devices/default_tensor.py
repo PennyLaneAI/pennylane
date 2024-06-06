@@ -161,7 +161,7 @@ def _accepted_gate_contract(contract: str, method: str) -> bool:
         return contract in _gate_contract_mps
     if method == "tn":
         return contract in _gate_contract_tn
-    return False
+    return False  # pragma: no cover
 
 
 def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
