@@ -299,6 +299,7 @@
   [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
 
 * `qml.snapshots` raises an error when a measurement other than `qml.state` is requested from `default.qubit.legacy` instead of silently returning the statevector.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 
 * Fixes a bug where `default.qutrit` is falsely determined to be natively compatible with `qml.snapshots`.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
