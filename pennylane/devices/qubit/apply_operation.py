@@ -264,7 +264,7 @@ def apply_conditional(
         return cond(
             op.meas_val.concretize(mid_measurements),
             lambda x: apply_operation(
-                op.then_op,
+                op.base,
                 x,
                 is_state_batched=is_state_batched,
                 debugger=debugger,
@@ -277,7 +277,7 @@ def apply_conditional(
         )
     if op.meas_val.concretize(mid_measurements):
         return apply_operation(
-            op.then_op,
+            op.base,
             state,
             is_state_batched=is_state_batched,
             debugger=debugger,
