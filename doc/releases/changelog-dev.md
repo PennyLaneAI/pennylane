@@ -341,6 +341,9 @@
 * `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
   [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
 
+* Fixes a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` is incorrect on `default.qubit.legacy` with `parameter_shift`.
+  [(#5806)](https://github.com/PennyLaneAI/pennylane/pull/5806)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
