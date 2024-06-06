@@ -19,13 +19,7 @@ import copy
 from threading import RLock
 
 import pennylane as qml
-from pennylane.measurements import (
-    CountsMP,
-    MeasurementProcess,
-    MidMeasureMP,
-    ProbabilityMP,
-    SampleMP,
-)
+from pennylane.measurements import CountsMP, MeasurementProcess, ProbabilityMP, SampleMP
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
@@ -51,7 +45,7 @@ def _validate_computational_basis_sampling(tape):
     qubit-wise commutativity relation."""
     measurements = tape.measurements
     n_meas = len(measurements)
-    n_mcms = sum(isinstance(op, MidMeasureMP) for op in tape.operations)
+    n_mcms = sum(qml.transforms.is_mcm(op) for op in tape.operations)
     non_comp_basis_sampling_obs = []
     comp_basis_sampling_obs = []
     comp_basis_indices = []

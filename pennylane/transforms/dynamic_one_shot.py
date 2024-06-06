@@ -40,6 +40,12 @@ from .core import transform
 fill_in_value = np.iinfo(np.int32).min
 
 
+def is_mcm(operation):
+    """Returns True if the operation is a mid-circuit measurement and False otherwise."""
+    mcm = isinstance(operation, MidMeasureMP)
+    return mcm or "MidCircuitMeasure" in str(type(operation))
+
+
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
     into a result for a single ``QuantumTape``.
@@ -179,12 +185,6 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
             )
     tkwargs.setdefault("device", qnode.device)
     return self.default_qnode_transform(qnode, targs, tkwargs)
-
-
-def is_mcm(operation):
-    """Returns True if the operation is a mid-circuit measurement and False otherwise."""
-    mcm = isinstance(operation, MidMeasureMP)
-    return mcm or "MidCircuitMeasure" in str(type(operation))
 
 
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
