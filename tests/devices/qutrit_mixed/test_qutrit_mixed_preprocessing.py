@@ -128,6 +128,7 @@ class TestPreprocessing:
             (qml.TRX(1.1, 0), True),
             (qml.QutritDepolarizingChannel(0.4, 0), True),
             (qml.QutritAmplitudeDamping(0.1, 0.2, 0.12, 0), True),
+            (qml.TritFlip(0.4, 0.1, 0.02, 0), True),
         ],
     )
     def test_accepted_operator(self, op, expected):
