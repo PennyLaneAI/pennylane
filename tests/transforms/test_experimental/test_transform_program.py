@@ -29,6 +29,7 @@ from pennylane.transforms.core.transform_program import (
     _apply_postprocessing_stack,
     _batch_postprocessing,
     null_postprocessing,
+    _prune_dynamic_transform,
 )
 from pennylane.typing import Result, ResultBatch
 
@@ -106,6 +107,27 @@ class TestUtilityHelpers:
 
         out2 = _apply_postprocessing_stack(results, [postprocessing2, postprocessing1])
         assert out2 == (4.0, 9.0)
+
+    def test_prune_dynamic_transform(self):
+        """Tests that prune dynamic transform works."""
+
+        program1 = TransformProgram(
+            [
+                qml.transforms.dynamic_one_shot,
+                qml.transforms.sum_expand,
+                qml.transforms.dynamic_one_shot,
+            ]
+        )
+        program2 = TransformProgram(
+            [
+                qml.transforms.dynamic_one_shot,
+                qml.transforms.sum_expand,
+            ]
+        )
+
+        _prune_dynamic_transform(program1, program2)
+        assert len(program1) == 1
+        assert len(program2) == 2
 
 
 class TestTransformProgramDunders:
@@ -355,6 +377,13 @@ class TestTransformProgram:
             "transform container.",
         ):
             program.get_last()
+
+    def test_get_last(self):
+        """Tests the get_last method"""
+        program = TransformProgram()
+        program.add_transform(transform(first_valid_transform))
+        program.add_transform(transform(second_valid_transform))
+        assert program.get_last() == TransformContainer(transform=second_valid_transform)
 
     def test_push_back(self):
         """Test to push back multiple transforms into a program and also the different methods of a program."""
