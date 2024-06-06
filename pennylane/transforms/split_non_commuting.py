@@ -19,7 +19,10 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 # pylint: disable=too-many-arguments
 
 from functools import partial
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
+
+import numpy as np
+from scipy.stats import binom
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
@@ -28,10 +31,22 @@ from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
 
 
+class ObsMetadata(NamedTuple):
+    """
+    Measurements metadata tuple
+    (Count of non-identity terms, Sum of non-identity term coefficients, offsets arising from Identity)
+    """
+
+    non_id_terms_counts: int
+    sum_non_id_coefficients: float
+    id_offset: float
+
+
 @transform
 def split_non_commuting(
     tape: qml.tape.QuantumScript,
     grouping_strategy: Optional[str] = "default",
+    term_sampling: Optional[Literal["weighted", "uniform"]] = None,
 ) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
@@ -257,17 +272,28 @@ def split_non_commuting(
     ):
         return _split_ham_with_grouping(tape)
 
-    single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
+    single_term_obs_mps, metadatas = _split_all_multi_term_obs_mps(tape)
+    offsets = [metadata.id_offset for metadata in metadatas]
 
     if grouping_strategy is None:
-        measurements = list(single_term_obs_mps.keys())
-        tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
+        if (
+            all(
+                isinstance(meas, ExpectationMP) and isinstance(meas.obs, (Hamiltonian, Sum))
+                for meas in tape.measurements
+            )
+            and term_sampling
+        ):
+            tapes = _split_ham_no_grouping(tape, term_sampling, single_term_obs_mps, metadatas)
+        else:
+            measurements = list(single_term_obs_mps.keys())
+            tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
         return tapes, partial(
             _processing_fn_no_grouping,
             single_term_obs_mps=single_term_obs_mps,
             offsets=offsets,
             shots=tape.shots,
             batch_size=tape.batch_size,
+            term_sampling=term_sampling,
         )
 
     if (
@@ -290,6 +316,63 @@ def split_non_commuting(
         return _split_using_wires_grouping(tape, single_term_obs_mps, offsets)
 
     return _split_using_qwc_grouping(tape, single_term_obs_mps, offsets)
+
+
+def _split_ham_no_grouping(
+    tape: qml.tape.QuantumScript, term_sampling, single_term_obs_mps, metadatas
+):
+    if term_sampling not in ("weighted", "uniform"):
+        raise ValueError(
+            f"Invalid term sampling technique passed: {term_sampling}."
+            "Only supported values are 'uniform' and 'weighted'"
+        )
+
+    if not tape.shots:
+        raise ValueError("Term sampling is only supported by finite-shot devices.")
+
+    remaining_shots_budget = np.stack(
+        [np.array([shot_copies.shots for shot_copies in tape.shots.shot_vector])]
+        * len(tape.measurements)
+    )
+
+    coefficient_sums = [metadata.sum_non_id_coefficients for metadata in metadatas]
+    non_id_term_counts = [metadata.non_id_terms_counts for metadata in metadatas]
+
+    new_tapes = []
+    for meas, (ham_idx, coeffs) in single_term_obs_mps.items():
+        for idx, coeff in zip(ham_idx, coeffs):
+            abs_coeff = np.abs(coeff)
+
+            prob = (
+                1 / non_id_term_counts[idx]
+                if term_sampling == "uniform"
+                else abs_coeff / coefficient_sums[idx]
+            )
+
+            shots_list = [
+                binom(n=rmng_shots, p=prob).rvs() for rmng_shots in remaining_shots_budget[idx]
+            ]
+
+            new_tapes.append(
+                tape.__class__(
+                    tape.operations,
+                    [meas],
+                    shots=qml.measurements.Shots(
+                        [
+                            (shots, shot_copies.copies)
+                            for shots, shot_copies in zip(shots_list, tape.shots.shot_vector)
+                        ]
+                    ),
+                )
+            )
+
+            coefficient_sums[idx] -= abs_coeff
+            remaining_shots_budget[idx] -= shots_list
+
+    # from pprint import pprint
+
+    # pprint([(tape.measurements, tape.shots) for tape in new_tapes])
+    return new_tapes
 
 
 def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
@@ -515,18 +598,20 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
     # of the original measurements it belongs to, and its coefficients.
     single_term_obs_mps = {}
 
-    # Offsets associated with each original measurement in the tape (from Identity)
-    offsets = []
+    metadatas = []
 
     for mp_idx, mp in enumerate(tape.measurements):
         obs = mp.obs
         offset = 0
+        coeff_sum = 0
+        non_id_obs_count = 0
         if isinstance(mp, ExpectationMP) and isinstance(obs, (Hamiltonian, Sum, Prod, SProd)):
             if isinstance(obs, SProd):
                 # This is necessary because SProd currently does not flatten into
                 # multiple terms if the base is a sum, which is needed here.
                 obs = obs.simplify()
             # Break the observable into terms, and construct an ExpectationMP with each term.
+
             for c, o in zip(*obs.terms()):
                 # If the observable is an identity, track it with a constant offset
                 if isinstance(o, qml.Identity):
@@ -536,11 +621,19 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 # corresponding to this original measurement.
                 # pylint: disable=superfluous-parens
                 elif (sm := qml.expval(o)) in single_term_obs_mps:
-                    single_term_obs_mps[sm][0].append(mp_idx)
-                    single_term_obs_mps[sm][1].append(c)
+                    if mp_idx in single_term_obs_mps[sm][0]:
+                        single_term_obs_mps[sm][1][mp_idx] += c
+                        coeff_sum += c
+                    else:
+                        single_term_obs_mps[sm][0].append(mp_idx)
+                        single_term_obs_mps[sm][1].append(c)
+                        coeff_sum += np.abs(c)
+                        non_id_obs_count += 1
                 # Otherwise, add this new measurement to the list of single-term measurements.
                 else:
                     single_term_obs_mps[sm] = ([mp_idx], [c])
+                    coeff_sum += np.abs(c)
+                    non_id_obs_count += 1
         else:
             # For all other measurement types, simply add them to the list of measurements.
             if mp not in single_term_obs_mps:
@@ -549,9 +642,9 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 single_term_obs_mps[mp][0].append(mp_idx)
                 single_term_obs_mps[mp][1].append(1)
 
-        offsets.append(offset)
+        metadatas.append(ObsMetadata(non_id_obs_count, coeff_sum, offset))
 
-    return single_term_obs_mps, offsets
+    return single_term_obs_mps, metadatas
 
 
 def _processing_fn_no_grouping(
@@ -560,6 +653,7 @@ def _processing_fn_no_grouping(
     offsets: List[float],
     shots: Shots,
     batch_size: int,
+    term_sampling: str,
 ):
     """Postprocessing function for the split_non_commuting transform without grouping.
 
@@ -577,11 +671,12 @@ def _processing_fn_no_grouping(
     res_batch_for_each_mp = [[] for _ in offsets]
     coeffs_for_each_mp = [[] for _ in offsets]
 
+    idx = 0
     for smp_idx, (_, (mp_indices, coeffs)) in enumerate(single_term_obs_mps.items()):
-
         for mp_idx, coeff in zip(mp_indices, coeffs):
-            res_batch_for_each_mp[mp_idx].append(res[smp_idx])
+            res_batch_for_each_mp[mp_idx].append(res[idx if term_sampling else smp_idx])
             coeffs_for_each_mp[mp_idx].append(coeff)
+            idx += 1
 
     result_shape = _infer_result_shape(shots, batch_size)
 
