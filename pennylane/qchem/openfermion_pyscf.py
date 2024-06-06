@@ -653,7 +653,6 @@ def dipole_of(
 
     return dip
 
-
 def molecular_dipole(
     molecule,
     method="dhf",
@@ -938,7 +937,6 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 
     This function uses OpenFermion functions to build the second-quantized electronic Hamiltonian
     of the molecule and map it to the Pauli basis using the Jordan-Wigner, Parity or Bravyi-Kitaev
-    transformation.
 
     Args:
         hf_file (str): absolute path to the hdf5-formatted file with the
