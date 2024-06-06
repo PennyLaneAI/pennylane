@@ -344,7 +344,7 @@ class QutritAmplitudeDamping(Channel):
 
 class QutritChannel(Channel):
     r"""
-    Apply an arbitrary fixed quantum channel.
+    Apply an arbitrary fixed qutrit channel.
 
     Kraus matrices that represent the fixed channel are provided
     as a list of NumPy arrays.
