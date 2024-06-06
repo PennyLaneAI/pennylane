@@ -32,6 +32,7 @@ from pennylane.operation import (
 )
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
+from pennylane.ops.channel import QuditChannel
 
 _INSTANCES_TO_TEST = [
     qml.sum(qml.PauliX(0), qml.PauliZ(0)),
@@ -144,7 +145,7 @@ _ABSTRACT_OR_META_TYPES = {
     PowOpObs,
     PowOperation,
     PowObs,
-    qml.QuditChannel,
+    QuditChannel,
 }
 """Types that should not have actual instances created."""
 
