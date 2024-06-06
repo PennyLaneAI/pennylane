@@ -161,14 +161,15 @@ def _accepted_gate_contract(contract: str, method: str) -> bool:
         return contract in _gate_contract_mps
     if method == "tn":
         return contract in _gate_contract_tn
-    raise ValueError(
-        f"Unsupported method {method}. Supported methods are {', '.join(_methods)}."
-    )  # pragma: no cover
+    return False
 
 
-def _warn_useless_kwarg(kwarg: str, method: str) -> None:
-    """A function that warns the user that a specific option is not used by the chosen method."""
-    warnings.warn(f"The keyword argument '{kwarg}' is not used by the '{method}' method.")
+def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
+    """A function that warns the user about unused keyword arguments for the TN method."""
+    if max_bond_dim is not None:
+        warnings.warn("The keyword argument 'max_bond_dim' is not used for the 'tn' method. ")
+    if cutoff is not None:
+        warnings.warn("The keyword argument 'cutoff' is not used for the 'tn' method. ")
 
 
 @simulator_tracking
@@ -195,23 +196,22 @@ class DefaultTensor(Device):
     Keyword Args:
         max_bond_dim (int): Maximum bond dimension for the MPS method.
             It corresponds to the maximum number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
-        cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is the machine limit for the given tensor data type,
-            retrieved with the ``numpy.finfo`` function.
+        cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is ``None``.
         contract (str): The contraction method for applying gates. The possible options depend on the method chosen.
             For the MPS method, the options are ``"auto-mps"``, ``"swap+split"`` and ``"nonlocal"``. For a description of these options, see the
             `quimb's CircuitMPS documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/index.html#quimb.tensor.CircuitMPS>`_.
             Default is ``"auto-mps"``.
             For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``"True"``, and ``"False"``.
-            For details, see the `quimb's documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_network_gate_inds>`_.
+            For details, see the `quimb's tensor_core documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_network_gate_inds>`_.
             Default is ``"auto-split-gate"``.
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
             For more information on available optimizers, see the
             `quimb's local_expectation documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/circuit/index.html#quimb.tensor.circuit.Circuit.local_expectation>`_.
-            Default is ``auto-hq``
+            Default is ``"auto-hq"``
         local_simplify (str): The simplification sequence to apply to the tensor network for computing local expectation values.
             For a complete list of available simplification options, see the
             `quimb's full_simplify documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.TensorNetwork.full_simplify>`_.
-            Default is ``ADCRS``.
+            Default is ``"ADCRS"``.
 
 
     **Example:**
@@ -245,7 +245,7 @@ class DefaultTensor(Device):
             We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
             In the following example, we consider a slightly more complex circuit. We use the ``default.tensor`` device with the MPS method,
-            setting the maximum bond dimension to 100 and the cutoff to 1e-16.
+            setting the maximum bond dimension to 100 and the cutoff to the machine epsilon.
 
             We set ``"auto-mps"`` as the contraction technique to apply gates. With this option, ``quimb`` turns 3-qubit gates and 4-qubit gates
             into Matrix Product Operators (MPO) and applies them directly to the MPS. On the other hand, qubits in 2-qubit gates are possibly
@@ -259,7 +259,7 @@ class DefaultTensor(Device):
                 theta = 0.5
                 phi = 0.1
                 num_qubits = 50
-                device_kwargs_mps = {"max_bond_dim": 100, "cutoff": 1e-16, "contract": "auto-mps"}
+                device_kwargs_mps = {"max_bond_dim": 100, "cutoff": np.finfo(np.complex128).eps, "contract": "auto-mps"}
 
                 dev = qml.device("default.tensor", wires=num_qubits, method="mps", **device_kwargs_mps)
 
@@ -289,9 +289,7 @@ class DefaultTensor(Device):
             The specific structure of the circuit significantly affects how the time complexity and accuracy of the simulation scale with these parameters.
 
 
-
             We can also simulate quantum circuits using the Tensor Network (TN) method. This can be particularly useful for circuits that build up entanglement.
-
             The following example shows how to execute a quantum circuit with the TN method and configurable depth using ``default.tensor``.
 
             We set the contraction technique to ``"auto-split-gate"``. With this option, each gate is added 'lazily' to the tensor network and nothing is contracted.
@@ -301,7 +299,6 @@ class DefaultTensor(Device):
             .. code-block:: python
 
                 import pennylane as qml
-                import numpy as np
 
                 phi = 0.1
                 dept = 10
@@ -327,7 +324,7 @@ class DefaultTensor(Device):
 
             The execution time for this circuit with the above parameters is around 0.2 seconds, depending on the machine.
 
-            Using the ``quimb`` backend, the exact tensor network method can be faster than the MPS method in some cases.
+            Using ``quimb`` as the backend, the exact tensor network method can be faster than MPS in some cases.
             As a comparison, the time for the exact calculation of the same circuit with the MPS method is about one order of magnitude slower.
     """
 
@@ -374,7 +371,7 @@ class DefaultTensor(Device):
 
         # options for MPS
         self._max_bond_dim = kwargs.get("max_bond_dim", None)
-        self._cutoff = kwargs.get("cutoff", np.finfo(self._dtype).eps)
+        self._cutoff = kwargs.get("cutoff", None)
 
         # options both for MPS and TN
         self._local_simplify = kwargs.get("local_simplify", "ADCRS")
@@ -385,10 +382,7 @@ class DefaultTensor(Device):
             self._contract = kwargs.get("contract", "auto-mps")
         elif method == "tn":
             self._contract = kwargs.get("contract", "auto-split-gate")
-            if self._max_bond_dim is not None:
-                _warn_useless_kwarg("max_bond_dim", method)
-            if self._cutoff != np.finfo(self._dtype).eps:
-                _warn_useless_kwarg("cutoff", method)
+            _warn_unused_kwarg_tn(self._max_bond_dim, self._cutoff)
         else:
             raise ValueError  # pragma: no cover
 
