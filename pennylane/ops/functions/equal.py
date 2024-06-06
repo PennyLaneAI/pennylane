@@ -31,6 +31,7 @@ from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
+    Conditional,
     Controlled,
     Exp,
     Hamiltonian,
@@ -504,6 +505,22 @@ def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
 
 
 @_equal_dispatch.register
+def _equal_conditional(op1: Conditional, op2: Conditional, **kwargs):
+    """Determine whether two Conditional objects are equal"""
+    # first line of top-level equal function already confirms both are Conditionaly - only need to compare bases and meas_val
+    return qml.equal(op1.base, op2.base, **kwargs) and qml.equal(
+        op1.meas_val, op2.meas_val, **kwargs
+    )
+
+
+@_equal_dispatch.register
+# pylint: disable=unused-argument
+def _equal_measurement_value(op1: MeasurementValue, op2: MeasurementValue, **kwargs):
+    """Determine whether two MeasurementValue objects are equal"""
+    return op1.measurements == op2.measurements
+
+
+@_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     """Determine whether two Exp objects are equal"""
@@ -664,9 +681,8 @@ def _equal_measurements(
         )
 
     if op1.mv is not None and op2.mv is not None:
-        # qml.equal doesn't check if the MeasurementValues have the same processing functions
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
-            return op1.mv.measurements == op2.mv.measurements
+            return qml.equal(op1.mv, op2.mv)
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
             if len(op1.mv) == len(op2.mv):
