@@ -593,26 +593,10 @@ def execute(
             raise ValueError("Using postselect_mode='hw-like' is not supported with jax-jit.")
         config.mcm_config.postselect_mode = "fill-shots"
 
-    if isinstance(device, qml.devices.Device):
-
-        # If gradient_fn is a gradient transform, device preprocessing should happen in
-        # inner execute (inside the ml boundary).
-        if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
-            if inner_transform is None:
-                inner_transform = device.preprocess(config)[0]
-            if transform_program is None:
-                transform_program = qml.transforms.core.TransformProgram()
-        else:
-            if inner_transform is None:
-                inner_transform = qml.transforms.core.TransformProgram()
-            if transform_program is None:
-                transform_program = device.preprocess(config)[0]
-
-    else:
-        if transform_program is None:
-            transform_program = qml.transforms.core.TransformProgram()
-        if inner_transform is None:
-            inner_transform = qml.transforms.core.TransformProgram()
+    is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
+    transform_program, inner_transform = _make_transform_programs(
+        device, config, inner_transform, transform_program, is_gradient_transform
+    )
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache is True:
@@ -852,6 +836,35 @@ def execute(
         )
 
     return post_processing(results)
+
+
+def _make_transform_programs(
+    device, config, inner_transform, transform_program, is_gradient_transform
+):
+    """helper function to make the transform programs."""
+
+    if isinstance(device, qml.devices.Device):
+
+        # If gradient_fn is a gradient transform, device preprocessing should happen in
+        # inner execute (inside the ml boundary).
+        if is_gradient_transform:
+            if inner_transform is None:
+                inner_transform = device.preprocess(config)[0]
+            if transform_program is None:
+                transform_program = qml.transforms.core.TransformProgram()
+        else:
+            if inner_transform is None:
+                inner_transform = qml.transforms.core.TransformProgram()
+            if transform_program is None:
+                transform_program = device.preprocess(config)[0]
+
+    else:
+        if transform_program is None:
+            transform_program = qml.transforms.core.TransformProgram()
+        if inner_transform is None:
+            inner_transform = qml.transforms.core.TransformProgram()
+
+    return transform_program, inner_transform
 
 
 def _get_execution_config(
