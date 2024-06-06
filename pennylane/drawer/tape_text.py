@@ -131,7 +131,7 @@ def _add_op(op, layer_str, config):
     """Updates ``layer_str`` with ``op`` operation."""
     if isinstance(op, qml.ops.Conditional):  # pylint: disable=no-member
         layer_str = _add_cond_grouping_symbols(op, layer_str, config)
-        return _add_op(op.then_op, layer_str, config)
+        return _add_op(op.base, layer_str, config)
 
     if isinstance(op, MidMeasureMP):
         return _add_mid_measure_op(op, layer_str, config)
