@@ -59,8 +59,6 @@ def new_terms_is_complex(lcu):
         new_op = qml.simplify(qml.ops.LinearCombination([1j * sign], [op]))
         new_ops.append(new_op)
 
-    print(new_coeffs)
-
     return new_coeffs, new_ops
 
 
