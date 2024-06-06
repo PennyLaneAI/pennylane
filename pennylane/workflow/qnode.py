@@ -1074,7 +1074,7 @@ class QNode:
             )
             override_shots = 1
         elif hasattr(self.device, "capabilities"):
-            full_transform_program.add_transform(
+            inner_transform_program.add_transform(
                 qml.defer_measurements,
                 device=self.device,
             )
