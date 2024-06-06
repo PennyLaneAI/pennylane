@@ -15,7 +15,6 @@
 # pylint: disable=protected-access, use-implicit-booleaness-not-comparison
 import functools
 import pickle
-import jax
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
@@ -614,6 +613,8 @@ class TestProjector:
     def test_jit_measurement(self):
         """Test that the measurement of a projector can be jitted."""
 
+        import jax
+
         @jax.jit
         @qml.qnode(qml.device("default.qubit"))
         def circuit(state):
@@ -636,6 +637,7 @@ class TestProjector:
     @pytest.mark.jax
     def test_jit_matrix(self):
         """Test that computing the matrix of a projector is jittable."""
+        import jax
 
         basis_state = jax.numpy.array([0, 1])
         f = jax.jit(BasisStateProjector.compute_matrix)
@@ -823,6 +825,7 @@ class TestStateVectorProjector:
     @pytest.mark.jax
     def test_jit_execution(self):
         """Test that executing a StateVectorProjector can be jitted."""
+        import jax
 
         @jax.jit
         @qml.qnode(qml.device("default.qubit"))
