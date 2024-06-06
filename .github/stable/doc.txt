@@ -22,14 +22,14 @@ exceptiongroup==1.2.1
 flatbuffers==24.3.25
 fonttools==4.53.0
 frozenlist==1.4.1
-fsspec==2024.5.0
+fsspec==2024.6.0
 future==1.0.0
 gast==0.4.0
 google-auth==2.29.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 graphviz==0.20.3
-grpcio==1.64.0
+grpcio==1.64.1
 h5py==3.11.0
 idna==3.7
 imagesize==1.4.1
@@ -73,7 +73,7 @@ Pygments==2.18.0
 pygments-github-lexers==0.0.5
 pyparsing==3.1.2
 pyscf==2.6.0
-pytest==8.2.1
+pytest==8.2.2
 python-dateutil==2.9.0.post0
 pytz==2024.1
 PyYAML==6.0.1
@@ -118,4 +118,4 @@ Werkzeug==3.0.3
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
 yarl==1.9.4
-zipp==3.19.1
+zipp==3.19.2
