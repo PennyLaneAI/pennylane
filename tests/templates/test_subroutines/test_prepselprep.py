@@ -56,7 +56,8 @@ def test_repr():
 # Use these circuits in tests
 def manual_circuit(lcu, control):
     """Circuit equivalent to decomposition of PrepSelPrep"""
-    coeffs, ops = qml.PrepSelPrep.preprocess_lcu(lcu)
+    lcu = qml.PrepSelPrep.preprocess_lcu(lcu)
+    coeffs, ops = lcu.terms()
 
     qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control)
     qml.Select(ops, control=control)

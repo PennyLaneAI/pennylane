@@ -143,7 +143,9 @@ class PrepSelPrep(Operation):
 
             new_unitaries.append(unitary)
 
-        return new_coeffs, new_unitaries
+        new_lcu = qml.ops.LinearCombination(new_coeffs, new_unitaries)
+
+        return new_lcu
 
     @staticmethod
     def compute_decomposition(lcu, control):
