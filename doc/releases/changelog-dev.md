@@ -172,6 +172,9 @@
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
 
+* Device preprocess transforms now happen inside the ml boundary.
+  [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
