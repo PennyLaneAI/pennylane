@@ -30,8 +30,6 @@ from pennylane.wires import Wires
 
 
 def _is_single_qubit_special_unitary(op):
-    if not op.has_matrix or len(op.wires) != 1:
-        return False
     mat = op.matrix()
     det = mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
     return qml.math.allclose(det, 1)
