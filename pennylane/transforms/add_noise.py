@@ -114,7 +114,7 @@ def add_noise(tape, noise_model, level=None):
 
         By default, for each operation for which a conditional evaluates to ``True``, the corresponding noise operations gets
         queued following an `iterative-insertion` approach. One could change this by including the operation itself, and
-        queue it with :func:`~.apply` as given below:
+        queue it with :func:`~.pennylane.apply` as given below:
 
         .. code-block:: python3
 
