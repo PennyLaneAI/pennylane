@@ -245,6 +245,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
+  [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
+
 * Disable Docker builds on PR merge.
   [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
 
