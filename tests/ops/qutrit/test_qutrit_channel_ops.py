@@ -369,3 +369,17 @@ class TestQutritChannel:
             return qml.expval(qml.GellMann(wires=0, index=1))
 
         qml.jacobian(func)(0.5)
+
+    def test_flatten(self):
+        """Test flatten method returns kraus matrices and wires"""
+        kraus = [
+            np.array([[1, 0, 0], [0, 0.70710678, 0], [0, 0, 0.8660254]]),
+            np.array([[0, 0.70710678, 0], [0, 0, 0], [0, 0, 0]]),
+            np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
+        ]
+
+        qutrit_channel = qml.QutritChannel(kraus, 1, id="test")
+        data, metadata = qutrit_channel._flatten()  # pylint: disable=protected-access
+
+        assert np.allclose(kraus, data)
+        assert metadata == (qml.wires.Wires(1), ())
