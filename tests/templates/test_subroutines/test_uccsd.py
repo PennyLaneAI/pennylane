@@ -205,13 +205,14 @@ class TestInputs:
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize(
-        ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
+        ("weights", "s_wires", "d_wires", "init_state", "n_repeats", "msg_match"),
         [
             (
                 np.array([-2.8]),
                 [[0, 1, 2]],
                 [],
                 np.array([1.2, 1, 0, 0]),
+                1,
                 "Elements of 'init_state' must be integers",
             ),
             (
@@ -219,6 +220,7 @@ class TestInputs:
                 [],
                 [],
                 np.array([1, 1, 0, 0]),
+                1,
                 "s_wires and d_wires lists can not be both empty",
             ),
             (
@@ -226,6 +228,7 @@ class TestInputs:
                 [],
                 [[[0, 1, 2, 3]]],
                 np.array([1, 1, 0, 0]),
+                1,
                 "expected entries of d_wires to be of size 2",
             ),
             (
@@ -233,6 +236,7 @@ class TestInputs:
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0, 0]),
+                1,
                 "Basis states must be of length 4",
             ),
             (
@@ -240,6 +244,7 @@ class TestInputs:
                 [[0, 1, 2]],
                 [],
                 np.array([1, 1, 0, 0]),
+                1,
                 "Weights tensor must be of",
             ),
             (
@@ -247,6 +252,7 @@ class TestInputs:
                 [],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
+                1,
                 "Weights tensor must be of",
             ),
             (
@@ -254,11 +260,44 @@ class TestInputs:
                 [[0, 1, 2], [1, 2, 3]],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
+                1,
+                "Weights tensor must be of",
+            ),
+            (
+                np.array([-2.8]),
+                [[0, 1, 2]],
+                [],
+                np.array([1, 1, 0, 0]),
+                0,
+                "Requires n_repeats to be at least 1",
+            ),
+            (
+                np.array([-2.8]),
+                [[0, 1, 2]],
+                [],
+                np.array([1, 1, 0, 0]),
+                -1,
+                "Requires n_repeats to be at least 1",
+            ),
+            (
+                np.array([-2.8]),
+                [[0, 1, 2]],
+                [],
+                np.array([1, 1, 0, 0]),
+                2,
+                "Weights tensor must be of",
+            ),
+            (
+                np.array([[-2.8], [-1.8]]),
+                [[0, 1, 2]],
+                [],
+                np.array([1, 1, 0, 0]),
+                3,
                 "Weights tensor must be of",
             ),
         ],
     )
-    def test_uccsd_xceptions(self, weights, s_wires, d_wires, init_state, msg_match):
+    def test_uccsd_xceptions(self, weights, s_wires, d_wires, init_state, n_repeats, msg_match):
         """Test that UCCSD throws an exception if the parameters have illegal
         shapes, types or values."""
         N = 4
@@ -266,7 +305,12 @@ class TestInputs:
         dev = qml.device("default.qubit", wires=N)
 
         def circuit(
-            weights=weights, wires=wires, s_wires=s_wires, d_wires=d_wires, init_state=init_state
+            weights=weights,
+            wires=wires,
+            s_wires=s_wires,
+            d_wires=d_wires,
+            init_state=init_state,
+            n_repeats=n_repeats,
         ):
             qml.UCCSD(
                 weights=weights,
@@ -274,6 +318,7 @@ class TestInputs:
                 s_wires=s_wires,
                 d_wires=d_wires,
                 init_state=init_state,
+                n_repeats=n_repeats,
             )
             return qml.expval(qml.PauliZ(0))
 
@@ -286,6 +331,7 @@ class TestInputs:
                 s_wires=s_wires,
                 d_wires=d_wires,
                 init_state=init_state,
+                n_repeats=n_repeats,
             )
 
     def test_id(self):
@@ -300,7 +346,7 @@ class TestInputs:
         )
         assert template.id == "a"
 
-    def test_reps(self):
+    def test_n_repeats(self):
         """Tests the reps parameter"""
 
         dev = qml.device("default.qubit", wires=4)
@@ -313,7 +359,7 @@ class TestInputs:
                 s_wires=[[0, 1]],
                 d_wires=[[[0, 1], [2, 3]]],
                 init_state=np.array([0, 1, 0, 1]),
-                reps=1,
+                n_repeats=1,
             )
             return qml.expval(qml.Identity(0)), qml.state()
 
@@ -325,7 +371,7 @@ class TestInputs:
                 s_wires=[[0, 1]],
                 d_wires=[[[0, 1], [2, 3]]],
                 init_state=np.array([0, 1, 0, 1]),
-                reps=1,
+                n_repeats=1,
             )
             return qml.expval(qml.Identity(0)), qml.state()
 
@@ -337,7 +383,7 @@ class TestInputs:
                 s_wires=[[0, 1]],
                 d_wires=[[[0, 1], [2, 3]]],
                 init_state=np.array([0, 1, 0, 1]),
-                reps=2,
+                n_repeats=2,
             )
             return qml.expval(qml.Identity(0)), qml.state()
 

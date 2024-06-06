@@ -63,7 +63,8 @@ class UCCSD(Operation):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(reps, len(s_wires) + len(d_wires),)`` (see usage details below) tensor containing the parameters
+        weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(n_repeats, len(s_wires) + len(d_wires),)``,
+            depending on ``n_repeats``, tensor containing the parameters (see usage details below)
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
             :func:`~.FermionicSingleExcitation`
             and
@@ -87,7 +88,7 @@ class UCCSD(Operation):
             and unoccupied orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
-        reps (int): Number of times UCCSD unitary is repeated.
+        n_repeats (int): Number of times the UCCSD unitary is repeated.
 
     .. details::
         :title: Usage Details
@@ -102,8 +103,8 @@ class UCCSD(Operation):
 
         #. The vector of parameters ``weights`` can be a one-dimensional array of size
            ``len(s_wires)+len(d_wires)`` or a two-dimensional array of size
-           ``(1, len(s_wires)+len(d_wires))``  if ``reps=1``. ``weights`` is a two-dimensional array of size
-           ``(reps, len(s_wires)+len(d_wires))`` if ``reps>1``.
+           ``(1, len(s_wires)+len(d_wires))``  if ``n_repeats=1``. ``weights`` is a two-dimensional array of size
+           ``(n_repeats, len(s_wires)+len(d_wires))`` if ``n_repeats>1``.
 
 
         An example of how to use this template is shown below:
@@ -175,7 +176,7 @@ class UCCSD(Operation):
     grad_method = None
 
     def __init__(
-        self, weights, wires, s_wires=None, d_wires=None, init_state=None, reps=1, id=None
+        self, weights, wires, s_wires=None, d_wires=None, init_state=None, n_repeats=1, id=None
     ):
         if (not s_wires) and (not d_wires):
             raise ValueError(
@@ -188,31 +189,24 @@ class UCCSD(Operation):
                     f"expected entries of d_wires to be of size 2; got {d_wires_} of length {len(d_wires_)}"
                 )
 
-        if reps < 1:
-            raise ValueError(f"Requires reps to be at least 1; got {reps}.")
+        if n_repeats < 1:
+            raise ValueError(f"Requires n_repeats to be at least 1; got {n_repeats}.")
 
         shape = qml.math.shape(weights)
 
-        if reps == 1:
-            if (
-                len(shape) == 2
-                and shape
-                != (
-                    reps,
-                    len(s_wires) + len(d_wires),
-                )
-            ) or (len(shape) == 1 and shape != (len(s_wires) + len(d_wires),)):
-                raise ValueError(
-                    f"Weights tensor must be of shape {(reps, len(s_wires) + len(d_wires),)} or  {(len(s_wires) + len(d_wires),)}; got {shape}."
-                )
-        else:
-            if shape != (
-                reps,
-                len(s_wires) + len(d_wires),
-            ):
-                raise ValueError(
-                    f"Weights tensor must be of shape {(reps, len(s_wires) + len(d_wires),)}; got {shape}."
-                )
+        expected_shape_1 = (len(s_wires) + len(d_wires),)
+        expected_shape_repeats = (n_repeats,) + expected_shape_1
+        if n_repeats == 1 and (
+            (len(shape) == 2 and shape != expected_shape_repeats)
+            or (len(shape) == 1 and shape != expected_shape_1)
+        ):
+            raise ValueError(
+                f"Weights tensor must be of shape {expected_shape_repeats} or {expected_shape_1}; got {shape}."
+            )
+        elif n_repeats != 1 and shape != expected_shape_repeats:
+            raise ValueError(
+                f"Weights tensor must be of shape {expected_shape_repeats}; got {shape}."
+            )
 
         init_state = qml.math.toarray(init_state)
 
@@ -223,7 +217,7 @@ class UCCSD(Operation):
             "init_state": tuple(init_state),
             "s_wires": tuple(tuple(w) for w in s_wires),
             "d_wires": tuple(tuple(tuple(w) for w in dw) for dw in d_wires),
-            "reps": reps,
+            "n_repeats": n_repeats,
         }
 
         super().__init__(weights, wires=wires, id=id)
@@ -246,7 +240,7 @@ class UCCSD(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, s_wires, d_wires, init_state, reps
+        weights, wires, s_wires, d_wires, init_state, n_repeats
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -257,8 +251,8 @@ class UCCSD(Operation):
         .. seealso:: :meth:`~.UCCSD.decomposition`.
 
         Args:
-            weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(reps, len(s_wires) + len(d_wires),)``
-                depending on ``reps`` (see usage details above) tensor containing the parameters
+            weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(n_repeats, len(s_wires) + len(d_wires),)``,
+                depending on ``n_repeats``, tensor containing the parameters (see usage details above)
                 entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             wires (Any or Iterable[Any]): wires that the operator acts on
             s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
@@ -267,7 +261,7 @@ class UCCSD(Operation):
                 specify the indices ``[s, ...,r]`` and ``[q,..., p]`` defining the double excitation.
             init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 HF state. ``init_state`` is used to initialize the wires.
-            reps (int): Number of times UCCSD unitary is repeated.
+            n_repeats (int): Number of times the UCCSD unitary is repeated.
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -276,10 +270,10 @@ class UCCSD(Operation):
 
         op_list.append(BasisState(init_state, wires=wires))
 
-        if reps == 1 and len(qml.math.shape(weights)) == 1:
+        if n_repeats == 1 and len(qml.math.shape(weights)) == 1:
             weights = qml.math.expand_dims(weights, 0)
 
-        for layer in range(reps):
+        for layer in range(n_repeats):
             for i, (w1, w2) in enumerate(d_wires):
                 op_list.append(
                     qml.FermionicDoubleExcitation(
