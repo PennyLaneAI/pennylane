@@ -178,7 +178,7 @@ toml==0.10.2
 tomli==2.0.1
 tomlkit==0.12.5
 toolz==0.12.1
-tornado==6.4
+tornado==6.4.1
 tqdm==4.66.4
 traitlets==5.14.3
 types-python-dateutil==2.9.0.20240316
