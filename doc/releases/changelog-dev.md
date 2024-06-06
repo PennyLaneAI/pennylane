@@ -183,6 +183,7 @@
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
+  [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
 
 <h3>Breaking changes 💔</h3>
 
@@ -229,6 +230,9 @@
 
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
+* The `qml.Tracker` examples are updated.
+  [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -312,6 +316,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 David Ittah,
 Soran Jahangiri,
 Korbinian Kottmann,
