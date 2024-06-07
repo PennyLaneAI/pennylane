@@ -69,6 +69,8 @@ class ControlledSequence(SymbolicOp, Operation):
 
     """
 
+    grad_method = None
+
     def _flatten(self):
         return (self.base,), (self.control,)
 

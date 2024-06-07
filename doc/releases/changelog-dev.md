@@ -174,6 +174,15 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
+* `MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations, and is applicable for any multi controlled unitary gate.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control unitary now includes the correct global phase.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control `GlobalPhase` has now a decomposition, i.e. relative phase on control wire.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
@@ -204,8 +213,8 @@
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
-
-* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  
+* `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
  
 * Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian`
@@ -215,6 +224,10 @@
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
   [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
+  
+* `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
+  to be simulated on the `default.qutrit.mixed` device.
+  [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
 <h3>Breaking changes 💔</h3>
 
@@ -334,6 +347,9 @@
 
 * `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
   [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
+
+* Fixes a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` is incorrect on `default.qubit.legacy` with `parameter_shift`.
+  [(#5806)](https://github.com/PennyLaneAI/pennylane/pull/5806)
 
 <h3>Contributors ✍️</h3>
 
