@@ -14,7 +14,7 @@
 """
 This module contains the functions for converting an openfermion fermionic operator to Pennylane FermiWord or FermiSentence operators
 """
-# pylint: disable= import-outside-toplevel,no-member,too-many-function-args,unused-import
+# pylint: disable= import-outside-toplevel,no-member,unused-import
 from pennylane import fermi
 
 
