@@ -574,7 +574,6 @@ def test_measure(mock_method, measurement_process):
         measurements = [qml.expval(qml.X(2)), qml.state(), qml.probs(), qml.var(qml.Z(3))]
         qml.debugging._measure(measurement_process)
 
-
     executed_tape = qml.tape.QuantumScript.from_queue(queue)
     expected_tape = qml.tape.QuantumScript(ops, measurements)
 

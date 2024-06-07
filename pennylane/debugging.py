@@ -317,7 +317,7 @@ def state():
     """Compute the quantum state at the current point in the quantum circuit.
 
     Returns:
-        Array(complex): Quantum state of the circuit.
+        Array(complex): quantum state of the circuit.
 
     **Example**
 
@@ -370,10 +370,10 @@ def expval(op):
     current state of the quantum circuit.
 
     Args:
-        op (Operator): The observable to compute the expectation value for.
+        op (Operator): the observable to compute the expectation value for.
 
     Returns:
-        complex: Quantum state of the circuit.
+        complex: expectation value of the operator
 
     **Example**
 
@@ -429,12 +429,12 @@ def probs(wires=None, op=None):
 
     Args:
         wires (Union[Iterable, int, str, list]): the wires the operation acts on
-        op (Union[Observable, MeasurementValue]): Observable (with a ``diagonalizing_gates``
+        op (Union[Observable, MeasurementValue]): observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
     Returns:
-        Array(float): The probability distribution of the bitstrings for the wires.
+        Array(float): the probability distribution of the bitstrings for the wires.
 
     **Example**
 
@@ -490,10 +490,10 @@ def _measure(measurement):
     """Perform the measurement.
 
     Args:
-        measurement (MeasurementProcess): The type of measurement to be performed
+        measurement (MeasurementProcess): the type of measurement to be performed
 
     Returns:
-        tuple(complex): Results from the measurement
+        tuple(complex): results from the measurement
     """
     active_queue = qml.queuing.QueuingManager.active_context()
     copied_queue = copy.deepcopy(active_queue)
@@ -510,7 +510,7 @@ def tape():
     been applied from the quantum circuit so far.
 
     Returns:
-        QuantumTape: The quantum tape representing the circuit.
+        QuantumTape: the quantum tape representing the circuit.
 
     **Example**
 
