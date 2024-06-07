@@ -206,20 +206,13 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
                 new_measurements.append(m)
-    new_operations = []
     for op in circuit.operations:
-        if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
-            new_op = op
-            new_op.bypass_postselect = True
-            new_operations.append(new_op)
-        else:
-            new_operations.append(op)
         if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
         elif isinstance(op, MidMeasureMP):
             new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
     return qml.tape.QuantumScript(
-        new_operations,
+        circuit.operations,
         new_measurements,
         shots=[1] * circuit.shots.total_shots,
         trainable_params=circuit.trainable_params,
@@ -292,6 +285,9 @@ def parse_native_mid_circuit_measurements(
                 # to any particular interface
                 result = qml.math.array(result, like=interface)
             if active_qjit:  # pragma: no cover
+                # `result` contains (bases, counts) need to return (basis, sum(counts)) where `is_valid`
+                # Any row of `result[0]` contains basis, so we return `result[0][0]`
+                # We return the sum of counts (`result[1]`) weighting by `is_valid`, which is `0` for invalid samples
                 if isinstance(m, CountsMP):
                     normalized_meas.append(
                         (result[0][0], qml.math.sum(result[1] * is_valid.reshape((-1, 1)), axis=0))
@@ -329,14 +325,15 @@ def gather_mcm_qjit(measurement, samples, is_valid):  # pragma: no cover
         raise LookupError("MCM not found")
     meas = qml.math.squeeze(meas)
     if isinstance(measurement, (CountsMP, ProbabilityMP)):
+        interface = qml.math.get_deep_interface(is_valid)
         sum_valid = qml.math.sum(is_valid)
         count_1 = qml.math.sum(meas * is_valid)
         if isinstance(measurement, CountsMP):
-            return {0: sum_valid - count_1, 1: count_1}
-        if isinstance(measurement, ProbabilityMP):
-            counts = qml.math.array(
-                [sum_valid - count_1, count_1], like=qml.math.get_deep_interface(is_valid)
+            return qml.math.array([0, 1], like=interface), qml.math.array(
+                [sum_valid - count_1, count_1], like=interface
             )
+        if isinstance(measurement, ProbabilityMP):
+            counts = qml.math.array([sum_valid - count_1, count_1], like=interface)
             return counts / sum_valid
     return gather_non_mcm(measurement, meas, is_valid)
 
