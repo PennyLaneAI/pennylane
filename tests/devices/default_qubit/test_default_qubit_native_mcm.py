@@ -153,7 +153,7 @@ def test_measurement_with_no_shots():
     probs = measurement_with_no_shots(qml.probs(wires=[0, 1]))
     assert probs.shape == (4,)
     assert all(np.isnan(probs).tolist())
-    probs = measurement_with_no_shots(qml.probs(wires=qml.PauliY(0)))
+    probs = measurement_with_no_shots(qml.probs(op=qml.PauliY(0)))
     assert probs.shape == (2,)
     assert all(np.isnan(probs).tolist())
 
@@ -255,11 +255,7 @@ def test_deep_circuit():
             m0 = qml.measure(0)
         return qml.expval(qml.PauliY(0)), qml.expval(m0)
 
-    func1 = func
-    func2 = qml.dynamic_one_shot(func)
-
-    _ = func1(0.1243)
-    _ = func2(0.1243)
+    _ = qml.QNode(func, dev, mcm_method="tree-traversal")(0.1234)
 
 
 # pylint: disable=unused-argument

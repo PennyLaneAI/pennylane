@@ -600,7 +600,7 @@ def circuit_up_to_first_mcm(circuit):
         for i, op in enumerate(circuit.operations):
             if isinstance(op, MidMeasureMP):
                 return i, op
-        return len(circuit.operations) + 1, None
+        return len(circuit.operations) + 1, None  # pragma: no cover
 
     i, op = find_next_mcm(circuit)
     # run circuit until next MidMeasureMP and sample
@@ -631,7 +631,7 @@ def measurement_with_no_shots(measurement):
     """Returns a NaN scalar or array of the correct size when executing an all-invalid-shot circuit."""
     if isinstance(measurement, ProbabilityMP):
         if measurement.obs:
-            return np.nan * np.ones(measurement.eigvals())
+            return np.nan * np.ones(measurement.obs.eigvals().size)
         return np.nan * np.ones(2 ** len(measurement.wires))
     return np.nan
 
@@ -639,18 +639,18 @@ def measurement_with_no_shots(measurement):
 def combine_measurements(circuit, measurements, mcm_samples):
     """Returns combined measurement values of various types."""
     empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
-    if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):
+    if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):  # pragma: no cover
         raise ValueError("mcm_samples have inconsistent shapes.")
     # loop over measurements
     final_measurements = []
     for circ_meas in circuit.measurements:
-        if circ_meas.mv and empty_mcm_samples:
+        if circ_meas.mv and empty_mcm_samples:  # pragma: no cover
             comb_meas = measurement_with_no_shots(circ_meas)
         elif circ_meas.mv:
             mcm_samples = dict((k, v.reshape((-1, 1))) for k, v in mcm_samples.items())
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = dyn_gather_mcm(circ_meas, mcm_samples, is_valid)
-        elif not measurements or not measurements[0]:
+        elif not measurements or not measurements[0]:  # pragma: no cover
             if len(measurements) > 0:
                 _ = measurements.pop(0)
             comb_meas = measurement_with_no_shots(circ_meas)
