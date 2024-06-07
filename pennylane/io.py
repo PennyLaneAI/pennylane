@@ -407,7 +407,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
-def from_qasm(quantum_circuit: str):
+def from_qasm(quantum_circuit: str, measurements=None):
     """Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
@@ -439,12 +439,15 @@ def from_qasm(quantum_circuit: str):
 
     Args:
         quantum_circuit (str): a QASM string containing a valid quantum circuit
+        measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
+            measurement or list of PennyLane measurements that overrides any terminal measurements
+            that may be present in the input circuit
 
     Returns:
         function: the PennyLane template created based on the QASM string
     """
     plugin_converter = plugin_converters["qasm"].load()
-    return plugin_converter(quantum_circuit)
+    return plugin_converter(quantum_circuit, measurements)
 
 
 def from_pyquil(pyquil_program):
