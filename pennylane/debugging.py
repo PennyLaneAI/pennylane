@@ -192,11 +192,11 @@ class PLDB(pdb.Pdb):
         """Execute the batch of tapes on the active device"""
         dev = cls.get_active_device()
 
-        valid_batch, _ = (
-            (batch_tapes, None)
-            if not dev.wires
-            else qml.devices.preprocess.validate_device_wires(batch_tapes, wires=dev.wires)
-        )
+        valid_batch = batch_tapes
+        if dev.wires:
+            valid_batch = qml.devices.preprocess.validate_device_wires(
+                batch_tapes, wires=dev.wires
+            )[0]
 
         program, new_config = dev.preprocess()
         new_batch, fn = program(valid_batch)
@@ -499,8 +499,8 @@ def _measure(measurement):
     copied_queue = copy.deepcopy(active_queue)
 
     copied_queue.append(measurement)
-    tape = qml.tape.QuantumScript.from_queue(copied_queue)
-    return PLDB._execute((tape,))
+    qtape = qml.tape.QuantumScript.from_queue(copied_queue)
+    return PLDB._execute((qtape,))  # pylint: disable=protected-access
 
 
 def tape():
