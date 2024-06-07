@@ -1041,9 +1041,11 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         finite_shots = _get_device_shots if override_shots is False else override_shots
-        if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
+        mcm_method = self.execute_kwargs["mcm_config"]["mcm_method"]
+        if not finite_shots and mcm_method in ("one-shot", "tree-traversal"):
             raise ValueError(
-                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+                f"Cannot use the '{mcm_method}' method for"
+                " mid-circuit measurements with analytic mode."
             )
 
         # Add the device program to the QNode program
