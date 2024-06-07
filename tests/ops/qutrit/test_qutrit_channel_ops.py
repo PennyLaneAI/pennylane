@@ -380,6 +380,8 @@ class TestQutritChannel:
 
         qutrit_channel = qml.QutritChannel(kraus, 1, id="test")
         data, metadata = qutrit_channel._flatten()  # pylint: disable=protected-access
+        new_op = qml.QutritChannel._unflatten(data, metadata)
+        assert qml.equal(qutrit_channel, new_op)
 
         assert np.allclose(kraus, data)
         assert metadata == (qml.wires.Wires(1), ())
