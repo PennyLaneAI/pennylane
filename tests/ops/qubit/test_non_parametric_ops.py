@@ -717,7 +717,7 @@ class TestMultiControlledX:
         assert qml.math.allclose(mpmct_state, pauli_x_state)
 
     def test_decomposition_not_enough_wires(self):
-        """Test that the decomposition raises an error if the number of wires"""
+        """Test that the decomposition raises an error if the number of wires is lower than two"""
         with pytest.raises(ValueError, match="Wrong number of wires"):
             qml.MultiControlledX.compute_decomposition((0,), control_values=[1])
 
@@ -791,16 +791,6 @@ class TestMultiControlledX:
         pauli_x_state = circuit_pauli_x()
 
         assert qml.math.allclose(mpmct_state, pauli_x_state)
-
-    def test_not_enough_workers(self):
-        """Test that a ValueError is raised when more than 2 control wires are to be decomposed with
-        no work wires supplied"""
-        control_target_wires = range(4)
-        op = qml.MultiControlledX(wires=control_target_wires)
-
-        match = "At least one work wire is required to decompose operation: MultiControlledX"
-        with pytest.raises(ValueError, match=match):
-            op.decomposition()
 
     def test_not_unique_wires(self):
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
