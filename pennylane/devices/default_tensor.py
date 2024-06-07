@@ -244,9 +244,6 @@ class DefaultTensor(Device):
 
             We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
-            Matrix Product State Method
-            ===========================
-
             In the following example, we consider a slightly more complex circuit. We use the ``default.tensor`` device with the MPS method,
             setting the maximum bond dimension to 100 and the cutoff to the machine epsilon.
 
@@ -295,8 +292,7 @@ class DefaultTensor(Device):
             The time complexity and the accuracy of the results also depend on the chosen keyword arguments for the device, such as the maximum bond dimension.
             The specific structure of the circuit significantly affects how the time complexity and accuracy of the simulation scale with these parameters.
 
-            Tensor Network Method
-            =====================
+
 
             We can also simulate quantum circuits using the Tensor Network (TN) method. This can be particularly useful for circuits that build up entanglement.
             The following example shows how to execute a quantum circuit with the TN method and configurable depth using ``default.tensor``.
