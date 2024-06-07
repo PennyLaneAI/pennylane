@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* QROM template is added. This template allows you to enter classic data in the form of bitstrings.
+  [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
+
+  ```python
+  # a list of bitstrings is defined
+  bitstrings = ["010", "111", "110", "000"]
+
+  dev = qml.device("default.qubit", shots = 1)
+
+  @qml.qnode(dev)
+  def circuit():
+
+      # the third index is encoded in the control wires [0, 1]
+      qml.BasisEmbedding(2, wires = [0,1])
+
+      qml.QROM(bitstrings = bitstrings,
+              control_wires = [0,1],
+              target_wires = [2,3,4],
+              work_wires = [5,6,7])
+
+      return qml.sample(wires = [2,3,4])
+  ```
+   ```pycon
+  >>> print(circuit())
+  [1 1 0]
+  ```
+
 * `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
   These keyword arguments can be used to configure how the device should behave when running circuits with
   mid-circuit measurements.
@@ -19,6 +46,7 @@
 
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
 
 <h3>Improvements 🛠</h3>
 
@@ -146,6 +174,15 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
+* `MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations, and is applicable for any multi controlled unitary gate.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control unitary now includes the correct global phase.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control `GlobalPhase` has now a decomposition, i.e. relative phase on control wire.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
@@ -179,14 +216,18 @@
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
-
-* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  
+* `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
   [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
+  
+* `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
+  to be simulated on the `default.qutrit.mixed` device.
+  [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
 <h3>Breaking changes 💔</h3>
 
@@ -307,10 +348,14 @@
 * `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
   [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
 
+* Fixes a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` is incorrect on `default.qubit.legacy` with `parameter_shift`.
+  [(#5806)](https://github.com/PennyLaneAI/pennylane/pull/5806)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje,
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,
