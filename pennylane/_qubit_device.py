@@ -468,7 +468,7 @@ class QubitDevice(Device):
 
         return new_r
 
-    def batch_execute(self, circuits):
+    def batch_execute(self, circuits, **kwargs):
         """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
@@ -492,13 +492,16 @@ class QubitDevice(Device):
                 ),
             )
 
+        if self.capabilities().get("supports_mid_measure", False):
+            kwargs.setdefault("postselect_mode", None)
+
         results = []
         for circuit in circuits:
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
 
-            res = self.execute(circuit)
+            res = self.execute(circuit, **kwargs)
             results.append(res)
 
         if self.tracker.active:
