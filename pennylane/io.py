@@ -447,7 +447,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
         function: the PennyLane template created based on the QASM string
     """
     plugin_converter = plugin_converters["qasm"].load()
-    return plugin_converter(quantum_circuit, measurements)
+    return plugin_converter(quantum_circuit, measurements=measurements)
 
 
 def from_pyquil(pyquil_program):
