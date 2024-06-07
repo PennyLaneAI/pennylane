@@ -77,6 +77,9 @@
 * The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
 
+* Molecules and Hamiltonians can be constructed for elements present in the periodic table.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
@@ -359,6 +362,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
+Utkarsh Azad
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,

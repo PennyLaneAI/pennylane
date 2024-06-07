@@ -100,6 +100,15 @@ def atom_basis_data(name, atom, load_data=False):
     if load_data:
         basis = load_basisset(name, atom)
     else:
+        basis = basis_sets[name].get(atom, None)
+        if basis is None:
+            raise ValueError(
+                "Currently, internally supported basis sets: 'sto-3g', '6-31g', '6-311g' and "
+                "'cc-pvdz', support only first- or second-row elements of the periodic table. "
+                "Please consider using `load_data=True` to download an extended version of "
+                f"{basis_sets[name]} from an external library that can be installed with: "
+                "pip install basis-set-exchange."
+            )
         basis = basis_sets[name][atom]
 
     params = []

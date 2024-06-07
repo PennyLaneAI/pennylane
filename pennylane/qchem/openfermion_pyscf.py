@@ -609,10 +609,7 @@ def dipole_of(
 
     for i in symbols:
         if i not in atomic_numbers:
-            raise ValueError(
-                f"Currently, only first- or second-row elements of the periodic table are supported;"
-                f" got element {i}"
-            )
+            raise ValueError(f"Requested element {i} doesn't exist in the periodic table")
 
     hf_file = qml.qchem.meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
