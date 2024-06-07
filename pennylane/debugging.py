@@ -208,7 +208,7 @@ class PLDB(pdb.Pdb):
 @contextmanager
 def pldb_device_manager(device):
     """Context manager to automatically set and reset active
-    device on the PLDB debugger.
+    device on the Pennylane Debugger (PLDB).
 
     Args:
         device (Union[Device, "qml.devices.Device"]): the active device instance
@@ -474,6 +474,7 @@ def probs(wires=None, op=None):
          12  	    return qml.state()
         [pldb]: qml.debugging.probs()
         array([0.33355943, 0.33355943, 0.16644057, 0.16644057])
+
     """
     if op:
         qml.queuing.QueuingManager.active_context().remove(
