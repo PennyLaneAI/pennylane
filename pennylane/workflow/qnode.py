@@ -1182,7 +1182,7 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
     if type_to_keep == 0:
         return
 
-    dynamic_transform_found = inner_transform._prune_dynamic_transform(type_to_keep)
+    dynamic_transform_found = inner_transform.prune_dynamic_transform(type_to_keep)
     if dynamic_transform_found:
         type_to_keep = 0
-    outer_transform._prune_dynamic_transform(type_to_keep)
+    outer_transform.prune_dynamic_transform(type_to_keep)

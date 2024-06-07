@@ -352,7 +352,7 @@ class TransformProgram:
             self._set_all_classical_jacobians(qnode, args, kwargs, argnums)
             self._set_all_argnums(qnode, args, kwargs, argnums)
 
-    def _prune_dynamic_transform(self, type_to_keep=1):
+    def prune_dynamic_transform(self, type_to_keep=1):
         """Ensures that only one or none ``dynamic_one_shot`` is applied.
 
         Args:
