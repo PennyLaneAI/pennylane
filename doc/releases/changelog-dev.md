@@ -289,5 +289,6 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Kazuki Tsuoka,
 Haochen Paul Wang,
 David Wierichs.

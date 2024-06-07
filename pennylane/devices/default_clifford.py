@@ -627,8 +627,7 @@ class DefaultClifford(Device):
     ):
         """Apply a snapshot operation to the stim circuit."""
         if debugger is not None and debugger.active:
-            meas = operation.hyperparameters["measurement"]
-            meas = StateMP() if meas is None else meas
+            meas = operation.hyperparameters["measurement"] or StateMP()
             measurement_func = self._analytical_measurement_map.get(type(meas), None)
 
             if measurement_func is None:  # pragma: no cover
@@ -641,13 +640,14 @@ class DefaultClifford(Device):
             if self.wires is not None:
                 snap_sim.set_num_qubits(len(self.wires))
             snap_sim.do_circuit(stim_circuit)
+            global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
             snap_result = measurement_func(
                 meas,
                 snap_sim,
                 circuit=circuit,
                 stim_circuit=stim_circuit,
-                global_phase=qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops)),
+                global_phase=global_phase,
             )
 
             # Add to the debugger snapshot
