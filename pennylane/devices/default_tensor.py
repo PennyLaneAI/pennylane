@@ -181,7 +181,7 @@ class DefaultTensor(Device):
     This device is designed to simulate large-scale quantum circuits using tensor networks. For small circuits, other devices like ``default.qubit`` may be more suitable.
 
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
-    Currently, the supported methods are Matrix Product State (MPS), based on the ``quimb``'s ``CircuitMPS`` class, and Exact Tensor Network (TN), based on the ``quimb``'s ``Circuit`` class.
+    The supported methods are Matrix Product State (MPS), based on the ``quimb``'s ``CircuitMPS`` class, and Tensor Network (TN), based on the ``quimb``'s ``Circuit`` class.
 
     This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values and variances.
 
@@ -189,7 +189,7 @@ class DefaultTensor(Device):
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
-        method (str): Supported method. Currently, the supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Exact Tensor Network).
+        method (str): Supported method. The supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Tensor Network).
         dtype (type): Data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
@@ -286,7 +286,7 @@ class DefaultTensor(Device):
             >>> circuit(theta, phi, num_qubits)
             [-0.9953099539219951, 0.0036631029671767208, 0.9999999876072984]
 
-            After the first execution, the time to run this circuit for 50 qubits is around 0.5 seconds depending on the machine.
+            After the first execution, the time to run this circuit for 50 qubits is around 0.5 seconds on a standard laptop.
             Increasing the number of qubits to 500 brings the execution time to approximately 15 seconds, and for 1000 qubits to around 50 seconds.
 
             The time complexity and the accuracy of the results also depend on the chosen keyword arguments for the device, such as the maximum bond dimension.
@@ -326,9 +326,9 @@ class DefaultTensor(Device):
             >>> circuit(phi, dept, num_qubits)
             -0.9511499466743278
 
-            The execution time for this circuit with the above parameters is around 0.2 seconds, depending on the machine.
+            The execution time for this circuit with the above parameters is around 0.2 seconds on a standard laptop.
 
-            Using ``quimb`` as the backend, the exact tensor network method can be faster than MPS in some cases.
+            Using ``quimb`` as the backend, the exact tensor network method can be faster than MPS and state vector methods in some cases.
             As a comparison, the time for the exact calculation of the same circuit with the MPS method is about one order of magnitude slower.
     """
 
