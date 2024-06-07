@@ -16,6 +16,7 @@ Unit tests for functions needed for converting objects obtained from external li
 PennyLane object.
 """
 import openfermion as of
+
 # pylint: disable=too-many-arguments,protected-access
 import pytest
 
