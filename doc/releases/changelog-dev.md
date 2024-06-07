@@ -50,6 +50,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
@@ -249,9 +252,6 @@
 
 * `qml.load` has been removed in favour of more specific functions, such as `qml.from_qiskit`, etc.
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
-
-* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
-   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
 * `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
   returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.

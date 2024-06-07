@@ -15,8 +15,6 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
-
-import copy
 from collections import defaultdict
 
 import pennylane as qml
@@ -267,8 +265,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         num_wires = len(self.wires)
         num_gates = len(decomp)
 
-        unique_operation_decomp = (copy.deepcopy(op) for op in decomp)
-        depth = qml.tape.QuantumTape(ops=unique_operation_decomp).graph.get_depth()
+        depth = qml.tape.QuantumTape(ops=decomp).graph.get_depth()
 
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
@@ -441,9 +438,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         ops = kwargs["base"].operands
 
         decomp = _recursive_expression(time / n, order, ops)[::-1] * n
+        unique_decomp = [copy.copy(op) for op in decomp]
 
         if qml.QueuingManager.recording():
-            for op in decomp:  # apply operators in reverse order of expression
+            for op in unique_decomp:  # apply operators in reverse order of expression
                 qml.apply(op)
 
-        return decomp
+        return unique_decomp
