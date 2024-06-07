@@ -28,7 +28,6 @@ from pennylane import Device
 from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core.transform_program import _prune_dynamic_transform
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
 
@@ -1159,3 +1158,23 @@ class QNode:
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+# pylint: disable=protected-access
+def _prune_dynamic_transform(outer_transform, inner_transform):
+    """Ensure a single ``dynamic_one_shot`` transform is applied."""
+
+    all_transforms = outer_transform._transform_program + inner_transform._transform_program
+    type_to_keep = 0
+    if any("mid_circuit_measurements" in str(t) for t in all_transforms):
+        type_to_keep = 2
+    elif any("dynamic_one_shot" in str(t) for t in all_transforms):
+        type_to_keep = 1
+
+    if type_to_keep == 0:
+        return
+
+    dynamic_transform_found = inner_transform._prune_dynamic_transform(type_to_keep)
+    if dynamic_transform_found:
+        type_to_keep = 0
+    outer_transform._prune_dynamic_transform(type_to_keep)

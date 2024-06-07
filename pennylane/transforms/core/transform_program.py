@@ -551,23 +551,3 @@ class TransformProgram:
         # Reset classical jacobians
         self._classical_jacobians = []
         return tuple(tapes), postprocessing_fn
-
-
-# pylint: disable=protected-access
-def _prune_dynamic_transform(outer_transform, inner_transform):
-    """Ensure a single ``dynamic_one_shot`` transform is applied."""
-
-    all_transforms = outer_transform._transform_program + inner_transform._transform_program
-    type_to_keep = 0
-    if any("mid_circuit_measurements" in str(t) for t in all_transforms):
-        type_to_keep = 2
-    elif any("dynamic_one_shot" in str(t) for t in all_transforms):
-        type_to_keep = 1
-
-    if type_to_keep == 0:
-        return
-
-    dynamic_transform_found = inner_transform._prune_dynamic_transform(type_to_keep)
-    if dynamic_transform_found:
-        type_to_keep = 0
-    outer_transform._prune_dynamic_transform(type_to_keep)
