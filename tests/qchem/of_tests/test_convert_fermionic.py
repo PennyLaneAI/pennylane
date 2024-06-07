@@ -16,6 +16,8 @@ Unit tests for functions needed for converting objects obtained from external li
 PennyLane object.
 """
 # pylint: disable=too-many-arguments,protected-access
+import sys
+
 import pytest
 
 import pennylane as qml
@@ -117,3 +119,13 @@ def test_convert_from_openfermion_tol():
     converted_op = qml.qchem.from_openfermion(of_op, tol=0.6)
 
     assert converted_op == truncated_op
+
+
+def test_fail_import_openfermion(monkeypatch):
+    """Test if an ImportError is raised when openfermion is requested but not installed"""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "openfermion", None)
+
+        with pytest.raises(ImportError, match="This feature requires openfermion"):
+            qml.qchem.from_openfermion(openfermion.FermionOperator("0^ 1"))
