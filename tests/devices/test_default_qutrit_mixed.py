@@ -1307,7 +1307,7 @@ class TestMeasurementError:  # TODO:--------------------------------------------
     @classmethod
     def matrix_over_wires(cls, matrix, wire):
         """TODO"""
-        pass
+        return reduce(np.kron, (np.eye(3 ** wire), matrix, np.eye(3 ** (cls.num_wires - (wire + 1)))))
 
     @classmethod
     def get_state_with_measurement_error(cls, state, gammas, probs):
@@ -1321,7 +1321,7 @@ class TestMeasurementError:  # TODO:--------------------------------------------
 
         # Apply trit flip to each wire
         if probs is not None:
-            Ks = qml.BitFlip.compute_kraus_matrices(*probs)
+            Ks = qml.TritFlip.compute_kraus_matrices(*probs)
             for wire in range(cls.num_wires):
                 Ks_over_wires = [cls.matrix_over_wires(K, wire) for K in Ks]
                 state = sum([K @ state @ K.T for K in Ks_over_wires])
@@ -1376,12 +1376,13 @@ class TestMeasurementError:  # TODO:--------------------------------------------
         circuit = qml.QNode(self.get_circuit(mp), device=dev)
 
         if isinstance(mp, ExpectationMP) or isinstance(mp, VarianceMP):
-            expected_res = [exp_fun(m_error_gammas, m_error_probs, obs) for obs in mp.obs]
+            expected_res = exp_fun(m_error_gammas, m_error_probs, mp.obs)
         else:
             expected_res = exp_fun(m_error_gammas, m_error_probs)
         assert np.allclose(circuit(), expected_res)
 
     shots_measurements = [
+            (qml.expval(), get_expected_expval),
             (qml.expval(), get_expected_expval),
             (qml.var(), get_expected_var),
             (qml.counts(), get_expected_counts),

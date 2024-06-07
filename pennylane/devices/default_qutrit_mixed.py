@@ -138,8 +138,7 @@ def get_measurement_errors(damping_measurement_gammas, trit_flip_measurement_pro
     if trit_flip_measurement_probs is not None:
         if len(trit_flip_measurement_probs) != 3:
             raise qml.DeviceError("You must input 3 probabilities for the qml.TritFlip channel")
-        measure_funcs.append(partial(qml.BitFlip, *trit_flip_measurement_probs))
-        # TODO: TritFlip
+        measure_funcs.append(partial(qml.TritFlip, *trit_flip_measurement_probs))
 
     return None if len(measure_funcs) == 0 else measure_funcs
 
