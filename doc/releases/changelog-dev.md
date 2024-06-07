@@ -213,6 +213,9 @@
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
 
+* `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
+  [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -275,6 +278,9 @@
 
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
+* Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fix of incorrectly set up commands)
+  [(#5804)](https://github.com/PennyLaneAI/pennylane/pull/5804)
 
 * The `qml.Tracker` examples are updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
@@ -368,6 +374,7 @@ Emiliano Godinez,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
+Rohan Jain,
 Mashhood Khan,
 Korbinian Kottmann,
 Christina Lee,
