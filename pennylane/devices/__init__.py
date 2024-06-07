@@ -84,10 +84,10 @@ Other transforms that may be relevant to device preprocessing include:
     :toctree: api
 
     defer_measurements
+    dynamic_one_shot
     transforms.broadcast_expand
-    transforms.sum_expand
     transforms.split_non_commuting
-    transforms.hamiltonian_expand
+    transforms.transpile
 
 
 Modifiers

@@ -47,15 +47,18 @@ A Basic Python Simulation
 
         # 3) perform measurements
         # note that shots are pulled from the tape, not from the device
-        if tape.shots:
-            results = []
-            for shots in tape.shots:
-                samples = sample_state(state, shots=shots, seed=seed)
-                results.append(tuple(mp.process_samples(samples, tape.wires) for mp in tape.measurements))
-            return tuple(results) if tape.shots.has_partitioned_shots else results[0]
-        else:
+        if not tape.shots:
             results = tuple(mp.process_state(state, tape.wires) for mp in tape.measurements)
-        return results[0] if len(tape.measurements) == 1 else results
+            return results[0] if len(tape.measurements) == 1 else results
+
+        results = []
+        samples = sample_state(state, shots=tape.shots.total_shots, seed=seed)
+        for lower, upper in tape.shots.bins():
+            sliced_samples = samples[lower: upper]
+            sliced_results = tuple(mp.process_samples(sliced_samples tape.wires) for mp in tape.measurements)
+            results.append(sliced_results)
+        return tuple(results) if tape.shots.has_partitioned_shots else results[0]
+
 
 
 Creating supported circuits

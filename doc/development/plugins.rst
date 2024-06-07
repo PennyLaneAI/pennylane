@@ -68,6 +68,10 @@ different numbers of shots to use when calculating the final expecation value.
 (ShotCopies(5 shots x 1),
  ShotCopies(500 shots x 1),
  ShotCopies(1000 shots x 1))
+>>> list(tape0.shots)
+[5, 500, 1000]
+>>> list(tape0.shots.bins())
+[(0, 5), (5, 505), (505, 1505)]
 >>> dev.execute(tape0)
 (0.2, -0.052, -0.014)
 
@@ -85,7 +89,7 @@ Devices can now either:
 3) Strictly require specific wire labels
 
 Option 2 allows workflows to change the number and labeling of wires over time, but sometimes users want
-to enfore a wire convention and labels. If a user does provide wires, the :method:`~.devices.Device.preprocess` should
+to enfore a wire convention and labels. If a user does provide wires, the :meth:`~.devices.Device.preprocess` should
 validate that submitted circuits only have wires in the requested range.
 
 >>> dev = qml.device('default.qubit', wires=1)
@@ -95,8 +99,8 @@ WireError: Cannot run circuit(s) of default.qubit as they contain wires not foun
 
 PennyLane wires can be any hashable object, where wire labels are distinguished by their equality and hash.
 If working with successive integers (``0``, ``1``, ``2``, ...) is preferred internally,
-the :method:`~.QuantumScript.map_to_standard_wires` method can be used inside of 
-the :method:`~.devices.Device.execute` method.  The :class:`~.map_wires` transform can also 
+the :meth:`~.QuantumScript.map_to_standard_wires` method can be used inside of 
+the :meth:`~.devices.Device.execute` method.  The :class:`~.map_wires` transform can also 
 map the wires of the submitted circuit to internal labels.
 
 Sometimes hardware qubit labels cannot be arbitrarily mapped without a changing in behaviour.
@@ -113,6 +117,74 @@ DeviceError: Device my_hardware cannot internally map wires, as the labels 0, 1,
 
 Preprocessing
 -------------
+
+The preprocessing method has two main responsibilities:
+
+1) Create a :class:`~.TransformProgram` capable of turning an arbitrary :class:`~.QuantumScript` into one supported by the device
+2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation
+
+These two tasks can be extracted into private methods or helper functions if that improves source code organization.
+
+See the section on the **Execution Config** below for more information on step 2.
+
+Devices may define their own transforms following the description in the ``transforms`` module,
+or can include in-built transforms such as:
+
+.. currentmodule:: pennylane.devices.preprocess
+.. autosummary::
+    :toctree: api
+
+    decompose
+    validate_observables
+    validate_measurements
+    validate_device_wires
+    validate_multiprocessing_workers
+    validate_adjoint_trainable_params
+    no_sampling
+
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    defer_measurements
+    dynamic_one_shot
+    transforms.broadcast_expand
+    transforms.split_non_commuting
+    transforms.transpile
+
+Once a program is created, an individual transform can be added to the program with the
+:meth:`~.TransformProgram.add_transform` method.
+
+.. code-block:: python
+
+    from pennylane.devices.preprocess import validate_device_wires
+
+    program = qml.transforms.core.TransformProgram()
+    program.add_transform(validate_device_wires, wires=qml.wires.Wires((0,1,2)), name="my_device")
+
+Preprocessing and validation can also exist inside the :meth:`~devices.Device.execute` method, but placing them
+in the preprocessing program has several benefits. Validation can happen earlier, leading to fewer resources
+spent before the error is raised.  Users can inspect, draw, and spec out the tapes at different stages throughout
+preprocessing. This provides users a better awareness of what the device is actually executing. When device
+gradients are used, the preprocessing transforms are tracked by the machine learning interfaces.  With the
+ML framework tracking the classical component of preprocessing, the device does not need to manually track the
+classical component of any decompositions or compilation. 
+
+Even with these benefits, devices can still opt to
+place some transforms inside the ``execute`` method.  For example, ``default.qubit`` maps wires to simulation indices
+inside ``execute`` instead of in ``preprocess``.
+
+The :meth:`~.devices.Device.execute` can assume that device preprocessing has been run on the input
+tapes, and has no obligation to re-validate the input or provide sensible error messages.
+
+>>> op = qml.Permute([2,1,0], wires=(0,1,2))
+>>> tape = qml.tape.QuantumScript([op], [qml.probs(wires=(0,1))])
+>>> qml.device('default.qubit').execute(tape)
+MatrixUndefinedError:
+>>> tape = qml.tape.QuantumScript([], [qml.density_matrix(wires=0)], shots=50)
+>>> qml.device('default.qubit').execute(tape)
+AttributeError: 'DensityMatrixMP' object has no attribute 'process_samples'
 
 
 Execution Config
@@ -138,8 +210,9 @@ dictionary on preprocessing.
  'method': 'mps',
  'max_bond_dim': 4}
 
-Even the property is stored as an attribute on the device, execution should pull the value of these properties from the config
-instead of from the device instance. While not yet integrated at the top user level, we aim to allow dynamic configuration of the device.
+Even if the property is stored as an attribute on the device, execution should pull the
+value of these properties from the config instead of from the device instance.
+While not yet integrated at the top user level, we aim to allow dynamic configuration of the device.
 
 >>> dev = qml.device('default.qubit')
 >>> config = qml.devices.ExecutionConfig(device_options={"rng": 42})
@@ -149,7 +222,8 @@ array([1, 0, 1, 1, 0, 1, 1, 1, 0, 0])
 >>> dev.execute(tape, config)
 array([1, 0, 1, 1, 0, 1, 1, 1, 0, 0])
 
-By pulling options from this dictionary, we unlock two key pieces of functionality.
+By pulling options from this dictionary instead of from device properties,
+we unlock two key pieces of functionality.
 
 1) Track and specify the exact configuration of the execution by only inspecting the ``ExecutionConfig`` object
 2) Dynamically configure the device over the course of a workflow.
@@ -157,7 +231,7 @@ By pulling options from this dictionary, we unlock two key pieces of functionali
 
 **Workflow Configuration:**
 
-Note that these properties are only applicable to devices that provided derivatives or VJPs. If you're device
+Note that these properties are only applicable to devices that provided derivatives or VJPs. If your device
 does not provide derivatives, you can safely ignore these properties.
 
 The workflow options are ``use_device_gradient``, ``use_device_jacobian_product``, and ``grad_on_execution``. 
@@ -176,6 +250,20 @@ True
 >>> processed_config.grad_on_execution
 True
 
+Execution
+---------
+
+For documentation on the expected result type output, please refer to :ref:`ReturnTypeSpec`.
+
+The device API allows individual devices to calculate results in whatever way makes sense for
+the individual device. With this freedom over the implementation does come more responsibility
+to handle each stage in the process.
+
+
+Mid circuit measurement support
+-------------------------------
+
+TODO
 
 Device tracker support
 ----------------------
@@ -200,7 +288,11 @@ to the device:
         ...
 
 
-We recommend placing the following code near the end of the ``execute`` method:
+``simulator_tracking`` is useful when the device can simulataneously measure non-commuting measurements or
+handle parameter-broadcasting, as it both tracks simulations and the corresponding number of QPU-like
+circuits.
+
+To implement your own tracking, we recommend placing the following code in the ``execute`` method:
 
 .. code-block:: python
 
@@ -264,33 +356,3 @@ where
 To ensure your device is working as expected, you can install it in developer mode using
 ``pip install -e pluginpath``, where ``pluginpath`` is the location of the plugin. It will
 then be accessible via PennyLane.
-
-Supporting custom operators
----------------------------
-
-If you would like to support an operator (such as a gate or observable) that is not currently supported by
-PennyLane, you can subclass the :class:`~.Operator` class. Detailed information can be found in the
-section :doc:`/development/adding_operators`.
-
-Users can then import this operator directly from your plugin, and use it when defining a QNode:
-
-.. code-block:: python
-
-    import pennylane as qml
-    from MyModule.MySubModule import CustomGate
-
-    @qnode(dev1)
-    def my_qfunc(phi):
-        qml.Hadamard(wires=0)
-        CustomGate(phi, theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
-.. warning::
-
-    If you are providing custom operators not natively supported by PennyLane, it is recommended
-    that the plugin unit tests provide tests to ensure that PennyLane returns the correct
-    gradient for the custom operations.
-
-If the custom operator is diagonal in the computational basis, it can be added to the
-``diagonal_in_z_basis`` attribute in ``pennylane.ops.qubit.attributes``. Devices can use this
-information to implement faster simulations.``
