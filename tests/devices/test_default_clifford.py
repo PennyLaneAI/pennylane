@@ -466,6 +466,7 @@ def test_snapshot_supported(measurement, tag):
     snaps_qubit = qml.snapshots(qnode_qubit)()
     snaps_clifford = qml.snapshots(qnode_clifford)()
 
+    assert len(snaps_qubit) == len(snaps_clifford)
     for key1, key2 in zip(snaps_qubit, snaps_clifford):
         assert key1 == key2
         assert qml.math.allclose(snaps_qubit[key1], snaps_clifford[key2])
