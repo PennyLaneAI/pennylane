@@ -90,7 +90,7 @@ def add_noise(tape, noise_model, level=None):
     1: ──RY(0.4)──ThermalRelaxationError(0.2,2.0,0.2,0.6)─╰X──RX(0.6)───PhaseDamping(0.4)───────────────────────┤ ╰<Z@Z>
 
     .. details::
-        :title: Usage Details: Advanced Examples
+        :title: Advanced Examples
         :href: add-noise-example
 
         ``qml.add_noise`` can also be used to tranform quantum functions, devices or already constructed qnodes.
@@ -162,6 +162,8 @@ def add_noise(tape, noise_model, level=None):
             qfunc_qnode = qml.QNode(f, dev)
             noise_qnode = qml.transforms.add_noise(qfunc_qnode, noise_model)
 
+        and obtain the resulting modified qnode or device:
+
         >>> print(qml.draw(qfunc_qnode, decimals=2)(0.1, 0.7, 0.8, 0.4))
         0: ──RX(0.10)─╭●──RY(0.80)─┤ ╭<Z@Z>
         1: ──RY(0.70)─╰X──RX(0.40)─┤ ╰<Z@Z>
@@ -176,7 +178,7 @@ def add_noise(tape, noise_model, level=None):
         True
 
     .. details::
-        :title: Usage Details: Tranform Levels
+        :title: Tranform Levels
         :href: add-noise-levels
 
         By default, ``add_noise`` transform will be added to the end of the "user" transforms,
