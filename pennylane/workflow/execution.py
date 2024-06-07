@@ -265,7 +265,7 @@ def _make_inner_execute(
     for the 1st order derivatives.
 
     Steps in between the ml framework execution and the device are:
-    - device expansion (old device)
+    - device expansion (old device) or device preprocessing (new device)
     - conversion to numpy
     - caching
 
@@ -443,7 +443,7 @@ def execute(
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
-        inner_transform (.TransformProgram): A transform program to be applied to the tapes in the inner_execute.
+        inner_transform (.TransformProgram): A transform program to be applied to the tapes in inner execution, inside the ml interface.
         config (qml.devices.ExecutionConfig): A datastructure describing the parameters needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform

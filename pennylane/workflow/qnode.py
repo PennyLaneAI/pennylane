@@ -1162,7 +1162,15 @@ qnode.__signature__ = inspect.signature(QNode)
 
 # pylint: disable=protected-access
 def _prune_dynamic_transform(outer_transform, inner_transform):
-    """Ensure a single ``dynamic_one_shot`` transform is applied."""
+    """Ensure a single ``dynamic_one_shot`` transform is applied.
+
+    Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
+    be added to the inner transform program. If the user then applies a ``dynamic_one_shot``
+    manually, it will duplicate the ``mid_circuit_measurements`` transform. This function ensures
+    that there is only one ``dynamic_one_shot`` transform in the outer and inner transform
+    programs combined.
+
+    """
 
     all_transforms = outer_transform._transform_program + inner_transform._transform_program
     type_to_keep = 0
