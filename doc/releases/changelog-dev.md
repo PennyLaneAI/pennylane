@@ -78,7 +78,7 @@
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
 
 * Molecules and Hamiltonians can be constructed for elements present in the periodic table.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
