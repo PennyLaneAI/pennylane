@@ -105,7 +105,7 @@ nbformat==5.10.4
 nest-asyncio==1.6.0
 networkx==3.2.1
 nodeenv==1.9.1
-notebook==7.2.0
+notebook==7.2.1
 notebook_shim==0.2.4
 numba==0.59.1
 numpy==1.26.4
