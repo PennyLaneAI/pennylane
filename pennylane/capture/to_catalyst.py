@@ -25,7 +25,15 @@ from .primitives import _get_abstract_measurement, _get_abstract_operator
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
 
-measurement_map = {"expval_obs": cat_p.expval_p, "probs_wires": cat_p.probs_p}
+measurement_map = {
+    "sample_wires": cat_p.sample_p,
+    "sample_obs": cat_p.sample_p,
+    "expval_obs": cat_p.expval_p,
+    "var_obs": cat_p.var_p,
+    "probs_wires": cat_p.probs_p,
+    "state_wires": cat_p.state_p,
+}
+# TODO: figure out what to do about counts
 
 
 null_source_info = jax.extend.source_info_util.SourceInfo(
@@ -171,7 +179,7 @@ class CatalystConverter:
     def add_device_eqn(self, device):
         self.num_device_wires = len(device.wires)
         shots = device.shots.total_shots
-        self.shots = 0 if shots is None else shots
+        self.shots = device.shots
         params = _get_device_kwargs(device)
         device_eqn = jax.core.JaxprEqn(
             [],
@@ -336,6 +344,13 @@ class CatalystConverter:
         outavals = _get_shapes_for(
             eqn.outvars[0].aval, shots=self.shots, num_device_wires=self.num_device_wires
         )
+        convert_element_inds = []
+        for i, oa in enumerate(outavals):
+            print(oa)
+            if oa != jax.numpy.float64:
+                convert_element_inds.append((i, oa))
+                outavals[i] = jax.core.ShapedArray(oa.shape, dtype=jax.numpy.float64)
+
         outvars = [self._make_var(oa) for oa in outavals]
 
         new_eqn = jax.core.JaxprEqn(
@@ -347,7 +362,23 @@ class CatalystConverter:
             source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(new_eqn)
-        return outvars
+
+        final_outvars = list(outvars)
+        for ind, orig_aval in convert_element_inds:
+            c_invars = [outvars[ind]]
+            c_outvars = [self._make_var(orig_aval)]
+            c_eqn = jax.core.JaxprEqn(
+                c_invars,
+                c_outvars,
+                jax.lax.convert_element_type_p,
+                {"new_dtype": orig_aval.dtype, "weak_type": False},
+                effects=jax.core.no_effects,
+                source_info=null_source_info,
+            )
+            self.catalyst_xpr.eqns.append(c_eqn)
+            final_outvars[ind] = c_outvars[0]
+
+        return final_outvars
 
     def convert_plxpr_eqns(self):
         for eqn in self.plxpr.eqns:

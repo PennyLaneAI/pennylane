@@ -143,10 +143,4 @@ def __getattr__(key):
 
         return _get_abstract_operator()
 
-    if key == "to_catalyst":
-        # lazy import to prevent circular dependency issues
-        from .to_catalyst import to_catalyst  # pylint: disable=import-outside-toplevel
-
-        return to_catalyst
-
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
