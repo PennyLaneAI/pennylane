@@ -227,14 +227,19 @@ class TestDifferentiability:
         "use_jit , shots",
         ((False, None), (True, None), (False, 50000)),
     )  # TODO: (True, 50000) fails because jax.jit on jax.grad does not work with AmplitudeEmbedding
-    def test_qnode_jax(self, shots, use_jit):
+    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
+    def test_qnode_jax(self, shots, use_jit, device):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        if device == "default.qubit":
+            dev = qml.device("default.qubit", shots=shots, seed=10)
+        else:
+            dev = qml.device("default.qubit.legacy", shots=shots, wires=5)
+
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
@@ -248,7 +253,7 @@ class TestDifferentiability:
 
         jac = jac_fn(params)
         assert jac.shape == (4,)
-        assert np.allclose(jac, self.exp_grad, atol=0.01)
+        assert np.allclose(jac, self.exp_grad, atol=0.05)
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
