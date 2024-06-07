@@ -174,6 +174,15 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
+* `MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations, and is applicable for any multi controlled unitary gate.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control unitary now includes the correct global phase.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control `GlobalPhase` has now a decomposition, i.e. relative phase on control wire.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
@@ -203,18 +212,25 @@
 * Device preprocess transforms now happen inside the ml boundary.
   [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
 
+* `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
+  [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
-
-* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  
+* `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
   [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
+  
+* `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
+  to be simulated on the `default.qutrit.mixed` device.
+  [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
 <h3>Breaking changes 💔</h3>
 
@@ -261,6 +277,9 @@
 
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
+* Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fix of incorrectly set up commands)
+  [(#5804)](https://github.com/PennyLaneAI/pennylane/pull/5804)
 
 * The `qml.Tracker` examples are updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
@@ -354,6 +373,7 @@ Emiliano Godinez,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
+Rohan Jain,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
