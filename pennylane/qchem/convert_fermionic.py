@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
 """
 This module contains the functions for converting an openfermion fermionic operator to Pennylane FermiWord or FermiSentence operators
 """
-
+# pylint: disable= import-outside-toplevel,no-member,too-many-function-args,unused-import
 from pennylane import fermi
 
 
-def from_openfermion(of_fermi_op, tol=1e-16):
+def from_openfermion(of_op, tol=1e-16):
     r"""Convert openfermion ``FermionOperator`` objects to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` objects.
 
     Args:
-        of_ferm_op (FermionOperator): OpenFermion fermionic operator
+        of_op (FermionOperator): OpenFermion fermionic operator
         tol (float): Tolerance for discarding coefficients
 
     Returns:
@@ -30,9 +30,9 @@ def from_openfermion(of_fermi_op, tol=1e-16):
 
     **Example**
 
-    >>> of_fermi_op = 0.5 * openfermion.FermionOperator('0^ 2') + openfermion.FermionOperator('0 2^')
-    >>> pl_fermi_op = qchem.from_openfermion(of_fermi_op)
-    >>> print(pl_ferm_op)
+    >>> of_op = 0.5 * openfermion.FermionOperator('0^ 2') + openfermion.FermionOperator('0 2^')
+    >>> pl_op = qchem.from_openfermion(of_op)
+    >>> print(pl_op)
         0.5 * a(0) a⁺(2)
         + 1.0 * a⁺(0) a(2)
     """
@@ -46,16 +46,16 @@ def from_openfermion(of_fermi_op, tol=1e-16):
 
     action = {"0": "-", "1": "+"}
 
-    if len(of_fermi_op.terms) == 1 and list(of_fermi_op.terms.values())[0] == 1.0:
+    if len(of_op.terms) == 1 and list(of_op.terms.values())[0] == 1.0:
         fermi_str = " ".join(
-            [str(operator[0]) + action[str(operator[1])] for operator in list(of_fermi_op.terms)[0]]
+            [str(operator[0]) + action[str(operator[1])] for operator in list(of_op.terms)[0]]
         )
         return fermi.from_string(fermi_str)
 
     fermi_pl = 0 * fermi.FermiWord({})
-    for term in of_fermi_op.terms:
+    for term in of_op.terms:
         fermi_str = " ".join([str(operator[0]) + action[str(operator[1])] for operator in term])
-        fermi_pl += of_fermi_op.terms[term] * fermi.from_string(fermi_str)
+        fermi_pl += of_op.terms[term] * fermi.from_string(fermi_str)
 
     fermi_pl.simplify(tol=tol)
     return fermi_pl
