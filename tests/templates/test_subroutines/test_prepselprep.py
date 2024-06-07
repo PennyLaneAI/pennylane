@@ -237,7 +237,8 @@ class TestPrepSelPrep:
         for op1, op2 in zip(queue1, queue2):
             assert op1.name == op2.name
             assert len(op1.parameters) == len(op2.parameters)
-            assert all([a == b] for a, b in zip(op1.parameters, op2.parameters))
+            for a, b in zip(op1.parameters, op2.parameters):
+                assert (a == b).all()
 
     def test_copy(self):
         """Test the copy function"""
