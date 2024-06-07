@@ -98,7 +98,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     - The function uses tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
       to map the resulting fermionic Hamiltonian to the basis of Pauli matrices via the
-      Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit operator is converted
+      Jordan-Wigner, Parity or Bravyi-Kitaev transformation. Finally, the qubit operator is converted
       to a PennyLane observable by the function :func:`~.convert_observable`.
 
     Args:
@@ -551,7 +551,7 @@ def dipole_of(
             mean field electronic structure problem
         core (list): indices of core orbitals
         active (list): indices of active orbitals
-        mapping (str): transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
+        mapping (str): transformation (``'jordan_wigner'``, ``'parity'``, or ``'bravyi_kitaev'``) used to
             map the fermionic operator to the Pauli basis
         cutoff (float): Cutoff value for including the matrix elements
             :math:`\langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle`. The matrix elements
