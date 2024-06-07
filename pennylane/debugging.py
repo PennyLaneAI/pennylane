@@ -14,6 +14,7 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
+import copy
 import pdb
 import sys
 from contextlib import contextmanager
@@ -186,6 +187,23 @@ class PLDB(pdb.Pdb):
         """Reset the global active device variable to None."""
         cls.__active_dev = None
 
+    @classmethod
+    def _execute(cls, batch_tapes):
+        """Execute tape on the active device"""
+        dev = cls.get_active_device()
+
+        valid_batch = batch_tapes
+        if dev.wires:
+            valid_batch = qml.devices.preprocess.validate_device_wires(
+                batch_tapes, wires=dev.wires
+            )[0]
+
+        program, new_config = dev.preprocess()
+        new_batch, fn = program(valid_batch)
+
+        # TODO: remove [0] index once compatible with transforms
+        return fn(dev.execute(new_batch, new_config))[0]
+
 
 @contextmanager
 def pldb_device_manager(device):
@@ -208,3 +226,82 @@ def breakpoint():
 
     debugger = PLDB(skip=["pennylane.*"])  # skip internals when stepping through trace
     debugger.set_trace(sys._getframe().f_back)  # pylint: disable=protected-access
+
+
+def state():
+    """Compute the state of the quantum circuit.
+
+    Returns:
+        Array(complex): quantum state of the circuit.
+    """
+    with qml.queuing.QueuingManager.stop_recording():
+        m = qml.state()
+
+    return _measure(m)
+
+
+def expval(op):
+    """Compute the expectation value of an observable.
+
+    Args:
+        op (Operator): the observable to compute the expectation value for
+
+    Returns:
+        complex: expectation value of the operator
+    """
+
+    qml.queuing.QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
+
+    with qml.queuing.QueuingManager.stop_recording():
+        m = qml.expval(op)
+
+    return _measure(m)
+
+
+def probs(wires=None, op=None):
+    """Compute the probability distribution for the state.
+    Args:
+        wires (Union[Iterable, int, str, list]): the wires the operation acts on
+        op (Union[Observable, MeasurementValue]): observable (with a ``diagonalizing_gates``
+            attribute) that rotates the computational basis, or a ``MeasurementValue``
+            corresponding to mid-circuit measurements.
+
+    Returns:
+        Array(float): the probability distribution of the bitstrings for the wires
+    """
+    if op:
+        qml.queuing.QueuingManager.active_context().remove(
+            op
+        )  # ensure we didn't accidentally queue op
+
+    with qml.queuing.QueuingManager.stop_recording():
+        m = qml.probs(wires, op)
+
+    return _measure(m)
+
+
+def _measure(measurement):
+    """Perform the measurement.
+
+    Args:
+        measurement (MeasurementProcess): the type of measurement to be performed
+
+    Returns:
+        tuple(complex): results from the measurement
+    """
+    active_queue = qml.queuing.QueuingManager.active_context()
+    copied_queue = copy.deepcopy(active_queue)
+
+    copied_queue.append(measurement)
+    qtape = qml.tape.QuantumScript.from_queue(copied_queue)
+    return PLDB._execute((qtape,))  # pylint: disable=protected-access
+
+
+def tape():
+    """Access the quantum tape of the circuit.
+
+    Returns:
+        QuantumScript: the quantum tape representing the circuit
+    """
+    active_queue = qml.queuing.QueuingManager.active_context()
+    return qml.tape.QuantumScript.from_queue(active_queue)

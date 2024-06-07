@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as qnp
 from pennylane.debugging import PLDB, pldb_device_manager
 
 
@@ -427,7 +428,7 @@ class TestPLDB:
 
     def test_valid_context_not_compatible_device(self):
         """Test that valid_context raises an error when breakpoint
-        is called with an un-supported device."""
+        is called with an incompatible device."""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev)
@@ -502,6 +503,147 @@ class TestPLDB:
 
         PLDB.reset_active_dev()
         assert not PLDB.has_active_dev()
+
+    tapes = (
+        qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
+            measurements=[qml.state()],
+        ),
+        qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0), qml.X(1)],
+            measurements=[qml.expval(qml.Z(1))],
+        ),
+        qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
+            measurements=[qml.probs()],
+        ),
+        qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
+            measurements=[qml.probs(wires=[0])],
+        ),
+        qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0)],
+            measurements=[qml.state()],
+        ),  # Test that state expands to number of device wires
+    )
+
+    results = (
+        qnp.array([1 / qnp.sqrt(2), 0, 0, 1 / qnp.sqrt(2)], dtype=complex),
+        qnp.array(-1),
+        qnp.array([1 / 2, 0, 0, 1 / 2]),
+        qnp.array([1 / 2, 1 / 2]),
+        qnp.array([1 / qnp.sqrt(2), 0, 1 / qnp.sqrt(2), 0], dtype=complex),
+    )
+
+    @pytest.mark.parametrize("tape, expected_result", zip(tapes, results))
+    @pytest.mark.parametrize(
+        "dev", (qml.device("default.qubit", wires=2), qml.device("lightning.qubit", wires=2))
+    )
+    def test_execute(self, dev, tape, expected_result):
+        """Test that the _execute method works as expected."""
+        PLDB.add_device(dev)
+        executed_results = PLDB._execute((tape,))
+        assert qnp.allclose(expected_result, executed_results)
+        PLDB.reset_active_dev()
+
+
+def test_tape():
+    """Test that we can access the tape from the active queue."""
+    with qml.queuing.AnnotatedQueue() as queue:
+        qml.X(0)
+
+        for i in range(3):
+            qml.Hadamard(i)
+
+        qml.Y(1)
+        qml.Z(0)
+        qml.expval(qml.Z(0))
+
+        executed_tape = qml.debugging.tape()
+
+    expected_tape = qml.tape.QuantumScript.from_queue(queue)
+    assert qml.equal(expected_tape, executed_tape)
+
+
+@pytest.mark.parametrize("measurement_process", (qml.expval(qml.Z(0)), qml.state(), qml.probs()))
+@patch.object(PLDB, "_execute")
+def test_measure(mock_method, measurement_process):
+    """Test that the private measure function doesn't modify the active queue"""
+    with qml.queuing.AnnotatedQueue() as queue:
+        ops = [qml.X(0), qml.Y(1), qml.Z(0)] + [qml.Hadamard(i) for i in range(3)]
+        measurements = [qml.expval(qml.X(2)), qml.state(), qml.probs(), qml.var(qml.Z(3))]
+        qml.debugging._measure(measurement_process)
+
+    executed_tape = qml.tape.QuantumScript.from_queue(queue)
+    expected_tape = qml.tape.QuantumScript(ops, measurements)
+
+    assert qml.equal(expected_tape, executed_tape)  # no unexpected queuing
+
+    expected_debugging_tape = qml.tape.QuantumScript(ops, measurements + [measurement_process])
+    executed_debugging_tape = mock_method.call_args.args[0][0]
+
+    assert qml.equal(
+        expected_debugging_tape, executed_debugging_tape
+    )  # _execute was called with new measurements
+
+
+@patch.object(PLDB, "_execute")
+def test_state(_mock_method):
+    """Test that the state function works as expected."""
+    with qml.queuing.AnnotatedQueue() as queue:
+        qml.RX(1.23, 0)
+        qml.RY(0.45, 2)
+        qml.sample()
+
+        qml.debugging.state()
+
+    assert qml.state() not in queue
+
+
+@patch.object(PLDB, "_execute")
+def test_expval(_mock_method):
+    """Test that the expval function works as expected."""
+    for op in [qml.X(0), qml.Y(1), qml.Z(2), qml.Hadamard(0)]:
+        with qml.queuing.AnnotatedQueue() as queue:
+            qml.RX(1.23, 0)
+            qml.RY(0.45, 2)
+            qml.sample()
+
+            qml.debugging.expval(op)
+
+        assert op not in queue
+        assert qml.expval(op) not in queue
+
+
+@patch.object(PLDB, "_execute")
+def test_probs_with_op(_mock_method):
+    """Test that the probs function works as expected."""
+
+    for op in [None, qml.X(0), qml.Y(1), qml.Z(2)]:
+        with qml.queuing.AnnotatedQueue() as queue:
+            qml.RX(1.23, 0)
+            qml.RY(0.45, 2)
+            qml.sample()
+
+            qml.debugging.probs(op=op)
+
+        assert op not in queue
+        assert qml.probs(op=op) not in queue
+
+
+@patch.object(PLDB, "_execute")
+def test_probs_with_wires(_mock_method):
+    """Test that the probs function works as expected."""
+
+    for wires in [None, [0, 1], [2]]:
+        with qml.queuing.AnnotatedQueue() as queue:
+            qml.RX(1.23, 0)
+            qml.RY(0.45, 2)
+            qml.sample()
+
+            qml.debugging.probs(wires=wires)
+
+        assert qml.probs(wires=wires) not in queue
 
 
 @pytest.mark.parametrize("device_name", ("default.qubit", "lightning.qubit"))
