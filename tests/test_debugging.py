@@ -551,7 +551,10 @@ def test_tape():
     """Test that we can access the tape from the active queue."""
     with qml.queuing.AnnotatedQueue() as queue:
         qml.X(0)
-        [qml.Hadamard(i) for i in range(3)]
+
+        for i in range(3):
+            qml.Hadamard(i)
+
         qml.Y(1)
         qml.Z(0)
         qml.expval(qml.Z(0))

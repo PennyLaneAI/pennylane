@@ -293,8 +293,8 @@ def _measure(measurement):
     copied_queue = copy.deepcopy(active_queue)
 
     copied_queue.append(measurement)
-    tape = qml.tape.QuantumScript.from_queue(copied_queue)
-    return PLDB._execute((tape,))
+    qtape = qml.tape.QuantumScript.from_queue(copied_queue)
+    return PLDB._execute((qtape,))  # pylint: disable=protected-access
 
 
 def tape():
