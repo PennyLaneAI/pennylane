@@ -181,7 +181,7 @@ class DefaultTensor(Device):
     This device is designed to simulate large-scale quantum circuits using tensor networks. For small circuits, other devices like ``default.qubit`` may be more suitable.
 
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
-    The supported methods are Matrix Product State (MPS), based on the ``quimb``'s ``CircuitMPS`` class, and Tensor Network (TN), based on the ``quimb``'s ``Circuit`` class.
+    The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
     This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values and variances.
 
@@ -306,7 +306,7 @@ class DefaultTensor(Device):
 
                 phi = 0.1
                 dept = 10
-                num_qubits = 20
+                num_qubits = 25
 
                 dev = qml.device("default.tensor", method="tn", contract="auto-split-gate")
 
@@ -324,12 +324,13 @@ class DefaultTensor(Device):
                     return qml.expval(qml.Z(0))
 
             >>> circuit(phi, dept, num_qubits)
-            -0.9511499466743278
+            -0.9511499466743266
 
             The execution time for this circuit with the above parameters is around 0.2 seconds on a standard laptop.
 
-            Using ``quimb`` as the backend, the exact tensor network method can be faster than MPS and state vector methods in some cases.
-            As a comparison, the time for the exact calculation of the same circuit with the MPS method is about one order of magnitude slower.
+            Using ``quimb`` as the backend, the tensor network method can be faster than MPS and state vector methods in some cases.
+            As a comparison, the time for the exact calculation of the same circuit with the MPS method and with the ``default.qubit``
+            device is about three orders of magnitude slower.
     """
 
     # pylint: disable=too-many-instance-attributes
