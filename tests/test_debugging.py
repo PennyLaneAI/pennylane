@@ -569,7 +569,7 @@ def test_measure(mock_method, measurement_process):
     with qml.queuing.AnnotatedQueue() as queue:
         ops = [qml.X(0), qml.Y(1), qml.Z(0)] + [qml.Hadamard(i) for i in range(3)]
         measurements = [qml.expval(qml.X(2)), qml.state(), qml.probs(), qml.var(qml.Z(3))]
-        _ = qml.debugging._measure(measurement_process)
+        qml.debugging._measure(measurement_process)
 
     executed_tape = qml.tape.QuantumScript.from_queue(queue)
     expected_tape = qml.tape.QuantumScript(ops, measurements)
@@ -592,7 +592,7 @@ def test_state(_mock_method):
         qml.RY(0.45, 2)
         qml.sample()
 
-        _ = qml.debugging.state()
+        qml.debugging.state()
 
     assert qml.state() not in queue
 
@@ -606,7 +606,7 @@ def test_expval(_mock_method):
             qml.RY(0.45, 2)
             qml.sample()
 
-            _ = qml.debugging.expval(op)
+            qml.debugging.expval(op)
 
         assert op not in queue
         assert qml.expval(op) not in queue
@@ -622,7 +622,7 @@ def test_probs_with_op(_mock_method):
             qml.RY(0.45, 2)
             qml.sample()
 
-            _ = qml.debugging.probs(op=op)
+            qml.debugging.probs(op=op)
 
         assert op not in queue
         assert qml.probs(op=op) not in queue
@@ -638,7 +638,7 @@ def test_probs_with_wires(_mock_method):
             qml.RY(0.45, 2)
             qml.sample()
 
-            _ = qml.debugging.probs(wires=wires)
+            qml.debugging.probs(wires=wires)
 
         assert qml.probs(wires=wires) not in queue
 

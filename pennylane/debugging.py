@@ -194,7 +194,9 @@ class PLDB(pdb.Pdb):
 
         valid_batch = batch_tapes
         if dev.wires:
-            valid_batch = qml.devices.preprocess.validate_device_wires(batch_tapes, wires=dev.wires)[0]
+            valid_batch = qml.devices.preprocess.validate_device_wires(
+                batch_tapes, wires=dev.wires
+            )[0]
 
         program, new_config = dev.preprocess()
         new_batch, fn = program(valid_batch)
