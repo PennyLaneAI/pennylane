@@ -192,11 +192,9 @@ class PLDB(pdb.Pdb):
         """Execute tape on the active device"""
         dev = cls.get_active_device()
 
-        valid_batch, _ = (
-            (batch_tapes, None)
-            if not dev.wires
-            else qml.devices.preprocess.validate_device_wires(batch_tapes, wires=dev.wires)
-        )
+        valid_batch = batch_tapes
+        if dev.wires:
+            valid_batch = qml.devices.preprocess.validate_device_wires(batch_tapes, wires=dev.wires)[0]
 
         program, new_config = dev.preprocess()
         new_batch, fn = program(valid_batch)
@@ -263,7 +261,7 @@ def probs(wires=None, op=None):
     Args:
         wires (Union[Iterable, int, str, list]): the wires the operation acts on
         op (Union[Observable, MeasurementValue]): observable (with a ``diagonalizing_gates``
-            attribute) that rotates the computational basis, or a  ``MeasurementValue``
+            attribute) that rotates the computational basis, or a ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
     Returns:
