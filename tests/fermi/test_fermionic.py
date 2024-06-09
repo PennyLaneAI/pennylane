@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string
+from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string, _to_string
 
 # pylint: disable=too-many-public-methods
 
@@ -1006,6 +1006,27 @@ class TestFermiSentenceArithmetic:
     def test_from_string_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
             from_string(string)  # pylint: disable=pointless-statement
+    
+    fw_string = (
+        (fw1, "0+ 1-"),
+        (fw2, "0+ 0-"),
+        (fw3, "0+ 3- 0+ 4-"),
+        (fw4, "I"),
+        (fw5, "10+ 30- 0+ 400-"),
+        (fw6, "10+ 30+ 0- 400-"),
+        (fw7, "10- 30+ 0- 400+"),
+        (fs1, "1.23 * 0+ 1-\n+ 4j * 0+ 0-\n+ -0.5 * 0+ 3- 0+ 4-"),
+        (fs2, "-1.23 * 0+ 1-\n+ (-0-4j) * 0+ 0-\n+ 0.5 * 0+ 3- 0+ 4-"),
+        (fs3, "-0.5 * 0+ 3- 0+ 4-\n+ 1 * I"),
+        (fs4, "1 * I"),
+        (fs5, "I")
+    )
+    
+    @pytest.mark.parametrize("f_op, string", fw_string)
+    def test_to_string(self, f_op, string):
+        assert _to_string(f_op) == string
+        
+    
 
     @pytest.mark.parametrize(
         "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")

@@ -75,12 +75,11 @@ class TestFromOpenFermion:
         """Test that the from_openfermion method yields a :class:`~.Sum` object if requested."""
         q_op = openfermion.QubitOperator("X0 X1", 0.25) + openfermion.QubitOperator("Z1 Z0", 0.75)
 
-        assert type(qml.from_openfermion(q_op)) == qml.ops.LinearCombination
-        assert (
-            type(qml.from_openfermion(q_op, format="LinearCombination"))
-            == qml.ops.LinearCombination
+        assert isinstance(qml.from_openfermion(q_op), qml.ops.LinearCombination)
+        assert isinstance(
+            qml.from_openfermion(q_op, format="LinearCombination"), qml.ops.LinearCombination
         )
-        assert type(qml.from_openfermion(q_op, format="Sum")) == qml.ops.Sum
+        assert isinstance(qml.from_openfermion(q_op, format="Sum"), qml.ops.Sum)
 
     def test_invalid_format(self):
         """Test if error is raised if format is invalid."""

@@ -17,7 +17,7 @@ from copy import copy
 from functools import singledispatch
 from numbers import Number
 
-from numpy import ndarray
+from numpy import ndarray, abs
 
 import pennylane as qml
 
@@ -552,7 +552,7 @@ def _(fermi_op: FermiWord, of=False):
         return "I"
 
     op_list = ["" for _ in range(len(fermi_op))]
-    for (loc, wire) in fermi_op:
+    for loc, wire in fermi_op:
         if of:
             op_str = str(wire) + pl_to_of_map[fermi_op[(loc, wire)]]
         else:
@@ -570,9 +570,9 @@ def _(fermi_op: FermiSentence, of=False):
 
     op_str = ""
     for fw in fermi_op:
-        op_str += str(fermi_op[fw]) + "*" + _to_string(fw, of=of) + "\n+ "
+        op_str += "\n+ " + str(fermi_op[fw]) + " * " + _to_string(fw, of=of)
 
-    return op_str[:-2].rstrip()  # Remove newline, last space and `+` sign from the operator string.
+    return op_str.strip()[2:]  # Remove redundant signs and newlines.
 
 
 # pylint: disable=too-few-public-methods

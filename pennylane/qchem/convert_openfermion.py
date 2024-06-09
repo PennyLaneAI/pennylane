@@ -130,11 +130,10 @@ def _(pl_op: FermiWord, wires=None, tol=None):
 
         # Map the FermiWord based on the ordering provided in `wires`.
         pl_op_mapped = {}
-        for (loc, orbital) in pl_op.keys():
+        for loc, orbital in pl_op.keys():
             pl_op_mapped[(loc, mapped_wires.index(orbital))] = pl_op[(loc, orbital)]
 
         pl_op = FermiWord(pl_op_mapped)
-        print(pl_op)
 
     return openfermion.ops.FermionOperator(qml.fermi.fermionic._to_string(pl_op, of=True))
 
