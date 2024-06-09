@@ -306,7 +306,7 @@ class DefaultTensor(Device):
                 import pennylane as qml
 
                 phi = 0.1
-                dept = 10
+                depth = 10
                 num_qubits = 25
 
                 dev = qml.device("default.tensor", method="tn", contract="auto-split-gate")
@@ -329,7 +329,7 @@ class DefaultTensor(Device):
 
             The execution time for this circuit with the above parameters is around 0.2 seconds on a standard laptop.
 
-            Using ``quimb`` as the backend, the tensor network method can be faster than MPS and state vector methods in some cases.
+            The tensor network method can be faster than MPS and state vector methods in some cases.
             As a comparison, the time for the exact calculation of the same circuit with the MPS method and with the ``default.qubit``
             device is about three orders of magnitude slower.
     """
