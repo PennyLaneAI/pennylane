@@ -30,13 +30,19 @@ from pennylane.fermi.fermionic import FermiWord, FermiSentence
 from pennylane.ops import Sum, LinearCombination
 from pennylane.wires import Wires
 
-try:
-    import openfermion
-except ImportError as Error:
-    raise ImportError(
-        "This feature requires openfermion. "
-        "It can be installed with: pip install openfermion"
-    ) from Error
+
+def _import_of():
+    """Import openfermion."""
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import openfermion
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires openfermion. "
+            "It can be installed with: pip install openfermion."
+        ) from Error
+
+    return openfermion
 
 
 def from_openfermion(ops, tol=None, **kwargs):
@@ -82,7 +88,7 @@ def from_openfermion(ops, tol=None, **kwargs):
 
 def to_openfermion(
     pl_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=None
-) -> Union[openfermion.QubitOperator, openfermion.ops.FermionOperator]:
+):
     r"""Convert a PennyLane operator to a OpenFermion ``QubitOperator`` or ``FermionOperator``.
 
     Args:
@@ -128,6 +134,8 @@ def _(pl_op: Sum, wires=None, tol=None):
 
 @_to_openfermion_dispatch.register
 def _(pl_op: FermiWord, wires=None, tol=None):
+    openfermion = _import_of()
+
     if wires:
         all_wires = Wires.all_wires(pl_op.wires, sort=True)
         mapped_wires = _process_wires(wires)
@@ -146,6 +154,8 @@ def _(pl_op: FermiWord, wires=None, tol=None):
 
 @_to_openfermion_dispatch.register
 def _(pl_op: FermiSentence, wires=None, tol=None):
+    openfermion = _import_of()
+
     fermion_op = openfermion.ops.FermionOperator()
     # Convert each FermiWord to a FermionOperator in OpenFermion.
     # The coverage of the wire mapping is checked in the conversion of each FermiWord.
