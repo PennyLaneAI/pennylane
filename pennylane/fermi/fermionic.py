@@ -17,7 +17,7 @@ from copy import copy
 from functools import singledispatch
 from numbers import Number
 
-from numpy import ndarray, abs
+from numpy import ndarray
 
 import pennylane as qml
 
