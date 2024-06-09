@@ -118,7 +118,7 @@ def _process_wires(wires, n_wires=None):
     return wires
 
 
-def _openfermion_to_pennylane(qubit_operator, wires=None, tol=None):
+def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
     r"""Convert OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
@@ -181,7 +181,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=None):
     )
     coeffs = np.array(coeffs)
 
-    if tol and (np.abs(coeffs.imag) < tol).all():
+    if (np.abs(coeffs.imag) < tol).all():
         coeffs = coeffs.real
 
     return coeffs, list(ops)
@@ -202,7 +202,7 @@ def _ps_to_coeff_term(ps, wire_order):
     return coeffs, ops_str
 
 
-def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=None):
+def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     r"""Convert a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
 
@@ -257,7 +257,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=None):
     else:
         qubit_indexed_wires = all_wires
 
-    if tol and (np.abs(coeffs.imag) < tol).all():
+    if (np.abs(coeffs.imag) < tol).all():
         coeffs = coeffs.real
 
     q_op = openfermion.QubitOperator()
