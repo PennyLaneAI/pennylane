@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions needed to convert OpenFermion ``QubitOperator`` objects to PennyLane ``Sum`` and ``LinearCombination`` and vice versa.
+This module contains the functions needed to convert OpenFermion ``QubitOperator`` objects to PennyLane ``Sum`` and :class:`~.LinearCombination` and vice versa.
 """
 
 from functools import singledispatch
@@ -33,7 +33,7 @@ from pennylane.wires import Wires
 import openfermion
 
 
-def from_openfermion(of_qubit_operator, wires=None, tol=None, return_sum=False):
+def from_openfermion(ops, tol=None, **kwargs):
     r"""Convert OpenFermion ``QubitOperator`` to a :class:`~.LinearCombination` object in PennyLane representing a linear combination of qubit operators.
 
     Args:
@@ -49,7 +49,7 @@ def from_openfermion(of_qubit_operator, wires=None, tol=None, return_sum=False):
         return_sum (bool): flag indicating whether a ``Sum`` object is returned
 
     Returns:
-        pennylane.ops.LinearCombination: a linear combination of Pauli words
+        (pennylane.ops.Sum, pennylane.ops.LinearCombination): a linear combination of Pauli words
 
     **Example**
 
@@ -61,22 +61,27 @@ def from_openfermion(of_qubit_operator, wires=None, tol=None, return_sum=False):
     1.2 * X(0) + 2.4 * Z(1)
     """
 
-    coeffs, ops = _openfermion_to_pennylane(of_qubit_operator, wires=wires, tol=tol)
-    pl_term = qml.ops.LinearCombination(coeffs, ops)
+    coeffs, pl_ops = _openfermion_to_pennylane(ops, tol=tol)
+    pl_term = qml.ops.LinearCombination(coeffs, pl_ops)
 
-    if return_sum:
-        pl_term.__class__ = qml.ops.Sum
+    if "format" in kwargs:
+        if kwargs["format"] == "Sum":
+            return qml.dot(*pl_term.terms())
+        elif kwargs["format"] != "LinearCombination":
+            f = kwargs["format"]
+            raise ValueError(f"format must be a Sum or LinearCombination, got: {f}.")
 
     return pl_term
 
 
 def to_openfermion(
-    pl_operator: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=None
+    pl_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=None
 ) -> Union[openfermion.QubitOperator, openfermion.ops.FermionOperator]:
-    r"""Convert ``LinearCombination`` object in PennyLane representing a linear combination of qubit operators to a OpenFermion ``QubitOperator``.
+    r"""Convert a PennyLane operator to a OpenFermion ``QubitOperator`` or ``FermionOperator``.
 
     Args:
-        pl_linear_combination (pennylane.ops.LinearCombination): linear combination of operators
+        pl_op (pennylane.ops.Sum, pennylane.ops.LinearCombination, pennylane.fermi.FermiWord,
+        pennylane.fermi.FermiSentence): linear combination of operators
         wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
             to an observable terms measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
@@ -85,7 +90,7 @@ def to_openfermion(
             If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
-        QubitOperator: a qubit operator in terms of Pauli matrices
+        (QubitOperator, FermionOperator): an OpenFermion operator
 
     **Example**
 
@@ -98,52 +103,52 @@ def to_openfermion(
     2.4 [Z1]
     """
 
-    return _to_openfermion_dispatch(pl_operator, wires=wires, tol=tol)
+    return _to_openfermion_dispatch(pl_op, wires=wires, tol=tol)
 
 
 @singledispatch
-def _to_openfermion_dispatch(pl_operator, wires=None, tol=None):
-    """Dispatches to appropriate function if pl_operator is a ``Sum``, ``LinearCombination, ``FermiWord`` or ``FermiSentence``."""
+def _to_openfermion_dispatch(pl_op, wires=None, tol=None):
+    """Dispatches to appropriate function if pl_op is a ``Sum``, ``LinearCombination, ``FermiWord`` or ``FermiSentence``."""
     raise ValueError(
-        f"pl_operator must be a Sum, LinearCombination, FermiWord or FermiSentence, got: {pl_operator}."
+        f"pl_op must be a Sum, LinearCombination, FermiWord or FermiSentence, got: {pl_op}."
     )
 
 
 @_to_openfermion_dispatch.register
-def _(pl_operator: Sum, wires=None, tol=None):
-    coeffs, ops = pl_operator.terms()
+def _(pl_op: Sum, wires=None, tol=None):
+    coeffs, ops = pl_op.terms()
     return _pennylane_to_openfermion(np.array(coeffs), ops, wires=wires, tol=tol)
 
 
 @_to_openfermion_dispatch.register
-def _(pl_operator: FermiWord, wires=None, tol=None):
+def _(pl_op: FermiWord, wires=None, tol=None):
     if wires:
-        # Check wheter wires cover all wires defined in `pl_operator`.
-        all_wires = Wires.all_wires(pl_operator.wires, sort=True)
+        all_wires = Wires.all_wires(pl_op.wires, sort=True)
         mapped_wires = _process_wires(wires)
         if not set(all_wires).issubset(set(mapped_wires)):
-            raise ValueError("Supplied `wires` does not cover all wires defined in `pl_operator`.")
+            raise ValueError("Supplied `wires` does not cover all wires defined in `pl_op`.")
 
         # Map the FermiWord based on the ordering provided in `wires`.
-        pl_operator_mapped = {}
-        for (loc, orbital) in pl_operator.keys():
-            pl_operator_mapped[(loc, mapped_wires.index(orbital))] = pl_operator[(loc, orbital)]
-        # Replace the FermiWord by the mapped FermiWord.
-        pl_operator = FermiWord(pl_operator_mapped)
+        pl_op_mapped = {}
+        for (loc, orbital) in pl_op.keys():
+            pl_op_mapped[(loc, mapped_wires.index(orbital))] = pl_op[(loc, orbital)]
 
-    return openfermion.ops.FermionOperator(pl_operator.to_openfermion_string())
+        pl_op = FermiWord(pl_op_mapped)
+        print(pl_op)
+
+    return openfermion.ops.FermionOperator(qml.fermi.fermionic._to_string(pl_op, of=True))
 
 
 @_to_openfermion_dispatch.register
-def _(pl_operator: FermiSentence, wires=None, tol=None):
+def _(pl_op: FermiSentence, wires=None, tol=None):
     fermion_op = openfermion.ops.FermionOperator()
     # Convert each FermiWord to a FermionOperator in OpenFermion.
     # The coverage of the wire mapping is checked in the conversion of each FermiWord.
-    for fermi_word in pl_operator:
+    for fermi_word in pl_op:
         if tol:
-            if np.abs(pl_operator[fermi_word]) > tol:
-                fermion_operator += to_openfermion(fermi_word, wires=wires)
+            if np.abs(pl_op[fermi_word].imag) < tol:
+                fermion_op += pl_op[fermi_word].real * to_openfermion(fermi_word, wires=wires)
         else:
-            fermion_operator += to_openfermion(fermi_word, wires=wires)
+            fermion_op += pl_op[fermi_word] * to_openfermion(fermi_word, wires=wires)
 
     return fermion_op

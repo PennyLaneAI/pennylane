@@ -14,6 +14,7 @@
 """The fermionic representation classes and functions."""
 import re
 from copy import copy
+from functools import singledispatch
 from numbers import Number
 
 from numpy import ndarray
@@ -116,30 +117,6 @@ class FermiWord(dict):
             ]
         )
         return string
-
-    def to_openfermion_string(self):
-        r"""Return a compact string representation of a FermiWord in the same style as OpenFermion using
-        the shorthand: 'q^' = a^\dagger_q 'q' = a_q. Each operator in the word is represented by the number
-        of the wire it operates on.
-
-        >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w.to_openfermion_string()
-        0^ 1
-        """
-        if len(self) == 0:
-            return "I"
-        # The order of the operator string is based on the first values in the tuples of the keys.
-        sq_ops = sorted(self.keys())
-        # Write operator using the shorthand: 'q^' = a^\dagger_q 'q' = a_q.
-        fermion_op_string = ""
-        for sq_op in sq_ops:
-            fermion_op_string += str(sq_op[1])
-            if self[sq_op] == "+":
-                fermion_op_string += "^ "
-            else:
-                fermion_op_string += " "
-
-        return fermion_op_string.rstrip()
 
     def __str__(self):
         r"""String representation of a FermiWord."""
@@ -533,6 +510,69 @@ def from_string(fermi_string):
     operators = [i + "-" if i[-1] not in "+-" else i for i in re.split(r"\s", fermi_string)]
 
     return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
+
+
+def _to_string(fermi_op, of=False):
+    r"""Return a string representation of the :class:`~.FermiWord` or :class:`~.FermiSentence` object.
+
+    Args:
+        fermi_op (FermiWord, FermiSentence): the fermionic operator
+        of (bool): whether to return a string representation in the same style as OpenFermion using
+                    the shorthand: 'q^' = a^\dagger_q 'q' = a_q. Each operator in the word is represented by the
+                    number of the wire it operates on
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> _to_string(w)
+    0+ 1-
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> _to_string(w, of=True)
+    0^ 1
+
+    >>> w1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = FermiSentence({w1 : 1.2, w2: 3.1})
+    1.2 * 0+ 1-
+    + 3.1 * 1+ 2-
+    """
+    return _to_string_dispatch(fermi_op, of=of)
+
+
+@singledispatch
+def _to_string_dispatch(fermi_op, of=False):
+    """Dispatches to appropriate function if fermi_op is a FermiWord or FermiSentence."""
+    raise ValueError(f"fermi_op must be a FermiWord or FermiSentence, got: {fermi_op}")
+
+
+@_to_string_dispatch.register
+def _(fermi_op: FermiWord, of=False):
+    pl_to_of_map = {"+": "^", "-": " "}
+
+    if len(fermi_op) == 0:
+        return "I"
+
+    op_list = ["" for _ in range(len(fermi_op))]
+    for (loc, wire) in fermi_op:
+        if of:
+            op_str = str(wire) + pl_to_of_map[fermi_op[(loc, wire)]]
+        else:
+            op_str = str(wire) + fermi_op[(loc, wire)]
+
+        op_list[loc] += op_str
+
+    return " ".join(op_list).rstrip()
+
+
+@_to_string_dispatch.register
+def _(fermi_op: FermiSentence, of=False):
+    if len(fermi_op) == 0:
+        return "I"
+
+    op_str = ""
+    for fw in fermi_op:
+        op_str += str(fermi_op[fw]) + "*" + _to_string(fw, of=of) + "\n+ "
+
+    return op_str[:-2].rstrip()  # Remove newline, last space and `+` sign from the operator string.
 
 
 # pylint: disable=too-few-public-methods

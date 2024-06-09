@@ -156,7 +156,8 @@
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
 
-* Conversion between ``openfermion.QubitOperator`` and ``qml.ops.LinearCombonation`` has been added.
+* Conversion between ``openfermion.QubitOperator``, ``qml.ops.Sum`` and ``qml.ops.LinearCombonation`` added.
+Conversion between ``openfermion.FermiOperator``, ``qml.fermi.FermiWord`` and ``qml.fermi.FermiSentence`` added.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
 
 <h3>Breaking changes 💔</h3>

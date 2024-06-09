@@ -131,6 +131,8 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=None):
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
             If None, will use identity map (e.g. 0->0, 1->1, ...).
+        tol (float): whether to keep the imaginary part of the coefficients if they are smaller
+            than the provided tolerance.
 
     Returns:
         tuple[array[float], Iterable[pennylane.operation.Operator]]: coefficients and their
@@ -178,8 +180,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=None):
         # example term: ((0,'X'), (2,'Z'), (3,'Y'))
     )
     coeffs = np.array(coeffs)
-    # If the imaginary part of the coefficients are smaller than
-    # the provided tolerance, only keep the real part of the coefficients.
+
     if tol and (np.abs(coeffs.imag) < tol).all():
         coeffs = coeffs.real
 
@@ -216,6 +217,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=None):
             corresponding to the qubit number equal to its index.
             For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
             accepted. If None, will map sorted wires from all `ops` to consecutive int.
+        tol (float): whether to keep the imaginary part of the coefficients if they are smaller
+            than the provided tolerance.
 
     Returns:
         QubitOperator: an instance of OpenFermion's ``QubitOperator``.
@@ -254,7 +257,6 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=None):
     else:
         qubit_indexed_wires = all_wires
 
-    # Discard imaginary part of coefficients if these are all smaller than a tolerance value.
     if tol and (np.abs(coeffs.imag) < tol).all():
         coeffs = coeffs.real
 
