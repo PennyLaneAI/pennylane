@@ -303,6 +303,11 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
     :figure: _static/templates/qubitization/thumbnail_qubitization.png
 
+.. gallery-item::
+    :description: :doc:`QROM <../code/api/pennylane.QROM>`
+    :figure: _static/templates/qrom/qrom_thumbnail.png
+
+
 .. raw:: html
 
         <div style='clear:both'></div>
