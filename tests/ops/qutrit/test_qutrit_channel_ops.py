@@ -135,7 +135,7 @@ class TestQutritDepolarizingChannel:
 
     @pytest.mark.torch
     def test_kraus_jac_torch(self):
-        """Tests Jacobian of Kraus matrices using torch."""
+        """Tests Jacobian of Kraus matrices using PyTorch."""
         import torch
 
         p = torch.tensor(0.43, requires_grad=True)
@@ -145,7 +145,7 @@ class TestQutritDepolarizingChannel:
 
     @pytest.mark.tf
     def test_kraus_jac_tf(self):
-        """Tests Jacobian of Kraus matrices using tensorflow."""
+        """Tests Jacobian of Kraus matrices using TensorFlow."""
         import tensorflow as tf
 
         p = tf.Variable(0.43)
@@ -161,7 +161,7 @@ class TestQutritDepolarizingChannel:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        """Tests Jacobian of Kraus matrices using jax."""
+        """Tests Jacobian of Kraus matrices using JAX."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
@@ -175,91 +175,219 @@ class TestQutritAmplitudeDamping:
     """Tests for the qutrit quantum channel QutritAmplitudeDamping"""
 
     def test_gamma_zero(self, tol):
-        """Test gamma_1=gamma_2=0 gives correct Kraus matrices"""
-        kraus_mats = qml.QutritAmplitudeDamping(0, 0, wires=0).kraus_matrices()
+        """Test gamma_10=gamma_20=0 gives correct Kraus matrices"""
+        kraus_mats = qml.QutritAmplitudeDamping(0, 0, 0, wires=0).kraus_matrices()
         assert np.allclose(kraus_mats[0], np.eye(3), atol=tol, rtol=0)
-        assert np.allclose(kraus_mats[1], np.zeros((3, 3)), atol=tol, rtol=0)
-        assert np.allclose(kraus_mats[2], np.zeros((3, 3)), atol=tol, rtol=0)
+        for kraus_mat in kraus_mats[1:]:
+            assert np.allclose(kraus_mat, np.zeros((3, 3)), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("gamma1,gamma2", ((0.1, 0.2), (0.75, 0.75)))
-    def test_gamma_arbitrary(self, gamma1, gamma2, tol):
-        """Test the correct Kraus matrices are returned, also ensures that the sum of gammas can be over 1."""
-        K_0 = np.diag((1, np.sqrt(1 - gamma1), np.sqrt(1 - gamma2)))
+    @pytest.mark.parametrize("gamma_10,gamma_20,gamma_21", ((0.1, 0.2, 0.3), (0.75, 0.75, 0.25)))
+    def test_gamma_arbitrary(self, gamma_10, gamma_20, gamma_21, tol):
+        """Test the correct Kraus matrices are returned."""
+        K_0 = np.diag((1, np.sqrt(1 - gamma_10), np.sqrt(1 - gamma_20 - gamma_21)))
 
         K_1 = np.zeros((3, 3))
-        K_1[0, 1] = np.sqrt(gamma1)
+        K_1[0, 1] = np.sqrt(gamma_10)
 
         K_2 = np.zeros((3, 3))
-        K_2[0, 2] = np.sqrt(gamma2)
+        K_2[0, 2] = np.sqrt(gamma_20)
 
-        expected = [K_0, K_1, K_2]
-        damping_channel = qml.QutritAmplitudeDamping(gamma1, gamma2, wires=0)
+        K_3 = np.zeros((3, 3))
+        K_3[1, 2] = np.sqrt(gamma_21)
+
+        expected = [K_0, K_1, K_2, K_3]
+        damping_channel = qml.QutritAmplitudeDamping(gamma_10, gamma_20, gamma_21, wires=0)
         assert np.allclose(damping_channel.kraus_matrices(), expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("gamma1,gamma2", ((1.5, 0.0), (0.0, 1.0 + math.eps)))
-    def test_gamma_invalid_parameter(self, gamma1, gamma2):
-        """Ensures that error is thrown when gamma_1 or gamma_2 are outside [0,1]"""
-        with pytest.raises(ValueError, match="Each probability must be in the interval"):
-            channel.QutritAmplitudeDamping(gamma1, gamma2, wires=0).kraus_matrices()
+    @pytest.mark.parametrize(
+        "gamma_10,gamma_20,gamma_21",
+        (
+            (1.5, 0.0, 0.0),
+            (0.0, 1.0 + math.eps, 0.0),
+            (0.0, 0.0, 1.1),
+            (0.0, 0.33, 0.67 + math.eps),
+        ),
+    )
+    def test_gamma_invalid_parameter(self, gamma_10, gamma_20, gamma_21):
+        """Ensures that error is thrown when gamma_10, gamma_20, gamma_21, or (gamma_20 + gamma_21) are outside [0,1]"""
+        with pytest.raises(ValueError, match="must be in the interval"):
+            channel.QutritAmplitudeDamping(gamma_10, gamma_20, gamma_21, wires=0).kraus_matrices()
 
     @staticmethod
-    def expected_jac_fn(gamma_1, gamma_2):
+    def expected_jac_fn(gamma_10, gamma_20, gamma_21):
         """Gets the expected Jacobian of Kraus matrices"""
-        partial_1 = [math.zeros((3, 3)) for _ in range(3)]
-        partial_1[0][1, 1] = -1 / (2 * math.sqrt(1 - gamma_1))
-        partial_1[1][0, 1] = 1 / (2 * math.sqrt(gamma_1))
+        partial_1 = [math.zeros((3, 3)) for _ in range(4)]
+        partial_1[0][1, 1] = -1 / (2 * math.sqrt(1 - gamma_10))
+        partial_1[1][0, 1] = 1 / (2 * math.sqrt(gamma_10))
 
-        partial_2 = [math.zeros((3, 3)) for _ in range(3)]
-        partial_2[0][2, 2] = -1 / (2 * math.sqrt(1 - gamma_2))
-        partial_2[2][0, 2] = 1 / (2 * math.sqrt(gamma_2))
+        partial_2 = [math.zeros((3, 3)) for _ in range(4)]
+        partial_2[0][2, 2] = -1 / (2 * math.sqrt(1 - gamma_20 - gamma_21))
+        partial_2[2][0, 2] = 1 / (2 * math.sqrt(gamma_20))
 
-        return [partial_1, partial_2]
+        partial_3 = [math.zeros((3, 3)) for _ in range(4)]
+        partial_3[0][2, 2] = -1 / (2 * math.sqrt(1 - gamma_20 - gamma_21))
+        partial_3[3][1, 2] = 1 / (2 * math.sqrt(gamma_21))
+
+        return [partial_1, partial_2, partial_3]
 
     @staticmethod
-    def kraus_fn(gamma_1, gamma_2):
+    def kraus_fn(gamma_10, gamma_20, gamma_21):
         """Gets the Kraus matrices of QutritAmplitudeDamping channel, used for differentiation."""
-        damping_channel = qml.QutritAmplitudeDamping(gamma_1, gamma_2, wires=0)
+        damping_channel = qml.QutritAmplitudeDamping(gamma_10, gamma_20, gamma_21, wires=0)
         return math.stack(damping_channel.kraus_matrices())
 
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         """Tests Jacobian of Kraus matrices using autograd."""
-        gamma_1 = pnp.array(0.43, requires_grad=True)
-        gamma_2 = pnp.array(0.12, requires_grad=True)
-        jac = qml.jacobian(self.kraus_fn)(gamma_1, gamma_2)
-        assert math.allclose(jac, self.expected_jac_fn(gamma_1, gamma_2))
+        gamma_10 = pnp.array(0.43, requires_grad=True)
+        gamma_20 = pnp.array(0.12, requires_grad=True)
+        gamma_21 = pnp.array(0.35, requires_grad=True)
+
+        jac = qml.jacobian(self.kraus_fn)(gamma_10, gamma_20, gamma_21)
+        assert math.allclose(jac, self.expected_jac_fn(gamma_10, gamma_20, gamma_21))
 
     @pytest.mark.torch
     def test_kraus_jac_torch(self):
         """Tests Jacobian of Kraus matrices using PyTorch."""
         import torch
 
-        gamma_1 = torch.tensor(0.43, requires_grad=True)
-        gamma_2 = torch.tensor(0.12, requires_grad=True)
+        gamma_10 = torch.tensor(0.43, requires_grad=True)
+        gamma_20 = torch.tensor(0.12, requires_grad=True)
+        gamma_21 = torch.tensor(0.35, requires_grad=True)
 
-        jac = torch.autograd.functional.jacobian(self.kraus_fn, (gamma_1, gamma_2))
-        expected = self.expected_jac_fn(gamma_1.detach().numpy(), gamma_2.detach().numpy())
-        assert math.allclose(jac[0].detach().numpy(), expected[0])
-        assert math.allclose(jac[1].detach().numpy(), expected[1])
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, (gamma_10, gamma_20, gamma_21))
+        expected = self.expected_jac_fn(
+            gamma_10.detach().numpy(), gamma_20.detach().numpy(), gamma_21.detach().numpy()
+        )
+
+        for res_partial, exp_partial in zip(jac, expected):
+            assert math.allclose(res_partial.detach().numpy(), exp_partial)
 
     @pytest.mark.tf
     def test_kraus_jac_tf(self):
         """Tests Jacobian of Kraus matrices using TensorFlow."""
         import tensorflow as tf
 
-        gamma_1 = tf.Variable(0.43)
-        gamma_2 = tf.Variable(0.12)
+        gamma_10 = tf.Variable(0.43)
+        gamma_20 = tf.Variable(0.12)
+        gamma_21 = tf.Variable(0.35)
+
         with tf.GradientTape() as tape:
-            out = self.kraus_fn(gamma_1, gamma_2)
-        jac = tape.jacobian(out, (gamma_1, gamma_2))
-        assert math.allclose(jac, self.expected_jac_fn(gamma_1, gamma_2))
+            out = self.kraus_fn(gamma_10, gamma_20, gamma_21)
+        jac = tape.jacobian(out, (gamma_10, gamma_20, gamma_21))
+        assert math.allclose(jac, self.expected_jac_fn(gamma_10, gamma_20, gamma_21))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
         """Tests Jacobian of Kraus matrices using JAX."""
         import jax
 
-        gamma_1 = jax.numpy.array(0.43)
-        gamma_2 = jax.numpy.array(0.12)
-        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1])(gamma_1, gamma_2)
-        assert math.allclose(jac, self.expected_jac_fn(gamma_1, gamma_2))
+        gamma_10 = jax.numpy.array(0.43)
+        gamma_20 = jax.numpy.array(0.12)
+        gamma_21 = jax.numpy.array(0.35)
+
+        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(gamma_10, gamma_20, gamma_21)
+        assert math.allclose(jac, self.expected_jac_fn(gamma_10, gamma_20, gamma_21))
+
+
+class TestTritFlip:
+    """Tests for the quantum channel TritFlip"""
+
+    @pytest.mark.parametrize(
+        "ps", [(0, 0, 0), (0.1, 0.12, 0.3), (0.5, 0.4, 0.1), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
+    )
+    def test_ps_arbitrary(self, ps, tol):
+        """Test that various values of p give correct Kraus matrices"""
+        kraus_mats = qml.TritFlip(*ps, wires=0).kraus_matrices()
+
+        expected_K0 = np.sqrt(1 - sum(ps)) * np.eye(3)
+        assert np.allclose(kraus_mats[0], expected_K0, atol=tol, rtol=0)
+
+        Ks = [
+            [[0, 1, 0], [1, 0, 0], [0, 0, 1]],
+            [[0, 0, 1], [0, 1, 0], [1, 0, 0]],
+            [[1, 0, 0], [0, 0, 1], [0, 1, 0]],
+        ]
+
+        for p, K, res in zip(ps, Ks, kraus_mats[1:]):
+            expected_K = np.sqrt(p) * np.array(K)
+            assert np.allclose(res, expected_K, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "p_01,p_02,p_12",
+        [(1.2, 0, 0), (0, -0.3, 0.5), (0, 0, 1 + math.eps), (1, math.eps, 0), (0.3, 0.4, 0.4)],
+    )
+    def test_p_invalid_parameter(self, p_01, p_02, p_12):
+        """Ensures that error is thrown when p_01, p_02, p_12, or their sum are outside [0,1]"""
+        with pytest.raises(ValueError, match="must be in the interval"):
+            qml.TritFlip(p_01, p_02, p_12, wires=0).kraus_matrices()
+
+    @staticmethod
+    def expected_jac_fn(p_01, p_02, p_12):
+        """Gets the expected Jacobian of Kraus matrices"""
+        # Set up the 3 partial derivatives of the 4 3x3 Kraus Matrices
+        partials = math.zeros((3, 4, 3, 3))
+
+        # All 3 partials have the same first Kraus Operator output
+        partials[:, 0] = -1 / (2 * math.sqrt(1 - (p_01 + p_02 + p_12))) * math.eye(3)
+
+        # Set the matrix defined by each partials parameter, the rest are 0
+        partials[0, 1] = 1 / (2 * math.sqrt(p_01)) * math.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+        partials[1, 2] = 1 / (2 * math.sqrt(p_02)) * math.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+        partials[2, 3] = 1 / (2 * math.sqrt(p_12)) * math.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])
+        return partials
+
+    @staticmethod
+    def kraus_fn(p_01, p_02, p_12):
+        """Gets a matrix of the Kraus matrices to be tested."""
+        return qml.math.stack(qml.TritFlip(p_01, p_02, p_12, wires=0).kraus_matrices())
+
+    @pytest.mark.autograd
+    def test_kraus_jac_autograd(self):
+        """Tests Jacobian of Kraus matrices using autograd."""
+
+        p_01 = pnp.array(0.14, requires_grad=True)
+        p_02 = pnp.array(0.04, requires_grad=True)
+        p_12 = pnp.array(0.23, requires_grad=True)
+        jac = qml.jacobian(self.kraus_fn)(p_01, p_02, p_12)
+        assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
+
+    @pytest.mark.torch
+    def test_kraus_jac_torch(self):
+        """Tests Jacobian of Kraus matrices using PyTorch."""
+        import torch
+
+        ps = [0.14, 0.04, 0.23]
+
+        p_01 = torch.tensor(ps[0], requires_grad=True)
+        p_02 = torch.tensor(ps[1], requires_grad=True)
+        p_12 = torch.tensor(ps[2], requires_grad=True)
+
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, (p_01, p_02, p_12))
+        expected_jac = self.expected_jac_fn(*ps)
+        for j, exp in zip(jac, expected_jac):
+            assert qml.math.allclose(j.detach().numpy(), exp)
+
+    @pytest.mark.tf
+    def test_kraus_jac_tf(self):
+        """Tests Jacobian of Kraus matrices using TensorFlow."""
+        import tensorflow as tf
+
+        p_01 = tf.Variable(0.14)
+        p_02 = tf.Variable(0.04)
+        p_12 = tf.Variable(0.23)
+        with tf.GradientTape() as tape:
+            out = self.kraus_fn(p_01, p_02, p_12)
+        jac = tape.jacobian(out, (p_01, p_02, p_12))
+        assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
+
+    @pytest.mark.jax
+    def test_kraus_jac_jax(self):
+        """Tests Jacobian of Kraus matrices using JAX."""
+        import jax
+
+        p_01 = jax.numpy.array(0.14)
+        p_02 = jax.numpy.array(0.04)
+        p_12 = jax.numpy.array(0.23)
+        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(p_01, p_02, p_12)
+        assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))

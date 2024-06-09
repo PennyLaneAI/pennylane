@@ -30,7 +30,7 @@ class Identity(CVObservable, Operation):
     The expectation of this observable
 
     .. math::
-        E[\I] = \text{Tr}(\I \rho)
+        E[I] = \text{Tr}(I \rho)
 
     .. seealso:: The equivalent short-form alias :class:`~I`
 
@@ -205,7 +205,7 @@ r"""The Identity operator
 The expectation of this observable
 
 .. math::
-    E[\I] = \text{Tr}(\I \rho)
+    E[I] = \text{Tr}(I \rho)
 
 .. seealso:: The equivalent long-form alias :class:`~Identity`
 

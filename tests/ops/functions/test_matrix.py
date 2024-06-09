@@ -664,7 +664,7 @@ class TestInterfaces:
     def test_catalyst(self):
         """Test with Catalyst interface"""
 
-        import catalyst
+        catalyst = pytest.importorskip("catalyst")
 
         dev = qml.device("lightning.qubit", wires=1)
 

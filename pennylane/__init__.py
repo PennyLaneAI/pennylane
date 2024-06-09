@@ -121,7 +121,7 @@ from pennylane.ops.functions import (
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
-from pennylane.debugging import snapshots
+from pennylane.debugging import snapshots, breakpoint
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
@@ -218,6 +218,9 @@ def device(name, *args, **kwargs):
 
     * :mod:`'default.qutrit' <pennylane.devices.default_qutrit>`: a simple
       state simulator of qutrit-based quantum circuit architectures.
+
+    * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a
+      mixed-state simulator of qutrit-based quantum circuit architectures.
 
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
