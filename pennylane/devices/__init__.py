@@ -54,6 +54,7 @@ accessible from the ``pennylane.devices`` submodule.
     :toctree: api
 
     ExecutionConfig
+    MCMConfig
     Device
     DefaultQubit
     NullQubit
@@ -146,7 +147,7 @@ Qutrit Mixed-State Simulation Tools
 
 """
 
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
 from .device_api import Device
 from .default_qubit import DefaultQubit
 

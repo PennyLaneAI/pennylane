@@ -167,7 +167,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
     drawer.box_gate(
         layer,
         list(op.wires),
-        op.then_op.label(decimals=config.decimals),
+        op.base.label(decimals=config.decimals),
         box_options={"zorder": 4},
         text_options={"zorder": 5},
     )

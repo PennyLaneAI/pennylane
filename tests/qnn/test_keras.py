@@ -540,15 +540,39 @@ class TestKerasLayer:
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-@pytest.mark.usefixtures("get_circuit")
-def test_interface_conversion(get_circuit, output_dim):
-    """Test if input QNodes with all types of interface are converted internally to the TensorFlow
-    interface"""
-    c, w = get_circuit
-    layer = KerasLayer(c, w, output_dim)
-    assert layer.qnode.interface == "tf"
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+def test_invalid_interface_error(interface):
+    """Test an error gets raised if input QNode has the wrong interface"""
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1}
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    with pytest.raises(ValueError, match="Invalid interface"):
+        _ = KerasLayer(circuit, weight_shapes, output_dim=2)
+
+
+@pytest.mark.tf
+@pytest.mark.parametrize(
+    "interface", ("auto", "tf", "tensorflow", "tensorflow-autograph", "tf-autograph")
+)
+def test_qnode_interface_not_mutated(interface):
+    """Test that the input QNode's interface is not mutated by KerasLayer"""
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1}
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
+    assert qlayer.qnode.interface == circuit.interface == interface
 
 
 @pytest.mark.tf
@@ -908,7 +932,7 @@ def test_specs():
     dev = qml.device("default.qubit", wires=3)
     weight_shapes = {"w1": 1, "w2": (3, 2, 3)}
 
-    @qml.qnode(dev, interface="tensorflow")
+    @qml.qnode(dev, interface="tf")
     def circuit(inputs, w1, w2):
         qml.templates.AngleEmbedding(inputs, wires=[0, 1])
         qml.RX(w1, wires=0)
