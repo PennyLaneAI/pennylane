@@ -522,11 +522,11 @@ def to_string(fermi_op, of=False):
                     number of the wire it operates on
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> _to_string(w)
+    >>> to_string(w)
     0+ 1-
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> _to_string(w, of=True)
+    >>> to_string(w, of=True)
     0^ 1
 
     >>> w1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
@@ -570,7 +570,7 @@ def _(fermi_op: FermiSentence, of=False):
 
     op_str = ""
     for fw in fermi_op:
-        op_str += "\n+ " + str(fermi_op[fw]) + " * " + _to_string(fw, of=of)
+        op_str += "\n+ " + str(fermi_op[fw]) + " * " + to_string(fw, of=of)
 
     return op_str.strip()[2:]  # Remove redundant signs and newlines.
 

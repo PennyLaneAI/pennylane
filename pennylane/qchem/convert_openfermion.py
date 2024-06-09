@@ -67,11 +67,11 @@ def from_openfermion(ops, tol=None, **kwargs):
     if "format" in kwargs:
         if kwargs["format"] == "Sum":
             return qml.dot(*pl_term.terms())
-        elif kwargs["format"] != "LinearCombination":
+        if kwargs["format"] != "LinearCombination":
             f = kwargs["format"]
             raise ValueError(f"format must be a Sum or LinearCombination, got: {f}.")
-        else:
-            return pl_term
+
+    return pl_term
 
 
 def to_openfermion(
