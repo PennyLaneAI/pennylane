@@ -30,7 +30,13 @@ from pennylane.fermi.fermionic import FermiWord, FermiSentence
 from pennylane.ops import Sum, LinearCombination
 from pennylane.wires import Wires
 
-import openfermion
+try:
+    import openfermion
+except ImportError as Error:
+    raise ImportError(
+        "This feature requires openfermion. "
+        "It can be installed with: pip install openfermion"
+    ) from Error
 
 
 def from_openfermion(ops, tol=None, **kwargs):
