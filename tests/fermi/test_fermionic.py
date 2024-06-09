@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string, _to_string
+from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string, to_string
 
 # pylint: disable=too-many-public-methods
 
@@ -1024,7 +1024,7 @@ class TestFermiSentenceArithmetic:
     
     @pytest.mark.parametrize("f_op, string", fw_string)
     def test_to_string(self, f_op, string):
-        assert _to_string(f_op) == string
+        assert to_string(f_op) == string
         
     
 

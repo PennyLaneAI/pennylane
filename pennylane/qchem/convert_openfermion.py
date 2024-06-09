@@ -70,8 +70,8 @@ def from_openfermion(ops, tol=None, **kwargs):
         elif kwargs["format"] != "LinearCombination":
             f = kwargs["format"]
             raise ValueError(f"format must be a Sum or LinearCombination, got: {f}.")
-
-    return pl_term
+        else:
+            return pl_term
 
 
 def to_openfermion(
@@ -135,7 +135,7 @@ def _(pl_op: FermiWord, wires=None, tol=None):
 
         pl_op = FermiWord(pl_op_mapped)
 
-    return openfermion.ops.FermionOperator(qml.fermi.fermionic._to_string(pl_op, of=True))
+    return openfermion.ops.FermionOperator(qml.fermi.fermionic.to_string(pl_op, of=True))
 
 
 @_to_openfermion_dispatch.register
