@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the insert transform.
+Tests for the add_noise transform.
 """
 from functools import partial
 
@@ -28,7 +28,7 @@ from pennylane.transforms.add_noise import add_noise
 
 
 class TestAddNoise:
-    """Tests for the insert function using input tapes"""
+    """Tests for the add_noise transform using input tapes"""
 
     with qml.queuing.AnnotatedQueue() as q_tape:
         qml.RX(0.9, wires=0)
@@ -149,310 +149,301 @@ class TestAddNoise:
         assert tape.measurements[0].return_type is Expectation
 
 
-def test_add_noise_qnode():
-    """Test that a QNode with add_noise decorator gives a different result."""
-    dev = qml.device("default.mixed", wires=2)
+class TestAddNoiseInterface:
+    """Tests for the add_noise transform using input qnode and devices"""
 
-    c, n = qml.noise.op_in([qml.RY, qml.RZ]), qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+    def test_add_noise_qnode(self):
+        """Test that a QNode with add_noise decorator gives a different result."""
+        dev = qml.device("default.mixed", wires=2)
 
-    @partial(add_noise, noise_model=qml.NoiseModel({c: n}))
-    @qml.qnode(dev)
-    def f_noisy(w, x, y, z):
-        qml.RX(w, wires=0)
-        qml.RY(x, wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(y, wires=0)
-        qml.RX(z, wires=1)
-        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        c, n = qml.noise.op_in([qml.RY, qml.RZ]), qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
-    @qml.qnode(dev)
-    def f(w, x, y, z):
-        qml.RX(w, wires=0)
-        qml.RY(x, wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(y, wires=0)
-        qml.RX(z, wires=1)
-        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        @partial(add_noise, noise_model=qml.NoiseModel({c: n}))
+        @qml.qnode(dev)
+        def f_noisy(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-    args = [0.1, 0.2, 0.3, 0.4]
+        @qml.qnode(dev)
+        def f(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-    assert not np.isclose(f_noisy(*args), f(*args))
+        args = [0.1, 0.2, 0.3, 0.4]
+
+        assert not np.isclose(f_noisy(*args), f(*args))
+
+    def test_add_noise_dev(self):
+        """Test if an device transformed by the add_noise transform does successfully add noise to
+        subsequent circuit executions"""
+        with qml.queuing.AnnotatedQueue() as q_in_tape:
+            qml.RX(0.9, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.5, wires=0)
+            qml.RX(0.6, wires=1)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliZ(0))
+
+        in_tape = QuantumScript.from_queue(q_in_tape)
+        dev = qml.device("default.qubit", wires=2)
+        program, _ = dev.preprocess()
+        res_without_noise = qml.execute(
+            [in_tape], dev, qml.gradients.param_shift, transform_program=program
+        )
+
+        c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseShift, 0.4)
+        new_dev = add_noise(dev, noise_model=qml.NoiseModel({c: n}))
+        new_program, _ = new_dev.preprocess()
+        [tape], _ = new_program([in_tape])
+        res_with_noise = qml.execute(
+            [in_tape], new_dev, qml.gradients, transform_program=new_program
+        )
+
+        with qml.queuing.AnnotatedQueue() as q_tape_exp:
+            qml.RX(0.9, wires=0)
+            qml.PhaseShift(0.4, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.PhaseShift(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.5, wires=0)
+            qml.PhaseShift(0.4, wires=0)
+            qml.RX(0.6, wires=1)
+            qml.PhaseShift(0.4, wires=1)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliZ(0))
+
+        tape_exp = QuantumScript.from_queue(q_tape_exp)
+        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
+        assert len(tape.measurements) == 2
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
+        assert tape.observables[0].wires.tolist() == [0, 1]
+        assert tape.measurements[0].return_type is Expectation
+        assert tape.observables[1].name == "PauliZ"
+        assert tape.observables[1].wires.tolist() == [0]
+        assert tape.measurements[1].return_type is Expectation
+
+        assert not np.allclose(res_without_noise, res_with_noise)
+
+    def test_add_noise_old_dev(self, mocker):
+        """Test if a old device transformed by the add_noise function does successfully add noise to
+        subsequent circuit executions"""
+        with qml.queuing.AnnotatedQueue() as q_in_tape:
+            qml.RX(0.9, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.5, wires=0)
+            qml.RX(0.6, wires=1)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliZ(0))
+
+        in_tape = QuantumScript.from_queue(q_in_tape)
+        dev = qml.device("default.mixed", wires=2)
+        res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
+
+        c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+        new_dev = add_noise(dev, noise_model=qml.NoiseModel({c: n}))
+        spy = mocker.spy(new_dev, "default_expand_fn")
+
+        res_with_noise = qml.execute([in_tape], new_dev, qml.gradients.param_shift)
+        tape = spy.call_args[0][0]
+
+        with qml.queuing.AnnotatedQueue() as q_tape_exp:
+            qml.RX(0.9, wires=0)
+            qml.PhaseDamping(0.4, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.PhaseDamping(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.5, wires=0)
+            qml.PhaseDamping(0.4, wires=0)
+            qml.RX(0.6, wires=1)
+            qml.PhaseDamping(0.4, wires=1)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(qml.PauliZ(0))
+        tape_exp = QuantumScript.from_queue(q_tape_exp)
+
+        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
+        assert len(tape.measurements) == 2
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
+        assert tape.observables[0].wires.tolist() == [0, 1]
+        assert tape.measurements[0].return_type is Expectation
+        assert tape.observables[1].name == "PauliZ"
+        assert tape.observables[1].wires.tolist() == [0]
+        assert tape.measurements[1].return_type is Expectation
+
+        assert not np.allclose(res_without_noise, res_with_noise)
+
+    def test_add_noise_template(self):
+        """Test that noisy ops are inserted correctly into a decomposed template"""
+        dev = qml.device("default.mixed", wires=2)
+
+        c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseDamping, 0.3)
+
+        @partial(add_noise, noise_model=qml.NoiseModel({c: n}))
+        @qml.qnode(dev)
+        def f1(w1, w2):
+            qml.SimplifiedTwoDesign(w1, w2, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def f2(w1, w2):
+            qml.RY(w1[0], wires=0)
+            qml.PhaseDamping(0.3, wires=0)
+            qml.RY(w1[1], wires=1)
+            qml.PhaseDamping(0.3, wires=1)
+            qml.CZ(wires=[0, 1])
+            qml.RY(w2[0][0][0], wires=0)
+            qml.PhaseDamping(0.3, wires=0)
+            qml.RY(w2[0][0][1], wires=1)
+            qml.PhaseDamping(0.3, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        w1 = np.random.random(2)
+        w2 = np.random.random((1, 1, 2))
+
+        assert np.allclose(f1(w1, w2), f2(w1, w2))
+
+    # pylint: disable=unused-argument
+    def test_add_noise_with_non_qwc_obs_and_mid_meas(self):
+        """Test that the add_noise transform catches and reports errors from the enclosed function."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        fcond = qml.noise.wires_in([0, 1])
+
+        def noise(op, **kwargs):
+            qml.CNOT(wires=[1, 0])
+            qml.CRX(kwargs["noise_param"], wires=[0, 1])
+
+        @qml.qnode(dev)
+        @partial(add_noise, noise_model=qml.NoiseModel({fcond: noise}, noise_param=0.3))
+        def noisy_circuit(circuit_param):
+            qml.RY(circuit_param, wires=0)
+            qml.Hadamard(wires=0)
+            qml.T(wires=0)
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def explicit_circuit(circuit_param):
+            qml.RY(circuit_param, wires=0)
+            noise(op=None, noise_param=0.3)
+            qml.Hadamard(wires=0)
+            noise(op=None, noise_param=0.3)
+            qml.T(wires=0)
+            noise(op=None, noise_param=0.3)
+            m0 = qml.measure(0)
+            noise(op=None, noise_param=0.3)
+            m1 = qml.measure(1)
+            noise(op=None, noise_param=0.3)
+            qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
+
+        assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
 
 
-def test_add_noise_dev():
-    """Test if an device transformed by the add_noise function does successfully add noise to
-    subsequent circuit executions"""
-    with qml.queuing.AnnotatedQueue() as q_in_tape:
-        qml.RX(0.9, wires=0)
-        qml.RY(0.4, wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(0.5, wires=0)
-        qml.RX(0.6, wires=1)
-        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-        qml.expval(qml.PauliZ(0))
+class TestAddNoiseLevels:
+    """Tests for custom insertion of add_noise transform at correct level."""
 
-    in_tape = QuantumScript.from_queue(q_in_tape)
-    dev = qml.device("default.qubit", wires=2)
-    program, _ = dev.preprocess()
-    res_without_noise = qml.execute(
-        [in_tape], dev, qml.gradients.param_shift, transform_program=program
+    @pytest.mark.parametrize(
+        "level1, level2",
+        [
+            ("top", 0),
+            (0, slice(0, 0)),
+            ("user", 4),
+            ("user", slice(0, 4)),
+            (None, slice(0, None)),
+            (-1, slice(0, -1)),
+            ("device", slice(0, -1)),
+        ],
     )
+    def test_add_noise_level(self, level1, level2):
+        """Test that add_noise can be inserted to correct level in the TransformProgram"""
+        dev = qml.device("default.mixed", wires=2)
 
-    c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseShift, 0.4)
-    new_dev = add_noise(dev, noise_model=qml.NoiseModel({c: n}))
-    new_program, _ = new_dev.preprocess()
-    [tape], _ = new_program([in_tape])
-    res_with_noise = qml.execute([in_tape], new_dev, qml.gradients, transform_program=new_program)
+        @qml.metric_tensor
+        @qml.transforms.undo_swaps
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        def f(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
-    with qml.queuing.AnnotatedQueue() as q_tape_exp:
-        qml.RX(0.9, wires=0)
-        qml.PhaseShift(0.4, wires=0)
-        qml.RY(0.4, wires=1)
-        qml.PhaseShift(0.4, wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(0.5, wires=0)
-        qml.PhaseShift(0.4, wires=0)
-        qml.RX(0.6, wires=1)
-        qml.PhaseShift(0.4, wires=1)
-        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-        qml.expval(qml.PauliZ(0))
+        fcond = qml.noise.op_eq(qml.RX)
+        fcall = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+        noise_model = qml.NoiseModel({fcond: fcall})
 
-    tape_exp = QuantumScript.from_queue(q_tape_exp)
-    assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
-    assert all(
-        np.allclose(o1.parameters, o2.parameters)
-        for o1, o2 in zip(tape.operations, tape_exp.operations)
-    )
-    assert len(tape.measurements) == 2
-    assert (
-        tape.observables[0].name == "Prod"
-        if qml.operation.active_new_opmath()
-        else ["PauliZ", "PauliZ"]
-    )
-    assert tape.observables[0].wires.tolist() == [0, 1]
-    assert tape.measurements[0].return_type is Expectation
-    assert tape.observables[1].name == "PauliZ"
-    assert tape.observables[1].wires.tolist() == [0]
-    assert tape.measurements[1].return_type is Expectation
+        noisy_qnode = add_noise(f, noise_model=noise_model, level=level1)
 
-    assert not np.allclose(res_without_noise, res_with_noise)
+        transform_level1 = noisy_qnode.transform_program
+        transform_level2 = qml.workflow.get_transform_program(f, level=level2)
+        transform_level2.add_transform(add_noise, noise_model=noise_model, level=level1)
 
+        assert len(transform_level1) == len(transform_level2)
+        for t1, t2 in zip(transform_level1, transform_level2):
+            if t1.transform.__name__ == t2.transform.__name__ == "expand_fn":
+                continue
+            assert t1 == t2
 
-def test_add_noise_old_dev(mocker):
-    """Test if a old device transformed by the add_noise function does successfully add noise to
-    subsequent circuit executions"""
-    with qml.queuing.AnnotatedQueue() as q_in_tape:
-        qml.RX(0.9, wires=0)
-        qml.RY(0.4, wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(0.5, wires=0)
-        qml.RX(0.6, wires=1)
-        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-        qml.expval(qml.PauliZ(0))
+    def test_add_noise_level_with_final(self):
+        """Test that add_noise can be inserted in the TransformProgram with a final transform"""
+        dev = qml.device("default.mixed", wires=2)
 
-    in_tape = QuantumScript.from_queue(q_in_tape)
-    dev = qml.device("default.mixed", wires=2)
-    res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
+        @qml.metric_tensor
+        @qml.transforms.undo_swaps
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        def f(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
-    c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseDamping, 0.4)
-    new_dev = add_noise(dev, noise_model=qml.NoiseModel({c: n}))
-    spy = mocker.spy(new_dev, "default_expand_fn")
+        fcond = qml.noise.op_eq(qml.RX)
+        fcall = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+        noise_model = qml.NoiseModel({fcond: fcall})
 
-    res_with_noise = qml.execute([in_tape], new_dev, qml.gradients.param_shift)
-    tape = spy.call_args[0][0]
+        noisy_qnode = add_noise(f, noise_model=noise_model)
 
-    with qml.queuing.AnnotatedQueue() as q_tape_exp:
-        qml.RX(0.9, wires=0)
-        qml.PhaseDamping(0.4, wires=0)
-        qml.RY(0.4, wires=1)
-        qml.PhaseDamping(0.4, wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(0.5, wires=0)
-        qml.PhaseDamping(0.4, wires=0)
-        qml.RX(0.6, wires=1)
-        qml.PhaseDamping(0.4, wires=1)
-        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-        qml.expval(qml.PauliZ(0))
-    tape_exp = QuantumScript.from_queue(q_tape_exp)
+        transform_level1 = qml.workflow.get_transform_program(f)
+        transform_level2 = qml.workflow.get_transform_program(noisy_qnode)
 
-    assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
-    assert all(
-        np.allclose(o1.parameters, o2.parameters)
-        for o1, o2 in zip(tape.operations, tape_exp.operations)
-    )
-    assert len(tape.measurements) == 2
-    assert (
-        tape.observables[0].name == "Prod"
-        if qml.operation.active_new_opmath()
-        else ["PauliZ", "PauliZ"]
-    )
-    assert tape.observables[0].wires.tolist() == [0, 1]
-    assert tape.measurements[0].return_type is Expectation
-    assert tape.observables[1].name == "PauliZ"
-    assert tape.observables[1].wires.tolist() == [0]
-    assert tape.measurements[1].return_type is Expectation
-
-    assert not np.allclose(res_without_noise, res_with_noise)
-
-
-def test_add_noise_template():
-    """Test that ops are inserted correctly into a decomposed template"""
-    dev = qml.device("default.mixed", wires=2)
-
-    c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseDamping, 0.3)
-
-    @partial(add_noise, noise_model=qml.NoiseModel({c: n}))
-    @qml.qnode(dev)
-    def f1(w1, w2):
-        qml.SimplifiedTwoDesign(w1, w2, wires=[0, 1])
-        return qml.expval(qml.PauliZ(0))
-
-    @qml.qnode(dev)
-    def f2(w1, w2):
-        qml.RY(w1[0], wires=0)
-        qml.PhaseDamping(0.3, wires=0)
-        qml.RY(w1[1], wires=1)
-        qml.PhaseDamping(0.3, wires=1)
-        qml.CZ(wires=[0, 1])
-        qml.RY(w2[0][0][0], wires=0)
-        qml.PhaseDamping(0.3, wires=0)
-        qml.RY(w2[0][0][1], wires=1)
-        qml.PhaseDamping(0.3, wires=1)
-        return qml.expval(qml.PauliZ(0))
-
-    w1 = np.random.random(2)
-    w2 = np.random.random((1, 1, 2))
-
-    assert np.allclose(f1(w1, w2), f2(w1, w2))
-
-
-# pylint: disable=unused-argument
-def test_add_noise_with_non_qwc_obs_and_mid_meas():
-    """Test that the add_noise transform catches and reports errors from the enclosed function."""
-
-    dev = qml.device("default.qubit", wires=3)
-
-    fcond = qml.noise.wires_in([0, 1])
-
-    def noise(op, **kwargs):
-        qml.CNOT(wires=[1, 0])
-        qml.CRX(kwargs["noise_param"], wires=[0, 1])
-
-    @qml.qnode(dev)
-    @partial(add_noise, noise_model=qml.NoiseModel({fcond: noise}, noise_param=0.3))
-    def noisy_circuit(circuit_param):
-        qml.RY(circuit_param, wires=0)
-        qml.Hadamard(wires=0)
-        qml.T(wires=0)
-        m0 = qml.measure(0)
-        m1 = qml.measure(1)
-        qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
-        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
-
-    @qml.qnode(dev)
-    def explicit_circuit(circuit_param):
-        qml.RY(circuit_param, wires=0)
-        noise(op=None, noise_param=0.3)
-        qml.Hadamard(wires=0)
-        noise(op=None, noise_param=0.3)
-        qml.T(wires=0)
-        noise(op=None, noise_param=0.3)
-        m0 = qml.measure(0)
-        noise(op=None, noise_param=0.3)
-        m1 = qml.measure(1)
-        noise(op=None, noise_param=0.3)
-        qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
-        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
-
-    assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
-
-
-@pytest.mark.parametrize(
-    "level1, level2",
-    [
-        ("top", 0),
-        (0, slice(0, 0)),
-        ("user", 4),
-        ("user", slice(0, 4)),
-        (None, slice(0, None)),
-        (-1, slice(0, -1)),
-        ("device", slice(0, -1)),
-    ],
-)
-def test_add_noise_level(level1, level2):
-    """Test that add_noise can be inserted to correct level in the TransformProgram"""
-    dev = qml.device("default.mixed", wires=2)
-
-    @qml.metric_tensor
-    @qml.transforms.undo_swaps
-    @qml.transforms.merge_rotations
-    @qml.transforms.cancel_inverses
-    @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
-    def f(w, x, y, z):
-        qml.RX(w, wires=0)
-        qml.RY(x, wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(y, wires=0)
-        qml.RX(z, wires=1)
-        return qml.expval(qml.Z(0) @ qml.Z(1))
-
-    fcond = qml.noise.op_eq(qml.RX)
-    fcall = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
-    noise_model = qml.NoiseModel({fcond: fcall})
-
-    noisy_qnode = add_noise(f, noise_model=noise_model, level=level1)
-
-    transform_level1 = noisy_qnode.transform_program
-    transform_level2 = qml.workflow.get_transform_program(f, level=level2)
-    transform_level2.add_transform(add_noise, noise_model=noise_model, level=level1)
-
-    assert len(transform_level1) == len(transform_level2)
-    for t1, t2 in zip(transform_level1, transform_level2):
-        if t1.transform.__name__ == t2.transform.__name__ == "expand_fn":
-            continue
-        assert t1 == t2
-
-
-@pytest.mark.parametrize(
-    "level1, level2",
-    [
-        ("top", 0),
-        (0, slice(0, 0)),
-        ("user", 4),
-        ("user", slice(0, 4)),
-        (None, slice(0, None)),
-        (-1, slice(0, -1)),
-        ("device", slice(0, -1)),
-    ],
-)
-def test_add_noise_level_with_final(level1, level2):
-    """Test that add_noise can be inserted in the TransformProgram with a final transform"""
-    dev = qml.device("default.mixed", wires=2)
-
-    @qml.metric_tensor
-    @qml.transforms.undo_swaps
-    @qml.transforms.merge_rotations
-    @qml.transforms.cancel_inverses
-    @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
-    def f(w, x, y, z):
-        qml.RX(w, wires=0)
-        qml.RY(x, wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(y, wires=0)
-        qml.RX(z, wires=1)
-        return qml.expval(qml.Z(0) @ qml.Z(1))
-
-    fcond = qml.noise.op_eq(qml.RX)
-    fcall = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
-    noise_model = qml.NoiseModel({fcond: fcall})
-
-    noisy_qnode = add_noise(f, noise_model=noise_model)
-
-    transform_level1 = qml.workflow.get_transform_program(f)
-    transform_level2 = qml.workflow.get_transform_program(noisy_qnode)
-
-    assert len(transform_level1) == len(transform_level2) - 1
-    assert transform_level2[4].transform == add_noise.transform
-    assert transform_level2[-1].transform == qml.metric_tensor.transform
+        assert len(transform_level1) == len(transform_level2) - 1
+        assert transform_level2[4].transform == add_noise.transform
+        assert transform_level2[-1].transform == qml.metric_tensor.transform
