@@ -366,6 +366,9 @@
 * Fixed a bug where `split_non_commuting` raises an error when the circuit contains measurements of observables that are not pauli words.
   [(#5827)](https://github.com/PennyLaneAI/pennylane/pull/5827)
 
+* `Exp.simplify()` now returns an operator with the correct number of Trotter steps, i.e. equal to the one from the pre-simplified operator.
+  [(#5831)](https://github.com/PennyLaneAI/pennylane/pull/5831)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
