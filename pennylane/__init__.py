@@ -21,8 +21,6 @@ from sys import version_info
 
 import numpy as _np
 
-from semantic_version import SimpleSpec, Version
-
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
@@ -123,7 +121,7 @@ from pennylane.ops.functions import (
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
-from pennylane.debugging import snapshots
+from pennylane.debugging import snapshots, breakpoint
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
@@ -143,6 +141,9 @@ import pennylane.data
 
 import pennylane.noise
 from pennylane.noise import NoiseModel
+
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -393,7 +394,7 @@ def device(name, *args, **kwargs):
 
         if hasattr(plugin_device_class, "pennylane_requires") and Version(
             version()
-        ) not in SimpleSpec(plugin_device_class.pennylane_requires):
+        ) not in SpecifierSet(f"=={plugin_device_class.pennylane_requires}"):
             raise DeviceError(
                 f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
                 f"however PennyLane version {__version__} is installed."
