@@ -738,78 +738,58 @@ class Device(abc.ABC):
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """
-        supports_hamiltonian = self.supports_observable("Hamiltonian")
-        supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
-        grouping_known = all(
-            obs.grouping_indices is not None
-            for obs in circuit.observables
-            if isinstance(obs, (Hamiltonian, LinearCombination))
-        )
-        # device property present in braket plugin
-        use_grouping = getattr(self, "use_grouping", True)
-
-        hamiltonian_in_obs = any(
-            isinstance(obs, (Hamiltonian, LinearCombination)) for obs in circuit.observables
-        )
-
-        expval_sum_or_prod_in_obs = any(
-            isinstance(m.obs, (Sum, Prod, SProd)) and isinstance(m, ExpectationMP)
-            for m in circuit.measurements
-        )
-
         is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
-
-        hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
-
-        if hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known)):
-            # If the observable contains a Hamiltonian and the device does not
-            # support Hamiltonians, or if the simulation uses finite shots, or
-            # if the Hamiltonian explicitly specifies an observable grouping,
-            # split tape into multiple tapes of diagonalizable known observables.
-            try:
-                circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-            except ValueError:
-                circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
-
-        elif expval_sum_or_prod_in_obs and not is_shadow and not supports_sum:
-            circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
-
-        elif (
-            len(circuit.obs_sharing_wires) > 0
-            and not hamiltonian_in_obs
-            and all(
-                not isinstance(m, (SampleMP, ProbabilityMP, CountsMP)) for m in circuit.measurements
-            )
+        if (
+            (not finite_shots or is_shadow)
+            and self._all_obs_supported(circuit)
+            and len(circuit.obs_sharing_wires) == 0
         ):
-            # Check for case of non-commuting terms and that there are no Hamiltonians
-            # TODO: allow for Hamiltonians in list of observables as well.
-            circuits, hamiltonian_fn = qml.transforms.split_non_commuting(circuit)
-
-        else:
-            # otherwise, return the output of an identity transform
             circuits = [circuit]
 
-            def hamiltonian_fn(res):
-                return res[0]
+            def processing_fn(results):
+                return results[0]
 
-        # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
-        # ones will be as well) and whether broadcasting is supported
+        else:
+            circuits, processing_fn = qml.transforms.split_non_commuting(circuit)
+
+        # Check whether the circuit was broadcasted and whether broadcasting is supported
         if circuit.batch_size is None or self.capabilities().get("supports_broadcasting"):
             # If the circuit wasn't broadcasted or broadcasting is supported, no action required
-            return circuits, hamiltonian_fn
+            return circuits, processing_fn
 
         # Expand each of the broadcasted Hamiltonian-expanded circuits
         expanded_tapes, expanded_fn = qml.transforms.broadcast_expand(circuits)
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
         # expansion. Note that the application order is reversed compared to the expansion order,
-        # i.e. while we first applied `hamiltonian_expand` to the tape, we need to process the
+        # i.e. while we first applied `split_non_commuting` to the tape, we need to process the
         # results from the broadcast expansion first.
         def total_processing(results):
-            return hamiltonian_fn(expanded_fn(results))
+            return processing_fn(expanded_fn(results))
 
         return expanded_tapes, total_processing
+
+    def _all_obs_supported(self, circuit):
+        """Check whether all observables (including multi-term observables) are supported."""
+
+        for obs in circuit.observables:
+
+            if isinstance(
+                obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
+            ) and not self.supports_observable("Hamiltonian"):
+                return False
+
+            if isinstance(obs, qml.ops.Sum) and not self.supports_observable("Sum"):
+                return False
+
+            if isinstance(obs, qml.ops.Prod) and not self.supports_observable("Prod"):
+                return False
+
+            if isinstance(obs, qml.ops.SProd) and not self.supports_observable("SProd"):
+                return False
+
+        return True
 
     @property
     def op_queue(self):
