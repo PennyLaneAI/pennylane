@@ -509,6 +509,60 @@ class TestUnits:
         result = ([0.1, 0.2], 0.2, 0.3, 0.4)
         assert fn(result) == ((0.1, 0.2, 0.2), (0.3, 0.4))
 
+    @pytest.mark.parametrize(
+        "non_pauli_obs",
+        [
+            [
+                qml.Projector([0], wires=[1]),
+                qml.Projector([1, 1, 0, 1], wires=[0, 1]),
+            ],
+            [
+                qml.Hadamard(wires=[1]),
+                qml.Hadamard(wires=[0]) @ qml.PauliX(wires=[1]),
+            ],
+        ],
+    )
+    def test_tape_with_non_pauli_obs(self, non_pauli_obs):
+        """Tests that the tape is split correctly when containing non-Pauli observables"""
+
+        obs_list = single_term_obs_list + non_pauli_obs
+        measurements = [
+            qml.expval(c * o) for c, o in zip([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7], obs_list)
+        ]
+        tape = qml.tape.QuantumScript([], measurements, shots=100)
+
+        expected_tapes_no_grouping = [
+            qml.tape.QuantumScript([], [qml.expval(o)], shots=100) for o in obs_list
+        ]
+
+        tapes, fn = split_non_commuting(tape, grouping_strategy=None)
+        for actual_tape, expected_tape in zip(tapes, expected_tapes_no_grouping):
+            assert qml.equal(actual_tape, expected_tape)
+        assert qml.math.allclose(
+            fn([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]), [0.01, 0.04, 0.09, 0.16, 0.25, 0.36, 0.49]
+        )
+
+        wires_groups = [
+            [qml.X(0), qml.Z(1)],
+            [qml.Y(0), non_pauli_obs[0]],
+            [qml.X(0) @ qml.Y(1)],
+            [qml.Y(0) @ qml.Z(1)],
+            [non_pauli_obs[1]],
+        ]
+
+        # wires grouping produces [[0, 2], [1, 5], [3], [4], [6]]
+        expected_tapes_wires_grouping = [
+            qml.tape.QuantumScript([], [qml.expval(o) for o in group], shots=100)
+            for group in wires_groups
+        ]
+
+        tapes, fn = split_non_commuting(tape)
+        for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
+            assert qml.equal(actual_tape, expected_tape)
+        assert qml.math.allclose(
+            fn([[0.1, 0.2], [0.3, 0.6], 0.4, 0.5, 0.7]), [0.01, 0.06, 0.06, 0.16, 0.25, 0.36, 0.49]
+        )
+
 
 class TestIntegration:
     """Tests the ``split_non_commuting`` transform performed on a QNode"""
@@ -815,6 +869,23 @@ class TestIntegration:
 
         assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, [1.5, 2.5])
+
+    def test_non_pauli_obs_in_circuit(self):
+        """Tests that the tape is executed correctly with non-pauli observables"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(_dev)
+        def circuit():
+            qml.Hadamard(0)
+            return (
+                qml.expval(qml.Projector([0], wires=[0])),
+                qml.expval(qml.Projector([1], wires=[0])),
+            )
+
+        res = circuit()
+        assert qml.math.allclose(res, [0.5, 0.5])
 
 
 expected_grad_param_0 = [
