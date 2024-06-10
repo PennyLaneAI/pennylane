@@ -58,6 +58,7 @@ from .observable_hf import fermionic_observable, qubit_observable
 from .openfermion_pyscf import (
     decompose,
     dipole_of,
+    molecular_dipole,
     meanfield,
     observable,
     one_particle,
