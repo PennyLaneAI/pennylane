@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* New Method in `ProbabilityMP` for Density Matrix Processing**: A new method `process_density_matrix` has been added to the `ProbabilityMP` class, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
+  [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
+
 * QROM template is added. This template allows you to enter classic data in the form of bitstrings.
   [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
 
@@ -365,6 +368,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Yushao Chen,
 Guillermo Alonso-Linaje,
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
