@@ -1347,9 +1347,7 @@ def _partial_h(coordinates, symbols):
     return qchem.molecular_hamiltonian(symbols, coordinates, method="pyscf")
 
 
-@pytest.mark.skipif(
-    os.cpu_count() == 1, reason="Parallel test requires more than one processor"
-)
+@pytest.mark.skipif(os.cpu_count() == 1, reason="Parallel test requires more than one processor")
 @pytest.mark.parametrize(
     "symbols", [["N", "H", "H", "H"], ["H", "H"], ["Li", "H"], ["H", "H", "O"], ["N", "N"]]
 )
