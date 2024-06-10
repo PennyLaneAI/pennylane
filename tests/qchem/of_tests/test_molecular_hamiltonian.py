@@ -14,7 +14,6 @@
 """
 Unit tests for molecular Hamiltonians.
 """
-import os
 # pylint: disable=too-many-arguments, protected-access
 import time
 from multiprocessing import Pool
@@ -1333,8 +1332,7 @@ def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdi
 
 
 def test_unit_error_molecular_hamiltonian():
-    r"""Test that an error is raised if a wrong/not-supported unit for coordinates is entered.
-    """
+    r"""Test that an error is raised if a wrong/not-supported unit for coordinates is entered."""
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
@@ -1344,37 +1342,43 @@ def test_unit_error_molecular_hamiltonian():
 
 
 def _partial_h(coordinates, symbols):
-    r""" Return a partial of molecular hamiltonian, only wait coordinates
+    r"""Return a partial of molecular hamiltonian, only wait coordinates
     The function has to be moved outside the caller so that it cal be pickled"""
     return qchem.molecular_hamiltonian(symbols, coordinates, method="pyscf")
 
 
 @pytest.mark.skipif(
-    psutil.cpu_count(logical=False) == 1,
-    reason=f"Parallel test requires more than one processor"
+    psutil.cpu_count(logical=False) == 1, reason="Parallel test requires more than one processor"
 )
-@pytest.mark.parametrize("symbols", [['N', 'H', 'H', 'H'], ['H', 'H'], ['Li', 'H'], ['H', 'H', 'O'], ['N', 'N']])
+@pytest.mark.parametrize(
+    "symbols", [["N", "H", "H", "H"], ["H", "H"], ["Li", "H"], ["H", "H", "O"], ["N", "N"]]
+)
 def test_parallel_hamiltonian(symbols):
-    r""" This test passes for relatively large molecules, but fails for the case of H2 due to overhead costs"""
+    r"""This test passes for relatively large molecules, but fails for the case of H2 due to overhead costs"""
     assert psutil.cpu_count(logic=False) > 1, "The number of cpus must be larger than 1"
     repeat = 4
     np.random.seed(5)
-    coordinates_list = np.random.random((repeat, 3*len(symbols)))
+    coordinates_list = np.random.random((repeat, 3 * len(symbols)))
     print(symbols)
     start_parallel = time.time()
     with Pool(psutil.cpu_count(logical=False)) as pool:
         # Map the build_hamiltonian function to the list of coordinates
-        parallel_hs = pool.starmap(_partial_h, zip(coordinates_list, itertools.repeat(symbols, repeat)))
+        parallel_hs = pool.starmap(
+            _partial_h, zip(coordinates_list, itertools.repeat(symbols, repeat))
+        )
     done_parallel = time.time()
     print(f"Parallel: {done_parallel - start_parallel}")
     start_serial = time.time()
-    expected_hs = [qchem.molecular_hamiltonian(symbols, coordinates, method='pyscf') for coordinates in coordinates_list]
+    expected_hs = [
+        qchem.molecular_hamiltonian(symbols, coordinates, method="pyscf")
+        for coordinates in coordinates_list
+    ]
     done_serial = time.time()
     print(f"Serial: {done_serial - start_serial}")
     # Check the results
-    if symbols in [['H', 'H'], ['Li', 'H']]:
+    if symbols in [["H", "H"], ["Li", "H"]]:
         assert done_serial - start_serial < done_parallel - start_parallel
     else:
-        assert done_parallel - start_parallel <  0.6*(done_serial - start_serial)
-    for i in range(len(parallel_hs)):
-        assert parallel_hs[i] == expected_hs[i]
+        assert done_parallel - start_parallel < 0.6 * (done_serial - start_serial)
+    for i, h in enumerate(parallel_hs):
+        assert h == expected_hs[i]
