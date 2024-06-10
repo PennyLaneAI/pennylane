@@ -54,7 +54,7 @@ numpy==1.26.4
 opt-einsum==3.3.0
 optree==0.11.0
 osqp==0.6.7
-packaging==24.0
+packaging==24.1
 pathspec==0.12.1
 PennyLane_Lightning==0.37.0
 pillow==10.3.0
@@ -82,6 +82,7 @@ rich==13.7.1
 rustworkx==0.14.2
 scipy==1.11.4
 scs==3.2.4.post2
+semantic-version==2.10.0
 six==1.16.0
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2

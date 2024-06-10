@@ -40,7 +40,7 @@ networkx==3.2.1
 nodeenv==1.9.1
 numpy==1.26.4
 osqp==0.6.7
-packaging==24.0
+packaging==24.1
 pathspec==0.12.1
 PennyLane_Lightning==0.37.0
 pillow==10.3.0
@@ -65,6 +65,7 @@ requests==2.32.3
 rustworkx==0.14.2
 scipy==1.11.4
 scs==3.2.4.post2
+semantic-version==2.10.0
 six==1.16.0
 sympy==1.12.1
 toml==0.10.2
