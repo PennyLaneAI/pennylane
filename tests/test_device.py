@@ -1174,10 +1174,11 @@ class TestGrouping:
 
         H = qml.Hamiltonian([1.0, 1.0], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc")
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
 
         dev = self.SomeDevice(shots=None)
         dev.use_grouping = use_grouping
+        dev.supports_observable = lambda *args, **kwargs: False
         new_qscripts, _ = dev.batch_transform(qs)
 
         if use_grouping:
@@ -1191,9 +1192,9 @@ class TestGrouping:
         """Tests that batch_transform does not expand Sums if they are supported."""
         H = qml.sum(qml.PauliX(0), qml.PauliY(0))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "sum_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
 
-        dev = self.SomeDevice()
+        dev = self.SomeDevice(shots=None)
         new_qscripts, _ = dev.batch_transform(qs)
 
         assert len(new_qscripts) == 1
@@ -1203,7 +1204,7 @@ class TestGrouping:
         """Tests that batch_transform expand Sums if they are not supported."""
         H = qml.sum(qml.PauliX(0), qml.PauliY(0))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "sum_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.supports_observable = lambda *args, **kwargs: False
@@ -1217,7 +1218,7 @@ class TestGrouping:
 
         H = qml.prod(qml.PauliX(0), qml.sum(qml.PauliY(0), qml.PauliZ(0)))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "sum_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.supports_observable = lambda *args, **kwargs: False

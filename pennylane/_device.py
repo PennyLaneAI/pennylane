@@ -746,7 +746,16 @@ class Device(abc.ABC):
         )
         has_overlapping_wires = len(circuit.obs_sharing_wires) > 0
 
-        if not has_overlapping_wires and (all_obs_usable or not exists_multi_term_obs):
+        if (
+            not getattr(self, "use_grouping", True)
+            and len(circuit.measurements) == 1
+            and isinstance(circuit.measurements[0].obs, (Hamiltonian, LinearCombination))
+        ):
+            # Special logic for the braket plugin
+            circuits = [circuit]
+            processing_fn = null_postprocess
+
+        elif not has_overlapping_wires and (all_obs_usable or not exists_multi_term_obs):
             circuits = [circuit]
             processing_fn = null_postprocess
         else:
