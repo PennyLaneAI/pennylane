@@ -792,7 +792,6 @@ def molecular_dipole(
     )
 
     if method == "dhf":
-
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
