@@ -14,16 +14,15 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
-import warnings
-from functools import partial
-from typing import Callable, Sequence, Tuple
 import copy
 import pdb
 import sys
+import warnings
 from contextlib import contextmanager
+from functools import partial
+from typing import Callable, Sequence, Tuple
 
 import pennylane as qml
-from pennylane.devices.preprocess import validate_measurements
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
@@ -60,7 +59,7 @@ class _Debugger:
 
 
 @transform
-def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
+def snapshots(tape_: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
     r"""This transform processes the :func:`Snapshot <pennylane.Snapshot>` instances depending on the compatibility of the execution device.
     For supported devices, the snapshots' measurements are computed as the execution progresses.
     Otherwise, the :func:`QuantumTape <pennylane.tape.QuantumTape>` gets split into several, one for each snapshot, with each aggregating
@@ -153,28 +152,27 @@ def snapshots(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable[[Resul
     >>> print(tapes)
     [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
     """
-
-    validate_measurements(tape)
+    qml.devices.preprocess.validate_measurements(tape_)
 
     new_tapes = []
     accumulated_ops = []
     snapshot_tags = []
 
-    for op in tape.operations:
+    for op in tape_.operations:
         if isinstance(op, qml.Snapshot):
             snapshot_tags.append(op.tag or len(new_tapes))
             meas_op = op.hyperparameters["measurement"]
 
             new_tapes.append(
-                type(tape)(ops=accumulated_ops, measurements=[meas_op], shots=tape.shots)
+                type(tape_)(ops=accumulated_ops, measurements=[meas_op], shots=tape_.shots)
             )
         else:
             accumulated_ops.append(op)
 
     # Create an additional final tape if a return measurement exists
-    if tape.measurements:
+    if tape_.measurements:
         snapshot_tags.append("execution_results")
-        new_tapes.append(type(tape)(ops=accumulated_ops, measurements=tape.measurements))
+        new_tapes.append(type(tape_)(ops=accumulated_ops, measurements=tape_.measurements))
 
     def postprocessing_fn(results, snapshot_tags):
         return dict(zip(snapshot_tags, results))
@@ -200,7 +198,7 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
     def get_snapshots(*args, **kwargs):
         # Need to construct to generate the tape and be able to validate
         qnode.construct(args, kwargs)
-        validate_measurements(qnode.tape)
+        qml.devices.preprocess.validate_measurements(qnode.tape)
 
         old_interface = qnode.interface
         if old_interface == "auto":
