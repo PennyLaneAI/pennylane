@@ -15,10 +15,12 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
+from collections import defaultdict
 
 import pennylane as qml
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
+from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
@@ -64,7 +66,7 @@ def _recursive_expression(x, order, ops):
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
 
-class TrotterProduct(ErrorOperation):
+class TrotterProduct(ErrorOperation, ResourcesOperation):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 
@@ -251,6 +253,29 @@ class TrotterProduct(ErrorOperation):
         context.append(self)
         return self
 
+    def resources(self) -> Resources:
+        """The resource requirements for a given instance of the Suzuki-Trotter product.
+
+        Returns:
+            Resources: The resources for an instance of ``TrotterProduct``.
+        """
+        with qml.QueuingManager.stop_recording():
+            decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
+
+        num_wires = len(self.wires)
+        num_gates = len(decomp)
+
+        depth = qml.tape.QuantumTape(ops=decomp).graph.get_depth()
+
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        for op in decomp:
+            gate_types[op.name] += 1
+            gate_sizes[len(op.wires)] += 1
+
+        return Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
+
     def error(
         self, method: str = "commutator-bound", fast: bool = True
     ):  # pylint: disable=arguments-differ
@@ -413,9 +438,10 @@ class TrotterProduct(ErrorOperation):
         ops = kwargs["base"].operands
 
         decomp = _recursive_expression(time / n, order, ops)[::-1] * n
+        unique_decomp = [copy.copy(op) for op in decomp]
 
         if qml.QueuingManager.recording():
-            for op in decomp:  # apply operators in reverse order of expression
+            for op in unique_decomp:  # apply operators in reverse order of expression
                 qml.apply(op)
 
-        return decomp
+        return unique_decomp

@@ -50,6 +50,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+
 * Removed `semantic_version` from the list of required packages in PennyLane. 
   [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
 
@@ -387,5 +390,6 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Jay Soni,
 Haochen Paul Wang,
 David Wierichs.
