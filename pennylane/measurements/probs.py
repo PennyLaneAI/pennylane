@@ -265,39 +265,10 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             prob = qml.math.diag(density_matrix)
         else:
             prob = qml.math.array([qml.math.diag(density_matrix[i]) for i in range(np.shape(density_matrix)[0])])
-        if self.wires == Wires([]):
-            # no need to marginalize
-            return prob
-
-        # determine which subsystems are to be summed over
-        inactive_wires = Wires.unique_wires([wire_order, self.wires])
-
-        # translate to wire labels used by device
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
-        inactive_wires = [wire_map[w] for w in inactive_wires]
-
-        # reshape the probability so that each axis corresponds to a wire
-        num_device_wires = len(wire_order)
-        shape = [2] * num_device_wires
-        desired_axes = np.argsort(np.argsort(mapped_wires))
-        flat_shape = (-1,)
-        expected_size = 2**num_device_wires
-        batch_size = qml.math.get_batch_size(prob, (expected_size,), expected_size)
-        if batch_size is not None:
-            # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
-            shape.insert(0, batch_size)
-            inactive_wires = [idx + 1 for idx in inactive_wires]
-            desired_axes = np.insert(desired_axes + 1, 0, 0)
-            flat_shape = (batch_size, -1)
-
-        prob = qml.math.reshape(prob, shape)
-        # sum over all inactive wires
-        prob = qml.math.sum(prob, axis=tuple(inactive_wires))
-        # rearrange wires if necessary
-        prob = qml.math.transpose(prob, desired_axes)
-        # flatten and return probabilities
-        return qml.math.reshape(prob, flat_shape)
+            
+        # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
+        p_state = np.sqrt(prob)
+        return self.process_state(p_state, wire_order)
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):
