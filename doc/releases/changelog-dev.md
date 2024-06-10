@@ -50,6 +50,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
@@ -79,6 +82,9 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
+  [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
+  
 * Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
   but keeping one that validates multiple mid-circuit measurements with any allowed return
   and interface end-to-end tests.
@@ -285,6 +291,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if a transform is applied to a catalyst qjit object.
+  [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
+
 * `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
   [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
 
@@ -380,5 +389,6 @@ Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
 Erik Schultheis,
+Jay Soni,
 Haochen Paul Wang,
 David Wierichs.
