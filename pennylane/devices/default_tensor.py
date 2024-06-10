@@ -184,7 +184,7 @@ class DefaultTensor(Device):
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
     This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values and variances.
-    Finally, UserWarnings from the ``cotengra`` package may appear when using this device.
+    Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -196,8 +196,8 @@ class DefaultTensor(Device):
 
     Keyword Args:
         max_bond_dim (int): Maximum bond dimension for the MPS method.
-            It corresponds to the maximum number of Schmidt coefficients retained at the end of the SVD algorithm when applying gates. Default is ``None``.
-        cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is ``None``.
+            It corresponds to the maximum number of Schmidt coefficients (singular values) retained at the end of the SVD algorithm when applying gates. Default is ``None`` (i.e. unlimited).
+        cutoff (float): Truncation threshold for the Schmidt coefficients in the MPS method. Default is ``None`` (which is equivalent to retaining all coefficients).
         contract (str): The contraction method for applying gates. The possible options depend on the method chosen.
             For the MPS method, the options are ``"auto-mps"``, ``"swap+split"`` and ``"nonlocal"``. For a description of these options, see the
             `quimb's CircuitMPS documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/index.html#quimb.tensor.CircuitMPS>`_.
@@ -424,7 +424,7 @@ class DefaultTensor(Device):
         """
         Initialize the quimb circuit according to the method chosen.
 
-        Internally, it uses `quimb`'s `CircuitMPS` or `Circuit` class.
+        Internally, it uses ``quimb``'s ``CircuitMPS`` or ``Circuit`` class.
 
         Args:
             wires (Wires): The wires to initialize the quimb circuit.
@@ -459,9 +459,9 @@ class DefaultTensor(Device):
 
     def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
         r"""
-        Return an initial mps to :math:`\ket{0}`.
+        Return a MPS object in the :math:`\ket{0}` state.
 
-        Internally, it uses `quimb`'s `MPS_computational_state` method.
+        Internally, it uses ``quimb``'s ``MPS_computational_state`` method.
 
         Args:
             wires (Wires): The wires to initialize the MPS.
@@ -475,38 +475,48 @@ class DefaultTensor(Device):
             tags=[str(l) for l in wires.labels] if wires else None,
         )
 
-    def draw(self, color="auto", **draw_opts):
+    def draw(self, color="auto", **kwargs):
         """
-        Draw the current quantum circuit using `quimb`'s functionality.
+        Draw the current state (wavefunction) associated with the circuit using ``quimb``'s functionality.
 
-        Internally, it uses `quimb`'s `draw` method.
+        Internally, it uses ``quimb``'s ``draw`` method.
 
         Args:
             color (str): The color of the tensor network diagram. Default is ``"auto"``.
-            **draw_opts: Additional keyword arguments for the ``quimb``'s ``draw`` function. For more information, see the
+            **kwargs: Additional keyword arguments for the ``quimb``'s ``draw`` function. For more information, see the
                 `quimb's draw documentation <https://quimb.readthedocs.io/en/latest/tensor-drawing.html>`_.
+
+        **Example**
+
+        Here is a minimal example of how to draw the current state of the circuit:
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            dev = qml.device("default.tensor", wires=15)
+
+            dev.draw()
         """
 
-        color = draw_opts.pop(
-            "color", [f"I{w}" for w in range(len(self._quimb_circuit.psi.tensors))]
-        )
-        edge_color = draw_opts.pop("edge_color", "black")
-        show_tags = draw_opts.pop("show_tags", False)
-        show_inds = draw_opts.pop("show_inds", False)
+        color = kwargs.pop("color", [f"I{w}" for w in range(len(self._quimb_circuit.psi.tensors))])
+        edge_color = kwargs.pop("edge_color", "black")
+        show_tags = kwargs.pop("show_tags", False)
+        show_inds = kwargs.pop("show_inds", False)
 
         return self._quimb_circuit.psi.draw(
             color=color,
             edge_color=edge_color,
             show_tags=show_tags,
             show_inds=show_inds,
-            **draw_opts,
+            **kwargs,
         )
 
     def _initial_tn(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
         r"""
         Return an initial tensor network state to :math:`\ket{0}`.
 
-        Internally, it uses `quimb`'s `TN_from_sites_computational_state` method.
+        Internally, it uses ``quimb``'s ``TN_from_sites_computational_state`` method.
 
         Args:
             wires (Wires): The wires to initialize the tensor network.
@@ -633,7 +643,7 @@ class DefaultTensor(Device):
     def _apply_operation(self, op: qml.operation.Operator) -> None:
         """Apply a single operator to the circuit.
 
-        Internally it uses `quimb`'s `apply_gate` method. This method modifies the tensor state of the device.
+        Internally it uses ``quimb``'s ``apply_gate`` method. This method modifies the tensor state of the device.
 
         Args:
             op (Operator): The operation to apply.
@@ -714,7 +724,7 @@ class DefaultTensor(Device):
     def _local_expectation(self, matrix, wires) -> float:
         """Compute the local expectation value of a matrix.
 
-        Internally, it uses `quimb`'s `local_expectation` method.
+        Internally, it uses ``quimb``'s ``local_expectation`` method.
 
         Args:
             matrix (array): the matrix to compute the expectation value of.

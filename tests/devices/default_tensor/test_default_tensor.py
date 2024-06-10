@@ -200,10 +200,14 @@ def test_invalid_kwarg():
 def test_invalid_contract():
     """Test an invalid combination of method and contract."""
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Unsupported gate contraction option: 'auto-split-gate' for 'mps' method."
+    ):
         qml.device("default.tensor", method="mps", contract="auto-split-gate")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Unsupported gate contraction option: 'auto-mps' for 'tn' method."
+    ):
         qml.device("default.tensor", method="tn", contract="auto-mps")
 
 
@@ -357,10 +361,10 @@ class TestSupportsDerivatives:
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
+@pytest.mark.jax
 class TestJaxSupport:
     """Test the JAX support for the DefaultTensor device."""
 
-    @pytest.mark.jax
     def test_jax(self, method):
         """Test the device with JAX."""
 
@@ -379,7 +383,6 @@ class TestJaxSupport:
 
         assert np.allclose(qnode(weights), ref_qnode(weights))
 
-    @pytest.mark.jax
     def test_jax_jit(self, method):
         """Test the device with JAX's JIT compiler."""
 
