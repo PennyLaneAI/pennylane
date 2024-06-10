@@ -184,6 +184,7 @@ class DefaultTensor(Device):
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
     This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values and variances.
+    Finally, UserWarnings from the ``cotengra`` package may appear when using this device.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
