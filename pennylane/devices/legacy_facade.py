@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-docstring
+Defines a LegacyDeviceFacade class for converting legacy devices to the
+new interface.
 """
 # pylint: disable=not-callable
 from contextlib import contextmanager
@@ -20,20 +21,19 @@ from dataclasses import replace
 
 import pennylane as qml
 from pennylane.measurements import Shots
-from pennylane.transforms.core.transform import transform
 from pennylane.transforms.core.transform_program import TransformProgram
 
+from .default_qubit import adjoint_observables, adjoint_ops
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
 from .modifiers import single_tape_support
 from .preprocess import (
-    no_sampling,
     decompose,
-    validate_observables,
-    validate_measurements,
+    no_sampling,
     validate_adjoint_trainable_params,
+    validate_measurements,
+    validate_observables,
 )
-from .default_qubit import adjoint_ops, adjoint_observables
 
 
 @contextmanager
@@ -57,6 +57,7 @@ def set_shots(device, shots):
     >>> set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
+    shots = qml.measurements.Shots(shots)
     shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:
         yield
@@ -108,14 +109,6 @@ def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
     program.add_transform(validate_adjoint_trainable_params)
 
 
-@transform
-def conditional_defered_measurements(tape, device):
-    """Apply the defer_measuements transform if any mid circuit measurements exist."""
-    if any(isinstance(op, qml.measurements.MidMeasureMP) for op in tape.operations):
-        return qml.defer_measurements(tape, device=device)
-    return (tape,), null_postprocessing
-
-
 @single_tape_support
 class LegacyDeviceFacade(Device):
     """
@@ -123,7 +116,7 @@ class LegacyDeviceFacade(Device):
     """
 
     # pylint: disable=super-init-not-called
-    def __init__(self, device: "qml._device.Device"):
+    def __init__(self, device: "qml.devices.LegacyDevice"):
         self._device = device
 
     @property
@@ -181,7 +174,7 @@ class LegacyDeviceFacade(Device):
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
         if not self._device.capabilities().get("supports_mid_measure", False):
-            program.add_transform(conditional_defered_measurements, device=self)
+            program.add_transform(qml.defer_measurements, device=self)
 
         return program, execution_config
 
