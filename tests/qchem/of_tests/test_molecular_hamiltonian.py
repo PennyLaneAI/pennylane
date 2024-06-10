@@ -1355,7 +1355,7 @@ def _partial_h(coordinates, symbols):
 )
 def test_parallel_hamiltonian(symbols):
     r"""This test passes for relatively large molecules, but fails for the case of H2 due to overhead costs"""
-    assert psutil.cpu_count(logic=False) > 1, "The number of cpus must be larger than 1"
+    assert psutil.cpu_count(logical=False) > 1, "The number of cpus must be larger than 1"
     repeat = 4
     np.random.seed(5)
     coordinates_list = np.random.random((repeat, 3 * len(symbols)))
