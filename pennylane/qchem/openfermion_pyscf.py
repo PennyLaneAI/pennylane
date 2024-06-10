@@ -13,11 +13,11 @@
 # limitations under the License.
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``.
 """
+import datetime
+
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
 # pylint: disable=consider-using-generator, protected-access
 import os
-import datetime
-
 
 import numpy as np
 
