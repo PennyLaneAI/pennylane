@@ -17,6 +17,7 @@ be installed alongside PennyLane:
 * `autograd <https://github.com/HIPS/autograd>`_
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
+* `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
 * `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.11
 * `packaging <https://github.com/pypa/packaging>`_
 
