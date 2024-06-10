@@ -26,15 +26,11 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
-    CountsMP,
     Expectation,
-    ExpectationMP,
     MeasurementProcess,
     MidMeasureMP,
     Probability,
-    ProbabilityMP,
     Sample,
-    SampleMP,
     ShadowExpvalMP,
     State,
     Variance,
@@ -775,18 +771,18 @@ class Device(abc.ABC):
 
         for obs in circuit.observables:
 
-            if isinstance(
-                obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
-            ) and not self.supports_observable("Hamiltonian"):
+            if isinstance(obs, (Hamiltonian, LinearCombination)) and not self.supports_observable(
+                "Hamiltonian"
+            ):
                 return False
 
-            if isinstance(obs, qml.ops.Sum) and not self.supports_observable("Sum"):
+            if isinstance(obs, Sum) and not self.supports_observable("Sum"):
                 return False
 
-            if isinstance(obs, qml.ops.Prod) and not self.supports_observable("Prod"):
+            if isinstance(obs, Prod) and not self.supports_observable("Prod"):
                 return False
 
-            if isinstance(obs, qml.ops.SProd) and not self.supports_observable("SProd"):
+            if isinstance(obs, SProd) and not self.supports_observable("SProd"):
                 return False
 
         return True
