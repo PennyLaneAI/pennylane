@@ -367,7 +367,7 @@ def state():
 
 def expval(op):
     """Compute the expectation value of an observable at the
-    current state of the quantum circuit.
+    current point in the quantum circuit.
 
     Args:
         op (Operator): the observable to compute the expectation value for.
@@ -507,8 +507,9 @@ def _measure(measurement):
 def tape():
     """Access the tape of the quantum circuit.
 
-    The tape can then be drawn to visualize the gates that have
-    been applied from the quantum circuit so far.
+    The tape can then be used to access all properties stored in :class:`~pennylane.tape.QuantumTape`.
+    This can be used to visualize the gates that have
+    been applied from the quantum circuit so far or otherwise process the operations.
 
     Returns:
         QuantumTape: the quantum tape representing the circuit.

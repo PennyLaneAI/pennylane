@@ -17,9 +17,9 @@ The ``qml.breakpoint()`` function provides an interface for interacting with and
 stepping through a quantum circuit during execution. It allows for faster debugging
 by provding access to the internal state of the circuit and the ``QuantumTape`` as 
 the circuit operations are applied. The functionality is highlighted by debugging 
-and example circuit.
+an example circuit below.
 
-Consider the following circuit, 
+Consider the following buggy circuit, 
 
 .. code-block:: python
 
@@ -46,9 +46,9 @@ Consider the following circuit,
 
     circuit(1.2345)
 
-While executing this circuit once a `qml.breakpoint()` is encountered, an interactive
-debugging prompt is launched. The prompt specifies the path to the script along with
-the next line to be executed after the breakpoint.
+When this code reaches ``qml.breakpoint()`` it will pause and launch an interactive
+debugging prompt. The prompt specifies the path to the script and
+the next line to be executed after the breakpoint:
 
 .. code-block:: console
 
@@ -56,7 +56,7 @@ the next line to be executed after the breakpoint.
     -> qml.Hadamard(wires=0)
     [pldb]:
 
-We can interact with the prompt using the builtin commands: ``list`` , ``next``, 
+We can interact with the debugger using the builtin commands: ``list`` , ``next``, 
 ``continue``, and ``quit``. Furthermore, we can perform measurements and extract
 information about operations or the state of the circuit with 
 :func:`~pennylane.debugging.expval`, :func:`~pennylane.debugging.state`, 
@@ -114,8 +114,8 @@ execute is ``CNOT``).
      15  	
     [pldb]: 
 
-In the first section of code aimed to produce an equal probability distribution for 
-the first two wires. We can verify this by measuring the probabilities using 
+The first section of code aimed to produce an equal probability distribution over 
+the first two wires. We can verify this was successful by measuring the probabilities using 
 :func:`~pennylane.debugging.probs`. 
 
 .. code-block:: console
