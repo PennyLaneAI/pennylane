@@ -257,6 +257,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     else:
         qubit_indexed_wires = all_wires
 
+    coeffs = np.array(coeffs)
     if (np.abs(coeffs.imag) < tol).all():
         coeffs = coeffs.real
 
@@ -309,7 +310,9 @@ def _openfermion_pennylane_equivalent(
         (bool): True if equivalent
     """
     coeffs, ops = pennylane_qubit_operator.terms()
-    return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
+    return openfermion_qubit_operator == _pennylane_to_openfermion(
+        np.array(coeffs), ops, wires=wires
+    )
 
 
 def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e010):

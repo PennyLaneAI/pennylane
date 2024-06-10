@@ -92,7 +92,7 @@ def to_openfermion(
 
     Args:
         pl_op (pennylane.ops.Sum, pennylane.ops.LinearCombination, pennylane.fermi.FermiWord,
-        pennylane.fermi.FermiSentence): linear combination of operators
+            pennylane.fermi.FermiSentence): linear combination of operators
         wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
             to an observable terms measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
@@ -113,7 +113,6 @@ def to_openfermion(
     1.2 [X0] +
     2.4 [Z1]
     """
-
     return _to_openfermion_dispatch(pl_op, wires=wires, tol=tol)
 
 
