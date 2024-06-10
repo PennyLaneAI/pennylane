@@ -290,6 +290,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if a transform is applied to a catalyst qjit object.
+
 * `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
   [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
 
