@@ -50,14 +50,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* Removed `semantic_version` from the list of required packages in PennyLane. 
+  [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
+
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
 * Added `packaging` in the required list of packages.
-  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769)
+  [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
 
 * Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
-  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528)
 
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
@@ -79,6 +83,9 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
+  [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
+  
 * Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
   but keeping one that validates multiple mid-circuit measurements with any allowed return
   and interface end-to-end tests.
