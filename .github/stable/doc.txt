@@ -57,7 +57,7 @@ oauthlib==3.2.2
 openfermion==1.6.1
 openfermionpyscf==0.5
 opt-einsum==3.3.0
-packaging==24.0
+packaging==24.1
 pandas==2.2.2
 pennylane-sphinx-theme==0.5.7
 PennyLane_Lightning==0.36.0
