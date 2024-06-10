@@ -211,6 +211,162 @@ class TestProbs:
         assert subset_probs.shape == qml.math.shape(expected)
         assert qml.math.allclose(subset_probs, expected)
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_process_density_matrix_basic(self, interface):
+        """Test that process_density_matrix returns correct probabilities from a density matrix."""
+        dm = qml.math.array([
+            [0.5, 0],
+            [0, 0.5]
+        ], like=interface)
+        wires = qml.wires.Wires(range(1))
+        expected = qml.math.array([0.5, 0.5], like=interface)
+        calculated_probs = qml.probs().process_density_matrix(dm, wires)
+        assert qml.math.allclose(calculated_probs, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires, expected",
+        [
+            ([0], [0.5, 0.5]),
+            ([1], [0.25, 0.75]),
+        ([1, 0], [0.15, 0.1, 0.35, 0.4]),
+        ([0, 1], [0.15, 0.35, 0.1, 0.4])
+        ]
+    )
+    def test_process_density_matrix_subsets(self, interface, subset_wires, expected):
+        """Test processing of density matrix with subsets of wires."""
+        dm = qml.math.array([
+            [0.15, 0, 0.1, 0],
+            [0, 0.35, 0, 0.4],
+            [0.1, 0, 0.1, 0],
+            [0, 0.4, 0, 0.4]
+        ], like=interface)
+        wires = qml.wires.Wires(range(2))
+        subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm, wires)
+        assert subset_probs.shape == qml.math.shape(expected)
+        assert qml.math.allclose(subset_probs, expected)
+        
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires, expected",
+        [
+            ([0], [[1, 0], [0.5, 0.5], [0.5, 0.5]]),
+            ([1], [[1, 0], [0.5, 0.5], [0.5, 0.5]]),
+            ([1, 0], [[1, 0, 0, 0], [0.25, 0.25, 0.25, 0.25], [0.5, 0, 0, 0.5]]),
+            ([0, 1], [[1, 0, 0, 0], [0.25, 0.25, 0.25, 0.25], [0.5, 0, 0, 0.5]])
+        ]
+    )
+    def test_process_density_matrix_batched(self, interface, subset_wires, expected):
+        """Test processing of a batch of density matrices."""
+        # Define a batch of density matrices
+        dm_batch = qml.math.array([
+            # Pure state |00⟩
+            np.outer([1, 0, 0, 0], [1, 0, 0, 0]),
+            # Maximally mixed state
+            np.identity(4)/4,
+            # Bell state |Φ+⟩ = 1/√2(|00⟩ + |11⟩)
+            0.5 * np.outer([1, 0, 0, 1], [1, 0, 0, 1])
+        ], like=interface)
+
+        wires = qml.wires.Wires(range(2))
+        
+        # Process the entire batch of density matrices
+        subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm_batch, wires)
+
+        expected = qml.math.array(expected, like=interface)
+        # Check if the calculated probabilities match the expected values
+        assert subset_probs.shape == expected.shape, f"Shape mismatch: expected {expected.shape}, got {subset_probs.shape}"
+        assert qml.math.allclose(subset_probs, expected), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
+        
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires, expected",
+        [
+            ([3, 1, 0], [0.16527324, 0.13982314, 0.13847902, 0.04774645, 0.08946633, 0.16450224, 0.17995419, 0.07475538])
+        ]
+    )
+    def test_process_density_matrix_medium(self, interface, subset_wires, expected):
+        """Test processing of a batch of density matrices."""
+        # Define a batch of density matrices
+        dm_batch = qml.math.array([[0.080989  , 0.05054025, 0.06706085, 0.05616603, 0.07001544,
+        0.05997686, 0.0726786 , 0.03272224, 0.06646674, 0.06662265,
+        0.04900118, 0.06608795, 0.06139745, 0.08252963, 0.0693334 ,
+        0.05244662],
+       [0.05054025, 0.0039525 , 0.03570121, 0.08530672, 0.0778656 ,
+        0.05587372, 0.02017853, 0.01982865, 0.05265699, 0.05702363,
+        0.02701604, 0.05136687, 0.01316993, 0.06475533, 0.05319626,
+        0.0704644 ],
+       [0.06706085, 0.03570121, 0.08428424, 0.05353046, 0.05727886,
+        0.04475616, 0.05065271, 0.06764512, 0.06899573, 0.07183764,
+        0.06956846, 0.05121532, 0.04466637, 0.05048799, 0.07175026,
+        0.05161699],
+       [0.05616603, 0.08530672, 0.05353046, 0.08551383, 0.08470469,
+        0.06411541, 0.04257544, 0.04969202, 0.03552623, 0.04336215,
+        0.02066428, 0.04676245, 0.03336671, 0.07039378, 0.04521083,
+        0.06038351],
+       [0.07001544, 0.0778656 , 0.05727886, 0.08470469, 0.03851449,
+        0.05794007, 0.07131056, 0.05296177, 0.09827191, 0.03160001,
+        0.05309798, 0.07633288, 0.03661442, 0.08934421, 0.06731681,
+        0.00329895],
+       [0.05997686, 0.05587372, 0.04475616, 0.06411541, 0.05794007,
+        0.09090044, 0.08186336, 0.05834778, 0.09545584, 0.04661815,
+        0.06149736, 0.04129336, 0.05284938, 0.04272225, 0.04229479,
+        0.04766869],
+       [0.0726786 , 0.02017853, 0.05065271, 0.04257544, 0.07131056,
+        0.08186336, 0.09996453, 0.02002902, 0.06213783, 0.03136972,
+        0.02329919, 0.07221994, 0.06348929, 0.04521518, 0.06373298,
+        0.07950719],
+       [0.03272224, 0.01982865, 0.06764512, 0.04969202, 0.05296177,
+        0.05834778, 0.02002902, 0.08905375, 0.09785625, 0.0525481 ,
+        0.02573775, 0.07713713, 0.06029518, 0.03442947, 0.06029504,
+        0.02708854],
+       [0.06646674, 0.05265699, 0.06899573, 0.03552623, 0.09827191,
+        0.09545584, 0.06213783, 0.09785625, 0.04838075, 0.02735249,
+        0.03710709, 0.02440981, 0.05473816, 0.0381057 , 0.02480048,
+        0.06388189],
+       [0.06662265, 0.05702363, 0.07183764, 0.04336215, 0.03160001,
+        0.04661815, 0.03136972, 0.0525481 , 0.02735249, 0.09374992,
+        0.01808993, 0.09396117, 0.06277499, 0.039946  , 0.05005397,
+        0.04559161],
+       [0.04900118, 0.02701604, 0.06956846, 0.02066428, 0.05309798,
+        0.06149736, 0.02329919, 0.02573775, 0.03710709, 0.01808993,
+        0.0914424 , 0.05776955, 0.03587103, 0.06108309, 0.06652214,
+        0.02442639],
+       [0.06608795, 0.05136687, 0.05121532, 0.04676245, 0.07633288,
+        0.04129336, 0.07221994, 0.07713713, 0.02440981, 0.09396117,
+        0.05776955, 0.07075232, 0.06369993, 0.06199866, 0.04284378,
+        0.06532901],
+       [0.06139745, 0.01316993, 0.04466637, 0.03336671, 0.03661442,
+        0.05284938, 0.06348929, 0.06029518, 0.05473816, 0.06277499,
+        0.03587103, 0.06369993, 0.03473495, 0.06439239, 0.06228124,
+        0.04379324],
+       [0.08252963, 0.06475533, 0.05048799, 0.07039378, 0.08934421,
+        0.04272225, 0.04521518, 0.03442947, 0.0381057 , 0.039946  ,
+        0.06108309, 0.06199866, 0.06439239, 0.00036181, 0.08717339,
+        0.06031977],
+       [0.0693334 , 0.05319626, 0.07175026, 0.04521083, 0.06731681,
+        0.04229479, 0.06373298, 0.06029504, 0.02480048, 0.05005397,
+        0.06652214, 0.04284378, 0.06228124, 0.08717339, 0.0130115 ,
+        0.06950743],
+       [0.05244662, 0.0704644 , 0.05161699, 0.06038351, 0.00329895,
+        0.04766869, 0.07950719, 0.02708854, 0.06388189, 0.04559161,
+        0.02442639, 0.06532901, 0.04379324, 0.06031977, 0.06950743,
+        0.07439358]], like=interface)
+
+        wires = qml.wires.Wires(range(4))
+        
+        # Process the entire batch of density matrices
+        subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm_batch, wires)
+
+        expected = qml.math.array(expected, like=interface)
+        # Check if the calculated probabilities match the expected values
+        assert subset_probs.shape == expected.shape, f"Shape mismatch: expected {expected.shape}, got {subset_probs.shape}"
+        assert qml.math.allclose(subset_probs, expected), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
+
     def test_integration(self, tol):
         """Test the probability is correct for a known state preparation."""
         dev = qml.device("default.qubit", wires=2)
