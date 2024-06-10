@@ -816,6 +816,23 @@ class TestIntegration:
         assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, [1.5, 2.5])
 
+    def test_non_pauli_obs_in_circuit(self):
+        """Tests that the tape is executed correctly with non-pauli observables"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(_dev)
+        def circuit():
+            qml.Hadamard(0)
+            return (
+                qml.expval(qml.Projector([0], wires=[0])),
+                qml.expval(qml.Projector([1], wires=[0])),
+            )
+
+        res = circuit()
+        assert qml.math.allclose(res, [0.5, 0.5])
+
 
 expected_grad_param_0 = [
     0.125,
