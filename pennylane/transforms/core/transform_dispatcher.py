@@ -126,7 +126,7 @@ class TransformDispatcher:
         if obj.__class__.__name__ == "QJIT":
             raise TransformError(
                 "Functions that are wrapped / decorated with qjit cannot subsequently be"
-                f" transformed with any transform in qml.transforms (attempted {self})."
+                f" transformed with a PennyLane transform (attempted {self})."
                 f" For the desired affect, ensure that qjit is applied after {self}."
             )
         if callable(obj):
