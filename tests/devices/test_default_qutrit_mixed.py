@@ -68,19 +68,6 @@ class TestDeviceProperties:
             qml.devices.modifiers.simulator_tracking,
         ]
 
-    @pytest.mark.parametrize(
-        "gammas,probs",
-        [
-            [(0.1, 0.2), None],
-            [None, (0.1, 0.2, 0.3, 0.1)],
-            [(0.1, 0.2, 0.3, 0.1), (0.1, 0.2, 0.3)],
-        ],
-    )
-    def test_measurement_error_validation(self, gammas, probs):
-        """Tests error is thrown if the wrong number of arguments inputted for measurement error."""
-        with pytest.raises(qml.DeviceError, match="You must input 3"):
-            DefaultQutritMixed(damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
-
 
 class TestSupportsDerivatives:
     """Test that DefaultQutritMixed states what kind of derivatives it supports."""
@@ -1442,3 +1429,166 @@ class TestMeasurementError:  # TODO:--------------------------------------------
             expected_res = exp_fun(m_error_gammas, m_error_probs)
         # TODO deal with outputs
         assert np.allclose(circuit(), expected_res, atol=self.atol)
+
+
+@pytest.mark.parametrize("nr_wires", [2, 3])
+class TestReadoutError:
+    """Tests for measurement readout error"""
+
+    prob_and_expected_expval = [
+        ((0, 0, 0), np.array([1, 1])),
+        (0.5, np.array([0, 0])),
+        (1, np.array([-1, -1])),
+    ]
+
+    @pytest.mark.parametrize("gammas, probs, expected", prob_and_expected_expval)
+    def test_readout_expval_pauliz(self, nr_wires, gammas, probs, expected):
+        """Tests the measurement results for expval of GellMann 3 observables"""
+        dev = qml.device("default.qutrit.mixed", wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+        @qml.qnode(dev)
+        def circuit():
+            for wire in nr_wires
+                qml.QutritUnitary(self.setup_unitary, wires=wire)
+            return qml.expval(qml.GellMann(0, 3)), qml.expval(qml.GellMann(0, 3))
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("gammas, probs, expected", prob_and_expected_expval)
+    def test_readout_expval_paulix(self, nr_wires, gammas, probs, expected):
+        """Tests the measurement results for expval of GellMann 1 observables"""
+        dev = qml.device("default.qutrit.mixed", wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+        @qml.qnode(dev)
+        def circuit():
+            for wire in nr_wires
+                qml.QutritUnitary(self.setup_unitary, wires=wire)
+            qml.THadamard(wires=0)
+            qml.THadamard(wires=1)
+            return qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(0, 6)), qml.expval(qml.GellMann(1, 4))
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("gammas, probs", [0, 0.5, 1])
+    @pytest.mark.parametrize(
+        "nr_wires, expected", [(1, np.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.0 + 0.0j]]))]
+    )
+    def test_readout_state(self, nr_wires, gammas, probs, expected):
+        """Tests the state output is not affected by readout error"""
+        dev = qml.device("default.qutrit.mixed", wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+        @qml.qnode(dev)
+        def circuit():
+            for wire in nr_wires
+                qml.QutritUnitary(self.setup_unitary, wires=wire)
+            return qml.state()
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("prob", [0, 0.5, 1])
+    def test_readout_density_matrix(self, nr_wires, prob):
+        """Tests the density matrix output is not affected by readout error"""
+        dev = qml.device("default.mixed", wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.density_matrix(wires=1)
+
+        res = circuit()
+        expected = np.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.0 + 0.0j]])
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("gammas, probs", [0, 0.5, 1])
+    def test_readout_vnentropy_and_mutualinfo(self, nr_wires, prob):
+        """Tests the output of qml.vn_entropy and qml.mutual_info is not affected by readout error"""
+        dev = qml.device("default.qutrit.mixed", wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.vn_entropy(wires=0, log_base=2), qml.mutual_info(
+                wires0=[0], wires1=[1], log_base=2
+            )
+
+        res = circuit()
+        expected = np.array([0, 0])
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "gammas, probs, expected", [(0, [np.zeros(2), np.zeros(2)]), (1, [np.ones(2), np.ones(2)])]
+    )
+    def test_readout_sample(self, nr_wires, gammas, probs, expected):
+        """Tests the sample output with readout error"""
+        dev = qml.device("default.qutrit.mixed", shots=2, wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(wires=[0, 1])
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    vars_and_counts
+    @pytest.mark.parametrize("gammas, probs, expected", )
+    def test_readout_counts(self, nr_wires, gammas, probs, expected):
+        """Tests the counts output with readout error"""
+        dev = qml.device("default.qutrit.mixed", shots=100, wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QutritBasisState([2]*nr_wires)
+            return qml.counts(wires=[0, 1])
+
+        res = circuit()
+        assert res == expected
+
+    variables_and_expected_probs = [
+        (0, np.array([1, 0])),
+        (0.5, np.array([0.5, 0.5])),
+        (1, np.array([0, 1])),
+    ]
+
+    @pytest.mark.parametrize("gammas, probs, expected", variables_and_expected_probs)
+    def test_readout_probs(self, nr_wires, gammas, probs, expected):
+        """Tests the measurement results for probs"""
+        dev = qml.device("default.qutrit.mixed", wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.probs(wires=0)
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    # def test_prob_out_of_range(self, nr_wires): # TODO: Do I need this?
+    #     """Tests that an error is raised when readout error probability is outside [0,1]"""
+    #     with pytest.raises(ValueError, match="should be in the range"):
+    #         qml.device("default.qutrit.mixed", wires=nr_wires, readout_prob=2)
+
+    @pytest.mark.parametrize(
+        "gammas,probs",
+        [
+            [(0.1, 0.2), None],
+            [None, (0.1, 0.2, 0.3, 0.1)],
+            [(0.1, 0.2, 0.3, 0.1), (0.1, 0.2, 0.3)],
+        ],
+    )
+    def test_measurement_error_validation(self, gammas, probs, nr_wires):
+        """Tests error is thrown if the wrong number of arguments inputted for measurement error."""
+        with pytest.raises(qml.DeviceError, match="You must input 3"):
+            qml.device("default.qutrit.mixed", wires=nr_wires, damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs)
+
+    @pytest.mark.parametrize(
+        "gammas,probs",
+        [
+            [(0.1, 0.2), None],
+            [None, (0.1, 0.2, 0.3, 0.1)],
+            [(0.1, 0.2, 0.3, 0.1), (0.1, 0.2, 0.3)],
+        ],
+    )
+    def test_gammas_and_probs_type(self, nr_wires):
+        """Tests that an error is raised for wrong data type of readout error probability"""
+        with pytest.raises(TypeError, match="should be an integer or a floating-point number"): # TODO type checking
+            qml.device("default.qutrit.mixed", wires=nr_wires, readout_prob="RandomNum")
