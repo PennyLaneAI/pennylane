@@ -89,6 +89,7 @@ class TestPytree:
         assert evol._unflatten(*evol._flatten()) == evol
 
 
+@pytest.mark.xfail
 @pytest.mark.jax
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""

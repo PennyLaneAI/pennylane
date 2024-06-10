@@ -104,6 +104,8 @@ class Reflection(Operation):
 
     """
 
+    grad_method = None
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
@@ -111,6 +113,10 @@ class Reflection(Operation):
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
         return data, (self.hyperparameters["reflection_wires"],)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -132,7 +138,7 @@ class Reflection(Operation):
             "reflection_wires": tuple(reflection_wires),
         }
 
-        super().__init__(alpha, wires=wires, id=id)
+        super().__init__(alpha, *U.data, wires=wires, id=id)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
