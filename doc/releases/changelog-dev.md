@@ -363,6 +363,9 @@
 * Fixes a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` is incorrect on `default.qubit.legacy` with `parameter_shift`.
   [(#5806)](https://github.com/PennyLaneAI/pennylane/pull/5806)
 
+* Fixed a bug where `split_non_commuting` raises an error when the circuit contains measurements of observables that are not pauli words.
+  [(#5827)](https://github.com/PennyLaneAI/pennylane/pull/5827)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
