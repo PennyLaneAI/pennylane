@@ -73,7 +73,12 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
         state = apply_operation(
-            op, state, is_state_batched=is_state_batched, debugger=debugger, **kwargs
+            op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            tape_shots=circuit.shots,
+            **kwargs,
         )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim

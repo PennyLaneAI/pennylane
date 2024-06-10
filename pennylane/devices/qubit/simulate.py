@@ -167,6 +167,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             is_state_batched=is_state_batched,
             debugger=debugger,
             prng_key=key,
+            tape_shots=circuit.shots,
             **execution_kwargs,
         )
         # Handle postselection on mid-circuit measurements

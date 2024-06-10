@@ -126,11 +126,11 @@ class TestSnapshotGeneral:
         with pytest.raises(qml.DeviceError):
             qml.snapshots(circuit)()
 
-    def test_state_measurement_with_finite_shot_device_fails(self, dev):
+    def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
-            qml.Snapshot(measurement=qml.state())
+            qml.Snapshot(measurement=qml.mutual_info(0, 1))
             return qml.expval(qml.PauliZ(0))
 
         # Expect a DeviceError to be raised here since no shots has
@@ -138,12 +138,28 @@ class TestSnapshotGeneral:
         with pytest.raises(qml.DeviceError):
             qml.snapshots(circuit)(shots=200)
 
+    def test_StateMP_with_finite_shot_device_passes(self, dev):
+        if "lightning" in dev.name:
+            pytest.skip()
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Snapshot(measurement=qml.state())
+            qml.Snapshot()
+            if "mixed" in dev.name:
+                qml.Snapshot(measurement=qml.density_matrix(wires=[0, 1]))
+
+            if isinstance(dev, qml.QutritDevice):
+                return qml.expval(qml.GellMann(0, 1))
+
+            return qml.expval(qml.PauliZ(0))
+
+        qml.snapshots(circuit)(shots=200)
+
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
-    def test_all_state_measurement_snapshot_pure_dev(self, dev, diff_method):
+    def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
         """Test that the correct measurement snapshots are returned for different measurement types."""
-        if isinstance(
-            dev, (qml.devices.default_mixed.DefaultMixed, qml.devices.default_qutrit.DefaultQutrit)
-        ):
+        if isinstance(dev, (qml.devices.default_mixed.DefaultMixed, qml.QutritDevice)):
             pytest.skip()
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -259,16 +275,18 @@ class TestSnapshotSupportedQNode:
             qml.Snapshot()
             return qml.expval(qml.PauliX(0))
 
-        with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
-            qml.snapshots(circuit)(shots=200)
-
-        result = qml.snapshots(circuit)()
         expected = {
             0: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
             "execution_results": np.array(0),
         }
 
+        result = qml.snapshots(circuit)()
         _compare_numpy_dicts(result, expected)
+
+        if diff_method not in ("backprop", "adjoint"):
+            result_shots = qml.snapshots(circuit)(shots=200)
+            expected["execution_results"] = np.array(-0.04)
+            _compare_numpy_dicts(result_shots, expected)
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
@@ -367,24 +385,31 @@ class TestSnapshotSupportedQNode:
             qml.TSWAP(wires=[0, 1])
             if add_bad_snapshot:
                 qml.Snapshot(measurement=qml.probs())
+            qml.Snapshot()
             return qml.counts()
 
         circuit(False)
         assert dev._debugger is None
-
         # This should fail since finite-shot probs() isn't supported
         with pytest.raises(NotImplementedError):
             qml.snapshots(circuit)(add_bad_snapshot=True)
 
         result = qml.snapshots(circuit)(add_bad_snapshot=False)
-
         expected = {
             0: {"00": 34, "10": 37, "20": 29},
             "execution_results": {"00": 37, "01": 33, "02": 30},
         }
 
         assert result[0] == expected[0]
+        assert np.allclose(
+            result[1][:3],
+            np.array([0.33333333, 0.33333333, 0.33333333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        )
         assert result["execution_results"] == expected["execution_results"]
+
+        # Make sure shots are overriden correctly
+        result = qml.snapshots(circuit)(add_bad_snapshot=False, shots=200)
+        assert result[0] == {"00": 74, "10": 58, "20": 68}
 
     @pytest.mark.parametrize(
         "m,expected_result",
@@ -503,6 +528,7 @@ class TestSnapshotSupportedQNode:
             qml.Snapshot(measurement=qml.probs(0))
             qml.Snapshot(measurement=qml.counts(wires=0))
             qml.Snapshot(measurement=qml.sample(wires=0))
+            qml.Snapshot()
 
             return qml.expval(qml.PauliZ(0))
 
@@ -514,6 +540,7 @@ class TestSnapshotSupportedQNode:
             2: np.array([0.6, 0.4]),
             3: {"0": 2, "1": 8},
             4: np.array([0, 1, 0, 1, 0, 1, 1, 0, 0, 0]),
+            5: np.array([0.70710678, 0.70710678]),
             "execution_results": np.array(0.2),
         }
 
@@ -524,6 +551,11 @@ class TestSnapshotSupportedQNode:
         del expected[3]
 
         _compare_numpy_dicts(result, expected)
+
+        # Make sure shots are overriden correctly
+        result = qml.snapshots(circuit)(shots=200)
+        assert result[3] == {"0": 98, "1": 102}
+        assert np.allclose(result[5], expected[5])
 
     def test_unsupported_snapshot_measurement(self):
         """Test that an exception is raised when an unsupported measurement is provided to the snapshot."""
@@ -573,6 +605,10 @@ class TestSnapshotUnsupportedQNode:
         assert 90 <= result[0]["0"] <= 110
         assert np.allclose(result["execution_results"], np.array(0.0))
 
+        # Make sure shots are overriden correctly
+        result = qml.snapshots(circuit)(shots=50)
+        assert 20 <= result[0]["0"] <= 30
+
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_lightning_qubit_fails_for_state_snapshots_with_adjoint_and_backprop(self, diff_method):
         """Test lightning with backprop and adjoint differentiation fails with default snapshot as it
@@ -580,8 +616,16 @@ class TestSnapshotUnsupportedQNode:
 
         dev = qml.device("lightning.qubit", wires=2)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match=f"does not support {diff_method} with requested circuit"
+        with (
+            pytest.raises(
+                qml.DeviceError,
+                match=r"not accepted for analytic simulation on adjoint \+ lightning.qubit",
+            )
+            if diff_method == "adjoint"
+            else pytest.raises(
+                qml.QuantumFunctionError,
+                match=f"does not support {diff_method} with requested circuit",
+            )
         ):
 
             @qml.qnode(dev, diff_method=diff_method)
@@ -623,6 +667,11 @@ class TestSnapshotUnsupportedQNode:
         del expected["execution_results"]
 
         _compare_numpy_dicts(result, expected)
+
+        # Make sure shots are overriden correctly
+        result = circuit(shots=50)
+        assert np.allclose(result[0], np.array([0.3, 0.0, 0.0, 0.32, 0.0, 0.0, 0.38, 0.0, 0.0]))
+
 
 # pylint: disable=protected-access
 class TestPLDB:

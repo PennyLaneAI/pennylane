@@ -20,7 +20,7 @@ import sys
 import warnings
 from contextlib import contextmanager
 from functools import partial
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
@@ -59,14 +59,14 @@ class _Debugger:
 
 
 @transform
-def snapshots(tape_: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
+def snapshots(tape_: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
     r"""This transform processes the :func:`Snapshot <pennylane.Snapshot>` instances depending on the compatibility of the execution device.
     For supported devices, the snapshots' measurements are computed as the execution progresses.
     Otherwise, the :func:`QuantumTape <pennylane.tape.QuantumTape>` gets split into several, one for each snapshot, with each aggregating
     all the operations up to that specific snapshot.
 
     Args:
-        tape (QNode or QuantumTape or Callable): a quantum circuit.
+        tape_ (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
         dictionary (dict) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
@@ -83,7 +83,8 @@ def snapshots(tape_: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable[[Resu
     function is responsible for aggregating the results into this dictionary.
 
     When the transform is applied to a QNode, the ``shots`` configuration is inherited from the device.
-    Therefore, the snapshot measurements must be supported by the device's nature.
+    Therefore, the snapshot measurements must be supported by the device's nature. An exception of this are
+    the :func:`qml.state <pennylane.state>` measurements on finite-shot simulators.
 
     .. warning::
 
@@ -117,15 +118,16 @@ def snapshots(tape_: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable[[Resu
         @qml.qnode(qml.device("lightning.qubit", shots=100, wires=2), diff_method="parameter-shift")
         def circuit():
             qml.Hadamard(wires=0),
-            qml.Snapshot(qml.counts()),
-            qml.CNOT(wires=[0, 1]),
+            qml.Snapshot(qml.counts())
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
             return qml.expval(qml.PauliZ(0))
 
         with circuit.device.tracker:
             out = circuit()
 
     >>> circuit.device.tracker.totals
-    {'batches': 1, 'simulations': 2, 'executions': 2}
+    {'batches': 1, 'simulations': 3, 'executions': 3}
 
     >>> out
     {0: {'00': tensor(51, requires_grad=True), '10': tensor(49, requires_grad=True)}, 'execution_results': tensor(0., requires_grad=True)}
@@ -152,6 +154,7 @@ def snapshots(tape_: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable[[Resu
     >>> print(tapes)
     [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
     """
+
     qml.devices.preprocess.validate_measurements(tape_)
 
     new_tapes = []

@@ -177,6 +177,7 @@ def apply_operation(
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
+        tape_shots (Shots): the shots object of the tape
 
     Returns:
         ndarray: output state
@@ -533,9 +534,9 @@ def apply_snapshot(
     if debugger is not None and debugger.active:
         measurement = op.hyperparameters["measurement"]
 
-        shots = debugger.device.shots
+        shots = execution_kwargs.get("tape_shots")
 
-        if not shots:
+        if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
         else:
             snapshot = qml.devices.qubit.measure_with_samples(

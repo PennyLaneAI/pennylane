@@ -271,10 +271,6 @@
   Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
   [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
 
-* `qml.Snapshot` now only accepts measurements that can be executed on the given device and the shots configuration. This means
-  that the default instantiation which returns `qml.state` would fail on finite-shot devices.
-  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
-
 <h3>Deprecations 👋</h3>
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated.

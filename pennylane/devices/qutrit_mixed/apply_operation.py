@@ -110,6 +110,13 @@ def apply_operation(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
 
+    Keyword Arguments:
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
+        tape_shots (Shots): the shots object of the tape
+
     Returns:
         ndarray: output state
 
@@ -172,13 +179,15 @@ def apply_snapshot(
     if debugger and debugger.active:
         measurement = op.hyperparameters["measurement"]
 
-        if not debugger.device.shots:
+        shots = execution_kwargs.get("tape_shots")
+
+        if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qutrit_mixed.measure(measurement, state, is_state_batched)
         else:
             snapshot = qml.devices.qutrit_mixed.measure_with_samples(
                 measurement,
                 state,
-                debugger.device.shots,
+                shots,
                 is_state_batched,
                 execution_kwargs.get("rng"),
                 execution_kwargs.get("prng_key"),
