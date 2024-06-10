@@ -50,6 +50,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
@@ -380,5 +383,6 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Jay Soni,
 Haochen Paul Wang,
 David Wierichs.
