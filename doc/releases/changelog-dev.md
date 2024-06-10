@@ -53,18 +53,14 @@
 * `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
    [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
-* Removed `semantic_version` from the list of required packages in PennyLane. 
-  [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
-
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
 * Added `packaging` in the required list of packages.
-  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769)
-  [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
 
 * Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
-  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528)
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
 
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
