@@ -19,13 +19,7 @@ import copy
 from threading import RLock
 
 import pennylane as qml
-from pennylane.measurements import (
-    CountsMP,
-    MeasurementProcess,
-    MidMeasureMP,
-    ProbabilityMP,
-    SampleMP,
-)
+from pennylane.measurements import CountsMP, MeasurementProcess, ProbabilityMP, SampleMP
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
@@ -51,7 +45,7 @@ def _validate_computational_basis_sampling(tape):
     qubit-wise commutativity relation."""
     measurements = tape.measurements
     n_meas = len(measurements)
-    n_mcms = sum(isinstance(op, MidMeasureMP) for op in tape.operations)
+    n_mcms = sum(qml.transforms.is_mcm(op) for op in tape.operations)
     non_comp_basis_sampling_obs = []
     comp_basis_sampling_obs = []
     comp_basis_indices = []
@@ -68,10 +62,10 @@ def _validate_computational_basis_sampling(tape):
         for idx, (cb_obs, global_idx) in enumerate(
             zip(comp_basis_sampling_obs, comp_basis_indices)
         ):
-            if cb_obs.wires == empty_wires:
-                all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
-                break
             if global_idx < n_meas - n_mcms:
+                if cb_obs.wires == empty_wires:
+                    all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
+                    break
                 all_wires.append(cb_obs.wires)
             if idx == len(comp_basis_sampling_obs) - 1:
                 all_wires = qml.wires.Wires.all_wires(all_wires)

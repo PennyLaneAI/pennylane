@@ -50,6 +50,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
@@ -79,6 +82,9 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
+  [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
+  
 * Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
   but keeping one that validates multiple mid-circuit measurements with any allowed return
   and interface end-to-end tests.
@@ -215,18 +221,26 @@
 * The `qml.Snapshot` operator now accepts sample-based measurements for finite-shot devices.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 
+* `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
+  [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
+
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
-
-* ``qml.QutritDepolarizingChannel`` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
+  
+* `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
 
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
   [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
+  
+* `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
+  to be simulated on the `default.qutrit.mixed` device.
+  [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
 <h3>Breaking changes 💔</h3>
 
@@ -277,6 +291,9 @@
 
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
+
+* Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fix of incorrectly set up commands)
+  [(#5804)](https://github.com/PennyLaneAI/pennylane/pull/5804)
 
 * The `qml.Tracker` examples are updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
@@ -379,11 +396,13 @@ Emiliano Godinez,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
+Rohan Jain,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Jay Soni,
 Haochen Paul Wang,
 David Wierichs.
