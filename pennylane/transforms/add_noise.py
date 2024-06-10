@@ -286,7 +286,7 @@ def _check_queue_op(operation, noise_func, metadata):
         qml.noise.partial_wires(operation, id=test_id)(operation.wires), **metadata
     ).operations
 
-    return test_id in [getattr(o, "id", "") for o in test_queue]
+    return any(test_id == getattr(o, "id", "") for o in test_queue)
 
 
 # pylint:disable = protected-access
