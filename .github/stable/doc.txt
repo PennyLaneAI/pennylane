@@ -82,7 +82,6 @@ requests-oauthlib==2.0.0
 rsa==4.9
 rustworkx==0.12.1
 scipy==1.13.1
-semantic-version==2.10.0
 six==1.16.0
 snowballstemmer==2.2.0
 sortedcontainers==2.4.0
