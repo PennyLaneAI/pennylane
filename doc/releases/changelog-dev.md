@@ -86,8 +86,7 @@
 * The `default.qubit` device implements a depth-first tree-traversal algorithm to
   accelerate native mid-circuit measurement execution. The new implementation
   supports classical control, collecting statistics, and post-selection, along
-  with all measurements enabled with `qml.defer_measurements` or
-  `qml.dynamic_one_shot`.
+  with all measurements enabled with `qml.dynamic_one_shot`.
   [(#5180)](https://github.com/PennyLaneAI/pennylane/pull/5180)
 
 * The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
