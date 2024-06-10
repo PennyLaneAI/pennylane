@@ -15,11 +15,11 @@
 Unit tests for molecular Hamiltonians.
 """
 # pylint: disable=too-many-arguments, protected-access
+import os
 import time
 from multiprocessing import Pool
 import itertools
 
-import psutil
 import pytest
 
 import pennylane as qml
@@ -1348,20 +1348,19 @@ def _partial_h(coordinates, symbols):
 
 
 @pytest.mark.skipif(
-    psutil.cpu_count(logical=False) == 1, reason="Parallel test requires more than one processor"
+    os.cpu_count() == 1, reason="Parallel test requires more than one processor"
 )
 @pytest.mark.parametrize(
     "symbols", [["N", "H", "H", "H"], ["H", "H"], ["Li", "H"], ["H", "H", "O"], ["N", "N"]]
 )
 def test_parallel_hamiltonian(symbols):
     r"""This test passes for relatively large molecules, but fails for the case of H2 due to overhead costs"""
-    assert psutil.cpu_count(logical=False) > 1, "The number of cpus must be larger than 1"
     repeat = 4
     np.random.seed(5)
     coordinates_list = np.random.random((repeat, 3 * len(symbols)))
     print(symbols)
     start_parallel = time.time()
-    with Pool(psutil.cpu_count(logical=False)) as pool:
+    with Pool(os.cpu_count()) as pool:
         # Map the build_hamiltonian function to the list of coordinates
         parallel_hs = pool.starmap(
             _partial_h, zip(coordinates_list, itertools.repeat(symbols, repeat))
