@@ -734,18 +734,21 @@ class Device(abc.ABC):
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """
+
+        def null_postprocess(results):
+            return results[0]
+
         finite_shots = self.shots is not None
         is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
-        if (
-            (not finite_shots or is_shadow)
-            and self._all_obs_supported(circuit)
-            and len(circuit.obs_sharing_wires) == 0
-        ):
+        all_obs_usable = self._all_obs_supported(circuit) and (not finite_shots or is_shadow)
+        exists_multi_term_obs = any(
+            isinstance(m.obs, (Hamiltonian, Sum, Prod, SProd)) for m in circuit.measurements
+        )
+        has_overlapping_wires = len(circuit.obs_sharing_wires) > 0
+
+        if not has_overlapping_wires and (all_obs_usable or not exists_multi_term_obs):
             circuits = [circuit]
-
-            def processing_fn(results):
-                return results[0]
-
+            processing_fn = null_postprocess
         else:
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit)
 
