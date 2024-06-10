@@ -886,7 +886,7 @@ class TestIntegration:
 
         with _dev.tracker:
             res = circuit()
-        assert _dev.tracker.totals['simulations'] == 2
+        assert _dev.tracker.totals["simulations"] == 2
         assert qml.math.allclose(res, [0.5, 0.5])
 
 
