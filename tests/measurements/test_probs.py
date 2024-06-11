@@ -247,7 +247,7 @@ class TestProbs:
         subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm, wires)
         assert subset_probs.shape == qml.math.shape(expected)
         assert qml.math.allclose(subset_probs, expected)
-        
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
     @pytest.mark.parametrize(
@@ -272,7 +272,6 @@ class TestProbs:
         ], like=interface)
 
         wires = qml.wires.Wires(range(2))
-        
         # Process the entire batch of density matrices
         subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm_batch, wires)
 
@@ -280,7 +279,7 @@ class TestProbs:
         # Check if the calculated probabilities match the expected values
         assert subset_probs.shape == expected.shape, f"Shape mismatch: expected {expected.shape}, got {subset_probs.shape}"
         assert qml.math.allclose(subset_probs, expected), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
-        
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
     @pytest.mark.parametrize(
@@ -358,7 +357,6 @@ class TestProbs:
         0.07439358]], like=interface)
 
         wires = qml.wires.Wires(range(4))
-        
         # Process the entire batch of density matrices
         subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm_batch, wires)
 
