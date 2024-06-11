@@ -574,9 +574,9 @@ def update_mcm_samples(op, samples, mcm_active, mcm_samples):
     To illustrate how the function works, let's take an example. Suppose there are
     `2**20` shots in total and the computation is midway through the circuit at the
     7th MCM, the active branch is `[0,1,1,0,0,1]` and each MCM everything happened to
-    split the counts 50/50 so there are `2**24` samples to update.
+    split the counts 50/50 so there are `2**14` samples to update.
     These samples are not contiguous in general and they are correlated with the parent
-    branches, so where do they go? They must update the `2**24` elements whose parent
+    branches, so where do they go? They must update the `2**14` elements whose parent
     sequence corresponds to `[0,1,1,0,0,1]`.
     """
     if mcm_active:
