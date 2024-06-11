@@ -1287,7 +1287,7 @@ class TestReadoutError:
 
     @staticmethod
     def get_expected_dm(num_wires):
-        """TODO"""
+        """Gets the expected density matrix of the circuit for the first num_wires"""
         state = np.array([2, 3, 6], dtype=complex) ** -(1 / 2)
         if num_wires == 2:
             state = np.kron(state, state)
@@ -1303,12 +1303,24 @@ class TestReadoutError:
     @pytest.mark.parametrize(
         "gammas, probs, expected",
         [  # TODO
-            ((0, 0, 0), (0, 0, 0), np.array([1, 1])),
-            ((0, 0, 0), (0, 0, 0), np.array([0, 0])),
-            ((0, 0, 0), (0, 0, 0), np.array([-1, -1])),
-            ((0, 0, 0), (0, 0, 0), np.array([-1, -1])),
-            ((0, 0, 0), (0, 0, 0), np.array([-1, -1])),
-            ((0, 0, 0), (0, 0, 0), np.array([-1, -1])),
+            ((0, 0, 0), (0, 0, 0), [1/6, 1/(2*np.sqrt(3)), 1/6]),
+            (None, (1, 0, 0), [-1/6, 1/(2*np.sqrt(3)), -1/6]),
+            (None, (0, 1, 0), [-1/6, -1/(2*np.sqrt(3)), -1/6]),
+            (None, (0, 0, 1), [1/3, 0, 1/3]),
+            ((1, 0, 0), None, [5/6, 1/(2*np.sqrt(3)), 5/6]),
+            ((0, 1, 0), None, [1/3, 1/np.sqrt(3), 1/3]),
+            ((1, 0, 1), None, [2/3, 1/np.sqrt(3), 2/3]),  # 5/6, 1/6, 0
+            ((0, 1, 0), (0, 0, 1), [4/6, 0, 4/6]),
+            (None, (0.1, 0.2, 0.4), [2/15, 1/(10*np.sqrt(3)), 2/15]),
+            # 1/2-(1/20-1/30) -(1/10-1/30), 1/3+(1/20-1/30)-(4/30-2/30), 1/6+(1/10-1/30)+(4/30-2/30)
+            # 1/2-(1/60)-(2/30), 1/3+(1/60)-(2/30), 1/6+(2/30)+(2/30)
+            # 1/2-(5/60), 1/3-(3/60), 1/6+(8/60)
+            # 30/60-(5/60), 20/60-(3/60), 10/60+(8/60)
+            # 25/60, 17/60, 18/60
+            ((0.2, 0.1, 0.3), None, [, , ]), # 1/2+1/60+1/60, 1/3-1/60+1/180, 1/6-1/60-1/180
+            # 1/2+1/60+1/60, 1/3-1/60+1/180, 1/6-1/60-1/180
+
+            # ((0.2, 0.1, 0.25), (0.1, 0.2, 0.5), [, , ]), # 1/2, 1/3, 1/6
         ],
     )
     def test_readout_expval_commuting(self, nr_wires, gammas, probs, expected):
@@ -1324,10 +1336,10 @@ class TestReadoutError:
         def circuit():
             qml.QutritUnitary(self.setup_unitary, wires=0)
             qml.QutritUnitary(self.setup_unitary, wires=1)
-            if nr_wires == 2:
+            if nr_wires == 3:
                 qml.TAdd(wires=(0, 2))
 
-            return qml.expval(qml.GellMann(0, 3)), qml.expval(qml.GellMann(0, 3))
+            return qml.expval(qml.GellMann(0, 3)), qml.expval(qml.GellMann(0, 8)), qml.expval(qml.GellMann(1, 3))
 
         res = circuit()
         assert np.allclose(res, expected)
@@ -1335,12 +1347,16 @@ class TestReadoutError:
     @pytest.mark.parametrize(
         "gammas, probs, expected",
         [  # TODO
-            ((0, 0, 0), (0, 0, 0), np.array([1, 1])),
-            ((0, 0, 0), (0, 0, 0), np.array([0, 0])),
-            ((0, 0, 0), (0, 0, 0), np.array([-1, -1])),
-            ((0, 0, 0), (0, 0, 0), np.array([-1, -1])),
-            ((0, 0, 0), (0, 0, 0), np.array([-1, -1])),
-            ((0, 0, 0), (0, 0, 0), np.array([-1, -1])),
+            # ((0, 0, 0), (0, 0, 0), [, , ]),
+            # (None, (0, 0, 1), [, , ]),
+            # ((0, 0, 1), None, [, , ]),
+            # (None, (0, 1, 0), [, , ]),
+            # ((0, 1, 0), None, [, , ]),
+            ((0, 0, 0), (0, 0, 0), [0, 0]),
+            ((0, 0, 0), (0, 0, 0), [-1, -1]),
+            ((0, 0, 0), (0, 0, 0), [-1, -1]),
+            ((0, 0, 0), (0, 0, 0), [-1, -1]),
+            ((0, 0, 0), (0, 0, 0), [-1, -1]),
         ],
     )
     def test_readout_expval_non_commuting(self, nr_wires, gammas, probs, expected):
