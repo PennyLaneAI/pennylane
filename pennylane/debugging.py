@@ -60,7 +60,8 @@ class _Debugger:
 
 @transform
 def snapshots(tape_: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
-    r"""This transform processes the :func:`Snapshot <pennylane.Snapshot>` instances depending on the compatibility of the execution device.
+    r"""This transform processes :func:`Snapshot <pennylane.Snapshot>` instances contained in a circuit,
+    depending on the compatibility of the execution device.
     For supported devices, the snapshots' measurements are computed as the execution progresses.
     Otherwise, the :func:`QuantumTape <pennylane.tape.QuantumTape>` gets split into several, one for each snapshot, with each aggregating
     all the operations up to that specific snapshot.
