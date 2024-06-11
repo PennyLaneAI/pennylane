@@ -581,10 +581,11 @@ def execute(
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
         if config.mcm_config.postselect_mode == "hw-like":
-            raise ValueError("Using postselect_mode='hw-like' is not supported with jax-jit.")
+            raise ValueError(
+                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
+                "mcm_method='deferred'."
+            )
         config.mcm_config.postselect_mode = "fill-shots"
-    if config.mcm_config.mcm_method == "single-branch-statistics" and not qml.compiler.active():
-        raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit")
 
     if transform_program is None:
         if isinstance(device, qml.devices.Device):

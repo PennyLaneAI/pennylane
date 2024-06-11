@@ -1045,11 +1045,16 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        mcm_config = self.execute_kwargs["mcm_config"]
         finite_shots = _get_device_shots if override_shots is False else override_shots
-        if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
-            raise ValueError(
-                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
-            )
+        if not finite_shots:
+            mcm_config["postselect_mode"] = None
+            if mcm_config["mcm_method"] == "one-shot":
+                raise ValueError(
+                    "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+                )
+        if mcm_config["mcm_method"] == "single-branch-statistics":
+            raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
@@ -1069,7 +1074,7 @@ class QNode:
             full_transform_program.add_transform(
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
-                mcm_config=self.execute_kwargs["mcm_config"],
+                mcm_config=mcm_config,
             )
             override_shots = 1
         elif hasattr(self.device, "capabilities"):
