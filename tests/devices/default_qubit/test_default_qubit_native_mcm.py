@@ -428,30 +428,28 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method):
 
 # pylint: disable=not-an-iterable
 @pytest.mark.jax
-@pytest.mark.parametrize("shots", [100, [100, 101]])
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+@pytest.mark.parametrize("shots", [100, [100, 101], [100, 100, 101]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
-def test_sample_with_prng_key(shots, postselect):
+def test_sample_with_prng_key(mcm_method, shots, postselect):
     """Test that setting a PRNGKey gives the expected behaviour. With separate calls
     to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
     # pylint: disable=import-outside-toplevel
     from jax.random import PRNGKey
 
     dev = get_device(shots=shots, seed=PRNGKey(678))
-    param = [np.pi / 4, np.pi / 3]
+    params = [np.pi / 4, np.pi / 3]
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
-    @qml.qnode(dev)
     def func(x, y):
         obs_tape(x, y, None, postselect=postselect)
         return qml.sample(op=obs)
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+    func0 = qml.QNode(func, dev, mcm_method=mcm_method)
+    results0 = func0(*params)
+    results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
 
-    results1 = func1(*param)
-    results2 = func2(*param)
-
-    mcm_utils.validate_measurements(qml.sample, shots, results1, results2, batch_size=None)
+    mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
 
     evals = obs.eigvals()
     for eig in evals:
@@ -463,13 +461,13 @@ def test_sample_with_prng_key(shots, postselect):
         else:
             assert not np.all(np.isclose(results1, eig))
 
-    results3 = func1(*param)
+    results0_2 = func0(*params)
     # Same result expected with multiple executions
     if isinstance(shots, list):
-        for r1, r3 in zip(results1, results3):
-            assert np.allclose(r1, r3)
+        for r0, r0_2 in zip(results0, results0_2):
+            assert np.allclose(r0, r0_2)
     else:
-        assert np.allclose(results1, results3)
+        assert np.allclose(results0, results0_2)
 
 
 # pylint: disable=import-outside-toplevel, not-an-iterable

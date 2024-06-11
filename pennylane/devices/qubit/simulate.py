@@ -327,7 +327,7 @@ def simulate(
             n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
             if 2 * n_mcms + 100 > sys.getrecursionlimit():
                 sys.setrecursionlimit(2 * n_mcms + 100)
-            return simulate_tree_mcm(circuit, **execution_kwargs)
+            return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
 
         results = []
         aux_circ = qml.tape.QuantumScript(
@@ -413,15 +413,17 @@ def simulate_tree_mcm(
     # shot vector treatment #
     #########################
     if circuit.shots.has_partitioned_shots:
+        prng_key = execution_kwargs.pop("prng_key", None)
+        keys = jax_random_split(prng_key, num=circuit.shots.num_copies)
         results = []
-        for s in circuit.shots:
+        for k, s in zip(keys, circuit.shots):
             aux_circuit = qml.tape.QuantumScript(
                 circuit.operations,
                 circuit.measurements,
                 shots=qml.measurements.Shots(s),
                 trainable_params=circuit.trainable_params,
             )
-            results.append(simulate_tree_mcm(aux_circuit, debugger, **execution_kwargs))
+            results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
         return tuple(results)
 
     #######################
@@ -460,7 +462,9 @@ def simulate_tree_mcm(
     update_mcm_samples(op, samples, mcm_active, mcm_samples)
 
     # Define ``branch_measurement`` here to capture ``op``, ``rng``, ``prng_key``, ``debugger``, ``interface``
-    def branch_measurement(circuit_next, state, branch, mcm_active, mcm_samples):
+    def branch_measurement(
+        circuit_next, state, branch, mcm_active, mcm_samples, **execution_kwargs
+    ):
         """Returns the measurements of the specified branch by executing ``circuit_next``."""
 
         def branch_state(state, branch, wire):
@@ -483,10 +487,12 @@ def simulate_tree_mcm(
     counts = samples_to_counts(samples)
     measurements = [{} for _ in circuit_next.measurements]
     single_measurement = len(circuit_next.measurements) == 1
+    prng_key = execution_kwargs.pop("prng_key", None)
     for branch, count in counts.items():
         if op.postselect is not None and branch != op.postselect:
             prune_mcm_samples(op, branch, mcm_active, mcm_samples)
             continue
+        prng_key, key = jax_random_split(prng_key)
         mcm_active[op] = branch
         circuit_branch = qml.tape.QuantumScript(
             circuit_next.operations,
@@ -500,6 +506,8 @@ def simulate_tree_mcm(
             branch,
             mcm_active=mcm_active,
             mcm_samples=mcm_samples,
+            prng_key=key,
+            **execution_kwargs,
         )
         if single_measurement:
             meas = [meas]
@@ -705,7 +713,7 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 
 @combine_measurements_core.register
 def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
-    new_sample = tuple(m[1] for m in measures.values())
+    new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values())
     return np.squeeze(np.concatenate(new_sample))
 
 
