@@ -91,7 +91,7 @@ line to be executed (eg. the next operation to execute is ``CNOT``).
 .. code-block:: console
     
     [pldb]: next
-    > /Users/jay/Desktop/PL/pennylane/random_scratch.py(8)circuit()
+    > /Users/your/path/to/script.py(8)circuit()
     -> qml.CNOT(wires=(0,2))
     [pldb]: list
       3  	@qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
@@ -113,7 +113,7 @@ ends the debugging prompt.
 .. code-block:: console
 
     [pldb]: continue
-    > /Users/jay/Desktop/PL/pennylane/random_scratch.py(14)circuit()
+    > /Users/your/path/to/script.py(14)circuit()
     -> qml.RX(-x, wires=1)
     [pldb]: list
       9  	
@@ -159,10 +159,10 @@ Consider the circuit from above,
      14  	    qml.RX(-x, wires=1)
      15  	    return qml.sample()
     [pldb]: next
-    > /Users/jay/Desktop/PL/pennylane/random_scratch.py(8)circuit()
+    > /Users/your/path/to/script.py(8)circuit()
     -> qml.CNOT(wires=(0,2))
     [pldb]: next
-    > /Users/jay/Desktop/PL/pennylane/random_scratch.py(10)circuit()
+    > /Users/your/path/to/script.py(10)circuit()
     -> for w in (0, 1, 2):
     [pldb]: 
 
@@ -207,7 +207,7 @@ from the prompt. This allows users to modify the circuit *on-the-fly*!
 .. code-block:: console
 
     [pldb]: continue
-    > /Users/jay/Desktop/PL/pennylane/random_scratch.py(14)circuit()
+    > /Users/your/path/to/script.py(14)circuit()
     -> qml.RX(-x, wires=1)
     [pldb]: qtape = qml.debugging.tape()
     [pldb]: print(qtape.draw(wire_order=(0,1,2)))
