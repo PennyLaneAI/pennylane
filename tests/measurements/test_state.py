@@ -129,6 +129,9 @@ class TestStateMP:
         with pytest.raises(WireError, match=r"Unexpected unique wires <Wires = \[0, 1, 2\]> found"):
             StateMP(wires=[0, 1]).process_state([1, 0], wire_order=Wires(2))
 
+    @pytest.mark.xfail(
+        reason="StateMP.process_density_matrix is no longer supported"
+    )
     @pytest.mark.parametrize(
         "dm, expected",
         [

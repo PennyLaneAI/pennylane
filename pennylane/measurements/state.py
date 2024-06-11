@@ -192,37 +192,7 @@ class StateMP(StateMeasurement):
         return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
     
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
-        # Goal: get the pure state from a density matrix
-        
-        # Zero step: check wires
-        is_tf_interface = qml.math.get_deep_interface(density_matrix) == "tensorflow"
-        wires = self.wires            
-        
-        # First step: check if the density matrix is already a pure state
-        if not qml.math.allclose(qml.math.purity(density_matrix, indices=wire_order), 1):
-            raise ValueError("The density matrix is not a pure state.")
-        
-        # Second step: with a given pure state denisty matrix, get the pure state by decomposition 
-        # Skip the batched version for a while
-        if qml.math.ndim(density_matrix) == 3:  # batched density matrix
-            raise NotImplementedError("This method (batched v.) is not implemented yet.")
-        # Use SVD to decompose the density matrix
-        U, S, V = qml.math.svd(density_matrix)
-        # Get the pure state
-        state = U[:, 0]
-        
-        if not wires:
-            wires = range(len(wire_order))
-        
-        shape = (2,) * len(wires)
-        flat_shape = (2 ** len(wires),)
-        desired_axes = [wire_order.index(w) for w in wires]
-        
-        state = qml.math.reshape(state, shape)
-        state = qml.math.transpose(state, desired_axes)
-        state = qml.math.reshape(state, flat_shape)
-        
-        return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
+        raise ValueError("Processing from density matrix to state is not supported.")
 
 
 
