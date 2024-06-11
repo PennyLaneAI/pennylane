@@ -275,7 +275,7 @@ class DensityMatrixMP(StateMP):
             kwargs["c_dtype"] = state.dtype
         return qml.math.reduce_statevector(state, **kwargs)
 
-    def process_density_matrix(self, density_matrix, wire_order: Wires):
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
         """
         Processes a density matrix to extract the state for the specified subsystem.
 
