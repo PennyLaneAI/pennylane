@@ -160,9 +160,6 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     interface = execution_kwargs.get("interface", None)
     initial_state = execution_kwargs.get("initial_state", None)
 
-    if initial_state is None:
-        circuit = circuit.map_to_standard_wires()
-
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
@@ -210,9 +207,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
 
 # pylint: disable=too-many-arguments
 @debug_logger
-def measure_final_state(
-    circuit, state, is_state_batched, initial_state=None, **execution_kwargs
-) -> Result:
+def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -223,7 +218,6 @@ def measure_final_state(
             non-negative integer wire labels
         state (TensorLike): The state to perform measurement on
         is_state_batched (bool): Whether the state has a batch dimension or not.
-        initial_state (TensorLike): Initial state vector
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -240,9 +234,6 @@ def measure_final_state(
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
     mid_measurements = execution_kwargs.get("mid_measurements", None)
-
-    if initial_state is None:
-        circuit = circuit.map_to_standard_wires()
 
     # analytic case
 
@@ -325,9 +316,12 @@ def simulate(
     if circuit.shots and has_mcm:
         if execution_kwargs.get("mcm_method", None) == "tree-traversal":
             n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
-            if 2 * n_mcms + 100 > sys.getrecursionlimit():
+            recursionlimit = sys.getrecursionlimit()
+            if 2 * n_mcms + 100 > recursionlimit:
                 sys.setrecursionlimit(2 * n_mcms + 100)
-            return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
+            results = simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
+            sys.setrecursionlimit(recursionlimit)
+            return results
 
         results = []
         aux_circ = qml.tape.QuantumScript(
@@ -368,7 +362,7 @@ def simulate(
     )
 
 
-# pylint: disable=too-many-arguments, dangerous-default-value
+# pylint: disable=too-many-arguments
 def simulate_tree_mcm(
     circuit: qml.tape.QuantumScript,
     debugger=None,
