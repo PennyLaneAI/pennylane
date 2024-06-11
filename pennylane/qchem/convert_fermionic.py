@@ -32,8 +32,9 @@ def from_openfermion(of_op, tol=1e-16):
 
     **Example**
 
-    >>> of_op = 0.5 * openfermion.FermionOperator('0^ 2') + openfermion.FermionOperator('0 2^')
-    >>> pl_op = qchem.from_openfermion(of_op)
+    >>> from openfermion import FermionOperator
+    >>> of_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
+    >>> pl_op = from_openfermion(of_op)
     >>> print(pl_op)
         0.5 * a(0) a⁺(2)
         + 1.0 * a⁺(0) a(2)
