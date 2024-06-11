@@ -616,7 +616,7 @@ def circuit_up_to_first_mcm(circuit):
     # run circuit until next MidMeasureMP and sample
     circuit_base = qml.tape.QuantumScript(
         circuit.operations[0:i],
-        [qml.sample(wires=op.wires) if op.obs is None else qml.sample(op=op.obs)],
+        [qml.sample(wires=op.wires)],
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
     )
