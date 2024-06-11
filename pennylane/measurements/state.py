@@ -261,13 +261,9 @@ class DensityMatrixMP(StateMP):
         Returns:
             array[complex]: The reduced density matrix of the subsystem defined by the wires of this measurement process.
         """
-        # Check if we need to do any reduction
-        if set(self.wires) == set(wire_order):
-            return density_matrix
-
-        # Determine indices of the wires to keep
-        keep_indices = [self.wires.index(w) for w in wire_order]
-        # Compute the reduced density matrix
-        reduced_dm = qml.math.partial_trace(density_matrix, indices=keep_indices)
-
-        return reduced_dm
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
+        if not qml.math.is_abstract(density_matrix) and qml.math.any(qml.math.iscomplex(density_matrix)):
+            kwargs["c_dtype"] = density_matrix.dtype
+        return qml.math.reduce_dm(density_matrix, indices=keep_indices)
