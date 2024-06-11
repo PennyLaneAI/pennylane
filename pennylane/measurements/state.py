@@ -266,4 +266,4 @@ class DensityMatrixMP(StateMP):
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
         if not qml.math.is_abstract(density_matrix) and qml.math.any(qml.math.iscomplex(density_matrix)):
             kwargs["c_dtype"] = density_matrix.dtype
-        return qml.math.reduce_dm(density_matrix, indices=keep_indices)
+        return qml.math.reduce_dm(density_matrix, **kwargs)
