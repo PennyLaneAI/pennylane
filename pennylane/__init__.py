@@ -395,8 +395,7 @@ def device(name, *args, **kwargs):
             operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
             if any(version_str.startswith(op) for op in operators):
                 return SpecifierSet(version_str)
-            else:
-                return SpecifierSet(f"=={version_str}")
+            return SpecifierSet(f"=={version_str}")
 
         if hasattr(plugin_device_class, "pennylane_requires"):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
