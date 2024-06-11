@@ -1390,11 +1390,14 @@ class TestReadoutError:
             qml.QutritUnitary(self.setup_unitary, wires=1)
             if nr_wires == 2:
                 qml.TAdd(wires=(0, 2))
+            qml.THadamard(wire=0)
+            qml.THadamard(wires=1, subspace=(0,1))
+
 
             return (
-                qml.expval(qml.GellMann(0, 1)),
-                qml.expval(qml.GellMann(0, 4)),
-                qml.expval(qml.GellMann(1, 6)),
+                qml.expval(qml.Hermitian([], 1)),
+                qml.expval(qml.Hamiltonian([], [])),
+                qml.expval(qml.GellMann(1, 1)),
             )
 
         res = circuit()
