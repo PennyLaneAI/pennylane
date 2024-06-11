@@ -30,7 +30,7 @@ from pennylane.wires import WireError, Wires
 
 
 class WiresIn(BooleanFn):
-    """A conditional for evaluating if a given wire exist in a specified set of wires.
+    """A conditional for evaluating if the wires of an operation exist in a specified set of wires.
 
     Args:
         wires (Union[Iterable[int, str], Wires]): sequence of wires for building the wire set.
@@ -86,18 +86,18 @@ def _get_wires(val):
 
 
 def wires_in(wires):
-    """Builds a conditional as a boolean function for evaluating
-    if a given wire exist in a specified set of wires.
+    """Builds a conditional as a :class:`~.BooleanFn` for evaluating
+    if the wires of an input operation are within the specified set of wires.
 
     Args:
-        wires (Union(Iterable[int, str], Wires, Operation)): object to be used
+        wires (Union(Iterable[int, str], Wires, Operation, int, str)): object to be used
             for building the wire set.
 
     Returns:
-        :class:`WiresIn <pennylane.noise.conditionals.WiresIn>`: a callable object that
-        accepts an argument ``wire`` and gives a boolean output. It evaluates to ``True``
-        if the wire set constructed from ``wire`` is a subset of the one built from the
-        specified set.
+        :class:`WiresIn <pennylane.noise.conditionals.WiresIn>`: a callable object with
+        signature ``Union(Iterable[int, str], Wires, Operation, int, str)``. It evaluates
+        to ``True`` if the wire set constructed from the input to the callable is a
+        subset of the one built from the specified ``wires`` set.
 
     Raises:
         ValueError: if the wire set cannot be computed from ``wires``.
@@ -107,9 +107,9 @@ def wires_in(wires):
     One may use ``wires_in`` with a given sequence of wires which are used as a wire set:
 
     >>> cond_func = qml.noise.wires_in([0, 1])
-    >>> cond_func(0)
+    >>> cond_func(qml.X(0))
     True
-    >>> cond_func(3)
+    >>> cond_func(qml.X(3))
     False
 
     Additionally, if an :class:`Operation <pennylane.operation.Operation>` is provided,
@@ -125,18 +125,18 @@ def wires_in(wires):
 
 
 def wires_eq(wires):
-    """Builds a conditional as a boolean function for evaluating
+    """Builds a conditional as a :class:`~.BooleanFn` for evaluating
     if a given wire is equal to specified set of wires.
 
     Args:
-        wires (Union(Iterable[int, str], Wires, Operation)): object to be used
+        wires (Union(Iterable[int, str], Wires, Operation, int, str)): object to be used
             for building the wire set.
 
     Returns:
-        :class:`WiresEq <pennylane.noise.conditionals.WiresEq>`: a callable object that
-        accepts an argument ``wire`` and gives a boolean output. It evaluates to ``True``
-        if the wire set constructed from ``wire`` is equal to the one built from the
-        specified set.
+        :class:`WiresEq <pennylane.noise.conditionals.WiresEq>`: a callable object with
+        signature ``Union(Iterable[int, str], Wires, Operation, int, str)``. It evaluates
+        to ``True`` if the wire set constructed from the input to the callable is equal
+        to the one built from the specified ``wires`` set.
 
     Raises:
         ValueError: if the wire set cannot be computed from ``wires``.
@@ -146,7 +146,7 @@ def wires_eq(wires):
     One may use ``wires_eq`` with a given sequence of wires which are used as a wire set:
 
     >>> cond_func = qml.noise.wires_eq(0)
-    >>> cond_func(0)
+    >>> cond_func(qml.X(0))
     True
     >>> cond_func(qml.RY(1.23, wires=[3]))
     False
@@ -164,7 +164,7 @@ def wires_eq(wires):
 
 
 class OpIn(BooleanFn):
-    """A conditional for evaluating if a given operation exist in a specified set of operation.
+    """A conditional for evaluating if a given operation exist in a specified set of operations.
 
     Args:
         ops (Union[str, class, Operation, list[str, class, Operation]]): sequence of operation
@@ -329,18 +329,19 @@ def _check_arithmetic_ops(op1, op2):
 
 
 def op_in(ops):
-    """Builds a conditional as a boolean function for evaluating
+    """Builds a conditional as a :class:`~.BooleanFn` for evaluating
     if a given operation exist in a specified set of operations.
 
     Args:
-        ops (str, class, Operation, Union(list[str, class, Operation])): sequence of string
+        ops (str, class, Operation, list(Union[str, class, Operation])): sequence of string
             representations, instances or classes of the operation(s).
 
     Returns:
         :class:`OpIn <pennylane.noise.conditionals.OpIn>`: A callable object that accepts
-        an ``operation`` and gives a boolean output. It evaluates to ``True``, if the
-        input operation exist in a specified set of operation(s) based on a comparison of
-        the type, irrespective of their wires.
+        an :class:`~.Operation` and gives a boolean output. It accepts any input from:
+        ``Union(str, class, Operation, list(Union[str, class, Operation]))`` and evaluates
+        to ``True``, if input operation(s) exist in the set of operation(s) specified by
+        ``ops``, based on a comparison of the operation type, irrespective of wires.
 
     **Example**
 
@@ -370,7 +371,7 @@ def op_in(ops):
 
 
 def op_eq(ops):
-    """Builds a conditional as a boolean function for evaluating
+    """Builds a conditional as a :class:`~.BooleanFn` for evaluating
     if a given operation is equal to the specified operation.
 
     Args:
@@ -378,9 +379,10 @@ def op_eq(ops):
 
     Returns:
         :class:`OpEq <pennylane.noise.conditionals.OpEq>`: A callable object that accepts
-        an ``operation`` and gives a boolean output. It evaluates to ``True``, if the
-        input operation is equal to the specified set of operation(s) based on a comparison
-        of the type, irrespective of their wires.
+        an :class:`~.Operation` and gives a boolean output. It accepts any input from:
+        ``Union(str, class, Operation)`` and evaluates to ``True``, if input operation(s)
+        is equal to the set of operation(s) specified by ``ops``, based on a comparison of
+        the operation type, irrespective of wires.
 
     **Example**
 
@@ -430,7 +432,7 @@ def partial_wires(operation, *args, **kwargs):
 
     Returns:
         callable: a wrapper function that accepts a sequence of wires as an argument or
-        any object with ``wires`` property.
+        any object with a ``wires`` property.
 
     Raises:
         ValueError: if ``args`` are provided when the given ``operation`` is an instance.
@@ -446,7 +448,7 @@ def partial_wires(operation, *args, **kwargs):
     >>> func(qml.RY(1.0, ["wires"]))
     qml.RX(1.2, wires=["wires"])
 
-    Additionally, class of :class:`Operation <pennylane.operation.Operation>` can
+    Additionally, an :class:`Operation <pennylane.operation.Operation>` class can
     also be provided, while providing required positional arguments via ``args``:
 
     >>> func = qml.noise.partial_wires(qml.RX, 3.2, [20])
