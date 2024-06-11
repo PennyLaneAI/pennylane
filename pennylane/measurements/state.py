@@ -190,10 +190,9 @@ class StateMP(StateMeasurement):
         state = qml.math.transpose(state, desired_axes)
         state = qml.math.reshape(state, flat_shape)
         return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
-    
+
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
         raise ValueError("Processing from density matrix to state is not supported.")
-
 
 
 class DensityMatrixMP(StateMP):
@@ -257,6 +256,8 @@ class DensityMatrixMP(StateMP):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not qml.math.is_abstract(density_matrix) and qml.math.any(qml.math.iscomplex(density_matrix)):
+        if not qml.math.is_abstract(density_matrix) and qml.math.any(
+            qml.math.iscomplex(density_matrix)
+        ):
             kwargs["c_dtype"] = density_matrix.dtype
         return qml.math.reduce_dm(density_matrix, **kwargs)
