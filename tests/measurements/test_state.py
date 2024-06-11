@@ -158,9 +158,6 @@ class TestDensityMatrixMP:
             exp = reduce_statevector(vec, wires)
         assert qml.math.allclose(processed, exp)
 
-    @pytest.mark.xfail(
-        reason="DensityMatrixMP.process_state no longer supports density matrix parameters"
-    )
     @pytest.mark.parametrize(
         "mat, wires",
         [
@@ -181,7 +178,7 @@ class TestDensityMatrixMP:
 
         num_wires = int(np.log2(len(mat)))
         order = list(range(num_wires))
-        processed = mp.process_state(mat, order)
+        processed = mp.process_density_matrix(mat, order)
         assert qml.math.shape(processed) == (2 ** len(wires), 2 ** len(wires))
         if len(wires) == num_wires:
             exp = _permute_dense_matrix(mat, wires, order, None)
