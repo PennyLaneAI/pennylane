@@ -740,7 +740,8 @@ class Device(abc.ABC):
 
         finite_shots = self.shots is not None
         is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
-        all_obs_usable = self._all_obs_supported(circuit) and (not finite_shots or is_shadow)
+        is_analytic_or_shadow = not finite_shots or is_shadow
+        all_obs_usable = self._all_obs_supported(circuit)
         exists_multi_term_obs = any(
             isinstance(m.obs, (Hamiltonian, Sum, Prod, SProd)) for m in circuit.measurements
         )
@@ -755,9 +756,14 @@ class Device(abc.ABC):
             circuits = [circuit]
             processing_fn = null_postprocess
 
-        elif not has_overlapping_wires and (all_obs_usable or not exists_multi_term_obs):
+        elif not exists_multi_term_obs and not has_overlapping_wires:
             circuits = [circuit]
             processing_fn = null_postprocess
+
+        elif is_analytic_or_shadow and all_obs_usable:
+            circuits = [circuit]
+            processing_fn = null_postprocess
+
         else:
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit)
 
