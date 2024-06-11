@@ -687,7 +687,7 @@ class StateMeasurement(MeasurementProcess):
 
         Args:
             density_matrix (Sequence[complex]): The density matrix representing the (mixed) quantum state,
-                which may be single or batched. For a single matrix, the shape should be `(2**n, 2**n)`
+                which may be single or batched. For a single matrix, the shape should be ``(2**n, 2**n)``
                 where `n` is the number of wires the matrix acts upon. For batched matrices, the shape
                 should be `(batch_size, 2**n, 2**n)`.
             wire_order (Wires): The wires determining the subspace that the `density_matrix` acts on.
