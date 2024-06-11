@@ -123,7 +123,7 @@ from pennylane.ops.functions import (
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
-from pennylane.debugging import snapshots
+from pennylane.debugging import snapshots, breakpoint
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
