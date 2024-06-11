@@ -736,6 +736,13 @@ class TestMiscMethods:
         assert qml.equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 0.2
 
+    def test_simplify_num_steps(self):
+        """Test that the number of Trotter steps is conserved after simplification"""
+        base = qml.Z(0) + 1.2 * qml.Z(1)
+        op = Exp(base, coeff=-1.2j, num_steps=2)
+        new_op = op.simplify()
+        assert new_op.num_steps == op.num_steps
+
     def test_simplify_s_prod(self):
         """Tests that when simplification of the base results in an SProd,
         the scalar is included in the coeff rather than the base"""
