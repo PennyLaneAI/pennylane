@@ -14,11 +14,12 @@
 """
 Unit tests for molecular Hamiltonians.
 """
+import itertools
+
 # pylint: disable=too-many-arguments, protected-access
 import os
 import time
 from multiprocessing import Pool
-import itertools
 
 import pytest
 
