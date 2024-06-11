@@ -33,7 +33,7 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
-from pennylane.transforms.dynamic_one_shot import gather_mcm as dyn_gather_mcm
+from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -667,7 +667,7 @@ def combine_measurements(circuit, measurements, mcm_samples):
         elif circ_meas.mv:
             mcm_samples = dict((k, v.reshape((-1, 1))) for k, v in mcm_samples.items())
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
-            comb_meas = dyn_gather_mcm(circ_meas, mcm_samples, is_valid)
+            comb_meas = gather_mcm(circ_meas, mcm_samples, is_valid)
         elif not measurements or not measurements[0]:  # pragma: no cover
             if len(measurements) > 0:
                 _ = measurements.pop(0)
@@ -694,6 +694,7 @@ def combine_measurements_core(original_measurement, measures):  # pylint: disabl
 
 @combine_measurements_core.register
 def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argument
+    """The counts are accumulated using a ``Counter`` object."""
     keys = list(measures.keys())
     new_counts = Counter()
     for k in keys:
@@ -703,6 +704,7 @@ def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argum
 
 @combine_measurements_core.register
 def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-argument
+    """The expectation value of two branches is a weighted sum of expectation values."""
     cum_value = 0
     total_counts = 0
     for v in measures.values():
@@ -713,6 +715,7 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
 
 @combine_measurements_core.register
 def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-argument
+    """The combined probability of two branches is a weighted sum of the probabilities. Note the implementation is the same as for ``ExpectationMP``."""
     cum_value = 0
     total_counts = 0
     for v in measures.values():
@@ -723,12 +726,15 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 
 @combine_measurements_core.register
 def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
+    """The combined samples of two branches is obtained by concatenating the sample if each branch.."""
     new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values())
     return np.squeeze(np.concatenate(new_sample))
 
 
 @combine_measurements_core.register
 def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-argument
+    """Intermediate ``VarianceMP`` measurements are in fact ``SampleMP`` measurements,
+    and hence the implementation is the same as for ``SampleMP``."""
     new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values())
     return np.squeeze(np.concatenate(new_sample))
 
