@@ -199,7 +199,7 @@ class StateMP(StateMeasurement):
         # First step: check if the density matrix is already a pure state
         
         # Second step: with a given pure state denisty matrix, get the pure state by decomposition 
-        
+        raise NotImplementedError("This method is not implemented yet.")
 
 
 
