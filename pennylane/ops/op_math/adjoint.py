@@ -166,6 +166,7 @@ def adjoint(fn, lazy=True):
         return Adjoint(fn)
     return create_adjoint_op(fn, lazy)
 
+
 def create_adjoint_op(fn, lazy):
     """Main logic for qml.adjoint, but allows bypassing the compiler dispatch if needed."""
     if isinstance(fn, Operator):
