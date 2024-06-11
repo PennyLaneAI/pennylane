@@ -372,9 +372,9 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     assert np.allclose(grad1, grad2, atol=0.01, rtol=0.3)
 
 
-@pytest.mark.parametrize("mcm_method", ["one-shot"])
-@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
-@pytest.mark.parametrize("postselect", [None, 1])
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+@pytest.mark.parametrize("shots", [5500, [5500, 5501]])
+@pytest.mark.parametrize("postselect", [None, 0])
 @pytest.mark.parametrize("measure_fn", [qml.counts, qml.expval, qml.probs, qml.sample])
 def test_broadcasting_qnode(mcm_method, shots, postselect, measure_fn):
     """Test that executing qnodes with broadcasting works as expected"""
@@ -415,13 +415,13 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method):
     dev = get_device(shots=10)
 
     @qml.qnode(dev, mcm_method=mcm_method)
-    def circuit():
-        qml.RX([0.1, 0.2], 0)
+    def circuit(x):
+        qml.RX(x, 0)
         qml.measure(0, postselect=1)
         return qml.sample(wires=0)
 
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
-        _ = circuit()
+        _ = circuit([0.1, 0.2])
 
 
 # pylint: disable=not-an-iterable
