@@ -421,6 +421,51 @@ def from_qasm(quantum_circuit: str, measurements=None):
         ...                 'h q[0];'
         >>> my_circuit = qml.from_qasm(hadamard_qasm)
 
+    The measurements can also be passed directly to the function when creating the
+    quantum function, making it possible to create a PennyLane circuit with
+    :class:`qml.QNode <pennylane.QNode>`:
+
+    >>> measurements = [qml.var(qml.Y(0))]
+    >>> circuit = qml.QNode(qml.from_qasm(hadamard_qasm, measurements), dev)
+    >>> circuit()
+    [tensor(1., requires_grad=True)]
+
+    .. note::
+
+        The ``measurements`` keyword allows one to add a list of PennyLane measurements
+        that will **override** any terminal measurements present in the QASM code,
+        so that they are not performed before the operations specified in ``measurements``.
+        ``measurements=None``.
+
+    If existing QASM code already contains measurements, ``from_qasm``
+    will return those measurements, provided that they are not overriden as shown above.
+
+    Mid-circuit measurements inside the QASM code can also be interpreted. 
+
+    .. code-block:: python
+
+        hadamard_qasm = 'OPENQASM 2.0;' \\
+                         'include "qelib1.inc";' \\
+                         'qreg q[2];' \\
+                         'creg c[2];' \\
+                         'h q[0];' \\
+                         'measure q[0] -> c[0];' \\
+                         'rz(0.24) q[0];' \\
+                         'cx q[0], q[1];' \\
+                         'measure q -> c;' 
+        
+        dev = qml.device("default.qubit")
+        loaded_circuit = qml.from_qasm(hadamard_qasm)
+
+        @qml.qnode(dev)
+        def circuit():
+            mid_measure, m0, m1 = loaded_circuit()
+            qml.cond(mid_measure == 0, qml.RX)(np.pi / 2, 0)
+            return [qml.expval(qml.measure(0))]
+
+    >>> circuit()
+    [tensor(0.75, requires_grad=True)]
+
     You can also load the contents of a QASM file:
 
     .. code-block:: python
