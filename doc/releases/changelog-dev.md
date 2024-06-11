@@ -52,18 +52,17 @@
 
 <h3>Improvements 🛠</h3>
 
-* Removed `semantic_version` from the list of required packages in PennyLane. 
-  [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
 * Added `packaging` in the required list of packages.
-  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769)
-  [(#5782)](https://github.com/PennyLaneAI/pennylane/pull/5782)
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
 
 * Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
-  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528)
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
 
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
@@ -228,6 +227,9 @@
   
 * `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
+ 
+* `qml.QutritChannel` has been added, enabling the specification of noise using a collection of (3x3) Kraus matrices on the `default.qutrit.mixed` device.
+  [(#5793)](https://github.com/PennyLaneAI/pennylane/issues/5793)
 
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
@@ -291,6 +293,9 @@
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
 <h3>Bug fixes 🐛</h3>
+
+* An error is now raised if a transform is applied to a catalyst qjit object.
+  [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
 
 * `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
   [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
@@ -363,10 +368,17 @@
 * Fixes a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` is incorrect on `default.qubit.legacy` with `parameter_shift`.
   [(#5806)](https://github.com/PennyLaneAI/pennylane/pull/5806)
 
+* Fixed a bug where `split_non_commuting` raises an error when the circuit contains measurements of observables that are not pauli words.
+  [(#5827)](https://github.com/PennyLaneAI/pennylane/pull/5827)
+
+* Simplify method for `Exp` now returns an operator with the correct number of Trotter steps, i.e. equal to the one from the pre-simplified operator.
+  [(#5831)](https://github.com/PennyLaneAI/pennylane/pull/5831)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
 Utkarsh Azad,
 Lillian M. A. Frederiksen,
@@ -387,5 +399,6 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Jay Soni,
 Haochen Paul Wang,
 David Wierichs.
