@@ -1025,7 +1025,7 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("f_op, string", fw_string)
     def test_to_string(self, f_op, string):
         assert to_string(f_op) == string
-        
+
     fw_of_string = (
         (fw1, "0^ 1"),
         (fw2, "0^ 0"),
