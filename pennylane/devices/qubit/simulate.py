@@ -424,11 +424,8 @@ def simulate_tree_mcm(
     # main implementation #
     #######################
 
-    def init_dict(d):
-        return {} if d is None else d
-
-    mcm_active = init_dict(mcm_active)
-    mcm_samples = init_dict(mcm_samples)
+    mcm_active = mcm_active or {}
+    mcm_samples = mcm_samples or {}
 
     circuit_base, circuit_next, op = circuit_up_to_first_mcm(circuit)
     # we need to make sure the state is the all-wire state
