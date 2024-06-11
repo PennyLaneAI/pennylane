@@ -111,6 +111,22 @@ def snapshots(tape_: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[Resu
     1: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
     'execution_results': 0.0}
 
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", shots=200, wires=2)
+
+        @qml.snapshots
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.Snapshot()
+            qml.CNOT(wires=[0, 1])
+            return qml.counts()
+
+    >>> circuit()
+    {0: array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+    'execution_results': {'00': 101, '11': 99}}
+
     Here one can see how a device that does not natively support snapshots executes two different circuits:
 
     .. code-block:: python3
@@ -121,14 +137,13 @@ def snapshots(tape_: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[Resu
             qml.Hadamard(wires=0),
             qml.Snapshot(qml.counts())
             qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
             return qml.expval(qml.PauliZ(0))
 
         with circuit.device.tracker:
             out = circuit()
 
     >>> circuit.device.tracker.totals
-    {'batches': 1, 'simulations': 3, 'executions': 3}
+    {'batches': 1, 'simulations': 2, 'executions': 2, 'results': 0.0}
 
     >>> out
     {0: {'00': tensor(51, requires_grad=True), '10': tensor(49, requires_grad=True)}, 'execution_results': tensor(0., requires_grad=True)}
