@@ -760,7 +760,7 @@ class Device(abc.ABC):
             circuits = [circuit]
             processing_fn = null_postprocess
 
-        elif is_analytic_or_shadow and all_obs_usable:
+        elif is_analytic_or_shadow and all_obs_usable and not has_overlapping_wires:
             circuits = [circuit]
             processing_fn = null_postprocess
 
