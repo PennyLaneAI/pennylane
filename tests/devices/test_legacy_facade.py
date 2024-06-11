@@ -33,8 +33,8 @@ class DummyDevice(qml.devices.LegacyDevice):
     short_name = "something"
     version = 0.0
 
-    observables = {}
-    operations = {"RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
+    observables = {"PauliX", "PauliY", "PauliZ"}
+    operations = {"Rot", "RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
     pennylane_requires = 0.38
 
     def reset(self):
@@ -158,3 +158,74 @@ def test_preprocessing_program_supports_mid_measure():
     dev = MidMeasureDev()
     program, _ = LegacyDeviceFacade(dev).preprocess()
     assert qml.defer_measurements not in program
+
+
+class TestGradientSupport:
+    """Test integration with various kinds of device derivatives."""
+
+    def test_adjoint_support(self):
+        """Test that the facade can handle devices that support adjoint."""
+
+        # pylint: disable=unnecessary-lambda-assignment
+        class AdjointDev(DummyDevice):
+
+            _capabilities = {"returns_state": True}
+
+            _apply_operation = lambda *args, **kwargs: 0
+            _apply_unitary = lambda *args, **kwargs: 0
+            adjoint_jacobian = lambda *args, **kwargs: "a"
+
+        adj_dev = AdjointDev()
+        dev = LegacyDeviceFacade(adj_dev)
+
+        tape = qml.tape.QuantumScript([], [], shots=None)
+        assert dev._validate_adjoint_method(tape)
+        tape_shots = qml.tape.QuantumScript([], [], shots=50)
+        assert not dev._validate_adjoint_method(tape_shots)
+
+        config = qml.devices.ExecutionConfig(gradient_method="best")
+        assert dev.supports_derivatives(config, tape)
+        assert not dev.supports_derivatives(config, tape_shots)
+        config2 = qml.devices.ExecutionConfig(gradient_method="adjoint")
+        assert dev.supports_derivatvies(config2, tape)
+        assert not dev.supports_derivatives(config2, tape_shots)
+
+        program, processed_config = dev.preprocess(config2)
+
+        tape = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4)], [qml.expval(qml.Z(0))])
+        (new_tape,), _ = program((tape,))
+        expected = qml.tape.QuantumScript(
+            [qml.RZ(1.2, 0), qml.RY(2.3, 0), qml.RZ(3.4, 0)], [qml.expval(qml.Z(0))]
+        )
+        assert qml.equal(new_tape, expected)
+
+        assert processed_config.use_device_gradient is True
+        assert processed_config.gradient_keyword_argument == {
+            "use_device_state": True,
+            "method": "adjoint_jacobian",
+        }
+        assert processed_config.grad_on_execution is True
+
+        out = dev.compute_derivatives(tape, processed_config)
+        assert out == "a"  # the output of adjoint_jacobian
+
+        res, jac = dev.execute_and_compute_derivatives(tape, processed_config)
+        assert qml.math.allclose(res, 0)
+        assert jac == "a"
+
+    def test_device_derivatives(self):
+
+        class DeviceDerivatives(DummyDevice):
+
+            _capabilities = {"provides_jacobian": True}
+
+        ddev = DeviceDerivatives()
+        dev = LegacyDeviceFacade(ddev)
+
+        assert dev.supports_derivatives()
+        assert dev._validate_device_method(qml.tape.QuantumScript())
+
+        config = qml.devices.DefaultExecutionConfig(gradient_method="best")
+        _, processed_config = dev.preprocess(config)
+        assert processed_config.use_device_gradient is True
+        assert processed_config.grad_on_execution is True

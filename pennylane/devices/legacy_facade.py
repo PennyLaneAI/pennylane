@@ -190,6 +190,15 @@ class LegacyDeviceFacade(Device):
             if execution_config.grad_on_execution is None:
                 updated_values["grad_on_execution"] = True
 
+        if execution_config.gradient_method == "device":
+            tape = qml.tape.QuantumScript([], [])
+            if not self._validate_device_method(tape):
+                raise qml.DeviceError("device does not support device derivatives")
+            if execution_config.use_device_gradient is None:
+                updated_values["use_device_gradient"] = True
+            if execution_config.grad_on_execution is None:
+                updated_values["grad_on_execution"] = True
+
         if execution_config.gradient_method == "best":
             tape = qml.tape.QuantumScript([], [])
             if self._validate_backprop_method(tape):
@@ -197,13 +206,11 @@ class LegacyDeviceFacade(Device):
                 if execution_config.use_device_gradient is None:
                     updated_values["use_device_gradient"] = True
             elif self._validate_adjoint_method(tape):
-                updated_values["gradient_method"] = "adjoint"
-                if execution_config.use_device_gradient is None:
-                    updated_values["use_device_gradient"] = True
+                config = replace(execution_config, gradient_method="adjoint")
+                return self._setup_execution_config(config)
             elif self._validate_device_method(tape):
-                updated_values["gradient_method"] = "device"
-                if execution_config.use_device_gradient is None:
-                    updated_values["use_device_gradient"] = True
+                config = replace(execution_config, gradient_method="device")
+                return self._setup_execution_config(config)
         return replace(execution_config, **updated_values)
 
     def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
