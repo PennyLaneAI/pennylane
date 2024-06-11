@@ -522,7 +522,6 @@ class TestUnits:
             ],
         ],
     )
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tape_with_non_pauli_obs(self, non_pauli_obs):
         """Tests that the tape is split correctly when containing non-Pauli observables"""
 
