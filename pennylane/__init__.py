@@ -21,7 +21,8 @@ from sys import version_info
 
 import numpy as _np
 
-from semantic_version import SimpleSpec, Version
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
 
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
@@ -389,13 +390,22 @@ def device(name, *args, **kwargs):
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
-        if hasattr(plugin_device_class, "pennylane_requires") and Version(
-            version()
-        ) not in SimpleSpec(plugin_device_class.pennylane_requires):
-            raise DeviceError(
-                f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
-                f"however PennyLane version {__version__} is installed."
-            )
+        def _safe_specifier_set(version_str):
+            """Safely create a SpecifierSet from a version string."""
+            operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
+            if any(version_str.startswith(op) for op in operators):
+                return SpecifierSet(version_str)
+            else:
+                return SpecifierSet(f"=={version_str}")
+
+        if hasattr(plugin_device_class, "pennylane_requires"):
+            required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
+            current_version = Version(version())
+            if current_version not in required_versions:
+                raise DeviceError(
+                    f"The {name} plugin requires PennyLane versions {required_versions}, "
+                    f"however PennyLane version {__version__} is installed."
+                )
 
         # Construct the device
         dev = plugin_device_class(*args, **options)

@@ -52,6 +52,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Removed `semantic_version` from the list of required packages in PennyLane. 
+  [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
+
 * `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
    [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
@@ -59,7 +62,7 @@
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
 * Added `packaging` in the required list of packages.
-  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769).
+  [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769)
 
 * Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
   [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528).
