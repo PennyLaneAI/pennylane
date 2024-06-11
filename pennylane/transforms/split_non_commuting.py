@@ -277,6 +277,9 @@ def split_non_commuting(
             isinstance(m, ExpectationMP) and isinstance(m.obs, (LinearCombination, Hamiltonian))
             for m in tape.measurements
         )
+        or any(
+            m.obs is not None and not qml.pauli.is_pauli_word(m.obs) for m in single_term_obs_mps
+        )
     ):
         # This is a loose check to see whether wires grouping or qwc grouping should be used,
         # which does not necessarily make perfect sense but is consistent with the old decision

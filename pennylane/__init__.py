@@ -21,6 +21,8 @@ from sys import version_info
 
 import numpy as _np
 
+from semantic_version import SimpleSpec, Version
+
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
@@ -394,7 +396,7 @@ def device(name, *args, **kwargs):
 
         if hasattr(plugin_device_class, "pennylane_requires") and Version(
             version()
-        ) not in SpecifierSet(f"=={plugin_device_class.pennylane_requires}"):
+        ) not in SimpleSpec(plugin_device_class.pennylane_requires):
             raise DeviceError(
                 f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
                 f"however PennyLane version {__version__} is installed."
