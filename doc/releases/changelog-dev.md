@@ -50,6 +50,8 @@
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
+* A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
+  [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
 
 <h3>Improvements 🛠</h3>
 
@@ -382,6 +384,7 @@ This release contains contributions from (in alphabetical order):
 Yushao Chen,
 Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
+Utkarsh Azad,
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,
