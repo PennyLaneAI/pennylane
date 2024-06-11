@@ -245,16 +245,6 @@ class DensityMatrixMP(StateMP):
 
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        """
-        Processes a density matrix to extract the state for the specified subsystem.
-
-        Args:
-            density_matrix (array[complex]): The full density matrix.
-            wire_order (Wires): The order of the wires in the device.
-
-        Returns:
-            array[complex]: The reduced density matrix of the subsystem defined by the wires of this measurement process.
-        """
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
