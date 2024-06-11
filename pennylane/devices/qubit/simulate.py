@@ -414,7 +414,7 @@ def simulate_tree_mcm(
             aux_circuit = qml.tape.QuantumScript(
                 circuit.operations,
                 circuit.measurements,
-                shots=qml.measurements.Shots(s),
+                shots=s,
                 trainable_params=circuit.trainable_params,
             )
             results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
