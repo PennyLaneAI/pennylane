@@ -357,7 +357,7 @@ def _equal_operators(
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
             if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
-                return f"Either op1 or op2 have a parameter that does not require a gradient. Got {op1.data} and {op2.data}"
+                return f"op1 and op2 have different trainability. Got {op1.data} and {op2.data}"
 
     if check_interface:
         for params_1, params_2 in zip(op1.data, op2.data):
@@ -433,7 +433,7 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
 
     if check_trainability:
         if qml.math.requires_grad(op1.z) != qml.math.requires_grad(op2.z):
-            return f"Either op1 or op2 have an exponent that does not require a gradient. {op1.z} and {op2.z}"
+            return f"op1 and op2 have different trainability. Got {op1.z} and {op2.z}."
 
     if op1.z != op2.z:
         return f"op1 and op2 have a different exponents. Got {op1.z} and {op2.z}."
@@ -476,7 +476,7 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data):
             if qml.math.requires_grad(params1) != qml.math.requires_grad(params2):
-                return f"Either op1 or op2 have an exponent that does not require a gradient. Got {params1} and {params2}."
+                return f"op1 and op2 have different trainability. Got {params1} and {params2}."
 
     if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
         return f"op1 and op2 have different coefficients. Got {op1.coeff} and {op2.coeff}."
@@ -550,7 +550,7 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
         return False
 
     # check parameters passed to operator match
-    if not _equal_operators(op1, op2, **kwargs):
+    if not _equal_operators(op1, op2, **kwargs) is not True:
         return False
 
     # check H.coeffs match
