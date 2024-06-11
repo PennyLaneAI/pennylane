@@ -2055,5 +2055,5 @@ def test_prune_dynamic_transform_with_mcm():
 
     _prune_dynamic_transform(program1, program2)
     assert len(program1) == 2
-    assert qml.transforms.mid_circuit_measurements in program1
+    assert qml.devices.preprocess.mid_circuit_measurements in program1
     assert len(program2) == 1
