@@ -19,7 +19,9 @@ from pennylane import fermi
 
 
 def from_openfermion(of_op, tol=1e-16):
-    r"""Convert openfermion ``FermionOperator`` objects to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` objects.
+    r"""Convert OpenFermion
+    `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__
+    objects to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` objects.
 
     Args:
         of_op (FermionOperator): OpenFermion fermionic operator
