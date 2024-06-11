@@ -367,14 +367,14 @@ def _equal_operators(
 
     if op1.hyperparameters != op2.hyperparameters:
         return (
-            "The hyperparameter is not equal for op1 and op2.\n"
+            "The hyperparameters are not equal for op1 and op2.\n"
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
-        return f"op1 and op2 have different data.\n" f"Got {op1.data} and {op2.data}"
+        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data):
