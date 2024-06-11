@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit preprocessing."""
-from functools import reduce
-from typing import Iterable, Sequence
+from typing import Sequence
 
+import mcm_utils
 import numpy as np
 import pytest
 
@@ -29,112 +29,6 @@ def get_device(**kwargs):
     kwargs.setdefault("shots", None)
     kwargs.setdefault("seed", 8237945)
     return qml.device("default.qubit", **kwargs)
-
-
-def validate_counts(shots, results1, results2, batch_size=None):
-    """Compares two counts.
-
-    If the results are ``Sequence``s, loop over entries.
-
-    Fails if a key of ``results1`` is not found in ``results2``.
-    Passes if counts are too low, chosen as ``100``.
-    Otherwise, fails if counts differ by more than ``20`` plus 20 percent.
-    """
-    if isinstance(shots, Sequence):
-        assert isinstance(results1, tuple)
-        assert isinstance(results2, tuple)
-        assert len(results1) == len(results2) == len(shots)
-        for s, r1, r2 in zip(shots, results1, results2):
-            validate_counts(s, r1, r2, batch_size=batch_size)
-        return
-
-    if batch_size is not None:
-        assert isinstance(results1, Iterable)
-        assert isinstance(results2, Iterable)
-        assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2):
-            validate_counts(shots, r1, r2, batch_size=None)
-        return
-
-    for key1, val1 in results1.items():
-        val2 = results2[key1]
-        if abs(val1 + val2) > 100:
-            assert np.allclose(val1, val2, atol=20, rtol=0.2)
-
-
-def validate_samples(shots, results1, results2, batch_size=None):
-    """Compares two samples.
-
-    If the results are ``Sequence``s, loop over entries.
-
-    Fails if the results do not have the same shape, within ``20`` entries plus 20 percent.
-    This is to handle cases when post-selection yields variable shapes.
-    Otherwise, fails if the sums of samples differ by more than ``20`` plus 20 percent.
-    """
-    if isinstance(shots, Sequence):
-        assert isinstance(results1, tuple)
-        assert isinstance(results2, tuple)
-        assert len(results1) == len(results2) == len(shots)
-        for s, r1, r2 in zip(shots, results1, results2):
-            validate_samples(s, r1, r2, batch_size=batch_size)
-        return
-
-    if batch_size is not None:
-        assert isinstance(results1, Iterable)
-        assert isinstance(results2, Iterable)
-        assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2):
-            validate_samples(shots, r1, r2, batch_size=None)
-        return
-
-    sh1, sh2 = results1.shape[0], results2.shape[0]
-    assert np.allclose(sh1, sh2, atol=20, rtol=0.2)
-    assert results1.ndim == results2.ndim
-    if results2.ndim > 1:
-        assert results1.shape[1] == results2.shape[1]
-    np.allclose(qml.math.sum(results1), qml.math.sum(results2), atol=20, rtol=0.2)
-
-
-def validate_expval(shots, results1, results2, batch_size=None):
-    """Compares two expval, probs or var.
-
-    If the results are ``Sequence``s, validate the average of items.
-
-    If ``shots is None``, validate using ``np.allclose``'s default parameters.
-    Otherwise, fails if the results do not match within ``0.01`` plus 20 percent.
-    """
-    if isinstance(shots, Sequence):
-        assert isinstance(results1, tuple)
-        assert isinstance(results2, tuple)
-        assert len(results1) == len(results2) == len(shots)
-        results1 = reduce(lambda x, y: x + y, results1) / len(results1)
-        results2 = reduce(lambda x, y: x + y, results2) / len(results2)
-        validate_expval(sum(shots), results1, results2, batch_size=batch_size)
-        return
-
-    if shots is None:
-        assert np.allclose(results1, results2)
-        return
-
-    if batch_size is not None:
-        assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2):
-            validate_expval(shots, r1, r2, batch_size=None)
-
-    assert np.allclose(results1, results2, atol=0.01, rtol=0.2)
-
-
-def validate_measurements(func, shots, results1, results2, batch_size=None):
-    """Calls the correct validation function based on measurement type."""
-    if func is qml.counts:
-        validate_counts(shots, results1, results2, batch_size=batch_size)
-        return
-
-    if func is qml.sample:
-        validate_samples(shots, results1, results2, batch_size=batch_size)
-        return
-
-    validate_expval(shots, results1, results2, batch_size=batch_size)
 
 
 def test_apply_mid_measure():
@@ -263,7 +157,7 @@ def test_simple_dynamic_circuit(shots, measure_f, postselect, meas_obj):
     func2 = qml.defer_measurements(func)
     results2 = func2(*params)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 @pytest.mark.parametrize("postselect", [None, 0, 1])
@@ -297,7 +191,7 @@ def test_multiple_measurements_and_reset(postselect, reset):
     for measure_f, r1, r2 in zip(
         [qml.counts, qml.expval, qml.probs, qml.sample, qml.var], results1, results2
     ):
-        validate_measurements(measure_f, shots, r1, r2)
+        mcm_utils.validate_measurements(measure_f, shots, r1, r2)
 
 
 @pytest.mark.parametrize(
@@ -355,7 +249,7 @@ def test_composite_mcms(mcm_f, measure_f):
     results1 = func1(param)
     results2 = func2(param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results2)
 
 
 @pytest.mark.parametrize(
@@ -422,7 +316,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results2)
 
     grad1 = qml.grad(func)(*param)
     grad2 = qml.grad(func2)(*param)
@@ -453,7 +347,7 @@ def test_broadcasting_qnode(shots, postselect, measure_fn):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
+    mcm_utils.validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
 
     if measure_fn is qml.sample and postselect is None:
         for i in range(2):  # batch_size
@@ -509,7 +403,7 @@ def test_sample_with_prng_key(shots, postselect):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    validate_measurements(qml.sample, shots, results1, results2, batch_size=None)
+    mcm_utils.validate_measurements(qml.sample, shots, results1, results2, batch_size=None)
 
     evals = obs.eigvals()
     for eig in evals:
@@ -638,4 +532,4 @@ def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
     results1 = func1(param)
     results2 = func2(param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results2)
