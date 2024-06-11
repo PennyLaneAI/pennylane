@@ -464,8 +464,8 @@ class Exp(ScalarSymbolicOp, Operation):
     def simplify(self):
         new_base = self.base.simplify()
         if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
-            return Exp(new_base.base, self.coeff * new_base.scalar)
-        return Exp(new_base, self.coeff)
+            return Exp(new_base.base, self.coeff * new_base.scalar, self.num_steps)
+        return Exp(new_base, self.coeff, self.num_steps)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
