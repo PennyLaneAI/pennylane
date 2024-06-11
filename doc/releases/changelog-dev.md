@@ -44,7 +44,7 @@
   * `mcm_method` will indicate which strategy to use for running circuits with mid-circuit measurements.
     Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
     to execute once for each shot. If using `qml.jit` with the Catalyst compiler, `mcm_method="single-branch-statistics"`
-    is also available. Using this method, only a single branch of the execution tree will be explored.
+    is also available. Using this method, a single branch of the execution tree will be randomly explored.
 
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
