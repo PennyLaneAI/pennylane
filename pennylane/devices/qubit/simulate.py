@@ -295,6 +295,11 @@ def simulate(
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
             keep the same number of shots. Default is ``None``.
+        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements.
+            ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
+            the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
+            otherwise. For usage details, please refer to the
+            :doc:`main measurements page </introduction/measurements>`.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -371,7 +376,13 @@ def simulate_tree_mcm(
     mcm_samples=None,
     **execution_kwargs,
 ) -> Result:
-    """Simulate a single quantum script with native mid-circuit measurements.
+    """Simulate a single quantum script with native mid-circuit measurements using the tree-traversal algorithm.
+
+    The tree-traversal algorithm recursively explores all combinations of mid-circuit measurement
+    outcomes using a depth-first approach. The depth-first approach requires ``n_mcm`` copies
+    of the state vector (``n_mcm + 1`` state vectors in total) and records ``n_mcm`` vectors
+    of MCM samples. It is generally more efficient than ``one-shot`` because it takes all samples
+    at a leaf at once and stops exploring more branches when a single shot is allocated to a sub-tree.
 
     Args:
         circuit (QuantumTape): The single circuit to simulate

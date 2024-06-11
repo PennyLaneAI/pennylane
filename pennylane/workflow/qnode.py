@@ -227,7 +227,9 @@ class QNode:
             usage details, please refer to the :doc:`main measurements page </introduction/measurements>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
-            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately. If not provided,
+            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
+            ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
+            as the name suggests. If not provided,
             the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`main measurements page </introduction/measurements>`.
 
