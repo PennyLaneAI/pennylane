@@ -21,12 +21,12 @@ import functools
 
 # pylint: disable=unnecessary-lambda
 class BooleanFn:
-    r"""Wrapper for simple callables with boolean output that can be
+    r"""Wrapper for simple callables with Boolean output that can be
     manipulated and combined with bit-wise operators.
 
     Args:
         fn (callable): Function to be wrapped. It can accept any number
-            of arguments, and must return a boolean.
+            of arguments, and must return a Boolean.
 
     **Example**
 
