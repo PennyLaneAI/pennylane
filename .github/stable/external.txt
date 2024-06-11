@@ -69,7 +69,7 @@ jaxlib==0.4.23
 jedi==0.19.1
 Jinja2==3.1.4
 json5==0.9.25
-jsonpointer==2.4
+jsonpointer==3.0.0
 jsonschema==4.22.0
 jsonschema-specifications==2023.12.1
 jupyter-events==0.10.0
