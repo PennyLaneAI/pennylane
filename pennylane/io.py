@@ -440,7 +440,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
     If existing QASM code already contains measurements, ``from_qasm``
     will return those measurements, provided that they are not overriden as shown above.
 
-    Mid-circuit measurements inside the QASM code can also be interpreted. 
+    Mid-circuit measurements inside the QASM code can also be interpreted.
 
     .. code-block:: python
 
@@ -452,8 +452,8 @@ def from_qasm(quantum_circuit: str, measurements=None):
                          'measure q[0] -> c[0];' \\
                          'rz(0.24) q[0];' \\
                          'cx q[0], q[1];' \\
-                         'measure q -> c;' 
-        
+                         'measure q -> c;'
+     
         dev = qml.device("default.qubit")
         loaded_circuit = qml.from_qasm(hadamard_qasm)
 
