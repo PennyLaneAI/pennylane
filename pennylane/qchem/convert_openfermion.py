@@ -91,9 +91,10 @@ def to_openfermion(
     r"""Convert a PennyLane operator to a OpenFermion ``QubitOperator`` or ``FermionOperator``.
 
     Args:
-        pl_op (pennylane.ops.Sum, pennylane.ops.LinearCombination, pennylane.fermi.FermiWord,
-            pennylane.fermi.FermiSentence): linear combination of operators
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+        pl_op (pennylane.ops.Sum, pennylane.ops.LinearCombination, pennylane.fermi.FermiWord, pennylane.fermi.FermiSentence):
+            linear combination of operators
+        wires (Wires, list, tuple, dict):
+            Custom wire mapping used to convert the qubit operator
             to an observable terms measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
