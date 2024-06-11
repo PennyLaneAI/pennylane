@@ -439,7 +439,7 @@ class TorchLayer(Module):
 
         if isinstance(res, tuple) and len(res) > 1:
             if all(isinstance(r, torch.Tensor) for r in res):
-                res = tuple([t] for t in res)
+                return tuple(_combine_dimensions([r]) for r in res)
             return tuple(_combine_dimensions(r) for r in res)
 
         return _combine_dimensions(res)
