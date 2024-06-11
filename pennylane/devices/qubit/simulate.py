@@ -601,6 +601,14 @@ def circuit_up_to_first_mcm(circuit):
     This is true for `counts`, `expval`, `probs` and `sample` but not `var` measurements.
     There is no way to recombine "partial variances" from two branches, so `var` measurements are replaced
     by `sample` measurements from which the variance is calculated (once samples from all branches are available).
+
+    Args:
+        circuit (QuantumTape): The circuit to simulate
+
+    Returns:
+        QuantumTape: Circuit up to the first MCM and measuring the MCM samples if an MCM is found and ``circuit`` otherwise
+        (QuantumTape, None): Rest of the circuit
+        (MidMeasureMP, None): The first MCM encountered in the circuit
     """
     if not has_mid_circuit_measurements(circuit):
         return circuit, None, None
@@ -721,7 +729,7 @@ def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argum
 
 @combine_measurements_core.register
 def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-argument
-    new_sample = tuple(m[1] for m in measures.values())
+    new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values())
     return np.squeeze(np.concatenate(new_sample))
 
 
