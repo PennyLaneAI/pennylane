@@ -546,7 +546,7 @@ def _to_string_dispatch(fermi_op, of=False):
 
 @_to_string_dispatch.register
 def _(fermi_op: FermiWord, of=False):
-    pl_to_of_map = {"+": "^", "-": " "}
+    pl_to_of_map = {"+": "^", "-": ""}
 
     if len(fermi_op) == 0:
         return "I"
