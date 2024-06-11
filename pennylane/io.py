@@ -453,7 +453,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
                          'rz(0.24) q[0];' \\
                          'cx q[0], q[1];' \\
                          'measure q -> c;'
-     
+
         dev = qml.device("default.qubit")
         loaded_circuit = qml.from_qasm(hadamard_qasm)
 
