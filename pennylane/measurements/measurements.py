@@ -696,6 +696,7 @@ class StateMeasurement(MeasurementProcess):
                 the mapping of matrix dimensions to physical qubits, allowing the function to correctly 
                 trace out the subsystems not involved in the measurement or operation.
         """
+        raise NotImplementedError
 
 
 
