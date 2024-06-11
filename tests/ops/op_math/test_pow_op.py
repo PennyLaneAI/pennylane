@@ -279,6 +279,7 @@ class TestInitialization:
         assert op.num_wires == 2
 
 
+# pylint: disable=too-many-public-methods
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestProperties:
     """Test Pow properties."""
