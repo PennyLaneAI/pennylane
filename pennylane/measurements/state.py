@@ -192,39 +192,14 @@ class StateMP(StateMeasurement):
         return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
     
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
-        # pylint:disable=redefined-outer-name
-        is_tf_interface = qml.math.get_deep_interface(density_matrix) == "tensorflow"
-        wires = self.wires
-        if not wires or wire_order == wires:
-            return qml.math.cast(density_matrix, "complex128") if is_tf_interface else density_matrix + 0.0j
-
-        if set(wires) != set(wire_order):
-            raise WireError(
-                f"Unexpected unique wires {Wires.unique_wires([wires, wire_order])} found. "
-                f"Expected wire order {wire_order} to be a rearrangement of {wires}"
-            )
-
-        # Reshape and reorder the density matrix according to wire_order
-        num_wires = len(wire_order)
-        shape = (2,) * (2 * num_wires)  # Each wire contributes two dimensions (row and column of a matrix)
-        desired_axes = []
-        for wire in wires:
-            idx = wire_order.index(wire)
-            desired_axes.append(idx)  # Rows
-            desired_axes.append(idx + num_wires)  # Columns
-
-        if qml.math.ndim(density_matrix) == 3:  # batched state
-            batch_size = qml.math.shape(density_matrix)[0]
-            shape = (batch_size,) + shape
-            flat_shape = (batch_size, 2 ** len(wires), 2 ** len(wires))
-            desired_axes = [0] + [i + 1 for i in desired_axes]
-        else:
-            flat_shape = (2 ** len(wires), 2 ** len(wires))
-
-        density_matrix = qml.math.reshape(density_matrix, shape)
-        density_matrix = qml.math.transpose(density_matrix, desired_axes)
-        density_matrix = qml.math.reshape(density_matrix, flat_shape)
-        return qml.math.cast(density_matrix, "complex128") if is_tf_interface else density_matrix + 0.0j
+        # Goal: get the pure state from a density matrix
+        
+        # Zero step: check wires
+        
+        # First step: check if the density matrix is already a pure state
+        
+        # Second step: with a given pure state denisty matrix, get the pure state by decomposition 
+        
 
 
 
