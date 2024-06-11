@@ -8,7 +8,7 @@ Overview
 --------
 
 Insertion-based noise models in PennyLane are defined via a mapping from conditionals, specified
-as :class:`~.BooleanFn` objects, to :ref:`quantum functions <intro_vcirc_qfunc>`-like callables
+as :class:`~.BooleanFn` objects, to :ref:`quantum function <intro_vcirc_qfunc>`-like callables
 that contain the noisy operations to be applied, but without any return statements. Additional
 noise-related metadata can also be supplied to construct a noise model.
 
