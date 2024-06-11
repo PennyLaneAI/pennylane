@@ -681,7 +681,7 @@ class StateMeasurement(MeasurementProcess):
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
         
-    @abstractmethod
+
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
         """
         Process the given density matrix.
