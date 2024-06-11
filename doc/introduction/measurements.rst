@@ -539,8 +539,8 @@ PennyLane. For ease of use, we provide the following configuration options to us
   to use the :ref:`deferred measurements principle <deferred_measurements>` or ``mcm_method="one-shot"`` to use
   the :ref:`one-shot transform <one_shot_transform>`. When executing with finite shots, ``mcm_method="one-shot"``
   will be the default, and ``mcm_method="deferred"`` otherwise. Additionally, if using :func:`~pennylane.qjit`,
-  ``mcm_method="single-branch-statistics"`` can also be used. Using this method, a single branch of the execution
-  tree will be randomly explored.
+  ``mcm_method="single-branch-statistics"`` can also be used and will be the default. Using this method, a single
+  branch of the execution tree will be randomly explored.
 
   .. warning::
 
