@@ -435,7 +435,6 @@ def from_qasm(quantum_circuit: str, measurements=None):
         The ``measurements`` keyword allows one to add a list of PennyLane measurements
         that will **override** any terminal measurements present in the QASM code,
         so that they are not performed before the operations specified in ``measurements``.
-        ``measurements=None``.
 
     If existing QASM code already contains measurements, ``from_qasm``
     will return those measurements, provided that they are not overriden as shown above.
