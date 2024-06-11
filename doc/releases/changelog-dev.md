@@ -35,7 +35,7 @@
   These keyword arguments can be used to configure how the device should behave when running circuits with
   mid-circuit measurements.
   [(#5679)](https://github.com/PennyLaneAI/pennylane/pull/5679)
-  [(#)]()
+  [(#5833)](https://github.com/PennyLaneAI/pennylane/pull/5833)
 
   * `postselect_mode="hw-like"` will indicate to devices to discard invalid shots when postselecting
     mid-circuit measurements. Use `postselect_mode="fill-shots"` to unconditionally sample the postselected
