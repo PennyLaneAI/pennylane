@@ -49,6 +49,8 @@
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
+* A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
+  [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
 
 <h3>Improvements 🛠</h3>
 
@@ -371,12 +373,16 @@
 * Fixed a bug where `split_non_commuting` raises an error when the circuit contains measurements of observables that are not pauli words.
   [(#5827)](https://github.com/PennyLaneAI/pennylane/pull/5827)
 
+* Simplify method for `Exp` now returns an operator with the correct number of Trotter steps, i.e. equal to the one from the pre-simplified operator.
+  [(#5831)](https://github.com/PennyLaneAI/pennylane/pull/5831)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
+Utkarsh Azad,
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,

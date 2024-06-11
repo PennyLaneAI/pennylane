@@ -140,6 +140,7 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
+import pennylane.noise
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
