@@ -9,20 +9,20 @@ Overview
 
 Insertion-based noise models in PennyLane are defined via a mapping from conditionals, specified
 as :class:`~.BooleanFn` objects, to :ref:`quantum functions <intro_vcirc_qfunc>`-like callables
-that contain the noisy operations to be applied but without any return statements. Additional
-noise-related metadata can also be supplied to construct the noise model.
+that contain the noisy operations to be applied, but without any return statements. Additional
+noise-related metadata can also be supplied to construct a noise model.
 
 ::
 
     NoiseModel: ({Conditional --> Callables},  metadata)
 
-Boolean functions
-^^^^^^^^^^^^^^^^^
-
 Each ``Conditional`` evaluates the gate operations in the quantum circuit based on some
 condition of its attributes (e.g., type, parameters, wires, etc.) and use the corresponding
 ``Callable`` to apply the noise operations, using the user-provided metadata (e.g., hardware
 topologies or relaxation times), whenever the condition results true.
+
+Boolean functions
+^^^^^^^^^^^^^^^^^
 
 Each :class:`~.BooleanFn` in the noise model is evaluated on the operations of a given
 quantum circuit. One can construct standard Boolean functions using the following helpers:
@@ -78,16 +78,16 @@ Noisy quantum functions
 If a Boolean function evaluates to ``True`` on a given operation in the quantum circuit,
 the corresponding quantum function is evaluated that inserts the noise directly after
 the operation. The quantum function should have signature ``fn(op, **metadata)``,
-allowing for dependency on both the preceding operation and metadata specified in the
-noise model. For example, the following noise channel adds an over-rotation to the
-``RX`` gate:
+allowing for dependency on both the preceding operation and metadata specified in
+the noise model. For example, the following noise model adds an over-rotation
+to the ``RX`` gate:
 
 .. code-block:: python
 
     def noisy_rx(op, **metadata):
         qml.RX(op.parameters[0] * 0.05, op.wires)
 
-    qml.NoiseChannel({rx_condition: noisy_rx})
+    noise_model = qml.NoiseModel({rx_condition: noisy_rx})
 
 A common use case is to have a single-operation :ref:`noise channel <intro_ref_ops_channels>`
 whose wires are the same as the preceding operation. This can be constructed using:
@@ -101,10 +101,13 @@ whose wires are the same as the preceding operation. This can be constructed usi
 
 For example, a constant-valued over-rotation can be created using:
 
->>> rx_constant = qml.noise.partial_wires(qml.RX(0.1))
+>>> rx_constant = qml.noise.partial_wires(qml.RX(0.1, wires=[0]))
 >>> rx_constant(2)
 RX(0.1, 2)
 >>> qml.NoiseModel({rx_condition: rx_constant})
+NoiseModel({
+    BooleanFn(rx_condition): RX(phi=0.1)
+})
 
 Example noise model
 ^^^^^^^^^^^^^^^^^^^
@@ -177,5 +180,8 @@ Bitwise operations like `And` and `Or` are represented with the following classe
 Class Inheritence Diagram
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. inheritance-diagram:: pennylane.noise.conditionals pennylane.boolean_fn
+.. inheritance-diagram:: pennylane.noise.conditionals
+    :parts: 1
+
+.. inheritance-diagram:: pennylane.boolean_fn
     :parts: 1
