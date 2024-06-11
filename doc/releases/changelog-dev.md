@@ -47,7 +47,7 @@
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
-* New feature is added to convert openfermion `FermionOperator` object to PennyLane `FermiWord` and
+* New feature is added to convert openfermion `FermionOperator` object to PennyLane `FermiWord` or
 `FermiSentence` objects.
 [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
 
