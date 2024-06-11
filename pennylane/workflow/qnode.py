@@ -527,7 +527,7 @@ class QNode:
         self.max_expansion = max_expansion
         cache = (max_diff > 1) if cache == "auto" else cache
 
-        if mcm_method not in ("deferred", "one-shot", None):
+        if mcm_method not in ("deferred", "one-shot", "single-branch-statistics", None):
             raise ValueError(f"Invalid mid-circuit measurements method '{mcm_method}'.")
         if postselect_mode not in ("hw-like", "fill-shots", None):
             raise ValueError(f"Invalid postselection mode '{postselect_mode}'.")
