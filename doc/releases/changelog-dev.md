@@ -4,6 +4,58 @@
 
 <h3>New features since last release</h3>
 
+* Added a quantum debugger (`PLDB`) which interfaces via `qml.breakpoint()` and provides tools for 
+  debugging quantum circuits. Users can step through the quantum circuit operations, dynamically
+  queue operations and make measurements using (`qml.debugging.state()`, `qml.debugging.probs()`, 
+  `qml.debugging.expval()`, and `qml.debugging.tape()`). Consider the following python script 
+  containing the quantum circuit with breakpoints.
+  [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+  [(#5749)](https://github.com/PennyLaneAI/pennylane/pull/5749)
+  [(#5789)](https://github.com/PennyLaneAI/pennylane/pull/5789)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev) 
+  def circuit(x):
+      qml.breakpoint()
+      qml.RX(x, wires=0)
+      qml.Hadamard(wires=1)
+      qml.breakpoint()
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.Z(0))
+  
+  circuit(1.23)
+  ```
+
+  Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+
+  ```pycon
+  > /Users/your/path/to/script.py(8)circuit()
+  -> qml.RX(x, wires=0)
+  [pldb]: x
+  1.23
+  [pldb]: list
+    3
+    4  	@qml.qnode(dev)
+    5  	def circuit(x):
+    6  	    qml.breakpoint()
+    7
+    8  ->	    qml.RX(x, wires=0)
+    9  	    qml.Hadamard(wires=1)
+   10
+   11  	    qml.breakpoint()
+   12
+   13  	    qml.CNOT(wires=[0, 1])
+  [pldb]: next
+  > /Users/your/path/to/script.py(9)circuit()
+  -> qml.Hadamard(wires=1)
+  [pldb]: continue
+  > /Users/your/path/to/script.py(13)circuit()
+  -> qml.CNOT(wires=[0, 1])
+  [pldb]: quit
+  ```
+
 * QROM template is added. This template allows you to enter classic data in the form of bitstrings.
   [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
 
