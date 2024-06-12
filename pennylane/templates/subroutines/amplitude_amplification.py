@@ -102,6 +102,8 @@ class AmplitudeAmplification(Operation):
         [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
     """
 
+    grad_method = None
+
     def _flatten(self):
         data = (self.hyperparameters["U"], self.hyperparameters["O"])
         metadata = tuple(item for item in self.hyperparameters.items() if item[0] not in ["O", "U"])
@@ -141,11 +143,11 @@ class AmplitudeAmplification(Operation):
         self.hyperparameters["p_min"] = p_min
         self.hyperparameters["reflection_wires"] = qml.wires.Wires(reflection_wires)
 
-        super().__init__(wires=wires)
+        super().__init__(*U.data, *O.data, wires=wires)
 
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(**kwargs):
+    def compute_decomposition(*_, **kwargs):
         U = kwargs["U"]
         O = kwargs["O"]
         iters = kwargs["iters"]

@@ -200,10 +200,14 @@ def test_invalid_kwarg():
 def test_invalid_contract():
     """Test an invalid combination of method and contract."""
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Unsupported gate contraction option: 'auto-split-gate' for 'mps' method."
+    ):
         qml.device("default.tensor", method="mps", contract="auto-split-gate")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Unsupported gate contraction option: 'auto-mps' for 'tn' method."
+    ):
         qml.device("default.tensor", method="tn", contract="auto-mps")
 
 
@@ -220,16 +224,16 @@ def test_invalid_method():
         qml.device("default.tensor", method=method)
 
 
-@pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
-def test_data_type(dtype):
+@pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+def test_data_type(c_dtype):
     """Test the data type."""
-    assert qml.device("default.tensor", dtype=dtype).dtype == dtype
+    assert qml.device("default.tensor", c_dtype=c_dtype).c_dtype == c_dtype
 
 
 def test_ivalid_data_type():
     """Test that data type can only be np.complex64 or np.complex128."""
     with pytest.raises(TypeError):
-        qml.device("default.tensor", dtype=float)
+        qml.device("default.tensor", c_dtype=float)
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
@@ -377,10 +381,10 @@ class TestSupportsDerivatives:
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
+@pytest.mark.jax
 class TestJaxSupport:
     """Test the JAX support for the DefaultTensor device."""
 
-    @pytest.mark.jax
     def test_jax(self, method):
         """Test the device with JAX."""
 
@@ -399,7 +403,6 @@ class TestJaxSupport:
 
         assert np.allclose(qnode(weights), ref_qnode(weights))
 
-    @pytest.mark.jax
     def test_jax_jit(self, method):
         """Test the device with JAX's JIT compiler."""
 
