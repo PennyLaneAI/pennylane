@@ -746,12 +746,14 @@ class Device(abc.ABC):
             isinstance(m.obs, (Hamiltonian, Sum, Prod, SProd)) for m in circuit.measurements
         )
         has_overlapping_wires = len(circuit.obs_sharing_wires) > 0
+        single_hamiltonian = len(circuit.measurements) == 1 and isinstance(
+            circuit.measurements[0].obs, (Hamiltonian, Sum)
+        )
+        single_hamiltonian_with_grouping_known = (
+            single_hamiltonian and circuit.measurements[0].obs.grouping_indices is not None
+        )
 
-        if (
-            not getattr(self, "use_grouping", True)
-            and len(circuit.measurements) == 1
-            and isinstance(circuit.measurements[0].obs, (Hamiltonian, LinearCombination))
-        ):
+        if not getattr(self, "use_grouping", True) and single_hamiltonian and all_obs_usable:
             # Special logic for the braket plugin
             circuits = [circuit]
             processing_fn = null_postprocess
@@ -763,6 +765,18 @@ class Device(abc.ABC):
         elif is_analytic_or_shadow and all_obs_usable and not has_overlapping_wires:
             circuits = [circuit]
             processing_fn = null_postprocess
+
+        elif single_hamiltonian_with_grouping_known:
+
+            # Use qwc grouping if the circuit contains a single measurement of a
+            # Hamiltonian/Sum with grouping indices already calculated.
+            circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "qwc")
+
+        elif any(isinstance(m.obs, (Hamiltonian, LinearCombination)) for m in circuit.measurements):
+
+            # Otherwise, use wire-based grouping if the circuit contains a Hamiltonian
+            # that is potentially very large.
+            circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "wires")
 
         else:
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit)
