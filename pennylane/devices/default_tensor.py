@@ -750,7 +750,7 @@ class DefaultTensor(Device):
         return expval_core(obs, self)
 
     def state(self, measurementprocess: MeasurementProcess):  # pylint: disable=unused-argument
-        """Returns the MPS state in vector form."""
+        """Returns the state vector."""
         return self._quimb_circuit.psi.to_dense().ravel()
 
     def var(self, measurementprocess: MeasurementProcess) -> float:
