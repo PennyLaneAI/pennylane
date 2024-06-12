@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions for converting an openfermion fermionic operator to Pennylane FermiWord or FermiSentence operators
+This module contains the functions for converting an openfermion fermionic operator to Pennylane
+FermiWord or FermiSentence operators
 """
 # pylint: disable= import-outside-toplevel,no-member,unused-import
-from pennylane import fermi
-
+from pennylane.fermi import FermiWord, FermiSentence
 
 def from_openfermion(of_op, tol=1e-16):
     r"""Convert OpenFermion
@@ -47,18 +47,26 @@ def from_openfermion(of_op, tol=1e-16):
             "It can be installed with: pip install openfermion"
         ) from Error
 
-    action = {"0": "-", "1": "+"}
+    terms = of_op.terms
+    typemap = {0: '-', 1: '+'}
 
-    if len(of_op.terms) == 1 and list(of_op.terms.values())[0] == 1.0:
-        fermi_str = " ".join(
-            [str(operator[0]) + action[str(operator[1])] for operator in list(of_op.terms)[0]]
-        )
-        return fermi.from_string(fermi_str)
+    fermiwords = []
+    fermivalue = []
 
-    fermi_pl = 0 * fermi.FermiWord({})
-    for term in of_op.terms:
-        fermi_str = " ".join([str(operator[0]) + action[str(operator[1])] for operator in term])
-        fermi_pl += of_op.terms[term] * fermi.from_string(fermi_str)
+    for ops, val in zip(terms.keys(), terms.values()):
 
-    fermi_pl.simplify(tol=tol)
-    return fermi_pl
+        fermiops, fermivals = [], []
+        for i, op in enumerate(ops):
+            fermiops.append((i, op[0]))
+            fermivals.append(typemap[op[1]])
+
+        fermiwords.append(FermiWord(dict(zip(fermiops, fermivals))))
+        fermivalue.append(val)
+
+    if len(fermiwords) == 1 and fermivalue[0] == 1.0:
+        return fermiwords[0]
+
+    pl_op = FermiSentence(dict(zip(fermiwords, fermivalue)))
+    pl_op.simplify(tol=tol)
+
+    return pl_op
