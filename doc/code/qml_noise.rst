@@ -8,11 +8,11 @@ Overview
 --------
 
 Insertion-based noise models in PennyLane are defined via a mapping from conditionals, specified
-as :class:`~.BooleanFn` objects, to :ref:`quantum functions <intro_vcirc_qfunc>`-like callables
+as :class:`~.BooleanFn` objects, to :ref:`quantum function <intro_vcirc_qfunc>`-like callables
 that contain the noisy operations to be applied, but without any return statements. Additional
 noise-related metadata can also be supplied to construct a noise model using:
 
-.. currentmodule:: pennylane.noise
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
@@ -23,15 +23,14 @@ Each conditional in the ``model_map`` evaluates the gate operations in the quant
 some condition of its attributes (e.g., type, parameters, wires, etc.) and use the corresponding
 callable to apply the noise operations, using the user-provided metadata (e.g., hardware topologies
 or relaxation times), whenever the condition results true. A noise model once built can be attached
-to a circuit or device via following transform:
-
-.. currentmodule:: pennylane.transforms
+to a circuit or device via the following transform:
 
 .. autosummary::
     :toctree: api
 
     ~add_noise
 
+.. _intro_boolean_fn:
 
 Boolean functions
 ^^^^^^^^^^^^^^^^^

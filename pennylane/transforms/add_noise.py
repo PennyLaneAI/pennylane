@@ -22,15 +22,21 @@ from pennylane.transforms.core import TransformContainer, transform
 def add_noise(tape, noise_model, level=None):
     """Insert operations according to a provided noise model.
 
-    Circuits passed through this transform will be updated to have the operation,
-    specified by the ``noise_model`` argument after appyling the transforms specified
-    by the ``level`` keyword argument.
+    Circuits passed through this transform will be updated to apply the
+    insertion-based :class:`~.NoiseModel`, which contains a mapping
+    ``{BooleanFn: Callable}`` from conditions to the corresponding noise
+    gates. Each condition of the noise model will be evaluated on the
+    operations contained within the given circuit. For conditions that
+    evaluate to ``True``, the noisy gates contained within the ``Callable``
+    will be inserted after the operation under consideration.
 
     Args:
-        tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit to be transformed.
+        tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit or
+            device to be transformed.
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
-        level (None, str, int, slice): An indication of a stage in the transform program, when transforming a ``QNode``.
-            More details on the following permissible values can be found in the :func:`~.workflow.get_transform_program` -
+        level (None, str, int, slice): An indication of which stage in the transform program the
+            noise model should be applied to. Only relevant when transforming a ``QNode``. More details
+            on the following permissible values can be found in the :func:`~.workflow.get_transform_program` -
 
             * ``None``: expands the tape to have no ``Adjoint`` and ``Templates``.
             * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
@@ -42,13 +48,14 @@ def add_noise(tape, noise_model, level=None):
         Transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        ValueError: argument ``noise_model`` is not an instance of :class:`NoiseModel`.
+        ValueError: argument ``noise_model`` is not a valid noise model.
 
     .. note::
 
-        For a given ``model_map``, if multiple conditionals in the ``model_map`` evaluates to ``True``
-        for an operation, then the noise operations defined via their respective noisy quantum functions
-        will be added in the same order in which the conditionals appear in the ``model_map``.
+        For a given ``model_map`` within a ``NoiseModel``, if multiple conditionals in the ``model_map``
+        evaluate to ``True`` for an operation, then the noise operations defined via their respective
+        noisy quantum functions will be added in the same order in which the conditionals appear in the
+        ``model_map``.
 
     **Example:**
 
@@ -112,8 +119,8 @@ def add_noise(tape, noise_model, level=None):
             noise2 = qml.noise.partial_wires(qml.PhaseDamping, 0.9)
 
         By default, for each operation for which a conditional evaluates to ``True``, the corresponding noise operations gets
-        queued following an `iterative-insertion` approach. One could change this by including the operation itself, and
-        queue it with :func:`~.pennylane.apply` as given below:
+        queued after it following an insertion-based approach. One could change this by including the operation itself in the
+        ``noise_fns``, and queue it with :func:`~.pennylane.apply` as given below:
 
         .. code-block:: python3
 
@@ -233,9 +240,9 @@ def add_noise(tape, noise_model, level=None):
         TransformProgram(merge_rotations, undo_swaps, add_noise)
 
     """
-    if not isinstance(noise_model, qml.NoiseModel):
+    if not hasattr(noise_model, "model_map") or not hasattr(noise_model, "metadata"):
         raise ValueError(
-            f"Argument noise_model must be an instance of NoiseModel, got {noise_model}."
+            f"Provided noise model object must define model_map and metatadata attributes, got {noise_model}."
         )
 
     if level is None or level == "user":  # decompose templates and their adjoints

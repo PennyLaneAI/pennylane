@@ -7,6 +7,7 @@ rustworkx
 autograd
 toml
 appdirs
+semantic_version
 packaging
 autoray>=0.6.1,<0.6.10
 matplotlib

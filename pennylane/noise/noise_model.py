@@ -35,9 +35,8 @@ class NoiseModel:
         For each key-value pair of ``model_map``:
 
         - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
-          a callable object built via the constructor functions (:func:`~.pennylane.noise.op_eq`,
-          :func:`~.pennylane.noise.op_in`, :func:`~.pennylane.noise.wires_eq`, and
-          :func:`~.pennylane.noise.wires_in`), or their bit-wise combination.
+          a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
+          the ``noise`` module, or their bit-wise combination.
         - The definition of ``noise_fn(op, **kwargs)`` should have the operations in same the order
           in which they are to be queued for an operation ``op``, whenever the corresponding
           ``conditional`` evaluates to ``True``.
@@ -49,33 +48,21 @@ class NoiseModel:
         # Set up the conditionals
         c0 = qml.noise.op_eq(qml.PauliX) | qml.noise.op_eq(qml.PauliY)
         c1 = qml.noise.op_eq(qml.Hadamard) & qml.noise.wires_in([0, 1])
-        c2 = qml.noise.op_eq(qml.RX)
-
-        @qml.BooleanFn
-        def c3(op, **kwargs):
-            return isinstance(op, qml.RY) and op.parameters[0] >= 0.5
 
         # Set up the noise functions
-        n0 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
-
-        def n1(op, **kwargs):
+        def n0(op, **kwargs):
             qml.ThermalRelaxationError(0.4, kwargs["t1"], 0.2, 0.6, op.wires)
 
-        def n2(op, **kwargs):
-            qml.RX(op.parameters[0] * 0.05, op.wires)
-
-        n3 = qml.noise.partial_wires(qml.PhaseDamping, 0.9)
+        n1 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
         # Set up noise model
-        noise_model = qml.NoiseModel({c0: n0, c1: n1, c2: n2}, t1=0.04)
-        noise_model += {c3: n3}
+        noise_model = qml.NoiseModel({c0: n0}, t1=0.04)
+        noise_model += {c1: n1}
 
     >>> noise_model
     NoiseModel({
-        OpEq(PauliX) | OpEq(PauliY): AmplitudeDamping(0.4, wires),
-        OpEq(Hadamard) & WiresIn([0, 1]): n1,
-        OpEq(RX): n2,
-        BooleanFn(c3): PhaseDamping(0.9, wires)
+        OpEq(PauliX) | OpEq(PauliY): n1
+        OpEq(Hadamard) & WiresIn([0, 1]): AmplitudeDamping(0.4, wires),
     }, t1=0.04)
     """
 

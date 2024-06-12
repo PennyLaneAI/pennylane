@@ -17,8 +17,6 @@ This module contains the ``TransformProgram`` class.
 from functools import partial
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
@@ -354,24 +352,32 @@ class TransformProgram:
             self._set_all_classical_jacobians(qnode, args, kwargs, argnums)
             self._set_all_argnums(qnode, args, kwargs, argnums)
 
-    def prune_dynamic_transform(self):
-        """Ensure a single ``dynamic_one_shot`` transform is applied."""
-        trans_type = np.zeros(len(self._transform_program), dtype=np.int32)
-        for i, t in enumerate(self._transform_program):
-            if "dynamic_one_shot" in str(t):
-                trans_type[i] = 1
-            if "mid_circuit_measurements" in str(t):
-                trans_type[i] = 2
-        if sum(trans_type) < 2:
-            return
-        keep = 2 if 2 in trans_type else 1
+    def prune_dynamic_transform(self, type_to_keep=1):
+        """Ensures that only one or none ``dynamic_one_shot`` is applied.
+
+        Args:
+            type_to_keep (int): The type of the dynamic transform to keep. 0: keep none,
+                1: dynamic_one_shot or mid_circuit_measurements, 2: only mid_circuit_measurements.
+
+        Returns:
+            bool: ``True`` if a dynamic transform was found, ``False`` otherwise.
+
+        """
+
+        i = len(self._transform_program) - 1
         found = False
-        for i, ttype in enumerate(reversed(trans_type)):
-            if not found and ttype == keep:
+        while i >= 0:
+            t = self._transform_program[i]
+            if "mid_circuit_measurements" in str(t) and type_to_keep > 0:
+                type_to_keep = 0  # keep this and do not keep the rest
                 found = True
-                continue
-            if found and ttype in [1, 2]:
-                self._transform_program.pop(len(self._transform_program) - 1 - i)
+            elif "dynamic_one_shot" in str(t) and type_to_keep == 1:
+                type_to_keep = 0  # keep this and do not keep the rest
+                found = True
+            elif "dynamic_one_shot" in str(t) or "mid_circuit_measurements" in str(t):
+                self._transform_program.pop(i)
+            i -= 1
+        return found
 
     def _set_all_classical_jacobians(
         self, qnode, args, kwargs, argnums

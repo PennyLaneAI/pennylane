@@ -464,7 +464,6 @@ def partial_wires(operation, *args, **kwargs):
     >>> rfunc(qml.RY(1.0, ["light"]))
     qml.RX(2.3, wires=["light"])
     """
-
     if not callable(operation):
         if args:
             raise ValueError(
