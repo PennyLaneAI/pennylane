@@ -22,6 +22,7 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane.operation import (
+    AdjointUndefinedError,
     DecompositionUndefinedError,
     Observable,
     Operation,
@@ -341,8 +342,17 @@ class Pow(ScalarSymbolicOp):
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return isinstance(self.z, int)
+
     def adjoint(self):
-        return Pow(base=qml.adjoint(self.base), z=self.z)
+        if isinstance(self.z, int):
+            return Pow(base=qml.adjoint(self.base), z=self.z)
+        raise AdjointUndefinedError(
+            "The adjoint of Pow operators only is well-defined for integer powers."
+        )
 
     def simplify(self) -> Union["Pow", Identity]:
         # try using pauli_rep:
