@@ -68,6 +68,8 @@ class TestMultiQubitGates:
 
     def test_qft(self, method):
         """Test that the device can apply a multi-qubit QFT gate."""
+        if method == "tn":
+            pytest.skip("Cannot generate such a large matrix.")
 
         wires = 16
         dev = qml.device("default.tensor", wires=wires, method=method)

@@ -436,7 +436,7 @@ class DefaultTensor(Device):
         return self._c_dtype
 
     def _initial_quimb_circuit(
-        self, wires: qml.wires.Wires
+        self, wires: qml.wires.Wires, psi0=None
     ) -> Union["qtn.CircuitMPS", "qtn.Circuit"]:
         """
         Initialize the quimb circuit according to the method chosen.
@@ -455,10 +455,12 @@ class DefaultTensor(Device):
                 f"Unsupported gate contraction option: '{self._contract}' for '{self.method}' method. "
                 "Please refer to the documentation for the supported options."
             )
+        if psi0 is None:
+            psi0 = self._initial_mps(wires)
 
         if self.method == "mps":
             return qtn.CircuitMPS(
-                psi0=self._initial_mps(wires),
+                psi0=psi0,
                 max_bond=self._max_bond_dim,
                 gate_contract=self._contract,
                 cutoff=self._cutoff,
@@ -466,7 +468,7 @@ class DefaultTensor(Device):
 
         if self.method == "tn":
             return qtn.Circuit(
-                psi0=self._initial_tn(wires),
+                psi0=psi0,
                 gate_contract=self._contract,
                 tags=[str(l) for l in wires.labels] if wires else None,
             )
@@ -560,23 +562,6 @@ class DefaultTensor(Device):
             show_tags=show_tags,
             show_inds=show_inds,
             **kwargs,
-        )
-
-    def _initial_tn(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
-        r"""
-        Return an initial tensor network state to :math:`\ket{0}`.
-
-        Internally, it uses ``quimb``'s ``TN_from_sites_computational_state`` method.
-
-        Args:
-            wires (Wires): The wires to initialize the tensor network.
-
-        Returns:
-            TensorNetwork: The initial tensor network of a circuit.
-        """
-        return qtn.TN_from_sites_computational_state(
-            site_map={i: "0" for i in range(len(wires) if wires else 1)},
-            dtype=self._c_dtype.__name__,
         )
 
     def _setup_execution_config(
@@ -678,27 +663,23 @@ class DefaultTensor(Device):
         # The state is reset every time a new circuit is executed, and number of wires
         # is established at runtime to match the circuit if not provided.
         wires = circuit.wires if self.wires is None else self.wires
-        self._quimb_circuit = self._initial_quimb_circuit(wires)
+        if circuit.operations and isinstance(circuit.operations[0], qml.BasisState):
+            op = circuit.operations.pop(0)
+            self._quimb_circuit = self._initial_quimb_circuit(
+                wires,
+                psi0=self._initial_mps(
+                    op.wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
+                ),
+            )
+        elif circuit.operations and isinstance(circuit.operations[0], qml.StatePrep):
+            op = circuit.operations.pop(0)
+            self._quimb_circuit = self._initial_quimb_circuit(
+                wires, psi0=qtn.MatrixProductState.from_dense(op.parameters[0])
+            )
+        else:
+            self._quimb_circuit = self._initial_quimb_circuit(wires)
 
-        for i, op in enumerate(circuit.operations):
-            if i == 0 and isinstance(op, qml.BasisState):
-                self._quimb_circuit = qtn.CircuitMPS(
-                    psi0=self._initial_mps(
-                        op.wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
-                    ),
-                    max_bond=self._max_bond_dim,
-                    gate_contract=self._contract,
-                    cutoff=self._cutoff,
-                )
-                continue
-            if i == 0 and isinstance(op, qml.StatePrep):
-                self._quimb_circuit = qtn.CircuitMPS(
-                    psi0=qtn.MatrixProductState.from_dense(op.parameters[0]),
-                    max_bond=self._max_bond_dim,
-                    gate_contract=self._contract,
-                    cutoff=self._cutoff,
-                )
-                continue
+        for op in circuit.operations:
             self._apply_operation(op)
 
         if not circuit.shots:
