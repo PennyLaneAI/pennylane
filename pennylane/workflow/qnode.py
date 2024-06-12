@@ -25,6 +25,7 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
+from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
@@ -526,10 +527,7 @@ class QNode:
         self.max_expansion = max_expansion
         cache = (max_diff > 1) if cache == "auto" else cache
 
-        if mcm_method not in ("deferred", "one-shot", None):
-            raise ValueError(f"Invalid mid-circuit measurements method '{mcm_method}'.")
-        if postselect_mode not in ("hw-like", "fill-shots", None):
-            raise ValueError(f"Invalid postselection mode '{postselect_mode}'.")
+        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -539,7 +537,7 @@ class QNode:
             "max_diff": max_diff,
             "max_expansion": max_expansion,
             "device_vjp": device_vjp,
-            "mcm_config": {"postselect_mode": postselect_mode, "mcm_method": mcm_method},
+            "mcm_config": mcm_config,
         }
 
         if self.expansion_strategy == "device":
@@ -958,8 +956,12 @@ class QNode:
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        with qml.queuing.AnnotatedQueue() as q:
-            self._qfunc_output = self.func(*args, **kwargs)
+        # Before constructing the tape, we pass the device to the
+        # debugger to ensure they are compatible if there are any
+        # breakpoints in the circuit
+        with pldb_device_manager(self.device) as _:
+            with qml.queuing.AnnotatedQueue() as q:
+                self._qfunc_output = self.func(*args, **kwargs)
 
         self._tape = QuantumScript.from_queue(q, shots)
 
@@ -1040,11 +1042,16 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        mcm_config = self.execute_kwargs["mcm_config"]
         finite_shots = _get_device_shots if override_shots is False else override_shots
-        if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
-            raise ValueError(
-                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
-            )
+        if not finite_shots:
+            mcm_config.postselect_mode = None
+            if mcm_config.mcm_method == "one-shot":
+                raise ValueError(
+                    "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+                )
+        if mcm_config.mcm_method == "single-branch-statistics":
+            raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
@@ -1064,7 +1071,7 @@ class QNode:
             full_transform_program.add_transform(
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
-                mcm_config=self.execute_kwargs["mcm_config"],
+                mcm_config=mcm_config,
             )
             override_shots = 1
         elif hasattr(self.device, "capabilities"):
