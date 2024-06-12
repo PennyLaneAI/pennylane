@@ -1048,9 +1048,9 @@ class QNode:
         finite_shots = _get_device_shots if override_shots is False else override_shots
         if not finite_shots:
             mcm_config.postselect_mode = None
-            if mcm_config.mcm_method == "one-shot":
+            if mcm_config.mcm_method in ("one-shot", "tree-traversal"):
                 raise ValueError(
-                    "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+                    f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
                 )
         if mcm_config.mcm_method == "single-branch-statistics":
             raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
