@@ -49,8 +49,21 @@
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
-* A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
+* A new `qml.noise` module which contains utility functions for building `NoiseModels`.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
+  [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
+
+  ```python
+  fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
+  noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+  ```
+
+  ```pycon
+  >>> qml.NoiseModel({fcond: noise}, t1=0.04)
+  NoiseModel({
+    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
+  }, t1 = 0.04)
+  ```
 
 <h3>Improvements 🛠</h3>
 
