@@ -253,13 +253,19 @@ def _preprocess_expand_fn(
 
 
 def _make_inner_execute(
-    device, override_shots, cache, expand_fn=None, execution_config=None, numpy_only=True
+    device,
+    override_shots,
+    cache,
+    inner_transform,
+    expand_fn=None,
+    execution_config=None,
+    numpy_only=True,
 ) -> Callable:
     """Construct the function that will execute the tapes inside the ml framework registration
     for the 1st order derivatives.
 
     Steps in between the ml framework execution and the device are:
-    - device expansion (old device)
+    - device expansion (old device) or device preprocessing (new device)
     - conversion to numpy
     - caching
 
@@ -287,11 +293,12 @@ def _make_inner_execute(
 
         Closure Variables:
             expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
-            numpy_only (bool): whether or not to convert the data to numpy or leave as is
+            numpy_only (bool): whether to convert the data to numpy or leave as is
             device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
             cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
-        transform_program = qml.transforms.core.TransformProgram()
+
+        transform_program = qml.transforms.core.TransformProgram(inner_transform)
 
         if numpy_only:
             transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
@@ -299,11 +306,11 @@ def _make_inner_execute(
         if cache is not None:
             transform_program.add_transform(_cache_transform, cache=cache)
 
+        transformed_tapes, transform_post_processing = transform_program(tapes)
+
         # TODO: Apply expand_fn() as transform.
         if expand_fn:
-            tapes = tuple(expand_fn(t) for t in tapes)
-
-        transformed_tapes, transform_post_processing = transform_program(tapes)
+            transformed_tapes = tuple(expand_fn(t) for t in transformed_tapes)
 
         if transformed_tapes:
             results = device_execution(transformed_tapes)
@@ -407,6 +414,7 @@ def execute(
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
     transform_program=None,
+    inner_transform=None,
     config=None,
     grad_on_execution="best",
     gradient_kwargs=None,
@@ -435,6 +443,7 @@ def execute(
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
+        inner_transform (.TransformProgram): A transform program to be applied to the tapes in inner execution, inside the ml interface.
         config (qml.devices.ExecutionConfig): A datastructure describing the parameters needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
@@ -587,11 +596,10 @@ def execute(
             )
         config.mcm_config.postselect_mode = "fill-shots"
 
-    if transform_program is None:
-        if isinstance(device, qml.devices.Device):
-            transform_program = device.preprocess(config)[0]
-        else:
-            transform_program = qml.transforms.core.TransformProgram()
+    is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
+    transform_program, inner_transform = _make_transform_programs(
+        device, config, inner_transform, transform_program, is_gradient_transform
+    )
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache is True:
@@ -617,6 +625,7 @@ def execute(
         device,
         override_shots,
         cache,
+        inner_transform,
         expand_fn,
         config,
         numpy_only=not device_supports_interface_data,
@@ -754,7 +763,9 @@ def execute(
 
         else:
             # need to override to have no cache
-            inner_execute = _make_inner_execute(device, override_shots, cache=None)
+            inner_execute = _make_inner_execute(
+                device, override_shots, cache=None, inner_transform=inner_transform
+            )
 
             def inner_execute_with_empty_jac(tapes, **_):
                 return (inner_execute(tapes), [])
@@ -828,6 +839,35 @@ def execute(
         )
 
     return post_processing(results)
+
+
+def _make_transform_programs(
+    device, config, inner_transform, transform_program, is_gradient_transform
+):
+    """helper function to make the transform programs."""
+
+    if isinstance(device, qml.devices.Device):
+
+        # If gradient_fn is a gradient transform, device preprocessing should happen in
+        # inner execute (inside the ml boundary).
+        if is_gradient_transform:
+            if inner_transform is None:
+                inner_transform = device.preprocess(config)[0]
+            if transform_program is None:
+                transform_program = qml.transforms.core.TransformProgram()
+        else:
+            if inner_transform is None:
+                inner_transform = qml.transforms.core.TransformProgram()
+            if transform_program is None:
+                transform_program = device.preprocess(config)[0]
+
+    else:
+        if transform_program is None:
+            transform_program = qml.transforms.core.TransformProgram()
+        if inner_transform is None:
+            inner_transform = qml.transforms.core.TransformProgram()
+
+    return transform_program, inner_transform
 
 
 def _get_execution_config(
