@@ -33,6 +33,7 @@ quantum-classical programs.
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
+    ~qnode_call
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -125,13 +126,14 @@ If needed, developers can also override the implementation method of the primiti
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
 from .switches import disable, enable, enabled
-from .capture_meta import CaptureMeta
+from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .primitives import (
     create_operator_primitive,
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
 )
+from .capture_qnode import qnode_call
 
 
 def __getattr__(key):

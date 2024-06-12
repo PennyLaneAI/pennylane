@@ -267,7 +267,18 @@ def _make_inner_execute(
     """
 
     if isinstance(device, qml.devices.LegacyDevice):
-        device_execution = set_shots(device, override_shots)(device.batch_execute)
+        dev_execute = (
+            device.batch_execute
+            # If this condition is not met, then dev.batch_execute likely also doesn't include
+            # any kwargs in its signature, hence why we use partial conditionally
+            if execution_config is None
+            or not device.capabilities().get("supports_mid_measure", False)
+            else partial(
+                device.batch_execute,
+                postselect_mode=execution_config.mcm_config.postselect_mode,
+            )
+        )
+        device_execution = set_shots(device, override_shots)(dev_execute)
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
@@ -360,6 +371,36 @@ def _apply_cache_transform(fn: Callable, cache: Optional[MutableMapping]) -> Cal
     return execution_function_with_caching
 
 
+def _get_interface_name(tapes, interface):
+    """Helper function to get the interface name of a list of tapes
+
+    Args:
+        tapes (list[.QuantumScript]): Quantum tapes
+        interface (Optional[str]): Original interface to use as reference.
+
+    Returns:
+        str: Interface name"""
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = qml.math.get_interface(*params)
+    if INTERFACE_MAP.get(interface, "") == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
+    if interface == "jax":
+        try:  # pragma: no cover
+            from .interfaces.jax import get_jax_interface_name
+        except ImportError as e:  # pragma: no cover
+            raise qml.QuantumFunctionError(  # pragma: no cover
+                "jax not found. Please install the latest "  # pragma: no cover
+                "version of jax to enable the 'jax' interface."  # pragma: no cover
+            ) from e  # pragma: no cover
+
+        interface = get_jax_interface_name(tapes)
+
+    return interface
+
+
 def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
@@ -377,6 +418,7 @@ def execute(
     max_expansion=10,
     device_batch_transform=True,
     device_vjp=False,
+    mcm_config=None,
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for NumPy and does not support shot vectors.
@@ -423,6 +465,7 @@ def execute(
             constituent terms if not supported on the device.
         device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
             product if it is available.
+        mcm_config (dict): Dictionary containing configuration options for handling mid-circuit measurements.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -512,26 +555,10 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
-    if interface == "auto":
-        params = []
-        for tape in tapes:
-            params.extend(tape.get_parameters(trainable_only=False))
-        interface = qml.math.get_interface(*params)
-    if INTERFACE_MAP.get(interface, "") == "tf" and _use_tensorflow_autograph():
-        interface = "tf-autograph"
-    if interface == "jax":
-        try:  # pragma: no-cover
-            from .interfaces.jax import get_jax_interface_name
-        except ImportError as e:  # pragma: no-cover
-            raise qml.QuantumFunctionError(  # pragma: no-cover
-                "jax not found. Please install the latest "  # pragma: no-cover
-                "version of jax to enable the 'jax' interface."  # pragma: no-cover
-            ) from e  # pragma: no-cover
-
-        interface = get_jax_interface_name(tapes)
-        # Only need to calculate derivatives with jax when we know it will be executed later.
-        if interface in {"jax", "jax-jit"}:
-            grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
+    interface = _get_interface_name(tapes, interface)
+    # Only need to calculate derivatives with jax when we know it will be executed later.
+    if interface in {"jax", "jax-jit"}:
+        grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
     if (
         device_vjp
@@ -543,9 +570,22 @@ def execute(
         )
 
     gradient_kwargs = gradient_kwargs or {}
+    mcm_config = mcm_config or {}
     config = config or _get_execution_config(
-        gradient_fn, grad_on_execution, interface, device, device_vjp
+        gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
     )
+
+    # Mid-circuit measurement configuration validation
+    mcm_interface = _get_interface_name(tapes, "auto") if interface is None else interface
+    if mcm_interface == "jax-jit" and config.mcm_config.mcm_method == "deferred":
+        # This is a current limitation of defer_measurements. "hw-like" behaviour is
+        # not yet accessible.
+        if config.mcm_config.postselect_mode == "hw-like":
+            raise ValueError(
+                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
+                "mcm_method='deferred'."
+            )
+        config.mcm_config.postselect_mode = "fill-shots"
 
     if transform_program is None:
         if isinstance(device, qml.devices.Device):
@@ -790,7 +830,9 @@ def execute(
     return post_processing(results)
 
 
-def _get_execution_config(gradient_fn, grad_on_execution, interface, device, device_vjp):
+def _get_execution_config(
+    gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
+):
     """Helper function to get the execution config."""
     if gradient_fn is None:
         _gradient_method = None
@@ -803,6 +845,7 @@ def _get_execution_config(gradient_fn, grad_on_execution, interface, device, dev
         gradient_method=_gradient_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
+        mcm_config=mcm_config,
     )
     if isinstance(device, qml.devices.Device):
         _, config = device.preprocess(config)

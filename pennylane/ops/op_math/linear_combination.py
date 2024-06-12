@@ -111,6 +111,11 @@ class LinearCombination(Sum):
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], _grouping_indices=metadata[0])
 
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, coeffs, observables, _pauli_rep=None, **kwargs):
+        return cls._primitive.bind(*coeffs, *observables, **kwargs, n_obs=len(observables))
+
     def __init__(
         self,
         coeffs,
@@ -568,3 +573,12 @@ class LinearCombination(Sum):
         new_op = LinearCombination(coeffs, new_ops)
         new_op.grouping_indices = self._grouping_indices
         return new_op
+
+
+if LinearCombination._primitive is not None:
+
+    @LinearCombination._primitive.def_impl
+    def _(*args, n_obs, **kwargs):
+        coeffs = args[:n_obs]
+        observables = args[n_obs:]
+        return type.__call__(LinearCombination, coeffs, observables, **kwargs)
