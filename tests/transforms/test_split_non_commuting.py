@@ -21,6 +21,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+from scipy.stats import ttest_ind
 
 import pennylane as qml
 from pennylane.transforms import split_non_commuting
@@ -562,6 +563,125 @@ class TestUnits:
         assert qml.math.allclose(
             fn([[0.1, 0.2], [0.3, 0.6], 0.4, 0.5, 0.7]), [0.01, 0.06, 0.06, 0.16, 0.25, 0.36, 0.49]
         )
+
+    def test_term_sampling_fails_with_analytical(self):
+        tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [])
+
+        for technique in ("uniform", "weighted"):
+            with pytest.raises(ValueError, match="only supported by finite-shot devices"):
+                split_non_commuting(tape, term_sampling=technique, grouping_strategy=None)
+
+    def test_term_sampling_fails_with_grouping(self):
+        tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [])
+
+        for technique in ("uniform", "weighted"):
+            with pytest.raises(ValueError, match="only supported with no grouping"):
+                split_non_commuting(tape, term_sampling=technique, grouping_strategy="qwc")
+
+    def test_term_sampling_fails_with_wrong_input(self):
+        tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [])
+
+        with pytest.raises(ValueError, match="are 'uniform' and 'weighted'"):
+            split_non_commuting(tape, term_sampling="blabla", grouping_strategy=None)
+
+    @pytest.mark.parametrize("meas", complex_obs_list)
+    @pytest.mark.parametrize("sampling_technique", ("uniform", "weighted"))
+    @pytest.mark.parametrize("shots", ([100], [100, (200, 2)]))
+    def test_term_sampling_returns_correct_number_of_shots(self, meas, sampling_technique, shots):
+        shots = qml.measurements.Shots(shots)
+        tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(meas)], shots=shots)
+
+        out, _ = split_non_commuting(tape, term_sampling=sampling_technique, grouping_strategy=None)
+
+        if not isinstance(meas, qml.ops.op_math.Sum):
+            if isinstance(getattr(meas, "base", None) or meas, qml.Identity):
+                assert len(out) == 0
+            else:
+                assert len(out) == 1
+                assert out[0].shots == shots
+        else:
+            num_identities = meas.terms()[1].count(qml.I())
+            assert len(out) == len(meas) - num_identities
+            coeffs = [coeff for coeff, term in zip(*meas.terms()) if not isinstance(term, qml.I)]
+
+            probs = (
+                np.ones(len(coeffs)) / len(coeffs)
+                if sampling_technique == "uniform"
+                else np.abs(coeffs) / np.sum(np.abs(coeffs))
+            )
+
+            for i, vector in enumerate(shots.shot_vector):
+                output_shots, output_copies = list(
+                    zip(
+                        *[
+                            (tape.shots.shot_vector[i].shots, tape.shots.shot_vector[i].copies)
+                            for tape in out
+                        ]
+                    )
+                )
+
+                assert all(copy == vector.copies for copy in output_copies)
+                assert sum(output_shots) == vector.shots
+
+                # Assert shots distribution is consistent with probability using statistical test
+                expected_shots = (probs[0] if np.all(probs == probs[0]) else probs) * vector.shots
+                assert ttest_ind(output_shots, expected_shots).pvalue > 0.95
+
+    @pytest.mark.parametrize("meas", complex_obs_list[2:4])  # Test only relevant for Sums
+    @pytest.mark.parametrize("shots", ([2], [3, (200, 2)]))
+    @pytest.mark.parametrize("sampling_technique", ("uniform", "weighted"))
+    def test_term_sampling_handles_insufficient_shots(self, meas, sampling_technique, shots):
+        shots = qml.measurements.Shots(shots)
+        tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(meas)], shots=shots)
+        num_identities = meas.terms()[1].count(qml.I())
+
+        out, _ = split_non_commuting(tape, term_sampling=sampling_technique, grouping_strategy=None)
+
+        assert len(out) <= len(meas) - num_identities
+
+        terms, coeffs = tuple(
+            zip(
+                *[
+                    (term, coeff)
+                    for coeff, term in zip(*meas.terms())
+                    if not isinstance(term, qml.I)
+                ]
+            )
+        )
+
+        probs = (
+            np.ones(len(coeffs)) / len(coeffs)
+            if sampling_technique == "uniform"
+            else np.abs(coeffs) / np.sum(np.abs(coeffs))
+        )
+
+        out_shots = np.zeros((len(shots.shot_vector), len(coeffs)))
+        out_copies = np.zeros((len(shots.shot_vector), len(coeffs)))
+
+        for tp in out:
+            shot_vector = tp.shots.shot_vector
+            term_idx = terms.index(tp.measurements[0].obs)
+
+            if len(shot_vector) == len(shots.shot_vector):
+                # We got lucky with the scarce shots
+                for i, shot_copy in enumerate(shot_vector):
+                    out_shots[i][term_idx], out_copies[i][term_idx] = shot_copy
+            else:
+                # We only got the generous vector
+                out_copies[0][term_idx] = 1
+                out_shots[1][term_idx], out_copies[1][term_idx] = shot_vector[0]
+
+        assert all(np.sum(out_shots, axis=1) == [vct.shots for vct in shots.shot_vector])
+        assert all(
+            np.sum(out_copies, axis=1) / np.count_nonzero(out_copies, axis=1)
+            == [vct.copies for vct in shots.shot_vector]
+        )
+
+        for out_shot, original_shot in zip(out_shots, [vct.shots for vct in shots.shot_vector]):
+            exp_shots = (probs[0] if np.all(probs == probs[0]) else probs) * original_shot
+            assert ttest_ind(out_shot, exp_shots).pvalue > 0.95
+
+    # TODO: Make sure a tape with two observables sharing some term generate only one tape with the needed shot vector
 
 
 class TestIntegration:

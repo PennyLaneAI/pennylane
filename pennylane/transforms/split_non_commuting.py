@@ -31,7 +31,7 @@ from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
 
 
-class ObsMetadata(NamedTuple):
+class _ObsMetadata(NamedTuple):
     """
     Measurements metadata tuple
     (Count of non-identity terms, Sum of non-identity term coefficients, offsets arising from Identity)
@@ -258,6 +258,17 @@ def split_non_commuting(
         [[expval(X(0)), probs(wires=[1])], [probs(wires=[0, 1])]]
 
     """
+    if grouping_strategy and term_sampling:
+        raise ValueError("Shot-allocation of observable terms is only supported with no grouping.")
+
+    if term_sampling not in ("weighted", "uniform"):
+        raise ValueError(
+            f"Invalid term sampling technique passed: {term_sampling}."
+            "Only supported values are 'uniform' and 'weighted'"
+        )
+
+    if not tape.shots and term_sampling:
+        raise ValueError("Term sampling is only supported by finite-shot devices.")
 
     # Special case for a single measurement of a Sum or Hamiltonian, in which case
     # the grouping information can be computed and cached in the observable.
@@ -278,7 +289,8 @@ def split_non_commuting(
     if grouping_strategy is None:
         if (
             all(
-                isinstance(meas, ExpectationMP) and isinstance(meas.obs, (Hamiltonian, Sum))
+                isinstance(meas, ExpectationMP)
+                and isinstance(meas.obs, (Hamiltonian, Sum, Prod, SProd))
                 for meas in tape.measurements
             )
             and term_sampling
@@ -286,7 +298,7 @@ def split_non_commuting(
             tapes = _split_ham_no_grouping(tape, term_sampling, single_term_obs_mps, metadatas)
         else:
             measurements = list(single_term_obs_mps.keys())
-            tapes = [tape.__class__(tape.operations, [m], shots=tape.shots) for m in measurements]
+            tapes = [type(tape)(tape.operations, [m], shots=tape.shots) for m in measurements]
         return tapes, partial(
             _processing_fn_no_grouping,
             single_term_obs_mps=single_term_obs_mps,
@@ -324,57 +336,47 @@ def split_non_commuting(
 def _split_ham_no_grouping(
     tape: qml.tape.QuantumScript, term_sampling, single_term_obs_mps, metadatas
 ):
-    if term_sampling not in ("weighted", "uniform"):
-        raise ValueError(
-            f"Invalid term sampling technique passed: {term_sampling}."
-            "Only supported values are 'uniform' and 'weighted'"
-        )
-
-    if not tape.shots:
-        raise ValueError("Term sampling is only supported by finite-shot devices.")
-
     remaining_shots_budget = np.stack(
         [np.array([shot_copies.shots for shot_copies in tape.shots.shot_vector])]
         * len(tape.measurements)
     )
 
-    coefficient_sums = [metadata.sum_non_id_coefficients for metadata in metadatas]
-    non_id_term_counts = [metadata.non_id_terms_counts for metadata in metadatas]
+    coefficient_sums = [
+        (
+            metadata.sum_non_id_coefficients
+            if term_sampling == "weighted"
+            else metadata.non_id_terms_counts
+        )
+        for metadata in metadatas
+    ]
 
     new_tapes = []
     for meas, (ham_idx, coeffs) in single_term_obs_mps.items():
+        shts = []
         for idx, coeff in zip(ham_idx, coeffs):
-            abs_coeff = np.abs(coeff)
+            term_coefficient = np.abs(coeff) if term_sampling == "weighted" else 1.0
 
-            prob = (
-                1 / non_id_term_counts[idx]
-                if term_sampling == "uniform"
-                else abs_coeff / coefficient_sums[idx]
-            )
+            prob = term_coefficient / coefficient_sums[idx]
 
-            shots_list = [
-                binom(n=rmng_shots, p=prob).rvs() for rmng_shots in remaining_shots_budget[idx]
-            ]
+            for i, (rmng_shots, shot_vector) in enumerate(
+                zip(remaining_shots_budget[idx], tape.shots.shot_vector)
+            ):
 
+                sampled_shots = binom(n=rmng_shots, p=prob).rvs() if prob < 1 else rmng_shots
+
+                if sampled_shots == 0:
+                    continue
+
+                shts.append((int(sampled_shots), shot_vector.copies))
+                remaining_shots_budget[idx][i] -= sampled_shots
+
+            coefficient_sums[idx] -= term_coefficient
+
+        if shts:
             new_tapes.append(
-                tape.__class__(
-                    tape.operations,
-                    [meas],
-                    shots=qml.measurements.Shots(
-                        [
-                            (shots, shot_copies.copies)
-                            for shots, shot_copies in zip(shots_list, tape.shots.shot_vector)
-                        ]
-                    ),
-                )
+                type(tape)(tape.operations, [meas], shots=qml.measurements.Shots(shts))
             )
 
-            coefficient_sums[idx] -= abs_coeff
-            remaining_shots_budget[idx] -= shots_list
-
-    # from pprint import pprint
-
-    # pprint([(tape.measurements, tape.shots) for tape in new_tapes])
     return new_tapes
 
 
@@ -435,7 +437,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
             mp_groups.append(mp_group)
             group_sizes.append(group_size)
 
-    tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
+    tapes = [type(tape)(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
     return tapes, partial(
         _processing_fn_with_grouping,
         single_term_obs_mps=single_term_obs_mps,
@@ -501,7 +503,7 @@ def _split_using_qwc_grouping(
         )
         group_sizes.append(1)
 
-    tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
+    tapes = [type(tape)(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
     return tapes, partial(
         _processing_fn_with_grouping,
         single_term_obs_mps=single_term_obs_mps_grouped,
@@ -572,7 +574,7 @@ def _split_using_wires_grouping(
             single_term_obs_mps_grouped[smp] = (mp_indices, coeffs, num_groups, 0)
             num_groups += 1
 
-    tapes = [tape.__class__(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
+    tapes = [type(tape)(tape.operations, mps, shots=tape.shots) for mps in mp_groups]
     return tapes, partial(
         _processing_fn_with_grouping,
         single_term_obs_mps=single_term_obs_mps_grouped,
@@ -645,7 +647,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 single_term_obs_mps[mp][0].append(mp_idx)
                 single_term_obs_mps[mp][1].append(1)
 
-        metadatas.append(ObsMetadata(non_id_obs_count, coeff_sum, offset))
+        metadatas.append(_ObsMetadata(non_id_obs_count, coeff_sum, offset))
 
     return single_term_obs_mps, metadatas
 
