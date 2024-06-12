@@ -21,7 +21,6 @@ import pytest
 import pennylane as qml
 from pennylane import math
 from pennylane.devices import DefaultQutritMixed, ExecutionConfig
-from pennylane.measurements import ExpectationMP, VarianceMP
 
 np.random.seed(0)
 
