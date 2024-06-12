@@ -461,11 +461,11 @@ def simulate_tree_mcm(
                     meas = [meas]
                 for i, m in enumerate(meas):
                     measurements[i][branch] = (count, m)
+            measurements = combine_measurements(circuit, measurements, mcm_samples)
             counts[depth] = None
             results_0[depth] = None
             results_1[depth] = None
             mcm_current[depth] = False
-            measurements = combine_measurements(circuit, measurements, mcm_samples)
             depth -= 1
             if not mcm_current[depth]:
                 results_0[depth] = measurements
@@ -474,6 +474,8 @@ def simulate_tree_mcm(
                 results_1[depth] = measurements
                 mcm_current[depth] = False
                 # depth -= 1
+            if depth == 0:
+                continue
             initial_state = branch_state(
                 states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
             )
@@ -483,16 +485,32 @@ def simulate_tree_mcm(
         circtmp = circuits[depth]
         if counts[depth]:
             shots = counts[depth][int(mcm_current[depth])]
+        else:
+            shots = circuits[depth].shots.total_shots
+        # print(shots)
+        if not bool(shots):
+            measurements = qml.math.array([], dtype=int)
+            if not mcm_current[depth]:
+                results_0[depth] = tuple()
+                mcm_current[depth] = True
+                initial_state = branch_state(
+                    states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
+                )
+                continue
+            results_1[depth] = tuple()
+            continue
+        else:
             circtmp._shots = qml.measurements.shots.Shots(shots)
-        state, is_state_batched = get_final_state(
-            circtmp,
-            debugger=debugger,
-            initial_state=initial_state,
-            **execution_kwargs,
-        )
-        measurements = measure_final_state(
-            circtmp, state, is_state_batched, initial_state=initial_state, **execution_kwargs
-        )
+            state, is_state_batched = get_final_state(
+                circtmp,
+                debugger=debugger,
+                initial_state=initial_state,
+                mid_measurements=dict((k, v) for k, v in zip(mcms, mcm_current[1:])),
+                **execution_kwargs,
+            )
+            measurements = measure_final_state(
+                circtmp, state, is_state_batched, initial_state=initial_state, **execution_kwargs
+            )
         if depth < n_mcms:
             samples = qml.math.atleast_1d(measurements)
             mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
@@ -502,7 +520,7 @@ def simulate_tree_mcm(
             )
             depth += 1
             states[depth] = state
-            counts[depth] = samples_to_counts(samples)
+            counts[depth] = samples_to_counts(samples, all_outcomes=True)
             continue
 
         if not mcm_current[depth]:
@@ -519,19 +537,23 @@ def simulate_tree_mcm(
 
 def branch_state(state, branch, wire, reset):
     state = apply_operation(qml.Projector([branch], wire), state)
+    if qml.math.norm(state) < 1e-16:
+        pass
     state = state / qml.math.norm(state)
     if reset and branch == 1:
         state = apply_operation(qml.PauliX(wire), state)
     return state
 
 
-def samples_to_counts(samples):
+def samples_to_counts(samples, all_outcomes=True):
     """Converts samples to counts.
 
     This function forces integer keys and values which are required by ``simulate_tree_mcm``.
     """
     counts = qml.math.unique(samples, return_counts=True)
-    return dict((int(x), int(y)) for x, y in zip(*counts))
+    result = {0: 0, 1: 0} if all_outcomes else {}
+    result.update(dict((int(x), int(y)) for x, y in zip(*counts)))
+    return result
 
 
 def prep_initial_state(circuit_base, interface, initial_state, wires):
@@ -710,6 +732,8 @@ def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argum
     keys = list(measures.keys())
     new_counts = Counter()
     for k in keys:
+        if not measures[k][0]:
+            continue
         new_counts.update(measures[k][1])
     return dict(sorted(new_counts.items()))
 
@@ -719,6 +743,8 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
     cum_value = 0
     total_counts = 0
     for v in measures.values():
+        if not v[0]:
+            continue
         cum_value += v[0] * v[1]
         total_counts += v[0]
     return cum_value / total_counts
@@ -729,6 +755,8 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
     cum_value = 0
     total_counts = 0
     for v in measures.values():
+        if not v[0]:
+            continue
         cum_value += v[0] * v[1]
         total_counts += v[0]
     return cum_value / total_counts
@@ -736,13 +764,13 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 
 @combine_measurements_core.register
 def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
-    new_sample = tuple(m[1] for m in measures.values())
+    new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values() if m[0])
     return np.squeeze(np.concatenate(new_sample))
 
 
 @combine_measurements_core.register
 def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-argument
-    new_sample = tuple(m[1] for m in measures.values())
+    new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values() if m[0])
     return np.squeeze(np.concatenate(new_sample))
 
 
