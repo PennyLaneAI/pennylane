@@ -1176,9 +1176,8 @@ class TestGrouping:
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
         spy = mocker.spy(qml.transforms, "split_non_commuting")
 
-        dev = self.SomeDevice(shots=None)
+        dev = self.SomeDevice()
         dev.use_grouping = use_grouping
-        dev.supports_observable = lambda *args, **kwargs: False
         new_qscripts, _ = dev.batch_transform(qs)
 
         if use_grouping:
