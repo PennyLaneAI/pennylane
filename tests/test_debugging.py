@@ -222,7 +222,7 @@ class TestSnapshotSupportedQNode:
     def test_default_qubit_with_backprob_and_adjoint(self, diff_method):
         dev = qml.device("default.qubit")
 
-        assert qml.debugging._is_snapshot_compatible(dev)
+        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit():
@@ -250,7 +250,7 @@ class TestSnapshotSupportedQNode:
     def test_default_qubit_legacy_only_supports_state(self, diff_method):
         dev = qml.device("default.qubit.legacy", wires=2)
 
-        assert qml.debugging._is_snapshot_compatible(dev)
+        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit_faulty():
@@ -294,7 +294,7 @@ class TestSnapshotSupportedQNode:
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
         dev = qml.device("default.mixed", wires=2)
 
-        assert qml.debugging._is_snapshot_compatible(dev)
+        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
@@ -326,7 +326,7 @@ class TestSnapshotSupportedQNode:
         """Test that multiple snapshots are returned correctly on the CV simulator."""
         dev = qml.device("default.gaussian", wires=2)
 
-        assert qml.debugging._is_snapshot_compatible(dev)
+        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
@@ -376,7 +376,7 @@ class TestSnapshotSupportedQNode:
         """Test that multiple snapshots are returned correctly on the qutrit density-matrix simulator."""
         dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
 
-        assert qml.debugging._is_snapshot_compatible(dev)
+        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(add_bad_snapshot: bool):
@@ -424,7 +424,8 @@ class TestSnapshotSupportedQNode:
     def test_different_measurements(self, m, expected_result, force_qnode_transform, mocker):
         """Test that snapshots are returned correctly with different QNode measurements."""
         mocker.patch(
-            "pennylane.debugging._is_snapshot_compatible", return_value=not force_qnode_transform
+            "pennylane.debugging.snapshot._is_snapshot_compatible",
+            return_value=not force_qnode_transform,
         )
 
         # Since we can't spy on `get_snapshots`, we do it the other way around
@@ -578,7 +579,7 @@ class TestSnapshotSupportedQNode:
     def test_default_clifford_with_arbitrary_measurement(self):
         dev = qml.device("default.clifford")
 
-        assert qml.debugging._is_snapshot_compatible(dev)
+        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qml.qnode(dev)
         def circuit():
@@ -643,7 +644,7 @@ class TestSnapshotUnsupportedQNode:
 
         dev = qml.device("default.qutrit", wires=2, shots=100)
 
-        assert not qml.debugging._is_snapshot_compatible(dev)
+        assert not qml.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qml.snapshots
         @qml.qnode(dev, diff_method=method)
