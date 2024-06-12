@@ -198,7 +198,11 @@ shot_testing_combos = [
     ([qml.expval(qml.PauliX(0))], 1, 10),
     ([qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))], 2, 20),
     # Hamiltonian test cases
-    ([qml.expval(qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]))], 2, 20),
+    (
+        [qml.expval(qml.Hamiltonian([1, 0.5, 1], [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)]))],
+        2,
+        20,
+    ),
     (
         [qml.expval(qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)], grouping_type="qwc"))],
         1,
