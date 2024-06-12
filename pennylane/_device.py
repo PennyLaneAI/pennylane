@@ -803,18 +803,15 @@ class Device(abc.ABC):
 
         for obs in circuit.observables:
 
-            if isinstance(obs, (Hamiltonian, LinearCombination)) and not self.supports_observable(
-                "Hamiltonian"
-            ):
+            if obs.name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
                 return False
 
-            if isinstance(obs, Sum) and not self.supports_observable("Sum"):
-                return False
-
-            if isinstance(obs, Prod) and not self.supports_observable("Prod"):
-                return False
-
-            if isinstance(obs, SProd) and not self.supports_observable("SProd"):
+            if obs.name in (
+                "Hamiltonian",
+                "Sum",
+                "Prod",
+                "SProd",
+            ) and not self.supports_observable(obs.name):
                 return False
 
         return True
