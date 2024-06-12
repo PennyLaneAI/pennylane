@@ -150,6 +150,12 @@ _gate_contract_tn = frozenset(
     {"auto-split-gate", "split-gate", "reduce-split", "swap-split-gate", "split", "True", "False"}
 )
 # The set of supported gate contraction methods for the TN method.
+_PAULI_MATRICES = {
+    "I": qml.Identity(0).matrix(),
+    "X": qml.PauliX(0).matrix(),
+    "Y": qml.PauliY(0).matrix(),
+    "Z": qml.PauliZ(0).matrix(),
+}
 
 
 def accepted_methods(method: str) -> bool:
@@ -910,14 +916,37 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
     """Dispatcher for _apply_operation."""
     theta = ops.parameters[0]
     wire_map = dict((w, i) for i, w in enumerate(ops.wires))
-    pw = qml.pauli.string_to_pauli_word(ops._hyperparameters["pauli_word"], wire_map)
-    cospsi = qml.math.cos(0.5 * theta) * copy.deepcopy(device._quimb_circuit.psi)
-    for o in pw:
-        device._quimb_circuit.apply_gate(
-            qml.matrix(o).astype(device._dtype), *o.wires, parametrize=None
+    pw = next(
+        iter(
+            qml.pauli.string_to_pauli_word(
+                ops._hyperparameters["pauli_word"], wire_map
+            ).pauli_rep.keys()
         )
-    device._quimb_circuit._psi = cospsi - 1j * qml.math.sin(0.5 * theta) * device._quimb_circuit.psi
-    device._quimb_circuit._psi.compress(max_bond=device._max_bond_dim, cutoff=device._cutoff)
+    )
+    arrays = []
+    sites = list(pw.keys())
+    for i, P in enumerate(pw.values()):
+        if i == 0:
+            arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P]
+            arr[0, 1] = qml.math.eye(2, dtype=complex)
+
+        elif i == len(wire_map) - 1:
+            arr = qml.math.zeros((2, 1, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
+            arr[1, 0] = qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
+
+        else:
+            arr = qml.math.zeros((2, 2, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P]
+            arr[1, 1] = qml.math.eye(2, dtype=complex)
+
+        arrays.append(arr)
+
+    mpo = qtn.MatrixProductOperator(arrays=arrays, sites=sites)
+    device._quimb_circuit._psi = mpo.apply(
+        device._quimb_circuit.psi, max_bond=device._max_bond_dim, cutoff=device._cutoff
+    )
 
 
 @apply_operation_core.register
