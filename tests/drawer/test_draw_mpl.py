@@ -357,7 +357,7 @@ def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
     def qfunc():
         qml.PauliZ(0)
 
-    with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
+    with pytest.warns(UserWarning, match="the expansion_strategy and level arguments are ignored"):
         _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")
 
 

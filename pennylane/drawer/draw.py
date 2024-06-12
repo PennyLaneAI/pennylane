@@ -24,6 +24,31 @@ import pennylane as qml
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
+_level_sentinel = object()
+
+
+def _determine_draw_level(kwargs, qnode=None):
+    if "max_expansion" in kwargs:
+        warnings.warn(
+            "'max_expansion' has no effect on the output of 'specs()' and should not be used."
+        )
+
+    sentinel = _level_sentinel
+
+    level = kwargs.get("level", sentinel)
+    expansion_strategy = kwargs.get("expansion_strategy", sentinel)
+
+    if all(val != sentinel for val in (level, expansion_strategy)):
+        raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
+
+    if level == sentinel and expansion_strategy == sentinel:
+        return qnode.expansion_strategy if qnode else sentinel
+
+    if level == sentinel:
+        return expansion_strategy
+
+    return level
+
 
 def catalyst_qjit(qnode):
     """A method checking whether a qnode is compiled by catalyst.qjit"""
@@ -37,7 +62,7 @@ def draw(
     decimals=2,
     max_length=100,
     show_matrices=True,
-    expansion_strategy=None,
+    **kwargs,
 ):
     """Create a function that draws the given qnode or quantum function.
 
@@ -51,8 +76,13 @@ def draw(
             ``None`` will omit parameters from operation labels.
         max_length (int): Maximum string width (columns) when printing the circuit
         show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
+
+    Keyword Args:
+        level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
+            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            this argument.
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required. Note that this is ignored if the input is not a QNode.
+            are required.
 
             - ``gradient``: The QNode will attempt to decompose
               the internal circuit such that all circuit operations are supported by the gradient
@@ -60,7 +90,6 @@ def draw(
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
-
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -216,12 +245,12 @@ def draw(
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
-            expansion_strategy=expansion_strategy,
+            level=_determine_draw_level(kwargs, qnode),
         )
 
-    if expansion_strategy is not None:
+    if _determine_draw_level(kwargs) != _level_sentinel:
         warnings.warn(
-            "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
+            "When the input to qml.draw is not a QNode, the expansion_strategy and level arguments are ignored.",
             UserWarning,
         )
 
@@ -256,27 +285,11 @@ def _draw_qnode(
     decimals=2,
     max_length=100,
     show_matrices=True,
-    expansion_strategy=None,
+    level=None,
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        if isinstance(qnode.device, qml.devices.Device) and (
-            expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
-        ):
-            qnode.construct(args, kwargs)
-            tapes = qnode.transform_program([qnode.tape])[0]
-            program, _ = qnode.device.preprocess()
-            tapes = program(tapes)[0]
-        else:
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                tapes = qnode.construct(args, kwargs)
-                program = qnode.transform_program
-                tapes = program([qnode.tape])[0]
-
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
+        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -328,7 +341,6 @@ def draw_mpl(
     wire_order=None,
     show_all_wires=False,
     decimals=None,
-    expansion_strategy=None,
     style=None,
     *,
     fig=None,
@@ -349,15 +361,6 @@ def draw_mpl(
             If no style is specified, the global style set with :func:`~.use_style` will be used, and the
             initial default is 'black_white'. If you would like to use your environment's current rcParams,
             set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
-
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method.
-
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
 
     Keyword Args:
         fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
@@ -368,6 +371,18 @@ def draw_mpl(
         label_options (dict): matplotlib formatting options for the wire labels
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
+        level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
+            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            this argument.
+        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+            are required.
+
+            - ``gradient``: The QNode will attempt to decompose
+              the internal circuit such that all circuit operations are supported by the gradient
+              method.
+
+            - ``device``: The QNode will attempt to decompose the internal circuit
+              such that all circuit operations are natively supported by the device.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -541,21 +556,24 @@ def draw_mpl(
     """
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
+
     if hasattr(qnode, "construct"):
+        resolved_level = _determine_draw_level(kwargs, qnode)
+        kwargs.pop("expansion_strategy", None)
         return _draw_mpl_qnode(
             qnode,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
-            expansion_strategy=expansion_strategy,
+            level=resolved_level,
             style=style,
             fig=fig,
             **kwargs,
         )
 
-    if expansion_strategy is not None:
+    if _determine_draw_level(kwargs) != _level_sentinel:
         warnings.warn(
-            "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
+            "When the input to qml.draw is not a QNode, the expansion_strategy and level arguments are ignored.",
             UserWarning,
         )
 
@@ -588,7 +606,7 @@ def _draw_mpl_qnode(
     wire_order=None,
     show_all_wires=False,
     decimals=None,
-    expansion_strategy=None,
+    level=None,
     style="black_white",
     *,
     fig=None,
@@ -596,22 +614,14 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
-            qnode.construct(args, kwargs)
-            tapes, _ = qnode.transform_program([qnode.tape])
-            program, _ = qnode.device.preprocess()
-            tapes, _ = program(tapes)
-            tape = tapes[0]
-        else:
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs_qnode)
 
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                qnode.construct(args, kwargs_qnode)
-                program = qnode.transform_program
-                [tape], _ = program([qnode.tape])
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
+        if len(tapes) > 0:
+            warnings.warn(
+                "More than one tape constructed, but only displaying the first one.", UserWarning
+            )
+
+        tape = tapes[0]
 
         if wire_order:
             _wire_order = wire_order

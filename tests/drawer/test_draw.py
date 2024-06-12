@@ -207,7 +207,7 @@ class TestMatrixParameters:
             "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>\n\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
-        output = draw(matrices_circuit)(np.array(1.0, requires_grad=True))
+        output = draw(matrices_circuit, level="gradient")(np.array(1.0, requires_grad=True))
         assert output == expected1
 
         expected2 = (
@@ -989,7 +989,7 @@ def test_draw_with_qfunc_warns_with_expansion_strategy():
     def qfunc():
         qml.PauliZ(0)
 
-    with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
+    with pytest.warns(UserWarning, match="the expansion_strategy and level arguments are ignored"):
         _ = qml.draw(qfunc, expansion_strategy="gradient")
 
 
