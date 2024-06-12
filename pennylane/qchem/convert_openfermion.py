@@ -121,7 +121,7 @@ def to_openfermion(
 def _to_openfermion_dispatch(pl_op, wires=None, tol=1.0e-16):
     """Dispatches to appropriate function if pl_op is a ``Sum``, ``LinearCombination, ``FermiWord`` or ``FermiSentence``."""
     raise ValueError(
-        f"pl_op must be a Sum, LinearCombination, FermiWord or FermiSentence, got: {pl_op}."
+        f"pl_op must be a Sum, LinearCombination, FermiWord or FermiSentence, got: {type(pl_op)}."
     )
 
 
@@ -133,23 +133,23 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
 
 # pylint:disable=unused-argument
 @_to_openfermion_dispatch.register
-def _(pl_op: FermiWord, wires=None, tol=1.0e-16):
+def _(ops: FermiWord, wires=None, tol=1.0e-16):
     openfermion = _import_of()
 
     if wires:
-        all_wires = Wires.all_wires(pl_op.wires, sort=True)
+        all_wires = Wires.all_wires(ops.wires, sort=True)
         mapped_wires = _process_wires(wires)
         if not set(all_wires).issubset(set(mapped_wires)):
-            raise ValueError("Supplied `wires` does not cover all wires defined in `pl_op`.")
+            raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
 
         # Map the FermiWord based on the ordering provided in `wires`.
         pl_op_mapped = {}
-        for loc, orbital in pl_op.keys():
-            pl_op_mapped[(loc, mapped_wires.index(orbital))] = pl_op[(loc, orbital)]
+        for loc, orbital in ops.keys():
+            pl_op_mapped[(loc, mapped_wires.index(orbital))] = ops[(loc, orbital)]
 
-        pl_op = FermiWord(pl_op_mapped)
+        ops = FermiWord(pl_op_mapped)
 
-    return openfermion.ops.FermionOperator(qml.fermi.fermionic.to_string(pl_op, of=True))
+    return openfermion.ops.FermionOperator(qml.fermi.fermionic.to_string(ops, of=True))
 
 
 @_to_openfermion_dispatch.register

@@ -541,7 +541,7 @@ def to_string(fermi_op, of=False):
 @singledispatch
 def _to_string_dispatch(fermi_op, of=False):
     """Dispatches to appropriate function if fermi_op is a FermiWord or FermiSentence."""
-    raise ValueError(f"fermi_op must be a FermiWord or FermiSentence, got: {fermi_op}")
+    raise ValueError(f"fermi_op must be a FermiWord or FermiSentence, got: {type(fermi_op)}")
 
 
 @_to_string_dispatch.register
