@@ -527,6 +527,11 @@ class TestUnits:
         """Tests that the tape is split correctly when containing non-Pauli observables"""
 
         obs_list = single_term_obs_list + non_pauli_obs
+
+        if not qml.operation.active_new_opmath():
+            non_pauli_obs = _convert_obs_to_legacy_opmath(non_pauli_obs)
+            obs_list = _convert_obs_to_legacy_opmath(obs_list)
+
         measurements = [
             qml.expval(c * o) for c, o in zip([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7], obs_list)
         ]
@@ -1076,9 +1081,31 @@ class TestDifferentiability:
         assert qml.math.allclose(grad1, expected_grad_1)
         assert qml.math.allclose(grad2, expected_grad_2)
 
-    @pytest.mark.jax
+    @pytest.mark.autograd
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
-    def test_jax(self, grouping_strategy):
+    def test_trainable_hamiltonian_autograd(self, grouping_strategy):
+        """Tests that measurements of trainable Hamiltonians are differentiable"""
+
+        import pennylane.numpy as pnp
+
+        dev = qml.device("default.qubit", wires=2, shots=50000)
+
+        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.qnode(dev)
+        def circuit(coeff1, coeff2):
+            qml.RX(np.pi / 4, wires=0)
+            qml.RY(np.pi / 4, wires=1)
+            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+
+        params = pnp.array(pnp.pi / 4), pnp.array(3 * pnp.pi / 4)
+        actual = qml.jacobian(circuit)(*params)
+
+        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [False, True])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_jax(self, grouping_strategy, use_jit):
         """Tests that the output of ``split_non_commuting`` is differentiable with jax"""
 
         import jax
@@ -1099,6 +1126,9 @@ class TestDifferentiability:
             qml.RY(phi, wires=1)
             return qml.probs(wires=[0, 1]), *[qml.expval(o) for o in obs_list]
 
+        if use_jit:
+            circuit = jax.jit(circuit)
+
         def cost(theta, phi):
             res = circuit(theta, phi)
             return qml.math.concatenate([res[0], qml.math.stack(res[1:])], axis=0)
@@ -1116,44 +1146,30 @@ class TestDifferentiability:
         assert qml.math.allclose(grad2, expected_grad_2)
 
     @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
-    def test_jax_jit(self, grouping_strategy):
-        """Tests that the output of ``split_non_commuting`` is differentiable with jax and jit"""
+    def test_trainable_hamiltonian_jax(self, grouping_strategy, use_jit):
+        """Tests that measurements of trainable Hamiltonians are differentiable with jax"""
 
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=50000)
 
-        obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
-
-        @jax.jit
         @partial(split_non_commuting, grouping_strategy=grouping_strategy)
         @qml.qnode(dev)
-        def circuit(theta, phi):
-            qml.RX(theta, wires=0)
-            qml.RY(phi, wires=0)
-            qml.RX(theta, wires=1)
-            qml.RY(phi, wires=1)
-            return qml.probs(wires=[0, 1]), *[qml.expval(o) for o in obs_list]
+        def circuit(coeff1, coeff2):
+            qml.RX(np.pi / 4, wires=0)
+            qml.RY(np.pi / 4, wires=1)
+            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
 
-        def cost(theta, phi):
-            res = circuit(theta, phi)
-            return qml.math.concatenate([res[0], qml.math.stack(res[1:])], axis=0)
+        if use_jit:
+            circuit = jax.jit(circuit)
 
-        params = jnp.array(jnp.pi / 4), jnp.array(3 * jnp.pi / 4)
-        grad1, grad2 = jax.jacobian(cost, argnums=[0, 1])(*params)
+        params = jnp.array(np.pi / 4), jnp.array(3 * np.pi / 4)
+        actual = jax.jacobian(circuit, argnums=[0, 1])(*params)
 
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
-        if not qml.operation.active_new_opmath():
-            expected_grad_1 = expected_grad_param_0[:-1]
-            expected_grad_2 = expected_grad_param_1[:-1]
-
-        assert qml.math.allclose(grad1, expected_grad_1)
-        assert qml.math.allclose(grad2, expected_grad_2)
+        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
@@ -1194,10 +1210,32 @@ class TestDifferentiability:
         assert qml.math.allclose(grad1, expected_grad_1, atol=1e-5)
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-5)
 
+    @pytest.mark.torch
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_trainable_hamiltonian_torch(self, grouping_strategy):
+        """Tests that measurements of trainable Hamiltonians are differentiable with torch"""
+
+        import torch
+        from torch.autograd.functional import jacobian
+
+        dev = qml.device("default.qubit", wires=2, shots=50000)
+
+        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.qnode(dev)
+        def circuit(coeff1, coeff2):
+            qml.RX(np.pi / 4, wires=0)
+            qml.RY(np.pi / 4, wires=1)
+            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+
+        params = torch.tensor(np.pi / 4), torch.tensor(3 * np.pi / 4)
+        actual = jacobian(circuit, params)
+
+        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+
     @pytest.mark.tf
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_tensorflow(self, grouping_strategy):
-        """Tests that the output of ``split_non_commuting`` is differentiable with torch"""
+        """Tests that the output of ``split_non_commuting`` is differentiable with tensorflow"""
 
         import tensorflow as tf
 
@@ -1231,3 +1269,27 @@ class TestDifferentiability:
 
         assert qml.math.allclose(grad1, expected_grad_1, atol=1e-5)
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-5)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_trainable_hamiltonian_tensorflow(self, grouping_strategy):
+        """Tests that measurements of trainable Hamiltonians are differentiable with tensorflow"""
+
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2, shots=50000)
+
+        @qml.qnode(dev)
+        def circuit(coeff1, coeff2):
+            qml.RX(np.pi / 4, wires=0)
+            qml.RY(np.pi / 4, wires=1)
+            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+
+        params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
+
+        with tf.GradientTape() as tape:
+            cost = split_non_commuting(circuit, grouping_strategy=grouping_strategy)(*params)
+
+        actual = tape.jacobian(cost, params)
+
+        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
