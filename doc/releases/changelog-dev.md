@@ -241,6 +241,9 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
+* `DefaultQutritMixed` has readout error. TODO
+  [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)
+
 <h3>Breaking changes 💔</h3>
 
 * Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
