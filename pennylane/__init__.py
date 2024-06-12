@@ -123,7 +123,7 @@ from pennylane.ops.functions import (
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
-from pennylane.debugging import snapshots
+from pennylane.debugging import snapshots, breakpoint
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
@@ -140,6 +140,7 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
+import pennylane.noise
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
