@@ -448,9 +448,7 @@ def simulate_tree_mcm(
         mid_measurements=mcm_active,
         **execution_kwargs,
     )
-    measurements = measure_final_state(
-        circuit_base, state, is_state_batched, initial_state=initial_state, **execution_kwargs
-    )
+    measurements = measure_final_state(circuit_base, state, is_state_batched, **execution_kwargs)
 
     # Simply return measurements when ``circuit_base`` does not have an MCM
     if circuit_next is None:
@@ -463,29 +461,6 @@ def simulate_tree_mcm(
         samples = qml.math.atleast_1d(measurements)
     update_mcm_samples(op, samples, mcm_active, mcm_samples)
 
-    # Define ``branch_measurement`` here to capture ``op``, ``rng``, ``prng_key``, ``debugger``, ``interface``
-    def branch_measurement(
-        circuit_next, state, branch, mcm_active, mcm_samples, **execution_kwargs
-    ):
-        """Returns the measurements of the specified branch by executing ``circuit_next``."""
-
-        def branch_state(state, branch, wire):
-            state = apply_operation(qml.Projector([branch], wire), state)
-            state = state / qml.math.norm(state)
-            if op.reset and branch == 1:
-                state = apply_operation(qml.PauliX(wire), state)
-            return state
-
-        new_state = branch_state(state, branch, op.wires)
-        return simulate_tree_mcm(
-            circuit_next,
-            debugger=debugger,
-            initial_state=new_state,
-            mcm_active=mcm_active,
-            mcm_samples=mcm_samples,
-            **execution_kwargs,
-        )
-
     counts = samples_to_counts(samples)
     measurements = [{} for _ in circuit_next.measurements]
     single_measurement = len(circuit_next.measurements) == 1
@@ -496,16 +471,17 @@ def simulate_tree_mcm(
             continue
         prng_key, key = jax_random_split(prng_key)
         mcm_active[op] = branch
+        new_state = branch_state(state, branch, op)
         circuit_branch = qml.tape.QuantumScript(
             circuit_next.operations,
             circuit_next.measurements,
             shots=qml.measurements.Shots(count),
             trainable_params=circuit_next.trainable_params,
         )
-        meas = branch_measurement(
+        meas = simulate_tree_mcm(
             circuit_branch,
-            state,
-            branch,
+            debugger=debugger,
+            initial_state=new_state,
             mcm_active=mcm_active,
             mcm_samples=mcm_samples,
             prng_key=key,
@@ -517,6 +493,24 @@ def simulate_tree_mcm(
             measurements[i][branch] = (count, m)
 
     return combine_measurements(circuit, measurements, mcm_samples)
+
+
+def branch_state(state, branch, mcm):
+    """Collapse the state on a given branch.
+
+    Args:
+        state (TensorLike): The initial state
+        branch (int): The branch on which the state is collapsed
+        mcm (MidMeasureMP): Mid-circuit measurement object used to obtain the wires and ``reset``
+
+    Returns:
+        TensorLike: The collapsed state
+    """
+    state = apply_operation(qml.Projector([branch], mcm.wires), state)
+    state = state / qml.math.norm(state)
+    if mcm.reset and branch == 1:
+        state = apply_operation(qml.PauliX(mcm.wires), state)
+    return state
 
 
 def samples_to_counts(samples):
