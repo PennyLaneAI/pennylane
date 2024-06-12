@@ -323,6 +323,9 @@
 * `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` can now be used with `Sum` operators.
   [(#5846)](https://github.com/PennyLaneAI/pennylane/pull/5846)
 
+* `qml.qnn.TorchLayer` now works with tuple returns.
+  [(#5816)](https://github.com/PennyLaneAI/pennylane/pull/5816)
+
 * An error is now raised if a transform is applied to a catalyst qjit object.
   [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
 
