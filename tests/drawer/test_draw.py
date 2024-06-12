@@ -877,6 +877,99 @@ class TestMidCircuitMeasurements:
         assert drawing == expected_drawing
 
 
+class TestLevelExpansionStrategy:
+    @pytest.fixture(
+        params=[qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit()],
+    )
+    def transforms_circuit(self, request):
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(request.param, diff_method="parameter-shift")
+        def circ(weights, order):
+            qml.RandomLayers(weights, wires=(0, 1))
+            qml.Permute(order, wires=(0, 1, 2))
+            qml.PauliX(0)
+            qml.PauliX(0)
+            qml.RX(0.1, wires=0)
+            qml.RX(-0.1, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        return circ
+
+    @pytest.mark.parametrize(
+        "var1,var2,expected",
+        [
+            (
+                0,
+                "top",
+                "0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>\n"
+                "1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤     \n"
+                "2: ───────────────────╰Permute────────────────────────────┤     ",
+            ),
+            (
+                2,
+                "user",
+                "0: ─╭RandomLayers(M0)─╭Permute─┤  <X>\n"
+                "1: ─╰RandomLayers(M0)─├Permute─┤     \n"
+                "2: ───────────────────╰Permute─┤     ",
+            ),
+            (
+                3,
+                "gradient",
+                "0: ──RY(1.00)──╭Permute─┤  <X>\n"
+                "1: ──RX(20.00)─├Permute─┤     \n"
+                "2: ────────────╰Permute─┤     ",
+            ),
+            (
+                8,
+                "device",
+                "0: ──RY(1.00)──╭SWAP─┤  <X>\n"
+                "1: ──RX(20.00)─│─────┤     \n"
+                "2: ────────────╰SWAP─┤     ",
+            ),
+        ],
+    )
+    def test_equivalent_levels(self, transforms_circuit, var1, var2, expected):
+        order = [2, 1, 0]
+        weights = np.array([[1.0, 20]])
+
+        out1 = qml.draw(transforms_circuit, level=var1, show_matrices=False)(weights, order)
+        out2 = qml.draw(transforms_circuit, level=var2, show_matrices=False)(weights, order)
+
+        assert out1 == out2 == expected
+
+    def test_draw_with_qfunc_warns_with_expansion_strategy(self):
+        """Test that draw warns the user about expansion_strategy being ignored."""
+
+        def qfunc():
+            qml.PauliZ(0)
+
+        with pytest.warns(
+            UserWarning, match="the expansion_strategy and level arguments are ignored"
+        ):
+            _ = qml.draw(qfunc, expansion_strategy="gradient")
+
+        with pytest.warns(
+            UserWarning, match="the expansion_strategy and level arguments are ignored"
+        ):
+            _ = qml.draw(qfunc, level="gradient")
+
+    def test_draw_at_level_1(self, transforms_circuit):
+        """Test that at level one the first transform has been applied, cancelling inverses."""
+
+        order = [2, 1, 0]
+        weights = np.array([[1.0, 20]])
+
+        out = qml.draw(transforms_circuit, level=1, show_matrices=False)(weights, order)
+
+        expected = (
+            "0: ─╭RandomLayers(M0)─╭Permute──RX(0.10)──RX(-0.10)─┤  <X>\n"
+            "1: ─╰RandomLayers(M0)─├Permute──────────────────────┤     \n"
+            "2: ───────────────────╰Permute──────────────────────┤     "
+        )
+        assert out == expected
+
+
 def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""
 
@@ -916,27 +1009,6 @@ def test_nested_tapes():
     )
 
     assert draw(circ)() == expected
-
-
-@pytest.mark.parametrize(
-    "device",
-    [qml.device("default.qubit.legacy", wires=2), qml.devices.DefaultQubit(wires=2)],
-)
-def test_expansion_strategy(device):
-    """Test expansion strategy keyword modifies tape expansion."""
-
-    H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
-
-    @qml.qnode(device)
-    def circ(t):
-        qml.ApproxTimeEvolution(H, t, 2)
-        return qml.probs(wires=0)
-
-    expected_gradient = "0: ─╭ApproxTimeEvolution─┤  Probs\n1: ─╰ApproxTimeEvolution─┤       "
-    assert draw(circ, expansion_strategy="gradient", decimals=None)(0.5) == expected_gradient
-
-    expected_device = "0: ──RX─╭RXX──RX─╭RXX─┤  Probs\n1: ──RZ─╰RXX──RZ─╰RXX─┤       "
-    assert draw(circ, expansion_strategy="device", decimals=None)(0.5) == expected_device
 
 
 @pytest.mark.parametrize(
@@ -981,16 +1053,6 @@ def test_draw_with_qfunc_with_measurements():
         return qml.expval(qml.PauliZ(1))
 
     assert qml.draw(qfunc)(1.1) == "0: ──RX(1.10)─╭●─┤     \n1: ───────────╰X─┤  <Z>"
-
-
-def test_draw_with_qfunc_warns_with_expansion_strategy():
-    """Test that draw warns the user about expansion_strategy being ignored."""
-
-    def qfunc():
-        qml.PauliZ(0)
-
-    with pytest.warns(UserWarning, match="the expansion_strategy and level arguments are ignored"):
-        _ = qml.draw(qfunc, expansion_strategy="gradient")
 
 
 @pytest.mark.parametrize("use_qnode", [True, False])
