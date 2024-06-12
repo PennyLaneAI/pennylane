@@ -1046,14 +1046,12 @@ class TestFermiSentenceArithmetic:
     def test_to_string_of_format(self, f_op, string):
         assert to_string(f_op, of=True) == string
 
-    def test_to_string_type(self, f_op):
+    def test_to_string_type(self):
         pl_op = qml.X(0)
         with pytest.raises(
             ValueError, match=f"fermi_op must be a FermiWord or FermiSentence, got: {type(pl_op)}"
         ):
             to_string(pl_op)
-
-        "fermi_op must be a FermiWord or FermiSentence, got: pennylane.ops.qubit.non_parametric_ops.PauliX"
 
     @pytest.mark.parametrize(
         "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")
