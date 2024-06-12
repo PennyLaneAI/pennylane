@@ -254,6 +254,9 @@
 * `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
  
+* Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian`
+ [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
+
 * `qml.QutritChannel` has been added, enabling the specification of noise using a collection of (3x3) Kraus matrices on the `default.qutrit.mixed` device.
   [(#5793)](https://github.com/PennyLaneAI/pennylane/issues/5793)
 
