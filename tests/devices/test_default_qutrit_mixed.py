@@ -1285,6 +1285,13 @@ class TestReadoutError:
         ]
     ).T
 
+    def setup_state(self, nr_wires):
+        """Sets up a basic state used for testing."""
+        qml.QutritUnitary(self.setup_unitary, wires=0)
+        qml.QutritUnitary(self.setup_unitary, wires=1)
+        if nr_wires == 3:
+            qml.TAdd(wires=(0, 2))
+
     @staticmethod
     def get_expected_dm(num_wires):
         """Gets the expected density matrix of the circuit for the first num_wires"""
@@ -1314,15 +1321,12 @@ class TestReadoutError:
         ((1, 0, 0), None, [5 / 6, 1 / (2 * np.sqrt(3)), 5 / 6]),
         ((0, 1, 0), None, [1 / 3, 1 / np.sqrt(3), 1 / 3]),
         ((1, 0, 1), None, [2 / 3, 1 / np.sqrt(3), 2 / 3]),
-
         # When both gammas and probs are not None, :func:`~qml.QutritAmplitudeDamping` error based
         # gammas is applied first then :func:`~qml.TritFlip` error.
         ((0, 1, 0), (0, 0, 1), [4 / 6, 0, 4 / 6]),
-
         # For trit flips with fractional values, the probabilities are adjusted linearly based on
         # each value of probs and the state's probabilities.
         (None, (0.1, 0.2, 0.4), [2 / 15, 1 / (10 * np.sqrt(3)), 2 / 15]),
-
         # For amplitude damping with fractional values, the probabilities are adjusted linearly
         # based on each value of gammas and the state's probabilities.
         ((0.2, 0.1, 0.3), None, [4 / 15, 7 / (10 * np.sqrt(3)), 4 / 15]),
@@ -1341,12 +1345,12 @@ class TestReadoutError:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QutritUnitary(self.setup_unitary, wires=0)
-            qml.QutritUnitary(self.setup_unitary, wires=1)
-            if nr_wires == 3:
-                qml.TAdd(wires=(0, 2))
-
-            return qml.expval(qml.GellMann(0, 3)), qml.expval(qml.GellMann(0, 8)), qml.expval(qml.GellMann(1, 3))
+            self.setup_state(nr_wires)
+            return (
+                qml.expval(qml.GellMann(0, 3)),
+                qml.expval(qml.GellMann(0, 8)),
+                qml.expval(qml.GellMann(1, 3)),
+            )
 
         res = circuit()
         assert np.allclose(res, expected)
@@ -1362,8 +1366,12 @@ class TestReadoutError:
         )
         # Create matrix of the GellMann 3 matrix undiagonalized with THadamard
         w = np.exp(2j / 3 * np.pi)
-        gellMann_3_equivalent = np.array([[0, (1 - w), (1 - w ** 2)], [(1 - w ** 2), 0, (1 - w)],
-                                          [(1 - w), (1 - w ** 2), 0]]) / 2
+        gellMann_3_equivalent = (
+            np.array(
+                [[0, (1 - w), (1 - w**2)], [(1 - w**2), 0, (1 - w)], [(1 - w), (1 - w**2), 0]]
+            )
+            / 2
+        )
 
         # Set up the Hamiltonian parameters for the undiagonalized GellMann 8 matrix
         inv_sqrt_3 = 1 / np.sqrt(3)
@@ -1372,10 +1380,7 @@ class TestReadoutError:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QutritUnitary(self.setup_unitary, wires=0)
-            qml.QutritUnitary(self.setup_unitary, wires=1)
-            if nr_wires == 3:
-                qml.TAdd(wires=(0, 2))
+            self.setup_state(nr_wires)
 
             qml.THadamard(wires=0)
             qml.THadamard(wires=1, subspace=(0, 1))
@@ -1407,11 +1412,7 @@ class TestReadoutError:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QutritUnitary(self.setup_unitary, wires=0)
-            qml.QutritUnitary(self.setup_unitary, wires=1)
-            if nr_wires == 3:
-                qml.TAdd(wires=(0, 2))
-
+            self.setup_state(nr_wires)
             return qml.state()
 
         res = circuit()
@@ -1429,11 +1430,7 @@ class TestReadoutError:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QutritUnitary(self.setup_unitary, wires=0)
-            qml.QutritUnitary(self.setup_unitary, wires=1)
-            if nr_wires == 3:
-                qml.TAdd(wires=(0, 2))
-
+            self.setup_state(nr_wires)
             return qml.density_matrix(wires=1)
 
         res = circuit()
@@ -1497,10 +1494,18 @@ class TestReadoutError:
 
     @pytest.mark.parametrize(
         "gammas, probs, expected",
-        [  # TODO
-            ((0, 0, 0), (0, 0, 0), np.array([1, 0])),
-            ((0, 0, 0), (0, 0, 0), np.array([0.5, 0.5])),
-            ((0, 0, 0), (0, 0, 0), np.array([0, 1])),
+        [
+            ((0, 0, 0), (0, 0, 0), [1 / 2, 1 / 3, 1 / 6]),
+            (None, (1, 0, 0), [1 / 3, 1 / 2, 1 / 6]),
+            (None, (0, 1, 0), [1 / 6, 1 / 3, 1 / 2]),
+            (None, (0, 0, 1), [1 / 2, 1 / 6, 1 / 3]),
+            ((1, 0, 0), None, [5 / 6, 0, 1 / 6]),
+            ((0, 1, 0), None, [2 / 3, 1 / 3, 0]),
+            ((1, 0, 1), None, [5 / 6, 1 / 6, 0]),
+            ((0, 1, 0), (0, 0, 1), [2 / 3, 0, 1 / 3]),
+            (None, (0.1, 0.2, 0.4), [5 / 12, 17 / 60, 0.3]),
+            ((0.2, 0.1, 0.3), None, [7 / 12, 19 / 60, 0.1]),
+            ((0.2, 0.1, 0.25), (0.1, 0.2, 0.5), [553 / 1200, 283 / 1200, 91 / 300]),
         ],
     )
     def test_readout_probs(self, nr_wires, gammas, probs, expected):
@@ -1514,6 +1519,7 @@ class TestReadoutError:
 
         @qml.qnode(dev)
         def circuit():
+            self.setup_state(nr_wires)
             return qml.probs(wires=0)
 
         res = circuit()
