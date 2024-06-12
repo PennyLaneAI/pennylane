@@ -146,7 +146,7 @@ def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, mo
 
 
 msg1 = "Elements in the lists are expected to be of type 'FermionOperator'"
-msg2 = "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'"
+msg2 = "Please set 'mapping' to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
 
 
 @pytest.mark.parametrize(
