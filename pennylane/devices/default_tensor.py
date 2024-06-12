@@ -135,7 +135,7 @@ _gate_contract_mps = frozenset({"auto-mps", "swap+split", "nonlocal"})
 # The set of supported gate contraction methods for the MPS method.
 
 _gate_contract_tn = frozenset(
-    {"auto-split-gate", "split-gate", "reduce-split", "swap-split-gate", "split", "True", "False"}
+    {"auto-split-gate", "split-gate", "reduce-split", "swap-split-gate", "split", True, False}
 )
 # The set of supported gate contraction methods for the TN method.
 
@@ -497,6 +497,35 @@ class DefaultTensor(Device):
             dev = qml.device("default.tensor", method="mps", wires=15)
 
             dev.draw()
+
+        We can also customize the appearance of the tensor network diagram by passing additional keyword arguments:
+
+        .. code-block:: python
+
+            dev = qml.device("default.tensor", method="tn")
+
+            @qml.qnode(dev)
+            def circuit(num_qubits):
+                for i in range(num_qubits):
+                qml.Hadamard(wires=i)
+                for _ in range(1, num_qubits - 1):
+                    for i in range(0, num_qubits, 2):
+                        qml.CNOT(wires=[i, i + 1])
+                    for i in range(10):
+                        qml.RZ(1.234, wires=i)
+                    for i in range(1, num_qubits - 1, 2):
+                        qml.CZ(wires=[i, i + 1])
+                    for i in range(num_qubits):
+                        qml.RX(1.234, wires=i)
+                for i in range(num_qubits):
+                    qml.Hadamard(wires=i)
+                return qml.expval(qml.Z(0))
+
+            num_qubits = 12
+
+            result = circuit(num_qubits)
+
+            dev.draw(color="auto", show_inds=True)
         """
 
         color = kwargs.pop("color", [f"I{w}" for w in range(len(self._quimb_circuit.psi.tensors))])
