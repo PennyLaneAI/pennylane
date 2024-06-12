@@ -154,19 +154,15 @@ class TestToOpenFermion:
 
     COMPLEX_OPS = (
         (
-            (
-                qml.fermi.FermiSentence(
-                    {
-                        qml.fermi.FermiWord(
-                            {(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"}
-                        ): 0.5
-                        + 1e-08j,
-                        qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"}): 0.3,
-                    }
-                )
-            ),
+            qml.fermi.FermiSentence(
+                {
+                    qml.fermi.FermiWord({(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"}): 0.5
+                    + 1e-08j,
+                    qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"}): 0.3,
+                }
+            )
         ),
-        ((0.5 * qml.Z(0) @ qml.X(2) + 0.1 + 1e-08j * qml.X(1) @ qml.Z(0)),),
+        (0.5 * qml.Z(0) @ qml.X(2) + 0.1 + 1e-08j * qml.X(1) @ qml.Z(0)),
     )
 
     @pytest.mark.parametrize("pl_op", COMPLEX_OPS)
