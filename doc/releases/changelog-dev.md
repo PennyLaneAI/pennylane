@@ -77,7 +77,7 @@
 * The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
 
-* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `QASM2` code and it can now also take an
+* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
    optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
    [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
