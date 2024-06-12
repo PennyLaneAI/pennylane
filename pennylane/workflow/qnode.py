@@ -1167,7 +1167,6 @@ qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 
 
-# pylint: disable=protected-access
 def _prune_dynamic_transform(outer_transform, inner_transform):
     """Ensure a single ``dynamic_one_shot`` transform is applied.
 
@@ -1179,7 +1178,7 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
 
     """
 
-    all_transforms = outer_transform._transform_program + inner_transform._transform_program
+    all_transforms = outer_transform + inner_transform
     type_to_keep = 0
     if any("mid_circuit_measurements" in str(t) for t in all_transforms):
         type_to_keep = 2
