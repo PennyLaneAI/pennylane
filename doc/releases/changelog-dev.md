@@ -52,6 +52,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
+
 * `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
    [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
@@ -78,6 +81,7 @@
 
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
+  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
 
 * The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
@@ -400,5 +404,6 @@ Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
 Jay Soni,
+Kazuki Tsuoka,
 Haochen Paul Wang,
 David Wierichs.
