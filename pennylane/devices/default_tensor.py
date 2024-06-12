@@ -191,7 +191,7 @@ class DefaultTensor(Device):
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
         method (str): Supported method. The supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Tensor Network).
-        dtype (type): Data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
+        c_dtype (type): Data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
     Keyword Args:
@@ -341,7 +341,7 @@ class DefaultTensor(Device):
         "contract",
         "contraction_optimizer",
         "cutoff",
-        "dtype",
+        "c_dtype",
         "local_simplify",
         "max_bond_dim",
         "method",
@@ -351,7 +351,7 @@ class DefaultTensor(Device):
         self,
         wires=None,
         method="mps",
-        dtype=np.complex128,
+        c_dtype=np.complex128,
         **kwargs,
     ) -> None:
 
@@ -366,15 +366,15 @@ class DefaultTensor(Device):
                 f"Unsupported method: {method}. Supported methods are 'mps' (Matrix Product State) and 'tn' (Exact Tensor Network)."
             )
 
-        if dtype not in [np.complex64, np.complex128]:
+        if c_dtype not in [np.complex64, np.complex128]:
             raise TypeError(
-                f"Unsupported type: {dtype}. Supported types are numpy.complex64 and numpy.complex128."
+                f"Unsupported type: {c_dtype}. Supported types are numpy.complex64 and numpy.complex128."
             )
 
         super().__init__(wires=wires, shots=None)
 
         self._method = method
-        self._dtype = dtype
+        self._c_dtype = c_dtype
 
         # options for MPS
         self._max_bond_dim = kwargs.get("max_bond_dim", None)
@@ -414,9 +414,9 @@ class DefaultTensor(Device):
         return self._method
 
     @property
-    def dtype(self) -> type:
+    def c_dtype(self) -> type:
         """Tensor complex data type."""
-        return self._dtype
+        return self._c_dtype
 
     def _initial_quimb_circuit(
         self, wires: qml.wires.Wires
@@ -470,7 +470,7 @@ class DefaultTensor(Device):
         """
         return qtn.MPS_computational_state(
             binary="0" * (len(wires) if wires else 1),
-            dtype=self._dtype.__name__,
+            dtype=self._c_dtype.__name__,
             tags=[str(l) for l in wires.labels] if wires else None,
         )
 
@@ -554,7 +554,7 @@ class DefaultTensor(Device):
         """
         return qtn.TN_from_sites_computational_state(
             site_map={i: "0" for i in range(len(wires) if wires else 1)},
-            dtype=self._dtype.__name__,
+            dtype=self._c_dtype.__name__,
         )
 
     def _setup_execution_config(
@@ -678,7 +678,7 @@ class DefaultTensor(Device):
         """
 
         self._quimb_circuit.apply_gate(
-            qml.matrix(op).astype(self._dtype), *op.wires, parametrize=None
+            qml.matrix(op).astype(self._c_dtype), *op.wires, parametrize=None
         )
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
@@ -768,7 +768,7 @@ class DefaultTensor(Device):
         exp_val = qc.local_expectation(
             matrix,
             wires,
-            dtype=self._dtype.__name__,
+            dtype=self._c_dtype.__name__,
             optimize=self._contraction_optimizer,
             simplify_sequence=self._local_simplify,
             simplify_atol=0.0,

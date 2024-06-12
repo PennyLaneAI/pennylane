@@ -41,8 +41,8 @@ pytestmark = pytest.mark.external
 )
 def dev(request):
     """Device fixture."""
-    dtype, method = request.param
-    return qml.device("default.tensor", wires=3, method=method, dtype=dtype)
+    c_dtype, method = request.param
+    return qml.device("default.tensor", wires=3, method=method, c_dtype=c_dtype)
 
 
 def calculate_reference(tape):
@@ -79,7 +79,7 @@ class TestVar:
 
         result = dev.execute(tape)
         expected = 1 - np.cos(theta) ** 2
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(result, expected, atol=tol, rtol=0)
 
@@ -92,7 +92,7 @@ class TestVar:
         )
         result = execute(dev, tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(0.0, result, atol=tol, rtol=0)
 
     def test_multi_wire_identity_variance(self, theta, phi, dev):
@@ -103,7 +103,7 @@ class TestVar:
             [qml.var(qml.Identity(wires=[0, 1]))],
         )
         result = execute(dev, tape)
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(0.0, result, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("wires", [([0, 1]), (["a", 1]), (["b", "a"]), ([-1, 2.5])])
@@ -126,7 +126,7 @@ class TestVar:
             [1 - np.cos(theta) ** 2, 1 - np.cos(theta) ** 2 * np.cos(phi) ** 2]
         )
 
-        tol = 1e-5 if device.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if device.c_dtype == np.complex64 else 1e-7
         assert np.allclose(calculated_val, reference_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
@@ -173,7 +173,7 @@ class TestVar:
         result = execute(dev, tape)
         expected = expected_fn(theta, phi)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(result, expected, atol=tol, rtol=0)
 
     def test_hermitian_variance(self, theta, phi, dev):
@@ -190,7 +190,7 @@ class TestVar:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(calculated_val, reference_val, atol=tol, rtol=0)
 
     def test_hamiltonian_variance(self, theta, phi, dev):
@@ -218,7 +218,7 @@ class TestVar:
         calculated_val = execute(dev, tape1)
         reference_val = calculate_reference(tape2)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(calculated_val, reference_val, atol=tol, rtol=0)
 
     def test_sparse_hamiltonian_variance(self, theta, phi, dev):
@@ -250,7 +250,7 @@ class TestVar:
         calculated_val = execute(dev, tape1)
         reference_val = calculate_reference(tape2)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(calculated_val, reference_val, atol=tol, rtol=0)
 
 
@@ -282,7 +282,7 @@ class TestOperatorArithmetic:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -302,7 +302,7 @@ class TestOperatorArithmetic:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -325,7 +325,7 @@ class TestTensorVar:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -344,7 +344,7 @@ class TestTensorVar:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -362,7 +362,7 @@ class TestTensorVar:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 

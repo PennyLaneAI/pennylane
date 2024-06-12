@@ -42,8 +42,8 @@ pytestmark = pytest.mark.external
 )
 def dev(request):
     """Device fixture."""
-    dtype, method = request.param
-    return qml.device("default.tensor", wires=3, method=method, dtype=dtype)
+    c_dtype, method = request.param
+    return qml.device("default.tensor", wires=3, method=method, c_dtype=c_dtype)
 
 
 def calculate_reference(tape):
@@ -80,7 +80,7 @@ class TestExpval:
 
         result = execute(dev, tape)
         expected = np.cos(theta)
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(result, expected, tol)
 
@@ -93,7 +93,7 @@ class TestExpval:
         )
         result = execute(dev, tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(1.0, result, tol)
 
@@ -105,7 +105,7 @@ class TestExpval:
             [qml.expval(qml.Identity(wires=[0, 1]))],
         )
         result = execute(dev, tape)
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(1.0, result, tol)
 
@@ -130,7 +130,7 @@ class TestExpval:
         calculated_val = execute(dev, tape)
         reference_val = np.array([np.cos(theta), np.cos(theta) * np.cos(phi)])
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -275,7 +275,7 @@ class TestOperatorArithmetic:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -295,7 +295,7 @@ class TestOperatorArithmetic:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -318,7 +318,7 @@ class TestTensorExpval:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -337,7 +337,7 @@ class TestTensorExpval:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -355,7 +355,7 @@ class TestTensorExpval:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 

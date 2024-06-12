@@ -224,16 +224,16 @@ def test_invalid_method():
         qml.device("default.tensor", method=method)
 
 
-@pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
-def test_data_type(dtype):
+@pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+def test_data_type(c_dtype):
     """Test the data type."""
-    assert qml.device("default.tensor", dtype=dtype).dtype == dtype
+    assert qml.device("default.tensor", c_dtype=c_dtype).c_dtype == c_dtype
 
 
 def test_ivalid_data_type():
     """Test that data type can only be np.complex64 or np.complex128."""
     with pytest.raises(TypeError):
-        qml.device("default.tensor", dtype=float)
+        qml.device("default.tensor", c_dtype=float)
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
