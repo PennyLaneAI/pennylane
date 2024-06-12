@@ -15,10 +15,10 @@
 This module contains functionality for debugging quantum programs on simulator devices.
 """
 
-from .snapshots import snapshots
+from .snapshot import snapshots
 
 from .debugger import (
-    breakpoint, 
+    breakpoint,
     expval,
     PLDB,
     pldb_device_manager,

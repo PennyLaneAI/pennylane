@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This file contains the snapshots function which extracts measurements from the qnode.
+"""
 import pennylane as qml
 from pennylane import DeviceError
 
