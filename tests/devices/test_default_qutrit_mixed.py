@@ -1300,22 +1300,36 @@ class TestReadoutError:
             )
         return np.outer(state, state)
 
-    @pytest.mark.parametrize(
-        "gammas, probs, expected",
-        [
-            ((0, 0, 0), (0, 0, 0), [1/6, 1/(2*np.sqrt(3)), 1/6]),
-            (None, (1, 0, 0), [-1/6, 1/(2*np.sqrt(3)), -1/6]),
-            (None, (0, 1, 0), [-1/6, -1/(2*np.sqrt(3)), -1/6]),
-            (None, (0, 0, 1), [1/3, 0, 1/3]),
-            ((1, 0, 0), None, [5/6, 1/(2*np.sqrt(3)), 5/6]),
-            ((0, 1, 0), None, [1/3, 1/np.sqrt(3), 1/3]),
-            ((1, 0, 1), None, [2/3, 1/np.sqrt(3), 2/3]),
-            ((0, 1, 0), (0, 0, 1), [4/6, 0, 4/6]),
-            (None, (0.1, 0.2, 0.4), [2/15, 1/(10*np.sqrt(3)), 2/15]),
-            ((0.2, 0.1, 0.3), None, [4/15, 7/(10*np.sqrt(3)), 4/15]),
-            ((0.2, 0.1, 0.25), (0.1, 0.2, 0.5), [9/40, 9/(100*np.sqrt(3)), 9/40]),
-        ],
-    )
+    inputs_and_expected_expval = [
+        ((0, 0, 0), (0, 0, 0), [1 / 6, 1 / (2 * np.sqrt(3)), 1 / 6]),
+        # The second input, probs, defines the probability of :func:`~qml.TritFlip` error.
+        # For inputs with one 1 the probabilities of each eigenvalue measurement can be flipped
+        # based on the list positions resulting subspace ((0,1), (0,2), (1,2)).
+        (None, (1, 0, 0), [-1 / 6, 1 / (2 * np.sqrt(3)), -1 / 6]),
+        (None, (0, 1, 0), [-1 / 6, -1 / (2 * np.sqrt(3)), -1 / 6]),
+        (None, (0, 0, 1), [1 / 3, 0, 1 / 3]),
+        # The first input, gammas, defines the gammas of :func:`~qml.QutritAmplitudeDamping` error.
+        # For inputs with 1 in gammas the probability of the first subspace is set  to 0 and added
+        # to the second subspaces' probability.
+        ((1, 0, 0), None, [5 / 6, 1 / (2 * np.sqrt(3)), 5 / 6]),
+        ((0, 1, 0), None, [1 / 3, 1 / np.sqrt(3), 1 / 3]),
+        ((1, 0, 1), None, [2 / 3, 1 / np.sqrt(3), 2 / 3]),
+
+        # When both gammas and probs are not None, :func:`~qml.QutritAmplitudeDamping` error based
+        # gammas is applied first then :func:`~qml.TritFlip` error.
+        ((0, 1, 0), (0, 0, 1), [4 / 6, 0, 4 / 6]),
+
+        # For trit flips with fractional values, the probabilities are adjusted linearly based on
+        # each value of probs and the state's probabilities.
+        (None, (0.1, 0.2, 0.4), [2 / 15, 1 / (10 * np.sqrt(3)), 2 / 15]),
+
+        # For amplitude damping with fractional values, the probabilities are adjusted linearly
+        # based on each value of gammas and the state's probabilities.
+        ((0.2, 0.1, 0.3), None, [4 / 15, 7 / (10 * np.sqrt(3)), 4 / 15]),
+        ((0.2, 0.1, 0.25), (0.1, 0.2, 0.5), [9 / 40, 9 / (100 * np.sqrt(3)), 9 / 40]),
+    ]
+
+    @pytest.mark.parametrize("gammas, probs, expected", inputs_and_expected_expval)
     def test_readout_expval_commuting(self, nr_wires, gammas, probs, expected):
         """Tests the measurement results for expval of GellMann 3 observables"""
         dev = qml.device(
@@ -1337,44 +1351,7 @@ class TestReadoutError:
         res = circuit()
         assert np.allclose(res, expected)
 
-    @pytest.mark.parametrize(
-        "gammas, probs, expected",
-        [  # TODO
-            ((0, 0, 0), (0, 0, 0), [1/6, 1/(2*np.sqrt(3)), 1/6]),
-            (None, (1, 0, 0), [-1/6, 1/(2*np.sqrt(3)), -1/6]),
-            (None, (0, 1, 0), [-1/6, -1/(2*np.sqrt(3)), -1/6]),
-            (None, (0, 0, 1), [1/3, 0, 1/3]),
-            ((1, 0, 0), None, [5/6, 1/(2*np.sqrt(3)), 5/6]),
-            ((0, 1, 0), None, [1/3, 1/np.sqrt(3), 1/3]),
-            ((1, 0, 1), None, [2/3, 1/np.sqrt(3), 2/3]),
-            ((0, 1, 0), (0, 0, 1), [4/6, 0, 4/6]),
-            (None, (0.1, 0.2, 0.4), [2/15, 1/(10*np.sqrt(3)), 2/15]),
-            # 1/2-(1/20-1/30) -(1/10-1/30), 1/3+(1/20-1/30)-(4/30-2/30), 1/6+(1/10-1/30)+(4/30-2/30)
-            # 1/2-(1/60)-(2/30), 1/3+(1/60)-(2/30), 1/6+(2/30)+(2/30)
-            # 1/2-(5/60), 1/3-(3/60), 1/6+(8/60)
-            # 30/60-(5/60), 20/60-(3/60), 10/60+(8/60)
-            # 25/60, 17/60, 18/60
-            ((0.2, 0.1, 0.3), None, [4/15, 7/(10*np.sqrt(3)), 4/15]), # 1/2+2/30+1/60, 1/3-2/30+3/60, 1/6-1/60-3/60
-            # 1/2+4/60+1/60, 1/3-4/60+3/60, 1/6-1/60-3/60
-            # 30/60+5/60, 20/60-1/60, 10/60-4/60
-            # 35/60, 19/60, 6/60
-            # 35-19=16  => 16/60=8/30=4/15
-            # 35+19 = 54 => 54-12=42 =>42/60 = 21/30 = 7/10
-
-            ((0.2, 0.1, 0.25), (0.1, 0.2, 0.5), [9/40, 9/(100*np.sqrt(3)), 9/40]), # 1/2+2/30+1/60, 1/3-2/30+2.5/60, 1/6-1/60-2.5/60
-            # 1/2+4/60+1/60, 1/3-4/60+2.5/60, 1/6-1/60-2.5/60
-            # 30/60+5/60, 20/60-1.5/60, 10/60-3.5/60
-            # 35/60, 18.5/60, 6.5/60
-            # 70/120, 37/120, 13/120
-            # Now apply bitflips
-            # 70/120-(70/1200-37/1200)-(140/1200-26/1200), 37/120+(70/1200-37/1200)-(185/1200-65/1200), 13/120+(140/1200-26/1200)+(185/1200-65/1200)
-            # 70/120-(33/1200)-(114/1200), 37/120+(33/1200)-(120/1200), 13/120+(114/1200)+(120/1200)
-            # 700/1200-(33/1200)-(114/1200), 370/1200+(33/1200)-(120/1200), 130/1200+(114/1200)+(120/1200)
-            # 700/1200-(147/1200), 370/1200-(87/1200), 130/1200+(234/1200)
-            # 553/1200, 283/1200, 364/1200
-            #553-283 270 =9/40
-        ],
-    )
+    @pytest.mark.parametrize("gammas, probs, expected", inputs_and_expected_expval)
     def test_readout_expval_non_commuting(self, nr_wires, gammas, probs, expected):
         """Tests the measurement results for expval of GellMann 1 observables"""
         dev = qml.device(
@@ -1383,20 +1360,29 @@ class TestReadoutError:
             damping_measurement_gammas=gammas,
             trit_flip_measurement_probs=probs,
         )
+        # Create matrix of the GellMann 3 matrix undiagonalized with THadamard
+        w = np.exp(2j / 3 * np.pi)
+        gellMann_3_equivalent = np.array([[0, (1 - w), (1 - w ** 2)], [(1 - w ** 2), 0, (1 - w)],
+                                          [(1 - w), (1 - w ** 2), 0]]) / 2
+
+        # Set up the Hamiltonian parameters for the undiagonalized GellMann 8 matrix
+        inv_sqrt_3 = 1 / np.sqrt(3)
+        gellMann_8_coeffs = np.array([inv_sqrt_3, -1, inv_sqrt_3, 1, inv_sqrt_3, -1]) / 2
+        gellMann_8_obs = [qml.GellMann(0, i) for i in [1, 2, 4, 5, 6, 7]]
 
         @qml.qnode(dev)
         def circuit():
             qml.QutritUnitary(self.setup_unitary, wires=0)
             qml.QutritUnitary(self.setup_unitary, wires=1)
-            if nr_wires == 2:
+            if nr_wires == 3:
                 qml.TAdd(wires=(0, 2))
-            qml.THadamard(wire=0)
-            qml.THadamard(wires=1, subspace=(0,1))
 
+            qml.THadamard(wires=0)
+            qml.THadamard(wires=1, subspace=(0, 1))
 
             return (
-                qml.expval(qml.Hermitian([], 1)),
-                qml.expval(qml.Hamiltonian([], [])),
+                qml.expval(qml.THermitian(gellMann_3_equivalent, 0)),
+                qml.expval(qml.Hamiltonian(gellMann_8_coeffs, gellMann_8_obs)),
                 qml.expval(qml.GellMann(1, 1)),
             )
 
