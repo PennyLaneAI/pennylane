@@ -803,7 +803,7 @@ class Device(abc.ABC):
 
         for obs in circuit.observables:
 
-            name = getattr(obs, "name")
+            name = getattr(obs, "name", None)
 
             if name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
                 return False
