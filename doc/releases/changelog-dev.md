@@ -316,7 +316,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.qnn.TorchLayer` now works with broadcasting and tuple returns.
+* `qml.qnn.TorchLayer` now works with tuple returns.
   [(#5816)](https://github.com/PennyLaneAI/pennylane/pull/5816)
 
 * An error is now raised if a transform is applied to a catalyst qjit object.
