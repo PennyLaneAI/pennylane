@@ -196,22 +196,36 @@ class CompositeOp(Operator):
             List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
             inner lists commute with each other.
         """
-        if self._overlapping_ops is None:
-            overlapping_ops = []  # [(wires, [ops])]
-            for op in self:
-                ops = [op]
-                wires = op.wires
-                op_added = False
-                for idx, (old_wires, old_ops) in enumerate(overlapping_ops):
-                    if any(wire in old_wires for wire in wires):
-                        overlapping_ops[idx] = (old_wires + wires, old_ops + ops)
-                        op_added = True
-                        break
-                if not op_added:
-                    overlapping_ops.append((op.wires, [op]))
 
-            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
+        if self._overlapping_ops is not None:
+            return self._overlapping_ops
 
+        # Construct graph where each edge is a pair of operators with overlapping wires
+        graph = {}
+        for i, op in enumerate(self):
+            graph[i] = set()
+            for j, _op in enumerate(self):
+                if i != j and len(qml.wires.Wires.shared_wires([op.wires, _op.wires])) > 0:
+                    graph[i].add(j)
+
+        def _dfs(_i):
+            """Find all nodes in the graph starting from node i"""
+            _group = {_i}
+            visited.add(_i)
+            for _j in graph[_i]:
+                if _j not in visited:
+                    _group.update(_dfs(_j))
+            return _group
+
+        # Perform DFS to find disconnected sub-graphs
+        visited = set()
+        all_groups = []
+        for i in graph:
+            if i in visited:
+                continue
+            all_groups.append(_dfs(i))
+
+        self._overlapping_ops = [[self[i] for i in group] for group in all_groups]
         return self._overlapping_ops
 
     @property
