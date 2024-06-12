@@ -16,7 +16,7 @@ This module contains the functions for converting an openfermion fermionic opera
 FermiWord or FermiSentence operators
 """
 # pylint: disable= import-outside-toplevel,no-member,unused-import
-from pennylane.fermi import FermiWord, FermiSentence
+from pennylane.fermi import FermiSentence, FermiWord
 
 
 def from_openfermion(of_op, tol=1e-16):
