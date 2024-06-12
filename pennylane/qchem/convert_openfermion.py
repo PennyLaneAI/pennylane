@@ -18,6 +18,7 @@ FermiWord or FermiSentence operators
 # pylint: disable= import-outside-toplevel,no-member,unused-import
 from pennylane.fermi import FermiWord, FermiSentence
 
+
 def from_openfermion(of_op, tol=1e-16):
     r"""Convert OpenFermion
     `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__
@@ -48,7 +49,7 @@ def from_openfermion(of_op, tol=1e-16):
         ) from Error
 
     terms = of_op.terms
-    typemap = {0: '-', 1: '+'}
+    typemap = {0: "-", 1: "+"}
 
     fermiwords = []
     fermivalue = []
