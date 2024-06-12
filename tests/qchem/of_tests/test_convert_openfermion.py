@@ -165,20 +165,12 @@ class TestToOpenFermion:
                     }
                 )
             ),
-            (
-                0.3
-                + 1e-08j * openfermion.FermionOperator("0^ 1")
-                + 0.5 * openfermion.FermionOperator("1 0^ 3^ 2")
-            ),
         ),
-        (
-            (0.5 * qml.Z(0) @ qml.X(2) + 0.1 + 1e-08j * qml.X(1) @ qml.Z(0)),
-            (openfermion.QubitOperator("Z0 X2", 0.5) + openfermion.QubitOperator("X1 Z0", 0.1)),
-        ),
+        ((0.5 * qml.Z(0) @ qml.X(2) + 0.1 + 1e-08j * qml.X(1) @ qml.Z(0)),),
     )
 
-    @pytest.mark.parametrize("pl_op, of_op", COMPLEX_OPS)
-    def test_tol(self, pl_op, of_op):
+    @pytest.mark.parametrize("pl_op", COMPLEX_OPS)
+    def test_tol(self, pl_op):
         """Test the to_openfermion function with complex coefficients."""
         q_op = qml.to_openfermion(pl_op, tol=1e-6)
         coeffs = np.array(list(q_op.terms.values()))
