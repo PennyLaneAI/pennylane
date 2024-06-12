@@ -123,6 +123,12 @@ class TransformDispatcher:
             return self._old_device_transform(obj, targs, tkwargs)
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
+        if obj.__class__.__name__ == "QJIT":
+            raise TransformError(
+                "Functions that are wrapped / decorated with qjit cannot subsequently be"
+                f" transformed with a PennyLane transform (attempted {self})."
+                f" For the desired affect, ensure that qjit is applied after {self}."
+            )
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
