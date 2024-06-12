@@ -338,8 +338,6 @@ def draw_mpl(
 
     Args:
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
-
-    Keyword Args:
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
            If not provided, the wire order defaults to the device wires. If device wires are not
            available, the circuit wires are sorted if possible.
@@ -351,13 +349,6 @@ def draw_mpl(
             If no style is specified, the global style set with :func:`~.use_style` will be used, and the
             initial default is 'black_white'. If you would like to use your environment's current rcParams,
             set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
-        fontsize (float or str): fontsize for text. Valid strings are
-            ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
-            Default is ``14``.
-        wire_options (dict): matplotlib formatting options for the wire lines
-        label_options (dict): matplotlib formatting options for the wire labels
-        active_wire_notches (bool): whether or not to add notches indicating active wires.
-            Defaults to ``True``.
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
             are required.
 
@@ -367,7 +358,16 @@ def draw_mpl(
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
+
+    Keyword Args:
         fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
+        fontsize (float or str): fontsize for text. Valid strings are
+            ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
+            Default is ``14``.
+        wire_options (dict): matplotlib formatting options for the wire lines
+        label_options (dict): matplotlib formatting options for the wire labels
+        active_wire_notches (bool): whether or not to add notches indicating active wires.
+            Defaults to ``True``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
