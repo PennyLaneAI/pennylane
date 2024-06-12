@@ -658,11 +658,14 @@ class TestStateMeasurement:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with pytest.raises(NotImplementedError):
-            state_measurement = MyMeasurement()
-            state_measurement.process_density_matrix(
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement().process_density_matrix(
                 density_matrix=qml.math.array([[1, 0], [0, 0]]), wire_order=Wires([0, 1])
             )
+
+        with pytest.raises(NotImplementedError):
+            circuit()
 
 
 class TestMeasurementTransform:
