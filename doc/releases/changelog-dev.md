@@ -54,6 +54,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
+
 * `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
    [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
@@ -403,5 +406,6 @@ Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
 Jay Soni,
+Kazuki Tsuoka,
 Haochen Paul Wang,
 David Wierichs.
