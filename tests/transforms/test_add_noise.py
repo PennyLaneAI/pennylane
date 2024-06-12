@@ -74,7 +74,8 @@ class TestAddNoise:
     def test_noise_model_error(self):
         """Tests if a ValueError is raised when noise model is not given"""
         with pytest.raises(
-            ValueError, match="Argument noise_model must be an instance of NoiseModel"
+            ValueError,
+            match="Provided noise model object must define model_map and metatadata attributes",
         ):
             add_noise(self.tape, {})
 
