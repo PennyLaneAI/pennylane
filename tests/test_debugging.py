@@ -228,7 +228,7 @@ class TestSnapshot:
         dev = DummyDevice()
 
         with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
-            with qml.debugging._Debugger(dev):
+            with qml.debugging.snapshot._Debugger(dev):
                 dev.execute([])
 
     def test_empty_snapshots(self):
@@ -572,7 +572,7 @@ def test_measure(mock_method, measurement_process):
     with qml.queuing.AnnotatedQueue() as queue:
         ops = [qml.X(0), qml.Y(1), qml.Z(0)] + [qml.Hadamard(i) for i in range(3)]
         measurements = [qml.expval(qml.X(2)), qml.state(), qml.probs(), qml.var(qml.Z(3))]
-        qml.debugging._measure(measurement_process)
+        qml.debugging.debugger._measure(measurement_process)
 
     executed_tape = qml.tape.QuantumScript.from_queue(queue)
     expected_tape = qml.tape.QuantumScript(ops, measurements)
