@@ -1053,14 +1053,19 @@ class QNode:
         if mcm_config.mcm_method == "single-branch-statistics":
             raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
-        # Add the device program to the QNode program
+        full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        inner_transform_program = qml.transforms.core.TransformProgram()
+        config = None
+
         if isinstance(self.device, qml.devices.Device):
+
             config = _make_execution_config(self, self.gradient_fn)
             device_transform_program, config = self.device.preprocess(execution_config=config)
-            full_transform_program = self.transform_program + device_transform_program
-        else:
-            config = None
-            full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+
+            if config.use_device_gradient:
+                full_transform_program += device_transform_program
+            else:
+                inner_transform_program += device_transform_program
 
         has_mcm_support = (
             any(isinstance(op, MidMeasureMP) for op in self._tape)
@@ -1068,14 +1073,15 @@ class QNode:
             and self.device.capabilities().get("supports_mid_measure", False)
         )
         if has_mcm_support:
-            full_transform_program.add_transform(
+            inner_transform_program.add_transform(
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
                 mcm_config=mcm_config,
+                interface=self.interface,
             )
             override_shots = 1
         elif hasattr(self.device, "capabilities"):
-            full_transform_program.add_transform(
+            inner_transform_program.add_transform(
                 qml.defer_measurements,
                 device=self.device,
             )
@@ -1086,9 +1092,10 @@ class QNode:
                 qml.transform(self.gradient_fn.expand_transform),
                 **self.gradient_kwargs,
             )
+
         # Calculate the classical jacobians if necessary
         full_transform_program.set_classical_component(self, args, kwargs)
-        full_transform_program.prune_dynamic_transform()
+        _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
@@ -1097,6 +1104,7 @@ class QNode:
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             transform_program=full_transform_program,
+            inner_transform=inner_transform_program,
             config=config,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
@@ -1157,3 +1165,30 @@ class QNode:
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+def _prune_dynamic_transform(outer_transform, inner_transform):
+    """Ensure a single ``dynamic_one_shot`` transform is applied.
+
+    Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
+    be added to the inner transform program. If the user then applies a ``dynamic_one_shot``
+    manually, it will duplicate the ``mid_circuit_measurements`` transform. This function ensures
+    that there is only one ``dynamic_one_shot`` transform in the outer and inner transform
+    programs combined.
+
+    """
+
+    all_transforms = outer_transform + inner_transform
+    type_to_keep = 0
+    if any("mid_circuit_measurements" in str(t) for t in all_transforms):
+        type_to_keep = 2
+    elif any("dynamic_one_shot" in str(t) for t in all_transforms):
+        type_to_keep = 1
+
+    if type_to_keep == 0:
+        return
+
+    dynamic_transform_found = inner_transform.prune_dynamic_transform(type_to_keep)
+    if dynamic_transform_found:
+        type_to_keep = 0
+    outer_transform.prune_dynamic_transform(type_to_keep)
