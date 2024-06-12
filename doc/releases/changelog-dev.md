@@ -300,6 +300,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qaoa.cost_layer` and `qaoa.mixer_layer` can now be used with `Sum` operators.
+
 * An error is now raised if a transform is applied to a catalyst qjit object.
   [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
 
