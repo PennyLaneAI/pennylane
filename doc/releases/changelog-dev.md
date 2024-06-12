@@ -49,8 +49,21 @@
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
-* A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
+* A new `qml.noise` module which contains utility functions for building `NoiseModels`.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
+  [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
+
+  ```python
+  fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
+  noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+  ```
+
+  ```pycon
+  >>> qml.NoiseModel({fcond: noise}, t1=0.04)
+  NoiseModel({
+    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
+  }, t1 = 0.04)
+  ```
 
 <h3>Improvements 🛠</h3>
 
@@ -226,6 +239,9 @@
 * The qchem docs are updated with the new qchem improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+
+* Device preprocess transforms now happen inside the ml boundary.
+  [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
 
 * `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
   [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
