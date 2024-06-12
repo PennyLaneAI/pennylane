@@ -32,15 +32,15 @@ def add_noise(tape, noise_model, level=None):
 
     Args:
         tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit or
-            device to be transformed.
-        noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
+            device to be transformed
+        noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted
         level (None, str, int, slice): An indication of which stage in the transform program the
             noise model should be applied to. Only relevant when transforming a ``QNode``. More details
             on the following permissible values can be found in the :func:`~.workflow.get_transform_program` -
 
             * ``None``: expands the tape to have no ``Adjoint`` and ``Templates``.
-            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
-            * ``int``: How many transforms to include, starting from the front of the program
+            * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
+            * ``int``: how many transforms to include, starting from the front of the program
             * ``slice``: a slice to select out components of the transform program.
 
     Returns:
@@ -98,10 +98,10 @@ def add_noise(tape, noise_model, level=None):
         :title: Advanced Examples
         :href: add-noise-example
 
-        ``qml.add_noise`` can also be used to tranform quantum functions, devices or already constructed qnodes.
-        To do this, one may construct noise models with various kinds of ``conditionals`` and ``noise_fns`` key-value pairs.
-        For example, for a list of specified operations, one can functionally add noise operations for their every encounter
-        in the circuit based on their wires:
+        The ``qml.add_noise`` transform can also be used to tranform quantum functions, devices or already constructed qnodes.
+        To do this, one may construct noise models with various kinds of ``conditionals`` and ``noise_fns`` key-value pairs
+        using functionality given in :ref:`qml.noise <intro_noise_model>` module. For example, for a list of specified
+        operations, one can functionally add noise operations for their every encounter in the circuit based on their wires:
 
         .. code-block:: python3
 
@@ -118,7 +118,7 @@ def add_noise(tape, noise_model, level=None):
                 return isinstance(op, qml.RY) and op.parameters[0] >= 0.5
             noise2 = qml.noise.partial_wires(qml.PhaseDamping, 0.9)
 
-        By default, for each operation for which a conditional evaluates to ``True``, the corresponding noise operations gets
+        By default, when a conditional evaluates to ``True`` for an operation, the corresponding noisy gates gets
         queued after it following an insertion-based approach. One could change this by including the operation itself in the
         ``noise_fns``, and queue it with :func:`~.pennylane.apply` as given below:
 
@@ -186,8 +186,9 @@ def add_noise(tape, noise_model, level=None):
         :title: Tranform Levels
         :href: add-noise-levels
 
-        By default, ``add_noise`` transform will be added to the end of the "user" transforms,
-        i.e., after the transforms that are manually applied to the qnode.
+        When transforming an already constructed ``QNode``, the ``add_noise`` transform will be
+        added at the end of the "user" transforms by default, i.e., after all the transforms
+        that have been manually applied to the QNode until that point.
 
         .. code-block:: python3
 
@@ -212,8 +213,8 @@ def add_noise(tape, noise_model, level=None):
         >>> qml.workflow.get_transform_program(noisy_circuit)
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, batch_transform, expand_fn, metric_tensor)
 
-        However, one can request inserting it at any specific point of the transform program. Using the ``level`` keyword argument,
-        where the transform will be added at the end of the transform program extracted at a designated level via
+        However, one can request inserting it at any specific point of the transform program. Specifying the ``level`` keyword argument while
+        transforming a ``QNode``, will allow addition of the transform at the end of the transform program extracted at a designated level via
         :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, one could specify ``None`` to add it at the end,
         which will also ensure that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 

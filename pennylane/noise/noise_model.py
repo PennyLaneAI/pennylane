@@ -129,7 +129,7 @@ class NoiseModel:
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
                 raise ValueError(
-                    f"{condition} must be a boolean conditional, i.e., an instance of"
+                    f"{condition} must be a boolean conditional, i.e., an instance of "
                     "BooleanFn or one of its subclasses."
                 )
 

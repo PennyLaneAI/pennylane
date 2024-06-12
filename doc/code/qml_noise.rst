@@ -4,6 +4,8 @@ qml.noise
 This module contains the functionality for building and manipulating insertion-based noise models,
 where noisy gates and channels are inserted based on the target operations.
 
+.. _intro_noise_model:
+
 Overview
 --------
 

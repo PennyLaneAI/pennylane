@@ -50,7 +50,8 @@ class TestAddNoise:
     tape_with_prep = QuantumScript.from_queue(q_tape_with_prep)
 
     # conditionals
-    c0, c1 = qml.noise.op_eq(qml.RX), qml.noise.op_in([qml.RY, qml.RZ])
+    c0 = qml.noise.op_eq(qml.RX)
+    c1 = qml.noise.op_in([qml.RY, qml.RZ])
     c2 = qml.noise.op_eq("StatePrep")
 
     # callables
