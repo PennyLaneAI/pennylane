@@ -323,6 +323,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where fractional powers and adjoints of operators were commuted, which is
+  not well-defined/correct in general. Adjoints of fractional powers can no longer be evaluated.
+  [(#5835)](https://github.com/PennyLaneAI/pennylane/pull/5835)
+
 * `qml.qnn.TorchLayer` now works with tuple returns.
   [(#5816)](https://github.com/PennyLaneAI/pennylane/pull/5816)
 
