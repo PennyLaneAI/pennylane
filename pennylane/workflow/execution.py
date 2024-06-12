@@ -590,7 +590,10 @@ def execute(
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
         if config.mcm_config.postselect_mode == "hw-like":
-            raise ValueError("Using postselect_mode='hw-like' is not supported with jax-jit.")
+            raise ValueError(
+                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
+                "mcm_method='deferred'."
+            )
         config.mcm_config.postselect_mode = "fill-shots"
 
     is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)

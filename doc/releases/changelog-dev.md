@@ -35,6 +35,7 @@
   These keyword arguments can be used to configure how the device should behave when running circuits with
   mid-circuit measurements.
   [(#5679)](https://github.com/PennyLaneAI/pennylane/pull/5679)
+  [(#5833)](https://github.com/PennyLaneAI/pennylane/pull/5833)
 
   * `postselect_mode="hw-like"` will indicate to devices to discard invalid shots when postselecting
     mid-circuit measurements. Use `postselect_mode="fill-shots"` to unconditionally sample the postselected
@@ -42,7 +43,8 @@
     matches the total number of shots.
   * `mcm_method` will indicate which strategy to use for running circuits with mid-circuit measurements.
     Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
-    to execute once for each shot.
+    to execute once for each shot. If using `qml.jit` with the Catalyst compiler, `mcm_method="single-branch-statistics"`
+    is also available. Using this method, a single branch of the execution tree will be randomly explored.
 
 * The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
@@ -51,6 +53,9 @@
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
 
 <h3>Improvements 🛠</h3>
+
+* `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
 * `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
    [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
@@ -78,6 +83,7 @@
 
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
+  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
 
 * The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
@@ -403,5 +409,6 @@ Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
 Jay Soni,
+Kazuki Tsuoka,
 Haochen Paul Wang,
 David Wierichs.

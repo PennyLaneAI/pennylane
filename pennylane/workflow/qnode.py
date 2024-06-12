@@ -527,10 +527,7 @@ class QNode:
         self.max_expansion = max_expansion
         cache = (max_diff > 1) if cache == "auto" else cache
 
-        if mcm_method not in ("deferred", "one-shot", None):
-            raise ValueError(f"Invalid mid-circuit measurements method '{mcm_method}'.")
-        if postselect_mode not in ("hw-like", "fill-shots", None):
-            raise ValueError(f"Invalid postselection mode '{postselect_mode}'.")
+        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -540,7 +537,7 @@ class QNode:
             "max_diff": max_diff,
             "max_expansion": max_expansion,
             "device_vjp": device_vjp,
-            "mcm_config": {"postselect_mode": postselect_mode, "mcm_method": mcm_method},
+            "mcm_config": mcm_config,
         }
 
         if self.expansion_strategy == "device":
@@ -1045,11 +1042,16 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        mcm_config = self.execute_kwargs["mcm_config"]
         finite_shots = _get_device_shots if override_shots is False else override_shots
-        if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
-            raise ValueError(
-                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
-            )
+        if not finite_shots:
+            mcm_config.postselect_mode = None
+            if mcm_config.mcm_method == "one-shot":
+                raise ValueError(
+                    "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+                )
+        if mcm_config.mcm_method == "single-branch-statistics":
+            raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
         full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         inner_transform_program = qml.transforms.core.TransformProgram()
@@ -1074,7 +1076,7 @@ class QNode:
             inner_transform_program.add_transform(
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
-                mcm_config=self.execute_kwargs["mcm_config"],
+                mcm_config=mcm_config,
                 interface=self.interface,
             )
             override_shots = 1

@@ -693,7 +693,7 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tupl
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-    return qml.math.convert_like(summed_dot_products + offset, res[0])
+    return summed_dot_products + offset
 
 
 def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.operation.Operator:
