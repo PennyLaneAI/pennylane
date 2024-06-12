@@ -33,7 +33,6 @@ from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .composite import CompositeOp
 
