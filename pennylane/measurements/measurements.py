@@ -18,7 +18,7 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional, Sequence, Tuple, Union
 
@@ -112,12 +112,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-# pylint: disable=abstract-method
-class ABCCaptureMeta(qml.capture.CaptureMeta, ABCMeta):
-    """A combination of the capture meta and ABCMeta"""
-
-
-class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
+class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
