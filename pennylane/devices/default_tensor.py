@@ -436,8 +436,7 @@ class DefaultTensor(Device):
         if not _accepted_gate_contract(self._contract, self.method):
             raise ValueError(
                 f"Unsupported gate contraction option: '{self._contract}' for '{self.method}' method. "
-                f"Supported options for 'mps' are {', '.join(_gate_contract_mps)}. "
-                f"Supported options for 'tn' are {', '.join(_gate_contract_tn)}."
+                "Please refer to the documentation for the supported options."
             )
 
         if self.method == "mps":
