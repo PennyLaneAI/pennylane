@@ -377,7 +377,7 @@ The samples are converted to counts and a copy of the state vector is made at ea
 We loop over the possible branches, collapsing the state vector and pursuing the calculation
 until the next MCM. Since many counts come out to be zero in practice, it is possible
 to ignore entire sub-trees, reducing the computational burden.
-We eventually reach the bottom of the tree having cached at most :math`n_{MCM}+1`
+We eventually reach the bottom of the tree having cached at most :math:`n_{MCM}+1`
 state vector copies, which is an exponential improvement compared with
 :func:`~. pennylane.defer_measurements` requiring :math`O(2^{n_{MCM}})` memory.
 We then obtain terminal measurements, propagating and combining at each node up the
