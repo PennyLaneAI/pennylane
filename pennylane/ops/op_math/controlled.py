@@ -518,8 +518,13 @@ class Controlled(SymbolicOp):
         return self.hyperparameters["work_wires"]
 
     @property
-    def wires(self):
+    def active_wires(self):
+        """Wires modified by the operator. This is the control wires followed by the target wires."""
         return self.control_wires + self.target_wires
+
+    @property
+    def wires(self):
+        return self.control_wires + self.target_wires + self.work_wires
 
     def map_wires(self, wire_map: dict):
         new_base = self.base.map_wires(wire_map=wire_map)
@@ -579,7 +584,9 @@ class Controlled(SymbolicOp):
             canonical_matrix = self._compute_matrix_from_base()
 
         wire_order = wire_order or self.wires
-        return qml.math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.math.expand_matrix(
+            canonical_matrix, wires=self.active_wires, wire_order=wire_order
+        )
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -736,16 +743,16 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     """Decomposes a PauliX-based operation"""
 
     if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 1:
-        return [qml.CNOT(wires=op.wires)]
+        return [qml.CNOT(wires=op.active_wires)]
 
     if isinstance(op.base, qml.PauliX) and len(op.control_wires) == 2:
-        return qml.Toffoli.compute_decomposition(wires=op.wires)
+        return qml.Toffoli.compute_decomposition(wires=op.active_wires)
 
     if isinstance(op.base, qml.CNOT) and len(op.control_wires) == 1:
-        return qml.Toffoli.compute_decomposition(wires=op.wires)
+        return qml.Toffoli.compute_decomposition(wires=op.active_wires)
 
     return qml.MultiControlledX.compute_decomposition(
-        wires=op.wires,
+        wires=op.active_wires,
         work_wires=op.work_wires,
     )
 
@@ -759,14 +766,11 @@ def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
         custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
-        return custom_op_cls.compute_decomposition(*op.data, op.wires)
+        return custom_op_cls.compute_decomposition(*op.data, op.active_wires)
     if isinstance(op.base, pauli_x_based_ctrl_ops):
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
 
-    if isinstance(op.base, qml.GlobalPhase) and len(op.control_wires) == 1:
-        # use Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016
-        return [qml.PhaseShift(phi=-op.data[0], wires=op.control_wires)]
     # A multi-wire controlled PhaseShift should be decomposed first using the decomposition
     # of ControlledPhaseShift. This is because the decomposition of PhaseShift contains a
     # GlobalPhase that we do not have a handling for.
@@ -805,9 +809,9 @@ def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
         return None
 
     base_decomp = op.base.decomposition()
-    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase) and len(op.control_wires) > 1:
+    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase):
         warnings.warn(
-            "Multi-Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
+            "Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
             "produce incorrect results. Consider implementing your circuit with a different set "
             "of operations, or use a device that natively supports GlobalPhase.",
             UserWarning,
@@ -844,6 +848,10 @@ class ControlledOp(Controlled, operation.Operation):
     @property
     def name(self):
         return self._name
+
+    @property
+    def grad_method(self):
+        return self.base.grad_method
 
     @property
     def parameter_frequencies(self):
