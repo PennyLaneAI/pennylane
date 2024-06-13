@@ -379,7 +379,7 @@ until the next MCM. Since many counts come out to be zero in practice, it is pos
 to ignore entire sub-trees, reducing the computational burden.
 We eventually reach the bottom of the tree having cached at most :math:`n_{MCM}+1`
 state vector copies, which is an exponential improvement compared with
-:func:`~. pennylane.defer_measurements` requiring :math`O(2^{n_{MCM}})` memory.
+:func:`~. pennylane.defer_measurements` requiring :math:`O(2^{n_{MCM}})` memory.
 We then obtain terminal measurements, propagating and combining at each node up the
 tree. This algorithm is thus of the depth-first family of tree-traversal algorithms.
 
