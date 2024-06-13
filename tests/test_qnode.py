@@ -29,6 +29,7 @@ from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript
+from pennylane.workflow.qnode import _prune_dynamic_transform
 
 
 def dummyfunc():
@@ -1823,6 +1824,21 @@ class TestMCMConfiguration:
         ):
             _ = f_jit(param)
 
+    def test_single_branch_statistics_error_without_qjit(self):
+        """Test that an error is raised if attempting to use mcm_method="single-branch-statistics
+        without qml.qjit"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, mcm_method="single-branch-statistics")
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=1)
+            return qml.sample(wires=0)
+
+        param = np.pi / 4
+        with pytest.raises(ValueError, match="Cannot use mcm_method='single-branch-statistics'"):
+            _ = circuit(param)
+
 
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
@@ -2011,3 +2027,48 @@ def test_resets_after_execution_error():
         circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"
+
+
+def test_prune_dynamic_transform():
+    """Tests that the helper function prune dynamic transform works."""
+
+    program1 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.sum_expand,
+            qml.transforms.dynamic_one_shot,
+        ]
+    )
+    program2 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.sum_expand,
+        ]
+    )
+
+    _prune_dynamic_transform(program1, program2)
+    assert len(program1) == 1
+    assert len(program2) == 2
+
+
+def test_prune_dynamic_transform_with_mcm():
+    """Tests that the helper function prune dynamic transform works with mcm"""
+
+    program1 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.sum_expand,
+            qml.devices.preprocess.mid_circuit_measurements,
+        ]
+    )
+    program2 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.sum_expand,
+        ]
+    )
+
+    _prune_dynamic_transform(program1, program2)
+    assert len(program1) == 2
+    assert qml.devices.preprocess.mid_circuit_measurements in program1
+    assert len(program2) == 1
