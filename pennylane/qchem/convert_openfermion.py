@@ -48,7 +48,6 @@ def from_openfermion(of_op, tol=1e-16):
             "It can be installed with: pip install openfermion"
         ) from Error
 
-    terms = of_op.terms
     typemap = {0: "-", 1: "+"}
 
     fermi_words = []
@@ -57,13 +56,13 @@ def from_openfermion(of_op, tol=1e-16):
     for ops, val in of_op.terms.items():
 
         fw_dict = {(i, op[0]): typemap[op[1]] for i, op in enumerate(ops)}
-        fermiwords.append(FermiWord(fw_dict))
-        fermivalue.append(val)
+        fermi_words.append(FermiWord(fw_dict))
+        fermi_coeffs.append(val)
 
-    if len(fermiwords) == 1 and fermivalue[0] == 1.0:
-        return fermiwords[0]
+    if len(fermi_words) == 1 and fermi_coeffs[0] == 1.0:
+        return fermi_words[0]
 
-    pl_op = FermiSentence(dict(zip(fermiwords, fermivalue)))
+    pl_op = FermiSentence(dict(zip(fermi_words, fermi_coeffs)))
     pl_op.simplify(tol=tol)
 
     return pl_op
