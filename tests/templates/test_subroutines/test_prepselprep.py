@@ -232,6 +232,7 @@ class TestPrepSelPrep:
             (qml.dot([1.0, 1.0, 1.0], [qml.X(2), qml.Y(2), qml.Z(2)]), [0, 1], [0, 1, 2], 2),
             (qml.dot([0.25, 0.75], [qml.I(1) @ qml.Z(2), qml.X(1) @ qml.X(2)]), [0], [0, 1, 2], 4),
             (qml.dot([0.25, 0.75], [qml.I(1) @ qml.Z(2), qml.Y(1) @ qml.Y(2)]), [0], [0, 1, 2], 4),
+            (qml.dot([0.25, 0.75], [qml.Z(1), qml.Y(2) @ qml.Y(1)]), [0], [0, 1, 2], 4),
         ],
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
