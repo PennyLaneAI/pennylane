@@ -16,7 +16,7 @@ import copy
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
-from dataclasses import replace
+from dataclasses import asdict, replace
 from functools import partial
 from typing import Callable, Tuple
 
@@ -1833,6 +1833,32 @@ class TestMCMConfiguration:
         param = np.pi / 4
         with pytest.raises(ValueError, match="Cannot use mcm_method='single-branch-statistics'"):
             _ = circuit(param)
+
+    @pytest.mark.parametrize("postselect_mode", [None, "fill-shots", "hw-like"])
+    @pytest.mark.parametrize("mcm_method", [None, "one-shot", "deferred"])
+    def test_execution_does_not_mutate_config(self, mcm_method, postselect_mode):
+        """Test that executing a QNode does not mutate its mid-circuit measurement config options"""
+        dev = qml.device("default.qubit", wires=2)
+
+        original_config = qml.devices.MCMConfig(
+            postselect_mode=postselect_mode, mcm_method=mcm_method
+        )
+
+        @qml.qnode(dev, **asdict(original_config))
+        def circuit(x, mp):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=1)
+            return mp(qml.PauliZ(0))
+
+        _ = circuit(1.8, qml.expval, shots=10)
+        assert circuit.execute_kwargs["mcm_config"] == original_config
+
+        if mcm_method != "one-shot":
+            _ = circuit(1.8, qml.expval)
+            assert circuit.execute_kwargs["mcm_config"] == original_config
+
+        _ = circuit(1.8, qml.expval, shots=10)
+        assert circuit.execute_kwargs["mcm_config"] == original_config
 
 
 class TestTapeExpansion:

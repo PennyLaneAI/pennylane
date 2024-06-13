@@ -1161,6 +1161,10 @@ def make_mixer_layer_test_cases():
             [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
         ],
         [
+            qml.X(0) + qml.X(1),
+            [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
+        ],
+        [
             qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
             [
                 qml.PauliRot(1.0, "XX", wires=[0, 1]),
@@ -1178,6 +1182,10 @@ def make_cost_layer_test_cases():
     return [
         [
             qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]),
+            [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
+        ],
+        [
+            qml.Z(0) + qml.Z(1),
             [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
         ],
         [
@@ -1199,7 +1207,9 @@ class TestLayers:
 
         hamiltonian = [[1, 1], [1, 1]]
 
-        with pytest.raises(ValueError, match=r"hamiltonian must be of type pennylane.Hamiltonian"):
+        with pytest.raises(
+            ValueError, match=r"hamiltonian must be a linear combination of pauli words"
+        ):
             qaoa.mixer_layer(0.1, hamiltonian)
 
     def test_cost_layer_errors(self):
@@ -1207,7 +1217,9 @@ class TestLayers:
 
         hamiltonian = [[1, 1], [1, 1]]
 
-        with pytest.raises(ValueError, match=r"hamiltonian must be of type pennylane.Hamiltonian"):
+        with pytest.raises(
+            ValueError, match=r"hamiltonian must be a linear combination of pauli words"
+        ):
             qaoa.cost_layer(0.1, hamiltonian)
 
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
@@ -1265,15 +1277,18 @@ class TestLayers:
 
         gamma = 1
 
-        with qml.tape.OperationRecorder() as rec:
-            qaoa.cost_layer(gamma, cost)
+        with qml.queuing.AnnotatedQueue() as q:
+            out = qaoa.cost_layer(gamma, cost)
 
-        rec = rec.expand()
+        expected = qml.ApproxTimeEvolution(cost, gamma, 1)
+        assert qml.equal(out, expected)
 
-        for i, j in zip(rec.operations, gates):
-            prep = [i.name, i.parameters, i.wires]
-            target = [j.name, j.parameters, j.wires]
-            assert prep == target
+        assert q.queue[0] is out
+        assert len(q) == 1
+        decomp = out.decomposition()
+
+        for i, j in zip(decomp, gates):
+            assert qml.equal(i, j)
 
     with qml.operation.disable_new_opmath_cm():
         cost_layer_test_cases_legacy = make_cost_layer_test_cases()
