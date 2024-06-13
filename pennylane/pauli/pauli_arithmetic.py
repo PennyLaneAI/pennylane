@@ -892,7 +892,12 @@ class PauliSentence(dict):
         """Compute the dense matrix of the Pauli sentence by efficiently adding the Pauli words
         that it is composed of. See pauli_sparse_matrices.md for the technical details."""
         pauli_words = list(self)  # Ensure consistent ordering
-
+        if len(pauli_words) < 5:
+            full_matrix = None
+            for pw in pauli_words:
+                mat = self[pw] * pw.to_mat(wire_order=wire_order)
+                full_matrix = mat if full_matrix is None else qml.math.add(full_matrix, mat)
+            return full_matrix
         try:
             op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
         except qml.wires.WireError as e:
