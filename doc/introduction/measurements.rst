@@ -370,12 +370,12 @@ exponential gains in memory of the one-shot approach compared with the deferred
 measurement principle, among other advantages.
 
 Briefly, it proceeds from the top of the tree and begins splitting the circuit
-into two: a circuit running to the next MCM replacing the MCM by a sample
+into two: a circuit running to the next mid-circuit measurement, replacing the mid-circuit measurement by a sample
 measurement, and a circuit consisting of the rest of the circuit. A key point is that
 all samples are collected at once, removing the need to run the circuit several times.
 The samples are converted to counts and a copy of the state vector is made at each node.
 We loop over the possible branches, collapsing the state vector and pursuing the calculation
-until the next MCM. Since many counts come out to be zero in practice, it is possible
+until the next mid-circuit measurement. Since many counts come out to be zero in practice, it is possible
 to ignore entire sub-trees, reducing the computational burden.
 We eventually reach the bottom of the tree having cached at most :math:`n_{MCM}+1`
 state vector copies, which is an exponential improvement compared with
@@ -384,15 +384,15 @@ We then obtain terminal measurements, propagating and combining at each node up 
 tree. This algorithm is thus of the depth-first family of tree-traversal algorithms.
 
 To summarize, this algorithm gives us the best of both worlds. In the limit of few
-shots and/or many MCMs, it is as fast as the naive shot-by-shot implementation
-because few sub-trees are explored. In the limit of many shots and/or few MCMs, it is
+shots and/or many mid-circuit measurements, it is as fast as the naive shot-by-shot implementation
+because few sub-trees are explored. In the limit of many shots and/or few mid-circuit measurements, it is
 equal to or faster than the deferred measurement algorithm (albeit with more
 overheads in practice) because each tree edge is visited at most once, all while
 reducing the memory requirements exponentially.
 
 The tree-traversal algorithm is not a transform. Its usage is therefore specified
 by passing an ``mcm_method`` option to a QNode (see section
-:ref:`MCMConfig <mcm_config>`). For example,
+:ref:`"Configuring mid-circuit measurements" <mcm_config>`). For example,
 
 .. code-block:: python
 
