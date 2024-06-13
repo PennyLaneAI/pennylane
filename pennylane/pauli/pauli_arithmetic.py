@@ -403,6 +403,9 @@ class PauliWord(dict):
         """Track wires in a PauliWord."""
         return Wires(self)
 
+    def is_diagonal(self):
+        return all(t in {"I", "Z"} for t in self.values())
+
     def to_mat(self, wire_order=None, format="dense", coeff=1.0):
         """Returns the matrix representation.
 
@@ -823,6 +826,9 @@ class PauliSentence(dict):
         """Track wires of the PauliSentence."""
         return Wires.all_wires((pw.wires for pw in self.keys()))
 
+    def is_diagonal(self):
+        return all(pw.is_diagonal() for pw in self)
+
     def to_mat(self, wire_order=None, format="dense", buffer_size=None):
         """Returns the matrix representation.
 
@@ -892,7 +898,7 @@ class PauliSentence(dict):
         """Compute the dense matrix of the Pauli sentence by efficiently adding the Pauli words
         that it is composed of. See pauli_sparse_matrices.md for the technical details."""
         pauli_words = list(self)  # Ensure consistent ordering
-        if len(pauli_words) < 5:
+        if len(pauli_words) < 17:
             full_matrix = None
             for pw in pauli_words:
                 mat = self[pw] * pw.to_mat(wire_order=wire_order)

@@ -408,6 +408,11 @@ class Exp(ScalarSymbolicOp, Operation):
                     "Use a different interface if you need backpropagation.",
                     UserWarning,
                 )
+        if self.base.pauli_rep:
+            ps = self.base.pauli_rep
+            if ps.is_diagonal():
+                mat = ps.to_mat(format="dense")
+                return qml.math.diag(qml.math.exp(self.scalar * qml.math.diag(mat)))
         return super().matrix(wire_order=wire_order)
 
     @staticmethod
