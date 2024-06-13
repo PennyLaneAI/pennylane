@@ -17,8 +17,9 @@ This submodule defines a base class for composite operations.
 # pylint: disable=too-many-instance-attributes
 import abc
 import copy
+import itertools
 from typing import Callable, List
-
+import rustworkx as rx
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
@@ -200,32 +201,20 @@ class CompositeOp(Operator):
         if self._overlapping_ops is not None:
             return self._overlapping_ops
 
-        # Construct graph where each edge is a pair of operators with overlapping wires
-        graph = {}
+        ops_on_each_wire = {}
         for i, op in enumerate(self):
-            graph[i] = set()
-            for j, _op in enumerate(self):
-                if i != j and len(qml.wires.Wires.shared_wires([op.wires, _op.wires])) > 0:
-                    graph[i].add(j)
+            for wire in op.wires:
+                ops_on_each_wire.setdefault(wire, []).append(i)
 
-        def _dfs(_i):
-            """Find all nodes in the graph starting from node i"""
-            _group = {_i}
-            visited.add(_i)
-            for _j in graph[_i]:
-                if _j not in visited:
-                    _group.update(_dfs(_j))
-            return _group
+        graph = rx.PyGraph()
+        graph.add_nodes_from(range(len(self)))
 
-        # Perform DFS to find disconnected sub-graphs
-        visited = set()
-        all_groups = []
-        for i in graph:
-            if i in visited:
-                continue
-            all_groups.append(_dfs(i))
+        for wire, op_indices in ops_on_each_wire.items():
+            for idx1, idx2 in itertools.combinations(op_indices, 2):
+                graph.add_edge(idx1, idx2, None)
 
-        self._overlapping_ops = [[self[i] for i in group] for group in all_groups]
+        groups = rx.connected_components(graph)
+        self._overlapping_ops = [[self[i] for i in group] for group in groups]
         return self._overlapping_ops
 
     @property
