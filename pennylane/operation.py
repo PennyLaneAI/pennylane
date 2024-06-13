@@ -256,7 +256,7 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, csr_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.capture import CaptureMeta, create_operator_primitive
+from pennylane.capture import ABCCaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -406,12 +406,7 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-# pylint: disable=abstract-method
-class CaptureMetaABC(CaptureMeta, abc.ABCMeta):
-    """Mixing together CaptureMeta and ABCMeta so that Operator can use both."""
-
-
-class Operator(abc.ABC, metaclass=CaptureMetaABC):
+class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,

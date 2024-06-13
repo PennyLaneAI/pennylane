@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `default.tensor` device now supports the `tn` method to simulate quantum circuits using exact tensor networks.
+  [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
+
 * QROM template is added. This template allows you to enter classic data in the form of bitstrings.
   [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
 
@@ -35,6 +38,7 @@
   These keyword arguments can be used to configure how the device should behave when running circuits with
   mid-circuit measurements.
   [(#5679)](https://github.com/PennyLaneAI/pennylane/pull/5679)
+  [(#5833)](https://github.com/PennyLaneAI/pennylane/pull/5833)
 
   * `postselect_mode="hw-like"` will indicate to devices to discard invalid shots when postselecting
     mid-circuit measurements. Use `postselect_mode="fill-shots"` to unconditionally sample the postselected
@@ -42,13 +46,35 @@
     matches the total number of shots.
   * `mcm_method` will indicate which strategy to use for running circuits with mid-circuit measurements.
     Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
-    to execute once for each shot.
+    to execute once for each shot. If using `qml.jit` with the Catalyst compiler, `mcm_method="single-branch-statistics"`
+    is also available. Using this method, a single branch of the execution tree will be randomly explored.
 
-* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+* The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
+* A new `qml.noise` module which contains utility functions for building `NoiseModels`.
+  [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
+  [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
+
+  ```python
+  fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
+  noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+  ```
+
+  ```pycon
+  >>> qml.NoiseModel({fcond: noise}, t1=0.04)
+  NoiseModel({
+    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
+  }, t1 = 0.04)
+  ```
 
 <h3>Improvements 🛠</h3>
+
+* `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
+  [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
+
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
@@ -73,12 +99,20 @@
 
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
+  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
 
 * The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
 
+* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
+   optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
+   [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
+  [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
+  
 * Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
   but keeping one that validates multiple mid-circuit measurements with any allowed return
   and interface end-to-end tests.
@@ -209,6 +243,12 @@
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
 
+* Device preprocess transforms now happen inside the ml boundary.
+  [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
+
+* `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
+  [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -216,6 +256,12 @@
   
 * `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
+ 
+* Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian`
+ [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
+
+* `qml.QutritChannel` has been added, enabling the specification of noise using a collection of (3x3) Kraus matrices on the `default.qutrit.mixed` device.
+  [(#5793)](https://github.com/PennyLaneAI/pennylane/issues/5793)
 
 * `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
@@ -272,10 +318,26 @@
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
+* Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fix of incorrectly set up commands)
+  [(#5804)](https://github.com/PennyLaneAI/pennylane/pull/5804)
+
 * The `qml.Tracker` examples are updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where `MottonenStatePreparation` produces wrong derivatives at special parameter values.
+  [(#5774)](https://github.com/PennyLaneAI/pennylane/pull/5774)
+
+* Fixes a bug where fractional powers and adjoints of operators were commuted, which is
+  not well-defined/correct in general. Adjoints of fractional powers can no longer be evaluated.
+  [(#5835)](https://github.com/PennyLaneAI/pennylane/pull/5835)
+
+* `qml.qnn.TorchLayer` now works with tuple returns.
+  [(#5816)](https://github.com/PennyLaneAI/pennylane/pull/5816)
+
+* An error is now raised if a transform is applied to a catalyst qjit object.
+  [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
 
 * `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
   [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
@@ -348,11 +410,19 @@
 * Fixes a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` is incorrect on `default.qubit.legacy` with `parameter_shift`.
   [(#5806)](https://github.com/PennyLaneAI/pennylane/pull/5806)
 
+* Fixed a bug where `split_non_commuting` raises an error when the circuit contains measurements of observables that are not pauli words.
+  [(#5827)](https://github.com/PennyLaneAI/pennylane/pull/5827)
+
+* Simplify method for `Exp` now returns an operator with the correct number of Trotter steps, i.e. equal to the one from the pre-simplified operator.
+  [(#5831)](https://github.com/PennyLaneAI/pennylane/pull/5831)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
+Utkarsh Azad,
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,
@@ -364,11 +434,15 @@ Emiliano Godinez,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
+Rohan Jain,
+Mashhood Khan,
 Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
+Jay Soni,
+Kazuki Tsuoka,
 Haochen Paul Wang,
 David Wierichs.

@@ -424,6 +424,54 @@ def test_pl_to_stim(pl_op, stim_op):
     assert wires == " ".join(map(str, stim_op[1]))
 
 
+@pytest.mark.parametrize(
+    ["measurement", "tag"],
+    [
+        (qml.expval(op=qml.Z(1)), None),
+        (qml.expval(op=qml.Y(0) @ qml.X(1)), "expval"),
+        (qml.var(op=qml.X(0)), None),
+        (qml.var(op=qml.X(0) @ qml.Z(1)), "var"),
+        (qml.density_matrix(wires=[1]), None),
+        (qml.density_matrix(wires=[0, 1]), "dm"),
+        (qml.probs(op=qml.Y(0)), None),
+        (qml.probs(op=qml.X(0) @ qml.Y(1)), "probs"),
+        (qml.vn_entropy(wires=[0]), None),
+        (qml.vn_entropy(wires=[1]), "vn_entropy"),
+        (qml.mutual_info(wires0=[1], wires1=[0]), None),
+        (qml.mutual_info(wires0=[0], wires1=[1]), "mi"),
+        (qml.purity(wires=[0]), None),
+        (qml.purity(wires=[1]), "purity"),
+    ],
+)
+def test_snapshot_supported(measurement, tag):
+    """Tests that applying snapshot of measurements is done correctly"""
+
+    def circuit():
+        """Snapshot circuit"""
+        qml.Hadamard(wires=0)
+        qml.Hadamard(wires=1)
+        qml.Snapshot(measurement=qml.expval(qml.Z(0) @ qml.Z(1)))
+        qml.CNOT(wires=[0, 1])
+        qml.Snapshot(measurement=measurement, tag=tag)
+        qml.CZ(wires=[1, 0])
+        qml.Snapshot("meas2", measurement=measurement)
+        return qml.probs(op=qml.Y(1) @ qml.Z(0))
+
+    dev_qubit = qml.device("default.qubit", wires=2)
+    dev_clifford = qml.device("default.clifford", wires=2)
+
+    qnode_qubit = qml.QNode(circuit, device=dev_qubit)
+    qnode_clifford = qml.QNode(circuit, device=dev_clifford)
+
+    snaps_qubit = qml.snapshots(qnode_qubit)()
+    snaps_clifford = qml.snapshots(qnode_clifford)()
+
+    assert len(snaps_qubit) == len(snaps_clifford)
+    for key1, key2 in zip(snaps_qubit, snaps_clifford):
+        assert key1 == key2
+        assert qml.math.allclose(snaps_qubit[key1], snaps_clifford[key2])
+
+
 def test_max_worker_clifford():
     """Test that the execution of multiple tapes is possible with multiprocessing on this device."""
 
@@ -591,17 +639,6 @@ def test_meas_error():
         match="default.clifford doesn't support expectation value calculation with",
     ):
         circuit_exp()
-
-    @qml.qnode(qml.device("default.clifford"))
-    def circuit_snap():
-        qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
-        return qml.state()
-
-    with pytest.raises(
-        ValueError,
-        match="default.clifford does not support arbitrary measurements of a state with snapshots.",
-    ):
-        qml.snapshots(circuit_snap)()
 
     @qml.qnode(qml.device("default.clifford", wires=3, shots=10))
     def circuit_herm():

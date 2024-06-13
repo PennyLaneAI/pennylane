@@ -161,19 +161,31 @@ def test_wires_runtime_error():
 
 @pytest.mark.parametrize("max_bond_dim", [None, 10])
 @pytest.mark.parametrize("cutoff", [1e-16, 1e-12])
-@pytest.mark.parametrize("contract", ["auto-mps", "nonlocal"])
-def test_kwargs(max_bond_dim, cutoff, contract):
-    """Test the class initialization with different arguments and returned properties."""
+def test_kwargs_mps(max_bond_dim, cutoff):
+    """Test the class initialization with different arguments and returned properties for the MPS method."""
 
-    kwargs = {"max_bond_dim": max_bond_dim, "cutoff": cutoff, "contract": contract}
+    max_bond_dim = 10
+    cutoff = 1e-16
+    method = "mps"
 
-    dev = qml.device("default.tensor", wires=0, **kwargs)
+    dev = qml.device("default.tensor", method=method, max_bond_dim=max_bond_dim, cutoff=cutoff)
 
     _, config = dev.preprocess()
-    assert config.device_options["method"] == "mps"
+    assert config.device_options["method"] == method
     assert config.device_options["max_bond_dim"] == max_bond_dim
     assert config.device_options["cutoff"] == cutoff
-    assert config.device_options["contract"] == contract
+    assert config.device_options["contract"] == "auto-mps"
+
+
+def test_kwargs_tn():
+    """Test the class initialization with different arguments and returned properties for the TN method."""
+
+    method = "tn"
+    dev = qml.device("default.tensor", method=method)
+
+    _, config = dev.preprocess()
+    assert config.device_options["method"] == method
+    assert config.device_options["contract"] == "auto-split-gate"
 
 
 def test_invalid_kwarg():
@@ -182,41 +194,77 @@ def test_invalid_kwarg():
         TypeError,
         match="Unexpected argument: fake_arg during initialization of the default.tensor device.",
     ):
-        qml.device("default.tensor", wires=0, fake_arg=None)
+        qml.device("default.tensor", fake_arg=None)
 
 
-def test_method():
+def test_invalid_contract():
+    """Test an invalid combination of method and contract."""
+
+    with pytest.raises(
+        ValueError, match="Unsupported gate contraction option: 'auto-split-gate' for 'mps' method."
+    ):
+        qml.device("default.tensor", method="mps", contract="auto-split-gate")
+
+    with pytest.raises(
+        ValueError, match="Unsupported gate contraction option: 'auto-mps' for 'tn' method."
+    ):
+        qml.device("default.tensor", method="tn", contract="auto-mps")
+
+
+@pytest.mark.parametrize("method", ["mps", "tn"])
+def test_method(method):
     """Test the device method."""
-    assert qml.device("default.tensor").method == "mps"
+    assert qml.device("default.tensor", method=method).method == method
 
 
 def test_invalid_method():
     """Test an invalid method."""
     method = "invalid_method"
     with pytest.raises(ValueError, match=f"Unsupported method: {method}"):
-        qml.device("default.tensor", wires=0, method=method)
+        qml.device("default.tensor", method=method)
 
 
-@pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
-def test_data_type(dtype):
+@pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+def test_data_type(c_dtype):
     """Test the data type."""
-    assert qml.device("default.tensor", wires=0, dtype=dtype).dtype == dtype
+    assert qml.device("default.tensor", c_dtype=c_dtype).c_dtype == c_dtype
 
 
 def test_ivalid_data_type():
     """Test that data type can only be np.complex64 or np.complex128."""
     with pytest.raises(TypeError):
-        qml.device("default.tensor", wires=0, dtype=float)
+        qml.device("default.tensor", c_dtype=float)
 
 
+@pytest.mark.parametrize("method", ["mps", "tn"])
+def test_draw(method):
+    """Test the draw method."""
+
+    dev = qml.device("default.tensor", wires=10, method=method)
+    fig = dev.draw(color="auto", title="Test", return_fig=True)
+    assert fig is not None
+
+
+def test_warning_useless_kwargs():
+    """Test that a warning is raised if the user provides a combination of arguments that are not used."""
+
+    with pytest.warns():
+        qml.device("default.tensor", method="tn", max_bond_dim=10)
+        qml.device("default.tensor", method="tn", cutoff=1e-16)
+
+
+@pytest.mark.parametrize("method", ["mps", "tn"])
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
 
+    # Note: we could potentially test each 'contract' option for both methods, but this would significantly
+    # increase the number of tests. Furthermore, the 'contract' option is tested in the quimb library itself.
+
     @pytest.mark.parametrize("operation", all_ops)
-    def test_supported_gates_can_be_implemented(self, operation):
+    def test_supported_gates_can_be_implemented(self, operation, method):
         """Test that the device can implement all its supported gates."""
 
-        dev = qml.device("default.tensor", wires=4, method="mps")
+        dev = qml.device("default.tensor", wires=4, method=method)
 
         tape = qml.tape.QuantumScript(
             [operations_list[operation]],
@@ -227,10 +275,10 @@ class TestSupportedGatesAndObservables:
         assert np.allclose(result, 1.0)
 
     @pytest.mark.parametrize("observable", all_obs)
-    def test_supported_observables_can_be_implemented(self, observable):
+    def test_supported_observables_can_be_implemented(self, observable, method):
         """Test that the device can implement all its supported observables."""
 
-        dev = qml.device("default.tensor", wires=3, method="mps")
+        dev = qml.device("default.tensor", wires=3, method=method)
 
         if observable == "Projector":
             for o in observables_list[observable]:
@@ -249,14 +297,14 @@ class TestSupportedGatesAndObservables:
             result = dev.execute(circuits=tape)
             assert isinstance(result, (float, np.ndarray))
 
-    def test_not_implemented_meas(self):
+    def test_not_implemented_meas(self, method):
         """Tests that support only exists for `qml.expval` and `qml.var` so far."""
 
         op = [qml.Identity(0)]
         measurements = [qml.probs(qml.PauliZ(0))]
         tape = qml.tape.QuantumScript(op, measurements)
 
-        dev = qml.device("default.tensor", wires=tape.wires)
+        dev = qml.device("default.tensor", wires=tape.wires, method=method)
 
         with pytest.raises(NotImplementedError):
             dev.execute(tape)
@@ -311,12 +359,17 @@ class TestSupportsDerivatives:
         ):
             dev.execute_and_compute_vjp(circuits=None, cotangents=None)
 
-    @pytest.mark.jax
-    def test_jax(self):
+
+@pytest.mark.parametrize("method", ["mps", "tn"])
+@pytest.mark.jax
+class TestJaxSupport:
+    """Test the JAX support for the DefaultTensor device."""
+
+    def test_jax(self, method):
         """Test the device with JAX."""
 
         jax = pytest.importorskip("jax")
-        dev = qml.device("default.tensor", wires=1)
+        dev = qml.device("default.tensor", wires=1, method=method)
         ref_dev = qml.device("default.qubit.jax", wires=1)
 
         def circuit(x):
@@ -330,12 +383,11 @@ class TestSupportsDerivatives:
 
         assert np.allclose(qnode(weights), ref_qnode(weights))
 
-    @pytest.mark.jax
-    def test_jax_jit(self):
+    def test_jax_jit(self, method):
         """Test the device with JAX's JIT compiler."""
 
         jax = pytest.importorskip("jax")
-        dev = qml.device("default.tensor", wires=1)
+        dev = qml.device("default.tensor", wires=1, method=method)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
