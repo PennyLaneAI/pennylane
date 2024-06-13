@@ -377,7 +377,7 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jit(self):
-        """Test that jax jit works """
+        """Test that jax jit works"""
         import jax
 
         dev = qml.device("default.qubit")
