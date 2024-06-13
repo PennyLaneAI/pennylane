@@ -54,16 +54,6 @@ def _get_device_kwargs(device: "pennylane.devices.Device") -> dict:
     }
 
 
-def _get_jaxpr_count(jaxpr) -> int:
-    """Get the the number of variables in the jaxpr."""
-    count = 0
-    for eqn in jaxpr.eqns:
-        for var in [*eqn.invars, *eqn.outvars]:
-            if isinstance(var, jax.core.Var):
-                count = max(count, var.count)
-    return count
-
-
 def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
     """Convert pennylane variant jaxpr to catalyst variant jaxpr.
 
@@ -146,7 +136,8 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
                 source_info=null_source_info,
             )
             new_xpr.eqns.append(new_eqn)
-    return new_xpr
+
+    return jax.core.ClosedJaxpr(new_xpr, jaxpr.consts)
 
 
 def qfunc_jaxpr_to_catalyst(
@@ -186,7 +177,7 @@ class CatalystConverter:
 
     def __init__(self, plxpr):
 
-        self._count = _get_jaxpr_count(plxpr)
+        self._count = 0
 
         self.catalyst_xpr = jax.core.Jaxpr(
             constvars=plxpr.constvars,
@@ -225,7 +216,9 @@ class CatalystConverter:
         if wire in self._wire_map:
             return self._wire_map[orig_wire.val]
 
-        wire_var = jax.core.Literal(val=wire, aval=jax.core.ConcreteArray(dtype=int, val=wire))
+        wire_var = jax.core.Literal(
+            val=wire, aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True)
+        )
         invars = [self._qreg, wire_var]
         wire = self._make_var(c_prims.AbstractQbit())
         outvar = [wire]
@@ -266,7 +259,7 @@ class CatalystConverter:
         invars = [
             jax.core.Literal(
                 val=self._num_device_wires,
-                aval=jax.core.ConcreteArray(dtype=int, val=self._num_device_wires),
+                aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True),
             )
         ]
         qreg = self._make_var(c_prims.AbstractQreg())
@@ -291,7 +284,9 @@ class CatalystConverter:
 
         """
         for orig_wire, wire in self._wire_map.items():
-            orig_wire_var = jax.core.Literal(val=orig_wire, aval=orig_wire)
+            orig_wire_var = jax.core.Literal(
+                val=orig_wire, aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True)
+            )
             invars = [self._qreg, orig_wire_var, wire]
             new_qreg = self._make_var(c_prims.AbstractQreg())
             outvars = [new_qreg]
@@ -469,7 +464,7 @@ class CatalystConverter:
         self.catalyst_xpr.eqns.append(new_eqn)
 
         if final_aval is outavals[0]:
-            return outavals
+            return outvars
         return self._convert_measurement_dtypes(outvars, final_aval)
 
     def convert_plxpr_eqn(self, eqn):
