@@ -4,9 +4,6 @@ qml.debugging
 .. automodapi:: pennylane.debugging
     :no-heading:
     :no-inherited-members:
-    :skip: _Debugger
-    :skip: contextmanager
-    :skip: _measure
     :skip: PLDB
     :skip: pldb_device_manager
 
@@ -53,7 +50,7 @@ executed after the breakpoint:
 Controlling Code Execution in the Debugging Context
 ---------------------------------------------------
 
-The PennyLane Debugger (pldb) is built from the native python debugger (pdb), as such 
+The Pennylane Debugger (PLDB) is built from the native python debugger (Pdb), as such 
 it shares a similar interface. We can interact with the debugger using the 
 builtin commands: ``list``, ``longlist``, ``next``, ``continue``, and ``quit``. Any 
 variables defined in the scope of the quantum function can also be accessed from the 

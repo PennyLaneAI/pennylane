@@ -134,7 +134,7 @@ def pldb_device_manager(device):
 def breakpoint():
     """A function which freezes execution and launches the PennyLane debugger (PLDB).
 
-    This function marks a location in a quantum function (QNode). When it is encountered during
+    This function marks a location in a quantum circuit (QNode). When it is encountered during
     execution of the quantum circuit, an interactive debugging prompt is launched to step
     throught the circuit execution using Pdb like commands (:code:`list`, :code:`next`,
     :code:`continue`, :code:`quit`).
@@ -228,7 +228,7 @@ def state():
     """Compute the quantum state at the current point in the quantum circuit.
 
     Returns:
-        Array(complex): quantum state of the circuit.
+        Array(complex): quantum state of the circuit
 
     **Example**
 
@@ -345,7 +345,7 @@ def probs(wires=None, op=None):
             corresponding to mid-circuit measurements.
 
     Returns:
-        Array(float): the probability distribution of the bitstrings for the wires.
+        Array(float): the probability distribution of the bitstrings for the wires
 
     **Example**
 
@@ -423,7 +423,7 @@ def tape():
     been applied from the quantum circuit so far or otherwise process the operations.
 
     Returns:
-        QuantumTape: the quantum tape representing the circuit.
+        QuantumTape: the quantum tape representing the circuit
 
     **Example**
 

@@ -74,7 +74,7 @@ def snapshots(qnode):
 
         @qml.qnode(dev, interface=None)
         def circuit():
-            qml.Snapshot(measurement=qml.expval(qml.Z(0))
+            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
             qml.Hadamard(wires=0)
             qml.Snapshot("very_important_state")
             qml.CNOT(wires=[0, 1])

@@ -30,7 +30,7 @@
 
   Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
 
-  ```pycon
+  ```console
   > /Users/your/path/to/script.py(8)circuit()
   -> qml.RX(x, wires=0)
   [pldb]: x
