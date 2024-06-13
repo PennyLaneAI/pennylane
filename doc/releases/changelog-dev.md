@@ -58,7 +58,7 @@
 
   ```python
   of_op = openfermion.FermionOperator('0^ 2')
-  pl_op = qml.qchem.from_openfermion(of_op)
+  pl_op = qml.from_openfermion(of_op)
 
   ```
   ```pycon
