@@ -51,8 +51,8 @@ def from_openfermion(of_op, tol=1e-16):
     terms = of_op.terms
     typemap = {0: "-", 1: "+"}
 
-    fermiwords = []
-    fermivalue = []
+    fermi_words = []
+    fermi_coeffs = []
 
     for ops, val in of_op.terms.items():
 
