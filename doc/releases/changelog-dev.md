@@ -323,6 +323,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `MottonenStatePreparation` produces wrong derivatives at special parameter values.
+  [(#5774)](https://github.com/PennyLaneAI/pennylane/pull/5774)
+
 * Fixes a bug where fractional powers and adjoints of operators were commuted, which is
   not well-defined/correct in general. Adjoints of fractional powers can no longer be evaluated.
   [(#5835)](https://github.com/PennyLaneAI/pennylane/pull/5835)
