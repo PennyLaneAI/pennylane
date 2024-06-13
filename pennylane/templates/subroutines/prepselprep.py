@@ -19,8 +19,6 @@ linear combination of unitaries using the Prepare, Select, Prepare method.
 # pylint: disable=arguments-differ,import-outside-toplevel,too-many-arguments
 import copy
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -28,55 +26,21 @@ from pennylane.operation import Operation
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
 
-    coeffs, _ = lcu.terms()
+    new_coeffs = []
+    new_ops = []
 
-    if qml.math.iscomplexobj(coeffs):
-        new_coeffs, new_ops = _new_terms_is_complex(lcu)
-    else:
-        new_coeffs, new_ops = _new_terms_is_real(lcu)
+    for coeff, op in zip(*lcu.terms()):
+
+        angle = qml.math.angle(coeff)
+        new_coeffs.append(qml.math.abs(coeff))
+
+        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
+        new_ops.append(new_op)
 
     interface = qml.math.get_interface(lcu.terms()[0])
     new_coeffs = qml.math.array(new_coeffs, like=interface)
 
     return new_coeffs, new_ops
-
-
-def _new_terms_is_complex(lcu):
-    """Computes new terms when the coefficients are complex.
-    This doubles the number of terms."""
-
-    new_coeffs = []
-    new_ops = []
-    for coeff, op in zip(*lcu.terms()):
-        real = qml.math.real(coeff)
-        imag = qml.math.imag(coeff)
-
-        sign = qml.math.sign(real)
-        angle = np.pi * (0.5 * (1 - sign))
-        new_coeffs.append(sign * real)
-        new_op = op @ qml.GlobalPhase(angle, wires=op.wires)
-        new_ops.append(new_op)
-
-        sign = qml.math.sign(imag)
-        new_coeffs.append(sign * imag)
-        angle = (-1) * np.pi * (0.5 * (2 - sign))
-        new_op = op @ qml.GlobalPhase(angle, wires=op.wires)
-        new_ops.append(new_op)
-
-    return new_coeffs, new_ops
-
-
-def _new_terms_is_real(lcu):
-    """Computes new terms when the coefficients are real."""
-    new_unitaries = []
-
-    coeffs, ops = lcu.terms()
-
-    for coeff, op in zip(coeffs, ops):
-        angle = np.pi * (0.5 * (1 - qml.math.sign(coeff)))
-        new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
-
-    return qml.math.abs(coeffs), new_unitaries
 
 
 class PrepSelPrep(Operation):

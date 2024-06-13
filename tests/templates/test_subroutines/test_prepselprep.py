@@ -56,55 +56,21 @@ def test_repr():
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
 
-    coeffs, _ = lcu.terms()
+    new_coeffs = []
+    new_ops = []
 
-    if qml.math.iscomplexobj(coeffs):
-        new_coeffs, new_ops = _new_terms_is_complex(lcu)
-    else:
-        new_coeffs, new_ops = _new_terms_is_real(lcu)
+    for coeff, op in zip(*lcu.terms()):
+
+        angle = qml.math.angle(coeff)
+        new_coeffs.append(qml.math.abs(coeff))
+
+        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
+        new_ops.append(new_op)
 
     interface = qml.math.get_interface(lcu.terms()[0])
     new_coeffs = qml.math.array(new_coeffs, like=interface)
 
     return new_coeffs, new_ops
-
-
-def _new_terms_is_complex(lcu):
-    """Computes new terms when the coefficients are complex.
-    This doubles the number of terms."""
-
-    new_coeffs = []
-    new_ops = []
-    for coeff, op in zip(*lcu.terms()):
-        real = qml.math.real(coeff)
-        imag = qml.math.imag(coeff)
-
-        sign = qml.math.sign(real)
-        angle = np.pi * (0.5 * (1 - sign))
-        new_coeffs.append(sign * real)
-        new_op = op @ qml.GlobalPhase(angle, wires=op.wires)
-        new_ops.append(new_op)
-
-        sign = qml.math.sign(imag)
-        new_coeffs.append(sign * imag)
-        angle = (-1) * np.pi * (0.5 * (2 - sign))
-        new_op = op @ qml.GlobalPhase(angle, wires=op.wires)
-        new_ops.append(new_op)
-
-    return new_coeffs, new_ops
-
-
-def _new_terms_is_real(lcu):
-    """Computes new terms when the coefficients are real."""
-    new_unitaries = []
-
-    coeffs, ops = lcu.terms()
-
-    for coeff, op in zip(coeffs, ops):
-        angle = np.pi * (0.5 * (1 - qml.math.sign(coeff)))
-        new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
-
-    return qml.math.abs(coeffs), new_unitaries
 
 
 # Use these circuits in tests
@@ -146,7 +112,7 @@ class TestPrepSelPrep:
     lcu5 = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)])
     lcu6 = qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)])
     lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
-    lcu8 = qml.dot([0.5, 0.5j], [qml.X(2), qml.Z(2)])
+    lcu8 = qml.dot([0.5, 0.5j], [qml.X(1), qml.Z(1)])
 
     dev = qml.device("default.qubit")
     manual = qml.QNode(manual_circuit, dev)
@@ -199,9 +165,9 @@ class TestPrepSelPrep:
             ),
             (
                 lcu8,
-                [0, 1],
-                qml.matrix(prepselprep, wire_order=[0, 1, 2]),
-                qml.matrix(manual, wire_order=[0, 1, 2]),
+                [0],
+                qml.matrix(prepselprep, wire_order=[0, 1]),
+                qml.matrix(manual, wire_order=[0, 1]),
             ),
         ],
     )
@@ -216,6 +182,7 @@ class TestPrepSelPrep:
     @pytest.mark.parametrize(
         ("lcu", "control", "wire_order", "dim"),
         [
+            (qml.dot([0.1, -0.4], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.3, -0.1], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.5j, -0.5j], [qml.Z(2), qml.X(2)]), [0, 1], [0, 1, 2], 2),
