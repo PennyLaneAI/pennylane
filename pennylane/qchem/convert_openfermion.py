@@ -25,7 +25,7 @@ def from_openfermion(openfermion_op, tol=1e-16):
     objects to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` objects.
 
     Args:
-        of_op (FermionOperator): OpenFermion fermionic operator
+        openfermion_op (FermionOperator): OpenFermion fermionic operator
         tol (float): Tolerance for discarding negligible coefficients
 
     Returns:
@@ -34,8 +34,8 @@ def from_openfermion(openfermion_op, tol=1e-16):
     **Example**
 
     >>> from openfermion import FermionOperator
-    >>> of_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
-    >>> pl_op = from_openfermion(of_op)
+    >>> openfermion_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
+    >>> pl_op = from_openfermion(openfermion_op)
     >>> print(pl_op)
         0.5 * a(0) a⁺(2)
         + 1.0 * a⁺(0) a(2)
@@ -53,7 +53,7 @@ def from_openfermion(openfermion_op, tol=1e-16):
     fermi_words = []
     fermi_coeffs = []
 
-    for ops, val in of_op.terms.items():
+    for ops, val in openfermion_op.terms.items():
         fw_dict = {(i, op[0]): typemap[op[1]] for i, op in enumerate(ops)}
         fermi_words.append(FermiWord(fw_dict))
         fermi_coeffs.append(val)
