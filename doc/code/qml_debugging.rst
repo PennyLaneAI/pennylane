@@ -13,9 +13,9 @@ qml.debugging
 Entering the Debugging Context
 ------------------------------
 
-The ``qml.breakpoint()`` function provides an interface for interacting with and
+The :func:`~.breakpoint <qml.breakpoint()>` function provides an interface for interacting with and
 stepping through a quantum circuit during execution. It allows for faster debugging
-by provding access to the internal state of the circuit and the ``QuantumTape`` as 
+by providing access to the internal state of the circuit and the ``QuantumTape`` as 
 the circuit operations are applied. The functionality is highlighted by the example 
 circuit below.
 
@@ -53,7 +53,7 @@ executed after the breakpoint:
 Controlling Code Execution in the Debugging Context
 ---------------------------------------------------
 
-The Pennylane Debugger (pldb) is built from the native python debugger (pdb), as such 
+The PennyLane Debugger (pldb) is built from the native python debugger (pdb), as such 
 it shares a similar interface. We can interact with the debugger using the 
 builtin commands: ``list``, ``longlist``, ``next``, ``continue``, and ``quit``. Any 
 variables defined in the scope of the quantum function can also be accessed from the 
@@ -86,7 +86,7 @@ the location of execution in the circuit.
      15  	    return qml.sample()
     
 The ``next`` command will execute the next line of code, and print the following 
-line to be executed (eg. the next operation to execute is ``CNOT``).
+line to be executed, e.g., the next operation to execute is ``CNOT``.
 
 .. code-block:: console
     
@@ -106,7 +106,7 @@ line to be executed (eg. the next operation to execute is ``CNOT``).
      12  	
      13  	    qml.breakpoint()
 
-Alternative, ``continue`` allows for jumping between breakpoints. This command resumes
+Alternative, the ``continue`` command allows for jumping between breakpoints. This command resumes
 code execution until the next breakpoint is reached. Finally, the ``quit`` command
 ends the debugging prompt.
 
