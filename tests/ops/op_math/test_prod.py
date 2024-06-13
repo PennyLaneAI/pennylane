@@ -329,7 +329,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = prod_op._eigs[prod_op.hash]
+        eigs_cache = prod_op._eigs[prod_op]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
