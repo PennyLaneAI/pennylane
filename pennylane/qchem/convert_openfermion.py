@@ -56,12 +56,8 @@ def from_openfermion(of_op, tol=1e-16):
 
     for ops, val in of_op.terms.items():
 
-        fermiops, fermivals = [], []
-        for i, op in enumerate(ops):
-            fermiops.append((i, op[0]))
-            fermivals.append(typemap[op[1]])
-
-        fermiwords.append(FermiWord(dict(zip(fermiops, fermivals))))
+        fw_dict = {(i, op[0]): typemap[op[1]] for i, op in enumerate(ops)}
+        fermiwords.append(FermiWord(fw_dict))
         fermivalue.append(val)
 
     if len(fermiwords) == 1 and fermivalue[0] == 1.0:
