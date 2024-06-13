@@ -10,7 +10,7 @@ qml.debugging
 Entering the Debugging Context
 ------------------------------
 
-The :func:`~.breakpoint <qml.breakpoint()>` function provides an interface for interacting with and
+The :func:`~pennylane.breakpoint` function provides an interface for interacting with and
 stepping through a quantum circuit during execution. It allows for faster debugging
 by providing access to the internal state of the circuit and the ``QuantumTape`` as 
 the circuit operations are applied. The functionality is highlighted by the example 
