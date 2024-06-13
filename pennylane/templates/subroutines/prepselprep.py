@@ -59,11 +59,12 @@ def _new_terms_is_complex(lcu):
 
         sign = qml.math.sign(imag)
         new_coeffs.append(sign * imag)
-        angle = (-1)*np.pi * (0.5 * (2 - sign))
+        angle = (-1) * np.pi * (0.5 * (2 - sign))
         new_op = op @ qml.GlobalPhase(angle, wires=op.wires)
         new_ops.append(new_op)
 
     return new_coeffs, new_ops
+
 
 def _new_terms_is_real(lcu):
     """Computes new terms when the coefficients are real."""
@@ -76,6 +77,7 @@ def _new_terms_is_real(lcu):
         new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
 
     return qml.math.abs(coeffs), new_unitaries
+
 
 class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
@@ -128,10 +130,16 @@ class PrepSelPrep(Operation):
         coeffs, ops = _get_new_terms(lcu)
 
         decomp_ops = []
-        decomp_ops.append(qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control))
+        decomp_ops.append(
+            qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+        )
         decomp_ops.append(qml.Select(ops, control))
         decomp_ops.append(
-            qml.adjoint(qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control))
+            qml.adjoint(
+                qml.AmplitudeEmbedding(
+                    qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
+                )
+            )
         )
 
         return decomp_ops
