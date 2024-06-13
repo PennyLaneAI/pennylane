@@ -272,6 +272,9 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
+* `qml.qsvt()` now supports jax arrays with angle conversions. 
+  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5853)
+
 <h3>Breaking changes 💔</h3>
 
 * Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
