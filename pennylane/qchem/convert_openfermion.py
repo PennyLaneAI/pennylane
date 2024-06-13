@@ -54,7 +54,6 @@ def from_openfermion(of_op, tol=1e-16):
     fermi_coeffs = []
 
     for ops, val in of_op.terms.items():
-
         fw_dict = {(i, op[0]): typemap[op[1]] for i, op in enumerate(ops)}
         fermi_words.append(FermiWord(fw_dict))
         fermi_coeffs.append(val)
