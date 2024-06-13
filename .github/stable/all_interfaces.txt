@@ -20,7 +20,7 @@ distlib==0.3.8
 ecos==2.0.13
 exceptiongroup==1.2.1
 execnet==2.1.1
-filelock==3.14.0
+filelock==3.15.1
 flaky==3.8.1
 flatbuffers==24.3.25
 fonttools==4.53.0
