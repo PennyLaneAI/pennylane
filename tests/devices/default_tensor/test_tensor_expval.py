@@ -32,24 +32,32 @@ pytestmark = pytest.mark.external
 # pylint: disable=too-many-arguments, redefined-outer-name
 
 
-@pytest.fixture(params=[np.complex64, np.complex128])
+@pytest.fixture(
+    params=[
+        (np.complex64, "mps"),
+        (np.complex64, "tn"),
+        (np.complex128, "mps"),
+        (np.complex128, "tn"),
+    ]
+)
 def dev(request):
     """Device fixture."""
-    return qml.device("default.tensor", wires=3, dtype=request.param)
+    c_dtype, method = request.param
+    return qml.device("default.tensor", wires=3, method=method, c_dtype=c_dtype)
 
 
 def calculate_reference(tape):
     """Calculate the reference value of the tape using DefaultQubit."""
-    dev = DefaultQubit(max_workers=1)
-    program, _ = dev.preprocess()
+    ref_dev = DefaultQubit(max_workers=1)
+    program, _ = ref_dev.preprocess()
     tapes, transf_fn = program([tape])
-    results = dev.execute(tapes)
+    results = ref_dev.execute(tapes)
     return transf_fn(results)
 
 
-def execute(dev, tape):
+def execute(device, tape):
     """Execute the tape on the device and return the result."""
-    results = dev.execute(tape)
+    results = device.execute(tape)
     return results
 
 
@@ -57,7 +65,7 @@ def execute(dev, tape):
 class TestExpval:
     """Test expectation value calculations"""
 
-    def test_Identity(self, theta, phi, dev, tol):
+    def test_Identity(self, theta, phi, dev):
         """Tests applying identities."""
 
         ops = [
@@ -70,44 +78,42 @@ class TestExpval:
         measurements = [qml.expval(qml.PauliZ(0))]
         tape = qml.tape.QuantumScript(ops, measurements)
 
-        result = dev.execute(tape)
+        result = execute(dev, tape)
         expected = np.cos(theta)
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(result, expected, tol)
 
-    def test_identity_expectation(self, theta, phi, dev, tol):
+    def test_identity_expectation(self, theta, phi, dev):
         """Tests identity expectations."""
 
         tape = qml.tape.QuantumScript(
             [qml.RX(theta, wires=[0]), qml.RX(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
             [qml.expval(qml.Identity(wires=[0])), qml.expval(qml.Identity(wires=[1]))],
         )
-        result = dev.execute(tape)
+        result = execute(dev, tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(1.0, result, tol)
 
-    def test_multi_wire_identity_expectation(self, theta, phi, dev, tol):
+    def test_multi_wire_identity_expectation(self, theta, phi, dev):
         """Tests multi-wire identity."""
 
         tape = qml.tape.QuantumScript(
             [qml.RX(theta, wires=[0]), qml.RX(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
             [qml.expval(qml.Identity(wires=[0, 1]))],
         )
-        result = dev.execute(tape)
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        result = execute(dev, tape)
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(1.0, result, tol)
 
-    @pytest.mark.parametrize(
-        "wires",
-        [([0, 1]), (["a", 1]), (["b", "a"]), ([-1, 2.5])],
-    )
-    def test_custom_wires(self, theta, phi, tol, wires):
+    @pytest.mark.parametrize("wires", [([0, 1]), (["a", 1]), (["b", "a"]), ([-1, 2.5])])
+    @pytest.mark.parametrize("method", ["mps", "tn"])
+    def test_custom_wires(self, theta, phi, wires, method):
         """Tests custom wires."""
-        dev = qml.device("default.tensor", wires=wires, dtype=np.complex128)
+        dev = qml.device("default.tensor", wires=wires, method=method)
 
         tape = qml.tape.QuantumScript(
             [
@@ -124,7 +130,7 @@ class TestExpval:
         calculated_val = execute(dev, tape)
         reference_val = np.array([np.cos(theta), np.cos(theta) * np.cos(phi)])
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -253,7 +259,7 @@ class TestOperatorArithmetic:
             qml.sum(qml.PauliZ(0), qml.PauliX(1)),
         ],
     )
-    def test_op_math(self, phi, dev, obs, tol):
+    def test_op_math(self, phi, dev, obs):
         """Tests the `SProd`, `Prod`, and `Sum` classes."""
 
         tape = qml.tape.QuantumScript(
@@ -269,11 +275,11 @@ class TestOperatorArithmetic:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    def test_integration(self, phi, dev, tol):
+    def test_integration(self, phi, dev):
         """Test a Combination of `Sum`, `SProd`, and `Prod`."""
 
         obs = qml.sum(
@@ -289,7 +295,7 @@ class TestOperatorArithmetic:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
@@ -298,7 +304,7 @@ class TestOperatorArithmetic:
 class TestTensorExpval:
     """Test tensor expectation values"""
 
-    def test_PauliX_PauliY(self, theta, phi, varphi, dev, tol):
+    def test_PauliX_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliX and PauliY."""
 
         with qml.tape.QuantumTape() as tape:
@@ -312,11 +318,11 @@ class TestTensorExpval:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    def test_PauliZ_identity(self, theta, phi, varphi, dev, tol):
+    def test_PauliZ_identity(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliZ and Identity."""
 
         with qml.tape.QuantumTape() as tape:
@@ -331,11 +337,11 @@ class TestTensorExpval:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    def test_PauliZ_hadamard_PauliY(self, theta, phi, varphi, dev, tol):
+    def test_PauliZ_hadamard_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliY, PauliZ and Hadamard."""
 
         with qml.tape.QuantumTape() as tape:
@@ -349,13 +355,14 @@ class TestTensorExpval:
         calculated_val = execute(dev, tape)
         reference_val = calculate_reference(tape)
 
-        tol = 1e-5 if dev.dtype == np.complex64 else 1e-7
+        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
 
         assert np.allclose(calculated_val, reference_val, tol)
 
 
 @pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
-def test_multi_qubit_gates(theta, phi, dev):
+@pytest.mark.parametrize("method", ["mps", "tn"])
+def test_multi_qubit_gates(theta, phi, method):
     """Tests a simple circuit with multi-qubit gates."""
 
     ops = [
@@ -393,7 +400,7 @@ def test_multi_qubit_gates(theta, phi, dev):
     tape = qml.tape.QuantumScript(ops=ops, measurements=meas)
 
     reference_val = calculate_reference(tape)
-    dev = qml.device("default.tensor", wires=tape.wires, dtype=np.complex128)
-    calculated_val = dev.execute(tape)
+    device = qml.device("default.tensor", method=method)
+    calculated_val = device.execute(tape)
 
     assert np.allclose(calculated_val, reference_val)

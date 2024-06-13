@@ -565,16 +565,58 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert len(weights) == len(list(layer.parameters()))
 
 
+@pytest.mark.parametrize(
+    "num_qubits, weight_shapes",
+    [(2, {"weights": [3, 2, 3]}), (3, {"weights": [7, 3, 3]}), (4, {"weights": [3, 4, 3]})],
+)
+def test_forward_tuple(num_qubits, weight_shapes):
+    """Test that the forward method accepts a tuple input and returns a torch tensor."""
+
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def qnode(inputs, weights):
+        qml.templates.AngleEmbedding(inputs, wires=range(num_qubits))
+        qml.templates.StronglyEntanglingLayers(weights, wires=range(num_qubits))
+        return qml.expval(qml.Z(0)), qml.var(qml.Y(1))
+
+    qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+    x = torch.tensor(np.random.random((5, num_qubits)), dtype=torch.float32)
+    assert isinstance(qlayer.forward(x), torch.Tensor)
+
+
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-@pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
-def test_interface_conversion(get_circuit):
-    """Test if input QNodes with all types of interface are converted internally to the PyTorch
-    interface"""
-    c, w = get_circuit
-    layer = TorchLayer(c, w)
-    assert layer.qnode.interface == "torch"
+@pytest.mark.parametrize("interface", ["autograd", "jax", "tf"])
+def test_invalid_interface_error(interface):
+    """Test an error gets raised if input QNode has the wrong interface"""
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1}
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    with pytest.raises(ValueError, match="Invalid interface"):
+        _ = TorchLayer(circuit, weight_shapes)
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("interface", ("auto", "torch", "pytorch"))
+def test_qnode_interface_not_mutated(interface):
+    """Test that the input QNode's interface is not mutated by TorchLayer"""
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1}
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = TorchLayer(circuit, weight_shapes)
+    assert qlayer.qnode.interface == circuit.interface == interface
 
 
 @pytest.mark.torch
