@@ -20,7 +20,7 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.drawer import draw
 
 
@@ -128,7 +128,7 @@ class TestDecimals:
         """Test numpy parameters display as normal numbers."""
 
         expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "
-        assert draw(circuit)(np.array(1), np.array(2), np.array(3)) == expected
+        assert draw(circuit)(pnp.array(1), pnp.array(2), pnp.array(3)) == expected
 
     @pytest.mark.torch
     def test_torch_parameters(self):
@@ -174,8 +174,8 @@ class TestMatrixParameters:
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit():
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
-            qml.QubitUnitary(np.eye(2), wires=0)
-            return qml.expval(qml.Hermitian(np.eye(2), wires=0))
+            qml.QubitUnitary(pnp.eye(2), wires=0)
+            return qml.expval(qml.Hermitian(pnp.eye(2), wires=0))
 
         expected1 = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
 
@@ -196,9 +196,9 @@ class TestMatrixParameters:
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
-            qml.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
+            qml.QubitUnitary(pnp.eye(2, requires_grad=False), wires=0)
             qml.RX(x, wires=1)
-            return qml.expval(qml.Hermitian(np.eye(2, requires_grad=False), wires=1))
+            return qml.expval(qml.Hermitian(pnp.eye(2, requires_grad=False), wires=1))
 
         expected1 = (
             "0: ─╭|Ψ⟩──U(M0)────┤         \n"
@@ -207,7 +207,7 @@ class TestMatrixParameters:
             "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>\n\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
-        output = draw(matrices_circuit, level="gradient")(np.array(1.0, requires_grad=True))
+        output = draw(matrices_circuit, level="gradient")(pnp.array(1.0, requires_grad=True))
         assert output == expected1
 
         expected2 = (
@@ -216,7 +216,7 @@ class TestMatrixParameters:
             "0: ─╭|Ψ⟩──U(M0)────┤         \n"
             "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>"
         )
-        output = draw(matrices_circuit, show_matrices=False)(np.array(1.0, requires_grad=True))
+        output = draw(matrices_circuit, show_matrices=False)(pnp.array(1.0, requires_grad=True))
         assert output == expected2
 
 
@@ -404,7 +404,7 @@ class TestMidCircuitMeasurements:
             qml.MultiRZ(0.5, [0, 2])
             return qml.expval(qml.PauliZ(2))
 
-        drawing = qml.draw(circ)(np.array([np.pi, 3.124, 0.456]))
+        drawing = qml.draw(circ)(pnp.array([pnp.pi, 3.124, 0.456]))
         expected_drawing = (
             "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
             "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
@@ -423,7 +423,7 @@ class TestMidCircuitMeasurements:
             m0 = qml.measure(0)
             qml.cond(m0, qml.PauliX)(wires=1)
 
-        drawing = qml.draw(circ)(np.pi)
+        drawing = qml.draw(circ)(pnp.pi)
         expected_drawing = (
             "0: ──RX(3.14)──┤↗├────┤  \n1: ─────────────║───X─┤  \n                ╚═══╝    "
         )
@@ -440,7 +440,7 @@ class TestMidCircuitMeasurements:
             qml.RY(theta, 2)
             qml.cond(m0, qml.CNOT)(wires=[1, 0])
 
-        drawing = qml.draw(circ)(np.pi, np.pi / 2)
+        drawing = qml.draw(circ)(pnp.pi, pnp.pi / 2)
         expected_drawing = (
             "0: ──RX(3.14)──┤↗├───────────╭X─┤  \n"
             "1: ─────────────║────────────╰●─┤  \n"
@@ -931,12 +931,27 @@ class TestLevelExpansionStrategy:
     )
     def test_equivalent_levels(self, transforms_circuit, var1, var2, expected):
         order = [2, 1, 0]
-        weights = np.array([[1.0, 20]])
+        weights = pnp.array([[1.0, 20]])
 
         out1 = qml.draw(transforms_circuit, level=var1, show_matrices=False)(weights, order)
         out2 = qml.draw(transforms_circuit, level=var2, show_matrices=False)(weights, order)
 
         assert out1 == out2 == expected
+
+    def test_draw_at_level_1(self, transforms_circuit):
+        """Test that at level one the first transform has been applied, cancelling inverses."""
+
+        order = [2, 1, 0]
+        weights = pnp.array([[1.0, 20]])
+
+        out = qml.draw(transforms_circuit, level=1, show_matrices=False)(weights, order)
+
+        expected = (
+            "0: ─╭RandomLayers(M0)─╭Permute──RX(0.10)──RX(-0.10)─┤  <X>\n"
+            "1: ─╰RandomLayers(M0)─├Permute──────────────────────┤     \n"
+            "2: ───────────────────╰Permute──────────────────────┤     "
+        )
+        assert out == expected
 
     def test_draw_with_qfunc_warns_with_expansion_strategy(self):
         """Test that draw warns the user about expansion_strategy being ignored."""
@@ -954,20 +969,9 @@ class TestLevelExpansionStrategy:
         ):
             _ = qml.draw(qfunc, level="gradient")
 
-    def test_draw_at_level_1(self, transforms_circuit):
-        """Test that at level one the first transform has been applied, cancelling inverses."""
-
-        order = [2, 1, 0]
-        weights = np.array([[1.0, 20]])
-
-        out = qml.draw(transforms_circuit, level=1, show_matrices=False)(weights, order)
-
-        expected = (
-            "0: ─╭RandomLayers(M0)─╭Permute──RX(0.10)──RX(-0.10)─┤  <X>\n"
-            "1: ─╰RandomLayers(M0)─├Permute──────────────────────┤     \n"
-            "2: ───────────────────╰Permute──────────────────────┤     "
-        )
-        assert out == expected
+    def test_providing_both_level_and_expansion_raises_error(self, transforms_circuit):
+        with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
+            qml.draw(transforms_circuit, level=0, expansion_strategy="device")
 
 
 def test_draw_batch_transform():
@@ -981,7 +985,7 @@ def test_draw_batch_transform():
         return qml.expval(qml.PauliZ(0))
 
     expected = "0: ──H──RX(0.8)─┤  <Z>\n\n0: ──H──RX(0.4)─┤  <Z>"
-    assert draw(circ, decimals=1)(np.array(0.6, requires_grad=True)) == expected
+    assert draw(circ, decimals=1)(pnp.array(0.6, requires_grad=True)) == expected
 
 
 @pytest.mark.skip("Nested tapes are being deprecated")

@@ -41,12 +41,10 @@ def _determine_draw_level(kwargs, qnode=None):
     if all(val != sentinel for val in (level, expansion_strategy)):
         raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
 
-    if level == sentinel and expansion_strategy == sentinel:
-        return qnode.expansion_strategy if qnode else sentinel
-
     if level == sentinel:
+        if expansion_strategy == sentinel:
+            return qnode.expansion_strategy if qnode else sentinel
         return expansion_strategy
-
     return level
 
 
@@ -559,7 +557,10 @@ def draw_mpl(
 
     if hasattr(qnode, "construct"):
         resolved_level = _determine_draw_level(kwargs, qnode)
+
         kwargs.pop("expansion_strategy", None)
+        kwargs.pop("level", None)
+
         return _draw_mpl_qnode(
             qnode,
             wire_order=wire_order,
@@ -616,7 +617,7 @@ def _draw_mpl_qnode(
     def wrapper(*args, **kwargs_qnode):
         tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs_qnode)
 
-        if len(tapes) > 0:
+        if len(tapes) > 1:
             warnings.warn(
                 "More than one tape constructed, but only displaying the first one.", UserWarning
             )
