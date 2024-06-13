@@ -7,6 +7,9 @@
 * New Method in `ProbabilityMP` for Density Matrix Processing**: A new method `process_density_matrix` has been added to the `ProbabilityMP` class, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
 
+* The `default.tensor` device now supports the `tn` method to simulate quantum circuits using exact tensor networks.
+  [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
+
 * QROM template is added. This template allows you to enter classic data in the form of bitstrings.
   [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
 
@@ -49,7 +52,7 @@
     to execute once for each shot. If using `qml.jit` with the Catalyst compiler, `mcm_method="single-branch-statistics"`
     is also available. Using this method, a single branch of the execution tree will be randomly explored.
 
-* The `default.tensor` device is introduced to perform tensor network simulation of a quantum circuit.
+* The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
 * A new `qml.noise` module which contains utility functions for building `NoiseModels`.
