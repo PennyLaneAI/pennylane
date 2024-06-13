@@ -400,6 +400,9 @@ by passing an ``mcm_method`` option to a QNode (see section
     def my_quantum_function(x, y):
         (...)
 
+.. warning::
+
+    The tree-traversal algorithm is only implemented on :class:`~.pennylane.devices.DefaultQubit`.
 
 Resetting wires
 ***************
