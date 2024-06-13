@@ -624,8 +624,6 @@ def circuit_up_to_first_mcm(circuit):
 def measurement_with_no_shots(measurement):
     """Returns a NaN scalar or array of the correct size when executing an all-invalid-shot circuit."""
     if isinstance(measurement, ProbabilityMP):
-        if measurement.obs:
-            return np.nan * np.ones(measurement.obs.eigvals().size)
         return np.nan * np.ones(2 ** len(measurement.wires))
     return np.nan
 
