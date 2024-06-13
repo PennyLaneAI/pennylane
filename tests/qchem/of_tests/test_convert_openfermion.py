@@ -72,7 +72,6 @@ openfermion = pytest.importorskip("openfermion")
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_convert_from_openfermion(of_op, pl_op):
     r"""Test that conversion from openfermion fermionic operator to pennylane
     fermionic operator is correct"""
