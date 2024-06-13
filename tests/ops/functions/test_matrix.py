@@ -659,6 +659,34 @@ class TestInterfaces:
 
         assert np.allclose(matrix, expected_matrix)
 
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_catalyst(self):
+        """Test with Catalyst interface"""
+
+        catalyst = pytest.importorskip("catalyst")
+
+        dev = qml.device("lightning.qubit", wires=1)
+
+        # create a plain QNode
+        @qml.qnode(dev)
+        def f():
+            qml.PauliX(0)
+            return qml.state()
+
+        # create a qjit-compiled QNode by decorating a function
+        @catalyst.qjit
+        @qml.qnode(dev)
+        def g():
+            qml.PauliX(0)
+            return qml.state()
+
+        # create a qjit-compiled QNode by passing in the plain QNode directly
+        h = catalyst.qjit(f)
+
+        assert np.allclose(f(), g(), h())
+        assert np.allclose(qml.matrix(f)(), qml.matrix(g)(), qml.matrix(h)())
+
     @pytest.mark.jax
     def test_get_unitary_matrix_interface_jax(self):
         """Test with JAX interface"""

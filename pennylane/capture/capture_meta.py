@@ -16,6 +16,8 @@ Defines a metaclass for automatic integration of any ``Operator`` with plxpr pro
 
 See ``explanations.md`` for technical explanations of how this works.
 """
+from abc import ABCMeta
+from inspect import Signature, signature
 
 from .switches import enabled
 
@@ -27,7 +29,46 @@ class CaptureMeta(type):
 
     See ``pennylane/capture/explanations.md`` for more detailed information on how this technically
     works.
+
+    .. code-block::
+
+        class AbstractMyObj(jax.core.AbstractValue):
+            pass
+
+        jax.core.raise_to_shaped_mappings[AbstractMyObj] = lambda aval, _: aval
+
+        class MyObj(metaclass=qml.capture.CaptureMeta):
+
+            primitive = jax.core.Primitive("MyObj")
+
+            @classmethod
+            def _primitive_bind_call(cls, a):
+                return cls.primitive.bind(a)
+
+            def __init__(self, a):
+                self.a = a
+
+        @MyObj.primitive.def_impl
+        def _(a):
+            return type.__call__(MyObj, a)
+
+        @MyObj.primitive.def_abstract_eval
+        def _(a):
+            return AbstractMyObj()
+
+    >>> jaxpr = jax.make_jaxpr(MyObj)(0.1)
+    >>> jaxpr
+    { lambda ; a:f32[]. let b:AbstractMyObj() = MyObj a in (b,) }
+    >>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.1)
+    [<__main__.MyObj at 0x17fc3ea50>]
+
     """
+
+    @property
+    def __signature__(cls):
+        sig = signature(cls.__init__)
+        without_self = tuple(sig.parameters.values())[1:]
+        return Signature(without_self)
 
     def _primitive_bind_call(cls, *args, **kwargs):
         raise NotImplementedError(
@@ -44,3 +85,8 @@ class CaptureMeta(type):
             # use bind to construct the class if we want class construction to add it to the jaxpr
             return cls._primitive_bind_call(*args, **kwargs)
         return type.__call__(cls, *args, **kwargs)
+
+
+# pylint: disable=abstract-method
+class ABCCaptureMeta(CaptureMeta, ABCMeta):
+    """A combination of the capture meta and ABCMeta"""

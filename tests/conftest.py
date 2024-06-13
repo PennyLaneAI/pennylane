@@ -15,8 +15,10 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
+import contextlib
 import os
 import pathlib
+import sys
 
 import numpy as np
 import pytest
@@ -24,6 +26,8 @@ import pytest
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
 from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 # defaults
 TOL = 1e-3
@@ -205,6 +209,7 @@ def use_legacy_opmath():
         yield cm
 
 
+# pylint: disable=contextmanager-generator-missing-cleanup
 @pytest.fixture(scope="function")
 def use_new_opmath():
     with enable_new_opmath_cm() as cm:
@@ -215,6 +220,12 @@ def use_new_opmath():
 def use_legacy_and_new_opmath(request):
     with request.param() as cm:
         yield cm
+
+
+@pytest.fixture
+def new_opmath_only():
+    if not qml.operation.active_new_opmath():
+        pytest.skip("This feature only works with new opmath enabled")
 
 
 #######################################################################

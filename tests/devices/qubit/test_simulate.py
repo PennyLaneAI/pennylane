@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
+from pennylane.devices.qubit.simulate import _FlexShots
 
 
 class TestCurrentlyUnsupportedCases:
@@ -174,7 +175,7 @@ class TestBasicCircuit:
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
 
         with tf.GradientTape(persistent=True) as grad_tape:
             qs = qml.tape.QuantumScript(
@@ -409,6 +410,30 @@ class TestPostselection:
         assert qml.math.all(qml.math.isnan(res))
 
 
+class Test_FlexShots:
+    """Unit tests for _FlexShots"""
+
+    @pytest.mark.parametrize(
+        "shots, expected_shot_vector",
+        [
+            (0, (0,)),
+            ((10, 0, 5, 0), (10, 0, 5, 0)),
+            (((10, 3), (0, 5)), (10, 10, 10, 0, 0, 0, 0, 0)),
+        ],
+    )
+    def test_init_with_zero_shots(self, shots, expected_shot_vector):
+        """Test that _FlexShots is initialized correctly with zero shots"""
+        flex_shots = _FlexShots(shots)
+        shot_vector = tuple(s for s in flex_shots)
+        assert shot_vector == expected_shot_vector
+
+    def test_init_with_other_shots(self):
+        """Test that a new _FlexShots object is not created if the input is a _FlexShots object."""
+        shots = _FlexShots(10)
+        new_shots = _FlexShots(shots)
+        assert new_shots is shots
+
+
 class TestDebugger:
     """Tests that the debugger works for a simple circuit"""
 
@@ -516,7 +541,7 @@ class TestDebugger:
         """Tests debugger with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
         debugger = self.Debugger()
 
         ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]

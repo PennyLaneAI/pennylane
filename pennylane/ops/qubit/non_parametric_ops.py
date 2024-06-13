@@ -204,8 +204,8 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, id=None):
-        super().__init__(*params, wires=wires, id=id)
+    def __init__(self, wires=None, id=None):
+        super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -391,8 +391,8 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, id=None):
-        super().__init__(*params, wires=wires, id=id)
+    def __init__(self, wires=None, id=None):
+        super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
     def __repr__(self):
@@ -575,8 +575,8 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, id=None):
-        super().__init__(*params, wires=wires, id=id)
+    def __init__(self, wires=None, id=None):
+        super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
     def __repr__(self):
@@ -1166,7 +1166,7 @@ class ECR(Operation):
 
     An echoed RZX(pi/2) gate.
 
-    .. math:: ECR = {1/\sqrt{2}} \begin{bmatrix}
+    .. math:: ECR = {\frac{1}{\sqrt{2}}} \begin{bmatrix}
             0 & 0 & 1 & i \\
             0 & 0 & i & 1 \\
             1 & -i & 0 & 0 \\

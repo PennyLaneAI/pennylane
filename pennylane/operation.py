@@ -256,7 +256,7 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, csr_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.capture import CaptureMeta, create_operator_primitive
+from pennylane.capture import ABCCaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -406,12 +406,7 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-# pylint: disable=abstract-method
-class CaptureMetaABC(CaptureMeta, abc.ABCMeta):
-    """Mixing together CaptureMeta and ABCMeta so that Operator can use both."""
-
-
-class Operator(abc.ABC, metaclass=CaptureMetaABC):
+class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -723,7 +718,6 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
-
         iterable_wires_types = (list, tuple, qml.wires.Wires, range, set)
 
         # process wires so that we can handle them either as a final argument or as a keyword argument.
@@ -2092,6 +2086,10 @@ class Tensor(Observable):
     def _unflatten(cls, data, _):
         return cls(*data)
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args)
+
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
         self.obs: List[Observable] = []
@@ -2319,12 +2317,14 @@ class Tensor(Observable):
             for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
-                    self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))
+                    self._eigvals_cache = qml.math.kron(
+                        self._eigvals_cache, pauli_eigs(len(list(g)))
+                    )
                 else:
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
+                        self._eigvals_cache = qml.math.kron(self._eigvals_cache, ns_ob.eigvals())
 
         return self._eigvals_cache
 
@@ -2409,7 +2409,7 @@ class Tensor(Observable):
             # append diagonalizing unitary for specific wire to U_list
             U_list.append(mats[0])
 
-        mat_size = np.prod([np.shape(mat)[0] for mat in U_list])
+        mat_size = np.prod([qml.math.shape(mat)[0] for mat in U_list])
         wire_size = 2 ** len(self.wires)
         if mat_size != wire_size:
             if partial_overlap:
@@ -2428,7 +2428,7 @@ class Tensor(Observable):
 
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
-        return functools.reduce(np.kron, U_list)
+        return functools.reduce(qml.math.kron, U_list)
 
     def check_wires_partial_overlap(self):
         r"""Tests whether any two observables in the Tensor have partially
@@ -3015,7 +3015,7 @@ def enable_new_opmath(warn=True):
     """
     if warn:
         warnings.warn(
-            "Re-enabling the new Operator arithmetic system after disabling it is not advised."
+            "Re-enabling the new Operator arithmetic system after disabling it is not advised. "
             "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
             UserWarning,
         )
@@ -3042,8 +3042,8 @@ def disable_new_opmath(warn=True):
     """
     if warn:
         warnings.warn(
-            "Disabling the new Operator arithmetic system for legacy support."
-            "If you need help troubleshooting your code, please visit"
+            "Disabling the new Operator arithmetic system for legacy support. "
+            "If you need help troubleshooting your code, please visit "
             "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
             UserWarning,
         )

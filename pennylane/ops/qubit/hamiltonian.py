@@ -236,9 +236,12 @@ class Hamiltonian(Observable):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        new_op = cls(data[0], data[1])
-        new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
-        return new_op
+        return cls(data[0], data[1], _grouping_indices=metadata[0])
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, coeffs, observables, **kwargs):
+        return cls._primitive.bind(*coeffs, *observables, **kwargs, n_obs=len(observables))
 
     def __init__(
         self,
@@ -246,6 +249,7 @@ class Hamiltonian(Observable):
         observables: List[Observable],
         simplify=False,
         grouping_type=None,
+        _grouping_indices=None,
         method="rlf",
         id=None,
     ):
@@ -280,7 +284,7 @@ class Hamiltonian(Observable):
 
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
-        self._grouping_indices = None
+        self._grouping_indices = _grouping_indices
 
         if simplify:
 
@@ -775,8 +779,9 @@ class Hamiltonian(Observable):
         ops1 = self.ops.copy()
 
         if isinstance(H, (Tensor, Observable)):
+            qml.QueuingManager.remove(H)
+            qml.QueuingManager.remove(self)
             terms = [copy(H) @ op for op in ops1]
-
             return qml.simplify(Hamiltonian(coeffs1, terms))
 
         return NotImplemented
@@ -790,11 +795,15 @@ class Hamiltonian(Observable):
             return self
 
         if isinstance(H, Hamiltonian):
+            qml.QueuingManager.remove(H)
+            qml.QueuingManager.remove(self)
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
             return qml.simplify(Hamiltonian(coeffs, ops))
 
         if isinstance(H, (Tensor, Observable)):
+            qml.QueuingManager.remove(H)
+            qml.QueuingManager.remove(self)
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
@@ -892,3 +901,15 @@ class Hamiltonian(Observable):
         new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
         new_op._pauli_rep = "unset"  # pylint: disable=protected-access
         return new_op
+
+
+# The primitive will be None if jax is not installed in the environment
+# If defined, we need to update the implementation to repack the coefficients and observables
+# See capture module for more information
+if Hamiltonian._primitive is not None:  # pylint: disable=protected-access
+
+    @Hamiltonian._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, n_obs, **kwargs):
+        coeffs = args[:n_obs]
+        observables = args[n_obs:]
+        return type.__call__(Hamiltonian, coeffs, observables, **kwargs)

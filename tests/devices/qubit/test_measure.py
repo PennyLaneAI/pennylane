@@ -189,11 +189,9 @@ class TestMeasurements:
         t1, t2 = 0.5, 1.0
         assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("Identity with no wires is not supported with legacy opmath.")
 
         state = np.random.random([2, 2, 2])
         out = measure(qml.measurements.ExpectationMP(qml.I()), state)
@@ -488,7 +486,7 @@ class TestSumOfTermsDifferentiability:
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf
 
-        x = tf.Variable(0.5)
+        x = tf.Variable(0.5, dtype="float64")
         coeffs = [8.3, 5.7]
 
         with tf.GradientTape() as tape1:

@@ -15,11 +15,14 @@ r"""
 Contains the FermionicDoubleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
+from pennylane.wires import Wires
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):
@@ -502,6 +505,10 @@ class FermionicDoubleExcitation(Operation):
         return self.data, (self.hyperparameters["wires1"], self.hyperparameters["wires2"])
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
         return cls(data[0], wires1=metadata[0], wires2=metadata[1])
 
@@ -531,6 +538,15 @@ class FermionicDoubleExcitation(Operation):
 
         wires = wires1 + wires2
         super().__init__(weight, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        for key in ["wires1", "wires2"]:
+            new_op._hyperparameters[key] = Wires(
+                [wire_map.get(wire, wire) for wire in self._hyperparameters[key]]
+            )
+        return new_op
 
     @property
     def num_params(self):

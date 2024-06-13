@@ -1075,7 +1075,7 @@ class TestIntegration:
         QNode construction if the device supports mid-circuit measurements."""
         dev = qml.device("default.qubit.legacy", wires=3)
         mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
 
         @qml.qnode(dev)
         def circuit():
@@ -1138,23 +1138,6 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 3 if dev.name == "defaut.qubit" else 1
 
-    def test_drawing_has_deferred_measurements(self):
-        """Test that `qml.draw` with qnodes uses defer_measurements
-        to draw circuits with mid-circuit measurements."""
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            m = qml.measure(0)
-            qml.cond(m, qml.PauliX)(wires=1)
-            return qml.expval(qml.PauliZ(wires=1))
-
-        res = qml.draw(circuit)("x")
-        expected = "0: ──RX(x)─╭●─┤     \n1: ────────╰X─┤  <Z>"
-
-        assert res == expected
-
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
@@ -1179,11 +1162,11 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        spy.assert_called_once()
+        spy.assert_called()
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
@@ -1876,12 +1859,10 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("grouping", [True, False])
     def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("expval of the legacy Hamiltonian does not support finite shots.")
 
         dev = qml.device("default.qubit.legacy", wires=3, shots=50000)
 

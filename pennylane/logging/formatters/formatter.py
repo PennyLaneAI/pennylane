@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The PennyLane log-level formatters are defined here with default options, and ANSI-terminal color-codes."""
+import inspect
 import logging
 from logging import Formatter
 from typing import NamedTuple, Tuple, Union
@@ -77,7 +78,7 @@ def bash_ansi_codes():
 class DefaultFormatter(Formatter):
     """This formatter has the default rules used for formatting PennyLane log messages."""
 
-    fmt_str = '[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::"%(message)s"'
+    fmt_str = '[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s::"%(message)s"\n'
 
     # 0x000000 Background
     _text_bg = (0, 0, 0)
@@ -110,6 +111,55 @@ class DefaultFormatter(Formatter):
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
+
+class DynamicFormatter(Formatter):
+    """This formatter has the default rules used for formatting PennyLane log messages, with a dynamically updated log format rule"""
+
+    # 0x000000 Background
+    _text_bg = (0, 0, 0)
+
+    cmap = ColorScheme(
+        debug=(220, 238, 200),  # Grey 1
+        debug_bg=_text_bg,
+        info=(80, 125, 125),  # Blue
+        info_bg=_text_bg,
+        warning=(208, 167, 133),  # Orange
+        warning_bg=_text_bg,
+        error=(208, 133, 133),  # Red 1
+        error_bg=_text_bg,
+        critical=(135, 53, 53),  # Red 2
+        critical_bg=(210, 210, 210),  # Grey 2
+        use_rgb=True,
+    )
+
+    @staticmethod
+    def _build_formats(fmt_str):
+        cmap = DynamicFormatter.cmap
+        local_formats = {
+            logging.DEBUG: build_code_rgb(cmap.debug, cmap.debug_bg) + fmt_str + _ANSI_CODES["end"],
+            logging.INFO: build_code_rgb(cmap.info, cmap.info_bg) + fmt_str + _ANSI_CODES["end"],
+            logging.WARNING: build_code_rgb(cmap.warning, cmap.warning_bg)
+            + fmt_str
+            + _ANSI_CODES["end"],
+            logging.ERROR: build_code_rgb(cmap.error, cmap.error_bg) + fmt_str + _ANSI_CODES["end"],
+            logging.CRITICAL: build_code_rgb(cmap.critical, cmap.critical_bg)
+            + fmt_str
+            + _ANSI_CODES["end"],
+        }
+
+        return local_formats
+
+    def format(self, record):
+        f = inspect.getouterframes(inspect.currentframe())[
+            8
+        ]  # Stack depth from log-func call to format function
+
+        fmt_str = f'[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.{f.function}()::"%(message)s"'
+
+        log_fmt = self._build_formats(fmt_str).get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 

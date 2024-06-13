@@ -30,7 +30,7 @@ class Identity(CVObservable, Operation):
     The expectation of this observable
 
     .. math::
-        E[\I] = \text{Tr}(\I \rho)
+        E[I] = \text{Tr}(I \rho)
 
     .. seealso:: The equivalent short-form alias :class:`~I`
 
@@ -195,7 +195,8 @@ class Identity(CVObservable, Operation):
     def adjoint(self):
         return I(wires=self.wires)
 
-    def pow(self, _):
+    # pylint: disable=unused-argument
+    def pow(self, z):
         return [I(wires=self.wires)]
 
 
@@ -205,7 +206,7 @@ r"""The Identity operator
 The expectation of this observable
 
 .. math::
-    E[\I] = \text{Tr}(\I \rho)
+    E[I] = \text{Tr}(I \rho)
 
 .. seealso:: The equivalent long-form alias :class:`~Identity`
 
