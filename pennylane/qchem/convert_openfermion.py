@@ -54,7 +54,7 @@ def from_openfermion(of_op, tol=1e-16):
     fermiwords = []
     fermivalue = []
 
-    for ops, val in zip(terms.keys(), terms.values()):
+    for ops, val in of_op.terms.items():
 
         fermiops, fermivals = [], []
         for i, op in enumerate(ops):
