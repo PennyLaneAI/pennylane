@@ -21,10 +21,10 @@ circuit below.
     import pennylane as qml
     
     @qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
-    def circuit(x):   
+    def circuit(x):
         qml.breakpoint()
 
-        qml.Hadamard(wires=0)        
+        qml.Hadamard(wires=0)
         qml.CNOT(wires=(0,2))
 
         for w in (0, 1, 2):
@@ -71,13 +71,13 @@ the location of execution in the circuit.
       3  	@qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
       4  	def circuit(x):
       5  	    qml.breakpoint()
-      6  	
+      6
       7  ->	    qml.Hadamard(wires=0)
       8  	    qml.CNOT(wires=(0,2))
-      9  	
+      9
      10  	    for w in (0, 1, 2):
      11  	        qml.RX(2*x, wires=w)
-     12  	
+     12
      13  	    qml.breakpoint()
      14  	    qml.RX(-x, wires=1)
      15  	    return qml.sample()
@@ -94,13 +94,13 @@ line to be executed, e.g., the next operation to execute is ``CNOT``.
       3  	@qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
       4  	def circuit(x):
       5  	    qml.breakpoint()
-      6  	
+      6
       7  	    qml.Hadamard(wires=0)
       8  ->	    qml.CNOT(wires=(0,2))
-      9  	
+      9
      10  	    for w in (0, 1, 2):
      11  	        qml.RX(2*x, wires=w)
-     12  	
+     12
      13  	    qml.breakpoint()
 
 Alternative, the ``continue`` command allows for jumping between breakpoints. This command resumes
@@ -113,14 +113,14 @@ ends the debugging prompt.
     > /Users/your/path/to/script.py(14)circuit()
     -> qml.RX(-x, wires=1)
     [pldb]: list
-      9  	
+      9
      10  	    for w in (0, 1, 2):
      11  	        qml.RX(2*x, wires=w)
-     12  	
+     12
      13  	    qml.breakpoint()
      14  ->	    qml.RX(-x, wires=1)
      15  	    return qml.sample()
-     16  	
+     16
      17  	circuit(1.2345)
     [EOF]
     [pldb]: quit
@@ -131,9 +131,9 @@ Extracting Circuit Information
 
 While in the debugging prompt, we can extract information and perform measurements 
 on the qunatum circuit. Specifically we can make measurements using 
-:func:`~pennylane.debugging.expval`, :func:`~pennylane.debugging.state`, 
-:func:`~pennylane.debugging.probs`, and access the gates in the circuit using
-:func:`~pennylane.debugging.tape`. 
+:func:`~pennylane.debug_expval`, :func:`~pennylane.debug_state`, 
+:func:`~pennylane.debug_probs`, and access the gates in the circuit using
+:func:`~pennylane.debug_tape`. 
 
 Consider the circuit from above, 
 
@@ -145,13 +145,13 @@ Consider the circuit from above,
       3  	@qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
       4  	def circuit(x):
       5  	    qml.breakpoint()
-      6  	
+      6
       7  ->	    qml.Hadamard(wires=0)
       8  	    qml.CNOT(wires=(0,2))
-      9  	
+      9
      10  	    for w in (0, 1, 2):
      11  	        qml.RX(2*x, wires=w)
-     12  	
+     12
      13  	    qml.breakpoint()
      14  	    qml.RX(-x, wires=1)
      15  	    return qml.sample()
@@ -161,41 +161,41 @@ Consider the circuit from above,
     [pldb]: next
     > /Users/your/path/to/script.py(10)circuit()
     -> for w in (0, 1, 2):
-    [pldb]: 
+    [pldb]:
 
 All of the operations applied so far are tracked in the circuit's ``QuantumTape`` 
-which is accessible using :func:`~pennylane.debugging.tape`. This can be used to
+which is accessible using :func:`~pennylane.debug_tape`. This can be used to
 *visually* debug the circuit.
 
 .. code-block:: console
 
-    [pldb]: qtape = qml.debugging.tape()
+    [pldb]: qtape = qml.debug_tape()
     [pldb]: qtape.operations
     [Hadamard(wires=[0]), CNOT(wires=[0, 2])]
     [pldb]: print(qtape.draw())
-    0: ──H─╭●─┤  
-    2: ────╰X─┤ 
+    0: ──H─╭●─┤
+    2: ────╰X─┤
 
 The quantum state of the circuit at this point can be extracted using 
-:func:`~pennylane.debugging.state`. The associated probability distribution 
-for the wires of interest can be probed using :func:`~pennylane.debugging.probs`.
+:func:`~pennylane.debug_state`. The associated probability distribution 
+for the wires of interest can be probed using :func:`~pennylane.debug_probs`.
 
 .. code-block:: console
 
-    [pldb]: qml.debugging.state()
+    [pldb]: qml.debug_state()
     array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
            0.        +0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
-    [pldb]: qml.debugging.probs(wires=(0,2))
+    [pldb]: qml.debug_probs(wires=(0,2))
     array([0.5, 0. , 0. , 0.5])
 
 Another method for probing the system is by measuring observables via 
-:func:`~pennylane.debugging.expval`.
+:func:`~pennylane.debug_expval`.
 
 .. code-block:: console
 
-    [pldb]: qml.debugging.expval(qml.Z(0))
+    [pldb]: qml.debug_expval(qml.Z(0))
     0.0
-    [pldb]: qml.debugging.expval(qml.X(0)@qml.X(2))
+    [pldb]: qml.debug_expval(qml.X(0)@qml.X(2))
     0.9999999999999996
 
 Additionally, the quantum circuit can be dynamically updated by adding gates directly
@@ -206,17 +206,17 @@ from the prompt. This allows users to modify the circuit *on-the-fly*!
     [pldb]: continue
     > /Users/your/path/to/script.py(14)circuit()
     -> qml.RX(-x, wires=1)
-    [pldb]: qtape = qml.debugging.tape()
+    [pldb]: qtape = qml.debug_tape()
     [pldb]: print(qtape.draw(wire_order=(0,1,2)))
-    0: ──H─╭●──RX─┤  
-    1: ────│───RX─┤  
-    2: ────╰X──RX─┤  
+    0: ──H─╭●──RX─┤
+    1: ────│───RX─┤
+    2: ────╰X──RX─┤
     [pldb]: qml.RZ(0.5*x, wires=0)
     RZ(0.61725, wires=[0])
     [pldb]: qml.CZ(wires=(1,2))
     CZ(wires=[1, 2])
-    [pldb]: qtape = qml.debugging.tape()
+    [pldb]: qtape = qml.debug_tape()
     [pldb]: print(qtape.draw(wire_order=(0,1,2)))
-    0: ──H─╭●──RX──RZ─┤  
-    1: ────│───RX─╭●──┤  
-    2: ────╰X──RX─╰Z──┤ 
+    0: ──H─╭●──RX──RZ─┤
+    1: ────│───RX─╭●──┤
+    2: ────╰X──RX─╰Z──┤

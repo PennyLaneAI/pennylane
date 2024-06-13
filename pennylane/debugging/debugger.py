@@ -224,7 +224,7 @@ def breakpoint():
     debugger.set_trace(sys._getframe().f_back)  # pylint: disable=protected-access
 
 
-def state():
+def debug_state():
     """Compute the quantum state at the current point in the quantum circuit.
 
     Returns:
@@ -265,7 +265,7 @@ def state():
          10
          11  ->	    qml.CNOT(wires=[0, 1])
          12  	    return qml.expval(qml.Z(0))
-        [pldb]: qml.debugging.state()
+        [pldb]: qml.debug_state()
         array([0.57754604+0.j        , 0.57754604+0.j        ,
         0.        -0.40797128j, 0.        -0.40797128j])
 
@@ -276,7 +276,7 @@ def state():
     return _measure(m)
 
 
-def expval(op):
+def debug_expval(op):
     """Compute the expectation value of an observable at the
     current point in the quantum circuit.
 
@@ -322,7 +322,7 @@ def expval(op):
          10
          11  ->	    qml.CNOT(wires=[0, 1])
          12  	    return qml.state()
-        [pldb]: qml.debugging.expval(qml.Z(0))
+        [pldb]: qml.debug_expval(qml.Z(0))
         0.33423772712450256
     """
 
@@ -334,7 +334,7 @@ def expval(op):
     return _measure(m)
 
 
-def probs(wires=None, op=None):
+def debug_probs(wires=None, op=None):
     """Compute the probability distribution for the state at the current
     point in the quantum circuit.
 
@@ -383,7 +383,7 @@ def probs(wires=None, op=None):
          10
          11  ->	    qml.CNOT(wires=[0, 1])
          12  	    return qml.state()
-        [pldb]: qml.debugging.probs()
+        [pldb]: qml.debug_probs()
         array([0.33355943, 0.33355943, 0.16644057, 0.16644057])
 
     """
@@ -415,7 +415,7 @@ def _measure(measurement):
     return PLDB._execute((qtape,))  # pylint: disable=protected-access
 
 
-def tape():
+def debug_tape():
     """Access the tape of the quantum circuit.
 
     The tape can then be used to access all properties stored in :class:`~pennylane.tape.QuantumTape`.
@@ -451,7 +451,7 @@ def tape():
 
     .. code-block:: console
 
-        [pldb]: t = qml.debugging.tape()
+        [pldb]: t = qml.debug_tape()
         [pldb]: print(t.draw())
         0: ──RX─╭●─┤
         1: ──H──╰X─┤
