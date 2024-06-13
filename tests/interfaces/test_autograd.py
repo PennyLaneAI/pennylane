@@ -211,7 +211,6 @@ class TestBatchTransformExecution:
         res = qml.execute([tape], dev, None, device_batch_transform=True)
         spy.assert_called()
 
-        # assert isinstance(res[0], np.ndarray)
         assert qml.math.shape(res[0]) == ()
         assert np.allclose(res[0], np.cos(y), rtol=0.05)
 

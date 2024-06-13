@@ -739,8 +739,8 @@ class Device(abc.ABC):
             return results[0]
 
         finite_shots = self.shots is not None
-        is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
-        is_analytic_or_shadow = not finite_shots or is_shadow
+        has_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
+        is_analytic_or_shadow = not finite_shots or has_shadow
         all_obs_usable = self._all_multi_term_obs_supported(circuit)
         exists_multi_term_obs = any(
             isinstance(m.obs, (Hamiltonian, Sum, Prod, SProd)) for m in circuit.measurements
@@ -799,22 +799,23 @@ class Device(abc.ABC):
         return expanded_tapes, total_processing
 
     def _all_multi_term_obs_supported(self, circuit):
-        """Check whether all multi-term observables are supported."""
+        """Check whether all multi-term observables in the circuit are supported."""
 
-        for obs in circuit.observables:
+        for mp in circuit.measurements:
 
-            if not hasattr(obs, "name"):
+            if mp.obs is None:
+                # Some measurements are not observable based.
                 continue
 
-            if obs.name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
+            if mp.obs.name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
                 return False
 
-            if obs.name in (
+            if mp.obs.name in (
                 "Hamiltonian",
                 "Sum",
                 "Prod",
                 "SProd",
-            ) and not self.supports_observable(obs.name):
+            ) and not self.supports_observable(mp.obs.name):
                 return False
 
         return True
