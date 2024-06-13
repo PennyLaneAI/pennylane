@@ -26,7 +26,7 @@ def from_openfermion(of_op, tol=1e-16):
 
     Args:
         of_op (FermionOperator): OpenFermion fermionic operator
-        tol (float): Tolerance for discarding coefficients
+        tol (float): Tolerance for discarding negligible coefficients
 
     Returns:
         Union[FermiWord, FermiSentence]: the fermionic operator object
