@@ -228,7 +228,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
     return _fermionic_dipole
 
 
-def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None):
+def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None, mapping="jordan_wigner"):
     r"""Return a function that computes the qubit dipole moment observable.
 
     The dipole operator in the second-quantized form is
@@ -277,6 +277,8 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None):
         cutoff (float): cutoff value for discarding the negligible dipole moment integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
+        mapping (str): Specifies the transformation to map the fermionic dipole operator to the
+            Pauli basis. Input values can be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
     Returns:
         function: function that computes the qubit dipole moment observable
@@ -313,7 +315,7 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None):
         d = []
         d_ferm = fermionic_dipole(mol, cutoff, core, active)(*args)
         for i in d_ferm:
-            d.append(qubit_observable(i, cutoff=cutoff))
+            d.append(qubit_observable(i, cutoff=cutoff, mapping=mapping))
 
         return d
 

@@ -15,6 +15,8 @@
 This submodule defines a capture compatible call to QNodes.
 """
 
+from copy import copy
+from dataclasses import asdict
 from functools import lru_cache, partial
 
 import pennylane as qml
@@ -159,7 +161,9 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
     qfunc_jaxpr = jax.make_jaxpr(qfunc)(*args)
-    qnode_kwargs = {"diff_method": qnode.diff_method, **qnode.execute_kwargs}
+    execute_kwargs = copy(qnode.execute_kwargs)
+    mcm_config = asdict(execute_kwargs.pop("mcm_config"))
+    qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
     return qnode_prim.bind(

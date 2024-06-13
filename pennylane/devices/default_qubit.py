@@ -501,7 +501,12 @@ class DefaultQubit(Device):
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(mid_circuit_measurements, device=self)
+        transform_program.add_transform(
+            mid_circuit_measurements,
+            device=self,
+            mcm_config=config.mcm_config,
+            interface=config.interface,
+        )
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
@@ -597,6 +602,7 @@ class DefaultQubit(Device):
                         "interface": interface,
                         "state_cache": self._state_cache,
                         "prng_key": _key,
+                        "postselect_mode": execution_config.mcm_config.postselect_mode,
                     },
                 )
                 for c, _key in zip(circuits, prng_keys)
@@ -604,7 +610,14 @@ class DefaultQubit(Device):
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-        simulate_kwargs = [{"rng": _rng, "prng_key": _key} for _rng, _key in zip(seeds, prng_keys)]
+        simulate_kwargs = [
+            {
+                "rng": _rng,
+                "prng_key": _key,
+                "postselect_mode": execution_config.mcm_config.postselect_mode,
+            }
+            for _rng, _key in zip(seeds, prng_keys)
+        ]
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             exec_map = executor.map(_simulate_wrapper, vanilla_circuits, simulate_kwargs)
@@ -848,6 +861,7 @@ def _simulate_wrapper(circuit, kwargs):
 
 
 def _adjoint_jac_wrapper(c, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jac = adjoint_jacobian(c, state=state)
     res = measure_final_state(c, state, is_state_batched)
@@ -855,6 +869,7 @@ def _adjoint_jac_wrapper(c, debugger=None):
 
 
 def _adjoint_jvp_wrapper(c, t, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jvp = adjoint_jvp(c, t, state=state)
     res = measure_final_state(c, state, is_state_batched)
@@ -862,6 +877,7 @@ def _adjoint_jvp_wrapper(c, t, debugger=None):
 
 
 def _adjoint_vjp_wrapper(c, t, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     vjp = adjoint_vjp(c, t, state=state)
     res = measure_final_state(c, state, is_state_batched)
