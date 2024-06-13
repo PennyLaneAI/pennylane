@@ -333,3 +333,25 @@ class TestSpecsTransform:
 
         info = qml.specs(circuit)()
         assert info["num_device_wires"] == num_wires
+
+    def test_no_error_contents_on_device_level(self):
+        coeffs = [0.25, 0.75]
+        ops = [qml.X(0), qml.Z(0)]
+        H = qml.dot(coeffs, ops)
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.Hadamard(0)
+            qml.TrotterProduct(H, time=2.4, order=2)
+
+            return qml.state()
+
+        top_specs = qml.specs(circuit, level="top")()
+        dev_specs = qml.specs(circuit, level="device")()
+
+        assert "SpectralNormError" in top_specs["errors"]
+        assert np.allclose(top_specs["errors"]["SpectralNormError"].error, 13.824)
+
+        # At the device level, approximations don't exist anymore and therefore
+        # we should expect an empty errors dictionary.
+        assert dev_specs["errors"] == {}
