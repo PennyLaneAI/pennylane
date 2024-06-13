@@ -221,11 +221,11 @@ def specs(qnode, **kwargs):
         infos = []
         batch, _ = qml.workflow.construct_batch(qnode, level=specs_level)(*args, **kwargs)
 
-        for elem in batch:
-            info = elem.specs.copy()
+        for tape in batch:
+            info = tape.specs.copy()
 
-            info["num_device_wires"] = len(qnode.device.wires or elem.wires)
-            info["num_tape_wires"] = elem.num_wires
+            info["num_device_wires"] = len(qnode.device.wires or tape.wires)
+            info["num_tape_wires"] = tape.num_wires
 
             info["device_name"] = getattr(qnode.device, "short_name", qnode.device.name)
             info["level"] = specs_level
@@ -241,7 +241,7 @@ def specs(qnode, **kwargs):
                 info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
 
                 try:
-                    info["num_gradient_executions"] = len(qnode.gradient_fn(elem)[0])
+                    info["num_gradient_executions"] = len(qnode.gradient_fn(tape)[0])
                 except Exception as e:  # pylint: disable=broad-except
                     # In the case of a broad exception, we don't want the `qml.specs` transform
                     # to fail. Instead, we simply indicate that the number of gradient executions
