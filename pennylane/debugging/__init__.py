@@ -11,7 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the functionality to work with noise models in PennyLane."""
+"""
+This module contains functionality for debugging quantum programs on simulator devices.
+"""
 
-from .conditionals import wires_in, wires_eq, op_in, op_eq, partial_wires
-from .noise_model import NoiseModel
+from .snapshot import snapshots
+
+from .debugger import (
+    breakpoint,
+    expval,
+    PLDB,
+    pldb_device_manager,
+    probs,
+    state,
+    tape,
+)
