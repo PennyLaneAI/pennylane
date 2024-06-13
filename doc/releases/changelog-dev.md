@@ -328,6 +328,7 @@
 
 * Fixes a bug where `Sum`'s with repeated identical operations ended up with the same hash as
   `Sum`'s with different numbers of repeats.
+    [(#5851)](https://github.com/PennyLaneAI/pennylane/pull/5851)
 
 * `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` can now be used with `Sum` operators.
   [(#5846)](https://github.com/PennyLaneAI/pennylane/pull/5846)
