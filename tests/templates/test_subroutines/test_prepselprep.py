@@ -52,6 +52,7 @@ def test_repr():
         == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=<Wires = [0]>)"
     )
 
+
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
 
@@ -86,11 +87,12 @@ def _new_terms_is_complex(lcu):
 
         sign = qml.math.sign(imag)
         new_coeffs.append(sign * imag)
-        angle = (-1)*np.pi * (0.5 * (2 - sign))
+        angle = (-1) * np.pi * (0.5 * (2 - sign))
         new_op = op @ qml.GlobalPhase(angle, wires=op.wires)
         new_ops.append(new_op)
 
     return new_coeffs, new_ops
+
 
 def _new_terms_is_real(lcu):
     """Computes new terms when the coefficients are real."""
@@ -103,6 +105,8 @@ def _new_terms_is_real(lcu):
         new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
 
     return qml.math.abs(coeffs), new_unitaries
+
+
 # Use these circuits in tests
 def manual_circuit(lcu, control):
     """Circuit equivalent to decomposition of PrepSelPrep"""
@@ -110,7 +114,9 @@ def manual_circuit(lcu, control):
 
     qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
     qml.Select(ops, control=control)
-    qml.adjoint(qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control))
+    qml.adjoint(
+        qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+    )
 
     return qml.state()
 
@@ -225,7 +231,7 @@ class TestPrepSelPrep:
             (qml.dot([0.5, 0.5j], [qml.X(2), qml.Z(2)]), [0, 1], [0, 1, 2], 2),
             (qml.dot([1.0, 1.0, 1.0], [qml.X(2), qml.Y(2), qml.Z(2)]), [0, 1], [0, 1, 2], 2),
             (qml.dot([0.25, 0.75], [qml.I(1) @ qml.Z(2), qml.X(1) @ qml.X(2)]), [0], [0, 1, 2], 4),
-            (qml.dot([0.25, 0.75], [qml.I(1) @ qml.Z(2), qml.Y(1) @ qml.Y(2)]), [0], [0, 1, 2], 4)
+            (qml.dot([0.25, 0.75], [qml.I(1) @ qml.Z(2), qml.Y(1) @ qml.Y(2)]), [0], [0, 1, 2], 4),
         ],
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
@@ -238,14 +244,10 @@ class TestPrepSelPrep:
         normalization_factor = qml.math.sum(coeffs)
         block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
 
-
         assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
     lcu1 = qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-    ops1 = [
-        qml.Z(2) @ qml.GlobalPhase(0),
-        (qml.X(1) @ qml.X(2)) @ qml.GlobalPhase(0)
-    ]
+    ops1 = [qml.Z(2) @ qml.GlobalPhase(0), (qml.X(1) @ qml.X(2)) @ qml.GlobalPhase(0)]
     coeffs1 = lcu1.terms()[0]
 
     @pytest.mark.parametrize(
@@ -255,10 +257,14 @@ class TestPrepSelPrep:
                 lcu1,
                 [0],
                 [
-                    qml.AmplitudeEmbedding(qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]),
+                    qml.AmplitudeEmbedding(
+                        qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
+                    ),
                     qml.Select(ops1, control=[0]),
                     qml.ops.Adjoint(
-                        qml.AmplitudeEmbedding(qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0])
+                        qml.AmplitudeEmbedding(
+                            qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
+                        )
                     ),
                 ],
             )
@@ -324,7 +330,6 @@ def test_control_in_ops():
 
 class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
-
 
     params = np.array([0.4, 0.5, 0.1, 0.3])
     exp_grad = [0.41177732, -0.21262349, 1.6437038, -0.74256516]
