@@ -19,19 +19,21 @@ linear combination of unitaries using the Prepare, Select, Prepare method.
 # pylint: disable=arguments-differ,import-outside-toplevel,too-many-arguments
 import copy
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 
 
-def get_new_terms(lcu):
+def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
 
     coeffs, _ = lcu.terms()
 
     if qml.math.iscomplexobj(coeffs):
-        new_coeffs, new_ops = new_terms_is_complex(lcu)
+        new_coeffs, new_ops = _new_terms_is_complex(lcu)
     else:
-        new_coeffs, new_ops = new_terms_is_real(lcu)
+        new_coeffs, new_ops = _new_terms_is_real(lcu)
 
     interface = qml.math.get_interface(lcu.terms()[0])
     new_coeffs = qml.math.array(new_coeffs, like=interface)
@@ -39,7 +41,7 @@ def get_new_terms(lcu):
     return new_coeffs, new_ops
 
 
-def new_terms_is_complex(lcu):
+def _new_terms_is_complex(lcu):
     """Computes new terms when the coefficients are complex.
     This doubles the number of terms."""
 
@@ -50,32 +52,30 @@ def new_terms_is_complex(lcu):
         imag = qml.math.imag(coeff)
 
         sign = qml.math.sign(real)
+        angle = np.pi * (0.5 * (1 - sign))
         new_coeffs.append(sign * real)
-        new_op = qml.simplify(qml.ops.LinearCombination([sign], [op]))
+        new_op = op @ qml.GlobalPhase(angle, wires=op.wires)
         new_ops.append(new_op)
 
         sign = qml.math.sign(imag)
         new_coeffs.append(sign * imag)
-        new_op = qml.simplify(qml.ops.LinearCombination([1j * sign], [op]))
+        angle = (-1)*np.pi * (0.5 * (2 - sign))
+        new_op = op @ qml.GlobalPhase(angle, wires=op.wires)
         new_ops.append(new_op)
 
     return new_coeffs, new_ops
 
+def _new_terms_is_real(lcu):
+    """Computes new terms when the coefficients are real."""
+    new_unitaries = []
 
-def new_terms_is_real(lcu):
-    """Computes new terms when the coefficients are real.
-    This preserves the number of terms."""
+    coeffs, ops = lcu.terms()
 
-    new_coeffs = []
-    new_ops = []
-    for coeff, op in zip(*lcu.terms()):
-        sign = qml.math.sign(coeff)
-        new_coeffs.append(sign * coeff)
-        new_op = qml.simplify(qml.ops.LinearCombination([sign], [op]))
-        new_ops.append(new_op)
+    for coeff, op in zip(coeffs, ops):
+        angle = np.pi * (0.5 * (1 - qml.math.sign(coeff)))
+        new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
 
-    return new_coeffs, new_ops
-
+    return qml.math.abs(coeffs), new_unitaries
 
 class PrepSelPrep(Operation):
     """This class implements a block-encoding of a linear combination of unitaries
@@ -124,31 +124,14 @@ class PrepSelPrep(Operation):
         return self.compute_decomposition(self.lcu, self.control)
 
     @staticmethod
-    def normalization_factor(lcu):
-        """Return the normalization factor lambda such that
-        A/lambda is in the upper left of the block encoding"""
-
-        new_coeffs, _ = get_new_terms(lcu)
-        return qml.math.sum(new_coeffs)
-
-    @staticmethod
-    def preprocess_lcu(lcu):
-        """Convert LCU into an equivalent form with positive real coefficients"""
-
-        new_coeffs, new_ops = get_new_terms(lcu)
-        new_lcu = qml.ops.LinearCombination(new_coeffs, new_ops)
-
-        return new_lcu
-
-    @staticmethod
     def compute_decomposition(lcu, control):
-        coeffs, ops = get_new_terms(lcu)
+        coeffs, ops = _get_new_terms(lcu)
 
         decomp_ops = []
-        decomp_ops.append(qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control))
+        decomp_ops.append(qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control))
         decomp_ops.append(qml.Select(ops, control))
         decomp_ops.append(
-            qml.adjoint(qml.AmplitudeEmbedding(coeffs, normalize=True, pad_with=0, wires=control))
+            qml.adjoint(qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control))
         )
 
         return decomp_ops

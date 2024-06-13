@@ -488,11 +488,6 @@ class Controlled(SymbolicOp):
     def ndim_params(self):
         return self.base.ndim_params
 
-    @property
-    def grad_method(self):
-        """Returns the grad method of the operator being controlled"""
-        return self.base.grad_method
-
     # Properties on the control values ######################
     @property
     def control_values(self):
