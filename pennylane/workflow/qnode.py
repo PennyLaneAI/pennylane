@@ -1042,7 +1042,7 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        mcm_config = self.execute_kwargs["mcm_config"]
+        mcm_config = copy.copy(self.execute_kwargs["mcm_config"])
         finite_shots = _get_device_shots if override_shots is False else override_shots
         if not finite_shots:
             mcm_config.postselect_mode = None
