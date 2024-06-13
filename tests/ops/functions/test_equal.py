@@ -2758,7 +2758,7 @@ class DepthIncreaseOperator(Operator):
         return self._op.wires
 
 
-@pytest.mark.jit
+@pytest.mark.jax
 def test_ops_with_abstract_parameters_not_equal():
     """Test that ops are not equal if any data is tracers."""
 
