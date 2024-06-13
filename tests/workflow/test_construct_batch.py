@@ -186,9 +186,10 @@ class TestTransformProgramGetter:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
 
         user_program = get_transform_program(circuit, level="user")
-        assert len(user_program) == 2
+        assert len(user_program) == 3
         assert user_program[0].transform == qml.compile.transform
         assert user_program[1].transform == qml.metric_tensor.expand_transform
+        assert user_program[2].transform == qml.metric_tensor.transform
 
         grad_program = get_transform_program(circuit, level="gradient")
         assert len(grad_program) == 3

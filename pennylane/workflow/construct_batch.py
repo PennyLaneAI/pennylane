@@ -118,14 +118,15 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         :class:`~.merge_rotations`.
 
         >>> qml.workflow.get_transform_program(circuit, level="user")
-        TransformProgram(cancel_inverses, merge_rotations)
+        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
 
-        The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.  This expands all trainable
-        operations to a state where the parameter shift transform can operate on them. For example, it will decompose
-        any parametrized templates into operators that have generators.
+        The ``_expand_transform_metric_tensor`` and ``_expand_transform_param_shift`` are the ``"gradient"`` transforms.
+        This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
+        it will decompose any parametrized templates into operators that have generators. Note that this would not include the
+        any ``"final"`` transform, if it exists. So in this instance, the final ``metric_tensor`` transform is not applied.
 
         >>> qml.workflow.get_transform_program(circuit, level="gradient")
-        TransformProgram(cancel_inverses, merge_rotations, _expand_transform_param_shift)
+        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift)
 
         ``"device"`` includes all transforms except for a ``"final"`` transform, if it exists.  This usually
         corresponds to the circuits that will be sent to the device to execute.
@@ -166,11 +167,14 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         # final transform is placed after device transforms
         num_user -= 1
 
+    readd_final_transform = False
+
     if level == "device":
         level = -1 if full_transform_program.has_final_transform else None
     elif level == "top":
         level = 0
     elif level == "user":
+        readd_final_transform = True
         level = num_user
     elif level == "gradient":
         if getattr(qnode.gradient_fn, "expand_transform", False):
@@ -181,9 +185,16 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
+
     if level is None or isinstance(level, int):
         level = slice(0, level)
-    return full_transform_program[level]
+
+    resolved_program = full_transform_program[level]
+
+    if qnode.transform_program.has_final_transform and readd_final_transform:
+        resolved_program += qnode.transform_program[-1:]
+
+    return resolved_program
 
 
 def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") -> Callable:
