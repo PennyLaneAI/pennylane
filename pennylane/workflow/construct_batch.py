@@ -72,7 +72,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
 
     Args:
         qnode (QNode): the qnode to get the transform program for.
-        level (None, str, int, slice): And indication of what transforms to use from the full program.
+        level (None, str, int, slice): An indication of what transforms to use from the full program.
 
             * ``None``: use the full transform program
             * ``str``: Acceptable keys are ``"user"``, ``"device"``, ``"top"`` and ``"gradient"``
