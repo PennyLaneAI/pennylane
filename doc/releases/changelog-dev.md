@@ -326,6 +326,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` can now be used with `Sum` operators.
+  [(#5846)](https://github.com/PennyLaneAI/pennylane/pull/5846)
+
 * Fixes a bug where `MottonenStatePreparation` produces wrong derivatives at special parameter values.
   [(#5774)](https://github.com/PennyLaneAI/pennylane/pull/5774)
 
