@@ -257,6 +257,9 @@
 * `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
  
+* Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian`
+ [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
+
 * `qml.QutritChannel` has been added, enabling the specification of noise using a collection of (3x3) Kraus matrices on the `default.qutrit.mixed` device.
   [(#5793)](https://github.com/PennyLaneAI/pennylane/issues/5793)
 
@@ -322,6 +325,16 @@
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where `MottonenStatePreparation` produces wrong derivatives at special parameter values.
+  [(#5774)](https://github.com/PennyLaneAI/pennylane/pull/5774)
+
+* Fixes a bug where fractional powers and adjoints of operators were commuted, which is
+  not well-defined/correct in general. Adjoints of fractional powers can no longer be evaluated.
+  [(#5835)](https://github.com/PennyLaneAI/pennylane/pull/5835)
+
+* `qml.qnn.TorchLayer` now works with tuple returns.
+  [(#5816)](https://github.com/PennyLaneAI/pennylane/pull/5816)
 
 * An error is now raised if a transform is applied to a catalyst qjit object.
   [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
