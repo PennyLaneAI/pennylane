@@ -64,7 +64,6 @@
 * A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
 
-
 <h3>Improvements 🛠</h3>
 
 * `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
