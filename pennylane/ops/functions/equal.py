@@ -373,7 +373,7 @@ def _equal_operators(
 
     if any(qml.math.is_abstract(d) for d in op1.data + op2.data):
         # assume all tracers are independent
-        return False
+        return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):

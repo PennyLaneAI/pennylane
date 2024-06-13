@@ -308,7 +308,7 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_sum_op._eigs[diag_sum_op]  # pylint: disable=protected-access
+        eigs_cache = diag_sum_op._eigs[diag_sum_op.hash]  # pylint: disable=protected-access
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 

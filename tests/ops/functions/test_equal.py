@@ -2756,3 +2756,14 @@ class DepthIncreaseOperator(Operator):
     @property
     def wires(self):
         return self._op.wires
+
+
+@pytest.mark.jit
+def test_ops_with_abstract_parameters_not_equal():
+    """Test that ops are not equal if any data is tracers."""
+
+    import jax
+
+    assert not jax.jit(qml.equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
+    with pytest.raises(AssertionError, match="Data contains a tracer"):
+        jax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
