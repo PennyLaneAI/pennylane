@@ -371,6 +371,9 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
+    if any(qml.math.is_abstract(d) for d in op1.data + op2.data):
+        # assume all tracers are independent
+        return False
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
