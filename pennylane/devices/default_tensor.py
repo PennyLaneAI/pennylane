@@ -14,7 +14,6 @@
 """
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
-import copy
 import warnings
 from dataclasses import replace
 from numbers import Number
@@ -202,7 +201,7 @@ class DefaultTensor(Device):
             For the MPS method, the options are ``"auto-mps"``, ``"swap+split"`` and ``"nonlocal"``. For a description of these options, see the
             `quimb's CircuitMPS documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/index.html#quimb.tensor.CircuitMPS>`_.
             Default is ``"auto-mps"``.
-            For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``"True"``, and ``"False"``.
+            For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``True``, and ``False``.
             For details, see the `quimb's tensor_core documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_network_gate_inds>`_.
             Default is ``"auto-split-gate"``.
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
@@ -474,6 +473,23 @@ class DefaultTensor(Device):
             tags=[str(l) for l in wires.labels] if wires else None,
         )
 
+    def _initial_tn(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
+        r"""
+        Return an initial tensor network state to :math:`\ket{0}`.
+
+        Internally, it uses ``quimb``'s ``TN_from_sites_computational_state`` method.
+
+        Args:
+            wires (Wires): The wires to initialize the tensor network.
+
+        Returns:
+            TensorNetwork: The initial tensor network of a circuit.
+        """
+        return qtn.TN_from_sites_computational_state(
+            site_map={i: "0" for i in range(len(wires) if wires else 1)},
+            dtype=self._c_dtype.__name__,
+        )
+
     def draw(self, color="auto", **kwargs):
         """
         Draw the current state (wavefunction) associated with the circuit using ``quimb``'s functionality.
@@ -501,7 +517,7 @@ class DefaultTensor(Device):
 
         .. code-block:: python
 
-            dev = qml.device("default.tensor", method="tn")
+            dev = qml.device("default.tensor", method="tn", contract=False)
 
             @qml.qnode(dev)
             def circuit(num_qubits):
@@ -538,23 +554,6 @@ class DefaultTensor(Device):
             show_tags=show_tags,
             show_inds=show_inds,
             **kwargs,
-        )
-
-    def _initial_tn(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
-        r"""
-        Return an initial tensor network state to :math:`\ket{0}`.
-
-        Internally, it uses ``quimb``'s ``TN_from_sites_computational_state`` method.
-
-        Args:
-            wires (Wires): The wires to initialize the tensor network.
-
-        Returns:
-            TensorNetwork: The initial tensor network of a circuit.
-        """
-        return qtn.TN_from_sites_computational_state(
-            site_map={i: "0" for i in range(len(wires) if wires else 1)},
-            dtype=self._c_dtype.__name__,
         )
 
     def _setup_execution_config(
@@ -763,7 +762,9 @@ class DefaultTensor(Device):
         """
 
         # We need to copy the quimb circuit since `local_expectation` modifies it.
-        qc = copy.deepcopy(self._quimb_circuit)
+        # If there is only one measurement and we don't wanto to keep track of the state
+        # after the execution, we could avoid copying the circuit.
+        qc = self._quimb_circuit.copy()
 
         exp_val = qc.local_expectation(
             matrix,
