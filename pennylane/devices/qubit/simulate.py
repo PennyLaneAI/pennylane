@@ -584,17 +584,19 @@ def circuit_up_to_first_mcm(circuit):
         (QuantumTape, None): Rest of the circuit
         (MidMeasureMP, None): The first MCM encountered in the circuit
     """
-    if not has_mid_circuit_measurements(circuit):
-        return circuit, None, None
 
     # find next MidMeasureMP
     def find_next_mcm(circuit):
         for i, op in enumerate(circuit.operations):
             if isinstance(op, MidMeasureMP):
                 return i, op
-        return len(circuit.operations) + 1, None  # pragma: no cover
+        return len(circuit.operations) + 1, None
 
     i, op = find_next_mcm(circuit)
+
+    if op is None:
+        return circuit, None, None
+
     # run circuit until next MidMeasureMP and sample
     circuit_base = qml.tape.QuantumScript(
         circuit.operations[0:i],
