@@ -660,8 +660,8 @@ class TestProperties:
         op3 = Sum(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ(-1))
         assert op3.hash != op1.hash
 
-        op3 = Sum(qml.X("a"), qml.X("a"), qml.Y("b"))
-        assert op3.hash != op1.hash
+        op4 = Sum(qml.X("a"), qml.X("a"), qml.Y("b"))
+        assert op4.hash != op1.hash
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
