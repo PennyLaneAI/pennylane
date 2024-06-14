@@ -303,9 +303,9 @@ class TestProbs:
         ],
     )
     def test_process_density_matrix_medium(self, interface, subset_wires, expected):
-        """Test processing of a batch of density matrices."""
+        """Test processing of a random generated, medium-sized density matrices."""
         # Define a batch of density matrices
-        dm_batch = qml.math.array(
+        dm = qml.math.array(
             [
                 [
                     0.080989,
@@ -601,7 +601,7 @@ class TestProbs:
 
         wires = qml.wires.Wires(range(4))
         # Process the entire batch of density matrices
-        subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm_batch, wires)
+        subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm, wires)
 
         expected = qml.math.array(expected, like=interface)
         # Check if the calculated probabilities match the expected values
