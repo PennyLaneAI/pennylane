@@ -36,7 +36,7 @@ class NoiseModel:
 
         - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
           a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
-          the ``noise`` module, or their bit-wise combination.
+          the ``qml.noise`` module, or their bit-wise combination.
         - The definition of ``noise_fn(op, **kwargs)`` should have the operations in same the order
           in which they are to be queued for an operation ``op``, whenever the corresponding
           ``conditional`` evaluates to ``True``.
