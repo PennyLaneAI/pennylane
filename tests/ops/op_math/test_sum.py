@@ -660,6 +660,9 @@ class TestProperties:
         op3 = Sum(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ(-1))
         assert op3.hash != op1.hash
 
+        op4 = Sum(qml.X("a"), qml.X("a"), qml.Y("b"))
+        assert op4.hash != op1.hash
+
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_is_hermitian(self, ops_lst, sum_method):
@@ -707,6 +710,15 @@ class TestProperties:
 
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
+
+    def test_eigendecomposition_repeat_operations(self):
+        """Test that the eigendecomposition works with a repeated operation."""
+        op1 = qml.X(0) + qml.X(0) + qml.X(0)
+        op2 = qml.X(0) + qml.X(0)
+
+        assert op1.diagonalizing_gates() == op2.diagonalizing_gates()
+        assert qml.math.allclose(op1.eigvals(), np.array([-3.0, 3.0]))
+        assert qml.math.allclose(op2.eigvals(), np.array([-2.0, 2.0]))
 
     op_pauli_reps = (
         (
