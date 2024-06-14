@@ -28,7 +28,7 @@
   circuit(1.23)
   ```
 
-  Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+  Running the above python script opens up the interactive `[pldb]:` prompt in the terminal.
 
   ```console
   > /Users/your/path/to/script.py(8)circuit()
