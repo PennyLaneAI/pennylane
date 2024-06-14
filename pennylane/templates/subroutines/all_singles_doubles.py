@@ -15,11 +15,14 @@ r"""
 Contains the AllSinglesDoubles template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BasisState
+from pennylane.wires import Wires
 
 
 class AllSinglesDoubles(Operation):
@@ -142,7 +145,7 @@ class AllSinglesDoubles(Operation):
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
         if hf_state[0].dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
+            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state[0].dtype}")
 
         singles = tuple(tuple(s) for s in singles)
         doubles = tuple(tuple(d) for d in doubles)
@@ -154,6 +157,15 @@ class AllSinglesDoubles(Operation):
         }
 
         super().__init__(weights, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        for key in ["singles", "doubles"]:
+            new_op._hyperparameters[key] = tuple(
+                tuple(wire_map[w] for w in wires) for wires in new_op._hyperparameters[key]
+            )
+        return new_op
 
     @property
     def num_params(self):

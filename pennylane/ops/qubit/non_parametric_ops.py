@@ -1166,7 +1166,7 @@ class ECR(Operation):
 
     An echoed RZX(pi/2) gate.
 
-    .. math:: ECR = {1/\sqrt{2}} \begin{bmatrix}
+    .. math:: ECR = {\frac{1}{\sqrt{2}}} \begin{bmatrix}
             0 & 0 & 1 & i \\
             0 & 0 & i & 1 \\
             1 & -i & 0 & 0 \\

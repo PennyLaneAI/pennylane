@@ -14,10 +14,38 @@
 """
 Contains the :class:`ExecutionConfig` data class.
 """
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Optional, Union
 
 from pennylane.workflow import SUPPORTED_INTERFACES
+
+
+@dataclass
+class MCMConfig:
+    """A class to store mid-circuit measurement configurations."""
+
+    mcm_method: Optional[str] = None
+    """Which mid-circuit measurement strategy to use. Use ``deferred`` for the deferred
+    measurements principle and "one-shot" if using finite shots to execute the circuit
+    for each shot separately. If not specified, the device will decide which method to
+    use."""
+
+    postselect_mode: Optional[str] = None
+    """Configuration for handling shots with mid-circuit measurement postselection. If
+    ``"hw-like"``, invalid shots will be discarded and only results for valid shots will
+    be returned. If ``"fill-shots"``, results corresponding to the original number of
+    shots will be returned. If not specified, the device will decide which mode to use."""
+
+    def __post_init__(self):
+        """
+        Validate the configured mid-circuit measurement options.
+
+        Note that this hook is automatically called after init via the dataclass integration.
+        """
+        if self.mcm_method not in ("deferred", "one-shot", "single-branch-statistics", None):
+            raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
+        if self.postselect_mode not in ("hw-like", "fill-shots", None):
+            raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
 
 # pylint: disable=too-many-instance-attributes
@@ -67,6 +95,9 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
+    mcm_config: Union[MCMConfig, dict] = field(default_factory=MCMConfig)
+    """Configuration options for handling mid-circuit measurements"""
+
     def __post_init__(self):
         """
         Validate the configured execution options.
@@ -88,6 +119,11 @@ class ExecutionConfig:
 
         if self.gradient_keyword_arguments is None:
             self.gradient_keyword_arguments = {}
+
+        if isinstance(self.mcm_config, dict):
+            self.mcm_config = MCMConfig(**self.mcm_config)
+        elif not isinstance(self.mcm_config, MCMConfig):
+            raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 
 
 DefaultExecutionConfig = ExecutionConfig()

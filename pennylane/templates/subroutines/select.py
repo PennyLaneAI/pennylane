@@ -70,6 +70,10 @@ class Select(Operation):
         return (self.ops), (self.control)
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
         return cls(data, metadata)
 
