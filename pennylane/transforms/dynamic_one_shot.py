@@ -124,6 +124,8 @@ def dynamic_one_shot(
 
     aux_tapes = [init_auxiliary_tape(t) for t in tapes]
 
+    interface = kwargs.get("interface", None)
+
     def reshape_data(array):
         return qml.math.squeeze(qml.math.vstack(array))
 
@@ -158,7 +160,7 @@ def dynamic_one_shot(
             results = [
                 reshape_data(tuple(res[i] for res in results)) for i, _ in enumerate(results[0])
             ]
-        return parse_native_mid_circuit_measurements(tape, aux_tapes, results)
+        return parse_native_mid_circuit_measurements(tape, aux_tapes, results, interface=interface)
 
     return aux_tapes, processing_fn
 
@@ -221,7 +223,10 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
 
 # pylint: disable=too-many-branches,too-many-statements
 def parse_native_mid_circuit_measurements(
-    circuit: qml.tape.QuantumScript, aux_tapes: qml.tape.QuantumScript, results: TensorLike
+    circuit: qml.tape.QuantumScript,
+    aux_tapes: qml.tape.QuantumScript,
+    results: TensorLike,
+    interface=None,
 ):
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
 
@@ -241,7 +246,7 @@ def parse_native_mid_circuit_measurements(
             else np.nan
         )
 
-    interface = qml.math.get_deep_interface(circuit.data)
+    interface = interface or qml.math.get_deep_interface(circuit.data)
     interface = "numpy" if interface == "builtins" else interface
     active_qjit = qml.compiler.active()
 
