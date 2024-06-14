@@ -30,7 +30,7 @@
 
   Running the above python script opens up the interactive `[pldb]:` prompt in the terminal.
 
-  ```console
+  ```pycon
   > /Users/your/path/to/script.py(8)circuit()
   -> qml.RX(x, wires=0)
   [pldb]: x
@@ -41,7 +41,7 @@
     5  	def circuit(x):
     6  	    qml.breakpoint()
     7
-    8  ->	    qml.RX(x, wires=0)
+    8  ->	  qml.RX(x, wires=0)
     9  	    qml.Hadamard(wires=1)
    10
    11  	    qml.breakpoint()
