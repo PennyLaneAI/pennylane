@@ -265,6 +265,7 @@
   [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
 
 * Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature of the original function.
+  [(#5857)](https://github.com/PennyLaneAI/pennylane/pull/5857)
 
 <h4>Community contributions 🥳</h4>
 
