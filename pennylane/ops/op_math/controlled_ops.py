@@ -329,8 +329,7 @@ class CY(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        control_wire, wire = wires
-        super().__init__(qml.Y(wire), control_wire, id=id)
+        super().__init__(qml.Y(wires[1:]), wires[:1], id=id)
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
@@ -436,8 +435,7 @@ class CZ(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        control_wire, wire = wires
-        super().__init__(qml.Z(wires=wire), control_wire, id=id)
+        super().__init__(qml.Z(wires=wires[1:]), wires[:1], id=id)
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
@@ -791,8 +789,7 @@ class CNOT(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        control_wire, wire = wires
-        super().__init__(qml.PauliX(wires=wire), control_wire, id=id)
+        super().__init__(qml.PauliX(wires=wires[1:]), wires[:1], id=id)
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
@@ -1267,7 +1264,7 @@ class CRX(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+        super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
@@ -1420,7 +1417,7 @@ class CRY(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+        super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
@@ -1573,7 +1570,7 @@ class CRZ(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+        super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRZ({self.data[0]}, wires={self.wires})"
@@ -1758,7 +1755,9 @@ class CRot(ControlledOp):
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
-        super().__init__(qml.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0], id=id)
+        super().__init__(
+            qml.Rot(phi, theta, omega, wires=wires[1:]), control_wires=wires[:1], id=id
+        )
 
     def __repr__(self):
         params = ", ".join([repr(p) for p in self.parameters])
@@ -1924,7 +1923,7 @@ class ControlledPhaseShift(ControlledOp):
     parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+        super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
