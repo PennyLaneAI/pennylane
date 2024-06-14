@@ -447,7 +447,7 @@ def simulate_tree_mcm(
     results_1 = [None] * (n_mcms + 1)
     counts = [None] * (n_mcms + 1)
 
-    while not mcm_current[0]:
+    while results_0[1] is None or results_1[1] is None:
 
         if results_0[depth] is not None and results_1[depth] is not None:
             measurements = [{} for _ in circuits[-1].measurements]
@@ -461,7 +461,7 @@ def simulate_tree_mcm(
                     meas = [meas]
                 for i, m in enumerate(meas):
                     measurements[i][branch] = (count, m)
-            measurements = combine_measurements(circuit, measurements, mcm_samples)
+            measurements = combine_measurements(circuits[-1], measurements, mcm_samples)
             counts[depth] = None
             results_0[depth] = None
             results_1[depth] = None
@@ -482,12 +482,14 @@ def simulate_tree_mcm(
             continue
 
         # we need to make sure the state is the all-wire state
-        circtmp = circuits[depth]
+        circtmp = circuits[depth].copy()
+        circtmp._ops = [qml.StatePrep(initial_state.ravel(), wires=circuit_wires)] + circtmp._ops
         if counts[depth]:
             shots = counts[depth][int(mcm_current[depth])]
         else:
             shots = circuits[depth].shots.total_shots
         # print(shots)
+        mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
         if not bool(shots):
             measurements = qml.math.array([], dtype=int)
             if not mcm_current[depth]:
@@ -501,22 +503,26 @@ def simulate_tree_mcm(
             continue
         else:
             circtmp._shots = qml.measurements.shots.Shots(shots)
+            # print(list(mcm_active.values()))
+            # print(initial_state)
             state, is_state_batched = get_final_state(
                 circtmp,
                 debugger=debugger,
                 initial_state=initial_state,
-                mid_measurements=dict((k, v) for k, v in zip(mcms, mcm_current[1:])),
+                mid_measurements=mcm_active,
                 **execution_kwargs,
             )
             measurements = measure_final_state(
                 circtmp, state, is_state_batched, initial_state=initial_state, **execution_kwargs
             )
+            # if depth >= n_mcms:
+            #     print(measurements)
         if depth < n_mcms:
             samples = qml.math.atleast_1d(measurements)
-            mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
             update_mcm_samples(mcms[depth], samples, mcm_active, mcm_samples)
+            # print(f"branching to {mcm_current[depth]}")
             initial_state = branch_state(
-                state, mcm_current[depth], mcms[depth].wires, mcms[depth].reset
+                state, mcm_current[depth + 1], mcms[depth].wires, mcms[depth].reset
             )
             depth += 1
             states[depth] = state
@@ -532,7 +538,20 @@ def simulate_tree_mcm(
             continue
         results_1[depth] = measurements
 
-    return results_0[0]
+    measurements = [{} for _ in circuit.measurements]
+    single_measurement = len(circuit.measurements) == 1
+    for branch, count in counts[depth].items():
+        # if op.postselect is not None and branch != op.postselect:
+        #     prune_mcm_samples(op, branch, mcm_active, mcm_samples)
+        #     continue
+        meas = results_0[depth] if branch == 0 else results_1[depth]
+        if single_measurement:
+            meas = [meas]
+        for i, m in enumerate(meas):
+            measurements[i][branch] = (count, m)
+    measurements = combine_measurements(circuit, measurements, mcm_samples)
+
+    return measurements
 
 
 def branch_state(state, branch, wire, reset):
