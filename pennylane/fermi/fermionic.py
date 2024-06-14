@@ -512,7 +512,7 @@ def from_string(fermi_string):
     return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
 
 
-# pylint: disable=protected-access
+# pylint: disable=W0212
 def _to_string(fermi_op, of=False):
     r"""Return a string representation of the :class:`~.FermiWord` or :class:`~.FermiSentence` object.
 
