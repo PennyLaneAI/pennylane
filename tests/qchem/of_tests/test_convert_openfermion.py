@@ -21,8 +21,8 @@ import sys
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import fermi
+from pennylane import numpy as np
 
 openfermion = pytest.importorskip("openfermion")
 

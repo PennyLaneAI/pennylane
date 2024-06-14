@@ -20,7 +20,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string, _to_string
+from pennylane.fermi.fermionic import (FermiSentence, FermiWord, _to_string,
+                                       from_string)
 
 # pylint: disable=too-many-public-methods
 
