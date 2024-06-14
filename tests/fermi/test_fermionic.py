@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string, to_string
+from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string, _to_string
 
 # pylint: disable=too-many-public-methods
 
@@ -1020,12 +1020,12 @@ class TestFermiSentenceArithmetic:
         (fs2, "-1.23 * 0+ 1-\n+ (-0-4j) * 0+ 0-\n+ 0.5 * 0+ 3- 0+ 4-"),
         (fs3, "-0.5 * 0+ 3- 0+ 4-\n+ 1 * I"),
         (fs4, "1 * I"),
-        (fs5, "I"),
+        (fs5, ""),
     )
 
     @pytest.mark.parametrize("f_op, string", fw_string)
     def test_to_string(self, f_op, string):
-        assert to_string(f_op) == string
+        assert _to_string(f_op) == string
 
     fw_of_string = (
         (fw1, "0^ 1"),
@@ -1039,19 +1039,19 @@ class TestFermiSentenceArithmetic:
         (fs2, "-1.23 * 0^ 1\n+ (-0-4j) * 0^ 0\n+ 0.5 * 0^ 3 0^ 4"),
         (fs3, "-0.5 * 0^ 3 0^ 4\n+ 1 * I"),
         (fs4, "1 * I"),
-        (fs5, "I"),
+        (fs5, ""),
     )
 
     @pytest.mark.parametrize("f_op, string", fw_of_string)
     def test_to_string_of_format(self, f_op, string):
-        assert to_string(f_op, of=True) == string
+        assert _to_string(f_op, of=True) == string
 
     def test_to_string_type(self):
         pl_op = qml.X(0)
         with pytest.raises(
             ValueError, match=f"fermi_op must be a FermiWord or FermiSentence, got: {type(pl_op)}"
         ):
-            to_string(pl_op)
+            _to_string(pl_op)
 
     @pytest.mark.parametrize(
         "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")
