@@ -69,6 +69,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `param_shift` with the `broadcast=True` option now supports shot vectors and multiple measurements.
+  [(#5667)](https://github.com/PennyLaneAI/pennylane/pull/5667)
+
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
@@ -264,6 +267,9 @@
 * `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
   [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
 
+* Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature of the original function.
+  [(#5857)](https://github.com/PennyLaneAI/pennylane/pull/5857)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
@@ -340,6 +346,9 @@
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug in the wire handling on special controlled ops.
+  [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
 
 * Fixes a bug where `Sum`'s with repeated identical operations ended up with the same hash as
   `Sum`'s with different numbers of repeats.
@@ -437,6 +446,9 @@
 
 * Simplify method for `Exp` now returns an operator with the correct number of Trotter steps, i.e. equal to the one from the pre-simplified operator.
   [(#5831)](https://github.com/PennyLaneAI/pennylane/pull/5831)
+
+* Fix bug where `CompositeOp.overlapping_ops` sometimes puts overlapping ops in different groups, leading to incorrect results returned by `LinearCombination.eigvals()`
+  [(#5847)](https://github.com/PennyLaneAI/pennylane/pull/5847)
 
 <h3>Contributors ✍️</h3>
 
