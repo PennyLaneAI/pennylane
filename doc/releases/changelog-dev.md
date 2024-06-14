@@ -296,10 +296,10 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
-* `qml.DefaultQutritMixed` readout error has been added via damping_measurement_gammas and 
-  trit_flip_measurement_probs. Adding a `qml.QutritAmplitudeDamping` then a `qml.TritFlip` channel 
-  respectively after measurement. This represents the potential for amplitude damping errors to 
-  occur in a longer measurement, followed by trit flips representing misclassification events.
+* `qml.DefaultQutritMixed` readout error has been added using parameters damping_measurement_gammas and 
+  trit_flip_measurement_probs. These parameters add a `qml.QutritAmplitudeDamping` then a `qml.TritFlip` channel 
+  respectively after measurement diagonalization. The amplitude damping error represents the potential for
+  relaxation errors to occur during a potentially longer measurement. Next, the trit flip error represents misclassification events.
   [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)
 
 <h3>Breaking changes 💔</h3>
