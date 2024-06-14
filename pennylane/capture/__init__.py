@@ -34,7 +34,6 @@ quantum-classical programs.
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
     ~qnode_call
-    ~to_catalyst
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.

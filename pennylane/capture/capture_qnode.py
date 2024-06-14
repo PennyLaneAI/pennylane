@@ -166,7 +166,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
-    return qnode_prim.bind(
+    res = qnode_prim.bind(
         *args,
         shots=shots,
         device=qnode.device,
@@ -174,3 +174,4 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         qnode=qnode,
         qfunc_jaxpr=qfunc_jaxpr,
     )
+    return res[0] if len(res) == 1 else res

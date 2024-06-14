@@ -388,7 +388,11 @@ class CatalystConverter:
         Used by ``_add_measurement_eqn``.
         """
         wires_invars = [self._get_wire(w) for w in eqn.invars]
-        outvars = [self._make_var(c_prims.AbstractObs())]
+        outvars = [
+            self._make_var(
+                c_prims.AbstractObs(num_qubits=len(eqn.invars), primitive=c_prims.compbasis_p)
+            )
+        ]
         wires_eqn = jax.core.JaxprEqn(
             wires_invars,
             outvars,
