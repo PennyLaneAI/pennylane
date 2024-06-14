@@ -182,7 +182,7 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
     return _pennylane_to_openfermion(np.array(coeffs), ops, wires=wires, tol=tol)
 
 
-# pylint:disable=unused-argument
+# pylint: disable=unused-argument, protected-access
 @_to_openfermion_dispatch.register
 def _(ops: FermiWord, wires=None, tol=1.0e-16):
     openfermion = _import_of()
