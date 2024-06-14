@@ -1368,7 +1368,6 @@ class TestReadoutError:
         [2 / 15, 1 / (10 * np.sqrt(3)), 2 / 15],
         [4 / 15, 7 / (10 * np.sqrt(3)), 4 / 15],
         [9 / 40, 3 / (40 * np.sqrt(3)), 9 / 40],
-
     ]
 
     @pytest.mark.parametrize(
