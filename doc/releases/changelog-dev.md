@@ -272,8 +272,7 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
-* Conversion between ``openfermion.QubitOperator``, ``qml.ops.Sum`` and ``qml.ops.LinearCombonation`` added.
-Conversion between ``openfermion.FermiOperator``, ``qml.fermi.FermiWord`` and ``qml.fermi.FermiSentence`` added.
+* The ``from_openfermion`` and ``to_openfermion`` functions are added to conversion between OpenFermion and PennyLane objects..
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
 
 <h3>Breaking changes 💔</h3>

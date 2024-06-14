@@ -512,7 +512,7 @@ def from_string(fermi_string):
     return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
 
 
-def to_string(fermi_op, of=False):
+def _to_string(fermi_op, of=False):
     r"""Return a string representation of the :class:`~.FermiWord` or :class:`~.FermiSentence` object.
 
     Args:
@@ -572,7 +572,7 @@ def _(fermi_op: FermiSentence, of=False):
     for fw in fermi_op:
         op_str += "\n+ " + str(fermi_op[fw]) + " * " + to_string(fw, of=of)
 
-    return op_str.strip()[2:]  # Remove redundant signs and newlines.
+    return op_str.strip()[2:]
 
 
 # pylint: disable=too-few-public-methods

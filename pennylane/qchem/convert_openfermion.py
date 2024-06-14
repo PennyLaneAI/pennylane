@@ -91,7 +91,7 @@ def to_openfermion(
     r"""Convert a PennyLane operator to a OpenFermion ``QubitOperator`` or ``FermionOperator``.
 
     Args:
-        pl_op (pennylane.ops.Sum, pennylane.ops.LinearCombination, pennylane.fermi.FermiWord, pennylane.fermi.FermiSentence):
+        pl_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, FermiWord, FermiSentence):
             linear combination of operators
         wires (Wires, list, tuple, dict):
             Custom wire mapping used to convert the qubit operator
@@ -142,7 +142,6 @@ def _(ops: FermiWord, wires=None, tol=1.0e-16):
         if not set(all_wires).issubset(set(mapped_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
 
-        # Map the FermiWord based on the ordering provided in `wires`.
         pl_op_mapped = {}
         for loc, orbital in ops.keys():
             pl_op_mapped[(loc, mapped_wires.index(orbital))] = ops[(loc, orbital)]
@@ -157,8 +156,6 @@ def _(pl_op: FermiSentence, wires=None, tol=1.0e-16):
     openfermion = _import_of()
 
     fermion_op = openfermion.ops.FermionOperator()
-    # Convert each FermiWord to a FermionOperator in OpenFermion.
-    # The coverage of the wire mapping is checked in the conversion of each FermiWord.
     for fermi_word in pl_op:
         if np.abs(pl_op[fermi_word].imag) < tol:
             fermion_op += pl_op[fermi_word].real * to_openfermion(fermi_word, wires=wires)
