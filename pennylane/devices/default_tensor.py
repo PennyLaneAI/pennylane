@@ -14,9 +14,11 @@
 """
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
+# pylint: disable=protected-access
 import copy
 import warnings
 from dataclasses import replace
+from functools import singledispatch
 from numbers import Number
 from typing import Callable, Optional, Sequence, Tuple, Union
 
@@ -31,8 +33,17 @@ from pennylane.devices.preprocess import (
     validate_measurements,
     validate_observables,
 )
-from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMeasurement, VarianceMP
+from pennylane.measurements import (
+    ExpectationMP,
+    MeasurementProcess,
+    StateMeasurement,
+    StateMP,
+    VarianceMP,
+)
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import WireError
@@ -58,7 +69,6 @@ _operations = frozenset(
         "PauliX",
         "PauliY",
         "PauliZ",
-        "MultiRZ",
         "GlobalPhase",
         "Hadamard",
         "S",
@@ -96,9 +106,11 @@ _operations = frozenset(
         "QubitCarry",
         "QubitSum",
         "OrbitalRotation",
-        "QFT",
         "ECR",
         "BlockEncode",
+        "PauliRot",
+        "MultiRZ",
+        "TrotterProduct",
     }
 )
 # The set of supported operations.
@@ -138,6 +150,12 @@ _gate_contract_tn = frozenset(
     {"auto-split-gate", "split-gate", "reduce-split", "swap-split-gate", "split", True, False}
 )
 # The set of supported gate contraction methods for the TN method.
+_PAULI_MATRICES = {
+    "I": qml.Identity(0).matrix(),
+    "X": qml.PauliX(0).matrix(),
+    "Y": qml.PauliY(0).matrix(),
+    "Z": qml.PauliZ(0).matrix(),
+}
 
 
 def accepted_methods(method: str) -> bool:
@@ -183,7 +201,7 @@ class DefaultTensor(Device):
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
-    This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values and variances.
+    This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values, variances and state measurements.
     Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
 
     Args:
@@ -191,7 +209,7 @@ class DefaultTensor(Device):
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
         method (str): Supported method. The supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Tensor Network).
-        c_dtype (type): Data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
+        c_dtype (type): Complex data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
     Keyword Args:
@@ -202,7 +220,7 @@ class DefaultTensor(Device):
             For the MPS method, the options are ``"auto-mps"``, ``"swap+split"`` and ``"nonlocal"``. For a description of these options, see the
             `quimb's CircuitMPS documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/index.html#quimb.tensor.CircuitMPS>`_.
             Default is ``"auto-mps"``.
-            For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``"True"``, and ``"False"``.
+            For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``True``, and ``False``.
             For details, see the `quimb's tensor_core documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_network_gate_inds>`_.
             Default is ``"auto-split-gate"``.
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
@@ -308,7 +326,7 @@ class DefaultTensor(Device):
 
                 phi = 0.1
                 depth = 10
-                num_qubits = 25
+                num_qubits = 100
 
                 dev = qml.device("default.tensor", method="tn", contract="auto-split-gate")
 
@@ -325,10 +343,10 @@ class DefaultTensor(Device):
                         qml.CNOT(wires=[qubit, qubit + 1])
                     return qml.expval(qml.Z(0))
 
-            >>> circuit(phi, dept, num_qubits)
-            -0.9511499466743266
+            >>> circuit(phi, depth, num_qubits)
+            -0.9511499466743283
 
-            The execution time for this circuit with the above parameters is around 0.2 seconds on a standard laptop.
+            The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 
             The tensor network method can be faster than MPS and state vector methods in some cases.
             As a comparison, the time for the exact calculation of the same circuit with the MPS method and with the ``default.qubit``
@@ -354,7 +372,6 @@ class DefaultTensor(Device):
         c_dtype=np.complex128,
         **kwargs,
     ) -> None:
-
         if not has_quimb:
             raise ImportError(
                 "This feature requires quimb, a library for tensor network manipulations. "
@@ -419,7 +436,7 @@ class DefaultTensor(Device):
         return self._c_dtype
 
     def _initial_quimb_circuit(
-        self, wires: qml.wires.Wires
+        self, wires: qml.wires.Wires, psi0=None
     ) -> Union["qtn.CircuitMPS", "qtn.Circuit"]:
         """
         Initialize the quimb circuit according to the method chosen.
@@ -438,10 +455,12 @@ class DefaultTensor(Device):
                 f"Unsupported gate contraction option: '{self._contract}' for '{self.method}' method. "
                 "Please refer to the documentation for the supported options."
             )
+        if psi0 is None:
+            psi0 = self._initial_mps(wires)
 
         if self.method == "mps":
             return qtn.CircuitMPS(
-                psi0=self._initial_mps(wires),
+                psi0=psi0,
                 max_bond=self._max_bond_dim,
                 gate_contract=self._contract,
                 cutoff=self._cutoff,
@@ -449,14 +468,14 @@ class DefaultTensor(Device):
 
         if self.method == "tn":
             return qtn.Circuit(
-                psi0=self._initial_tn(wires),
+                psi0=psi0.column_reduce(),
                 gate_contract=self._contract,
                 tags=[str(l) for l in wires.labels] if wires else None,
             )
 
         raise NotImplementedError  # pragma: no cover
 
-    def _initial_mps(self, wires: qml.wires.Wires) -> "qtn.MatrixProductState":
+    def _initial_mps(self, wires: qml.wires.Wires, basis_state=None) -> "qtn.MatrixProductState":
         r"""
         Return a MPS object in the :math:`\ket{0}` state.
 
@@ -464,12 +483,17 @@ class DefaultTensor(Device):
 
         Args:
             wires (Wires): The wires to initialize the MPS.
+            basis_state (str, None): prepares the basis state :math:`\ket{n}`, where ``n`` is a
+                string of integers from the set :math:`\{0, 1\}`, i.e.,
+                if ``n = "010"``, prepares the state :math:`|010\rangle`.
 
         Returns:
             MatrixProductState: The initial MPS of a circuit.
         """
+        if basis_state is None:
+            basis_state = "0" * (len(wires) if wires else 1)
         return qtn.MPS_computational_state(
-            binary="0" * (len(wires) if wires else 1),
+            binary=basis_state,
             dtype=self._c_dtype.__name__,
             tags=[str(l) for l in wires.labels] if wires else None,
         )
@@ -501,12 +525,12 @@ class DefaultTensor(Device):
 
         .. code-block:: python
 
-            dev = qml.device("default.tensor", method="tn")
+            dev = qml.device("default.tensor", method="tn", contract=False)
 
             @qml.qnode(dev)
             def circuit(num_qubits):
                 for i in range(num_qubits):
-                qml.Hadamard(wires=i)
+                    qml.Hadamard(wires=i)
                 for _ in range(1, num_qubits - 1):
                     for i in range(0, num_qubits, 2):
                         qml.CNOT(wires=[i, i + 1])
@@ -538,23 +562,6 @@ class DefaultTensor(Device):
             show_tags=show_tags,
             show_inds=show_inds,
             **kwargs,
-        )
-
-    def _initial_tn(self, wires: qml.wires.Wires) -> "qtn.TensorNetwork":
-        r"""
-        Return an initial tensor network state to :math:`\ket{0}`.
-
-        Internally, it uses ``quimb``'s ``TN_from_sites_computational_state`` method.
-
-        Args:
-            wires (Wires): The wires to initialize the tensor network.
-
-        Returns:
-            TensorNetwork: The initial tensor network of a circuit.
-        """
-        return qtn.TN_from_sites_computational_state(
-            site_map={i: "0" for i in range(len(wires) if wires else 1)},
-            dtype=self._c_dtype.__name__,
         )
 
     def _setup_execution_config(
@@ -656,9 +663,24 @@ class DefaultTensor(Device):
         # The state is reset every time a new circuit is executed, and number of wires
         # is established at runtime to match the circuit if not provided.
         wires = circuit.wires if self.wires is None else self.wires
-        self._quimb_circuit = self._initial_quimb_circuit(wires)
+        operations = copy.deepcopy(circuit.operations)
+        if operations and isinstance(operations[0], qml.BasisState):
+            op = operations.pop(0)
+            self._quimb_circuit = self._initial_quimb_circuit(
+                wires,
+                psi0=self._initial_mps(
+                    op.wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
+                ),
+            )
+        elif operations and isinstance(operations[0], qml.StatePrep):
+            op = operations.pop(0)
+            self._quimb_circuit = self._initial_quimb_circuit(
+                wires, psi0=qtn.MatrixProductState.from_dense(op.state_vector())
+            )
+        else:
+            self._quimb_circuit = self._initial_quimb_circuit(wires)
 
-        for op in circuit.operations:
+        for op in operations:
             self._apply_operation(op)
 
         if not circuit.shots:
@@ -676,10 +698,7 @@ class DefaultTensor(Device):
         Args:
             op (Operator): The operation to apply.
         """
-
-        self._quimb_circuit.apply_gate(
-            qml.matrix(op).astype(self._c_dtype), *op.wires, parametrize=None
-        )
+        apply_operation_core(op, self)
 
     def measurement(self, measurementprocess: MeasurementProcess) -> TensorLike:
         """Measure the measurement required by the circuit.
@@ -708,6 +727,9 @@ class DefaultTensor(Device):
             if isinstance(measurementprocess, ExpectationMP):
                 return self.expval
 
+            if isinstance(measurementprocess, StateMP):
+                return self.state
+
             if isinstance(measurementprocess, VarianceMP):
                 return self.var
 
@@ -726,10 +748,11 @@ class DefaultTensor(Device):
         """
 
         obs = measurementprocess.obs
+        return expval_core(obs, self)
 
-        result = self._local_expectation(qml.matrix(obs), tuple(obs.wires))
-
-        return result
+    def state(self, measurementprocess: MeasurementProcess):  # pylint: disable=unused-argument
+        """Returns the state vector."""
+        return self._quimb_circuit.psi.to_dense().ravel()
 
     def var(self, measurementprocess: MeasurementProcess) -> float:
         """Variance of the supplied observable contained in the MeasurementProcess.
@@ -763,7 +786,9 @@ class DefaultTensor(Device):
         """
 
         # We need to copy the quimb circuit since `local_expectation` modifies it.
-        qc = copy.deepcopy(self._quimb_circuit)
+        # If there is only one measurement and we don't want to keep track of the state
+        # after the execution, we could avoid copying the circuit.
+        qc = self._quimb_circuit.copy()
 
         exp_val = qc.local_expectation(
             matrix,
@@ -889,3 +914,105 @@ class DefaultTensor(Device):
         raise NotImplementedError(
             "The computation of vector-Jacobian product has yet to be implemented for the default.tensor device."
         )
+
+
+@singledispatch
+def apply_operation_core(ops: Operation, device):
+    """Dispatcher for _apply_operation."""
+    device._quimb_circuit.apply_gate(
+        qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
+    )
+
+
+@apply_operation_core.register
+def apply_operation_core_multirz(ops: qml.MultiRZ, device):
+    """Dispatcher for _apply_operation."""
+    apply_operation_core(qml.PauliRot(ops.parameters[0], "Z" * len(ops.wires), ops.wires), device)
+
+
+@apply_operation_core.register
+def apply_operation_core_paulirot(ops: qml.PauliRot, device):
+    """Dispatcher for _apply_operation."""
+    theta = ops.parameters[0]
+    pauli_string = ops._hyperparameters["pauli_word"]
+
+    arrays = []
+    sites = list(ops.wires)
+    for i, P in enumerate(pauli_string):
+        if i == 0:
+            arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P]
+            arr[0, 1] = qml.math.eye(2, dtype=complex)
+
+        elif i == len(sites) - 1:
+            arr = qml.math.zeros((2, 1, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
+            arr[1, 0] = qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
+
+        else:
+            arr = qml.math.zeros((2, 2, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P]
+            arr[1, 1] = qml.math.eye(2, dtype=complex)
+
+        arrays.append(arr)
+
+    mpo = qtn.MatrixProductOperator(arrays=arrays, sites=sites)
+    mpo = mpo.fill_empty_sites()
+    device._quimb_circuit._psi = mpo.apply(
+        device._quimb_circuit.psi,
+        max_bond=device._max_bond_dim,
+        cutoff=device._cutoff,
+    )
+
+
+@apply_operation_core.register
+def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
+    """Dispatcher for _apply_operation."""
+    time = ops.data[-1]
+    n = ops._hyperparameters["n"]
+    order = ops._hyperparameters["order"]
+    ops = ops._hyperparameters["base"].operands
+    decomp = _recursive_expression(time / n, order, ops)[::-1] * n
+    for o in decomp:
+        device._quimb_circuit.apply_gate(
+            qml.matrix(o).astype(device._c_dtype), *o.wires, parametrize=None
+        )
+
+
+@singledispatch
+def expval_core(obs: Observable, device) -> float:
+    """Dispatcher for expval."""
+    return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
+
+
+@expval_core.register
+def expval_core_tensor(obs: Tensor, device) -> float:
+    """Computes the expval of a Tensor."""
+    return expval_core(Prod(*obs._args), device)
+
+
+@expval_core.register
+def expval_core_prod(obs: Prod, device) -> float:
+    """Computes the expval of a Prod."""
+    ket = device._quimb_circuit.copy()
+    for op in obs:
+        ket.apply_gate(qml.matrix(op).astype(device._c_dtype), *op.wires, parametrize=None)
+    return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
+
+
+@expval_core.register
+def expval_core_sprod(obs: SProd, device) -> float:
+    """Computes the expval of a SProd."""
+    return obs.scalar * expval_core(obs.base, device)
+
+
+@expval_core.register
+def expval_core_sum(obs: Sum, device) -> float:
+    """Computes the expval of a Sum."""
+    return sum(expval_core(m, device) for m in obs)
+
+
+@expval_core.register
+def expval_core_linear_combination(obs: LinearCombination, device) -> float:
+    """Computes the expval of a LinearCombination."""
+    return sum(expval_core(m, device) for m in obs)
