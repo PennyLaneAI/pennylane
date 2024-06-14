@@ -201,7 +201,7 @@ class DefaultTensor(Device):
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
-    This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values and variances.
+    This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values, variances and state measurements.
     Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
 
     Args:
@@ -530,7 +530,7 @@ class DefaultTensor(Device):
             @qml.qnode(dev)
             def circuit(num_qubits):
                 for i in range(num_qubits):
-                qml.Hadamard(wires=i)
+                    qml.Hadamard(wires=i)
                 for _ in range(1, num_qubits - 1):
                     for i in range(0, num_qubits, 2):
                         qml.CNOT(wires=[i, i + 1])
