@@ -341,6 +341,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in the wire handling on special controlled ops.
+  [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
+
 * Fixes a bug where `Sum`'s with repeated identical operations ended up with the same hash as
   `Sum`'s with different numbers of repeats.
   [(#5851)](https://github.com/PennyLaneAI/pennylane/pull/5851)
