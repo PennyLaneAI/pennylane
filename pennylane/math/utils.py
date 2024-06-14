@@ -301,7 +301,7 @@ def get_deep_interface(value):
 
     >>> qml.math.asarray(x, like=qml.math.get_deep_interface(x))
     Array([[1, 2],
-       [3, 4]], dtype=int64)
+           [3, 4]], dtype=int64)
 
     """
     itr = value
