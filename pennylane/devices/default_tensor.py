@@ -936,17 +936,13 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
         )
         return
     theta = ops.parameters[0]
-    wire_map = dict((w, i) for i, w in enumerate(ops.wires))
-    pw = next(
-        iter(
-            qml.pauli.string_to_pauli_word(
-                ops._hyperparameters["pauli_word"], wire_map
-            ).pauli_rep.keys()
-        )
-    )
+    wire_map = dict((i, w) for i, w in enumerate(ops.wires))
+    pauli_string = ops._hyperparameters["pauli_word"]
+
     arrays = []
-    sites = list(pw.keys())
-    for i, P in enumerate(pw.values()):
+    sites = []
+    for i, P in enumerate(pauli_string):
+        site = wire_map[i]
         if i == 0:
             arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
