@@ -209,7 +209,7 @@ class DefaultTensor(Device):
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
         method (str): Supported method. The supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Tensor Network).
-        c_dtype (type): Data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
+        c_dtype (type): Complex data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
     Keyword Args:
@@ -220,7 +220,7 @@ class DefaultTensor(Device):
             For the MPS method, the options are ``"auto-mps"``, ``"swap+split"`` and ``"nonlocal"``. For a description of these options, see the
             `quimb's CircuitMPS documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/index.html#quimb.tensor.CircuitMPS>`_.
             Default is ``"auto-mps"``.
-            For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``"True"``, and ``"False"``.
+            For the TN method, the options are ``"auto-split-gate"``, ``"split-gate"``, ``"reduce-split"``, ``"swap-split-gate"``, ``"split"``, ``True``, and ``False``.
             For details, see the `quimb's tensor_core documentation <https://quimb.readthedocs.io/en/latest/autoapi/quimb/tensor/tensor_core/index.html#quimb.tensor.tensor_core.tensor_network_gate_inds>`_.
             Default is ``"auto-split-gate"``.
         contraction_optimizer (str): The contraction path optimizer to use for the computation of local expectation values.
@@ -326,7 +326,7 @@ class DefaultTensor(Device):
 
                 phi = 0.1
                 depth = 10
-                num_qubits = 25
+                num_qubits = 100
 
                 dev = qml.device("default.tensor", method="tn", contract="auto-split-gate")
 
@@ -343,10 +343,10 @@ class DefaultTensor(Device):
                         qml.CNOT(wires=[qubit, qubit + 1])
                     return qml.expval(qml.Z(0))
 
-            >>> circuit(phi, dept, num_qubits)
-            -0.9511499466743266
+            >>> circuit(phi, depth, num_qubits)
+            -0.9511499466743283
 
-            The execution time for this circuit with the above parameters is around 0.2 seconds on a standard laptop.
+            The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 
             The tensor network method can be faster than MPS and state vector methods in some cases.
             As a comparison, the time for the exact calculation of the same circuit with the MPS method and with the ``default.qubit``
@@ -525,7 +525,7 @@ class DefaultTensor(Device):
 
         .. code-block:: python
 
-            dev = qml.device("default.tensor", method="tn")
+            dev = qml.device("default.tensor", method="tn", contract=False)
 
             @qml.qnode(dev)
             def circuit(num_qubits):
@@ -786,7 +786,9 @@ class DefaultTensor(Device):
         """
 
         # We need to copy the quimb circuit since `local_expectation` modifies it.
-        qc = copy.deepcopy(self._quimb_circuit)
+        # If there is only one measurement and we don't want to keep track of the state
+        # after the execution, we could avoid copying the circuit.
+        qc = self._quimb_circuit.copy()
 
         exp_val = qc.local_expectation(
             matrix,
