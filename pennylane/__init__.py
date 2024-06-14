@@ -52,7 +52,7 @@ from pennylane.qchem import (
     import_operator,
     from_openfermion_fermionic,
     from_openfermion_qubit,
-    to_openfermion
+    to_openfermion,
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp
