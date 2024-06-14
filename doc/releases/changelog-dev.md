@@ -77,7 +77,7 @@
 * The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
 
-* Molecules and Hamiltonians can be constructed for elements present in the periodic table.
+* Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
