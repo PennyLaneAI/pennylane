@@ -14,7 +14,7 @@
 """
 This submodule defines a base class for composite operations.
 """
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,invalid-sequence-index
 import abc
 import copy
 from typing import Callable, List
@@ -189,7 +189,7 @@ class CompositeOp(Operator):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> List[List[Operator]]:  # pylint: disable=invalid-sequence-index
+    def overlapping_ops(self) -> List[List[Operator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
