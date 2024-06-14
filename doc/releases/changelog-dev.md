@@ -69,6 +69,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `param_shift` with the `broadcast=True` option now supports shot vectors and multiple measurements.
+  [(#5667)](https://github.com/PennyLaneAI/pennylane/pull/5667)
+
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
