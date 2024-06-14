@@ -762,7 +762,7 @@ class DefaultTensor(Device):
         """
 
         # We need to copy the quimb circuit since `local_expectation` modifies it.
-        # If there is only one measurement and we don't wanto to keep track of the state
+        # If there is only one measurement and we don't want to keep track of the state
         # after the execution, we could avoid copying the circuit.
         qc = self._quimb_circuit.copy()
 
