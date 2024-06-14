@@ -202,7 +202,6 @@ def assert_equal(
         None
 
     Raises:
-
         AssertionError: An ``AssertionError`` is raised if the two operators are not equal.
 
     .. warning::
@@ -212,6 +211,8 @@ def assert_equal(
     .. see-also::
 
         :func:`~.equal`
+
+    **Example**
 
     >>> mat1 = qml.IsingXX.compute_matrix(0.1)
     >>> op1 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat1)
