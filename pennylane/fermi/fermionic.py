@@ -522,16 +522,17 @@ def _to_string(fermi_op, of=False):
                     number of the wire it operates on
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> to_string(w)
+    >>> _to_string(w)
     0+ 1-
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> to_string(w, of=True)
+    >>> _to_string(w, of=True)
     0^ 1
 
     >>> w1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> _to_string(s)
     1.2 * 0+ 1-
     + 3.1 * 1+ 2-
     """
@@ -565,12 +566,13 @@ def _(fermi_op: FermiWord, of=False):
 
 @_to_string_dispatch.register
 def _(fermi_op: FermiSentence, of=False):
-    if len(fermi_op) == 0:
-        return "I"
 
     op_str = ""
+    if len(fermi_op) == 0:
+        return op_str
+
     for fw in fermi_op:
-        op_str += "\n+ " + str(fermi_op[fw]) + " * " + to_string(fw, of=of)
+        op_str += "\n+ " + str(fermi_op[fw]) + " * " + _to_string(fw, of=of)
 
     return op_str.strip()[2:]
 

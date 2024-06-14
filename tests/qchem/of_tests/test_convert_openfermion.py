@@ -79,7 +79,7 @@ class TestFromOpenFermion:
         )
 
         pl_op = qml.from_openfermion(q_op, tol=1e-6)
-        assert ~np.any(pl_op.coeffs.imag)
+        assert not np.any(pl_op.coeffs.imag)
 
         pl_op = qml.from_openfermion(q_op, tol=1e-10)
         assert np.any(pl_op.coeffs.imag)
@@ -156,31 +156,26 @@ class TestToOpenFermion:
         (
             qml.fermi.FermiSentence(
                 {
-                    qml.fermi.FermiWord({(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"}): 0.5
-                    + 1e-08j,
+                    qml.fermi.FermiWord(
+                        {(1, 0): "+", (0, 1): "-", (2, 3): "+", (3, 2): "-"}
+                    ): 1e-08j,
                     qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"}): 0.3,
                 }
             )
         ),
-        (0.5 * qml.Z(0) @ qml.X(2) + 0.1 + 1e-08j * qml.X(1) @ qml.Z(0)),
+        (2.0 * qml.Z(0) @ qml.X(2) + 1e-08j * qml.X(1) @ qml.Z(0)),
     )
 
     @pytest.mark.parametrize("pl_op", COMPLEX_OPS)
     def test_tol(self, pl_op):
-        """Test the to_openfermion function with complex coefficients."""
+        """Test whether the to_openfermion function removes the imaginary parts if they are all smaller than tol."""
         q_op = qml.to_openfermion(pl_op, tol=1e-6)
         coeffs = np.array(list(q_op.terms.values()))
-        assert ~np.any(coeffs.imag)
+        assert not np.any(coeffs.imag)
 
         q_op = qml.to_openfermion(pl_op, tol=1e-10)
         coeffs = np.array(list(q_op.terms.values()))
         assert np.any(coeffs.imag)
-
-    INVALID_OPS = (
-        qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
-        qml.prod(qml.PauliX(0), qml.Hadamard(1)),
-        qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
-    )
 
     MAPPED_OPS = (
         (
@@ -212,6 +207,12 @@ class TestToOpenFermion:
         r"Test the mapping of the wires."
         q_op = qml.to_openfermion(pl_op, wires=wires)
         assert q_op == of_op
+
+    INVALID_OPS = (
+        qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+        qml.prod(qml.PauliX(0), qml.Hadamard(1)),
+        qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
+    )
 
     @pytest.mark.parametrize("op", INVALID_OPS)
     def test_not_xyz(self, op):

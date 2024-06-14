@@ -107,9 +107,7 @@ def to_openfermion(
     **Example**
 
     >>> pl_term = 1.2 * qml.X(0) + 2.4 * qml.Z(1)
-    >>> pl_term
-    1.2 * X(0) + 2.4 * Z(1)
-    >>> q_op = to_openfermion(q_op)
+    >>> q_op = to_openfermion(pl_term)
     >>> q_op
     1.2 [X0] +
     2.4 [Z1]
@@ -148,7 +146,7 @@ def _(ops: FermiWord, wires=None, tol=1.0e-16):
 
         ops = FermiWord(pl_op_mapped)
 
-    return openfermion.ops.FermionOperator(qml.fermi.fermionic.to_string(ops, of=True))
+    return openfermion.ops.FermionOperator(qml.fermi.fermionic._to_string(ops, of=True))
 
 
 @_to_openfermion_dispatch.register

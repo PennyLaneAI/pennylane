@@ -281,7 +281,10 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
             sub_coeffs, op_strs = _ps_to_coeff_term(ps, wire_order=qubit_indexed_wires)
             for c, op_str in zip(sub_coeffs, op_strs):
                 # This is how one makes QubitOperator in OpenFermion
-                q_op += complex(coeff * c) * openfermion.QubitOperator(op_str)
+                if np.iscomplex(coeff):
+                    q_op += complex(coeff * c) * openfermion.QubitOperator(op_str)
+                else:
+                    q_op += (coeff * c) * openfermion.QubitOperator(op_str)
 
     return q_op
 
