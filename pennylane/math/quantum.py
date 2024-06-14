@@ -778,7 +778,10 @@ def _check_hermitian_operator(operators):
         or operators.shape[-2] != dim
         or not np.log2(dim).is_integer()
     ):
-        raise ValueError("Operator matrix must be of shape (2**wires,) or (batch_dim, 2**wires)")
+        raise ValueError(
+            "Operator matrix must be of shape (2**wires,2**wires) "
+            "or (batch_dim, 2**wires, 2**wires)."
+        )
 
     if len(operators.shape) == 2:
         operators = qml.math.stack([operators])
@@ -838,7 +841,9 @@ def expectation_value(
         _check_hermitian_operator(operator_matrix)
 
     if qml.math.shape(operator_matrix)[-1] != qml.math.shape(state_vector)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+        raise qml.QuantumFunctionError(
+            "The operator and the state vector must have the same number of wires."
+        )
 
     # The overlap <psi|A|psi>
     expval = qml.math.einsum(
