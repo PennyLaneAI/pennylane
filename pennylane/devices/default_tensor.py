@@ -468,7 +468,7 @@ class DefaultTensor(Device):
 
         if self.method == "tn":
             return qtn.Circuit(
-                psi0=psi0,
+                psi0=psi0.column_reduce(),
                 gate_contract=self._contract,
                 tags=[str(l) for l in wires.labels] if wires else None,
             )
