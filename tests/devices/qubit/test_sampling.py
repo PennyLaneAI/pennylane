@@ -517,11 +517,9 @@ class TestMeasureSamples:
         [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
         assert qml.math.allclose(result, 1.0)
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_identity_on_no_wires_with_other_observables(self):
         """Test that measuring an identity on no wires can be used in conjunction with other measurements."""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("Identity with no wires is not supported with legacy opmath.")
 
         state = np.array([0, 1])
 

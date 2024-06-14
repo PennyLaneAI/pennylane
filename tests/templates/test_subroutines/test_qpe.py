@@ -21,22 +21,11 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 
-# pylint: disable=protected-access,too-few-public-methods
-def test_flatten_unflatten():
-    """Tests the flatten and unflatten methods."""
-    op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 3])
-    data, metadata = op._flatten()
-    expected_data = qml.QubitUnitary(np.eye(4), (0, 1))
-    assert qml.equal(data[0], expected_data)
-
-    assert metadata[0] == qml.wires.Wires((2, 3))
-
-    # make sure metadata is hashable
-    assert hash(metadata)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
+def test_standard_validity():
+    """Test standard validity criteria using assert_valid."""
+    op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])
+    assert op.target_wires == qml.wires.Wires([0, 1])
+    qml.ops.functions.assert_valid(op)
 
 
 class TestError:
@@ -51,6 +40,7 @@ class TestError:
         """Test that QPE error is correct for a given custom operator."""
 
         class CustomOP(qml.resource.ErrorOperation):
+            # pylint: disable=too-few-public-methods
             def error(self):
                 return qml.resource.SpectralNormError(operator_error)
 
@@ -73,6 +63,7 @@ class TestError:
         u_apprx = qml.RY(0.51, wires=0)
 
         class CustomOP(qml.resource.ErrorOperation):
+            # pylint: disable=too-few-public-methods
             def error(self):
                 error_value = qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
                 return qml.resource.SpectralNormError(error_value)
@@ -98,6 +89,7 @@ class TestError:
         """Test that the error method works with all interfaces."""
 
         class CustomOP(qml.resource.ErrorOperation):
+            # pylint: disable=too-few-public-methods
             def error(self):
                 spectral_norm_error = qml.resource.SpectralNormError(
                     qml.math.array(operator_error, like=interface)

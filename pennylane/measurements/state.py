@@ -139,9 +139,19 @@ class StateMP(StateMeasurement):
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
 
-    @property
-    def return_type(self):
-        return State
+    return_type = State
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires,)
+        return shape, complex
 
     @property
     def numeric_type(self):
@@ -195,6 +205,18 @@ class DensityMatrixMP(StateMP):
 
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires, 2**n_wires)
+        return shape, complex
 
     def shape(self, device, shots):
         num_shot_elements = (

@@ -59,7 +59,8 @@ We then construct the Hamiltonian.
 
     args = [geometry, alpha, coeff] # initial values of the differentiable parameters
 
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, alpha=alpha, coeff=coeff, args=args)
+    molecule = qml.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, args=args)
 
 >>> print(hamiltonian)
   (-0.35968235922631075) [I0]
@@ -95,7 +96,7 @@ molecular geometry optimization with PennyLane is provided in this
         def circuit(*args):
             qml.BasisState(hf_state, wires=[0, 1, 2, 3])
             qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
-            return qml.expval(qml.qchem.molecular_hamiltonian(mol.symbols, mol.coordinates, alpha=mol.alpha, coeff=mol.coeff, args=args[1:])[0])
+            return qml.expval(qml.qchem.molecular_hamiltonian(mol, args=args[1:])[0])
         return circuit
 
 Now that the circuit is defined, we can create a geometry and parameter optimization loop. For
@@ -170,11 +171,12 @@ integral can be differentiated with respect to the basis set parameters as follo
 OpenFermion-PySCF backend
 -------------------------
 
-The :func:`~.molecular_hamiltonian` function can be also used to construct the molecular Hamiltonian
-with a non-differentiable backend that uses the
-`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
+The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
+with non-differentiable backends that use the
+`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin or the
 electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_. The non-differentiable
-backend can be selected by setting ``method='pyscf'`` in :func:`~.molecular_hamiltonian`:
+backends can be selected by setting ``method='openfermion'`` or ``method='pyscf'``
+in ``molecular_hamiltonian``:
 
 .. code-block:: python
 
@@ -183,18 +185,13 @@ backend can be selected by setting ``method='pyscf'`` in :func:`~.molecular_hami
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
-        symbols,
-        geometry,
-        charge=0,
-        mult=1,
-        basis='sto-3g',
-        method='pyscf'
-    )
+    molecule = qml.qchem.Molecule(symbols, geometry, charge=0, mult=1, basis_name='sto-3g')
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, method='pyscf')
 
-The non-differentiable backend requires the ``OpenFermion-PySCF`` plugin to be installed by the user
-with
+The non-differentiable backends require either ``OpenFermion-PySCF`` or ``PySCF`` to be installed by
+the user with
 
 .. code-block:: bash
 
     pip install openfermionpyscf
+    pip install pyscf

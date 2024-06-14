@@ -737,3 +737,29 @@ def test_controlled_method(base, cbase):
     """Tests the _controlled method for parametric ops."""
     # pylint: disable=protected-access
     assert qml.equal(base._controlled("a"), cbase)
+
+
+@pytest.mark.parametrize(
+    "control, control_values",
+    [([0, 1], [True, False]), ([10, "a"], (0, 0)), ([2], 1), (2, (True,))],
+)
+@pytest.mark.parametrize(
+    "base_op", [qml.CRX(0.2, [21, 22]), qml.CNOT([21, 22]), qml.CPhase(0.6, [21, 22])]
+)
+def test_controlling_a_controlled_operation(control, control_values, base_op):
+    """Test that a controlled op can be controlled again."""
+    qml.ctrl(base_op, control=control, control_values=control_values)
+
+
+@pytest.mark.parametrize("op_type", (qml.CH, qml.CY, qml.CZ, qml.CNOT))
+def test_tuple_control_wires_non_parametric_ops(op_type):
+    """Test that tuples can be provided as control wire labels."""
+
+    assert op_type([(0, 1), 2]).wires == qml.wires.Wires([(0, 1), 2])
+
+
+@pytest.mark.parametrize("op_type", (qml.CRX, qml.CRY, qml.CRZ, qml.CPhase))
+def test_tuple_control_wires_parametric_ops(op_type):
+    """Test that tuples can be provided as control wire labels."""
+
+    assert op_type(0.123, [(0, 1), 2]).wires == qml.wires.Wires([(0, 1), 2])
