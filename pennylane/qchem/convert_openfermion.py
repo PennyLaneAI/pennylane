@@ -162,8 +162,8 @@ def to_openfermion(
     >>> pl_term = 1.2 * qml.X(0) + 2.4 * qml.Z(1)
     >>> q_op = to_openfermion(pl_term)
     >>> q_op
-    1.2 [X0] +
-    2.4 [Z1]
+    (1.2+0j) [X0] +
+    (2.4+0j) [Z1]
     """
     return _to_openfermion_dispatch(pl_op, wires=wires, tol=tol)
 

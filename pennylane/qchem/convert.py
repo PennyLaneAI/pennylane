@@ -202,6 +202,7 @@ def _ps_to_coeff_term(ps, wire_order):
     return coeffs, ops_str
 
 
+# pylint:disable=too-many-branches
 def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     r"""Convert a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
@@ -281,10 +282,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
             sub_coeffs, op_strs = _ps_to_coeff_term(ps, wire_order=qubit_indexed_wires)
             for c, op_str in zip(sub_coeffs, op_strs):
                 # This is how one makes QubitOperator in OpenFermion
-                if np.iscomplex(coeff):
-                    q_op += complex(coeff * c) * openfermion.QubitOperator(op_str)
-                else:
-                    q_op += (coeff * c) * openfermion.QubitOperator(op_str)
+                q_op += complex(coeff * c) * openfermion.QubitOperator(op_str)
 
     return q_op
 
