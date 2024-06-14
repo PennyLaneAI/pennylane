@@ -754,17 +754,3 @@ def simulate_one_shot_native_mcm(
         mid_measurements=mid_measurements,
         **execution_kwargs,
     )
-
-
-def has_mid_circuit_measurements(
-    circuit: qml.tape.QuantumScript,
-):
-    """Returns True if the circuit contains a MidMeasureMP object and False otherwise.
-
-    Args:
-        circuit (QuantumTape): A QuantumScript
-
-    Returns:
-        bool: Whether the circuit contains a MidMeasureMP object
-    """
-    return any(isinstance(op, MidMeasureMP) for op in circuit.operations)
