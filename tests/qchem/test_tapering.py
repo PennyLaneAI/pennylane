@@ -208,7 +208,7 @@ def test_generate_paulis(generators, num_qubits, result):
     assert not any(isinstance(g, qml.Hamiltonian) for g in generators_as_ops)
 
     for p1, p2 in zip(pauli_ops, result):
-        assert qml.equal(p1, p2)
+        qml.assert_equal(p1, p2)
 
 
 @pytest.mark.parametrize(
@@ -552,7 +552,7 @@ def test_taper_obs(symbols, geometry, charge):
         ).toarray()
 
         assert np.isclose(obs_val, obs_val_tapered)
-        assert qml.equal(tapered_obs, tapered_ps)
+        qml.assert_equal(tapered_obs, tapered_ps)
 
 
 @pytest.mark.parametrize(

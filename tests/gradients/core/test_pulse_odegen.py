@@ -481,7 +481,7 @@ class TestInsertOp:
         assert isinstance(new_tapes, list) and len(new_tapes) == len(ops)
         for t, op in zip(new_tapes, ops):
             assert all(qml.equal(o0, o1) for o0, o1 in zip(t[:op_idx], tape[:op_idx]))
-            assert qml.equal(t[op_idx], op)
+            qml.assert_equal(t[op_idx], op)
             assert all(qml.equal(o0, o1) for o0, o1 in zip(t[op_idx + 1 :], tape[op_idx:]))
 
 

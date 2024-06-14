@@ -213,7 +213,7 @@ class TestSelect:
         op = qml.Select(ops, control=[0, 1])
         op_copy = copy.copy(op)
 
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
 
 class TestErrorMessages:

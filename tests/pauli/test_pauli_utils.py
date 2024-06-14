@@ -487,7 +487,7 @@ class TestGroupingUtils:
     def test_string_to_pauli_word(self, pauli_string, wire_map, expected_pauli):
         """Test that valid strings are correctly converted into Pauli words."""
         obtained_pauli = string_to_pauli_word(pauli_string, wire_map)
-        assert qml.equal(obtained_pauli, expected_pauli)
+        qml.assert_equal(obtained_pauli, expected_pauli)
 
     @pytest.mark.parametrize(
         "non_pauli_string,wire_map,error_type,error_message",
@@ -980,7 +980,7 @@ class TestMeasurementTransformations:
             for i in range(len(qwc_rot))
         )
         for diag_op, expected in zip(diag_qwc_grouping, diag_qwc_grouping_sol):
-            assert qml.equal(diag_op, expected)
+            qml.assert_equal(diag_op, expected)
 
     not_qwc_groupings = [
         [PauliX("a"), PauliY("a")],

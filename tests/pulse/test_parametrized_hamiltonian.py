@@ -57,7 +57,7 @@ class TestInitialization:
         H = qml.dot(coeffs, ops)
         expected_H = ParametrizedHamiltonian(coeffs, ops)
 
-        assert qml.equal(H([1.2, 2.3], 3.4), expected_H([1.2, 2.3], 3.4))
+        qml.assert_equal(H([1.2, 2.3], 3.4), expected_H([1.2, 2.3], 3.4))
 
     def test_initialization_via_addition(self):
         """Test that adding combinations of operators and numbers/callables initializes
@@ -73,7 +73,7 @@ class TestInitialization:
         ops = [XX, YY, ZZ]
         expected_H = ParametrizedHamiltonian(coeffs, ops)
 
-        assert qml.equal(H([1.2, 2.3], 3.4), expected_H([1.2, 2.3], 3.4))
+        qml.assert_equal(H([1.2, 2.3], 3.4), expected_H([1.2, 2.3], 3.4))
 
     def test_mismatched_coeffs_and_obs_raises_error(self):
         """Test that an error is raised if the length of the list of coefficients
@@ -109,7 +109,7 @@ class TestInitialization:
         """Test that H_fixed() is an Operator of the expected form"""
         H_fixed = test_example.H_fixed()
         op = qml.sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
-        assert qml.equal(H_fixed, op)
+        qml.assert_equal(H_fixed, op)
 
     def test_H_parametrized(self):
         """Test H_parametrized is a function that, when passed parameters,
@@ -225,8 +225,8 @@ class TestCall:
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
-        assert qml.equal(H_fixed, expected_H_fixed)
-        assert qml.equal(H_parametrized, expected_H_parametrized)
+        qml.assert_equal(H_fixed, expected_H_fixed)
+        qml.assert_equal(H_parametrized, expected_H_parametrized)
 
     def test_call_with_qutrit_operators(self):
         """Test that the ParametrizedHamiltonian can be created and called to initialize an
@@ -296,8 +296,8 @@ class TestInteractionWithOperators:
         params = [1, 2]
         # Adding on the right
         new_pH = pH + H
-        assert qml.equal(pH.H_fixed(), pH_fixed)
-        assert qml.equal(new_pH.H_fixed(), sum((pH_fixed, qml.s_prod(coeff, qml.PauliZ(0)))))
+        qml.assert_equal(pH.H_fixed(), pH_fixed)
+        qml.assert_equal(new_pH.H_fixed(), sum((pH_fixed, qml.s_prod(coeff, qml.PauliZ(0)))))
         assert new_pH.coeffs_fixed == [2, coeff]
         assert qml.math.allclose(
             new_pH(params, t=0.5).matrix(),
@@ -305,8 +305,8 @@ class TestInteractionWithOperators:
         )
         # Adding on the left
         new_pH = H + pH
-        assert qml.equal(pH.H_fixed(), pH_fixed)
-        assert qml.equal(new_pH.H_fixed(), sum((qml.s_prod(coeff, qml.PauliZ(0)), pH_fixed)))
+        qml.assert_equal(pH.H_fixed(), pH_fixed)
+        qml.assert_equal(new_pH.H_fixed(), sum((qml.s_prod(coeff, qml.PauliZ(0)), pH_fixed)))
         assert new_pH.coeffs_fixed == [coeff, 2]
         assert qml.math.allclose(
             new_pH(params, t=0.5).matrix(),
@@ -322,13 +322,13 @@ class TestInteractionWithOperators:
 
         # Adding on the right
         new_pH = pH + op
-        assert qml.equal(pH.H_fixed(), pH_fixed)
-        assert qml.equal(new_pH.H_fixed(), sum((pH_fixed, qml.s_prod(1, op))))
+        qml.assert_equal(pH.H_fixed(), pH_fixed)
+        qml.assert_equal(new_pH.H_fixed(), sum((pH_fixed, qml.s_prod(1, op))))
 
         # Adding on the left
         new_pH = op + pH
-        assert qml.equal(pH.H_fixed(), pH_fixed)
-        assert qml.equal(new_pH.H_fixed(), sum((qml.s_prod(1, op), pH_fixed)))
+        qml.assert_equal(pH.H_fixed(), pH_fixed)
+        qml.assert_equal(new_pH.H_fixed(), sum((qml.s_prod(1, op), pH_fixed)))
 
     def test_add_invalid_object_raises_error(self):
         """Test that an error is raised when adding a ``ParametrizedHamiltonian`` with an invalid
@@ -349,7 +349,7 @@ class TestInteractionWithOperators:
             [lambda p, t: 3 * f1(p, t), lambda p, t: 3 * f2(p, t)], [qml.PauliX(0), qml.PauliY(1)]
         )
         assert new_H.H_fixed() == expected_H.H_fixed() == 0
-        assert qml.equal(new_H.H_parametrized([1, 2], t=4), expected_H.H_parametrized([1, 2], t=4))
+        qml.assert_equal(new_H.H_parametrized([1, 2], t=4), expected_H.H_parametrized([1, 2], t=4))
 
     def test_multiply_invalid_object_raises_error(self):
         """Test that an error is raised when multiplying a ``ParametrizedHamiltonian`` with an invalid
@@ -370,13 +370,13 @@ class TestInteractionWithOperators:
 
         # H_fixed now contains the fixed terms from both pH1 and pH2
         new_pH = pH1 + pH2
-        assert qml.equal(new_pH.H_fixed()[0], pH1.H_fixed())
-        assert qml.equal(new_pH.H_fixed()[1], pH2.H_fixed())
+        qml.assert_equal(new_pH.H_fixed()[0], pH1.H_fixed())
+        qml.assert_equal(new_pH.H_fixed()[1], pH2.H_fixed())
 
         # H_parametrized now contained the parametrized terms from both pH1 and pH2
         parametric_term = new_pH.H_parametrized([1.2, 2.3], 0.5)
-        assert qml.equal(parametric_term[0], pH1.H_parametrized([1.2], 0.5))
-        assert qml.equal(parametric_term[1], pH2.H_parametrized([2.3], 0.5))
+        qml.assert_equal(parametric_term[0], pH1.H_parametrized([1.2], 0.5))
+        qml.assert_equal(parametric_term[1], pH2.H_parametrized([2.3], 0.5))
 
     def test_fn_times_observable_creates_parametrized_hamiltonian(self):
         """Test a ParametrizedHamiltonian can be created by multiplying a
@@ -431,8 +431,8 @@ class TestInterfaces:
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
-        assert qml.equal(H_fixed, expected_H_fixed)
-        assert qml.equal(H_parametrized, expected_H_parametrized)
+        qml.assert_equal(H_fixed, expected_H_fixed)
+        qml.assert_equal(H_parametrized, expected_H_parametrized)
 
     @pytest.mark.torch
     def test_call_torch(self):
@@ -455,8 +455,8 @@ class TestInterfaces:
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
-        assert qml.equal(H_fixed, expected_H_fixed)
-        assert qml.equal(H_parametrized, expected_H_parametrized)
+        qml.assert_equal(H_fixed, expected_H_fixed)
+        qml.assert_equal(H_parametrized, expected_H_parametrized)
 
     @pytest.mark.tf
     def test_call_tf(self):
@@ -479,5 +479,5 @@ class TestInterfaces:
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
-        assert qml.equal(H_fixed, expected_H_fixed)
-        assert qml.equal(H_parametrized, expected_H_parametrized)
+        qml.assert_equal(H_fixed, expected_H_fixed)
+        qml.assert_equal(H_parametrized, expected_H_parametrized)

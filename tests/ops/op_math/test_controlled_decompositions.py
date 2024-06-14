@@ -337,8 +337,8 @@ class TestControlledDecompositionZYZ:
         assert op.has_decomposition
         decomp = op.expand().circuit if test_expand else op.decomposition()
         assert len(decomp) == 3
-        assert qml.equal(qml.PauliX(0), decomp[0])
-        assert qml.equal(qml.PauliX(0), decomp[-1])
+        qml.assert_equal(qml.PauliX(0), decomp[0])
+        qml.assert_equal(qml.PauliX(0), decomp[-1])
         decomp = decomp[1]
         decomp = decomp.expand().circuit if test_expand else decomp.decomposition()
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
@@ -474,12 +474,12 @@ class TestControlledBisectOD:
         assert len(op_seq) == 8
 
         mcx1 = qml.MultiControlledX(wires=Wires([1, 2, 3, 0]), work_wires=Wires([4, 5]))
-        assert qml.equal(mcx1, op_seq[0])
-        assert qml.equal(mcx1, op_seq[4])
+        qml.assert_equal(mcx1, op_seq[0])
+        qml.assert_equal(mcx1, op_seq[4])
 
         mcx2 = qml.Toffoli(wires=[4, 5, 0])
-        assert qml.equal(mcx2, op_seq[2])
-        assert qml.equal(mcx2, op_seq[6])
+        qml.assert_equal(mcx2, op_seq[2])
+        qml.assert_equal(mcx2, op_seq[6])
 
         a = op_seq[1].matrix()
         at = op_seq[3].matrix()
