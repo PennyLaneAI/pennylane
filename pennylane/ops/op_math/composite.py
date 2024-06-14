@@ -224,7 +224,7 @@ class CompositeOp(Operator):
                     i += 1
             if not added:
                 # Create new group
-                groups.append(([op], op.wires))
+                groups.append([[op], op.wires])
 
         self._overlapping_ops = [group[0] for group in groups]
         return self._overlapping_ops
