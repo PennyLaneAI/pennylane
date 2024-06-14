@@ -56,6 +56,14 @@ class TestSnapshotTape:
         tapes_no_meas, _ = qml.snapshots(tape_no_meas)
 
         assert len(tapes_no_meas) == num_snapshots
+        tape1 = qml.tape.QuantumScript([], [qml.state()])
+        assert qml.equal(tapes_no_meas[0], tape1)
+        tape2 = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.state()])
+        assert qml.equal(tapes_no_meas[1], tape2)
+        tape3 = qml.tape.QuantumScript([qml.Hadamad(0), qml.CNOT((0,1))], [qml.state()])
+        assert qml.equal(tapes_no_meas[2], tape3)
+        tape4 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT((0,1))], [qml.expval(qml.X(0))])
+        assert qml.equal(tapes_no_meas[3], tape4)
 
     def test_snapshot_postprocessing_fn(self):
         ops = [
