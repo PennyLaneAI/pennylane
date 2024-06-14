@@ -16,6 +16,7 @@ Tests for the TrotterProduct template and helper functions.
 """
 # pylint: disable=private-access, protected-access
 import copy
+from collections import defaultdict
 from functools import reduce
 
 import pytest
@@ -23,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
+from pennylane.resource import Resources
 from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
 
@@ -211,6 +213,94 @@ test_decompositions = (
     }
 )
 
+test_resources_data = {
+    # (hamiltonian_index, order): Resources computed by hand
+    (0, 1): Resources(
+        num_wires=2,
+        num_gates=3,
+        gate_types=defaultdict(int, {"Exp": 3}),
+        gate_sizes=defaultdict(int, {1: 3}),
+        depth=2,
+    ),
+    (0, 2): Resources(
+        num_wires=2,
+        num_gates=6,
+        gate_types=defaultdict(int, {"Exp": 6}),
+        gate_sizes=defaultdict(int, {1: 6}),
+        depth=4,
+    ),
+    (0, 4): Resources(
+        num_wires=2,
+        num_gates=30,
+        gate_types=defaultdict(int, {"Exp": 30}),
+        gate_sizes=defaultdict(int, {1: 30}),
+        depth=20,
+    ),
+    (1, 1): Resources(
+        num_wires=2,
+        num_gates=2,
+        gate_types=defaultdict(int, {"Exp": 2}),
+        gate_sizes=defaultdict(int, {1: 1, 2: 1}),
+        depth=2,
+    ),
+    (1, 2): Resources(
+        num_wires=2,
+        num_gates=4,
+        gate_types=defaultdict(int, {"Exp": 4}),
+        gate_sizes=defaultdict(int, {1: 2, 2: 2}),
+        depth=4,
+    ),
+    (1, 4): Resources(
+        num_wires=2,
+        num_gates=20,
+        gate_types=defaultdict(int, {"Exp": 20}),
+        gate_sizes=defaultdict(int, {1: 10, 2: 10}),
+        depth=20,
+    ),
+    (2, 1): Resources(
+        num_wires=2,
+        num_gates=3,
+        gate_types=defaultdict(int, {"Exp": 3}),
+        gate_sizes=defaultdict(int, {1: 2, 2: 1}),
+        depth=3,
+    ),
+    (2, 2): Resources(
+        num_wires=2,
+        num_gates=6,
+        gate_types=defaultdict(int, {"Exp": 6}),
+        gate_sizes=defaultdict(int, {1: 4, 2: 2}),
+        depth=6,
+    ),
+    (2, 4): Resources(
+        num_wires=2,
+        num_gates=30,
+        gate_types=defaultdict(int, {"Exp": 30}),
+        gate_sizes=defaultdict(int, {1: 20, 2: 10}),
+        depth=30,
+    ),
+    (3, 1): Resources(
+        num_wires=2,
+        num_gates=3,
+        gate_types=defaultdict(int, {"Exp": 3}),
+        gate_sizes=defaultdict(int, {1: 3}),
+        depth=2,
+    ),
+    (3, 2): Resources(
+        num_wires=2,
+        num_gates=6,
+        gate_types=defaultdict(int, {"Exp": 6}),
+        gate_sizes=defaultdict(int, {1: 6}),
+        depth=4,
+    ),
+    (3, 4): Resources(
+        num_wires=2,
+        num_gates=30,
+        gate_types=defaultdict(int, {"Exp": 30}),
+        gate_sizes=defaultdict(int, {1: 30}),
+        depth=20,
+    ),
+}
+
 
 def _generate_simple_decomp(coeffs, ops, time, order, n):
     """Given coeffs, ops and a time argument in a given framework, generate the
@@ -333,8 +423,8 @@ class TestInitialization:
             hamiltonian = hamiltonian.simplify()
 
         assert op.wires == hamiltonian.wires
-        assert op.parameters == [time]
-        assert op.data == (time,)
+        assert op.parameters == [*hamiltonian.data, time]
+        assert op.data == (*hamiltonian.data, time)
         assert op.hyperparameters == {
             "base": hamiltonian,
             "n": n,
@@ -358,22 +448,11 @@ class TestInitialization:
         assert op is not new_op
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_flatten_and_unflatten(self, hamiltonian):
-        """Test that the flatten and unflatten methods work correctly."""
+    def test_standard_validity(self, hamiltonian):
+        """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-
-        if isinstance(hamiltonian, qml.ops.op_math.SProd):
-            hamiltonian = hamiltonian.simplify()
-
-        data, metadata = op._flatten()
-        assert qml.equal(data[0], hamiltonian)
-        assert data[1] == time
-        assert dict(metadata) == {"n": n, "order": order, "check_hermitian": True}
-
-        new_op = type(op)._unflatten(data, metadata)
-        assert qml.equal(op, new_op)
-        assert new_op is not op
+        qml.ops.functions.assert_valid(op)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
@@ -563,6 +642,113 @@ class TestError:
         op = qml.TrotterProduct(hamiltonian, 1.23, order=2, n=5)
         with pytest.raises(TypeError, match="Calculating error bound for Tensorflow objects"):
             _ = op.error()
+
+
+class TestResources:
+    """Test the resources method of the TrotterProduct class"""
+
+    def test_resources_no_queuing(self):
+        """Test that no operations are queued when computing resources."""
+        time = 0.5
+        hamiltonian = qml.sum(qml.PauliX(0), qml.PauliZ(0))
+        op = qml.TrotterProduct(hamiltonian, time, n=5, order=2)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            _ = op.resources()
+
+        assert len(q.queue) == 0
+
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    def test_resources(self, hamiltonian, hamiltonian_index, order):
+        """Test that the resources are tracked accurately."""
+        op = qml.TrotterProduct(hamiltonian, 4.2, order=order)
+
+        tracked_resources = op.resources()
+        expected_resources = test_resources_data[(hamiltonian_index, order)]
+
+        assert expected_resources == tracked_resources
+
+    @pytest.mark.parametrize("n", (1, 5, 10))
+    def test_resources_with_trotter_steps(self, n):
+        """Test that the resources are tracked accurately with number of steps."""
+        order = 2
+        hamiltonian_index = 0
+
+        op = qml.TrotterProduct(test_hamiltonians[hamiltonian_index], 0.5, order=order, n=n)
+        tracked_resources = op.resources()
+
+        expected_resources = Resources(
+            num_wires=2,
+            num_gates=6 * n,
+            gate_types=defaultdict(int, {"Exp": 6 * n}),
+            gate_sizes=defaultdict(int, {1: 6 * n}),
+            depth=4 * n,
+        )
+
+        assert expected_resources == tracked_resources
+
+    def test_resources_integration(self):
+        """Test that the resources integrate well with qml.tracker and qml.specs
+        resource tracking."""
+        time = 0.5
+        hamiltonian = qml.sum(qml.X(0), qml.Y(0), qml.Z(1))
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circ():
+            qml.TrotterProduct(hamiltonian, time, n=5, order=2)
+            return qml.expval(qml.Z(0))
+
+        expected_resources = Resources(
+            num_wires=2,
+            num_gates=30,
+            gate_types=defaultdict(int, {"Exp": 30}),
+            gate_sizes=defaultdict(int, {1: 30}),
+            depth=20,
+        )
+
+        with qml.Tracker(dev) as tracker:
+            circ()
+
+        spec_resources = qml.specs(circ)()["resources"]
+        tracker_resources = tracker.history["resources"][0]
+
+        assert expected_resources == spec_resources
+        assert expected_resources == tracker_resources
+
+    def test_resources_and_error(self):
+        """Test that we can compute the resources and error together"""
+        time = 0.1
+        coeffs = qml.math.array([1.0, 0.5])
+        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circ():
+            qml.TrotterProduct(hamiltonian, time, n=2, order=2)
+            return qml.expval(qml.Z(0))
+
+        specs = qml.specs(circ)()
+
+        computed_error = (specs["errors"])["SpectralNormError"]
+        computed_resources = specs["resources"]
+
+        # Expected resources and errors (computed by hand)
+        expected_resources = Resources(
+            num_wires=1,
+            num_gates=8,
+            gate_types=defaultdict(int, {"Exp": 8}),
+            gate_sizes=defaultdict(int, {1: 8}),
+            depth=8,
+        )
+        expected_error = 0.001
+
+        assert computed_resources == expected_resources
+        assert isinstance(computed_error, SpectralNormError)
+        assert qnp.isclose(computed_error.error, qml.math.array(expected_error))
 
 
 class TestDecomposition:

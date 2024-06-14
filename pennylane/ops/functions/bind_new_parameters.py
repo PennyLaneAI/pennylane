@@ -78,6 +78,16 @@ def bind_new_parameters_commuting_evolution(
 
 
 @bind_new_parameters.register
+def bind_new_parameters_qdrift(op: qml.QDrift, params: Sequence[TensorLike]):
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[:-1])
+    time = params[-1]
+    n = op.hyperparameters["n"]
+    seed = op.hyperparameters["seed"]
+
+    return qml.QDrift(new_hamiltonian, time, n=n, seed=seed)
+
+
+@bind_new_parameters.register
 def bind_new_parameters_fermionic_double_excitation(
     op: qml.FermionicDoubleExcitation, params: Sequence[TensorLike]
 ):
@@ -244,7 +254,7 @@ def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
 
 @bind_new_parameters.register
 def bind_new_parameters_conditional(op: qml.ops.Conditional, params: Sequence[TensorLike]):
-    then_op = bind_new_parameters(op.then_op, params)
+    then_op = bind_new_parameters(op.base, params)
     mv = copy.deepcopy(op.meas_val)
 
     return qml.ops.Conditional(mv, then_op)

@@ -14,7 +14,7 @@
 """
 This submodule contains controlled operators based on the ControlledOp class.
 """
-# pylint: disable=no-value-for-parameter
+# pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
 import warnings
 from functools import lru_cache
 from typing import Iterable
@@ -210,6 +210,10 @@ class CH(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
 
+    @classmethod
+    def _primitive_bind_call(cls, wires, id=None):
+        return cls._primitive.bind(*wires, n_wires=2)
+
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
@@ -320,9 +324,12 @@ class CY(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
 
+    @classmethod
+    def _primitive_bind_call(cls, wires, id=None):
+        return cls._primitive.bind(*wires, n_wires=2)
+
     def __init__(self, wires, id=None):
-        control_wire, wire = wires
-        super().__init__(qml.Y(wire), control_wire, id=id)
+        super().__init__(qml.Y(wires[1:]), wires[:1], id=id)
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
@@ -423,9 +430,12 @@ class CZ(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
 
+    @classmethod
+    def _primitive_bind_call(cls, wires, id=None):
+        return cls._primitive.bind(*wires, n_wires=2)
+
     def __init__(self, wires, id=None):
-        control_wire, wire = wires
-        super().__init__(qml.Z(wires=wire), control_wire, id=id)
+        super().__init__(qml.Z(wires=wires[1:]), wires[:1], id=id)
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
@@ -504,6 +514,10 @@ class CSWAP(ControlledOp):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
+
+    @classmethod
+    def _primitive_bind_call(cls, wires, id=None):
+        return cls._primitive.bind(*wires, n_wires=3)
 
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
@@ -606,6 +620,10 @@ class CCZ(ControlledOp):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
     """
+
+    @classmethod
+    def _primitive_bind_call(cls, wires, id=None):
+        return cls._primitive.bind(*wires, n_wires=3)
 
     def _flatten(self):
         return tuple(), (self.wires,)
@@ -757,8 +775,6 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    arithmetic_depth = 0
-
     name = "CNOT"
 
     def _flatten(self):
@@ -768,9 +784,12 @@ class CNOT(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(metadata[0])
 
+    @classmethod
+    def _primitive_bind_call(cls, wires, id=None):
+        return cls._primitive.bind(*wires, n_wires=2)
+
     def __init__(self, wires, id=None):
-        control_wire, wire = wires
-        super().__init__(qml.PauliX(wires=wire), control_wire, id=id)
+        super().__init__(qml.PauliX(wires=wires[1:]), wires[:1], id=id)
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
@@ -839,8 +858,6 @@ class Toffoli(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    arithmetic_depth = 0
-
     name = "Toffoli"
 
     def _flatten(self):
@@ -849,6 +866,10 @@ class Toffoli(ControlledOp):
     @classmethod
     def _unflatten(cls, _, metadata):
         return cls(metadata[0])
+
+    @classmethod
+    def _primitive_bind_call(cls, wires, id=None):
+        return cls._primitive.bind(*wires, n_wires=3)
 
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
@@ -1035,6 +1056,13 @@ class MultiControlledX(ControlledOp):
     def _unflatten(cls, _, metadata):
         return cls(wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
 
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, wires, control_values=None, work_wires=None, id=None):
+        return cls._primitive.bind(
+            *wires, n_wires=len(wires), control_values=control_values, work_wires=work_wires
+        )
+
     # pylint: disable=too-many-arguments
     def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
 
@@ -1171,19 +1199,10 @@ class MultiControlledX(ControlledOp):
             control_values = [True] * len(control_wires)
 
         work_wires = work_wires or []
-        if len(control_wires) > 2 and len(work_wires) == 0:
-            raise ValueError(
-                "At least one work wire is required to decompose operation: MultiControlledX"
-            )
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
-        if len(control_wires) == 1:
-            decomp = [qml.CNOT(wires=wires)]
-        elif len(control_wires) == 2:
-            decomp = qml.Toffoli.compute_decomposition(wires=wires)
-        else:
-            decomp = decompose_mcx(control_wires, target_wire, work_wires)
+        decomp = decompose_mcx(control_wires, target_wire, work_wires)
 
         flips2 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
@@ -1245,16 +1264,21 @@ class CRX(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+        super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
 
+    def _flatten(self):
+        return self.data, (self.wires,)
+
     @classmethod
     def _unflatten(cls, data, metadata):
-        base = data[0]
-        control_wires = metadata[0]
-        return cls(*base.data, wires=control_wires + base.wires)
+        return cls(*data, wires=metadata[0])
+
+    @classmethod
+    def _primitive_bind_call(cls, phi, wires, id=None):
+        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1393,16 +1417,21 @@ class CRY(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+        super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
 
+    def _flatten(self):
+        return self.data, (self.wires,)
+
     @classmethod
     def _unflatten(cls, data, metadata):
-        base = data[0]
-        control_wires = metadata[0]
-        return cls(*base.data, wires=control_wires + base.wires)
+        return cls(*data, wires=metadata[0])
+
+    @classmethod
+    def _primitive_bind_call(cls, phi, wires, id=None):
+        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1541,16 +1570,21 @@ class CRZ(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+        super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRZ({self.data[0]}, wires={self.wires})"
 
+    def _flatten(self):
+        return self.data, (self.wires,)
+
     @classmethod
     def _unflatten(cls, data, metadata):
-        base = data[0]
-        control_wires = metadata[0]
-        return cls(*base.data, wires=control_wires + base.wires)
+        return cls(*data, wires=metadata[0])
+
+    @classmethod
+    def _primitive_bind_call(cls, phi, wires, id=None):
+        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1721,17 +1755,25 @@ class CRot(ControlledOp):
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
-        super().__init__(qml.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0], id=id)
+        super().__init__(
+            qml.Rot(phi, theta, omega, wires=wires[1:]), control_wires=wires[:1], id=id
+        )
 
     def __repr__(self):
         params = ", ".join([repr(p) for p in self.parameters])
         return f"CRot({params}, wires={self.wires})"
 
+    def _flatten(self):
+        return self.data, (self.wires,)
+
     @classmethod
     def _unflatten(cls, data, metadata):
-        base = data[0]
-        control_wires = metadata[0]
-        return cls(*base.data, wires=control_wires + base.wires)
+        return cls(*data, wires=metadata[0])
+
+    # pylint: disable=too-many-arguments
+    @classmethod
+    def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
+        return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
@@ -1881,16 +1923,21 @@ class ControlledPhaseShift(ControlledOp):
     parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[0], id=id)
+        super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
 
+    def _flatten(self):
+        return self.data, (self.wires,)
+
     @classmethod
     def _unflatten(cls, data, metadata):
-        base = data[0]
-        control_wires = metadata[0]
-        return cls(*base.data, wires=control_wires + base.wires)
+        return cls(*data, wires=metadata[0])
+
+    @classmethod
+    def _primitive_bind_call(cls, phi, wires, id=None):
+        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ

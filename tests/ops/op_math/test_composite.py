@@ -37,8 +37,8 @@ ops = (
 
 ops_rep = (
     "X(0) # Z(0) # Hadamard(wires=[0])",
-    "CNOT(wires=[0, 1]) # RX(1.23, wires=[1]) # I(0)",
-    "IsingXX(4.56, wires=[2, 3]) # Toffoli(wires=[1, 2, 3]) # Rot(0.34, 1.0, 0, wires=[0])",
+    "(CNOT(wires=[0, 1])) # RX(1.23, wires=[1]) # I(0)",
+    "IsingXX(4.56, wires=[2, 3]) # (Toffoli(wires=[1, 2, 3])) # Rot(0.34, 1.0, 0, wires=[0])",
 )
 
 
@@ -353,14 +353,16 @@ class TestProperties:
         valid_op = ValidOp(
             qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
             qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
-            qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+            qml.prod(qml.PauliX(10), qml.PauliY(2)),
             qml.PauliY(7),
+            qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
             qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
         )
         overlapping_ops = [
             [
                 qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
-                qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+                qml.prod(qml.PauliX(10), qml.PauliY(2)),
+                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
                 qml.PauliY(7),
             ],
             [

@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
 
-from semantic_version import Version
+from packaging.version import Version
 
 try:
     import tensorflow as tf
@@ -331,7 +331,14 @@ class KerasLayer(Layer):
         self._signature_validation(qnode, weight_shapes)
 
         self.qnode = qnode
-        self.qnode.interface = "tf"
+        if self.qnode.interface not in (
+            "auto",
+            "tf",
+            "tensorflow",
+            "tensorflow-autograph",
+            "tf-autograph",
+        ):
+            raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer")
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)

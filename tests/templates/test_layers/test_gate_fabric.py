@@ -753,7 +753,7 @@ class TestAttributes:
         """Test that the shape function warns if there are not enough qubits."""
 
         with pytest.raises(
-            ValueError, match="This template requires the number of qubits to be greater than four"
+            ValueError, match="This template requires the number of qubits to be at least four"
         ):
             qml.GateFabric.shape(3, 1)
 

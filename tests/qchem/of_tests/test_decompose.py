@@ -539,17 +539,3 @@ def test_transformation(name, core, active, mapping, coeffs_ref, pauli_strings_r
 
     assert np.allclose(coeffs, coeffs_ref, **tol)
     assert pauli_strings == pauli_strings_ref
-
-
-@pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_not_available_transformation():
-    r"""Test that an error is raised if the chosen fermionic-to-qubit transformation
-    is neither 'jordan_wigner' nor 'bravyi_kitaev'."""
-
-    with pytest.raises(TypeError, match="transformation is not available"):
-        qchem.decompose(
-            os.path.join(ref_dir, "lih"),
-            mapping="not_available_transformation",
-            core=[0],
-            active=[1, 2],
-        )
