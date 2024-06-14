@@ -137,7 +137,7 @@ class TestExpectationValueMath:
         state_vectors = [1, 0]
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="The two states must have the same number of wires",
+            match="The operator and the state vector must have the same number of wires.",
         ):
             qml.math.expectation_value(ops, state_vectors, check_state=True, check_operator=True)
 
