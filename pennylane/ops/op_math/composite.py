@@ -203,20 +203,28 @@ class CompositeOp(Operator):
         if self._overlapping_ops is not None:
             return self._overlapping_ops
 
-        ops_on_each_wire = {}
-        for i, op in enumerate(self):
-            for wire in op.wires:
-                ops_on_each_wire.setdefault(wire, []).append(i)
+        groups = []
+        for op in self:
+            i = 0
+            added = False
+            first_group_idx = -1
+            while i < len(groups):
+                if not added and any(wire in op.wires for wire in groups[i][1]):
+                    groups[i][0].append(op)
+                    groups[i][1] = groups[i][1] + op.wires
+                    added = True
+                    first_group_idx = i
+                    i += 1
+                elif added and any(wire in op.wires for wire in groups[i][1]):
+                    ops, wires = groups.pop(i)
+                    groups[first_group_idx][0].extend(ops)
+                    groups[first_group_idx][1] = groups[first_group_idx][1] + wires
+                else:
+                    i += 1
+            if not added:
+                groups.append([[op], op.wires])
 
-        graph = rx.PyGraph()
-        graph.add_nodes_from(range(len(self)))
-
-        for wire, op_indices in ops_on_each_wire.items():
-            for idx1, idx2 in itertools.combinations(op_indices, 2):
-                graph.add_edge(idx1, idx2, None)
-
-        groups = rx.connected_components(graph)
-        self._overlapping_ops = [[self[i] for i in group] for group in groups]
+        self._overlapping_ops = [group[0] for group in groups]
         return self._overlapping_ops
 
     @property
