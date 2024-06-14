@@ -416,7 +416,17 @@ def simulate_tree_mcm(
     # main implementation #
     #######################
 
+    # mcm_active is analogous to one-shot's mid_measurements dictionary,
+    # i.e. for each MCM in the circuit, there is a MidMeasureMP key with a value
+    # corresponding to the MCM. It is used in get_final_state to evaluate cond operations.
+    # Unlike the one-shot case, the value is not stochastically determined,
+    # it is fixed by the branch we're on, and hence the variable name mcm_active
     mcm_active = mcm_active or {}
+    # mcm_active is the vector version of one-shot's mid_measurements dictionary,
+    # i.e. for each MCM in the circuit, there is a MidMeasureMP key with a value
+    # corresponding to all samples at that MCM. This is used to evaluate terminal
+    # measurements of MCMs. Update and pruning of invalid samples are performed by
+    # update_mcm_samples and prune_mcm_samples respectively.
     mcm_samples = mcm_samples or {}
 
     circuit_base, circuit_next, op = circuit_up_to_first_mcm(circuit)
