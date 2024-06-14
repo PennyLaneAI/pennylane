@@ -14,7 +14,7 @@
 """
 This submodule defines a base class for composite operations.
 """
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,invalid-sequence-index
 import abc
 import copy
 from typing import Callable, List
@@ -196,22 +196,35 @@ class CompositeOp(Operator):
             List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
             inner lists commute with each other.
         """
-        if self._overlapping_ops is None:
-            overlapping_ops = []  # [(wires, [ops])]
-            for op in self:
-                ops = [op]
-                wires = op.wires
-                op_added = False
-                for idx, (old_wires, old_ops) in enumerate(overlapping_ops):
-                    if any(wire in old_wires for wire in wires):
-                        overlapping_ops[idx] = (old_wires + wires, old_ops + ops)
-                        op_added = True
-                        break
-                if not op_added:
-                    overlapping_ops.append((op.wires, [op]))
 
-            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
+        if self._overlapping_ops is not None:
+            return self._overlapping_ops
 
+        groups = []
+        for op in self:
+            # For every op, find all groups that have overlapping wires with it.
+            i = 0
+            first_group_idx = None
+            while i < len(groups):
+                if first_group_idx is None and any(wire in op.wires for wire in groups[i][1]):
+                    # Found the first group that has overlapping wires with this op
+                    groups[i][0].append(op)
+                    groups[i][1] = groups[i][1] + op.wires
+                    first_group_idx = i  # record the index of this group
+                    i += 1
+                elif first_group_idx is not None and any(wire in op.wires for wire in groups[i][1]):
+                    # If the op has already been added to the first group, every subsequent
+                    # group that overlaps with this op is merged into the first group
+                    ops, wires = groups.pop(i)
+                    groups[first_group_idx][0].extend(ops)
+                    groups[first_group_idx][1] = groups[first_group_idx][1] + wires
+                else:
+                    i += 1
+            if first_group_idx is None:
+                # Create new group
+                groups.append([[op], op.wires])
+
+        self._overlapping_ops = [group[0] for group in groups]
         return self._overlapping_ops
 
     @property
