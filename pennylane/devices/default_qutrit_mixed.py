@@ -92,8 +92,8 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 def warn_measurement_error_state(
     tape: qml.tape.QuantumTape,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
-    """Warns if a measurement is an analytic State or density_matrix measurement that measurement
-    error is not applied.
+    """If a measurement is an analytic state or density_matrix measurement and a readout error
+    parameter is defined wasns that the measurement error will not be applied.
 
     Args:
         tape (QuantumTape, .QNode, Callable): a quantum circuit.
@@ -112,7 +112,7 @@ def warn_measurement_error_state(
 
 
 def get_measurement_errors(damping_measurement_gammas, trit_flip_measurement_probs):
-    r"""Get the list of measurement errors that should be applied to each
+    r"""Get the list of measurement errors that should be applied to each measured wire.
 
     Args:
         damping_measurement_gammas (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
