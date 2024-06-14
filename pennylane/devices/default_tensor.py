@@ -955,8 +955,11 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
         arrays.append(arr)
 
     mpo = qtn.MatrixProductOperator(arrays=arrays, sites=sites)
+    mpo = mpo.fill_empty_sites()
     device._quimb_circuit._psi = mpo.apply(
-        device._quimb_circuit.psi, max_bond=device._max_bond_dim, cutoff=device._cutoff
+        device._quimb_circuit.psi,
+        max_bond=device._max_bond_dim,
+        cutoff=device._cutoff,
     )
 
 
