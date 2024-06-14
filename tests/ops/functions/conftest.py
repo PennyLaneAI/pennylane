@@ -35,6 +35,7 @@ from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 
 _INSTANCES_TO_TEST = [
     qml.sum(qml.PauliX(0), qml.PauliZ(0)),
+    qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)),
     qml.BasisState([1], wires=[0]),
     qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
     qml.QubitStateVector([0, 1], wires=0),
