@@ -874,7 +874,7 @@ def test_bravyi_kitaev_fermi_word_operation(fermionic_op, n_qubits, result):
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op = expected_op.operation(wires)
 
-    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
+    assert qml.equal(qubit_op.simplify(), expected_op.simplify())
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -887,12 +887,12 @@ def test_bravyi_kitaev_fermi_word_operation_legacy(fermionic_op, n_qubits, resul
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op = expected_op.operation(wires)
 
-    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
+    assert qml.equal(qubit_op.simplify(), expected_op.simplify())
 
 
 def test_bravyi_kitaev_for_identity():
     """Test that the bravyi_kitaev function returns the correct qubit operator for Identity."""
-    qml.assert_equal(bravyi_kitaev(FermiWord({}), 2), qml.Identity(0))
+    assert qml.equal(bravyi_kitaev(FermiWord({}), 2), qml.Identity(0))
 
 
 def test_bravyi_kitaev_for_identity_ps():
@@ -958,7 +958,7 @@ def test_fermi_sentence_identity():
     assert ps_op == ps
 
     result = ps.operation(wire_order=[0])
-    qml.assert_equal(qubit_op.simplify(), result.simplify())
+    assert qml.equal(qubit_op.simplify(), result.simplify())
 
 
 FERMI_AND_PAULI_SENTENCES = [
@@ -1030,7 +1030,7 @@ def test_bravyi_kitaev_for_fermi_sentence_operation(fermionic_op, n_qubits, resu
     qubit_op = bravyi_kitaev(fermionic_op, n_qubits)
     result = result.operation(wires)
 
-    qml.assert_equal(qubit_op.simplify(), result.simplify())
+    assert qml.equal(qubit_op.simplify(), result.simplify())
 
 
 WIRE_MAP_FOR_FERMI_SENTENCE = [

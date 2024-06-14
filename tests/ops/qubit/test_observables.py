@@ -469,7 +469,7 @@ class TestProjector:
         assert isinstance(basis_state_projector, BasisStateProjector)
 
         second_projector = qml.Projector(basis_state, wires)
-        qml.assert_equal(second_projector, basis_state_projector)
+        assert qml.equal(second_projector, basis_state_projector)
 
         qml.ops.functions.assert_valid(basis_state_projector)
 
@@ -481,7 +481,7 @@ class TestProjector:
         assert isinstance(state_vector_projector, StateVectorProjector)
 
         second_projector = qml.Projector(state_vector, wires)
-        qml.assert_equal(second_projector, state_vector_projector)
+        assert qml.equal(second_projector, state_vector_projector)
 
         qml.ops.functions.assert_valid(state_vector_projector)
 
@@ -504,13 +504,13 @@ class TestProjector:
         basis_state = np.array([0, 1])
         op = qml.Projector(basis_state, wires=(0, 1))
         pow_op = op.pow(n)[0]
-        qml.assert_equal(op, pow_op)
+        assert qml.equal(op, pow_op)
 
         # State vector projector
         state_vector = np.array([0, 1])
         op = qml.Projector(state_vector, wires=[0])
         pow_op = op.pow(n)[0]
-        qml.assert_equal(op, pow_op)
+        assert qml.equal(op, pow_op)
 
     def test_exception_bad_input(self):
         """Tests that we get an exception when the input shape is wrong."""
@@ -528,7 +528,7 @@ class TestProjector:
         serialization = pickle.dumps(proj)
         new_proj = pickle.loads(serialization)
         assert type(new_proj) is type(proj)
-        qml.assert_equal(new_proj, proj)
+        assert qml.equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
 
         # State vector projector
@@ -537,7 +537,7 @@ class TestProjector:
         new_proj = pickle.loads(serialization)
 
         assert type(new_proj) is type(proj)
-        qml.assert_equal(new_proj, proj)
+        assert qml.equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
 
     @pytest.mark.jax

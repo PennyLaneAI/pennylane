@@ -145,4 +145,4 @@ def test_nested_pl_object():
         shots=50,
         trainable_params=(0, 1),
     )
-    qml.assert_equal(new_tape, expected_new_tape)
+    assert qml.equal(new_tape, expected_new_tape)

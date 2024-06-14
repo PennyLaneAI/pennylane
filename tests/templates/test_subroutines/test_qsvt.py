@@ -156,7 +156,7 @@ class TestQSVT:
         tape = qml.tape.QuantumScript.from_queue(q)
 
         for expected, val in zip(results, tape.expand().operations):
-            qml.assert_equal(expected, val)
+            assert qml.equal(expected, val)
 
     def test_decomposition_queues_its_contents(self):
         """Test that the decomposition method queues the decomposition in the correct order."""
@@ -363,7 +363,7 @@ class TestQSVT:
         """Test that a QSVT operator can be copied."""
         orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
         copy_op = copy(orig_op)
-        qml.assert_equal(orig_op, copy_op)
+        assert qml.equal(orig_op, copy_op)
 
         # Ensure the (nested) operations are copied instead of aliased.
         assert orig_op is not copy_op

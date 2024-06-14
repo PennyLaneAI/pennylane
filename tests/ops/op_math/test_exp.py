@@ -457,7 +457,7 @@ class TestDecomposition:
 
         assert op.has_decomposition
         pr = op.decomposition()[0]
-        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
     @pytest.mark.parametrize(
         "base, base_string",
@@ -473,7 +473,7 @@ class TestDecomposition:
 
         assert op.has_decomposition
         pr = op.decomposition()[0]
-        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
@@ -528,7 +528,7 @@ class TestDecomposition:
             # cannot compare GlobalPhase and PauliRot with qml.equal
             assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         else:
-            qml.assert_equal(op, dec[0])
+            assert qml.equal(op, dec[0])
 
     def test_trotter_is_used_if_num_steps_is_defined(self):
         """Test that the Suzuki-Trotter decomposition is used when ``num_steps`` is defined."""
@@ -666,7 +666,7 @@ class TestMiscMethods:
         assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
-        qml.assert_equal(new_op, op)
+        assert qml.equal(new_op, op)
 
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""
@@ -687,7 +687,7 @@ class TestMiscMethods:
         base = qml.PauliX(0)
         op = Exp(base, 1 + 2j)
         for op1, op2 in zip(base.diagonalizing_gates(), op.diagonalizing_gates()):
-            qml.assert_equal(op1, op2)
+            assert qml.equal(op1, op2)
 
     def test_pow(self):
         """Test the pow decomposition method."""
@@ -724,7 +724,7 @@ class TestMiscMethods:
 
         op = Exp(s_op, 3j)
         new_op = op.simplify()
-        qml.assert_equal(new_op.base, qml.PauliX(0))
+        assert qml.equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 6.0j
 
     def test_simplify(self):
@@ -733,7 +733,7 @@ class TestMiscMethods:
 
         op = Exp(orig_base, coeff=0.2)
         new_op = op.simplify()
-        qml.assert_equal(new_op.base, qml.PauliX(0))
+        assert qml.equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 0.2
 
     def test_simplify_num_steps(self):
@@ -750,7 +750,7 @@ class TestMiscMethods:
         op = Exp(base, 3)
         new_op = op.simplify()
 
-        qml.assert_equal(new_op.base, qml.PauliX(0))
+        assert qml.equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 12
         assert new_op is not op
 
@@ -759,7 +759,7 @@ class TestMiscMethods:
         op = Exp(qml.CNOT([0, 1]), 2)
         copied_op = copy.copy(op)
 
-        qml.assert_equal(op.base, copied_op.base)
+        assert qml.equal(op.base, copied_op.base)
         assert op.data == copied_op.data
         assert op.hyperparameters.keys() == copied_op.hyperparameters.keys()
 

@@ -281,7 +281,7 @@ class TestMscMethods:
         assert op.wires == copied_op.wires
 
         for o1, o2 in zip(op.operands, copied_op.operands):
-            qml.assert_equal(o1, o2)
+            assert qml.equal(o1, o2)
             assert o1 is not o2
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -315,7 +315,7 @@ class TestMscMethods:
         assert metadata == tuple()
 
         new_op = type(op)._unflatten(*op._flatten())
-        qml.assert_equal(op, new_op)
+        assert qml.equal(op, new_op)
 
 
 class TestProperties:

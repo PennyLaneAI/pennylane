@@ -349,7 +349,7 @@ class TestInitialization:
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        qml.assert_equal(eval(repr(op)), op)
+        assert qml.equal(eval(repr(op)), op)
 
 
 class TestMatrix:
@@ -1001,7 +1001,7 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        qml.assert_equal(simplified_op, result)
+        assert qml.equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -1039,7 +1039,7 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        qml.assert_equal(simplified_op, result)
+        assert qml.equal(simplified_op, result)
 
 
 class TestSortWires:
@@ -1072,7 +1072,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            qml.assert_equal(op1, op2)
+            assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
         """Test that the sorting algorithm works for operators that act on multiple wires."""
@@ -1107,7 +1107,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            qml.assert_equal(op1, op2)
+            assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting algorithm works using a wire map."""
@@ -1162,7 +1162,7 @@ class TestSortWires:
         ]
         sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
         for op1, op2 in zip(final_list, sorted_list):
-            qml.assert_equal(op1, op2)
+            assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_no_wires(self):
         """Test that sorting can occur when an operator acts on no wires."""

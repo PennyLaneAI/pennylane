@@ -49,7 +49,7 @@ def test_flatten_unflatten_standard_checks(op_type):
     assert op.hyperparameters["v_function"] == new_op.hyperparameters["v_function"]
     assert op.hyperparameters["v_wires"] == new_op.hyperparameters["v_wires"]
     for op1, op2 in zip(op.hyperparameters["u_tape"], new_op.hyperparameters["u_tape"]):
-        qml.assert_equal(op1, op2)
+        assert qml.equal(op1, op2)
     assert new_op is not op
 
 
@@ -166,10 +166,10 @@ class TestHilbertSchmidt:
         ]
 
         for op1, op2 in zip(tape_dec.operations, expected_operations):
-            qml.assert_equal(op1, op2)
+            assert qml.equal(op1, op2)
 
         for op1, op2 in zip(decomp, expected_operations):
-            qml.assert_equal(op1, op2)
+            assert qml.equal(op1, op2)
 
     def test_v_not_quantum_function(self):
         """Test that we cannot pass a non quantum function to the HS operation"""

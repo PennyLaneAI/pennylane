@@ -154,7 +154,7 @@ class TestOperations:
         assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
-        qml.assert_equal(op, new_op)
+        assert qml.equal(op, new_op)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
@@ -167,7 +167,7 @@ class TestOperations:
 
         leaves, tree_def = jax.tree_util.tree_flatten(op)
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
-        qml.assert_equal(op_unflattened, op)
+        assert qml.equal(op_unflattened, op)
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
@@ -2991,7 +2991,7 @@ class TestPauliRot:
             else:
                 expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
-        qml.assert_equal(gen, qml.Hamiltonian([-0.5], [expected_gen]))
+        assert qml.equal(gen, qml.Hamiltonian([-0.5], [expected_gen]))
 
     @pytest.mark.torch
     @pytest.mark.gpu
@@ -3199,7 +3199,7 @@ class TestMultiRZ:
         for i in range(1, qubits):
             expected_gen = expected_gen @ qml.PauliZ(wires=i)
 
-        qml.assert_equal(gen, qml.Hamiltonian([-0.5], [expected_gen]))
+        assert qml.equal(gen, qml.Hamiltonian([-0.5], [expected_gen]))
 
         spy = mocker.spy(qml.utils, "pauli_eigs")
 
@@ -3551,7 +3551,7 @@ class TestSimplify:
             assert isinstance(simplified_op, qml.Identity)
         else:
             # PSWAP reduces to SWAP when the angle is 0
-            qml.assert_equal(simplified_op, qml.SWAP(wires=[0, 1]))
+            assert qml.equal(simplified_op, qml.SWAP(wires=[0, 1]))
 
     def test_simplify_rot(self):
         """Simplify rot operations with different parameters."""

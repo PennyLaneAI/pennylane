@@ -1281,14 +1281,14 @@ class TestLayers:
             out = qaoa.cost_layer(gamma, cost)
 
         expected = qml.ApproxTimeEvolution(cost, gamma, 1)
-        qml.assert_equal(out, expected)
+        assert qml.equal(out, expected)
 
         assert q.queue[0] is out
         assert len(q) == 1
         decomp = out.decomposition()
 
         for i, j in zip(decomp, gates):
-            qml.assert_equal(i, j)
+            assert qml.equal(i, j)
 
     with qml.operation.disable_new_opmath_cm():
         cost_layer_test_cases_legacy = make_cost_layer_test_cases()
