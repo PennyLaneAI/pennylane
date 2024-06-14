@@ -37,7 +37,6 @@ from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, c
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
-from pennylane.qchem.convert_openfermion import from_openfermion, to_openfermion
 from pennylane.fermi import (
     FermiC,
     FermiA,
@@ -51,7 +50,9 @@ from pennylane.qchem import (
     paulix_ops,
     taper_operation,
     import_operator,
-    from_openfermion,
+    from_openfermion_fermionic,
+    from_openfermion_qubit,
+    to_openfermion
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp

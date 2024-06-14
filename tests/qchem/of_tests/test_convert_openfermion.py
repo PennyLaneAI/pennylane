@@ -1,4 +1,3 @@
-
 # Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,34 +69,34 @@ class TestFromOpenFermion:
     )
 
     @pytest.mark.parametrize("of_op, pl_op", OPS)
-    def test_conversion(self, of_op, pl_op):
+    def test_convert_qubit(self, of_op, pl_op):
         """Test conversion from ``QubitOperator`` to PennyLane."""
-        converted_pl_op = qml.from_openfermion(of_op)
+        converted_pl_op = qml.from_openfermion_qubit(of_op)
         assert converted_pl_op.compare(pl_op)
 
-    def test_tol(self):
+    def test_tol_qubit(self):
         """Test with complex coefficients."""
         q_op = openfermion.QubitOperator("X0", complex(1.0, 1e-8)) + openfermion.QubitOperator(
             "Z1", complex(1.3, 1e-8)
         )
 
-        pl_op = qml.from_openfermion(q_op, tol=1e-6)
+        pl_op = qml.from_openfermion_qubit(q_op, tol=1e-6)
         assert not np.any(pl_op.coeffs.imag)
 
-        pl_op = qml.from_openfermion(q_op, tol=1e-10)
+        pl_op = qml.from_openfermion_qubit(q_op, tol=1e-10)
         assert np.any(pl_op.coeffs.imag)
 
-    def test_sum(self):
-        """Test that the from_openfermion method yields a :class:`~.Sum` object if requested."""
+    def test_sum_qubit(self):
+        """Test that the from_openfermion_qubit method yields a :class:`~.Sum` object if requested."""
         q_op = openfermion.QubitOperator("X0 X1", 0.25) + openfermion.QubitOperator("Z1 Z0", 0.75)
 
-        assert isinstance(qml.from_openfermion(q_op), qml.ops.LinearCombination)
+        assert isinstance(qml.from_openfermion_qubit(q_op), qml.ops.LinearCombination)
         assert isinstance(
-            qml.from_openfermion(q_op, format="LinearCombination"), qml.ops.LinearCombination
+            qml.from_openfermion_qubit(q_op, format="LinearCombination"), qml.ops.LinearCombination
         )
-        assert isinstance(qml.from_openfermion(q_op, format="Sum"), qml.ops.Sum)
+        assert isinstance(qml.from_openfermion_qubit(q_op, format="Sum"), qml.ops.Sum)
 
-    def test_invalid_format(self):
+    def test_invalid_format_qubit(self):
         """Test if error is raised if format is invalid."""
         q_op = openfermion.QubitOperator("X0")
 
@@ -105,7 +104,106 @@ class TestFromOpenFermion:
             ValueError,
             match="format must be a Sum or LinearCombination, got: invalid_format",
         ):
-            qml.from_openfermion(q_op, format="invalid_format")
+            qml.from_openfermion_qubit(q_op, format="invalid_format")
+
+    # PennyLane operators were obtained from openfermion operators manually
+    @pytest.mark.parametrize(
+        ("of_op", "pl_op"),
+        [
+            (
+                openfermion.FermionOperator("3^ 2", 0.5) + openfermion.FermionOperator("0 2^", 1.0),
+                fermi.FermiSentence(
+                    {
+                        fermi.FermiWord({(0, 3): "+", (1, 2): "-"}): 0.5,
+                        fermi.FermiWord({(0, 0): "-", (1, 2): "+"}): 1.0,
+                    }
+                ),
+            ),
+            (
+                openfermion.FermionOperator("1^ 2^ 0 3", 1.2)
+                + openfermion.FermionOperator("3^ 2^ 1 0", 4.5),
+                fermi.FermiSentence(
+                    {
+                        fermi.FermiWord({(0, 1): "+", (1, 2): "+", (2, 0): "-", (3, 3): "-"}): 1.2,
+                        fermi.FermiWord({(0, 3): "+", (1, 2): "+", (2, 1): "-", (3, 0): "-"}): 4.5,
+                    }
+                ),
+            ),
+            (
+                openfermion.FermionOperator("2^ 2", 1.5),
+                fermi.FermiSentence({fermi.FermiWord({(0, 2): "+", (1, 2): "-"}): 1.5}),
+            ),
+            (openfermion.FermionOperator("0^ 0"), fermi.FermiWord({(0, 0): "+", (1, 0): "-"})),
+            (
+                openfermion.FermionOperator("1^ 2", 1.5)
+                + openfermion.FermionOperator("2^ 1", 1.5)
+                + openfermion.FermionOperator("3^ 2", 0.8),
+                fermi.FermiSentence(
+                    {
+                        fermi.FermiWord({(0, 1): "+", (1, 2): "-"}): 1.5,
+                        fermi.FermiWord({(0, 2): "+", (1, 1): "-"}): 1.5,
+                        fermi.FermiWord({(0, 3): "+", (1, 2): "-"}): 0.8,
+                    }
+                ),
+            ),
+            (
+                openfermion.FermionOperator("3^ 4 5^ 6"),
+                fermi.FermiWord({(0, 3): "+", (1, 4): "-", (2, 5): "+", (3, 6): "-"}),
+            ),
+        ],
+    )
+    def test_convert_fermionic(self, of_op, pl_op):
+        r"""Test that conversion from openfermion fermionic operator to pennylane
+        fermionic operator is correct"""
+
+        converted_op = qml.qchem.from_openfermion_fermionic(of_op)
+        assert converted_op == pl_op
+
+    def test_convert_fermionic_type_fw(self):
+        r"""Test that FermiWord object is returned when there is one term in the
+        fermionic operator with coefficient equal to 1.0"""
+
+        of_op = openfermion.FermionOperator("2^ 3")
+        converted_op = qml.qchem.from_openfermion_fermionic(of_op)
+
+        assert isinstance(converted_op, qml.fermi.FermiWord)
+
+    def test_convert_fermionic_type_fs(self):
+        r"""Test that FermiSentence object is returned when there are multiple
+        terms in the fermionic operator"""
+
+        of_op = openfermion.FermionOperator("2^ 3") + openfermion.FermionOperator("1^ 2")
+        converted_op = qml.qchem.from_openfermion_fermionic(of_op)
+
+        assert isinstance(converted_op, qml.fermi.FermiSentence)
+
+    def test_tol_fermionic(self):
+        r"""Test that terms with coefficients larger than tolerance are discarded"""
+
+        of_op = (
+            openfermion.FermionOperator("2^ 3", 2.0)
+            + openfermion.FermionOperator("1^ 2", 3.0)
+            + openfermion.FermionOperator("2^ 1", 0.5)
+        )
+        truncated_op = fermi.FermiSentence(
+            {
+                fermi.FermiWord({(0, 2): "+", (1, 3): "-"}): 2.0,
+                fermi.FermiWord({(0, 1): "+", (1, 2): "-"}): 3.0,
+            }
+        )
+
+        converted_op = qml.qchem.from_openfermion_fermionic(of_op, tol=0.6)
+
+        assert converted_op == truncated_op
+
+    def test_fail_import_openfermion_fermionic(self, monkeypatch):
+        """Test if an ImportError is raised when openfermion is requested but not installed"""
+
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "openfermion", None)
+
+            with pytest.raises(ImportError, match="This feature requires openfermion"):
+                qml.qchem.from_openfermion_fermionic(openfermion.FermionOperator("0^ 1"))
 
 
 class TestToOpenFermion:
@@ -265,107 +363,3 @@ class TestToOpenFermion:
             qml.to_openfermion(
                 pl_op,
             )
-
-# PennyLane operators were obtained from openfermion operators manually
-@pytest.mark.parametrize(
-    ("of_op", "pl_op"),
-    [
-        (
-            openfermion.FermionOperator("3^ 2", 0.5) + openfermion.FermionOperator("0 2^", 1.0),
-            fermi.FermiSentence(
-                {
-                    fermi.FermiWord({(0, 3): "+", (1, 2): "-"}): 0.5,
-                    fermi.FermiWord({(0, 0): "-", (1, 2): "+"}): 1.0,
-                }
-            ),
-        ),
-        (
-            openfermion.FermionOperator("1^ 2^ 0 3", 1.2)
-            + openfermion.FermionOperator("3^ 2^ 1 0", 4.5),
-            fermi.FermiSentence(
-                {
-                    fermi.FermiWord({(0, 1): "+", (1, 2): "+", (2, 0): "-", (3, 3): "-"}): 1.2,
-                    fermi.FermiWord({(0, 3): "+", (1, 2): "+", (2, 1): "-", (3, 0): "-"}): 4.5,
-                }
-            ),
-        ),
-        (
-            openfermion.FermionOperator("2^ 2", 1.5),
-            fermi.FermiSentence({fermi.FermiWord({(0, 2): "+", (1, 2): "-"}): 1.5}),
-        ),
-        (openfermion.FermionOperator("0^ 0"), fermi.FermiWord({(0, 0): "+", (1, 0): "-"})),
-        (
-            openfermion.FermionOperator("1^ 2", 1.5)
-            + openfermion.FermionOperator("2^ 1", 1.5)
-            + openfermion.FermionOperator("3^ 2", 0.8),
-            fermi.FermiSentence(
-                {
-                    fermi.FermiWord({(0, 1): "+", (1, 2): "-"}): 1.5,
-                    fermi.FermiWord({(0, 2): "+", (1, 1): "-"}): 1.5,
-                    fermi.FermiWord({(0, 3): "+", (1, 2): "-"}): 0.8,
-                }
-            ),
-        ),
-        (
-            openfermion.FermionOperator("3^ 4 5^ 6"),
-            fermi.FermiWord({(0, 3): "+", (1, 4): "-", (2, 5): "+", (3, 6): "-"}),
-        ),
-    ],
-)
-def test_convert_from_openfermion(of_op, pl_op):
-    r"""Test that conversion from openfermion fermionic operator to pennylane
-    fermionic operator is correct"""
-
-    converted_op = qml.qchem.from_openfermion(of_op)
-    assert converted_op == pl_op
-
-
-def test_convert_from_openfermion_type_fw():
-    r"""Test that FermiWord object is returned when there is one term in the
-    fermionic operator with coefficient equal to 1.0"""
-
-    of_op = openfermion.FermionOperator("2^ 3")
-    converted_op = qml.qchem.from_openfermion(of_op)
-
-    assert isinstance(converted_op, qml.fermi.FermiWord)
-
-
-def test_convert_from_openfermion_type_fs():
-    r"""Test that FermiSentence object is returned when there are multiple
-    terms in the fermionic operator"""
-
-    of_op = openfermion.FermionOperator("2^ 3") + openfermion.FermionOperator("1^ 2")
-    converted_op = qml.qchem.from_openfermion(of_op)
-
-    assert isinstance(converted_op, qml.fermi.FermiSentence)
-
-
-def test_convert_from_openfermion_tol():
-    r"""Test that terms with coefficients larger than tolerance are discarded"""
-
-    of_op = (
-        openfermion.FermionOperator("2^ 3", 2.0)
-        + openfermion.FermionOperator("1^ 2", 3.0)
-        + openfermion.FermionOperator("2^ 1", 0.5)
-    )
-    truncated_op = fermi.FermiSentence(
-        {
-            fermi.FermiWord({(0, 2): "+", (1, 3): "-"}): 2.0,
-            fermi.FermiWord({(0, 1): "+", (1, 2): "-"}): 3.0,
-        }
-    )
-
-    converted_op = qml.qchem.from_openfermion(of_op, tol=0.6)
-
-    assert converted_op == truncated_op
-
-
-def test_fail_import_openfermion(monkeypatch):
-    """Test if an ImportError is raised when openfermion is requested but not installed"""
-
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "openfermion", None)
-
-        with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.from_openfermion(openfermion.FermionOperator("0^ 1"))
-
