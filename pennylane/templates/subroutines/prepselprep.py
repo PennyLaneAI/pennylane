@@ -93,18 +93,17 @@ class PrepSelPrep(Operation):
     def compute_decomposition(lcu, control):
         coeffs, ops = _get_new_terms(lcu)
 
-        decomp_ops = []
-        decomp_ops.append(
-            qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
-        )
-        decomp_ops.append(qml.Select(ops, control))
-        decomp_ops.append(
+        decomp_ops = [
+            qml.AmplitudeEmbedding(
+                qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
+            ),
+            qml.Select(ops, control),
             qml.adjoint(
                 qml.AmplitudeEmbedding(
                     qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
                 )
-            )
-        )
+            ),
+        ]
 
         return decomp_ops
 
