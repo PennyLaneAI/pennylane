@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for qutrit mixed device preprocessing."""
 import warnings
+
 import numpy as np
 import pytest
 
