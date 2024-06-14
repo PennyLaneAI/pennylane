@@ -1025,6 +1025,7 @@ class TestFermiSentenceArithmetic:
 
     @pytest.mark.parametrize("f_op, string", fw_string)
     def test_to_string(self, f_op, string):
+        """Test if to_string returns the correct string in PennyLane format."""
         assert _to_string(f_op) == string
 
     fw_of_string = (
@@ -1044,9 +1045,11 @@ class TestFermiSentenceArithmetic:
 
     @pytest.mark.parametrize("f_op, string", fw_of_string)
     def test_to_string_of_format(self, f_op, string):
+        """Test if to_string returns the correct string in OpenFermion format."""
         assert _to_string(f_op, of=True) == string
 
     def test_to_string_type(self):
+        """Test if to_string throws error if wrong type is given."""
         pl_op = qml.X(0)
         with pytest.raises(
             ValueError, match=f"fermi_op must be a FermiWord or FermiSentence, got: {type(pl_op)}"
