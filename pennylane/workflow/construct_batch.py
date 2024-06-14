@@ -120,7 +120,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         >>> qml.workflow.get_transform_program(circuit, level="user")
         TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
 
-        The ``_expand_transform_metric_tensor`` and ``_expand_transform_param_shift`` are the ``"gradient"`` transforms.
+        The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
         This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
         it will decompose any parametrized templates into operators that have generators. Note that this would not include the
         any ``"final"`` transform, if it exists. So in this instance, the final ``metric_tensor`` transform is not applied.
