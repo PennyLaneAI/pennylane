@@ -190,7 +190,7 @@ class DefaultTensor(Device):
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
             (``['aux_wire', 'q1', 'q2']``).
         method (str): Supported method. The supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Tensor Network).
-        c_dtype (type): Data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
+        c_dtype (type): Complex data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
         **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
 
     Keyword Args:
@@ -307,7 +307,7 @@ class DefaultTensor(Device):
 
                 phi = 0.1
                 depth = 10
-                num_qubits = 25
+                num_qubits = 100
 
                 dev = qml.device("default.tensor", method="tn", contract="auto-split-gate")
 
@@ -324,10 +324,10 @@ class DefaultTensor(Device):
                         qml.CNOT(wires=[qubit, qubit + 1])
                     return qml.expval(qml.Z(0))
 
-            >>> circuit(phi, dept, num_qubits)
-            -0.9511499466743266
+            >>> circuit(phi, depth, num_qubits)
+            -0.9511499466743283
 
-            The execution time for this circuit with the above parameters is around 0.2 seconds on a standard laptop.
+            The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 
             The tensor network method can be faster than MPS and state vector methods in some cases.
             As a comparison, the time for the exact calculation of the same circuit with the MPS method and with the ``default.qubit``
