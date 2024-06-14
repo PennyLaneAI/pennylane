@@ -37,8 +37,8 @@ def from_openfermion(openfermion_op, tol=1e-16):
     >>> openfermion_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
     >>> pl_op = from_openfermion(openfermion_op)
     >>> print(pl_op)
-        0.5 * a(0) a⁺(2)
-        + 1.0 * a⁺(0) a(2)
+        0.5 * a⁺(0) a(2)
+        + 1.0 * a(0) a⁺(2)
     """
     try:
         import openfermion
