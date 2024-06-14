@@ -373,7 +373,7 @@ def simulate_tree_mcm(
     The tree-traversal algorithm recursively explores all combinations of mid-circuit measurement
     outcomes using a depth-first approach. The depth-first approach requires ``n_mcm`` copies
     of the state vector (``n_mcm + 1`` state vectors in total) and records ``n_mcm`` vectors
-    of MCM samples. It is generally more efficient than ``one-shot`` because it takes all samples
+    of mid-circuit measurement samples. It is generally more efficient than ``one-shot`` because it takes all samples
     at a leaf at once and stops exploring more branches when a single shot is allocated to a sub-tree.
 
     Args:
