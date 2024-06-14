@@ -202,24 +202,29 @@ class CompositeOp(Operator):
 
         groups = []
         for op in self:
+            # For every op, find all groups that has overlapping wires with it.
             i = 0
             added = False
             first_group_idx = -1
             while i < len(groups):
                 if not added and any(wire in op.wires for wire in groups[i][1]):
+                    # Found the first group that has overlapping wires with this op
                     groups[i][0].append(op)
                     groups[i][1] = groups[i][1] + op.wires
                     added = True
-                    first_group_idx = i
+                    first_group_idx = i  # record the index of this group
                     i += 1
                 elif added and any(wire in op.wires for wire in groups[i][1]):
+                    # If the op has already been added to the first group, every subsequent
+                    # group that overlaps with this op is merged into the first group
                     ops, wires = groups.pop(i)
                     groups[first_group_idx][0].extend(ops)
                     groups[first_group_idx][1] = groups[first_group_idx][1] + wires
                 else:
                     i += 1
             if not added:
-                groups.append([[op], op.wires])
+                # Create new group
+                groups.append(([op], op.wires))
 
         self._overlapping_ops = [group[0] for group in groups]
         return self._overlapping_ops
