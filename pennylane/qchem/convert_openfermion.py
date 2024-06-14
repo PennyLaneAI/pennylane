@@ -22,7 +22,7 @@ from pennylane.fermi import FermiSentence, FermiWord
 def from_openfermion(openfermion_op, tol=1e-16):
     r"""Convert OpenFermion
     `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__
-    objects to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` objects.
+    object to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` objects.
 
     Args:
         openfermion_op (FermionOperator): OpenFermion fermionic operator
