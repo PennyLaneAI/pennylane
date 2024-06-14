@@ -277,21 +277,19 @@ class TestSupportedGatesAndObservables:
     @pytest.mark.parametrize("operation", all_ops)
     def test_supported_gates_yield_correct_state(self, operation, method):
         """Test that the device can implement all its supported gates."""
-        dq = qml.device("default.qubit", wires=4)
-        dev = qml.device("default.tensor", wires=4, method=method)
+        nwires = 4
+        dq = qml.device("default.qubit", wires=nwires)
+        dev = qml.device("default.tensor", wires=nwires, method=method)
         np.random.seed(0)
-        state = np.random.rand(2**4) + 1j * np.random.rand(2**4)
+        state = np.random.rand(2**nwires) + 1j * np.random.rand(2**nwires)
         state /= np.linalg.norm(state)
-        wires = qml.wires.Wires(range(4))
+        wires = qml.wires.Wires(range(nwires))
         tape = qml.tape.QuantumScript(
-            qml.MottonenStatePreparation.compute_decomposition(state, wires)
-            + [operations_list[operation]],
+            [qml.StatePrep(state, wires=wires), operations_list[operation]],
             [qml.state()],
         )
-
         result = dev.execute(circuits=[tape])[0]
         ref = dq.execute(circuits=[tape])[0]
-
         assert np.allclose(result, ref)
 
     @pytest.mark.parametrize("observable", all_obs)

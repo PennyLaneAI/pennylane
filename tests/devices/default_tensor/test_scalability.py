@@ -32,8 +32,6 @@ class TestMultiQubitGates:
 
     def test_multirz(self, method):
         """Test that the device can apply a multi-qubit MultiRZ gate."""
-        if method == "tn":
-            pytest.skip("Cannot generate such a large matrix.")
         wires = 16
         dev = qml.device("default.tensor", wires=wires, method=method)
 
@@ -50,8 +48,6 @@ class TestMultiQubitGates:
 
     def test_paulirot(self, method):
         """Test that the device can apply a multi-qubit PauliRot gate."""
-        if method == "tn":
-            pytest.skip("Cannot generate such a large matrix.")
         wires = 16
         dev = qml.device("default.tensor", wires=wires, method=method)
 
@@ -69,10 +65,9 @@ class TestMultiQubitGates:
     def test_qft(self, method):
         """Test that the device can apply a multi-qubit QFT gate."""
         if method == "tn":
-            pytest.skip("Cannot generate such a large matrix.")
-
+            pytest.skip("Test is too costly with the TN method.")
         wires = 16
-        dev = qml.device("default.tensor", wires=wires, method=method)
+        dev = qml.device("default.tensor", wires=wires, method=method, max_bond_dim=128)
 
         def circuit(basis_state):
             qml.BasisState(basis_state, wires=range(wires))
@@ -112,7 +107,7 @@ class TestMultiQubitMeasurements:
     def test_prod(self, method):
         """Test that the device can compute the expval of a multi-qubit Prod."""
 
-        wires = 16
+        wires = 30
         dev = qml.device("default.tensor", wires=wires, method=method)
 
         def circuit():
@@ -123,7 +118,7 @@ class TestMultiQubitMeasurements:
     def test_tensor(self, method):
         """Test that the device can compute the expval of a multi-qubit Tensor."""
 
-        wires = 16
+        wires = 30
         dev = qml.device("default.tensor", wires=wires, method=method)
 
         def circuit():
@@ -134,7 +129,7 @@ class TestMultiQubitMeasurements:
     def test_hamiltonian(self, method):
         """Test that the device can compute the expval of a multi-qubit Hamiltonian."""
 
-        wires = 16
+        wires = 30
         dev = qml.device("default.tensor", wires=wires, method=method)
 
         def circuit():
@@ -149,7 +144,7 @@ class TestMultiQubitMeasurements:
     def test_linear_combination(self, method):
         """Test that the device can compute the expval of a multi-qubit LinearCombination."""
 
-        wires = 16
+        wires = 30
         dev = qml.device("default.tensor", wires=wires, method=method)
 
         def circuit():

@@ -663,23 +663,24 @@ class DefaultTensor(Device):
         # The state is reset every time a new circuit is executed, and number of wires
         # is established at runtime to match the circuit if not provided.
         wires = circuit.wires if self.wires is None else self.wires
-        if circuit.operations and isinstance(circuit.operations[0], qml.BasisState):
-            op = circuit.operations.pop(0)
+        operations = copy.deepcopy(circuit.operations)
+        if operations and isinstance(operations[0], qml.BasisState):
+            op = operations.pop(0)
             self._quimb_circuit = self._initial_quimb_circuit(
                 wires,
                 psi0=self._initial_mps(
                     op.wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
                 ),
             )
-        elif circuit.operations and isinstance(circuit.operations[0], qml.StatePrep):
-            op = circuit.operations.pop(0)
+        elif operations and isinstance(operations[0], qml.StatePrep):
+            op = operations.pop(0)
             self._quimb_circuit = self._initial_quimb_circuit(
-                wires, psi0=qtn.MatrixProductState.from_dense(op.parameters[0])
+                wires, psi0=qtn.MatrixProductState.from_dense(op.state_vector())
             )
         else:
             self._quimb_circuit = self._initial_quimb_circuit(wires)
 
-        for op in circuit.operations:
+        for op in operations:
             self._apply_operation(op)
 
         if not circuit.shots:
@@ -930,25 +931,18 @@ def apply_operation_core_multirz(ops: qml.MultiRZ, device):
 @apply_operation_core.register
 def apply_operation_core_paulirot(ops: qml.PauliRot, device):
     """Dispatcher for _apply_operation."""
-    if device.method == "tn":
-        device._quimb_circuit.apply_gate(
-            qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
-        )
-        return
     theta = ops.parameters[0]
-    wire_map = dict((i, w) for i, w in enumerate(ops.wires))
     pauli_string = ops._hyperparameters["pauli_word"]
 
     arrays = []
-    sites = []
+    sites = list(ops.wires)
     for i, P in enumerate(pauli_string):
-        site = wire_map[i]
         if i == 0:
             arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
             arr[0, 1] = qml.math.eye(2, dtype=complex)
 
-        elif i == len(wire_map) - 1:
+        elif i == len(sites) - 1:
             arr = qml.math.zeros((2, 1, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
             arr[1, 0] = qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
@@ -995,7 +989,7 @@ def expval_core_tensor(obs: Tensor, device) -> float:
 @expval_core.register
 def expval_core_prod(obs: Prod, device) -> float:
     """Computes the expval of a Prod."""
-    ket = copy.deepcopy(device._quimb_circuit)
+    ket = device._quimb_circuit.copy()
     for op in obs:
         ket.apply_gate(qml.matrix(op).astype(device._c_dtype), *op.wires, parametrize=None)
     return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
