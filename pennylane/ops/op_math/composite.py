@@ -17,10 +17,7 @@ This submodule defines a base class for composite operations.
 # pylint: disable=too-many-instance-attributes
 import abc
 import copy
-import itertools
 from typing import Callable, List
-
-import rustworkx as rx
 
 import pennylane as qml
 from pennylane import math
