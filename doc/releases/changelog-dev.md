@@ -342,6 +342,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug in the wire handling on special controlled ops.
+  [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
 
 * `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` can now be used with `Sum` operators.
   [(#5846)](https://github.com/PennyLaneAI/pennylane/pull/5846)
