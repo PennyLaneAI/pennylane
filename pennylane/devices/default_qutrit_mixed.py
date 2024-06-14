@@ -111,7 +111,6 @@ def warn_measurement_error_state(
     return (tape,), null_postprocessing
 
 
-# PR-comment: separate function so that you can use this to redefine the measurment error without needing new function
 def get_measurement_errors(damping_measurement_gammas, trit_flip_measurement_probs):
     r"""Get the list of measurement errors that should be applied to each
 
@@ -119,7 +118,7 @@ def get_measurement_errors(damping_measurement_gammas, trit_flip_measurement_pro
         damping_measurement_gammas (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
             of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
             amplitude damping from longer measurements with shorter relaxation time associated with
-            transmon based qudits. # PR-comment: should I add a citation.
+            transmon based qudits.
         trit_flip_measurement_probs (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
             of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
             in measurement.
@@ -165,7 +164,7 @@ class DefaultQutritMixed(Device):
         damping_measurement_gammas (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
             of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
             amplitude damping from longer measurements with shorter relaxation time associated with
-            transmon based qudits. # PR-comment: should I add a citation.
+            transmon based qudits.
         trit_flip_measurement_probs (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
             of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
             in measurement.
@@ -248,7 +247,7 @@ class DefaultQutritMixed(Device):
         wires=None,
         shots=None,
         seed="global",
-        damping_measurement_gammas=None,  # PR-comment: do you prefer this or together?
+        damping_measurement_gammas=None,
         trit_flip_measurement_probs=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
@@ -313,7 +312,7 @@ class DefaultQutritMixed(Device):
         return replace(execution_config, **updated_values)
 
     @debug_logger
-    def preprocess(  # PR-comment: How do I deal with param-shift when measurement_error applied.???
+    def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[TransformProgram, ExecutionConfig]:
