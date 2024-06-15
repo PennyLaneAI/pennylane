@@ -749,3 +749,17 @@ def test_controlled_method(base, cbase):
 def test_controlling_a_controlled_operation(control, control_values, base_op):
     """Test that a controlled op can be controlled again."""
     qml.ctrl(base_op, control=control, control_values=control_values)
+
+
+@pytest.mark.parametrize("op_type", (qml.CH, qml.CY, qml.CZ, qml.CNOT))
+def test_tuple_control_wires_non_parametric_ops(op_type):
+    """Test that tuples can be provided as control wire labels."""
+
+    assert op_type([(0, 1), 2]).wires == qml.wires.Wires([(0, 1), 2])
+
+
+@pytest.mark.parametrize("op_type", (qml.CRX, qml.CRY, qml.CRZ, qml.CPhase))
+def test_tuple_control_wires_parametric_ops(op_type):
+    """Test that tuples can be provided as control wire labels."""
+
+    assert op_type(0.123, [(0, 1), 2]).wires == qml.wires.Wires([(0, 1), 2])
