@@ -81,6 +81,14 @@ def cost9(x):
     return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
 
 
+def cost10(x):
+    """Cost function."""
+    qml.Rot(*x, wires=0)
+    qml.Hadamard(1)
+    qml.X(2)
+    return qml.probs()
+
+
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
@@ -549,6 +557,7 @@ class TestHadamardGrad:
         (cost4, [4, 3], np.ndarray),
         (cost5, [4, 3], list),
         (cost6, [2, 4, 3], tuple),
+        (cost10, [32, 3], np.ndarray),  # Note that the shape here depends on the device
     ]
 
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)

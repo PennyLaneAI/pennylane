@@ -341,6 +341,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `hadamard_grad` returned a wrong shape for `qml.probs()` without wires.
+  [(#5860)](https://github.com/PennyLaneAI/pennylane/pull/5860)
+
 * Fixes a bug where `Sum`'s with repeated identical operations ended up with the same hash as
   `Sum`'s with different numbers of repeats.
   [(#5851)](https://github.com/PennyLaneAI/pennylane/pull/5851)
