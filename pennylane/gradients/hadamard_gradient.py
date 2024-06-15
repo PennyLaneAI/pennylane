@@ -326,7 +326,6 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                     obs_new = [m.obs]
                 else:
                     m_wires = m.wires if len(m.wires) > 0 else tape.wires
-                    print(f"{m_wires=}")
                     obs_new = [qml.Z(i) for i in m_wires]
 
                 obs_new.append(qml.Y(aux_wire))
@@ -366,7 +365,6 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         num_wires_probs = len(measurement.wires)
         if num_wires_probs == 0:
             num_wires_probs = tape.num_wires
-        print(f"{num_wires_probs=}")
         res = qml.math.reshape(res, (2**num_wires_probs, 2))
         return qml.math.tensordot(res, projector, axes=[[1], [0]])
 

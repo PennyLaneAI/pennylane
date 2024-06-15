@@ -583,19 +583,25 @@ class TestHadamardGrad:
             res_hadamard = res_hadamard[0]
         assert len(res_hadamard) == exp_shape[0]
 
-        if len(exp_shape) > 2:
-            for r in res_hadamard:
-                assert isinstance(r, np.ndarray)
-                assert len(r) == exp_shape[1]
+        # Also check on the tape level
+        circuit(x)
+        tapes, fn = qml.gradients.hadamard_grad(circuit.tape)
+        res_hadamard_tape = qml.math.moveaxis(qml.math.stack(fn(dev.execute(tapes))), -2, -1)
 
-                for r_ in r:
-                    assert isinstance(r_, np.ndarray)
-                    assert len(r_) == exp_shape[2]
+        for res in [res_hadamard, res_hadamard_tape]:
+            if len(exp_shape) > 2:
+                for r in res:
+                    assert isinstance(r, np.ndarray)
+                    assert len(r) == exp_shape[1]
 
-        elif len(exp_shape) > 1:
-            for r in res_hadamard:
-                assert isinstance(r, np.ndarray)
-                assert len(r) == exp_shape[1]
+                    for r_ in r:
+                        assert isinstance(r_, np.ndarray)
+                        assert len(r_) == exp_shape[2]
+
+            elif len(exp_shape) > 1:
+                for r in res:
+                    assert isinstance(r, np.ndarray)
+                    assert len(r) == exp_shape[1]
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):
