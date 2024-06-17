@@ -70,9 +70,8 @@ def transpile(tape: QuantumTape, coupling_map, device=None) -> (Sequence[Quantum
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum tape.
-        coupling_map: Data specifying the couplings between different qubits.
-        This data can be any format accepted by `nx.to_networkx_graph()`, currently including edge list, dict of dicts,
-        dict of lists, NetworkX graph, 2D NumPy array, SciPy sparse matrix, or PyGraphviz graph.
+        coupling_map: Data specifying the couplings between different qubits. This data can be any format accepted by `nx.to_networkx_graph()`,
+            currently including edge list, dict of dicts, dict of lists, NetworkX graph, 2D NumPy array, SciPy sparse matrix, or PyGraphviz graph.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
