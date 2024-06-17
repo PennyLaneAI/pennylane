@@ -305,6 +305,9 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
+* It is now possible to build Hamiltonians in a parallel fashion. It would greatly speed up VQE, especially when optimizing for the coordinates 
+  of a molecule [(#5792)](https://github.com/PennyLaneAI/pennylane/pull/5792)
+
 <h3>Breaking changes 💔</h3>
 
 * Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
@@ -472,6 +475,7 @@ Utkarsh Azad,
 Lillian M. A. Frederiksen,
 Gabriel Bottrill,
 Astral Cai,
+Minh Triet Chau,
 Ahmed Darwish,
 Isaac De Vlugt,
 Diksha Dhawan,

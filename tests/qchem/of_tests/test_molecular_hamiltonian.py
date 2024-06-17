@@ -14,7 +14,13 @@
 """
 Unit tests for molecular Hamiltonians.
 """
+import itertools
+
 # pylint: disable=too-many-arguments, protected-access
+import os
+import time
+from multiprocessing import Pool
+
 import pytest
 
 import pennylane as qml
@@ -1334,3 +1340,43 @@ def test_unit_error_molecular_hamiltonian():
 
     with pytest.raises(ValueError, match="The provided unit 'degrees' is not supported."):
         qchem.molecular_hamiltonian(symbols, geometry, unit="degrees")
+
+
+def _partial_h(coordinates, symbols):
+    r"""Return a partial of molecular hamiltonian, only wait coordinates
+    The function has to be moved outside the caller so that it cal be pickled"""
+    return qchem.molecular_hamiltonian(symbols, coordinates, method="pyscf")
+
+
+@pytest.mark.skipif(os.cpu_count() == 1, reason="Parallel test requires more than one processor")
+@pytest.mark.parametrize(
+    "symbols", [["N", "H", "H", "H"], ["H", "H"], ["Li", "H"], ["H", "H", "O"], ["N", "N"]]
+)
+def test_parallel_hamiltonian(symbols):
+    r"""This test passes for relatively large molecules, but fails for the case of H2 due to overhead costs"""
+    repeat = 4
+    np.random.seed(5)
+    coordinates_list = np.random.random((repeat, 3 * len(symbols)))
+    print(symbols)
+    start_parallel = time.time()
+    with Pool(os.cpu_count()) as pool:
+        # Map the build_hamiltonian function to the list of coordinates
+        parallel_hs = pool.starmap(
+            _partial_h, zip(coordinates_list, itertools.repeat(symbols, repeat))
+        )
+    done_parallel = time.time()
+    print(f"Parallel: {done_parallel - start_parallel}")
+    start_serial = time.time()
+    expected_hs = [
+        qchem.molecular_hamiltonian(symbols, coordinates, method="pyscf")
+        for coordinates in coordinates_list
+    ]
+    done_serial = time.time()
+    print(f"Serial: {done_serial - start_serial}")
+    # Check the results
+    if symbols in [["H", "H"], ["Li", "H"]]:
+        assert done_serial - start_serial < done_parallel - start_parallel
+    else:
+        assert done_parallel - start_parallel < 0.6 * (done_serial - start_serial)
+    for i, h in enumerate(parallel_hs):
+        assert h == expected_hs[i]

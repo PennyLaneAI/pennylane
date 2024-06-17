@@ -13,6 +13,8 @@
 # limitations under the License.
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``.
 """
+import datetime
+
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
 # pylint: disable=consider-using-generator, protected-access
 import os
@@ -790,7 +792,6 @@ def molecular_dipole(
     )
 
     if method == "dhf":
-
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
@@ -913,7 +914,9 @@ def meanfield(
         )
         raise TypeError(error_message)
 
-    filename = name + "_" + package.lower() + "_" + basis.strip()
+    ct = datetime.datetime.now()
+    filename = name + "_" + package.lower() + "_" + basis.strip() + "_" + str(ct.timestamp())
+
     path_to_file = os.path.join(outpath.strip(), filename)
 
     geometry = [
