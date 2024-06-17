@@ -18,7 +18,6 @@ from functools import wraps
 
 import pennylane as qml
 from pennylane.compiler import compiler
-from pennylane.compiler.compiler import CompileError
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
@@ -160,13 +159,16 @@ def adjoint(fn, lazy=True):
 
     """
     if active_jit := compiler.active_compiler():
-        if lazy is False:
-            raise CompileError("Setting lazy=False is not supported with qjit.")
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.adjoint(fn)
+        return ops_loader.adjoint(fn, lazy=lazy)
     if qml.math.is_abstract(fn):
         return Adjoint(fn)
+    return create_adjoint_op(fn, lazy)
+
+
+def create_adjoint_op(fn, lazy):
+    """Main logic for qml.adjoint, but allows bypassing the compiler dispatch if needed."""
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):

@@ -25,6 +25,7 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import Device
+from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
@@ -226,7 +227,9 @@ class QNode:
             usage details, please refer to the :doc:`main measurements page </introduction/measurements>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
-            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately. If not provided,
+            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
+            ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
+            as the name suggests. If not provided,
             the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`main measurements page </introduction/measurements>`.
 
@@ -526,10 +529,7 @@ class QNode:
         self.max_expansion = max_expansion
         cache = (max_diff > 1) if cache == "auto" else cache
 
-        if mcm_method not in ("deferred", "one-shot", "tree-traversal", None):
-            raise ValueError(f"Invalid mid-circuit measurements method '{mcm_method}'.")
-        if postselect_mode not in ("hw-like", "fill-shots", None):
-            raise ValueError(f"Invalid postselection mode '{postselect_mode}'.")
+        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -539,7 +539,7 @@ class QNode:
             "max_diff": max_diff,
             "max_expansion": max_expansion,
             "device_vjp": device_vjp,
-            "mcm_config": {"postselect_mode": postselect_mode, "mcm_method": mcm_method},
+            "mcm_config": mcm_config,
         }
 
         if self.expansion_strategy == "device":
@@ -958,8 +958,12 @@ class QNode:
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        with qml.queuing.AnnotatedQueue() as q:
-            self._qfunc_output = self.func(*args, **kwargs)
+        # Before constructing the tape, we pass the device to the
+        # debugger to ensure they are compatible if there are any
+        # breakpoints in the circuit
+        with pldb_device_manager(self.device) as _:
+            with qml.queuing.AnnotatedQueue() as q:
+                self._qfunc_output = self.func(*args, **kwargs)
 
         self._tape = QuantumScript.from_queue(q, shots)
 
@@ -1040,20 +1044,30 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        mcm_config = copy.copy(self.execute_kwargs["mcm_config"])
         finite_shots = _get_device_shots if override_shots is False else override_shots
-        if not finite_shots and self.execute_kwargs["mcm_config"]["mcm_method"] == "one-shot":
-            raise ValueError(
-                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
-            )
+        if not finite_shots:
+            mcm_config.postselect_mode = None
+            if mcm_config.mcm_method in ("one-shot", "tree-traversal"):
+                raise ValueError(
+                    f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
+                )
+        if mcm_config.mcm_method == "single-branch-statistics":
+            raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
-        # Add the device program to the QNode program
+        full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        inner_transform_program = qml.transforms.core.TransformProgram()
+        config = None
+
         if isinstance(self.device, qml.devices.Device):
+
             config = _make_execution_config(self, self.gradient_fn)
             device_transform_program, config = self.device.preprocess(execution_config=config)
-            full_transform_program = self.transform_program + device_transform_program
-        else:
-            config = None
-            full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+
+            if config.use_device_gradient:
+                full_transform_program += device_transform_program
+            else:
+                inner_transform_program += device_transform_program
 
         has_mcm_support = (
             any(isinstance(op, MidMeasureMP) for op in self._tape)
@@ -1061,14 +1075,15 @@ class QNode:
             and self.device.capabilities().get("supports_mid_measure", False)
         )
         if has_mcm_support:
-            full_transform_program.add_transform(
+            inner_transform_program.add_transform(
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
-                mcm_config=self.execute_kwargs["mcm_config"],
+                mcm_config=mcm_config,
+                interface=self.interface,
             )
             override_shots = 1
         elif hasattr(self.device, "capabilities"):
-            full_transform_program.add_transform(
+            inner_transform_program.add_transform(
                 qml.defer_measurements,
                 device=self.device,
             )
@@ -1079,9 +1094,10 @@ class QNode:
                 qml.transform(self.gradient_fn.expand_transform),
                 **self.gradient_kwargs,
             )
+
         # Calculate the classical jacobians if necessary
         full_transform_program.set_classical_component(self, args, kwargs)
-        full_transform_program.prune_dynamic_transform()
+        _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
@@ -1090,6 +1106,7 @@ class QNode:
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             transform_program=full_transform_program,
+            inner_transform=inner_transform_program,
             config=config,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
@@ -1150,3 +1167,30 @@ class QNode:
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+def _prune_dynamic_transform(outer_transform, inner_transform):
+    """Ensure a single ``dynamic_one_shot`` transform is applied.
+
+    Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
+    be added to the inner transform program. If the user then applies a ``dynamic_one_shot``
+    manually, it will duplicate the ``mid_circuit_measurements`` transform. This function ensures
+    that there is only one ``dynamic_one_shot`` transform in the outer and inner transform
+    programs combined.
+
+    """
+
+    all_transforms = outer_transform + inner_transform
+    type_to_keep = 0
+    if any("mid_circuit_measurements" in str(t) for t in all_transforms):
+        type_to_keep = 2
+    elif any("dynamic_one_shot" in str(t) for t in all_transforms):
+        type_to_keep = 1
+
+    if type_to_keep == 0:
+        return
+
+    dynamic_transform_found = inner_transform.prune_dynamic_transform(type_to_keep)
+    if dynamic_transform_found:
+        type_to_keep = 0
+    outer_transform.prune_dynamic_transform(type_to_keep)

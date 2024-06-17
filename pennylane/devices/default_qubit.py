@@ -502,7 +502,10 @@ class DefaultQubit(Device):
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
-            mid_circuit_measurements, device=self, mcm_config=config.mcm_config
+            mid_circuit_measurements,
+            device=self,
+            mcm_config=config.mcm_config,
+            interface=config.interface,
         )
         transform_program.add_transform(
             decompose,
@@ -516,7 +519,8 @@ class DefaultQubit(Device):
         transform_program.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
-
+        if config.mcm_config.mcm_method == "tree-traversal":
+            transform_program.add_transform(qml.transforms.broadcast_expand)
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
+import inspect
 from functools import partial
 from typing import Callable, Sequence
 
@@ -31,7 +32,7 @@ with qml.tape.QuantumTape() as tape_circuit:
     qml.expval(qml.PauliZ(wires=0))
 
 
-def qfunc_circuit(a):
+def qfunc_circuit(a: qml.typing.TensorLike):
     """Qfunc circuit/"""
     qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
@@ -222,6 +223,28 @@ class TestTransformContainer:
 class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_error_on_qjit(self):
+        """Test that an error is raised on when applying a transform to a qjit object."""
+
+        pytest.importorskip("catalyst")
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def cost():
+            qml.RY(0.1, wires=0)
+            qml.RY(0.1, wires=0)
+            return qml.expval(qml.Z(0))
+
+        dispatched_transform = transform(first_valid_transform)
+
+        with pytest.raises(
+            TransformError,
+            match=r"Functions that are wrapped / decorated with qjit cannot subsequently",
+        ):
+            dispatched_transform(cost)
+
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform(self, valid_transform):
         """Test that no error is raised with the transform function and that the transform dispatcher returns
@@ -359,6 +382,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         # Applied on a qfunc (return a qfunc)
         qfunc_transformed = dispatched_transform(qfunc_circuit, 0)
         assert callable(qfunc_transformed)
+
+        assert inspect.signature(qfunc_transformed) == inspect.signature(qfunc_circuit)
 
         with qml.tape.QuantumTape() as transformed_tape:
             qfunc_transformed(0.42)
