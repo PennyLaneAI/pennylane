@@ -619,7 +619,8 @@ def _draw_mpl_qnode(
 
         if len(tapes) > 1:
             warnings.warn(
-                "More than one tape constructed, but only displaying the first one.", UserWarning
+                "Multiple tapes constructed, but only displaying the first one.", UserWarning
+
             )
 
         tape = tapes[0]
