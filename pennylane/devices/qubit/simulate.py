@@ -428,16 +428,16 @@ def simulate_tree_mcm(
     # main implementation #
     #######################
 
-    mcms = tuple(op for op in circuit.operations if isinstance(op, MidMeasureMP))
-    n_mcms = len(mcms)
+    mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasureMP)])
+    n_mcms = len(mcms) - 1
     mcm_current = qml.math.zeros(n_mcms + 1, dtype=bool)
     mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
-    mcm_samples = dict((k, qml.math.empty(circuit.shots.total_shots, dtype=int)) for k in mcms)
+    mcm_samples = dict((k, qml.math.empty(circuit.shots.total_shots, dtype=int)) for k in mcms[1:])
     circuit_wires = circuit.wires
     depth = 0
     circuits = []
     circuit_right = circuit
-    for _ in mcms:
+    for _ in mcms[1:]:
         circuit_left, circuit_right, _ = circuit_up_to_first_mcm(circuit_right)
         circuits.append(circuit_left)
     circuits.append(circuit_right)
@@ -476,41 +476,61 @@ def simulate_tree_mcm(
             if depth == 0:
                 continue
             initial_state = branch_state(
-                states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
+                states[depth], mcm_current[depth], mcms[depth].wires, mcms[depth].reset
             )
             continue
 
-        # Run the circuit segment at the current depth
-        circtmp = circuits[depth].copy()
-        # Make sure the state is the all-wire state
-        circtmp._ops = [qml.StatePrep(initial_state.ravel(), wires=circuit_wires)] + circtmp._ops
         # Parse shots for the current branche
         if counts[depth]:
-            shots = counts[depth][int(mcm_current[depth])]
+            shots = counts[depth][mcm_current[depth]]
         else:
             shots = circuits[depth].shots.total_shots
+        # print(list(mcm_active.values()))
         # print(shots)
+        # print(initial_state)
         # Update active branch dict
-        mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
+        mcm_active = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:]))
         # If num_shots is zero, update measurements with empty tuple
         if not bool(shots):
-            measurements = qml.math.array([], dtype=int)  # WARN: is this line necessary?
+            measurements = qml.math.array([], dtype=int)  # TODO: is this line necessary?
             # On the zero-branch, update measurements and switch to the one-branch
             if not mcm_current[depth]:
                 results_0[depth] = tuple()
                 mcm_current[depth] = True
                 initial_state = branch_state(
-                    states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
+                    states[depth], mcm_current[depth], mcms[depth].wires, mcms[depth].reset
+                )
+                continue
+            # On the one-branch, update measurements and continue
+            results_1[depth] = tuple()
+            continue
+        elif (
+            depth > 0
+            and mcms[depth].postselect is not None
+            and mcm_current[depth] != mcms[depth].postselect
+        ):
+            counts[depth][mcm_current[depth]] = 0
+            prune_mcm_samples(mcms[depth], mcm_current[depth], mcm_active, mcm_samples)
+            # On the zero-branch, update measurements and switch to the one-branch
+            if not mcm_current[depth]:
+                results_0[depth] = tuple()
+                mcm_current[depth] = True
+                initial_state = branch_state(
+                    states[depth], mcm_current[depth], mcms[depth].wires, mcms[depth].reset
                 )
                 continue
             # On the one-branch, update measurements and continue
             results_1[depth] = tuple()
             continue
         else:
-            # If num_shots is non-zero, simulate circuit segment
-            circtmp._shots = qml.measurements.shots.Shots(shots)
-            # print(list(mcm_active.values()))
-            # print(initial_state)
+            # If num_shots is non-zero, simulate the current depth circuit segment
+            circtmp = qml.tape.QuantumScript(
+                [qml.StatePrep(initial_state.ravel(), wires=circuit_wires)]
+                + circuits[depth].operations,  # Make sure the state is the all-wire state
+                circuits[depth].measurements,
+                qml.measurements.shots.Shots(shots),
+                trainable_params=circuits[depth].trainable_params,
+            )
             state, is_state_batched = get_final_state(
                 circtmp,
                 debugger=debugger,
@@ -527,10 +547,10 @@ def simulate_tree_mcm(
         if depth < n_mcms:
             # Update the active branch samples with `update_mcm_samples`
             samples = qml.math.atleast_1d(measurements)
-            update_mcm_samples(mcms[depth], samples, mcm_active, mcm_samples)
+            update_mcm_samples(mcms[depth + 1], samples, mcm_active, mcm_samples)
             # print(f"branching to {mcm_current[depth]}")
             initial_state = branch_state(
-                state, mcm_current[depth + 1], mcms[depth].wires, mcms[depth].reset
+                state, mcm_current[depth + 1], mcms[depth + 1].wires, mcms[depth + 1].reset
             )
             depth += 1
             # Store a copy of the state-vector to project on the one-branch
@@ -543,7 +563,7 @@ def simulate_tree_mcm(
             results_0[depth] = measurements
             mcm_current[depth] = True
             initial_state = branch_state(
-                states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
+                states[depth], mcm_current[depth], mcms[depth].wires, mcms[depth].reset
             )
             continue
         # If at a one-branch leaf, update measurements
@@ -576,9 +596,10 @@ def get_measurement_dicts(circuit, counts, results):
 
 def branch_state(state, branch, wire, reset):
     state = apply_operation(qml.Projector([branch], wire), state)
-    if qml.math.norm(state) < 1e-16:
+    state_norm = qml.math.norm(state)
+    if state_norm < 1e-16:
         pass
-    state = state / qml.math.norm(state)
+    state = state / state_norm
     if reset and branch == 1:
         state = apply_operation(qml.PauliX(wire), state)
     return state
