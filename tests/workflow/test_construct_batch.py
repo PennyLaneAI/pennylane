@@ -192,18 +192,21 @@ class TestTransformProgramGetter:
         assert user_program[2].transform == qml.metric_tensor.transform
 
         grad_program = get_transform_program(circuit, level="gradient")
-        assert len(grad_program) == 3
+        assert len(grad_program) == 4
         assert grad_program[0].transform == qml.compile.transform
         assert grad_program[1].transform == qml.metric_tensor.expand_transform
         assert grad_program[2].transform == qml.gradients.param_shift.expand_transform
+        assert grad_program[3].transform == qml.metric_tensor.transform
 
         dev_program = get_transform_program(circuit, level="device")
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
-        assert len(dev_program) == 3 + len(circuit.device.preprocess(config)[0])  # currently 8
-        assert qml.metric_tensor not in dev_program
+        assert len(dev_program) == 4 + len(circuit.device.preprocess(config)[0])  # currently 8
+        assert dev_program[-1].transform == qml.metric_tensor.transform
 
-        full = get_transform_program(circuit)
-        assert full[-1].transform == qml.metric_tensor.transform
+        full_program = get_transform_program(circuit)
+        assert full_program[-1].transform == qml.metric_tensor.transform
+
+        assert dev_program == full_program
 
 
 @qml.transforms.merge_rotations
