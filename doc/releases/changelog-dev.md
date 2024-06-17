@@ -105,6 +105,7 @@
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
   [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
+  [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
 * The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
@@ -342,9 +343,6 @@
 
 * `qml.transforms.map_batch_transform` is deprecated, since a transform can be applied directly to a batch of tapes.
   [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
-
-* `split_non_commuting` returns the unmodified tape if there are no measurements, instead of an empty list.
-  [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
 <h3>Documentation 📝</h3>
 
