@@ -56,7 +56,7 @@ pytest-split==0.8.2
 pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 PyYAML==6.0.1
-qdldl==0.1.7.post2
+qdldl==0.1.7.post3
 requests==2.32.3
 rustworkx==0.14.2
 scipy==1.11.4
