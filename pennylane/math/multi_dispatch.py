@@ -16,6 +16,7 @@
 import functools
 from collections.abc import Sequence
 
+# pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
