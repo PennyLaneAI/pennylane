@@ -13,7 +13,6 @@
 # limitations under the License.
 """Simulate a quantum script."""
 import logging
-import sys
 
 # pylint: disable=protected-access
 from collections import Counter
@@ -313,9 +312,6 @@ def simulate(
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
         if execution_kwargs.get("mcm_method", None) == "tree-traversal":
-            n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
-            if 2 * n_mcms + 100 > sys.getrecursionlimit():
-                sys.setrecursionlimit(2 * n_mcms + 100)
             return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
 
         results = []
