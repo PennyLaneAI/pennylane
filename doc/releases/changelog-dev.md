@@ -34,7 +34,7 @@
   [1 1 0]
   ```
 
-* `expectation_value` was added to `math` to calculate the expectation value of a matrix for pure states.
+* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
   [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
 
   ```pycon

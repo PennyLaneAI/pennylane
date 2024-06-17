@@ -816,13 +816,13 @@ def expectation_value(
 
 
     Args:
-        operator_matrix (tensor_like):  operator matrix with shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
+        operator_matrix (tensor_like): operator matrix with shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
         state_vector (tensor_like): state vector with shape ``(2**N)`` or ``(batch_dim, 2**N)``.
-        check_state (bool): If True, the function will check the validity of the state vector
-            via its shape and the norm
-        check_operator (bool): If True, the function will check the validity of the operator
+        check_state (bool): if True, the function will check the validity of the state vector
+            via its shape and the norm.
+        check_operator (bool): if True, the function will check the validity of the operator
             via its shape and whether it is hermitian.
-        c_dtype (str): Complex floating point precision type.
+        c_dtype (str): complex floating point precision type.
 
     Returns:
         float: Expectation value of the operator for the state vector.
