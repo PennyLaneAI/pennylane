@@ -129,7 +129,7 @@ def all_state_postprocessing(results, measurements, wire_order):
 @qml.transform
 def adjoint_state_measurements(
     tape: QuantumTape, device_vjp=False
-) -> (Tuple[QuantumTape], Callable):
+) -> Tuple[Tuple[QuantumTape], Callable]:
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified
