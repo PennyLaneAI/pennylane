@@ -280,7 +280,7 @@
   [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
 
 * Circuits can now be plotted at any specific point of the transform program through the `level` keyword argument in `draw()` and `draw_mpl()`.
-  [(#5781)](https://github.com/PennyLaneAI/pennylane/pull/5855)
+  [(#5855)](https://github.com/PennyLaneAI/pennylane/pull/5855)
 
 * Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature of the original function.
   [(#5857)](https://github.com/PennyLaneAI/pennylane/pull/5857)
