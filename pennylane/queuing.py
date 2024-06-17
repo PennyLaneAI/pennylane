@@ -576,7 +576,9 @@ def process_queue(
     list_order = {"_ops": 1, "_measurements": 2}
     current_list = "_ops"
 
-    for obj in queue.queue:
+    # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
+    # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
+    for obj, _ in queue.items():
         if not hasattr(obj, "_queue_category"):
             raise QueuingError(
                 f"{obj} encountered in AnnotatedQueue and is not an object that can "
