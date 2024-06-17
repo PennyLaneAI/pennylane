@@ -208,7 +208,7 @@ def assert_equal(
 
         This function is still under developement.
 
-    .. see-also::
+    .. seealso::
 
         :func:`~.equal`
 
