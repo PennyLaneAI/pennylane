@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,13 +19,14 @@ of functions with boolean output.
 import functools
 
 
+# pylint: disable=unnecessary-lambda
 class BooleanFn:
-    r"""Wrapper for simple callables with boolean output that can be
+    r"""Wrapper for simple callables with Boolean output that can be
     manipulated and combined with bit-wise operators.
 
     Args:
-        fn (callable): Function to be wrapped. It must accept a single
-            argument, and must return a boolean.
+        fn (callable): Function to be wrapped. It can accept any number
+            of arguments, and must return a Boolean.
 
     **Example**
 
@@ -77,18 +78,132 @@ class BooleanFn:
 
     """
 
-    def __init__(self, fn):
+    def __init__(self, fn, name=None):
         self.fn = fn
+        self.name = name or self.fn.__name__
         functools.update_wrapper(self, fn)
 
     def __and__(self, other):
-        return BooleanFn(lambda obj: self.fn(obj) and other.fn(obj))
+        return And(self, other)
 
     def __or__(self, other):
-        return BooleanFn(lambda obj: self.fn(obj) or other.fn(obj))
+        return Or(self, other)
+
+    def __xor__(self, other):
+        return Xor(self, other)
 
     def __invert__(self):
-        return BooleanFn(lambda obj: not self.fn(obj))
+        return Not(self)
 
-    def __call__(self, obj):
-        return self.fn(obj)
+    def __call__(self, *args, **kwargs):
+        return self.fn(*args, **kwargs)
+
+    def __repr__(self):
+        return f"BooleanFn({self.name})" if not (self.bitwise or self.conditional) else self.name
+
+    @property
+    def bitwise(self):
+        """Determine whether wrapped callable performs a bit-wise operation or not.
+        This checks for the ``operands`` attribute that should be defined by it."""
+        return bool(getattr(self, "operands", tuple()))
+
+    @property
+    def conditional(self):
+        """Determine whether wrapped callable is for a conditional or not.
+        This checks for the ``condition`` attribute that should be defined by it."""
+        return bool(getattr(self, "condition", None))
+
+
+class And(BooleanFn):
+    """Developer facing class for implemeting bit-wise ``AND`` for callables
+    wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
+
+    Args:
+        left (~.BooleanFn): Left operand in the bit-wise expression.
+        right (~.BooleanFn): Right operand in the bit-wise expression.
+    """
+
+    def __init__(self, left, right):
+        self.operands = (left, right)
+
+        if any(getattr(opr, "condition", None) for opr in self.operands):
+            self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
+
+        super().__init__(
+            lambda *args, **kwargs: left(*args, **kwargs) and right(*args, **kwargs),
+            f"And({left.name}, {right.name})",
+        )
+
+    def __str__(self):
+        return f"{self.operands[0].name} & {self.operands[1].name}"
+
+
+class Or(BooleanFn):
+    """Developer facing class for implemeting bit-wise ``OR`` for callables
+    wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
+
+    Args:
+        left (~.BooleanFn): Left operand in the bit-wise expression.
+        right (~.BooleanFn): Right operand in the bit-wise expression.
+    """
+
+    def __init__(self, left, right):
+        self.operands = (left, right)
+
+        if any(getattr(opr, "condition", None) for opr in self.operands):
+            self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
+
+        super().__init__(
+            lambda *args, **kwargs: left(*args, **kwargs) or right(*args, **kwargs),
+            f"Or({left.name}, {right.name})",
+        )
+
+    def __str__(self):
+        return f"{self.operands[0].name} | {self.operands[1].name}"
+
+
+class Xor(BooleanFn):
+    """Developer facing class for implemeting bit-wise ``XOR`` for callables
+    wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
+
+    Args:
+        left (~.BooleanFn): Left operand in the bit-wise expression.
+        right (~.BooleanFn): Right operand in the bit-wise expression.
+    """
+
+    def __init__(self, left, right):
+        self.operands = (left, right)
+
+        if any(getattr(opr, "condition", None) for opr in self.operands):
+            self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
+
+        super().__init__(
+            lambda *args, **kwargs: left(*args, **kwargs) ^ right(*args, **kwargs),
+            f"Xor({left.name}, {right.name})",
+        )
+
+    def __str__(self):
+        return f"{self.operands[0].name} ^ {self.operands[1].name}"
+
+
+class Not(BooleanFn):
+    """Developer facing class for implemeting bit-wise ``NOT`` for callables
+    wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
+
+    Args:
+        left (~.BooleanFn): Left operand in the bit-wise expression.
+    """
+
+    def __init__(self, left):
+        self.operands = (left,)
+
+        if any(getattr(opr, "condition", None) for opr in self.operands):
+            self.condition = tuple(getattr(opr, "condition", ()) for opr in self.operands)
+
+        super().__init__(
+            lambda *args, **kwargs: not left(*args, **kwargs),
+            f"Not({left.name})",
+        )
+
+    def __str__(self):
+        return f"~{self.operands[0].name}"

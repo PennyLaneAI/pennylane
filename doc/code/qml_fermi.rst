@@ -51,18 +51,18 @@ The fermionic operators can be mapped to the qubit basis by using the
 Fermi sentences.
 
 >>> qml.jordan_wigner(qml.FermiA(1))
-(0.5*(PauliZ(wires=[0]) @ PauliX(wires=[1])))
-+ (0.5j*(PauliZ(wires=[0]) @ PauliY(wires=[1])))
+0.5 * (Z(0) @ X(1)) + 0.5j * (Z(0) @ Y(1))
 
 >>> qml.jordan_wigner(qml.FermiC(1) * qml.FermiA(1))
-((0.5+0j)*(Identity(wires=[1])))
-+ ((-0.5+0j)*(PauliZ(wires=[1])))
+(0.5+0j) * I(1) + (-0.5+0j) * Z(1)
 
 >>> f = 0.5 * qml.FermiC(1) * qml.FermiA(1) + 0.75 * qml.FermiC(2) * qml.FermiA(2)
 >>> qml.jordan_wigner(f)
-((0.625+0j)*(Identity(wires=[1])))
-+ ((-0.25+0j)*(PauliZ(wires=[1])))
-+ ((-0.375+0j)*(PauliZ(wires=[2])))
+(
+    (0.625+0j) * I(1)
+  + (-0.25+0j) * Z(1)
+  + (-0.375+0j) * Z(2)
+)
 
 FermiWord and FermiSentence
 ---------------------------

@@ -277,6 +277,9 @@ def split_non_commuting(
             isinstance(m, ExpectationMP) and isinstance(m.obs, (LinearCombination, Hamiltonian))
             for m in tape.measurements
         )
+        or any(
+            m.obs is not None and not qml.pauli.is_pauli_word(m.obs) for m in single_term_obs_mps
+        )
     ):
         # This is a loose check to see whether wires grouping or qwc grouping should be used,
         # which does not necessarily make perfect sense but is consistent with the old decision
@@ -690,7 +693,7 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tupl
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-    return qml.math.convert_like(summed_dot_products + offset, res[0])
+    return summed_dot_products + offset
 
 
 def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.operation.Operator:
