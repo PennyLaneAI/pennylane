@@ -370,17 +370,17 @@ exponential gains in memory of the one-shot approach compared with the deferred
 measurement principle, among other advantages.
 
 Briefly, it proceeds cutting an :math:`n_{MCM}` circuit into :math:`n_{MCM}+1`
-circuit segments. Each segment can be executed on either the `0`- or `1`-branch,
-which gives rise to a binary tree with :math:`2^{n_{MCM}}` leaves.  Terminal
+circuit segments. Each segment can be executed on either the 0- or 1-branch,
+which gives rise to a binary tree with :math:`2^{n_{MCM}}` leaves. Terminal
 measurements are obtained at the leaves, and propagated and combined back up at each
 node up the tree. The tree is visited using a depth-first pattern. The tree-traversal
 method improves on :func:`~.pennylane.dynamic_one_shot` by taking all samples at a
 node or leaf at once. Neglecting overheads, simulating all branches requires the same
 amount of computations as :func:`~. pennylane.defer_measurements`, but without the
-:math:`O(2^{n_{MCM}})` memory requirement.  To save time, a copy of the state vector
+:math:`O(2^{n_{MCM}})` memory requirement. To save time, a copy of the state vector
 is made at every branching point, or MCM, requiring at most :math:`n_{MCM}+1` state
 vectors at any instant, an exponential improvement compared with :func:`~. pennylane.
-defer_measurements`.  Since the counts of many nodes come out to be zero in practice,
+defer_measurements`. Since the counts of many nodes come out to be zero in practice,
 it is often possible to ignore entire sub-trees, thereby reducing the computational
 burden.
 
@@ -403,7 +403,7 @@ by passing an ``mcm_method`` option to a QNode (see section
 
 .. warning::
 
-    The tree-traversal algorithm is only implemented on :class:`~.pennylane.devices.DefaultQubit`.
+    The tree-traversal algorithm is only implemented in the :class:`~.pennylane.devices.DefaultQubit` device.
 
 Resetting wires
 ***************
