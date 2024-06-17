@@ -519,7 +519,8 @@ class DefaultQubit(Device):
         transform_program.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
-
+        if config.mcm_config.mcm_method == "tree-traversal":
+            transform_program.add_transform(qml.transforms.broadcast_expand)
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
@@ -602,6 +603,7 @@ class DefaultQubit(Device):
                         "interface": interface,
                         "state_cache": self._state_cache,
                         "prng_key": _key,
+                        "mcm_method": execution_config.mcm_config.mcm_method,
                         "postselect_mode": execution_config.mcm_config.postselect_mode,
                     },
                 )
@@ -614,6 +616,7 @@ class DefaultQubit(Device):
             {
                 "rng": _rng,
                 "prng_key": _key,
+                "mcm_method": execution_config.mcm_config.mcm_method,
                 "postselect_mode": execution_config.mcm_config.postselect_mode,
             }
             for _rng, _key in zip(seeds, prng_keys)
