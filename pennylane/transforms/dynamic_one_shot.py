@@ -248,6 +248,7 @@ def parse_native_mid_circuit_measurements(
 
     interface = interface or qml.math.get_deep_interface(circuit.data)
     interface = "numpy" if interface == "builtins" else interface
+    interface = "tensorflow" if interface == "tf" else interface
     active_qjit = qml.compiler.active()
 
     all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
