@@ -16,6 +16,7 @@ broadcasted tape into multiple tapes."""
 from typing import Callable, Sequence
 
 import pennylane as qml
+from pennylane.measurements import MidMeasureMP, SampleMP
 
 from .core import transform
 
@@ -132,6 +133,16 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
 
         processing_fn = null_postprocessing
     else:
+
+        has_postselect = any(
+            op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+        )
+        has_sample = any(isinstance(op, SampleMP) for op in tape.measurements)
+        if has_postselect and has_sample:
+            raise ValueError(
+                "Returning qml.sample is not supported when using post-selected mid-circuit measurements and parameters broadcasting."
+            )
+
         num_tapes = tape.batch_size
         new_ops = _split_operations(tape.operations, num_tapes)
 
