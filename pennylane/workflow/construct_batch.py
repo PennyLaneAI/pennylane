@@ -16,7 +16,7 @@
 """
 import inspect
 from functools import wraps
-from typing import Callable, Tuple, Union
+from typing import Callable, Literal, Optional, Tuple, Union
 
 import pennylane as qml
 
@@ -72,7 +72,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
 
     Args:
         qnode (QNode): the qnode to get the transform program for.
-        level (None, str, int, slice): And indication of what transforms to use from the full program.
+        level (None, str, int, slice): An indication of what transforms to use from the full program.
 
             * ``None``: use the full transform program
             * ``str``: Acceptable keys are ``"user"``, ``"device"``, ``"top"`` and ``"gradient"``
@@ -208,7 +208,10 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
     return resolved_program
 
 
-def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") -> Callable:
+def construct_batch(
+    qnode: QNode,
+    level: Optional[Union[Literal["top", "user", "device", "gradient"], int, slice]] = "user",
+) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
     Args:
@@ -312,6 +315,24 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
             shots = _get_device_shots(qnode.device)
         else:
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
+
+        if isinstance(qnode, qml.qnn.KerasLayer):
+            # pylint: disable=import-outside-toplevel
+            import tensorflow as tf
+
+            with tf.GradientTape() as tape:
+                tape.watch(list(qnode.qnode_weights.values()))
+
+                kwargs = {
+                    **{k: 1.0 * w for k, w in qnode.qnode_weights.items()},
+                    **kwargs,
+                }
+
+        if isinstance(qnode, qml.qnn.TorchLayer):
+            x = args[0]
+            kwargs = {
+                **{arg: weight.data.to(x) for arg, weight in qnode.qnode_weights.items()},
+            }
 
         initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
 
