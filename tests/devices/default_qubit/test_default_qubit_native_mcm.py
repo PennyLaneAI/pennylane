@@ -241,8 +241,8 @@ def obs_tape(x, y, z, reset=False, postselect=None):
     return m0, m1
 
 
-@pytest.mark.parametrize("mcm_method", ["tree-traversal"])
-@pytest.mark.parametrize("shots", [5500])
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+@pytest.mark.parametrize("shots", [5500, [5500, 5501]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 @pytest.mark.parametrize(
@@ -284,7 +284,7 @@ def test_simple_dynamic_circuit(mcm_method, shots, measure_f, postselect, meas_o
     validate_measurements(measure_f, shots, results1, results0)
 
 
-@pytest.mark.parametrize("mcm_method", ["tree-traversal"])
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 def test_multiple_measurements_and_reset(mcm_method, postselect, reset):
@@ -315,7 +315,7 @@ def test_multiple_measurements_and_reset(mcm_method, postselect, reset):
         validate_measurements(measure_f, shots, r1, r0)
 
 
-@pytest.mark.parametrize("mcm_method", ["tree-traversal"])
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 @pytest.mark.parametrize(
     "mcm_f",
     [
@@ -370,7 +370,7 @@ def test_composite_mcms(mcm_method, mcm_f, measure_f):
     validate_measurements(measure_f, shots, results1, results0)
 
 
-@pytest.mark.parametrize("mcm_method", ["tree-traversal"])
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 @pytest.mark.parametrize(
     "mcm_f",
     [

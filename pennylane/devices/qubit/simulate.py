@@ -431,7 +431,7 @@ def simulate_tree_mcm(
     mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasureMP)])
     n_mcms = len(mcms) - 1
     mcm_current = qml.math.zeros(n_mcms + 1, dtype=bool)
-    mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
+    mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:].tolist()))
     mcm_samples = dict((k, qml.math.empty(circuit.shots.total_shots, dtype=int)) for k in mcms[1:])
     circuit_wires = circuit.wires
     depth = 0
@@ -463,7 +463,7 @@ def simulate_tree_mcm(
             counts[depth] = None
             results_0[depth] = None
             results_1[depth] = None
-            mcm_current[depth] = False
+            mcm_current[depth:] = False
             # Go up one level to explore alternate subtree of the same depth
             depth -= 1
             if not mcm_current[depth]:
@@ -489,7 +489,7 @@ def simulate_tree_mcm(
         # print(shots)
         # print(initial_state)
         # Update active branch dict
-        mcm_active = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:]))
+        mcm_active = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
         # If num_shots is zero, update measurements with empty tuple
         if not bool(shots):
             measurements = qml.math.array([], dtype=int)  # TODO: is this line necessary?
@@ -538,6 +538,7 @@ def simulate_tree_mcm(
                 mid_measurements=mcm_active,
                 **execution_kwargs,
             )
+            # print(state)
             measurements = measure_final_state(
                 circtmp, state, is_state_batched, initial_state=initial_state, **execution_kwargs
             )
@@ -556,6 +557,7 @@ def simulate_tree_mcm(
             # Store a copy of the state-vector to project on the one-branch
             states[depth] = state
             counts[depth] = samples_to_counts(samples, all_outcomes=True)
+            # print(counts[depth])
             continue
 
         # If at a zero-branch leaf, update measurements and switch to the one-branch
