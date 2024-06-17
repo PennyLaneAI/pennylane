@@ -438,7 +438,7 @@ def simulate_tree_mcm(
     circuits = []
     circuit_right = circuit
     for _ in mcms:
-        circuit_left, circuit_right, op = circuit_up_to_first_mcm(circuit_right)
+        circuit_left, circuit_right, _ = circuit_up_to_first_mcm(circuit_right)
         circuits.append(circuit_left)
     circuits.append(circuit_right)
     states = [prep_initial_state(circuit_left, interface, None, circuit_wires)] + [None] * n_mcms
@@ -447,25 +447,34 @@ def simulate_tree_mcm(
     results_1 = [None] * (n_mcms + 1)
     counts = [None] * (n_mcms + 1)
 
+    # The goal is to obtain the measurements of the zero-branch and one-branch
+    # and to combine them into the final result. Exit the loop once the
+    # zero-branch and one-branch measurements are available.
     while results_0[1] is None or results_1[1] is None:
 
+        # Combine two leaves once measurements are available
         if results_0[depth] is not None and results_1[depth] is not None:
+            # We use `circuits[-1].measurements` since it contains the
+            # target measurements (this is the only tape segment with
+            # unmodified measurements)
             measurements = [{} for _ in circuits[-1].measurements]
+            # Special treatment for single measurements
             single_measurement = len(circuits[-1].measurements) == 1
+            # Store each measurement in a dictionary `{branch: (count, measure)}`
             for branch, count in counts[depth].items():
-                # if op.postselect is not None and branch != op.postselect:
-                #     prune_mcm_samples(op, branch, mcm_active, mcm_samples)
-                #     continue
                 meas = results_0[depth] if branch == 0 else results_1[depth]
                 if single_measurement:
                     meas = [meas]
                 for i, m in enumerate(meas):
                     measurements[i][branch] = (count, m)
+            # Call `combine_measurements` to count-average measurements
             measurements = combine_measurements(circuits[-1], measurements, mcm_samples)
+            # Clear stack
             counts[depth] = None
             results_0[depth] = None
             results_1[depth] = None
             mcm_current[depth] = False
+            # Go up one level to explore alternate subtree of the same depth
             depth -= 1
             if not mcm_current[depth]:
                 results_0[depth] = measurements
@@ -481,17 +490,22 @@ def simulate_tree_mcm(
             )
             continue
 
-        # we need to make sure the state is the all-wire state
+        # Run the circuit segment at the current depth
         circtmp = circuits[depth].copy()
+        # Make sure the state is the all-wire state
         circtmp._ops = [qml.StatePrep(initial_state.ravel(), wires=circuit_wires)] + circtmp._ops
+        # Parse shots for the current branche
         if counts[depth]:
             shots = counts[depth][int(mcm_current[depth])]
         else:
             shots = circuits[depth].shots.total_shots
         # print(shots)
+        # Update active branch dict
         mcm_active = dict((k, v) for k, v in zip(mcms, mcm_current[1:]))
+        # If num_shots is zero, update measurements with empty tuple
         if not bool(shots):
-            measurements = qml.math.array([], dtype=int)
+            measurements = qml.math.array([], dtype=int)  # WARN: is this line necessary?
+            # On the zero-branch, update measurements and switch to the one-branch
             if not mcm_current[depth]:
                 results_0[depth] = tuple()
                 mcm_current[depth] = True
@@ -499,9 +513,11 @@ def simulate_tree_mcm(
                     states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
                 )
                 continue
+            # On the one-branch, update measurements and continue
             results_1[depth] = tuple()
             continue
         else:
+            # If num_shots is non-zero, simulate circuit segment
             circtmp._shots = qml.measurements.shots.Shots(shots)
             # print(list(mcm_active.values()))
             # print(initial_state)
@@ -517,7 +533,9 @@ def simulate_tree_mcm(
             )
             # if depth >= n_mcms:
             #     print(measurements)
+        # If not at a leaf, project on the zero-branch and increase depth by one
         if depth < n_mcms:
+            # Update the active branch samples with `update_mcm_samples`
             samples = qml.math.atleast_1d(measurements)
             update_mcm_samples(mcms[depth], samples, mcm_active, mcm_samples)
             # print(f"branching to {mcm_current[depth]}")
@@ -525,10 +543,12 @@ def simulate_tree_mcm(
                 state, mcm_current[depth + 1], mcms[depth].wires, mcms[depth].reset
             )
             depth += 1
+            # Store a copy of the state-vector to project on the one-branch
             states[depth] = state
             counts[depth] = samples_to_counts(samples, all_outcomes=True)
             continue
 
+        # If at a zero-branch leaf, update measurements and switch to the one-branch
         if not mcm_current[depth]:
             results_0[depth] = measurements
             mcm_current[depth] = True
@@ -536,14 +556,13 @@ def simulate_tree_mcm(
                 states[depth], mcm_current[depth], mcms[depth - 1].wires, mcms[depth - 1].reset
             )
             continue
+        # If at a one-branch leaf, update measurements
         results_1[depth] = measurements
 
+    # Combine first two branches
     measurements = [{} for _ in circuit.measurements]
     single_measurement = len(circuit.measurements) == 1
     for branch, count in counts[depth].items():
-        # if op.postselect is not None and branch != op.postselect:
-        #     prune_mcm_samples(op, branch, mcm_active, mcm_samples)
-        #     continue
         meas = results_0[depth] if branch == 0 else results_1[depth]
         if single_measurement:
             meas = [meas]
