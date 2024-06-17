@@ -541,12 +541,12 @@ class TestDecomposition:
             qml.matrix(exp, wire_order=[0, 1]),
         )
         expected_decomp = [
-            qml.IsingXX(-phi / 3 / 2, wires=[0, 1]),
-            qml.IsingYY(-phi / 3 / 2, wires=[0, 1]),
-            qml.IsingXX(-phi / 3 / 2, wires=[0, 1]),
-            qml.IsingYY(-phi / 3 / 2, wires=[0, 1]),
-            qml.IsingXX(-phi / 3 / 2, wires=[0, 1]),
-            qml.IsingYY(-phi / 3 / 2, wires=[0, 1]),
+            qml.IsingXX((-phi / 2) / 3, wires=[0, 1]),
+            qml.IsingYY((-phi / 2) / 3, wires=[0, 1]),
+            qml.IsingXX((-phi / 2) / 3, wires=[0, 1]),
+            qml.IsingYY((-phi / 2) / 3, wires=[0, 1]),
+            qml.IsingXX((-phi / 2) / 3, wires=[0, 1]),
+            qml.IsingYY((-phi / 2) / 3, wires=[0, 1]),
         ]
         assert len(dec) == len(expected_decomp)
         for op1, op2 in zip(dec, expected_decomp):
