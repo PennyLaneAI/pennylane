@@ -355,7 +355,7 @@ class Projector(Observable):
 
     Args:
         state (tensor-like): Input state of shape ``(n,)`` for a basis-state projector, or ``(2**n,)``
-            for a state-vector projector.
+            for a statevector projector.
         wires (Iterable): wires that the projector acts on.
         id (str or None): String representing the operation (optional).
 
