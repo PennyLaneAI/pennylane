@@ -369,19 +369,20 @@ The tree-traversal algorithm does away with such redundancy while retaining the
 exponential gains in memory of the one-shot approach compared with the deferred
 measurement principle, among other advantages.
 
-Briefly, it proceeds from the top of the tree and begins splitting the circuit
-into two: a circuit running to the next mid-circuit measurement, replacing the mid-circuit measurement by a sample
-measurement, and a circuit consisting of the rest of the circuit. A key point is that
-all samples are collected at once, removing the need to run the circuit several times.
-The samples are converted to counts and a copy of the state vector is made at each node.
-We loop over the possible branches, collapsing the state vector and pursuing the calculation
-until the next mid-circuit measurement. Since many counts come out to be zero in practice, it is possible
-to ignore entire sub-trees, reducing the computational burden.
-We eventually reach the bottom of the tree having cached at most :math:`n_{MCM}+1`
-state vector copies, which is an exponential improvement compared with
-:func:`~. pennylane.defer_measurements` requiring :math:`O(2^{n_{MCM}})` memory.
-We then obtain terminal measurements, propagating and combining at each node up the
-tree. This algorithm is thus of the depth-first family of tree-traversal algorithms.
+Briefly, it proceeds cutting an :math:`n_{MCM}` circuit into :math:`n_{MCM}+1`
+circuit segments. Each segment can be executed on either the `0`- or `1`-branch,
+which gives rise to a binary tree with :math:`2^{n_{MCM}}` leaves.  Terminal
+measurements are obtained at the leaves, and propagated and combined back up at each
+node up the tree. The tree is visited using a depth-first pattern. The tree-traversal
+method improves on :func:`~.pennylane.dynamic_one_shot` by taking all samples at a
+node or leaf at once. Neglecting overheads, simulating all branches requires the same
+amount of computations as :func:`~. pennylane.defer_measurements`, but without the
+:math:`O(2^{n_{MCM}})` memory requirement.  To save time, a copy of the state vector
+is made at every branching point, or MCM, requiring at most :math:`n_{MCM}+1` state
+vectors at any instant, an exponential improvement compared with :func:`~. pennylane.
+defer_measurements`.  Since the counts of many nodes come out to be zero in practice,
+it is often possible to ignore entire sub-trees, thereby reducing the computational
+burden.
 
 To summarize, this algorithm gives us the best of both worlds. In the limit of few
 shots and/or many mid-circuit measurements, it is as fast as the naive shot-by-shot implementation
