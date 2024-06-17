@@ -187,7 +187,7 @@ def block_diag(values, like=None):
     >>> t = [
     ...     np.array([[1, 2], [3, 4]]),
     ...     torch.tensor([[1, 2, 3], [-1, -6, -3]]),
-    ...     torch.tensor(5)
+    ...     torch.tensor([[5]])
     ... ]
     >>> qml.math.block_diag(t)
     tensor([[ 1,  2,  0,  0,  0,  0],
@@ -225,8 +225,9 @@ def concatenate(values, axis=0, like=None):
     >>> y = tf.Variable([0.1, 0.2, 0.3])
     >>> z = np.array([5., 8., 101.])
     >>> concatenate([x, y, z])
-    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
-    array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01, 5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
+    <tf.Tensor: shape=(9,), dtype=float32, numpy=
+    array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01,
+           5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
     """
 
     if like == "torch":
@@ -415,11 +416,12 @@ def get_trainable_indices(values, like=None):
 
     **Example**
 
+    >>> from pennylane import numpy as pnp
     >>> def cost_fn(params):
     ...     print("Trainable:", qml.math.get_trainable_indices(params))
     ...     return np.sum(np.sin(params[0] * params[1]))
-    >>> values = [np.array([0.1, 0.2], requires_grad=True),
-    ... np.array([0.5, 0.2], requires_grad=False)]
+    >>> values = [pnp.array([0.1, 0.2], requires_grad=True),
+    ... pnp.array([0.5, 0.2], requires_grad=False)]
     >>> cost_fn(values)
     Trainable: {0}
     tensor(0.0899685, requires_grad=True)
@@ -453,7 +455,7 @@ def ones_like(tensor, dtype=None):
 
     >>> x = torch.tensor([1., 2.])
     >>> ones_like(x)
-    tensor([1, 1])
+    tensor([1., 1.])
     >>> y = tf.Variable([[0], [5]])
     >>> ones_like(y, dtype=np.complex128)
     <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
@@ -563,7 +565,7 @@ def einsum(indices, *operands, like=None, optimize=None):
 
 
 def where(condition, x=None, y=None):
-    """Returns elements chosen from x or y depending on a boolean tensor condition,
+    r"""Returns elements chosen from x or y depending on a boolean tensor condition,
     or the indices of entries satisfying the condition.
 
     The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
@@ -594,12 +596,10 @@ def where(condition, x=None, y=None):
         The output format for ``x=None`` and ``y=None`` follows the respective
         interface and differs between TensorFlow and all other interfaces:
         For TensorFlow, the output is a tensor with shape
-        ``(num_true, len(condition.shape))`` where ``num_true`` is the number
+        ``(len(condition.shape), num_true)`` where ``num_true`` is the number
         of entries in ``condition`` that are ``True`` .
-        The entry at position ``(i, j)`` is the ``j`` th entry of the ``i`` th
-        index.
         For all other interfaces, the output is a tuple of tensor-like objects,
-        with the ``j`` th object indicating the ``j`` th entries of all indices.
+        with the ``j``\ th object indicating the ``j``\ th entries of all indices.
         Also see the examples below.
 
     **Example with single argument**
@@ -614,13 +614,10 @@ def where(condition, x=None, y=None):
     ``(2, 4)`` . For TensorFlow, on the other hand:
 
     >>> math.where(tf.constant(a) < 1)
-    tf.Tensor(
-    [[0 0]
-     [0 1]
-     [1 1]
-     [1 2]], shape=(4, 2), dtype=int64)
+    <tf.Tensor: shape=(2, 4), dtype=int64, numpy=
+    array([[0, 0, 1, 1],
+           [0, 1, 1, 2]])>
 
-    As we can see, the dimensions are swapped and the output is a single Tensor.
     Note that the number of dimensions of the output does *not* depend on the input
     shape, it is always two-dimensional.
 
@@ -767,7 +764,7 @@ def unwrap(values, max_depth=None):
     ...     return np.sum(np.sin(params))
     >>> params = np.array([0.1, 0.2, 0.3])
     >>> grad = autograd.grad(cost_fn)(params)
-    Unwrapped: [(0.1, <class 'float'>), (0.2, <class 'float'>), (0.3, <class 'float'>)]
+    Unwrapped: [(0.1, <class 'numpy.float64'>), (0.2, <class 'numpy.float64'>), (0.3, <class 'numpy.float64'>)]
     >>> print(grad)
     [0.99500417 0.98006658 0.95533649]
     """
