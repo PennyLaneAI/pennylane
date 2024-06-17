@@ -79,6 +79,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add operation and measurement specific routines in `default.tensor` to improve scalability.
+  [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
+  
 * `param_shift` with the `broadcast=True` option now supports shot vectors and multiple measurements.
   [(#5667)](https://github.com/PennyLaneAI/pennylane/pull/5667)
 
@@ -121,6 +124,12 @@
    [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
+
+* The `default.qubit` device implements a depth-first tree-traversal algorithm to
+  accelerate native mid-circuit measurement execution. The new implementation
+  supports classical control, collecting statistics, and post-selection, along
+  with all measurements enabled with `qml.dynamic_one_shot`.
+  [(#5180)](https://github.com/PennyLaneAI/pennylane/pull/5180)
 
 * `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
   These keyword arguments can be used to configure how the device should behave when running circuits with
