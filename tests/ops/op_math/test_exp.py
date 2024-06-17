@@ -536,17 +536,21 @@ class TestDecomposition:
         op = qml.IsingXY(phi, wires=[0, 1])
         exp = qml.evolve(op.generator(), coeff=-phi, num_steps=3)
         dec = exp.decomposition()
+        assert qml.math.allclose(
+            qml.matrix(qml.tape.QuantumScript(dec), wire_order=[0, 1]),
+            qml.matrix(exp, wire_order=[0, 1]),
+        )
         expected_decomp = [
-            qml.IsingXX(phi / 3, wires=[0, 1]),
-            qml.IsingYY(phi / 3, wires=[0, 1]),
-            qml.IsingXX(phi / 3, wires=[0, 1]),
-            qml.IsingYY(phi / 3, wires=[0, 1]),
-            qml.IsingXX(phi / 3, wires=[0, 1]),
-            qml.IsingYY(phi / 3, wires=[0, 1]),
+            qml.IsingXX(-phi / 3 / 2, wires=[0, 1]),
+            qml.IsingYY(-phi / 3 / 2, wires=[0, 1]),
+            qml.IsingXX(-phi / 3 / 2, wires=[0, 1]),
+            qml.IsingYY(-phi / 3 / 2, wires=[0, 1]),
+            qml.IsingXX(-phi / 3 / 2, wires=[0, 1]),
+            qml.IsingYY(-phi / 3 / 2, wires=[0, 1]),
         ]
         assert len(dec) == len(expected_decomp)
         for op1, op2 in zip(dec, expected_decomp):
-            qml.equal(op1, op2)
+            assert qml.equal(op1, op2)
 
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expected_queue"),
