@@ -483,7 +483,7 @@ class TestBasis:
         with pytest.raises(ValueError, match="Currently, internally supported basis sets"):
             qchem.basis_set.atom_basis_data(name="sto-3g", atom="Os")
 
-        with pytest.raises(ValueError, match="doesn't exist in the periodic table"):
+        with pytest.raises(ValueError, match="Requested element Ox doesn't exist"):
             qchem.basis_data.load_basisset(basis="sto-3g", element="Ox")
 
 
