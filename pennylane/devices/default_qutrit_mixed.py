@@ -92,16 +92,15 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 def warn_measurement_error_state(
     tape: qml.tape.QuantumTape,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
-    """If a measurement is an analytic state or density_matrix measurement and a readout error
-    parameter is defined wasns that the measurement error will not be applied.
+    """If the measurement returned is an analytic state or density_matrix, and a readout error
+    parameter is defined, warn that measurement error will not be applied.
 
     Args:
         tape (QuantumTape, .QNode, Callable): a quantum circuit.
 
     Returns:
         qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
-
-        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+        The unaltered input circuit.
     """
     if not tape.shots:
         for m in tape.measurements:
@@ -165,7 +164,7 @@ class DefaultQutritMixed(Device):
             of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
             amplitude damping from longer measurements with shorter relaxation time associated with
             transmon based qudits.
-        trit_flip_measurement_probs (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+        trit_flip_measurement_probs (List[float]): Gamma inputs for qml.TritFlip channel
             of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
             in measurement.
 

@@ -1374,7 +1374,7 @@ class TestReadoutError:
         "gammas_and_probs, expected", zip(gammas_and_probs, expected_commuting_expvals)
     )
     def test_readout_expval_commuting(self, nr_wires, gammas_and_probs, expected):
-        """Tests the measurement results for expval of GellMann 3 observables"""
+        """Tests the measurement results for expval of diagonal GellMann observables (3 and 8)"""
         dev = qml.device(
             "default.qutrit.mixed",
             wires=nr_wires,
@@ -1422,7 +1422,7 @@ class TestReadoutError:
             damping_measurement_gammas=gammas_and_probs[0],
             trit_flip_measurement_probs=gammas_and_probs[1],
         )
-        # Create matricies for the observables with diagonalizing matrix :math:`THadamard^\dag`
+        # Create matrices for the observables with diagonalizing matrix :math:`THadamard^\dag`
         inv_sqrt_3_i = 1j / np.sqrt(3)
         non_commuting_obs_one = np.array(
             [
