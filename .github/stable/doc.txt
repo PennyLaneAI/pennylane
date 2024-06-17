@@ -113,7 +113,7 @@ torch==1.9.0+cpu
 tqdm==4.66.4
 typing_extensions==4.12.2
 tzdata==2024.1
-urllib3==1.26.18
+urllib3==1.26.19
 Werkzeug==3.0.3
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
