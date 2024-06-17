@@ -19,6 +19,7 @@ computing the sum of operations.
 
 import itertools
 import warnings
+from collections import Counter
 from collections.abc import Iterable
 from copy import copy
 from typing import List
@@ -240,7 +241,7 @@ class Sum(CompositeOp):
     @property
     def hash(self):
         # Since addition is always commutative, we do not need to sort
-        return hash(("Sum", frozenset(o.hash for o in self.operands)))
+        return hash(("Sum", hash(frozenset(Counter(self.operands).items()))))
 
     @property
     def grouping_indices(self):
