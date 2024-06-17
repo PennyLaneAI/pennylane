@@ -71,7 +71,7 @@ six==1.16.0
 toml==0.10.2
 tomli==2.0.1
 typing_extensions==4.12.2
-urllib3==2.2.1
+urllib3==2.2.2
 virtualenv==20.26.2
 wrapt==1.12.1
 zipp==3.19.2

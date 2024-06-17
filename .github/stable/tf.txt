@@ -93,7 +93,7 @@ tf_keras==2.16.0
 toml==0.10.2
 tomli==2.0.1
 typing_extensions==4.12.2
-urllib3==2.2.1
+urllib3==2.2.2
 virtualenv==20.26.2
 Werkzeug==3.0.3
 wrapt==1.12.1
