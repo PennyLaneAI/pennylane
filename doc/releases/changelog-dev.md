@@ -343,6 +343,9 @@
 * `qml.transforms.map_batch_transform` is deprecated, since a transform can be applied directly to a batch of tapes.
   [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
 
+* `split_non_commuting` returns the unmodified tape if there are no measurements, instead of an empty list.
+  [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
+
 <h3>Documentation 📝</h3>
 
 * The documentation for the `default.tensor` device has been added.
