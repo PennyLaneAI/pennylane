@@ -14,7 +14,7 @@
 """
 Unit tests for functions needed for computing the dipole.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, protected-access
 import pytest
 
 import pennylane as qml
