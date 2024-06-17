@@ -309,8 +309,8 @@ class TestDotPauliSentence:
         ps = qml.dot(coeffs0, ops0, pauli=True)
         h = ps.hamiltonian()
         assert qml.math.allequal(h.coeffs, coeffs0)
-        for op1, op2 in zip(h.ops, ops0):
-            qml.assert_equal(op1, op2)
+        for _op1, _op2 in zip(h.ops, ops0):
+            qml.assert_equal(_op1, _op2)
 
     def test_dot_simplifies_linear_combination(self):
         """Test that the dot function groups equal pauli words."""
