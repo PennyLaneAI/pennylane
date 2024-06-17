@@ -83,6 +83,20 @@ def _convert_obs_to_legacy_opmath(obs):
     return obs
 
 
+def _extract_non_id_terms_and_coefficients(meas, sampling_technique):
+    terms, coeffs = tuple(
+        zip(*[(term, coeff) for coeff, term in zip(*meas.terms()) if not isinstance(term, qml.I)])
+    )
+
+    probs = (
+        np.ones(len(coeffs)) / len(coeffs)
+        if sampling_technique == "uniform"
+        else np.abs(coeffs) / np.sum(np.abs(coeffs))
+    )
+
+    return terms, probs
+
+
 def complex_no_grouping_processing_fn(results):
     """The expected processing function without grouping of complex_obs_list"""
 
@@ -569,6 +583,8 @@ class TestUnits:
             fn([[0.1, 0.2], [0.3, 0.6], 0.4, 0.5, 0.7]), [0.01, 0.06, 0.06, 0.16, 0.25, 0.36, 0.49]
         )
 
+
+class TestTermSampling:
     def test_term_sampling_fails_with_analytical(self):
         tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [])
 
@@ -607,13 +623,8 @@ class TestUnits:
         else:
             num_identities = meas.terms()[1].count(qml.I())
             assert len(out) == len(meas) - num_identities
-            coeffs = [coeff for coeff, term in zip(*meas.terms()) if not isinstance(term, qml.I)]
 
-            probs = (
-                np.ones(len(coeffs)) / len(coeffs)
-                if sampling_technique == "uniform"
-                else np.abs(coeffs) / np.sum(np.abs(coeffs))
-            )
+            _, probs = _extract_non_id_terms_and_coefficients(meas, sampling_technique)
 
             for i, vector in enumerate(shots.shot_vector):
                 output_shots, output_copies = list(
@@ -644,24 +655,10 @@ class TestUnits:
 
         assert len(out) <= len(meas) - num_identities
 
-        terms, coeffs = tuple(
-            zip(
-                *[
-                    (term, coeff)
-                    for coeff, term in zip(*meas.terms())
-                    if not isinstance(term, qml.I)
-                ]
-            )
-        )
+        terms, probs = _extract_non_id_terms_and_coefficients(meas, sampling_technique)
 
-        probs = (
-            np.ones(len(coeffs)) / len(coeffs)
-            if sampling_technique == "uniform"
-            else np.abs(coeffs) / np.sum(np.abs(coeffs))
-        )
-
-        out_shots = np.zeros((len(shots.shot_vector), len(coeffs)))
-        out_copies = np.zeros((len(shots.shot_vector), len(coeffs)))
+        out_shots = np.zeros((len(shots.shot_vector), len(probs)))
+        out_copies = np.zeros((len(shots.shot_vector), len(probs)))
 
         for tp in out:
             shot_vector = tp.shots.shot_vector
@@ -686,7 +683,41 @@ class TestUnits:
             exp_shots = (probs[0] if np.all(probs == probs[0]) else probs) * original_shot
             assert ttest_ind(out_shot, exp_shots).pvalue > 0.95
 
-    # TODO: Make sure a tape with two observables sharing some term generate only one tape with the needed shot vector
+    @pytest.mark.parametrize("sampling_technique", ("uniform", "weighted"))
+    def test_term_sampling_groups_shared_observables_in_single_tape(self, sampling_technique):
+        shots = qml.measurements.Shots(200)
+        tape = qml.tape.QuantumScript(
+            [qml.RY(0.5, 0)],
+            [qml.expval(complex_obs_list[-2]), qml.expval(0.5 * qml.Z(1) + qml.X(0))],
+            shots=shots,
+        )
+
+        out, _ = split_non_commuting(tape, term_sampling=sampling_technique, grouping_strategy=None)
+
+        terms_1, probs_1 = _extract_non_id_terms_and_coefficients(
+            complex_obs_list[-2], sampling_technique
+        )
+
+        terms_2, probs_2 = _extract_non_id_terms_and_coefficients(
+            0.5 * qml.Z(1) + qml.X(0), sampling_technique
+        )
+
+        out_shots_1 = []
+        out_shots_2 = []
+
+        for tape in out:
+            if tape.measurements[0].obs in terms_1:
+                out_shots_1.append(tape.shots.shot_vector[0].shots)
+
+            if tape.measurements[0].obs in terms_2:
+                shot_vector_idx = 1 if tape.shots.has_partitioned_shots else 0
+
+                out_shots_2.append(tape.shots.shot_vector[shot_vector_idx].shots)
+
+        for out_shot, probs in zip((out_shots_1, out_shots_2), (probs_1, probs_2)):
+            exp_shots = (probs[0] if np.all(probs == probs[0]) else probs) * shots.total_shots
+
+            assert ttest_ind(out_shot, exp_shots).pvalue > 0.95
 
 
 class TestIntegration:
