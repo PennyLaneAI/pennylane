@@ -65,9 +65,9 @@ def test_convert_arrays_to_numpy(framework, shots):
     assert fn([0.5]) == 0.5
 
     for ind in (0, 1, 2):
-        assert qml.equal(new_qs[ind], qs[ind], check_interface=False, check_trainability=False)
+        qml.assert_equal(new_qs[ind], qs[ind], check_interface=False, check_trainability=False)
         assert qml.math.get_interface(*new_qs[ind].data) == "numpy"
-    assert qml.equal(new_qs[6], qs[6], check_interface=False, check_trainability=False)
+    qml.assert_equal(new_qs[6], qs[6], check_interface=False, check_trainability=False)
     assert qml.math.get_interface(*new_qs[6].obs.data) == "numpy"
 
     # check shots attribute matches

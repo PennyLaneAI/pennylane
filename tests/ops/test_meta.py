@@ -150,7 +150,7 @@ class TestBarrier:
         """Test that if `only_visual=True`, the operation simplifies to the identity."""
         op = qml.Barrier(wires="a", only_visual=True)
         simplified = op.simplify()
-        assert qml.equal(simplified, qml.Identity("a"))
+        qml.assert_equal(simplified, qml.Identity("a"))
 
     def test_simplify_only_visual_multiple_wires(self):
         """Test that if `only_visual=True`, the operation simplifies to a product of identities."""
@@ -158,7 +158,7 @@ class TestBarrier:
         simplified = op.simplify()
         assert isinstance(simplified, qml.ops.op_math.Prod)
         for i, op in enumerate(simplified.operands):
-            assert qml.equal(op, qml.Identity(i))
+            qml.assert_equal(op, qml.Identity(i))
 
     def test_simplify_only_visual_False(self):
         """Test that no simplification occurs if only_visual is False."""

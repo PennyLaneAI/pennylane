@@ -48,7 +48,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op is not op
 
 
@@ -103,7 +103,7 @@ class TestDecomposition:
                 gate_order.append(sw_op)
 
         for op1, op2 in zip(queue, gate_order):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_custom_wire_labels(self, tol=1e-8):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""

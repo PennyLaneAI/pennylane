@@ -115,7 +115,7 @@ class TestPreprocessing:
         tape = tapes[0]
         assert tape.operations == qs.operations
         assert tape.measurements != qs.measurements
-        assert qml.equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
+        qml.assert_equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
         assert tape.measurements[1] is exp_z
 
     @pytest.mark.parametrize(
@@ -200,7 +200,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
             for op, expected_op in zip(res_tape.operations, ops):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
@@ -223,7 +223,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for i, t in enumerate(res_tapes):
             for op, exp in zip(t.circuit, expected + measurements[i]):
-                assert qml.equal(op, exp)
+                qml.assert_equal(op, exp)
 
         val = (("a", "b"), "c", "d")
         assert batch_fn(val) == (("a", "b"), "c")
@@ -250,7 +250,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
             for op, expected_op in zip(res_tape.operations, expected_ops):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])

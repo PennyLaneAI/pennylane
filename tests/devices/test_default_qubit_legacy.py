@@ -2380,13 +2380,13 @@ class TestHamiltonianSupport:
         rotations = dev._get_diagonalizing_gates(qs)
 
         assert len(rotations) == 1
-        assert qml.equal(rotations[0], qml.Hadamard(0))
+        qml.assert_equal(rotations[0], qml.Hadamard(0))
 
         call_args = spy.call_args.args[1]  # 0 is self (the device)
         assert isinstance(call_args, qml.tape.QuantumScript)
         assert len(call_args.operations) == 0
         assert len(call_args.measurements) == 1
-        assert qml.equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
+        qml.assert_equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
 
 
 @pytest.mark.parametrize("is_state_batched", [False, True])

@@ -350,32 +350,32 @@ class TestUnits:
 
         tapes, fn = split_non_commuting(tape, grouping_strategy=None)
         for actual_tape, expected_tape in zip(tapes, expected_tapes_no_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), [0.01, 0.04, 0.09, 0.16, 0.25])
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="default")
         # When new opmath is disabled, c * o gives Hamiltonians, which leads to wires grouping
         if qml.operation.active_new_opmath():
             for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
-                assert qml.equal(actual_tape, expected_tape)
+                qml.assert_equal(actual_tape, expected_tape)
             assert qml.math.allclose(
                 fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), [0.01, 0.06, 0.12, 0.08, 0.25]
             )
         else:
             for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
-                assert qml.equal(actual_tape, expected_tape)
+                qml.assert_equal(actual_tape, expected_tape)
             assert qml.math.allclose(
                 fn([[0.1, 0.2], 0.3, 0.4, 0.5]), [0.01, 0.06, 0.06, 0.16, 0.25]
             )
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="qwc")
         for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), [0.01, 0.06, 0.12, 0.08, 0.25])
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="wires")
         for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         assert qml.math.allclose(fn([[0.1, 0.2], 0.3, 0.4, 0.5]), [0.01, 0.06, 0.06, 0.16, 0.25])
 
     @pytest.mark.parametrize(
@@ -416,13 +416,13 @@ class TestUnits:
 
         tapes, fn = split_non_commuting(tape, grouping_strategy=None)
         for actual_tape, expected_tape in zip(tapes, expected_tapes_no_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         expected = 0.55 if not qml.operation.active_new_opmath() else 1.15
         assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), expected)
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="default")
         for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         expected = 0.52 if not qml.operation.active_new_opmath() else 1.12
         assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), expected)
 
@@ -472,7 +472,7 @@ class TestUnits:
         tapes, fn = split_non_commuting(tape, grouping_strategy=grouping_strategy)
 
         for actual_tape, expected_tape in zip(tapes, expected_tapes):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
 
         expected = processing_fn(mock_results)
         if not qml.operation.active_new_opmath():
@@ -504,7 +504,7 @@ class TestUnits:
             qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(qml.Y(0))]),
         ]
         for actual_tape, expected_tape in zip(tapes, expected_tapes):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
 
         result = ([0.1, 0.2], 0.2, 0.3, 0.4)
         assert fn(result) == ((0.1, 0.2, 0.2), (0.3, 0.4))
@@ -542,7 +542,7 @@ class TestUnits:
 
         tapes, fn = split_non_commuting(tape, grouping_strategy=None)
         for actual_tape, expected_tape in zip(tapes, expected_tapes_no_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         assert qml.math.allclose(
             fn([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]), [0.01, 0.04, 0.09, 0.16, 0.25, 0.36, 0.49]
         )
@@ -563,7 +563,7 @@ class TestUnits:
 
         tapes, fn = split_non_commuting(tape)
         for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         assert qml.math.allclose(
             fn([[0.1, 0.2], [0.3, 0.6], 0.4, 0.5, 0.7]), [0.01, 0.06, 0.06, 0.16, 0.25, 0.36, 0.49]
         )
