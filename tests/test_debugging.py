@@ -20,10 +20,12 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from flaky import flaky
+from scipy.stats import ttest_ind
 
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.debugging import PLDB, pldb_device_manager
+from pennylane.ops.functions.equal import assert_equal
 
 
 def _compare_numpy_dicts(dict1, dict2):
@@ -32,7 +34,8 @@ def _compare_numpy_dicts(dict1, dict2):
 
 
 class TestSnapshotTape:
-    def test_snapshot_output_tapes(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_snapshot_output_tapes(self, shots):
         ops = [
             qml.Snapshot(),
             qml.Hadamard(wires=0),
@@ -45,25 +48,30 @@ class TestSnapshotTape:
 
         num_snapshots = len(tuple(filter(lambda x: isinstance(x, qml.Snapshot), ops)))
 
-        tape = qml.tape.QuantumTape(ops, measurements)
+        expected_tapes = [
+            qml.tape.QuantumTape([], [qml.state()], shots=shots),
+            qml.tape.QuantumTape([qml.Hadamard(0)], [qml.state()], shots=shots),
+            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.state()], shots=shots),
+            qml.tape.QuantumTape(
+                [qml.Hadamard(0), qml.CNOT((0, 1))], [qml.expval(qml.X(0))], shots=shots
+            ),
+        ]
 
+        tape = qml.tape.QuantumTape(ops, measurements, shots=shots)
         tapes, _ = qml.snapshots(tape)
 
         assert len(tapes) == num_snapshots + 1
 
-        tape_no_meas = qml.tape.QuantumTape(ops)
+        for out, expected in zip(tapes, expected_tapes):
+            assert_equal(out, expected)
 
+        tape_no_meas = qml.tape.QuantumTape(ops, shots=shots)
         tapes_no_meas, _ = qml.snapshots(tape_no_meas)
 
         assert len(tapes_no_meas) == num_snapshots
-        tape1 = qml.tape.QuantumScript([], [qml.state()])
-        assert qml.equal(tapes_no_meas[0], tape1)
-        tape2 = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.state()])
-        assert qml.equal(tapes_no_meas[1], tape2)
-        tape3 = qml.tape.QuantumScript([qml.Hadamad(0), qml.CNOT((0,1))], [qml.state()])
-        assert qml.equal(tapes_no_meas[2], tape3)
-        tape4 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT((0,1))], [qml.expval(qml.X(0))])
-        assert qml.equal(tapes_no_meas[3], tape4)
+
+        for out, expected in zip(tapes_no_meas, expected_tapes[:-1]):
+            assert_equal(out, expected)
 
     def test_snapshot_postprocessing_fn(self):
         ops = [
@@ -86,6 +94,12 @@ class TestSnapshotTape:
         assert "snapshot_tags" in fn.keywords
         assert len(fn.keywords["snapshot_tags"]) == num_snapshots + 1
         assert all(key in fn.keywords["snapshot_tags"] for key in expected_keys)
+        assert fn(["a", 1, 2, []]) == {
+            0: "a",
+            "very_important_state": 1,
+            2: 2,
+            "execution_results": [],
+        }
 
         tape_no_meas = qml.tape.QuantumTape(ops)
 
@@ -95,6 +109,11 @@ class TestSnapshotTape:
         assert "snapshot_tags" in fn.keywords
         assert len(fn_no_meas.keywords["snapshot_tags"]) == num_snapshots
         assert all(key in fn_no_meas.keywords["snapshot_tags"] for key in expected_keys)
+        assert fn(["a", 1, 2]) == {
+            0: "a",
+            "very_important_state": 1,
+            2: 2,
+        }
 
     def test_snapshot_fails_with_mcm(self):
         with pytest.raises(
@@ -583,26 +602,11 @@ class TestSnapshotSupportedQNode:
 
         qml.snapshots(circuit)()
 
-    @pytest.mark.xfail
-    def test_default_clifford_with_arbitrary_measurement(self):
-        dev = qml.device("default.clifford")
-
-        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(0)
-            qml.Snapshot(measurement=qml.expval(qml.X(0)))
-            qml.S(wires=0)
-            return qml.expval(qml.X(0))
-
-        qml.snapshots(circuit)()
-
 
 class TestSnapshotUnsupportedQNode:
     @flaky(max_runs=3)
     def test_lightning_qubit_finite_shots(self):
-        dev = qml.device("lightning.qubit", wires=2, shots=200)
+        dev = qml.device("lightning.qubit", wires=2, shots=500)
 
         @qml.qnode(dev, diff_method=None)
         def circuit():
@@ -610,13 +614,14 @@ class TestSnapshotUnsupportedQNode:
             qml.Snapshot(measurement=qml.counts(wires=0))
             return qml.expval(qml.PauliX(1))
 
-        result = qml.snapshots(circuit)()
-        assert 90 <= result[0]["0"] <= 110
-        assert np.allclose(result["execution_results"], np.array(0.0))
+        # TODO: fallback to simple `np.allclose` tests once `setRandomSeed` is exposed from the lightning C++ code
+        counts, expvals = tuple(zip(*(qml.snapshots(circuit)().values() for _ in range(50))))
+        assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.8
+        assert ttest_ind(expvals, 0.0).pvalue >= 0.8
 
         # Make sure shots are overriden correctly
-        result = qml.snapshots(circuit)(shots=50)
-        assert 20 <= result[0]["0"] <= 30
+        counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
+        assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.8
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_lightning_qubit_fails_for_state_snapshots_with_adjoint_and_backprop(self, diff_method):
