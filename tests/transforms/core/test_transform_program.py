@@ -356,6 +356,13 @@ class TestTransformProgram:
         ):
             program.get_last()
 
+    def test_get_last(self):
+        """Tests the get_last method"""
+        program = TransformProgram()
+        program.add_transform(transform(first_valid_transform))
+        program.add_transform(transform(second_valid_transform))
+        assert program.get_last() == TransformContainer(transform=second_valid_transform)
+
     def test_push_back(self):
         """Test to push back multiple transforms into a program and also the different methods of a program."""
         transform_program = TransformProgram()

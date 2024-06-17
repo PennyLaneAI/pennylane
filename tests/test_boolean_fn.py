@@ -58,3 +58,13 @@ class TestBooleanFn:
         assert crit(-2)
         assert not crit(6)
         assert crit(10)
+
+    def test_repr(self):
+        """Test the repr is right."""
+
+        def greater_than_five(x):
+            return x > 5
+
+        func = qml.BooleanFn(greater_than_five)
+
+        assert repr(func) == "BooleanFn(greater_than_five)"
