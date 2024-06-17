@@ -576,8 +576,7 @@ def process_queue(
     list_order = {"_ops": 1, "_measurements": 2}
     current_list = "_ops"
 
-    for obj in queue:
-        obj = obj.obj
+    for obj in queue.queue:
         if not hasattr(obj, "_queue_category"):
             raise QueuingError(
                 f"{obj} encountered in AnnotatedQueue and is not an object that can "
