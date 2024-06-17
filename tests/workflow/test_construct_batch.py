@@ -106,7 +106,8 @@ class TestTransformProgramGetter:
         assert p_dev == p_default
         assert p_none == p_dev
         assert len(p_dev) == 9
-        assert p_dev == p_grad + dev.preprocess()[0]
+        config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
+        assert p_dev == p_grad + dev.preprocess(config)[0]
 
         # slicing
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
@@ -142,7 +143,9 @@ class TestTransformProgramGetter:
         assert len(full_prog) == 13
 
         config = qml.devices.ExecutionConfig(
-            gradient_method="adjoint", use_device_jacobian_product=False
+            interface=getattr(circuit, "interface", None),
+            gradient_method="adjoint",
+            use_device_jacobian_product=False,
         )
         dev_program = dev.preprocess(config)[0]
 
@@ -183,22 +186,27 @@ class TestTransformProgramGetter:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
 
         user_program = get_transform_program(circuit, level="user")
-        assert len(user_program) == 2
+        assert len(user_program) == 3
         assert user_program[0].transform == qml.compile.transform
         assert user_program[1].transform == qml.metric_tensor.expand_transform
+        assert user_program[2].transform == qml.metric_tensor.transform
 
         grad_program = get_transform_program(circuit, level="gradient")
-        assert len(grad_program) == 3
+        assert len(grad_program) == 4
         assert grad_program[0].transform == qml.compile.transform
         assert grad_program[1].transform == qml.metric_tensor.expand_transform
         assert grad_program[2].transform == qml.gradients.param_shift.expand_transform
+        assert grad_program[3].transform == qml.metric_tensor.transform
 
         dev_program = get_transform_program(circuit, level="device")
-        assert len(dev_program) == 3 + len(circuit.device.preprocess()[0])  # currently 8
-        assert qml.metric_tensor not in dev_program
+        config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
+        assert len(dev_program) == 4 + len(circuit.device.preprocess(config)[0])  # currently 8
+        assert dev_program[-1].transform == qml.metric_tensor.transform
 
-        full = get_transform_program(circuit)
-        assert full[-1].transform == qml.metric_tensor.transform
+        full_program = get_transform_program(circuit)
+        assert full_program[-1].transform == qml.metric_tensor.transform
+
+        assert dev_program == full_program
 
 
 @qml.transforms.merge_rotations
