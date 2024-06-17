@@ -243,6 +243,8 @@ def split_non_commuting(
         [[expval(X(0)), probs(wires=[1])], [probs(wires=[0, 1])]]
 
     """
+    if len(tape.measurements) == 0:
+        return [tape], lambda x: x[0]
 
     # Special case for a single measurement of a Sum or Hamiltonian, in which case
     # the grouping information can be computed and cached in the observable.
