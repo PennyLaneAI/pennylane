@@ -145,6 +145,10 @@
 * The `dynamic_one_shot` transform can be compiled with `jax.jit`.
   [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
 
+* `dynamic_one_shot` has better support for differentiation with `jax`, `torch`, `tensorflow`, and `autograd`.
+  [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
+  [(#5861)](https://github.com/PennyLaneAI/pennylane/pull/5861)
+
 * When using `defer_measurements` with postselecting mid-circuit measurements, operations
   that will never be active due to the postselected state are skipped in the transformed
   quantum circuit. In addition, postselected controls are skipped, as they are evaluated
@@ -264,7 +268,7 @@
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
 
-* Device preprocess transforms now happen inside the ml boundary.
+* Device preprocess transforms now happen inside the ML boundary.
   [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
 
 * `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
