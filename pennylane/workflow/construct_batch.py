@@ -207,7 +207,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
 
     return resolved_program
 
-  
+
 def construct_batch(
     qnode: QNode,
     level: Optional[Union[Literal["top", "user", "device", "gradient"], int, slice]] = "user",
