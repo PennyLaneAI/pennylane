@@ -60,11 +60,12 @@ def test_apply_mid_measure():
         )
 
 
-def test_all_invalid_shots_circuit():
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+def test_all_invalid_shots_circuit(mcm_method):
     """Test that circuits in which all shots mismatch with post-selection conditions return the same answer as ``defer_measurements``."""
     dev = get_device()
+    dev_shots = get_device(shots=10)
 
-    @qml.qnode(dev)
     def circuit_op():
         m = qml.measure(0, postselect=1)
         qml.cond(m, qml.PauliX)(1)
@@ -74,22 +75,21 @@ def test_all_invalid_shots_circuit():
             qml.var(op=qml.PauliZ(1)),
         )
 
-    res1 = circuit_op()
-    res2 = circuit_op(shots=10)
+    res1 = qml.QNode(circuit_op, dev, mcm_method="deferred")()
+    res2 = qml.QNode(circuit_op, dev_shots, mcm_method=mcm_method)()
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
         assert np.all(np.isnan(r1))
         assert np.all(np.isnan(r2))
 
-    @qml.qnode(dev)
     def circuit_mcm():
         m = qml.measure(0, postselect=1)
         qml.cond(m, qml.PauliX)(1)
         return qml.expval(op=m), qml.probs(op=m), qml.var(op=m)
 
-    res1 = circuit_mcm()
-    res2 = circuit_mcm(shots=10)
+    res1 = qml.QNode(circuit_mcm, dev, mcm_method="deferred")()
+    res2 = qml.QNode(circuit_mcm, dev_shots, mcm_method=mcm_method)()
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
@@ -97,12 +97,13 @@ def test_all_invalid_shots_circuit():
         assert np.all(np.isnan(r2))
 
 
-def test_unsupported_measurement():
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+def test_unsupported_measurement(mcm_method):
     """Test that circuits with unsupported measurements raise the correct error."""
     dev = get_device(shots=1000)
     params = np.pi / 4 * np.ones(2)
 
-    @qml.qnode(dev)
+    @qml.qnode(dev, mcm_method=mcm_method)
     def func(x, y):
         qml.RX(x, wires=0)
         m0 = qml.measure(0)
@@ -539,11 +540,12 @@ def test_jax_jit(diff_method, postselect, reset):
 
 
 @pytest.mark.torch
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 @pytest.mark.parametrize("postselect", [None, 1])
 @pytest.mark.parametrize("diff_method", [None, "best"])
 @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
 @pytest.mark.parametrize("meas_obj", [qml.PauliZ(1), [0, 1], "composite_mcm", "mcm_list"])
-def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
+def test_torch_integration(mcm_method, postselect, diff_method, measure_f, meas_obj):
     """Test that native MCM circuits are executed correctly with Torch"""
     if measure_f in (qml.expval, qml.var) and (
         isinstance(meas_obj, list) or meas_obj == "mcm_list"
@@ -556,13 +558,12 @@ def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
     dev = get_device(shots=shots, seed=123456789)
     param = torch.tensor(np.pi / 3, dtype=torch.float64)
 
-    @qml.qnode(dev, diff_method=diff_method)
     def func(x):
         qml.RX(x, 0)
         m0 = qml.measure(0)
         qml.RX(0.5 * x, 1)
         m1 = qml.measure(1, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
+        qml.cond(m0 & m1, qml.RY)(2.0 * x, 0)
         m2 = qml.measure(0)
 
         mid_measure = 0.5 * m2 if meas_obj == "composite_mcm" else [m1, m2]
@@ -570,10 +571,7 @@ def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
         measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
         return measure_f(**{measurement_key: measurement_value})
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+    results0 = qml.QNode(func, dev, mcm_method=mcm_method, diff_method=diff_method)(param)
+    results1 = qml.QNode(func, dev, mcm_method="deferred", diff_method=diff_method)(param)
 
-    results1 = func1(param)
-    results2 = func2(param)
-
-    mcm_utils.validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results0)

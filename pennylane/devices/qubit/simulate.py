@@ -714,13 +714,13 @@ def combine_measurements(circuit, measurements, mcm_samples):
     # loop over measurements
     final_measurements = []
     for circ_meas in circuit.measurements:
-        if circ_meas.mv and empty_mcm_samples:  # pragma: no cover
+        if circ_meas.mv and empty_mcm_samples:
             comb_meas = measurement_with_no_shots(circ_meas)
         elif circ_meas.mv:
             mcm_samples = dict((k, v.reshape((-1, 1))) for k, v in mcm_samples.items())
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = gather_mcm(circ_meas, mcm_samples, is_valid)
-        elif not measurements or not measurements[0]:  # pragma: no cover
+        elif not measurements or not measurements[0]:
             if len(measurements) > 0:
                 _ = measurements.pop(0)
             comb_meas = measurement_with_no_shots(circ_meas)
