@@ -92,9 +92,10 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
             :width: 800px
             :target: javascript:void(0);
 
-        where ``transform1`` is first applied to the ``QNode`` followed by ``transform2``.  First user transforms are run on the tapes,
-        followed by the gradient expansion, followed by the device expansion.  "Final" transforms, like ``param_shift`` and ``metric_tensor``,
-        always occur at the end of the program.
+        where ``transform1`` is first applied to the ``QNode`` followed by ``transform2``.  First, user transforms are run on the tapes,
+        followed by the gradient expansion, followed by the device expansion. "Final" transforms, like ``param_shift`` and ``metric_tensor``,
+        always occur at the end of the program, despite being part of user transforms. Note that when requesting a level by name
+        (e.g. "gradient" or "device"), the preceding levels would be applied as well.
 
         .. code-block:: python
 
@@ -114,26 +115,27 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         _expand_transform_param_shift, validate_device_wires, defer_measurements,
         decompose, validate_measurements, validate_observables, metric_tensor)
 
-        The ``"user"`` transforms are the ones manually applied to the qnode, :class:`~.cancel_inverses` and
-        :class:`~.merge_rotations`.
+        The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
+        :func:`~.merge_rotations` and :func:`~.metric_tensor`.
 
         >>> qml.workflow.get_transform_program(circuit, level="user")
-        TransformProgram(cancel_inverses, merge_rotations)
+        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
 
-        The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.  This expands all trainable
-        operations to a state where the parameter shift transform can operate on them. For example, it will decompose
-        any parametrized templates into operators that have generators.
+        The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
+        This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
+        it will decompose any parametrized templates into operators that have generators. Note how ``metric_tensor`` is still
+        present at the very end of resulting program.
 
         >>> qml.workflow.get_transform_program(circuit, level="gradient")
-        TransformProgram(cancel_inverses, merge_rotations, _expand_transform_param_shift)
+        TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift, metric_tensor)
 
-        ``"device"`` includes all transforms except for a ``"final"`` transform, if it exists.  This usually
+        ``"device"`` is equivalent to ``level=None`` and includes all transforms. Semantically, this usually
         corresponds to the circuits that will be sent to the device to execute.
 
         >>> qml.workflow.get_transform_program(circuit, level="device")
         TransformProgram(cancel_inverses, merge_rotations, _expand_transform_param_shift,
         validate_device_wires, defer_measurements, decompose, validate_measurements,
-        validate_observables)
+        validate_observables, metric_tensor)
 
         ``"top"`` and ``0`` both return empty transform programs.
 
@@ -158,6 +160,17 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         decompose, defer_measurements, validate_device_wires, _expand_transform_param_shift,
         _expand_metric_tensor, merge_rotations, cancel_inverses)
 
+        You can get creative and pick a single category of transforms as follows, excluding
+        any preceding transforms (and the final transform if it exists):
+
+        >>> user_prog = qml.workflow.get_transform_program(circuit, level="user")
+        >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
+        >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
+        >>> grad_prog[len(user_prog) - 1 : -1]
+        TransformProgram(_expand_transform_param_shift)
+        >>> dev_prog[len(grad_prog) - 1 : -1]
+        TransformProgram(validate_device_wires, mid_circuit_measurements, decompose, validate_measurements, validate_observables)
+
     """
     full_transform_program = _get_full_transform_program(qnode)
 
@@ -166,17 +179,19 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         # final transform is placed after device transforms
         num_user -= 1
 
+    readd_final_transform = False
+
     if level == "device":
-        level = -1 if full_transform_program.has_final_transform else None
+        level = None
     elif level == "top":
         level = 0
     elif level == "user":
+        readd_final_transform = True
         level = num_user
     elif level == "gradient":
-        if getattr(qnode.gradient_fn, "expand_transform", False):
-            level = slice(0, num_user + 1)
-        else:
-            level = slice(0, num_user)
+        readd_final_transform = True
+
+        level = num_user + 1 if getattr(qnode.gradient_fn, "expand_transform", False) else num_user
     elif isinstance(level, str):
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
@@ -185,9 +200,14 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
     if level is None or isinstance(level, int):
         level = slice(0, level)
 
-    return full_transform_program[level]
+    resolved_program = full_transform_program[level]
 
+    if qnode.transform_program.has_final_transform and readd_final_transform:
+        resolved_program += qnode.transform_program[-1:]
 
+    return resolved_program
+
+  
 def construct_batch(
     qnode: QNode,
     level: Optional[Union[Literal["top", "user", "device", "gradient"], int, slice]] = "user",
