@@ -454,21 +454,11 @@ def simulate_tree_mcm(
 
         # Combine two leaves once measurements are available
         if results_0[depth] is not None and results_1[depth] is not None:
-            # We use `circuits[-1].measurements` since it contains the
-            # target measurements (this is the only tape segment with
-            # unmodified measurements)
-            measurements = [{} for _ in circuits[-1].measurements]
-            # Special treatment for single measurements
-            single_measurement = len(circuits[-1].measurements) == 1
-            # Store each measurement in a dictionary `{branch: (count, measure)}`
-            for branch, count in counts[depth].items():
-                meas = results_0[depth] if branch == 0 else results_1[depth]
-                if single_measurement:
-                    meas = [meas]
-                for i, m in enumerate(meas):
-                    measurements[i][branch] = (count, m)
             # Call `combine_measurements` to count-average measurements
-            measurements = combine_measurements(circuits[-1], measurements, mcm_samples)
+            measurement_dicts = get_measurement_dicts(
+                circuits[-1], counts[depth], (results_0[depth], results_1[depth])
+            )
+            measurements = combine_measurements(circuits[-1], measurement_dicts, mcm_samples)
             # Clear stack
             counts[depth] = None
             results_0[depth] = None
@@ -560,17 +550,28 @@ def simulate_tree_mcm(
         results_1[depth] = measurements
 
     # Combine first two branches
-    measurements = [{} for _ in circuit.measurements]
+    measurement_dicts = get_measurement_dicts(
+        circuit, counts[depth], (results_0[depth], results_1[depth])
+    )
+    return combine_measurements(circuit, measurement_dicts, mcm_samples)
+
+
+def get_measurement_dicts(circuit, counts, results):
+    # We use `circuits[-1].measurements` since it contains the
+    # target measurements (this is the only tape segment with
+    # unmodified measurements)
+    results_0, results_1 = results
+    measurement_dicts = [{} for _ in circuit.measurements]
+    # Special treatment for single measurements
     single_measurement = len(circuit.measurements) == 1
-    for branch, count in counts[depth].items():
-        meas = results_0[depth] if branch == 0 else results_1[depth]
+    # Store each measurement in a dictionary `{branch: (count, measure)}`
+    for branch, count in counts.items():
+        meas = results_0 if branch == 0 else results_1
         if single_measurement:
             meas = [meas]
         for i, m in enumerate(meas):
-            measurements[i][branch] = (count, m)
-    measurements = combine_measurements(circuit, measurements, mcm_samples)
-
-    return measurements
+            measurement_dicts[i][branch] = (count, m)
+    return measurement_dicts
 
 
 def branch_state(state, branch, wire, reset):
