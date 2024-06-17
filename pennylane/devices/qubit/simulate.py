@@ -388,16 +388,6 @@ def simulate_tree_mcm(
     interface = execution_kwargs.get("interface", None)
     postselect_mode = execution_kwargs.get("postselect_mode", None)
 
-    samples_present = any(isinstance(mp, SampleMP) for mp in circuit.measurements)
-    postselect_present = any(
-        op.postselect is not None for op in circuit.operations if isinstance(op, MidMeasureMP)
-    )
-    if postselect_present and samples_present and circuit.batch_size is not None:
-        raise ValueError(
-            "Returning qml.sample is not supported when postselecting mid-circuit "
-            "measurements with broadcasting"
-        )
-
     #########################
     # shot vector treatment #
     #########################
@@ -648,7 +638,7 @@ def update_mcm_samples(op, samples, mcm_active, mcm_samples):
             if k == op:
                 break
             mask = qml.math.logical_and(mask, mcm_samples[k] == v)
-        if op not in mcm_samples:
+        if op not in mcm_samples:  # pragma: no cover
             mcm_samples[op] = qml.math.empty(shape, dtype=samples.dtype)
         mcm_samples[op][mask] = samples
     else:
