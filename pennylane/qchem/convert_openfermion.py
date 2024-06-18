@@ -139,12 +139,12 @@ def from_openfermion(openfermion_op, tol=1e-16):
 
 
 def to_openfermion(
-    pl_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=1.0e-16
+    pennylane_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=1.0e-16
 ):
     r"""Convert a PennyLane operator to a OpenFermion ``QubitOperator`` or ``FermionOperator``.
 
     Args:
-        pl_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, FermiWord, FermiSentence):
+        pennylane_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, FermiWord, FermiSentence):
             linear combination of operators
         wires (Wires, list, tuple, dict):
             Custom wire mapping used to convert the qubit operator
@@ -167,7 +167,7 @@ def to_openfermion(
     1.2 [0^ 1] +
     3.1 [1^ 2]
     """
-    return _to_openfermion_dispatch(pl_op, wires=wires, tol=tol)
+    return _to_openfermion_dispatch(pennylane_op, wires=wires, tol=tol)
 
 
 @singledispatch
