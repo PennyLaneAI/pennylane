@@ -529,6 +529,9 @@ def _to_string(fermi_op, of=False):
     >>> _to_string(w, of=True)
     0^ 1
     """
+    if not isinstance(fermi_op, FermiWord):
+        raise ValueError(f"fermi_op must be a FermiWord, got: {type(fermi_op)}")
+
     pl_to_of_map = {"+": "^", "-": ""}
 
     if len(fermi_op) == 0:

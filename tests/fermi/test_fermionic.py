@@ -1016,16 +1016,11 @@ class TestFermiSentenceArithmetic:
         (fw5, "10+ 30- 0+ 400-"),
         (fw6, "10+ 30+ 0- 400-"),
         (fw7, "10- 30+ 0- 400+"),
-        (fs1, "1.23 * 0+ 1-\n+ 4j * 0+ 0-\n+ -0.5 * 0+ 3- 0+ 4-"),
-        (fs2, "-1.23 * 0+ 1-\n+ (-0-4j) * 0+ 0-\n+ 0.5 * 0+ 3- 0+ 4-"),
-        (fs3, "-0.5 * 0+ 3- 0+ 4-\n+ 1 * I"),
-        (fs4, "1 * I"),
-        (fs5, ""),
     )
 
     @pytest.mark.parametrize("f_op, string", fw_string)
     def test_to_string(self, f_op, string):
-        """Test if to_string returns the correct string in PennyLane format."""
+        """Test if _to_string returns the correct string in PennyLane format."""
         assert _to_string(f_op) == string
 
     fw_of_string = (
@@ -1036,11 +1031,6 @@ class TestFermiSentenceArithmetic:
         (fw5, "10^ 30 0^ 400"),
         (fw6, "10^ 30^ 0 400"),
         (fw7, "10 30^ 0 400^"),
-        (fs1, "1.23 * 0^ 1\n+ 4j * 0^ 0\n+ -0.5 * 0^ 3 0^ 4"),
-        (fs2, "-1.23 * 0^ 1\n+ (-0-4j) * 0^ 0\n+ 0.5 * 0^ 3 0^ 4"),
-        (fs3, "-0.5 * 0^ 3 0^ 4\n+ 1 * I"),
-        (fs4, "1 * I"),
-        (fs5, ""),
     )
 
     @pytest.mark.parametrize("f_op, string", fw_of_string)
@@ -1051,9 +1041,7 @@ class TestFermiSentenceArithmetic:
     def test_to_string_type(self):
         """Test if to_string throws error if wrong type is given."""
         pl_op = qml.X(0)
-        with pytest.raises(
-            ValueError, match=f"fermi_op must be a FermiWord or FermiSentence, got: {type(pl_op)}"
-        ):
+        with pytest.raises(ValueError, match=f"fermi_op must be a FermiWord, got: {type(pl_op)}"):
             _to_string(pl_op)
 
     @pytest.mark.parametrize(
