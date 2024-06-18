@@ -416,6 +416,7 @@ def simulate_tree_mcm(
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
     counts = [None] * (n_mcms + 1)
     mcm_samples = qml.math.empty((circuit.shots.total_shots, n_mcms), dtype=bool)
+    mid_measurements = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
     results_0 = [None] * (n_mcms + 1)
     results_1 = [None] * (n_mcms + 1)
     states = [None] * (n_mcms + 1)
@@ -448,6 +449,9 @@ def simulate_tree_mcm(
             else:
                 results_1[depth] = measurements
                 mcm_current[depth] = False
+            mid_measurements.update(
+                (k, v) for k, v in zip(mcms[depth:], mcm_current[depth:].tolist())
+            )
             continue
 
         # Parse shots for the current branche
@@ -456,7 +460,6 @@ def simulate_tree_mcm(
         else:
             shots = circuits[depth].shots.total_shots
         # Update active branch dict
-        mid_measurements = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
         no_shots = not bool(shots)  # If num_shots is zero, update measurements with empty tuple
         invalid_postselect = (
             depth > 0
@@ -510,6 +513,7 @@ def simulate_tree_mcm(
         if not mcm_current[depth]:
             results_0[depth] = measurements
             mcm_current[depth] = True
+            mid_measurements[mcms[depth]] = True
             continue
         # If at a one-branch leaf, update measurements
         results_1[depth] = measurements
