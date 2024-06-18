@@ -44,9 +44,8 @@ and `How to create dynamci circuits with mid-circuit measurements
 Resetting wires
 ***************
 
-Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire
-can also be reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument
-of :func:`~.pennylane.measure` to ``True``:
+Wires can be reused after making mid-circuit measurements. Moreover, a measured wire can be
+reset to the :math:`|0 \rangle` state by setting ``reset=True`` in :func:`~.pennylane.measure`:
 
 .. code-block:: python3
 
@@ -99,8 +98,7 @@ discarded. This behaviour can be customized, see the section
 
 .. note::
 
-    Currently, postselection support is only available on :class:`~.pennylane.devices.DefaultQubit`. Using
-    postselection on other devices will raise an error.
+    Currently, postselection is only supported on :class:`~.pennylane.devices.DefaultQubit`.
 
 Conditional operators / Dynamic circuits
 ----------------------------------------
@@ -129,8 +127,8 @@ condition based on such values and pass it to ``cond()``:
     >>> qnode_conditional_op_on_zero(*pars)
     tensor([0.88660045, 0.11339955], requires_grad=True)
 
-For more examples, refer to the :func:`~.pennylane.cond` documentation
-and `How to create dynamic circuits with mid-circuit measurements
+For more examples, refer to the :func:`~.cond` documentation
+and the `how-to on creating dynamic circuits with mid-circuit measurements
 <https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits/>`__.
 
 .. _mid_circuit_measurements_statistics:
@@ -139,10 +137,10 @@ Mid-circuit measurement statistics
 ----------------------------------
 
 Statistics of mid-circuit measurements can be collected along with terminal measurement statistics.
-Currently, ``qml.probs``, ``qml.sample``, ``qml.expval``, ``qml.var``, and ``qml.counts``
+Currently, :func:`~.probs`, :func:`~.sample`, :func:`~.expval`, :func:`~.var`, and :func:`~.counts`
 are supported, and devices that currently support collecting such
-statistics are :class:`~.pennylane.devices.DefaultQubit`,
-:class:`~.pennylane.devices.DefaultMixed`, and :class:`~.pennylane.devices.DefaultQubitLegacy`.
+statistics are :class:`~.DefaultQubit`, :class:`~.DefaultMixed`,
+and :class:`~.DefaultQubitLegacy`.
 
 .. code-block:: python3
 
@@ -254,24 +252,27 @@ scalings are
    <style>
        .gr-parent {background-color:#e1eba8}
        .or-parent {background-color:#ffe096}
-       .rd-parent {background-color:#ffa7ab}
+       .rd-parent {background-color:#ffb3b3}
        .tb { border-collapse: collapse; }
-       .tb th, .tb td { padding: 1px; border: solid 1px black; }
+       .tb th, .tb td { padding: 1px; border: solid 1px black; vertical-align: middle; column-width: auto; }
    </style>
 
 .. rst-class:: tb
 
-+--------------------------+--------------------------------------------------+-------------------------------------------------------+---------------------------------------+-----------------------------+
-| **Simulation technique** | **Memory**                                       | **Time**                                              | **Differentiation support**           | **Supports shots/analytic** |
-| Deferred measurements    | :rd: :math:`\mathcal{O}\left(2^{n_{MCM}}\right)` | :rd: :math:`\mathcal{O}\left(2^{n_{MCM}}\right)`      | :gr: yes                              | :gr: yes / yes              |
-| Dynamic one-shot         | :gr: :math:`\mathcal{O}\left(1\right)`           | :rd: :math:`\mathcal{O}\left(n_{shots}\right)`        | :or: finite differences\ :math:`{}^1` | :or: yes / no               |
-| Tree-traversal           | :or: :math:`\mathcal{O}\left(n_{MCM}+1\right)`   | :or: :math:`\mathcal{O}\left(\leq 2^{n_{MCM}}\right)` | :or: finite differences\ :math:`{}^1` | :or: yes / no               |
-+--------------------------+--------------------------------------------------+-------------------------------------------------------+---------------------------------------+-----------------------------+
++--------------------------+-------------------------------------------+------------------------------------------------+-------------------------------------------+----------------------------------+
+| **Simulation technique** | **Memory**                                | **Time**                                       | **Differentiation support**               | **Supports shots/analytic mode** |
++==========================+===========================================+================================================+===========================================+==================================+
+| Deferred measurements    | :rd:`\ ` :math:`\mathcal{O}(2^{n_{MCM}})` | :rd:`\ ` :math:`\mathcal{O}(2^{n_{MCM}})`      | :gr:`\ ` yes                              | :gr:`\ ` yes / yes               |
++--------------------------+-------------------------------------------+------------------------------------------------+-------------------------------------------+----------------------------------+
+| Dynamic one-shot         | :gr:`\ ` :math:`\mathcal{O}(1)`           | :rd:`\ ` :math:`\mathcal{O}(n_{shots})`        | :or:`\ ` finite differences\ :math:`{}^1` | :or:`\ ` yes / no                |
++--------------------------+-------------------------------------------+------------------------------------------------+-------------------------------------------+----------------------------------+
+| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(\leq 2^{n_{MCM}})` | :or:`\ ` finite differences\ :math:`{}^1` | :or:`\ ` yes / no                |
++--------------------------+-------------------------------------------+------------------------------------------------+-------------------------------------------+----------------------------------+
 
 :math:`{}^1` In principle, parameter-shift differentiation is supported as long as no
 postselection is used. Parameters within ``qml.cond``\ itionally applied operations will
 fall back to finite differences, so that a proper value for ``h`` should be provided, see
-:func:`~.pennylane.finite_diff`.
+:func:`~.pennylane.gradients.finite_diff`.
 
 The strengths and weaknesses of the simulation techniques differ strongly and the best
 technique will depend on details of the simulation workflow. As a rule of thumb:
@@ -463,7 +464,7 @@ PennyLane. For ease of use, we provide the following configuration options to us
   .. warning::
 
       If the ``mcm_method`` argument is provided, the :func:`~pennylane.defer_measurements` or
-      :func:`~pennylane.dynamic_one_shot` transforms must not be applied directly to the :class:`~pennylane.QNode`
+      :func:`~pennylane.dynamic_one_shot` transforms must not be applied manually to the :class:`~pennylane.QNode`
       as this can lead to incorrect behaviour.
 
 * ``postselect_mode``: To configure how invalid shots are handled when postselecting mid-circuit measurements
@@ -480,18 +481,19 @@ PennyLane. For ease of use, we provide the following configuration options to us
 
       dev = qml.device("default.qubit", wires=3, shots=10)
 
-      def circuit(x):
+      def circ(x):
           qml.RX(x, 0)
           m_0 = qml.measure(0, postselect=1)
           qml.CNOT([0, 1])
           return qml.sample(qml.PauliZ(0))
 
-      fill_shots_qnode = qml.QNode(circuit, dev, mcm_method="one-shot", postselect_mode="fill-shots")
-      hw_like_qnode = qml.QNode(circuit, dev, mcm_method="one-shot", postselect_mode="hw-like")
+      method = "one-shot"
+      fill_shots_node = qml.QNode(circ, dev, mcm_method=method, postselect_mode="fill-shots")
+      hw_like_node = qml.QNode(circ, dev, mcm_method=method, postselect_mode="hw-like")
 
-  >>> fill_shots_qnode(np.pi / 2)
+  >>> fill_shots_node(np.pi / 2)
   array([-1., -1., -1., -1., -1., -1., -1., -1., -1., -1.])
-  >>> hw_like_qnode(np.pi / 2)
+  >>> hw_like_node(np.pi / 2)
   array([-1., -1., -1., -1., -1., -1., -1.])
 
   .. note::
@@ -508,7 +510,8 @@ PennyLane. For ease of use, we provide the following configuration options to us
             import jax
             import jax.numpy as jnp
 
-            dev = qml.device("default.qubit", wires=3, shots=10, seed=jax.random.PRNGKey(123))
+            key = jax.random.PRNGKey(123)
+            dev = qml.device("default.qubit", wires=3, shots=10, seed=key)
 
             @qml.qnode(dev, postselect_mode="hw-like", mcm_method="one-shot")
             def circuit(x):
