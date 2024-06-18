@@ -22,6 +22,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops import Prod
 from pennylane.operation import Tensor
 from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
@@ -450,7 +451,7 @@ class TestPauliWord:
         ),
     )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("pw, h", tup_pw_hamiltonian)
     def test_hamiltonian(self, pw, h):
         """Test that a PauliWord can be cast to a Hamiltonian."""
@@ -458,14 +459,14 @@ class TestPauliWord:
         h = qml.operation.convert_to_legacy_H(h)
         assert pw_h.compare(h)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity Hamiltonian."""
         op = PauliWord({}).hamiltonian(wire_order=[0, 1])
         id = qml.Hamiltonian([1], [qml.Identity(wires=[0, 1])])
         assert op.compare(id)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliWord is
         cast to a Hamiltonian."""
@@ -919,21 +920,37 @@ class TestPauliSentence:
         assert un_simplified_ps == expected_simplified_ps2
 
     tup_ps_operation = (
-        (PauliSentence({PauliWord({0: X}): 1}), qml.s_prod(1, qml.PauliX(wires=0))),
+        (PauliSentence({PauliWord({0: X}): 1}), qml.ops.LinearCombination([1], [qml.X(wires=0)])),
         (
             ps1_hamiltonian,
-            qml.sum(
-                1.23 * qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2)),
-                4 * qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
-                -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+            qml.ops.LinearCombination(
+                [1.23, 4.0, -0.5],
+                [
+                    Prod(qml.X(wires=1), qml.Y(wires=2)),
+                    Prod(qml.X(wires="a"), qml.X(wires="b"), qml.Z(wires="c")),
+                    Prod(qml.Z(wires=0), qml.Z(wires="b"), qml.Z(wires="c")),
+                ],
             ),
         ),
         (
             ps2_hamiltonian,
-            qml.sum(
-                -1.23 * qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2)),
-                -4 * qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
-                0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+            qml.ops.LinearCombination(
+                [-1.23, -4.0, 0.5],
+                [
+                    Prod(qml.X(wires=1), qml.Y(wires=2)),
+                    Prod(qml.X(wires="a"), qml.X(wires="b"), qml.Z(wires="c")),
+                    Prod(qml.Z(wires=0), qml.Z(wires="b"), qml.Z(wires="c")),
+                ],
+            ),
+        ),
+        (
+            ps3,
+            qml.ops.LinearCombination(
+                [-0.5, 1.0],
+                [
+                    Prod(qml.Z(wires=0), qml.Z(wires="b"), qml.Z(wires="c")),
+                    qml.Identity(wires=[0, "b", "c"]),
+                ],
             ),
         ),
     )
@@ -941,21 +958,8 @@ class TestPauliSentence:
     @pytest.mark.parametrize("ps, op", tup_ps_operation)
     def test_operation(self, ps, op):
         """Test that a PauliSentence can be cast to a PL operation."""
-
-        def _compare_ops(op1, op2):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-
-        ps_op = ps.operation()
-        if len(ps) > 1:
-            for ps_summand, op_summand in zip(ps_op.operands, op.operands):
-                assert ps_summand.scalar == op_summand.scalar
-                if isinstance(ps_summand.base, qml.ops.Prod):  # pylint: disable=no-member
-                    for pw_factor, op_factor in zip(ps_summand.base, op_summand.base):
-                        _compare_ops(pw_factor, op_factor)
-                else:
-                    ps_base, op_base = (ps_summand.base, op_summand.base)
-                    _compare_ops(ps_base, op_base)
+        actual = ps.operation()
+        assert qml.equal(actual, op)
 
     def test_operation_with_identity(self):
         """Test that a PauliSentence with an empty PauliWord can be cast to
@@ -1039,7 +1043,7 @@ class TestPauliSentence:
         ),
     )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("ps, h", tup_ps_hamiltonian)
     def test_hamiltonian(self, ps, h):
         """Test that a PauliSentence can be cast to a Hamiltonian."""
@@ -1047,14 +1051,14 @@ class TestPauliSentence:
         h = qml.operation.convert_to_legacy_H(h)
         assert ps_h.compare(h)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.hamiltonian(wire_order=[0, 1])
         id = qml.Hamiltonian([], [])
         assert op.compare(id)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a Hamiltonian."""
@@ -1063,7 +1067,7 @@ class TestPauliSentence:
         ):
             ps5.hamiltonian()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
         op = ps5.hamiltonian(wire_order=["a", "b"])

@@ -1008,18 +1008,17 @@ class PauliSentence(dict):
         matrix.eliminate_zeros()
         return matrix
 
-    def operation(self, wire_order=None):
-        """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
-        if len(self) == 0:
-            return qml.s_prod(0, Identity(wires=wire_order))
+    def operation(self, wire_order=None) -> qml.ops.LinearCombination:
+        """Returns a native PennyLane :class:`~pennylane.ops.LinearCombination` representing the PauliSentence."""
 
-        summands = []
+        if len(self) == 0:
+            return qml.ops.LinearCombination([0], Identity(wires=wire_order))
+
         wire_order = wire_order or self.wires
-        for pw, coeff in self.items():
-            pw_op = pw.operation(wire_order=list(wire_order))
-            rep = PauliSentence({pw: coeff})
-            summands.append(pw_op if coeff == 1 else SProd(coeff, pw_op, _pauli_rep=rep))
-        return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
+        ops, coeffs = zip(
+            *((pw.operation(wire_order=list(wire_order)), coeff) for pw, coeff in self.items())
+        )
+        return qml.ops.LinearCombination(coeffs, ops, _pauli_rep=self)
 
     def hamiltonian(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
