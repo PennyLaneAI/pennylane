@@ -24,7 +24,7 @@ jax = pytest.importorskip("jax")
 
 # needs to be below the importorskip calls
 # pylint: disable=wrong-import-position
-from pennylane.capture.to_catalyst import qfunc_jaxpr_to_catalyst, to_catalyst
+from pennylane.capture.to_catalyst import to_catalyst
 
 pytestmark = [pytest.mark.external, pytest.mark.catalyst]
 

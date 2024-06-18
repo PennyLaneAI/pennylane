@@ -122,7 +122,7 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
             invars = eqn.invars
             outvars = eqn.outvars
             primitive = c_prims.func_p
-            call_jaxpr = qfunc_jaxpr_to_catalyst(
+            call_jaxpr = _qfunc_jaxpr_to_catalyst(
                 eqn.params["qfunc_jaxpr"].jaxpr, eqn.params["device"]
             )
             params = {"fn": eqn.params["qnode"], "call_jaxpr": call_jaxpr}
@@ -140,12 +140,12 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
     return jax.core.ClosedJaxpr(new_xpr, jaxpr.consts)
 
 
-def qfunc_jaxpr_to_catalyst(
+def _qfunc_jaxpr_to_catalyst(
     plxpr: jax.core.Jaxpr, device: "pennylane.devices.Device"
 ) -> jax.core.Jaxpr:
     """Convert qfunc jaxpr and a device to catalyst variant jaxpr."""
 
-    converter = CatalystConverter(plxpr)
+    converter = _CatalystConverter(plxpr.constsvars, plxpr.invars)
     converter.add_device_eqn(device)
     converter.add_qreg_eqn()
     for eqn in plxpr.eqns:
@@ -154,13 +154,18 @@ def qfunc_jaxpr_to_catalyst(
     return converter.catalyst_xpr
 
 
-class CatalystConverter:
+class _CatalystConverter:
     """A class that manages the conversion of pennylane variant qfunc jaxpr to catalyst variant jaxpr.
 
     By using this class, we can manage the statefullness of the conversion and the clean up required
     at the end.
 
-    This class is purely internal to the ``qfunc_jaxpr_to_catalyst`` helper function.
+    This class is purely internal to the ``_qfunc_jaxpr_to_catalyst`` helper function. The division into
+    public methods and private methods is designed to improve readability and add an additional level
+    of detail at each level in the stack.  While the public methods have a very particular order
+    to be called in, the tight coupling between ``_CatalystConverter`` and ``_qfunc_jaxpr_to_catalyst``
+    insures that we do not need to worry about the methods being called in a different order. We do
+    not need to be concerned about this class being used in a different context.
 
     Stateful variables are:
     * ``catalyst_xpr``
@@ -175,13 +180,13 @@ class CatalystConverter:
 
     """
 
-    def __init__(self, plxpr):
+    def __init__(self, constvars, invars):
 
         self._count = 0
 
         self.catalyst_xpr = jax.core.Jaxpr(
-            constvars=plxpr.constvars,
-            invars=plxpr.invars,
+            constvars=constvars,
+            invars=invars,
             outvars=[],
             eqns=[],
         )
