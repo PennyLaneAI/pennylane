@@ -118,6 +118,12 @@
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
+* The `default.qubit` device implements a depth-first tree-traversal algorithm to
+  accelerate native mid-circuit measurement execution. The new implementation
+  supports classical control, collecting statistics, and post-selection, along
+  with all measurements enabled with `qml.dynamic_one_shot`.
+  [(#5180)](https://github.com/PennyLaneAI/pennylane/pull/5180)
+
 * `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
   These keyword arguments can be used to configure how the device should behave when running circuits with
   mid-circuit measurements.
