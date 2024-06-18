@@ -139,7 +139,7 @@ Mid-circuit measurement statistics
 Statistics of mid-circuit measurements can be collected along with terminal measurement statistics.
 Currently, :func:`~.probs`, :func:`~.sample`, :func:`~.expval`, :func:`~.var`, and :func:`~.counts`
 are supported, and devices that currently support collecting such
-statistics are :class:`~.DefaultQubit`, :class:`~.DefaultMixed`,
+statistics are :class:`~.pennylane.devices.DefaultQubit`, :class:`~.DefaultMixed`,
 and :class:`~.DefaultQubitLegacy`.
 
 .. code-block:: python3
