@@ -273,7 +273,7 @@ class TestPreprocessingIntegration:
             program(tapes)
 
     @pytest.mark.parametrize(
-        "gammas,probs,req_warn",
+        "relaxations,misclassifications,req_warn",
         [
             [(0.1, 0.2, 0.3), None, True],
             [None, (0.1, 0.2, 0.3), True],
@@ -290,7 +290,9 @@ class TestPreprocessingIntegration:
             [qml.state(), qml.expval(qml.GellMann(1))],
         ],
     )
-    def test_preprocess_warns_measurement_error_state(self, gammas, probs, req_warn, measurements):
+    def test_preprocess_warns_measurement_error_state(
+        self, relaxations, misclassifications, req_warn, measurements
+    ):
         """Test that preprocess raises a warning if there is an analytic state measurement and
         measurement error."""
         tapes = [
@@ -300,7 +302,7 @@ class TestPreprocessingIntegration:
             ),
         ]
         device = DefaultQutritMixed(
-            damping_measurement_gammas=gammas, trit_flip_measurement_probs=probs
+            readout_relaxations=relaxations, readout_misclassifications=misclassifications
         )
         program, _ = device.preprocess()
 

@@ -39,7 +39,7 @@ def calculate_expval(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Measure the expectation value of an observable.
 
@@ -101,7 +101,7 @@ def calculate_probability(
     measurementprocess: StateMeasurement,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Find the probability of measuring states.
 
@@ -179,7 +179,7 @@ def calculate_variance(
     measurementprocess: StateMeasurement,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Find variance of observable.
 
@@ -203,7 +203,7 @@ def calculate_expval_sum_of_terms(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
@@ -278,7 +278,7 @@ def measure(
     measurementprocess: MeasurementProcess,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Apply a measurement process to a state.
 

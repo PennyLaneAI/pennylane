@@ -164,14 +164,14 @@ class DefaultQutritMixed(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        readout_relaxations (List[float]): Gamma inputs for :class:`qml.QutritAmplitudeDamping` channel
-            of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
-            amplitude damping from longer readouts with shorter relaxation time associated with
-            transmon based qudits.
-        readout_misclassifications (List[float]): Gamma inputs for :class:`qml.TritFlip` channel
-            of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
-            in readouts.
-
+        readout_relaxations (List[float]): Input probabilities for relation input errors implemented
+            with the :class:`qml.QutritAmplitudeDamping` channel. The input defines the
+            channel's parameters :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models
+            state relaxation error that occur during readout of transmon based qutrits.
+        readout_misclassifications (List[float]):  Input probabilities for state readout
+            misclassification events implemented with the :class:`qml.TritFlip` channel. The input defines the
+            channel's parameters :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models
+            misclassification events in readouts.
 
     **Example:**
 

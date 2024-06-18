@@ -1566,11 +1566,22 @@ class TestReadoutError:
         ],
     )
     def test_measurement_error_validation(self, relaxations, misclassifications, nr_wires):
-        """Tests error is thrown if the wrong number of arguments inputted for readout errors."""
+        """Tests that an error is raised for wrong number of arguments inputted in readout errors."""
         with pytest.raises(qml.DeviceError, match="results in error:"):
             qml.device(
                 "default.qutrit.mixed",
                 wires=nr_wires,
                 readout_relaxations=relaxations,
                 readout_misclassifications=misclassifications,
+            )
+
+    def test_prob_type(self, nr_wires):
+        """Tests that an error is raised for wrong data type in readout errors"""
+        with pytest.raises(qml.DeviceError, match="results in error:"):
+            qml.device(
+                "default.qutrit.mixed", wires=nr_wires, readout_relaxations=[0.1, 0.2, "0.3"]
+            )
+        with pytest.raises(qml.DeviceError, match="results in error:"):
+            qml.device(
+                "default.qutrit.mixed", wires=nr_wires, readout_misclassifications=[0.1, 0.2, "0.3"]
             )

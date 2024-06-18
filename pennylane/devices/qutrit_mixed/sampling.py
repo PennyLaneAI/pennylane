@@ -15,6 +15,7 @@
 Code relevant for sampling a qutrit mixed state.
 """
 import functools
+from typing import Callable
 
 import numpy as np
 
@@ -103,7 +104,7 @@ def _measure_with_samples_diagonalizing_gates(
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Returns the samples of the measurement process performed on the given state,
     by rotating the state into the measurement basis using the diagonalizing gates
@@ -191,7 +192,7 @@ def _measure_sum_with_samples(
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ):
     """Compute expectation values of Sum or Hamiltonian Observables"""
     # mp.obs returns is the list of observables for Sum,
@@ -226,7 +227,12 @@ def _measure_sum_with_samples(
 
 
 def _sample_state_jax(
-    state, shots: int, prng_key, is_state_batched: bool = False, wires=None, readout_errors=None
+    state,
+    shots: int,
+    prng_key,
+    is_state_batched: bool = False,
+    wires=None,
+    readout_errors: list[Callable] = None,
 ) -> np.ndarray:
     """Returns a series of samples of a state for the JAX interface based on the PRNG.
 
@@ -287,7 +293,7 @@ def sample_state(
     wires=None,
     rng=None,
     prng_key=None,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ) -> np.ndarray:
     """Returns a series of computational basis samples of a state.
 
@@ -348,7 +354,7 @@ def measure_with_samples(
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    readout_errors=None,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process
