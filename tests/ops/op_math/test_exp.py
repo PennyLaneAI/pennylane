@@ -533,21 +533,19 @@ class TestDecomposition:
     def test_trotter_is_used_if_num_steps_is_defined(self):
         """Test that the Suzuki-Trotter decomposition is used when ``num_steps`` is defined."""
         phi = 1.23
+        num_steps = 3
         op = qml.IsingXY(phi, wires=[0, 1])
-        exp = qml.evolve(op.generator(), coeff=-phi, num_steps=3)
+        exp = qml.evolve(op.generator(), coeff=-phi, num_steps=num_steps)
         dec = exp.decomposition()
         assert qml.math.allclose(
             qml.matrix(qml.tape.QuantumScript(dec), wire_order=[0, 1]),
             qml.matrix(exp, wire_order=[0, 1]),
         )
+        new_phi = (-phi / 2) / num_steps
         expected_decomp = [
-            qml.IsingXX((-phi / 2) / 3, wires=[0, 1]),
-            qml.IsingYY((-phi / 2) / 3, wires=[0, 1]),
-            qml.IsingXX((-phi / 2) / 3, wires=[0, 1]),
-            qml.IsingYY((-phi / 2) / 3, wires=[0, 1]),
-            qml.IsingXX((-phi / 2) / 3, wires=[0, 1]),
-            qml.IsingYY((-phi / 2) / 3, wires=[0, 1]),
-        ]
+            qml.IsingXX(new_phi, wires=[0, 1]),
+            qml.IsingYY(new_phi, wires=[0, 1]),
+        ] * num_steps
         assert len(dec) == len(expected_decomp)
         for op1, op2 in zip(dec, expected_decomp):
             assert qml.equal(op1, op2)
