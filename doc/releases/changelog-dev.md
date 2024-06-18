@@ -127,6 +127,9 @@
    optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
    [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
+* Add more complicated tests to cover cases when mapped operator is different for various mapping schemes.
+  [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `default.qubit` device implements a depth-first tree-traversal algorithm to
