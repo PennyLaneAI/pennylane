@@ -14,9 +14,9 @@
 """
 This submodule defines a utility for converting plxpr into catalyst jaxpr.
 """
-
 import catalyst
 import jax
+import numpy as np
 from catalyst import jax_primitives as c_prims
 
 from .capture_qnode import _get_qnode_prim, _get_shapes_for
@@ -27,13 +27,11 @@ AbstractMeasurement = _get_abstract_measurement()
 
 measurement_map = {
     "sample_wires": c_prims.sample_p,
-    "sample_obs": c_prims.sample_p,
     "expval_obs": c_prims.expval_p,
     "var_obs": c_prims.var_p,
     "probs_wires": c_prims.probs_p,
     "state_wires": c_prims.state_p,
 }
-# TODO: figure out what to do about counts
 
 
 null_source_info = jax.extend.source_info_util.SourceInfo(
@@ -111,7 +109,7 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
     """
     new_xpr = jax.core.Jaxpr(
         constvars=jaxpr.jaxpr.constvars,
-        invars=jaxpr.jaxpr.invars,  # + qreg var?
+        invars=jaxpr.jaxpr.invars,
         outvars=jaxpr.jaxpr.outvars,
         eqns=[],
     )
@@ -119,6 +117,8 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
         if eqn.primitive != _get_qnode_prim():
             new_xpr.eqns.append(eqn)
         else:
+            if eqn.params["shots"] != eqn.params["device"].shots:
+                raise NotImplementedError("catalyst does not support dynamic shots.")
             invars = eqn.invars
             outvars = eqn.outvars
             primitive = c_prims.func_p
@@ -145,7 +145,7 @@ def _qfunc_jaxpr_to_catalyst(
 ) -> jax.core.Jaxpr:
     """Convert qfunc jaxpr and a device to catalyst variant jaxpr."""
 
-    converter = _CatalystConverter(plxpr.constsvars, plxpr.invars)
+    converter = _CatalystConverter(plxpr.constvars, plxpr.invars)
     converter.add_device_eqn(device)
     converter.add_qreg_eqn()
     for eqn in plxpr.eqns:
@@ -171,7 +171,9 @@ class _CatalystConverter:
     * ``catalyst_xpr``
     * ``_wire_map``: map from wire value to ``AbstractQbit`` produced by earlier operations on the wire
     * ``_op_math_cache``: operators that are consumed by later equations
-    * ``count``: number of variables already existing.  Used when creating new variables.
+    * ``_count``: number of variables already existing.  Used when creating new variables.
+    * ``_classical_var_map``: map from plxpr classical vars to catalyst classical vars.  Different
+      by count.
 
     Constants saved between calls are:
     * ``_qreg``
@@ -181,8 +183,7 @@ class _CatalystConverter:
     """
 
     def __init__(self, constvars, invars):
-
-        self._count = 0
+        self._count = len(invars)
 
         self.catalyst_xpr = jax.core.Jaxpr(
             constvars=constvars,
@@ -196,6 +197,7 @@ class _CatalystConverter:
         self._op_math_cache = {}
         self._num_device_wires = 0
         self._shots = None
+        self._classical_var_map = {}
 
     def _make_var(self, aval):
         """Create a variable from an aval.
@@ -203,8 +205,9 @@ class _CatalystConverter:
         Side Effects:
             Increments the ``_count`` variable.
         """
+        out = jax.core.Var(count=self._count, suffix="", aval=aval)
         self._count += 1
-        return jax.core.Var(count=self._count, suffix="", aval=aval)
+        return out
 
     def _get_wire(self, orig_wire):
         """Get the ``AbstractQubit`` corresponding to a given wire label.
@@ -368,6 +371,10 @@ class _CatalystConverter:
         """
         primitive = c_prims.namedobs_p
 
+        if "n_wires" not in eqn.params:
+            raise NotImplementedError(
+                f"Operator {eqn.primitive} not yet supported for catalyst conversion"
+            )
         n_wires = eqn.params["n_wires"]
         orig_wires = eqn.invars[-n_wires:]
         wires = [self._get_wire(w) for w in orig_wires]
@@ -392,11 +399,19 @@ class _CatalystConverter:
 
         Used by ``_add_measurement_eqn``.
         """
-        wires_invars = [self._get_wire(w) for w in eqn.invars]
+        if len(eqn.invars) == 0:
+            num_wires = self._num_device_wires
+            wires_invars = []
+            for w in range(self._num_device_wires):
+                w_literal = jax.core.Literal(
+                    val=w, aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True)
+                )
+                wires_invars.append(self._get_wire(w_literal))
+        else:
+            num_wires = len(eqn.invars)
+            wires_invars = [self._get_wire(w) for w in eqn.invars]
         outvars = [
-            self._make_var(
-                c_prims.AbstractObs(num_qubits=len(eqn.invars), primitive=c_prims.compbasis_p)
-            )
+            self._make_var(c_prims.AbstractObs(num_qubits=num_wires, primitive=c_prims.compbasis_p))
         ]
         wires_eqn = jax.core.JaxprEqn(
             wires_invars,
@@ -432,6 +447,10 @@ class _CatalystConverter:
         Called by ``convert_plxpr_eqn``.
 
         """
+        if eqn.primitive.name not in measurement_map:
+            raise NotImplementedError(
+                f"measurement {eqn.primitive.name} not yet implemented for catalyst conversion."
+            )
         primitive = measurement_map[eqn.primitive.name]
 
         if "_wires" in eqn.primitive.name:
@@ -457,7 +476,7 @@ class _CatalystConverter:
         # convert all output dtypes to float64
         # _convert_measurement_dtypes will add an equation converting float64 to any non-float64 output
         final_aval = outavals[0]
-        if outavals[0].dtype != jax.numpy.float64:
+        if outavals[0].dtype.name not in {"float64", "complex64", "complex128"}:
             outavals = [jax.core.ShapedArray(outavals[0].shape, dtype=jax.numpy.float64)]
 
         outvars = [self._make_var(oa) for oa in outavals]
@@ -476,6 +495,9 @@ class _CatalystConverter:
             return outvars
         return self._convert_measurement_dtypes(outvars, final_aval)
 
+    def _convert_classical_eqn(self, eqn):
+        raise NotImplementedError
+
     def convert_plxpr_eqn(self, eqn):
         """Converts a pl variant equation into a catalyst variant equation and adds it to ``catalyst_xpr``.
 
@@ -492,4 +514,4 @@ class _CatalystConverter:
             mp_outaval = self._add_measurement_eqn(eqn)
             self.catalyst_xpr.outvars.extend(mp_outaval)
         else:
-            self.catalyst_xpr.eqns.append(eqn)
+            self._convert_classical_eqn(eqn)
