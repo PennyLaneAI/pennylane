@@ -2768,29 +2768,21 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "II", wires=[0, 1])
         decomp_ops = op.decomposition()
 
-        assert np.allclose(op.eigvals(), np.exp(-1j * theta / 2) * np.ones(4))
-        assert np.allclose(op.matrix() / op.matrix()[0, 0], np.eye(4))
+        assert len(decomp_ops) == 1
 
-        assert len(decomp_ops) == 0
+        decomp_op = decomp_ops[0]
+
+        assert decomp_op.name == "GlobalPhase"
+
+        # global phase acts on all wires so wire attribute is unused
+        assert decomp_op.wires == Wires([])
+        assert qml.math.allclose(decomp_op.data[0], theta / 2)
+        assert qml.math.allclose(op.matrix(), decomp_op.matrix() * np.eye(4))
 
     def test_PauliRot_all_Identity_broadcasted(self):
         """Test handling of the broadcasted all-identity Pauli."""
 
         theta = np.array([0.4, 0.9, 1.2])
-        op = qml.PauliRot(theta, "II", wires=[0, 1])
-        decomp_ops = op.decomposition()
-
-        phases = np.exp(-1j * theta / 2)
-        assert np.allclose(op.eigvals(), np.outer(phases, np.ones(4)))
-        mat = op.matrix()
-        for phase, sub_mat in zip(phases, mat):
-            assert np.allclose(sub_mat, phase * np.eye(4))
-
-        assert len(decomp_ops) == 0
-
-    @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
-    def test_PauliRot_decomposition_II(self, theta):
-        """Test that the decomposition for a I rotation returns a GlobalPhase."""
         op = qml.PauliRot(theta, "II", wires=[0, 1])
         decomp_ops = op.decomposition()
 
@@ -2802,8 +2794,12 @@ class TestPauliRot:
 
         # global phase acts on all wires so wire attribute is unused
         assert decomp_op.wires == Wires([])
-        assert qml.math.allclose(decomp_op.data[0], theta / 2)
-        assert qml.math.allclose(op.matrix(), decomp_op.matrix() * np.eye(4))
+
+        for param, angle in zip(decomp_op.data[0], theta):
+            assert qml.math.allclose(param, angle / 2)
+
+        for op_matrix, decomp_phase in zip(op.matrix(), decomp_op.matrix().T):
+            assert qml.math.allclose(op_matrix, decomp_phase * np.eye(4))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_ZZ(self, theta):
