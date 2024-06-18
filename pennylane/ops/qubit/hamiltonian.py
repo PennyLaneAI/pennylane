@@ -318,6 +318,10 @@ class Hamiltonian(Observable):
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
         self._pauli_rep = "unset"
 
+    def __len__(self):
+        """The number of terms in the Hamiltonian."""
+        return len(self.ops)
+
     @property
     def pauli_rep(self):
         if self._pauli_rep != "unset":
