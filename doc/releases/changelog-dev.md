@@ -80,7 +80,7 @@
 <h3>Improvements 🛠</h3>
 
 * Move information about mid-circuit measurements from the measurements quickstart page to its own
-  [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid-circuit_measurements.html)
+  [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
   [(#5870)](https://github.com/PennyLaneAI/pennylane/pull/5870)
 
 * Add operation and measurement specific routines in `default.tensor` to improve scalability.

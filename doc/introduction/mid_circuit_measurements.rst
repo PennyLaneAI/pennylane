@@ -261,12 +261,17 @@ scalings are
 
 .. rst-class:: tb
 
-+--------------------------+--------------------------------------------------+-------------------------------------------------------+-------------------------------------+-----------------------------+
-| **Simulation technique** | **Memory**                                       | **Time**                                              | **Differentiation support**         | **Supports shots/analytic** |
-| Deferred measurements    | :rd: :math:`\mathcal{O}\left(2^{n_{MCM}}\right)` | :rd: :math:`\mathcal{O}\left(2^{n_{MCM}}\right)`      | :gr: yes                            | :gr: yes / yes              |
-| Dynamic one-shot         | :gr: :math:`\mathcal{O}\left(1\right)`           | :rd: :math:`\mathcal{O}\left(n_{shots}\right)`        | :or: finite differences\ :math:`^1` | :or: yes / no               |
-| Tree-traversal           | :or: :math:`\mathcal{O}\left(n_{MCM}+1\right)`   | :or: :math:`\mathcal{O}\left(\leq 2^{n_{MCM}}\right)` | :rd: TBD                            | :rd: TBD                    |
-+--------------------------+--------------------------------------------------+-------------------------------------------------------+-------------------------------------+-----------------------------+
++--------------------------+--------------------------------------------------+-------------------------------------------------------+---------------------------------------+-----------------------------+
+| **Simulation technique** | **Memory**                                       | **Time**                                              | **Differentiation support**           | **Supports shots/analytic** |
+| Deferred measurements    | :rd: :math:`\mathcal{O}\left(2^{n_{MCM}}\right)` | :rd: :math:`\mathcal{O}\left(2^{n_{MCM}}\right)`      | :gr: yes                              | :gr: yes / yes              |
+| Dynamic one-shot         | :gr: :math:`\mathcal{O}\left(1\right)`           | :rd: :math:`\mathcal{O}\left(n_{shots}\right)`        | :or: finite differences\ :math:`{}^1` | :or: yes / no               |
+| Tree-traversal           | :or: :math:`\mathcal{O}\left(n_{MCM}+1\right)`   | :or: :math:`\mathcal{O}\left(\leq 2^{n_{MCM}}\right)` | :or: finite differences\ :math:`{}^1` | :or: yes / no               |
++--------------------------+--------------------------------------------------+-------------------------------------------------------+---------------------------------------+-----------------------------+
+
+:math:`{}^1` In principle, parameter-shift differentiation is supported as long as no
+postselection is used. Parameters within ``qml.cond``\ itionally applied operations will
+fall back to finite differences, so that a proper value for ``h`` should be provided, see
+:func:`~.pennylane.finite_diff`.
 
 The strengths and weaknesses of the simulation techniques differ strongly and the best
 technique will depend on details of the simulation workflow. As a rule of thumb:
@@ -281,6 +286,8 @@ technique will depend on details of the simulation workflow. As a rule of thumb:
 
 By default, ``QNode``\ s use deferred measurements and dynamic one-shot sampling (if supported)
 when executed without and with shots, respectively.
+
+.. _deferred_measurements:
 
 Deferred measurements
 *********************
@@ -379,7 +386,7 @@ The transform can be applied to a QNode as follows:
 
 .. warning::
 
-    Dynamic circuits executed with shots should be differentiated with the finite-difference method.
+    Dynamic circuits executed with shots should be differentiated with the finite difference method.
 
 .. _tree_traversal:
 
