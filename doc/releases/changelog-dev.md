@@ -117,8 +117,11 @@
   [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
-* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
+* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends. The
+  ``molecular_hamiltonian`` and ``molecular_dipole`` functions are moved to ``hamiltonian`` and
+  ``dipole`` modules.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
+  [(#5863)](https://github.com/PennyLaneAI/pennylane/pull/5863)
 
 * `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
    optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
@@ -367,6 +370,9 @@
 
 * The `qml.Tracker` examples are updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
+
+* The input types for `coupling_map` in `qml.transpile` are updated to reflect all the allowed input types by `nx.to_networkx_graph`.
+  [(#5864)](https://github.com/PennyLaneAI/pennylane/pull/5864)
 
 <h3>Bug fixes 🐛</h3>
 
