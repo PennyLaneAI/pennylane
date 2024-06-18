@@ -28,6 +28,13 @@ from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
 
 
+def null_postprocessing(results):
+    """A postprocessing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
 @transform
 def split_non_commuting(
     tape: qml.tape.QuantumScript,
@@ -243,6 +250,8 @@ def split_non_commuting(
         [[expval(X(0)), probs(wires=[1])], [probs(wires=[0, 1])]]
 
     """
+    if len(tape.measurements) == 0:
+        return [tape], null_postprocessing
 
     # Special case for a single measurement of a Sum or Hamiltonian, in which case
     # the grouping information can be computed and cached in the observable.
