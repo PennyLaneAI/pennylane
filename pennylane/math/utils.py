@@ -14,6 +14,7 @@
 """Utility functions"""
 import warnings
 
+# pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as _np
 

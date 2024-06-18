@@ -16,6 +16,7 @@
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
 
+# pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as np
 from packaging.version import Version
