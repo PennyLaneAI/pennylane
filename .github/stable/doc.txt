@@ -72,7 +72,7 @@ pybtex-docutils==1.0.3
 Pygments==2.18.0
 pygments-github-lexers==0.0.5
 pyparsing==3.1.2
-pyscf==2.6.0
+pyscf==2.6.1
 pytest==8.2.2
 python-dateutil==2.9.0.post0
 pytz==2024.1
