@@ -522,11 +522,11 @@ def _to_string(fermi_op, of=False):
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> _to_string(w)
-    0+ 1-
+    '0+ 1-'
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> _to_string(w, of=True)
-    0^ 1
+    '0^ 1'
     """
     if not isinstance(fermi_op, FermiWord):
         raise ValueError(f"fermi_op must be a FermiWord, got: {type(fermi_op)}")
