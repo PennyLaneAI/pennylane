@@ -407,6 +407,46 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
 
 
 @apply_operation.register
+def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply PhaseShift to state."""
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    # must be first state and then -1 because it breaks otherwise
+    state1 = math.multiply(state[sl_1], math.exp(1j * op.parameters[0]))
+    return math.stack([state[sl_0], state1], axis=axis)
+
+
+@apply_operation.register
+def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply T to state."""
+    return apply_operation(
+        qml.PhaseShift(np.pi / 4, op.wires),
+        state,
+        is_state_batched=is_state_batched,
+        debugger=debugger,
+    )
+
+
+@apply_operation.register
+def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply S to state."""
+    return apply_operation(
+        qml.PhaseShift(np.pi / 2, op.wires),
+        state,
+        is_state_batched=is_state_batched,
+        debugger=debugger,
+    )
+
+
+@apply_operation.register
 def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply cnot gate to state."""
     target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + is_state_batched
