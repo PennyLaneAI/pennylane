@@ -92,7 +92,7 @@ class UCCSD(Operation):
             and unoccupied orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
-        n_repeats (int): Number of times the UCCSD unitary is repeated.
+        n_repeats (int): Number of times the UCCSD unitary is repeated. The default value is ``1``.
 
     .. details::
         :title: Usage Details
