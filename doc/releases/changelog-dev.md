@@ -63,6 +63,24 @@
   }, t1 = 0.04)
   ```
 
+* The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
+  OpenFermion and PennyLane objects.
+  [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
+  [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+
+  ```python
+  of_op = openfermion.FermionOperator('0^ 2')
+  pl_op = qml.from_openfermion(of_op)
+  of_op_new = qml.to_openfermion(pl_op)
+
+  ```
+  ```pycon
+  >>> print(pl_op)
+  a⁺(0) a(2)
+  >>> print(of_op_new)
+  1.0 [0^ 2]
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * Add operation and measurement specific routines in `default.tensor` to improve scalability.
@@ -305,11 +323,6 @@
 * `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
-
-* The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
-  OpenFermion and PennyLane objects.
-  [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
-  [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
 
 <h3>Breaking changes 💔</h3>
 
