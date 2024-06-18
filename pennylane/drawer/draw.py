@@ -76,7 +76,7 @@ def draw(
         show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
 
     Keyword Args:
-        level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
+        level (None, str, int, slice): An indication of what transforms to apply before drawing.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
