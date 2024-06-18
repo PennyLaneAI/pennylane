@@ -92,7 +92,7 @@ def get_final_state(circuit, debugger=None, interface=None):
 
 
 def measure_final_state(  # pylint: disable=too-many-arguments
-    circuit, state, is_state_batched, rng=None, prng_key=None, measurement_errors=None
+    circuit, state, is_state_batched, rng=None, prng_key=None, readout_errors=None
 ) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
@@ -110,8 +110,8 @@ def measure_final_state(  # pylint: disable=too-many-arguments
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
-        measurement_errors (List[Callable]): List of operators to apply to each wire being measured
-        to simulate measurement error.
+        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         Tuple[TensorLike]: The measurement results
@@ -122,10 +122,10 @@ def measure_final_state(  # pylint: disable=too-many-arguments
     if not circuit.shots:
         # analytic case
         if len(circuit.measurements) == 1:
-            return measure(circuit.measurements[0], state, is_state_batched, measurement_errors)
+            return measure(circuit.measurements[0], state, is_state_batched, readout_errors)
 
         return tuple(
-            measure(mp, state, is_state_batched, measurement_errors) for mp in circuit.measurements
+            measure(mp, state, is_state_batched, readout_errors) for mp in circuit.measurements
         )
 
     # finite-shot case
@@ -138,7 +138,7 @@ def measure_final_state(  # pylint: disable=too-many-arguments
             is_state_batched=is_state_batched,
             rng=rng,
             prng_key=prng_key,
-            measurement_errors=measurement_errors,
+            readout_errors=readout_errors,
         )
         for mp in circuit.measurements
     )
@@ -156,7 +156,7 @@ def simulate(  # pylint: disable=too-many-arguments
     prng_key=None,
     debugger=None,
     interface=None,
-    measurement_errors=None,
+    readout_errors=None,
 ) -> Result:
     """Simulate a single quantum script.
 
@@ -172,8 +172,8 @@ def simulate(  # pylint: disable=too-many-arguments
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        measurement_errors (List[Callable]): List of operators to apply to each wire being measured
-        to simulate measurement error.
+        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -195,5 +195,5 @@ def simulate(  # pylint: disable=too-many-arguments
         is_state_batched,
         rng=rng,
         prng_key=prng_key,
-        measurement_errors=measurement_errors,
+        readout_errors=readout_errors,
     )

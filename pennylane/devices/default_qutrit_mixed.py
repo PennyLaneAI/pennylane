@@ -89,11 +89,11 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 
 
 @qml.transform
-def warn_measurement_error_state(
+def warn_readout_error_state(
     tape: qml.tape.QuantumTape,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
-    """If the measurement returned is an analytic state or density_matrix, and a readout error
-    parameter is defined, warn that measurement error will not be applied.
+    """If a measurement in the QNode is an analytic state or density_matrix, and a readout error
+    parameter is defined, warn that readout error will not be applied.
 
     Args:
         tape (QuantumTape, .QNode, Callable): a quantum circuit.
@@ -105,38 +105,42 @@ def warn_measurement_error_state(
     if not tape.shots:
         for m in tape.measurements:
             if isinstance(m, qml.measurements.StateMP):
-                warnings.warn(f"Measurement {m} is not affected by measurement error.")
+                warnings.warn(f"Measurement {m} is not affected by readout error.")
 
     return (tape,), null_postprocessing
 
 
-def get_measurement_errors(damping_measurement_gammas, trit_flip_measurement_probs):
-    r"""Get the list of measurement errors that should be applied to each measured wire.
+def get_readout_errors(readout_relaxations, readout_misclassifications):
+    r"""Get the list of readout errors that should be applied to each measured wire.
 
     Args:
-        damping_measurement_gammas (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+        readout_relaxations (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
             of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
-            amplitude damping from longer measurements with shorter relaxation time associated with
+            amplitude damping from longer readout with shorter relaxation time associated with
             transmon based qudits.
-        trit_flip_measurement_probs (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+        readout_misclassifications (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
             of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
-            in measurement.
+            in readout.
 
     Returns:
-        measurement_errors (List[Callable]): List of measurement errors functions that should be
+        readout_errors (List[Callable]): List of readout error functions that should be
         applied to each measured wire.
     """
     measure_funcs = []
-    if damping_measurement_gammas is not None:
-        if len(damping_measurement_gammas) != 3:
-            raise qml.DeviceError(
-                "You must input 3 gammas for the qml.QutritAmplitudeDamping channel"
-            )
-        measure_funcs.append(partial(qml.QutritAmplitudeDamping, *damping_measurement_gammas))
-    if trit_flip_measurement_probs is not None:
-        if len(trit_flip_measurement_probs) != 3:
-            raise qml.DeviceError("You must input 3 probabilities for the qml.TritFlip channel")
-        measure_funcs.append(partial(qml.TritFlip, *trit_flip_measurement_probs))
+    if readout_relaxations is not None:
+        try:
+            with qml.queuing.QueuingManager.stop_recording():
+                qml.QutritAmplitudeDamping(*readout_relaxations, wires=0)
+        except Exception as e:
+            raise qml.DeviceError("Applying damping readout error results in error:\n" + str(e))
+        measure_funcs.append(partial(qml.QutritAmplitudeDamping, *readout_relaxations))
+    if readout_misclassifications is not None:
+        try:
+            with qml.queuing.QueuingManager.stop_recording():
+                qml.TritFlip(*readout_misclassifications, wires=0)
+        except Exception as e:
+            raise qml.DeviceError("Applying trit flip readout error results in error:\n" + str(e))
+        measure_funcs.append(partial(qml.TritFlip, *readout_misclassifications))
 
     return None if len(measure_funcs) == 0 else measure_funcs
 
@@ -160,13 +164,13 @@ class DefaultQutritMixed(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        damping_measurement_gammas (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+        readout_relaxations (List[float]): Gamma inputs for :class:`qml.QutritAmplitudeDamping` channel
             of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
-            amplitude damping from longer measurements with shorter relaxation time associated with
+            amplitude damping from longer readouts with shorter relaxation time associated with
             transmon based qudits.
-        trit_flip_measurement_probs (List[float]): Gamma inputs for qml.TritFlip channel
+        readout_misclassifications (List[float]): Gamma inputs for :class:`qml.TritFlip` channel
             of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
-            in measurement.
+            in readouts.
 
 
     **Example:**
@@ -246,8 +250,8 @@ class DefaultQutritMixed(Device):
         wires=None,
         shots=None,
         seed="global",
-        damping_measurement_gammas=None,
-        trit_flip_measurement_probs=None,
+        readout_relaxations=None,
+        readout_misclassifications=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
@@ -259,9 +263,7 @@ class DefaultQutritMixed(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
-        self.measurement_errors = get_measurement_errors(
-            damping_measurement_gammas, trit_flip_measurement_probs
-        )
+        self.readout_errors = get_readout_errors(readout_relaxations, readout_misclassifications)
 
     @debug_logger
     def supports_derivatives(
@@ -354,8 +356,8 @@ class DefaultQutritMixed(Device):
         if config.gradient_method == "backprop":
             transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
 
-        if self.measurement_errors is not None:
-            transform_program.add_transform(warn_measurement_error_state)
+        if self.readout_errors is not None:
+            transform_program.add_transform(warn_readout_error_state)
 
         return transform_program, config
 
@@ -378,7 +380,7 @@ class DefaultQutritMixed(Device):
                 prng_key=self._prng_key,
                 debugger=self._debugger,
                 interface=interface,
-                measurement_errors=self.measurement_errors,
+                readout_errors=self.readout_errors,
             )
             for c in circuits
         )

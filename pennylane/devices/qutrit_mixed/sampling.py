@@ -103,7 +103,7 @@ def _measure_with_samples_diagonalizing_gates(
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    measurement_errors=None,
+    readout_errors=None,
 ) -> TensorLike:
     """Returns the samples of the measurement process performed on the given state,
     by rotating the state into the measurement basis using the diagonalizing gates
@@ -119,8 +119,8 @@ def _measure_with_samples_diagonalizing_gates(
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-        measurement_errors (List[Callable]): List of operators to apply to each wire being measured
-        to simulate measurement error.
+        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         TensorLike[Any]: Sample measurement results
@@ -165,7 +165,7 @@ def _measure_with_samples_diagonalizing_gates(
                 wires=wires,
                 rng=rng,
                 prng_key=prng_key,
-                measurement_errors=measurement_errors,
+                readout_errors=readout_errors,
             )
             processed_samples.append(_process_single_shot(samples))
 
@@ -178,7 +178,7 @@ def _measure_with_samples_diagonalizing_gates(
         wires=wires,
         rng=rng,
         prng_key=prng_key,
-        measurement_errors=measurement_errors,
+        readout_errors=readout_errors,
     )
 
     return _process_single_shot(samples)
@@ -191,7 +191,7 @@ def _measure_sum_with_samples(
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    measurement_errors=None,
+    readout_errors=None,
 ):
     """Compute expectation values of Sum or Hamiltonian Observables"""
     # mp.obs returns is the list of observables for Sum,
@@ -209,7 +209,7 @@ def _measure_sum_with_samples(
                     is_state_batched=is_state_batched,
                     rng=rng,
                     prng_key=prng_key,
-                    measurement_errors=measurement_errors,
+                    readout_errors=readout_errors,
                 )
             )
 
@@ -226,7 +226,7 @@ def _measure_sum_with_samples(
 
 
 def _sample_state_jax(
-    state, shots: int, prng_key, is_state_batched: bool = False, wires=None, measurement_errors=None
+    state, shots: int, prng_key, is_state_batched: bool = False, wires=None, readout_errors=None
 ) -> np.ndarray:
     """Returns a series of samples of a state for the JAX interface based on the PRNG.
 
@@ -237,8 +237,8 @@ def _sample_state_jax(
             the key to the JAX pseudo random number generator.
         is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
-        measurement_errors (List[Callable]): List of operators to apply to each wire being measured
-        to simulate measurement error.
+        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
@@ -257,9 +257,7 @@ def _sample_state_jax(
     basis_states = np.arange(QUDIT_DIM**num_wires)
 
     with qml.queuing.QueuingManager.stop_recording():
-        probs = measure(
-            qml.probs(wires=wires_to_sample), state, is_state_batched, measurement_errors
-        )
+        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
 
     if is_state_batched:
         # Produce separate keys for each of the probabilities along the broadcasted axis
@@ -289,7 +287,7 @@ def sample_state(
     wires=None,
     rng=None,
     prng_key=None,
-    measurement_errors=None,
+    readout_errors=None,
 ) -> np.ndarray:
     """Returns a series of computational basis samples of a state.
 
@@ -303,8 +301,8 @@ def sample_state(
             If no value is provided, a default RNG will be used
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-        measurement_errors (List[Callable]): List of operators to apply to each wire being measured
-        to simulate measurement error.
+        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
@@ -316,7 +314,7 @@ def sample_state(
             prng_key,
             is_state_batched=is_state_batched,
             wires=wires,
-            measurement_errors=measurement_errors,
+            readout_errors=readout_errors,
         )
 
     rng = np.random.default_rng(rng)
@@ -329,9 +327,7 @@ def sample_state(
     basis_states = np.arange(QUDIT_DIM**num_wires)
 
     with qml.queuing.QueuingManager.stop_recording():
-        probs = measure(
-            qml.probs(wires=wires_to_sample), state, is_state_batched, measurement_errors
-        )
+        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
 
     if is_state_batched:
         # rng.choice doesn't support broadcasting
@@ -352,7 +348,7 @@ def measure_with_samples(
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    measurement_errors=None,
+    readout_errors=None,
 ) -> TensorLike:
     """Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process
@@ -368,8 +364,8 @@ def measure_with_samples(
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-        measurement_errors (List[Callable]): List of operators to apply to each wire being measured
-        to simulate measurement error.
+        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         TensorLike[Any]: Sample measurement results
@@ -388,5 +384,5 @@ def measure_with_samples(
         is_state_batched=is_state_batched,
         rng=rng,
         prng_key=prng_key,
-        measurement_errors=measurement_errors,
+        readout_errors=readout_errors,
     )
