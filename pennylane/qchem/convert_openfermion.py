@@ -159,11 +159,13 @@ def to_openfermion(
 
     **Example**
 
-    >>> pl_term = 1.2 * qml.X(0) + 2.4 * qml.Z(1)
-    >>> q_op = to_openfermion(pl_term)
-    >>> q_op
-    (1.2+0j) [X0] +
-    (2.4+0j) [Z1]
+    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qmk.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = qmk.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> of_op = qml.to_openfermion(s)
+    >>> of_op
+    1.2 [0^ 1] +
+    3.1 [1^ 2]
     """
     return _to_openfermion_dispatch(pl_op, wires=wires, tol=tol)
 
