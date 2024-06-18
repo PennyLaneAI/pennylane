@@ -583,6 +583,17 @@ class TestUnits:
             fn([[0.1, 0.2], [0.3, 0.6], 0.4, 0.5, 0.7]), [0.01, 0.06, 0.06, 0.16, 0.25, 0.36, 0.49]
         )
 
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_no_measurements(self, grouping_strategy):
+        """Test that if the tape contains no measurements, the transform doesn't
+        modify it"""
+
+        tape = qml.tape.QuantumScript([qml.X(0)])
+        tapes, post_processing_fn = split_non_commuting(tape, grouping_strategy=grouping_strategy)
+        assert len(tapes) == 1
+        assert tapes[0] == tape
+        assert post_processing_fn(tapes) == tape
+
 
 class TestTermSampling:
     def test_term_sampling_fails_with_analytical(self):

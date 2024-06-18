@@ -41,6 +41,12 @@ class _ObsMetadata(NamedTuple):
     sum_non_id_coefficients: float
     id_offset: float
 
+def null_postprocessing(results):
+    """A postprocessing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
 
 @transform
 def split_non_commuting(
@@ -269,6 +275,9 @@ def split_non_commuting(
 
     if not tape.shots and term_sampling:
         raise ValueError("Term sampling is only supported by finite-shot devices.")
+    
+    if len(tape.measurements) == 0:
+        return [tape], null_postprocessing
 
     # Special case for a single measurement of a Sum or Hamiltonian, in which case
     # the grouping information can be computed and cached in the observable.
