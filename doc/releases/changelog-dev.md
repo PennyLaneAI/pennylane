@@ -296,7 +296,8 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
-* `qml.UCCSD` now accepts an additional optional argument `n_repeats` which is an integer and defines the number of times the UCCSD template is repeated. This can improve the accuracy of the UCCSD template by reducing the Trotter-error but results in deeper circuits. The provided weights should have the shape `(n_repeats, len(s_wires) + len(d_wires),)`. If `n_repeats=1`, which is the default value, the weights can also have the shape `(len(s_wires) + len(d_wires),)`. `s_wires` and `d_wires` are sequences of lists containing the wires defining the single and double excitations, respectively. Therefore, already existing code using the UCCSD template does not break.
+* `qml.UCCSD` now accepts an additional optional argument, `n_repeats`, which defines the number of times the UCCSD template is repeated. This can improve the accuracy of the template by reducing the Trotter error but would result in deeper circuits.
+  [(#5801)](https://github.com/PennyLaneAI/pennylane/pull/5801)
 
 <h3>Breaking changes 💔</h3>
 
