@@ -421,6 +421,8 @@ def gather_mcm(measurement, samples, is_valid):
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))
             values = [qml.math.array([v], like=interface, dtype=mcm_samples.dtype) for v in values]
+            # Need to use boolean functions explicitly as Tensorflow does not allow integer math
+            # on boolean arrays
             counts = [
                 qml.math.count_nonzero(
                     qml.math.logical_and(qml.math.all(mcm_samples == v, axis=1), is_valid)
@@ -434,6 +436,8 @@ def gather_mcm(measurement, samples, is_valid):
         return gather_non_mcm(measurement, mcm_samples, is_valid)
     mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=interface))
     if isinstance(measurement, ProbabilityMP):
+        # Need to use boolean functions explicitly as Tensorflow does not allow integer math
+        # on boolean arrays
         counts = [
             qml.math.count_nonzero(qml.math.logical_and((mcm_samples == v), is_valid))
             for v in list(mv.branches.values())
