@@ -384,6 +384,47 @@ def test_sample_with_broadcasting_and_postselection_error():
 class TestJaxIntegration:
     """Integration tests for dynamic_one_shot with jax"""
 
+    @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+    @pytest.mark.parametrize("shots", [100, [100, 101], [100, 100, 101]])
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    def test_sample_with_prng_key(self, mcm_method, shots, postselect):
+        """Test that setting a PRNGKey gives the expected behaviour. With separate calls
+        to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
+        # pylint: disable=import-outside-toplevel
+        from jax.random import PRNGKey
+
+        dev = get_device(shots=shots, seed=PRNGKey(678))
+        params = [np.pi / 4, np.pi / 3]
+        obs = qml.PauliZ(0) @ qml.PauliZ(1)
+
+        def func(x, y):
+            obs_tape(x, y, None, postselect=postselect)
+            return qml.sample(op=obs)
+
+        func0 = qml.QNode(func, dev, mcm_method=mcm_method)
+        results0 = func0(*params)
+        results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
+
+        mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
+
+        evals = obs.eigvals()
+        for eig in evals:
+            # When comparing with the results from a circuit with deferred measurements
+            # we're not always expected to have the functions used to sample are different
+            if isinstance(shots, list):
+                for r in results1:
+                    assert not np.all(np.isclose(r, eig))
+            else:
+                assert not np.all(np.isclose(results1, eig))
+
+        results0_2 = func0(*params)
+        # Same result expected with multiple executions
+        if isinstance(shots, list):
+            for r0, r0_2 in zip(results0, results0_2):
+                assert np.allclose(r0, r0_2)
+        else:
+            assert np.allclose(results0, results0_2)
+
     @pytest.mark.parametrize("diff_method", [None, "best"])
     @pytest.mark.parametrize("postselect", [None, 1])
     @pytest.mark.parametrize("reset", [False, True])
@@ -450,49 +491,6 @@ class TestJaxIntegration:
             if measure_f == qml.sample:
                 r2 = r2[r2 != fill_in_value]
             np.allclose(r1, r2)
-
-    @pytest.mark.parametrize("shots", [100, [100, 101]])
-    @pytest.mark.parametrize("postselect", [None, 0, 1])
-    def test_sample_with_prng_key(self, shots, postselect):
-        """Test that setting a PRNGKey gives the expected behaviour. With separate calls
-        to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
-        # pylint: disable=import-outside-toplevel
-        from jax.random import PRNGKey
-
-        dev = get_device(shots=shots, seed=PRNGKey(678))
-        param = [np.pi / 4, np.pi / 3]
-        obs = qml.PauliZ(0) @ qml.PauliZ(1)
-
-        @qml.qnode(dev)
-        def func(x, y):
-            obs_tape(x, y, None, postselect=postselect)
-            return qml.sample(op=obs)
-
-        func1 = func
-        func2 = qml.defer_measurements(func)
-
-        results1 = func1(*param)
-        results2 = func2(*param)
-
-        mcm_utils.validate_measurements(qml.sample, shots, results1, results2, batch_size=None)
-
-        evals = obs.eigvals()
-        for eig in evals:
-            # When comparing with the results from a circuit with deferred measurements
-            # we're not always expected to have the functions used to sample are different
-            if isinstance(shots, list):
-                for r in results1:
-                    assert not np.all(np.isclose(r, eig))
-            else:
-                assert not np.all(np.isclose(results1, eig))
-
-        results3 = func1(*param)
-        # Same result expected with multiple executions
-        if isinstance(shots, list):
-            for r1, r3 in zip(results1, results3):
-                assert np.allclose(r1, r3)
-        else:
-            assert np.allclose(results1, results3)
 
     def test_grad_basic(self):
         """Test that the gradient is correct in a circuit without postselection
