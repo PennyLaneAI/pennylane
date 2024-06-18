@@ -34,6 +34,16 @@
   [1 1 0]
   ```
 
+* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
+  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
+
+  ```pycon
+  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+  >>> qml.math.expectation_value(operator_matrix, state_vector)
+  tensor(-2.23711432e-17+0.j, requires_grad=True)
+  ```
+
 * The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
@@ -105,9 +115,13 @@
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
   [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
+  [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
-* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
+* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends. The
+  ``molecular_hamiltonian`` and ``molecular_dipole`` functions are moved to ``hamiltonian`` and
+  ``dipole`` modules.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
+  [(#5863)](https://github.com/PennyLaneAI/pennylane/pull/5863)
 
 * `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
    optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
@@ -357,7 +371,14 @@
 * The `qml.Tracker` examples are updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
+* The input types for `coupling_map` in `qml.transpile` are updated to reflect all the allowed input types by `nx.to_networkx_graph`.
+  [(#5864)](https://github.com/PennyLaneAI/pennylane/pull/5864)
+
 <h3>Bug fixes 🐛</h3>
+
+* An error is now raised on processing an `AnnotatedQueue` into a `QuantumScript` if the queue
+  contains something other than an `Operator`, `MeasurementProcess`, or `QuantumScript`.
+  [(#5866)](https://github.com/PennyLaneAI/pennylane/pull/5866)
 
 * Fixes a bug in the wire handling on special controlled ops.
   [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
@@ -470,6 +491,7 @@ Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
 Utkarsh Azad,
 Lillian M. A. Frederiksen,
+Ludmila Botelho,
 Gabriel Bottrill,
 Astral Cai,
 Ahmed Darwish,
