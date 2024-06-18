@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import fermi
 from pennylane import numpy as np
+from pennylane.qchem.convert_openfermion import _from_openfermion_qubit
 
 openfermion = pytest.importorskip("openfermion")
 
@@ -71,7 +72,7 @@ class TestFromOpenFermion:
     @pytest.mark.parametrize("of_op, pl_op", OPS)
     def test_convert_qubit(self, of_op, pl_op):
         """Test conversion from ``QubitOperator`` to PennyLane."""
-        converted_pl_op = qml.from_openfermion_qubit(of_op)
+        converted_pl_op = _from_openfermion_qubit(of_op)
         assert converted_pl_op.compare(pl_op)
 
     def test_tol_qubit(self):
@@ -80,21 +81,21 @@ class TestFromOpenFermion:
             "Z1", complex(1.3, 1e-8)
         )
 
-        pl_op = qml.from_openfermion_qubit(q_op, tol=1e-6)
+        pl_op = _from_openfermion_qubit(q_op, tol=1e-6)
         assert not np.any(pl_op.coeffs.imag)
 
-        pl_op = qml.from_openfermion_qubit(q_op, tol=1e-10)
+        pl_op = _from_openfermion_qubit(q_op, tol=1e-10)
         assert np.any(pl_op.coeffs.imag)
 
     def test_sum_qubit(self):
         """Test that the from_openfermion_qubit method yields a :class:`~.Sum` object if requested."""
         q_op = openfermion.QubitOperator("X0 X1", 0.25) + openfermion.QubitOperator("Z1 Z0", 0.75)
 
-        assert isinstance(qml.from_openfermion_qubit(q_op), qml.ops.LinearCombination)
+        assert isinstance(_from_openfermion_qubit(q_op), qml.ops.LinearCombination)
         assert isinstance(
-            qml.from_openfermion_qubit(q_op, format="LinearCombination"), qml.ops.LinearCombination
+            _from_openfermion_qubit(q_op, format="LinearCombination"), qml.ops.LinearCombination
         )
-        assert isinstance(qml.from_openfermion_qubit(q_op, format="Sum"), qml.ops.Sum)
+        assert isinstance(_from_openfermion_qubit(q_op, format="Sum"), qml.ops.Sum)
 
     def test_invalid_format_qubit(self):
         """Test if error is raised if format is invalid."""
@@ -104,7 +105,7 @@ class TestFromOpenFermion:
             ValueError,
             match="format must be a Sum or LinearCombination, got: invalid_format",
         ):
-            qml.from_openfermion_qubit(q_op, format="invalid_format")
+            _from_openfermion_qubit(q_op, format="invalid_format")
 
     # PennyLane operators were obtained from openfermion operators manually
     @pytest.mark.parametrize(
@@ -156,7 +157,7 @@ class TestFromOpenFermion:
         r"""Test that conversion from openfermion fermionic operator to pennylane
         fermionic operator is correct"""
 
-        converted_op = qml.qchem.from_openfermion_fermionic(of_op)
+        converted_op = qml.qchem.from_openfermion(of_op)
         assert converted_op == pl_op
 
     def test_convert_fermionic_type_fw(self):
@@ -164,7 +165,7 @@ class TestFromOpenFermion:
         fermionic operator with coefficient equal to 1.0"""
 
         of_op = openfermion.FermionOperator("2^ 3")
-        converted_op = qml.qchem.from_openfermion_fermionic(of_op)
+        converted_op = qml.qchem.from_openfermion(of_op)
 
         assert isinstance(converted_op, qml.fermi.FermiWord)
 
@@ -173,7 +174,7 @@ class TestFromOpenFermion:
         terms in the fermionic operator"""
 
         of_op = openfermion.FermionOperator("2^ 3") + openfermion.FermionOperator("1^ 2")
-        converted_op = qml.qchem.from_openfermion_fermionic(of_op)
+        converted_op = qml.qchem.from_openfermion(of_op)
 
         assert isinstance(converted_op, qml.fermi.FermiSentence)
 
@@ -192,7 +193,7 @@ class TestFromOpenFermion:
             }
         )
 
-        converted_op = qml.qchem.from_openfermion_fermionic(of_op, tol=0.6)
+        converted_op = qml.qchem.from_openfermion(of_op, tol=0.6)
 
         assert converted_op == truncated_op
 
@@ -203,7 +204,7 @@ class TestFromOpenFermion:
             m.setitem(sys.modules, "openfermion", None)
 
             with pytest.raises(ImportError, match="This feature requires openfermion"):
-                qml.qchem.from_openfermion_fermionic(openfermion.FermionOperator("0^ 1"))
+                qml.qchem.from_openfermion(openfermion.FermionOperator("0^ 1"))
 
 
 class TestToOpenFermion:
