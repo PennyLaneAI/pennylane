@@ -14,7 +14,6 @@
 """The fermionic representation classes and functions."""
 import re
 from copy import copy
-from functools import singledispatch
 from numbers import Number
 
 from numpy import ndarray

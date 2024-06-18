@@ -305,7 +305,7 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
-* The ``from_openfermion`` and ``to_openfermion`` functions are added to conversion between 
+* The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
   OpenFermion and PennyLane objects.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
   [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
