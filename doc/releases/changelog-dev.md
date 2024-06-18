@@ -47,20 +47,6 @@
 * The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
-* Added `from_openfermion` to convert openfermion `FermionOperator` objects to PennyLane `FermiWord` or
-`FermiSentence` objects.
-[(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
-
-  ```python
-  of_op = openfermion.FermionOperator('0^ 2')
-  pl_op = qml.from_openfermion_fermionic(of_op)
-
-  ```
-  ```pycon
-  >>> print(pl_op)
-  a⁺(0) a(2)
-  ```
-
 * A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
@@ -319,8 +305,10 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
-* The ``from_openfermion`` and ``to_openfermion`` functions are added to conversion between OpenFermion and PennyLane objects..
+* The ``from_openfermion`` and ``to_openfermion`` functions are added to conversion between 
+  OpenFermion and PennyLane objects.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
+  [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
 
 <h3>Breaking changes 💔</h3>
 
@@ -502,6 +490,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Daria Van Hende,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
