@@ -456,6 +456,7 @@ class TestHadamardGrad:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
+            qml.probs()
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
@@ -464,7 +465,7 @@ class TestHadamardGrad:
         assert len(tapes) == 2
 
         assert isinstance(res_hadamard, tuple)
-        assert len(res_hadamard) == 2
+        assert len(res_hadamard) == 3
 
         assert isinstance(res_hadamard[0], tuple)
         assert len(res_hadamard[0]) == 2
@@ -474,13 +475,14 @@ class TestHadamardGrad:
         assert isinstance(res_hadamard[0][1], np.ndarray)
         assert res_hadamard[0][1].shape == ()
 
-        assert isinstance(res_hadamard[1], tuple)
-        assert len(res_hadamard[1]) == 2
+        for res in res_hadamard[1:]:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
 
-        assert isinstance(res_hadamard[1][0], np.ndarray)
-        assert res_hadamard[1][0].shape == (4,)
-        assert isinstance(res_hadamard[1][1], np.ndarray)
-        assert res_hadamard[1][1].shape == (4,)
+            assert isinstance(res[0], np.ndarray)
+            assert res[0].shape == (4,)
+            assert isinstance(res[1], np.ndarray)
+            assert res[1].shape == (4,)
 
         expval_expected = [-2 * np.sin(x) / 2, 0]
         probs_expected = (
@@ -511,8 +513,9 @@ class TestHadamardGrad:
         assert np.allclose(res_hadamard[0][1], expval_expected[1], tol)
 
         # Probs
-        assert np.allclose(res_hadamard[1][0], probs_expected[:, 0], tol)
-        assert np.allclose(res_hadamard[1][1], probs_expected[:, 1], tol)
+        for res in res_hadamard[1:]:
+            assert np.allclose(res[0], probs_expected[:, 0], tol)
+            assert np.allclose(res[1], probs_expected[:, 1], tol)
 
     costs_and_expected_expval_scalar = [
         (cost7, (), np.ndarray),
