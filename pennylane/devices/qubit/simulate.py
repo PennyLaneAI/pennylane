@@ -584,13 +584,13 @@ def prepend_state_prep(circuit, state, interface, wires):
     of the original circuit (which included all wires)."""
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
-    new_state = (
+    state = (
         create_initial_state(wires, None, like=INTERFACE_TO_LIKE[interface])
         if state is None
         else state
     )
     return qml.tape.QuantumScript(
-        [qml.StatePrep(new_state.ravel(), wires=wires)] + circuit.operations,
+        [qml.StatePrep(state.ravel(), wires=wires)] + circuit.operations,
         circuit.measurements,
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
