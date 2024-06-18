@@ -185,7 +185,7 @@ class TestLevelExpansionStrategy:
         def circuit():
             return [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
 
-        with pytest.warns(UserWarning, match="More than one tape constructed"):
+        with pytest.warns(UserWarning, match="Multiple tapes constructed"):
             qml.draw_mpl(circuit)()
 
 
