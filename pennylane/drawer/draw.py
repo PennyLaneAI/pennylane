@@ -316,6 +316,8 @@ def _draw_qnode(
             if show_matrices and cache["matrices"]:
                 mat_str = ""
                 for i, mat in enumerate(cache["matrices"]):
+                    if qml.math.requires_grad(mat) and hasattr(mat, "detach"):
+                        mat = mat.detach()
                     mat_str += f"\nM{i} = \n{mat}"
                 if mat_str:
                     mat_str = "\n" + mat_str

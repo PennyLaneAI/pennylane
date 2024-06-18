@@ -15,6 +15,7 @@
 
 """
 import inspect
+from contextlib import nullcontext
 from functools import wraps
 from typing import Callable, Literal, Optional, Tuple, Union
 
@@ -320,31 +321,37 @@ def construct_batch(
         else:
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
 
+        context_fn = nullcontext
+
         if isinstance(qnode, qml.qnn.KerasLayer):
             # pylint: disable=import-outside-toplevel
             import tensorflow as tf
 
-            with tf.GradientTape() as tf_tape:
-                tf_tape.watch(list(qnode.qnode_weights.values()))
+            context_fn = tf.GradientTape
+
+        if isinstance(qnode, qml.qnn.TorchLayer):
+            x = args[0]
+            kwargs = {
+                **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
+            }
+
+        with context_fn() as cntxt:
+            # If TF tape, use the watch function
+            if hasattr(cntxt, "watch"):
+                cntxt.watch(list(qnode.qnode_weights.values()))
 
                 kwargs = {
                     **{k: 1.0 * w for k, w in qnode.qnode_weights.items()},
                     **kwargs,
                 }
 
-        if isinstance(qnode, qml.qnn.TorchLayer):
-            x = args[0]
-            kwargs = {
-                **{arg: weight.data.to(x) for arg, weight in qnode.qnode_weights.items()},
-            }
-
-        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
-
-        params = initial_tape.get_parameters(trainable_only=False)
-        initial_tape.trainable_params = qml.math.get_trainable_indices(params)
+            initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+            params = initial_tape.get_parameters(trainable_only=False)
+            initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
         qnode._update_gradient_fn(tape=initial_tape)
         program = get_transform_program(qnode, level=level)
+
         return program((initial_tape,))
 
     return batch_constructor
