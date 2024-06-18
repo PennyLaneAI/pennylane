@@ -957,12 +957,15 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
         arrays.append(arr)
 
     mpo = qtn.MatrixProductOperator(arrays=arrays, sites=sites)
-    mpo = mpo.fill_empty_sites()
-    device._quimb_circuit._psi = mpo.apply(
-        device._quimb_circuit.psi,
-        max_bond=device._max_bond_dim,
-        cutoff=device._cutoff,
-    )
+    if device.method == "tn":
+        device._quimb_circuit._psi &= mpo
+    else:
+        mpo = mpo.fill_empty_sites()
+        device._quimb_circuit._psi = mpo.apply(
+            device._quimb_circuit.psi,
+            max_bond=device._max_bond_dim,
+            cutoff=device._cutoff,
+        )
 
 
 @apply_operation_core.register
@@ -982,7 +985,7 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
 @singledispatch
 def expval_core(obs: Observable, device) -> float:
     """Dispatcher for expval."""
-    return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
+    return device._local_expectation(qml.matrix(obs).astype(device._c_dtype), tuple(obs.wires))
 
 
 @expval_core.register
@@ -997,7 +1000,8 @@ def expval_core_prod(obs: Prod, device) -> float:
     ket = device._quimb_circuit.copy()
     for op in obs:
         ket.apply_gate(qml.matrix(op).astype(device._c_dtype), *op.wires, parametrize=None)
-    return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
+    expval_tn = device._quimb_circuit.psi.H & ket.psi
+    return np.real(expval_tn.contract(all, output_inds=()))
 
 
 @expval_core.register
