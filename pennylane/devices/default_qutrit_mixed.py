@@ -166,12 +166,10 @@ class DefaultQutritMixed(Device):
             ``numpy.random.default_rng``.
         readout_relaxations (List[float]): Input probabilities for relation input errors implemented
             with the :class:`qml.QutritAmplitudeDamping` channel. The input defines the
-            channel's parameters :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models
-            state relaxation error that occur during readout of transmon based qutrits.
+            channel's parameters :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`.
         readout_misclassifications (List[float]):  Input probabilities for state readout
             misclassification events implemented with the :class:`qml.TritFlip` channel. The input defines the
-            channel's parameters :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models
-            misclassification events in readouts.
+            channel's parameters :math:`[\p_{01}, \p_{02}, \p_{12}]`.
 
     **Example:**
 
@@ -221,6 +219,27 @@ class DefaultQutritMixed(Device):
     DeviceArray(0.36235774, dtype=float32)
     >>> jax.grad(f)(jax.numpy.array(1.2))
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+
+    .. details::
+        :title: Readout Error
+
+        ``DefaultQutritMixed`` includes readout error support. There are two readout error inputs
+        which apply an error channel to the state after it has
+        been diagonalized for the measurement:
+
+        * ``readout_relaxations``: Defines the readout error inputs of :class:`qml.QutritAmplitudeDamping`
+            channel. This error models state relaxation error that occur during readout of transmon
+            based qutrits. The motivation for this readout error is decribed in
+            [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
+        * ``readout_misclassifications``: Defines the inputs of :class:`qml.TritFlip` channel.
+            This error models misclassification events in readout. An example of this readout error
+            can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
+
+        .. note::
+            The readout errors will be applied based on the state after diagonalizing gates. This
+            may result in different results depending on how an observable is inputted. For example
+            measuring :class:`THermitian` of a GellMann matrix may result in a different result
+            then measuring the equivalent :class:`qml.GellMann` observable.
 
     .. details::
         :title: Tracking
