@@ -156,10 +156,10 @@ class TestQNode:
             qml.RY(p2[0] * p2[1], wires=1)
             qml.RX(kwargs["p3"], wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.state()
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         result = qml.draw(circuit)(p1=x, p3=z)
-        expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  State\n1: ──RY(0.06)───────────╰X─┤  State"
+        expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  <Z>\n1: ──RY(0.06)───────────╰X─┤  <Z>"
         assert result == expected
 
     def test_jacobian(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface):
