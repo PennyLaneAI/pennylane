@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions for converting an openfermion fermionic operator to Pennylane
-Sum, LinearCombination, FermiWord or FermiSentence operators.
+This module contains the functions for converting between OpenFermion and PennyLane objects.
 """
 
 from functools import singledispatch
