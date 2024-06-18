@@ -50,8 +50,7 @@ from pennylane.qchem import (
     paulix_ops,
     taper_operation,
     import_operator,
-    from_openfermion_fermionic,
-    from_openfermion_qubit,
+    from_openfermion,
     to_openfermion,
 )
 from pennylane._device import Device, DeviceError
