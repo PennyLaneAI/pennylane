@@ -2789,6 +2789,23 @@ class TestPauliRot:
         assert len(decomp_ops) == 0
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
+    def test_PauliRot_decomposition_II(self, theta):
+        """Test that the decomposition for a I rotation returns a GlobalPhase."""
+        op = qml.PauliRot(theta, "II", wires=[0, 1])
+        decomp_ops = op.decomposition()
+
+        assert len(decomp_ops) == 1
+
+        decomp_op = decomp_ops[0]
+
+        assert decomp_op.name == "GlobalPhase"
+
+        # global phase acts on all wires so wire attribute is unused
+        assert decomp_op.wires == Wires([])
+        assert qml.math.allclose(decomp_op.data[0], theta / 2)
+        assert qml.math.allclose(op.matrix(), decomp_op.matrix() * np.eye(4))
+
+    @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_ZZ(self, theta):
         """Test that the decomposition for a ZZ rotation is correct."""
         op = qml.PauliRot(theta, "ZZ", wires=[0, 1])
