@@ -137,7 +137,7 @@ Mid-circuit measurement statistics
 ----------------------------------
 
 Statistics of mid-circuit measurements can be collected along with terminal measurement statistics.
-Currently, :func:`~.probs`, :func:`~.sample`, :func:`~.expval`, :func:`~.var`, and :func:`~.counts`
+Currently, :func:`~.counts`, :func:`~.expval`, :func:`~.probs`, :func:`~.sample`, and :func:`~.var`
 are supported, and devices that currently support collecting such
 statistics are :class:`~.pennylane.devices.DefaultQubit`, :class:`~.DefaultMixed`,
 and :class:`~.DefaultQubitLegacy`.
@@ -187,7 +187,7 @@ Executing this ``QNode``:
     array([-1, -2,  1, -1,  1])
 
 Collecting statistics for mid-circuit measurements manipulated using arithmetic/boolean operators is supported
-with ``qml.expval``, ``qml.var``, ``qml.sample``, and ``qml.counts``.
+with :func:`~.counts`, :func:`~.expval`, :func:`~.sample`, and :func:`~.var`.
 
 Moreover, statistics for multiple mid-circuit measurements can be collected by passing lists of mid-circuit
 measurement values to the measurement process:
@@ -215,8 +215,7 @@ array([[0, 1],
        [0, 0],
        [1, 1]])
 
-Collecting statistics for sequences of mid-circuit measurements is supported with ``qml.sample``,
-``qml.probs``, and ``qml.counts``.
+Collecting statistics for sequences of mid-circuit measurements is supported with :func:`~.counts`, :func:`~.probs`, and :func:`~.sample`.
 
 .. warning::
 
@@ -270,7 +269,7 @@ scalings are
 +--------------------------+-------------------------------------------+------------------------------------------------+-------------------------------------------+----------------------------------+
 
 :math:`{}^1` In principle, parameter-shift differentiation is supported as long as no
-postselection is used. Parameters within ``qml.cond``\ itionally applied operations will
+postselection is used. Parameters within conditionally applied operations will
 fall back to finite differences, so that a proper value for ``h`` should be provided, see
 :func:`~.pennylane.gradients.finite_diff`.
 

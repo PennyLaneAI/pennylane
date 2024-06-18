@@ -1088,8 +1088,6 @@ def param_shift(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
-    print(tape)
-    print(tape.operations)
 
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)
