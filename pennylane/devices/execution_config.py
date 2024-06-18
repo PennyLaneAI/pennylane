@@ -42,7 +42,13 @@ class MCMConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        if self.mcm_method not in ("deferred", "one-shot", "single-branch-statistics", None):
+        if self.mcm_method not in (
+            "deferred",
+            "one-shot",
+            "single-branch-statistics",
+            "tree-traversal",
+            None,
+        ):
             raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
         if self.postselect_mode not in ("hw-like", "fill-shots", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")

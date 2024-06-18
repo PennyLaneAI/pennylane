@@ -333,7 +333,7 @@ analytic calculations.
 
 The :func:`~.pennylane.dynamic_one_shot` transform is usually advantageous compared
 with the :func:`~.pennylane.defer_measurements` transform in the
-large-number-of-mid-circuit-measurements and small-number-of-shots limit.  This is because, unlike the
+large-number-of-mid-circuit-measurements and small-number-of-shots limit. This is because, unlike the
 deferred measurement principle, the method does not need an additional wire for every
 mid-circuit measurement present in the circuit. Otherwise, one generally gets
 equivalent results, so you may try both in an attempt to improve performance without
@@ -353,6 +353,57 @@ The transform can be applied to a QNode as follows:
     Dynamic circuits executed with shots should be differentiated with the finite-difference method.
     If the ``defer_measurements`` transform is used in analytic mode, ``backprop`` is also a viable
     option.
+
+.. _tree_traversal:
+
+The tree-traversal algorithm
+****************************
+
+Dynamic circuit execution is akin to traversing a binary tree where each MCM
+corresponds to a node and groups of gates between the MCMs correspond to edges.
+The :func:`~.pennylane.dynamic_one_shot` approach picks a branch of the tree randomly
+and simulates it from beginning to end.
+This is wasteful in many cases; the same branch is simulated many times
+when there are more shots than branches for example.
+The tree-traversal algorithm does away with such redundancy while retaining the
+exponential gains in memory of the one-shot approach compared with the deferred
+measurement principle, among other advantages.
+
+Briefly, it proceeds cutting an :math:`n_{MCM}` circuit into :math:`n_{MCM}+1`
+circuit segments. Each segment can be executed on either the 0- or 1-branch,
+which gives rise to a binary tree with :math:`2^{n_{MCM}}` leaves. Terminal
+measurements are obtained at the leaves, and propagated and combined back up at each
+node up the tree. The tree is visited using a depth-first pattern. The tree-traversal
+method improves on :func:`~.pennylane.dynamic_one_shot` by taking all samples at a
+node or leaf at once. Neglecting overheads, simulating all branches requires the same
+amount of computations as :func:`~. pennylane.defer_measurements`, but without the
+:math:`O(2^{n_{MCM}})` memory requirement. To save time, a copy of the state vector
+is made at every branching point, or MCM, requiring at most :math:`n_{MCM}+1` state
+vectors at any instant, an exponential improvement compared with :func:`~. pennylane.
+defer_measurements`. Since the counts of many nodes come out to be zero in practice,
+it is often possible to ignore entire sub-trees, thereby reducing the computational
+burden.
+
+To summarize, this algorithm gives us the best of both worlds. In the limit of few
+shots and/or many mid-circuit measurements, it is as fast as the naive shot-by-shot implementation
+because few sub-trees are explored. In the limit of many shots and/or few mid-circuit measurements, it is
+equal to or faster than the deferred measurement algorithm (albeit with more
+overheads in practice) because each tree edge is visited at most once, all while
+reducing the memory requirements exponentially.
+
+The tree-traversal algorithm is not a transform. Its usage is therefore specified
+by passing an ``mcm_method`` option to a QNode (see section
+:ref:`"Configuring mid-circuit measurements" <mcm_config>`). For example,
+
+.. code-block:: python
+
+    @qml.qnode(dev, mcm_method="tree-traversal")
+    def my_quantum_function(x, y):
+        (...)
+
+.. warning::
+
+    The tree-traversal algorithm is only implemented in the :class:`~.pennylane.devices.DefaultQubit` device.
 
 Resetting wires
 ***************
@@ -528,6 +579,8 @@ Collecting statistics for sequences of mid-circuit measurements is supported wit
     When collecting statistics for a list of mid-circuit measurements, values manipulated using
     arithmetic operators should not be used as this behaviour is not supported.
 
+.. _mcm_config:
+
 Configuring mid-circuit measurements
 ************************************
 
@@ -536,8 +589,10 @@ PennyLane. For ease of use, we provide the following configuration options to us
 :class:`~pennylane.QNode`:
 
 * ``mcm_method``: To set the method used for applying mid-circuit measurements. Use ``mcm_method="deferred"``
-  to use the :ref:`deferred measurements principle <deferred_measurements>` or ``mcm_method="one-shot"`` to use
-  the :ref:`one-shot transform <one_shot_transform>`. When executing with finite shots, ``mcm_method="one-shot"``
+  to apply the :ref:`deferred measurements principle <deferred_measurements>`, ``mcm_method="one-shot"`` to apply
+  the :ref:`one-shot transform <one_shot_transform>` or ``mcm_method="tree-traversal"`` to execute the
+  :ref:`tree-traversal algorithm <tree_traversal>`.
+  When executing with finite shots, ``mcm_method="one-shot"``
   will be the default, and ``mcm_method="deferred"`` otherwise. Additionally, if using :func:`~pennylane.qjit`,
   ``mcm_method="single-branch-statistics"`` can also be used and will be the default. Using this method, a single
   branch of the execution tree will be randomly explored.

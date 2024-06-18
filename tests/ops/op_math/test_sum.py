@@ -711,6 +711,7 @@ class TestProperties:
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_eigendecomposition_repeat_operations(self):
         """Test that the eigendecomposition works with a repeated operation."""
         op1 = qml.X(0) + qml.X(0) + qml.X(0)

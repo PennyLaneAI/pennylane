@@ -34,6 +34,16 @@
   [1 1 0]
   ```
 
+* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
+  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
+
+  ```pycon
+  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+  >>> qml.math.expectation_value(operator_matrix, state_vector)
+  tensor(-2.23711432e-17+0.j, requires_grad=True)
+  ```
+
 * The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
@@ -105,6 +115,7 @@
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
   [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
+  [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
 * The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
@@ -114,6 +125,12 @@
    [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
+
+* The `default.qubit` device implements a depth-first tree-traversal algorithm to
+  accelerate native mid-circuit measurement execution. The new implementation
+  supports classical control, collecting statistics, and post-selection, along
+  with all measurements enabled with `qml.dynamic_one_shot`.
+  [(#5180)](https://github.com/PennyLaneAI/pennylane/pull/5180)
 
 * `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
   These keyword arguments can be used to configure how the device should behave when running circuits with
@@ -263,6 +280,9 @@
 * The qchem docs are updated with the new qchem improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+  
+* `specs()` can now be requested at any specific point of the transform program through the `level` keyword argument.
+  [(#5781)](https://github.com/PennyLaneAI/pennylane/pull/5781/)
 
 * Device preprocess transforms now happen inside the ml boundary.
   [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
@@ -464,6 +484,7 @@ Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
 Utkarsh Azad,
 Lillian M. A. Frederiksen,
+Ludmila Botelho,
 Gabriel Bottrill,
 Astral Cai,
 Ahmed Darwish,
