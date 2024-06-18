@@ -79,16 +79,19 @@
 
 <h3>Improvements 🛠</h3>
 
+* Avoid early contracting the `PauliRot` matrix-product operator in `default.tensor` when `method="tn"`.
+  [(#5872)](https://github.com/PennyLaneAI/pennylane/pull/5872)
+
 * Add operation and measurement specific routines in `default.tensor` to improve scalability.
   [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
-  
+
 * `param_shift` with the `broadcast=True` option now supports shot vectors and multiple measurements.
   [(#5667)](https://github.com/PennyLaneAI/pennylane/pull/5667)
 
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
-* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
+* `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`.
    [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
@@ -150,7 +153,7 @@
 
 * The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
   [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
-  
+
 * Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
   but keeping one that validates multiple mid-circuit measurements with any allowed return
   and interface end-to-end tests.
@@ -280,7 +283,7 @@
 * The qchem docs are updated with the new qchem improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
-  
+
 * `specs()` can now be requested at any specific point of the transform program through the `level` keyword argument.
   [(#5781)](https://github.com/PennyLaneAI/pennylane/pull/5781/)
 
@@ -297,10 +300,10 @@
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
-  
+
 * `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
- 
+
 * Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian`
  [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
 
@@ -311,8 +314,8 @@
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
   [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
-  
-* `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
+
+* `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification,
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
