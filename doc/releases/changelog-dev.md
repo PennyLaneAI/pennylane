@@ -376,6 +376,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised on processing an `AnnotatedQueue` into a `QuantumScript` if the queue
+  contains something other than an `Operator`, `MeasurementProcess`, or `QuantumScript`.
+  [(#5866)](https://github.com/PennyLaneAI/pennylane/pull/5866)
+
 * Fixes a bug in the wire handling on special controlled ops.
   [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
 
