@@ -506,7 +506,7 @@ def simulate_tree_mcm(
             mcm_samples = update_mcm_samples(samples, mcm_samples, depth, mcm_current)
             # Store a copy of the state-vector to project on the one-branch
             states[depth] = state
-            counts[depth] = samples_to_counts(samples, all_outcomes=True)
+            counts[depth] = samples_to_counts(samples)
             continue
 
         # If at a zero-branch leaf, update measurements and switch to the one-branch
@@ -557,22 +557,28 @@ def branch_state(state, branch, mcm):
     Returns:
         TensorLike: The collapsed state
     """
-    state = apply_operation(qml.Projector([branch], mcm.wires), state)
+    # SLOWER
+    # state = apply_operation(qml.Projector([branch], mcm.wires), state)
+    # FASTER
+    state = state.copy()
+    slices = [slice(None)] * qml.math.ndim(state)
+    axis = mcm.wires.toarray()[0]
+    slices[axis] = int(not branch)
+    state[tuple(slices)] = 0.0
+
     state = state / qml.math.norm(state)
     if mcm.reset and branch == 1:
         state = apply_operation(qml.PauliX(mcm.wires), state)
     return state
 
 
-def samples_to_counts(samples, all_outcomes=True):
+def samples_to_counts(samples):
     """Converts samples to counts.
 
     This function forces integer keys and values which are required by ``simulate_tree_mcm``.
     """
-    counts = qml.math.unique(samples, return_counts=True)
-    result = {0: 0, 1: 0} if all_outcomes else {}
-    result.update(dict((int(x), int(y)) for x, y in zip(*counts)))
-    return result
+    counts_1 = qml.math.count_nonzero(samples)
+    return {0: samples.size - counts_1, 1: counts_1}
 
 
 def prepend_state_prep(circuit, state, interface, wires):
@@ -590,7 +596,7 @@ def prepend_state_prep(circuit, state, interface, wires):
         else state
     )
     return qml.tape.QuantumScript(
-        [qml.StatePrep(state.ravel(), wires=wires)] + circuit.operations,
+        [qml.StatePrep(state.ravel(), wires=wires, skip_norm_validation=True)] + circuit.operations,
         circuit.measurements,
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
@@ -605,9 +611,10 @@ def prune_mcm_samples(mcm_samples, depth, mcm_current):
     must be deleted accordingly. We need to find which samples are
     corresponding to the current branch by looking at all parent nodes.
     """
-    mask = qml.math.all(
-        mcm_samples[:, 0:depth] == np.atleast_2d(mcm_current[1 : depth + 1]), axis=1
-    )
+    # FASTER than using qml.math.all(x == y, axis=1)
+    mask = mcm_samples[:, 0] == mcm_current[1]
+    for i in range(1, depth):
+        mask = qml.math.logical_and(mask, mcm_samples[:, i] == mcm_current[i + 1])
     return mcm_samples[qml.math.logical_not(mask), :]
 
 
@@ -625,9 +632,10 @@ def update_mcm_samples(samples, mcm_samples, depth, mcm_current):
     if depth == 1:
         mcm_samples[:, depth - 1] = samples
     else:
-        mask = qml.math.all(
-            mcm_samples[:, 0 : depth - 1] == np.atleast_2d(mcm_current[1:depth]), axis=1
-        )
+        # FASTER than using qml.math.all(x == y, axis=1)
+        mask = mcm_samples[:, 0] == mcm_current[1]
+        for i in range(1, depth - 1):
+            mask = qml.math.logical_and(mask, mcm_samples[:, i] == mcm_current[i + 1])
         mcm_samples[mask, depth - 1] = samples
     return mcm_samples
 
