@@ -484,6 +484,9 @@
 * Fix bug where `CompositeOp.overlapping_ops` sometimes puts overlapping ops in different groups, leading to incorrect results returned by `LinearCombination.eigvals()`
   [(#5847)](https://github.com/PennyLaneAI/pennylane/pull/5847)
 
+* Implement the correct decomposition for a `qml.PauliRot` with an identity as `pauli_word`, i.e. returns a `qml.GlobalPhase` with half the angle.
+  [(#5875)](https://github.com/PennyLaneAI/pennylane/pull/5875)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
