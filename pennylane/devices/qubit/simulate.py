@@ -557,16 +557,19 @@ def branch_state(state, branch, mcm):
     Returns:
         TensorLike: The collapsed state
     """
-    # SLOWER
-    # state = apply_operation(qml.Projector([branch], mcm.wires), state)
-    # FASTER
-    state = state.copy()
-    slices = [slice(None)] * qml.math.ndim(state)
-    axis = mcm.wires.toarray()[0]
-    slices[axis] = int(not branch)
-    state[tuple(slices)] = 0.0
+    if isinstance(state, np.ndarray):
+        # FASTER
+        state = state.copy()
+        slices = [slice(None)] * qml.math.ndim(state)
+        axis = mcm.wires.toarray()[0]
+        slices[axis] = int(not branch)
+        state[tuple(slices)] = 0.0
+        state /= qml.math.norm(state)
+    else:
+        # SLOWER
+        state = apply_operation(qml.Projector([branch], mcm.wires), state)
+        state = state / qml.math.norm(state)
 
-    state = state / qml.math.norm(state)
     if mcm.reset and branch == 1:
         state = apply_operation(qml.PauliX(mcm.wires), state)
     return state
@@ -577,7 +580,7 @@ def samples_to_counts(samples):
 
     This function forces integer keys and values which are required by ``simulate_tree_mcm``.
     """
-    counts_1 = qml.math.count_nonzero(samples)
+    counts_1 = int(qml.math.count_nonzero(samples))
     return {0: samples.size - counts_1, 1: counts_1}
 
 
