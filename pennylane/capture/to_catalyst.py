@@ -46,7 +46,7 @@ def _get_device_kwargs(device: "pennylane.devices.Device") -> dict:
     features = catalyst.utils.toml.ProgramFeatures(device.shots is not None)
     capabilities = catalyst.utils.toml.get_device_capabilities(device, features)
     info = catalyst.device.extract_backend_info(device, capabilities)
-    # Note that the value of rtd_kwargs is a string version of the info kwargs, not the info kwargs itself !!!
+    # Note that the value of rtd_kwargs is a string version of the info kwargs, not the info kwargs itself!
     return {
         "rtd_kwargs": str(info.kwargs),
         "rtd_lib": info.lpath,
@@ -64,7 +64,7 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
         jax.core.Jaxpr: catalyst variant jaxpr
 
     Note that the input jaxpr should be workflow level and contain qnode primitives, rather than
-    qfunc level with individual operators.  See ``plxpr_to_catalyst`` for converting the quantum
+    qfunc level with individual operators.  See ``qfunc_jaxpr_to_catalyst`` for converting the quantum
     function plxpr.
 
     .. code-block:: python
@@ -73,11 +73,11 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
 
         @qml.qnode(qml.device('lightning.qubit', wires=2))
         def circuit(x):
-            qml.RX(x,0)
-            return qml.probs(wires=(0,1))
+            qml.RX(x, 0)
+            return qml.probs(wires=(0, 1))
 
         def f(x):
-            return circuit(2* x) ** 2
+            return circuit(2 * x) ** 2
 
         jaxpr = jax.make_jaxpr(circuit)(0.5)
 
@@ -157,7 +157,7 @@ def qfunc_jaxpr_to_catalyst(
 class CatalystConverter:
     """A class that manages the conversion of pennylane variant qfunc jaxpr to catalyst variant jaxpr.
 
-    By using this class, we can manage the statefullness of the conversion and the clean up required
+    By using this class, we can manage the state of the conversion and the clean up required
     at the end.
 
     This class is purely internal to the ``qfunc_jaxpr_to_catalyst`` helper function.
@@ -196,7 +196,7 @@ class CatalystConverter:
         """Create a variable from an aval.
 
         Side Effects:
-            Increments the ``_counts`` variable.
+            Increments the ``_count`` variable.
         """
         self._count += 1
         return jax.core.Var(count=self._count, suffix="", aval=aval)
@@ -204,7 +204,7 @@ class CatalystConverter:
     def _get_wire(self, orig_wire):
         """Get the ``AbstractQubit`` corresponding to a given wire label.
 
-        If the wire has already been acted upon, this will retrieved the ``AbstractQbit`` stored
+        If the wire has already been acted upon, this will retrieve the ``AbstractQbit`` stored
         in ``self._wire_map``.  If the wire has not already been acted upon, it adds
         a qubit extraction equation and returns the ``AbstractQbit`` extracted from the
         register.
@@ -214,14 +214,14 @@ class CatalystConverter:
         """
         wire = orig_wire.val
         if wire in self._wire_map:
-            return self._wire_map[orig_wire.val]
+            return self._wire_map[wire]
 
         wire_var = jax.core.Literal(
             val=wire, aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True)
         )
         invars = [self._qreg, wire_var]
-        wire = self._make_var(c_prims.AbstractQbit())
-        outvar = [wire]
+        c_wire = self._make_var(c_prims.AbstractQbit())
+        outvar = [c_wire]
         qextract_eqn = jax.core.JaxprEqn(
             invars,
             outvar,
@@ -231,7 +231,7 @@ class CatalystConverter:
             source_info=null_source_info,
         )
         self.catalyst_xpr.eqns.append(qextract_eqn)
-        return wire
+        return c_wire
 
     def add_device_eqn(self, device):
         """Add the equation for setting a device.
@@ -275,9 +275,9 @@ class CatalystConverter:
         self.catalyst_xpr.eqns.append(qalloc_eqn)
 
     def return_wires(self):
-        """Inserts all active qubits back into the original register and de-allocated the register.
+        """Inserts all active qubits back into the original register and de-allocates the register.
 
-        Should be last method called before returning extracting the final ``catalyst_xpr`` property.
+        Should be last method called before extracting the final ``catalyst_xpr`` property.
 
         Side Effects:
             Adds equations for qubit insertion and register de-allocation.
@@ -422,7 +422,7 @@ class CatalystConverter:
         return c_outvars
 
     def _add_measurement_eqn(self, eqn):
-        """Converts a pl variant measurement eqn into a catalyst one and adds it to ``catalsyt_xpr``.
+        """Converts a pl variant measurement eqn into a catalyst one and adds it to ``catalyst_xpr``.
 
         Called by ``convert_plxpr_eqn``.
 
