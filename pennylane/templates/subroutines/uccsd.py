@@ -63,8 +63,12 @@ class UCCSD(Operation):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(n_repeats, len(s_wires) + len(d_wires),)``,
-            depending on ``n_repeats``, tensor containing the parameters (see usage details below)
+        weights (tensor_like): Size ``(n_repeats, len(s_wires) + len(d_wires),)`` tensor containing the
+            parameters (see usage details below) :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering
+            the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
+            These parameters are the coupled-cluster amplitudes that need to be optimized for each
+            single and double excitation generated with the :func:`~.excitations` function. For legacy support,
+            If the size of given tensor is ``(len(s_wires) + len(d_wires),)``, it is assumed ``n_repeats == 1``.
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
             :func:`~.FermionicSingleExcitation`
             and
