@@ -238,8 +238,8 @@ class DefaultQutritMixed(Device):
         .. note::
             The readout errors will be applied based on the state after diagonalizing gates. This
             may result in different results depending on how an observable is inputted. For example
-            measuring :class:`THermitian` of a GellMann matrix may result in a different result
-            then measuring the equivalent :class:`qml.GellMann` observable.
+            measuring :class:`qml.THermitian` with a GellMann matrix may result in a different
+            measurement result then measuring the equivalent :class:`qml.GellMann` observable.
 
     .. details::
         :title: Tracking
