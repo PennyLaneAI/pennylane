@@ -233,6 +233,61 @@ def draw(
         0: ──RX(1.10)─╭●─┤
         1: ───────────╰X─┤
 
+        **Levels:**
+
+        The ``level`` keyword argument allows one to select a subset of the transforms to apply on the ``QNode``
+        before carrying out any drawing. Take for example this circuit:
+
+        .. code-block:: python
+
+            @qml.transforms.merge_rotations
+            @qml.transforms.cancel_inverses
+            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+            def circ(weights, order):
+                qml.RandomLayers(weights, wires=(0, 1))
+                qml.Permute(order, wires=(0, 1, 2))
+                qml.PauliX(0)
+                qml.PauliX(0)
+                qml.RX(0.1, wires=0)
+                qml.RX(-0.1, wires=0)
+                return qml.expval(qml.PauliX(0))
+
+            order = [2, 1, 0]
+            weights = qml.numpy.array([[1.0, 20]])
+
+        One can print the circuit without any transforms by passing ``level="top"`` or ``level=0``:
+
+        .. code-block:: none
+
+            >>> print(qml.draw(circ, level="top")(weights, order))
+            0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>
+            1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤
+            2: ───────────────────╰Permute────────────────────────────┤
+
+            M0 =
+            [[ 1. 20.]]
+
+        Or print the circuit after applying the transforms manually applied on the QNode (``merge_rotations`` and ``cancel_inverses``):
+
+        >>> print(qml.draw(circ, level="user", show_matrices=False)(weights, order))
+        0: ─╭RandomLayers(M0)─╭Permute─┤  <X>
+        1: ─╰RandomLayers(M0)─├Permute─┤
+        2: ───────────────────╰Permute─┤
+
+        To apply all of the transforms, including those carried out by the differentitation method and the device, use ``level=None``:
+
+        >>> print(qml.draw(circ, level=None, show_matrices=False)(weights, order))
+        0: ──RY(1.00)──╭SWAP─┤  <X>
+        1: ──RX(20.00)─│─────┤
+        2: ────────────╰SWAP─┤
+
+        Slices can also be passed to the ``level`` argument. So one can, for example, request that only the ``merge_rotations`` transform is applied:
+
+        >>> print(qml.draw(circ, level=slice(1, 2), show_matrices=False)(weights, order))
+        0: ─╭RandomLayers(M0)─╭Permute──X──X─┤  <X>
+        1: ─╰RandomLayers(M0)─├Permute───────┤
+        2: ───────────────────╰Permute───────┤
+
     """
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
