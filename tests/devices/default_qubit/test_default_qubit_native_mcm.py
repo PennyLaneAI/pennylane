@@ -663,7 +663,7 @@ class TestTensorflowIntegration:
     @pytest.mark.parametrize("diff_method", [None, "best"])
     @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
     @pytest.mark.parametrize("meas_obj", [qml.PauliZ(1), [0, 1], "composite_mcm", "mcm_list"])
-    def test_autograd_integration(self, postselect, diff_method, measure_f, meas_obj):
+    def test_tf_integration(self, postselect, diff_method, measure_f, meas_obj):
         """Test that native MCM circuits are executed correctly with Tensorflow"""
         if measure_f in (qml.expval, qml.var) and (
             isinstance(meas_obj, list) or meas_obj == "mcm_list"
