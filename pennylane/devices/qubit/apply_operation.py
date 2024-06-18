@@ -14,6 +14,7 @@
 """Functions to apply an operation to a state vector."""
 # pylint: disable=unused-argument, too-many-arguments
 
+import copy
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -226,6 +227,35 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
     ) or (op.batch_size and is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+
+@apply_operation.register
+def apply_controlled_operation(
+    op: qml.ops.op_math.ControlledOp, state, is_state_batched: bool = False, debugger=None, **_
+):  # pylint : disable=protected-access
+    if any(qml.math.get_deep_interface(data) != "numpy" for data in (op.data, state)):
+        return _apply_operation_default(
+            op, state, is_state_batched=is_state_batched, debugger=debugger
+        )
+    base = copy.deepcopy(op.base)
+    slices = [slice(None)] * qml.math.ndim(state)
+    for v, w in zip(op.control_values, op.control_wires):
+        slices[w] = int(v)
+    wires = list(range(qml.math.ndim(state)))
+    for w in reversed(sorted(op.control_wires)):
+        wires.pop(w)
+    op_wires = []
+    for b in base.wires:
+        for i, w in enumerate(wires):
+            if b == w:
+                op_wires.append(i)
+                break
+    base._wires = qml.wires.Wires(op_wires)
+    state = state + 0j
+    slc = state[tuple(slices)]
+    slc = apply_operation(base, slc, is_state_batched=is_state_batched, debugger=debugger)
+    state[tuple(slices)] = slc
+    return state
 
 
 @apply_operation.register
