@@ -46,7 +46,7 @@ def _import_of():
     return openfermion
 
 
-def from_openfermion_qubit(of_op, tol=1.0e-16, **kwargs):
+def _from_openfermion_qubit(of_op, tol=1.0e-16, **kwargs):
     r"""Convert OpenFermion ``QubitOperator`` to a :class:`~.LinearCombination` object in PennyLane representing a linear combination of qubit operators.
 
     Args:
@@ -90,13 +90,13 @@ def from_openfermion_qubit(of_op, tol=1.0e-16, **kwargs):
     return pl_term
 
 
-def from_openfermion_fermionic(of_op, tol=1e-16):
+def from_openfermion(openfermion_op, tol=1e-16):
     r"""Convert OpenFermion
     `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__
     object to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` objects.
 
     Args:
-        of_op (FermionOperator): OpenFermion fermionic operator
+        openfermion_op (FermionOperator): OpenFermion fermionic operator
         tol (float): tolerance for discarding negligible coefficients
 
     Returns:
@@ -105,8 +105,8 @@ def from_openfermion_fermionic(of_op, tol=1e-16):
     **Example**
 
     >>> from openfermion import FermionOperator
-    >>> of_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
-    >>> pl_op = from_openfermion_fermionic(of_op)
+    >>> openfermion_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
+    >>> pl_op = from_openfermion(openfermion_op)
     >>> print(pl_op)
         0.5 * a⁺(0) a(2)
         + 1.0 * a(0) a⁺(2)
@@ -124,7 +124,7 @@ def from_openfermion_fermionic(of_op, tol=1e-16):
     fermi_words = []
     fermi_coeffs = []
 
-    for ops, val in of_op.terms.items():
+    for ops, val in openfermion_op.terms.items():
         fw_dict = {(i, op[0]): typemap[op[1]] for i, op in enumerate(ops)}
         fermi_words.append(FermiWord(fw_dict))
         fermi_coeffs.append(val)
