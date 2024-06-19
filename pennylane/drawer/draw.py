@@ -255,17 +255,14 @@ def draw(
             order = [2, 1, 0]
             weights = qml.numpy.array([[1.0, 20]])
 
-        One can print the circuit without any transforms by passing ``level="top"`` or ``level=0``:
+        One can print the circuit without any transforms applied by passing ``level="top"`` or ``level=0``:
 
-        .. code-block:: none
-
-            >>> print(qml.draw(circ, level="top")(weights, order))
-            0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>
-            1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤
-            2: ───────────────────╰Permute────────────────────────────┤
-
-            M0 =
-            [[ 1. 20.]]
+        >>> print(qml.draw(circ, level="top")(weights, order))
+        0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>
+        1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤
+        2: ───────────────────╰Permute────────────────────────────┤
+        M0 =
+        [[ 1. 20.]]
 
         Or print the circuit after applying the transforms manually applied on the QNode (``merge_rotations`` and ``cancel_inverses``):
 
@@ -453,7 +450,10 @@ def draw_mpl(
         as it allows for the same values as ``expansion_strategy``, and allows for more flexibility choosing
         the wanted transforms/expansions.
 
+    .. warning::
 
+        Unlike :func:`~.draw`, this function can not draw the full result of a tape-splitting transform. In such cases,
+        only the tape generated first will be plotted.
 
     **Example**:
 
@@ -618,6 +618,74 @@ def draw_mpl(
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
+
+        **Levels:**
+
+        The ``level`` keyword argument allows one to select a subset of the transforms to apply on the ``QNode``
+        before carrying out any drawing. Take for example this circuit:
+
+        .. code-block:: python
+
+            @qml.transforms.merge_rotations
+            @qml.transforms.cancel_inverses
+            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+            def circ():
+                qml.RandomLayers([[1.0, 20]], wires=(0, 1))
+                qml.Permute([2, 1, 0], wires=(0, 1, 2))
+                qml.PauliX(0)
+                qml.PauliX(0)
+                qml.RX(0.1, wires=0)
+                qml.RX(-0.1, wires=0)
+                return qml.expval(qml.PauliX(0))
+
+        One can plot the circuit without any transforms applied by passing ``level="top"`` or ``level=0``:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(circ, level="top")()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/level_top.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+        Or plot the circuit after applying the transforms manually applied on the QNode (``merge_rotations`` and ``cancel_inverses``):
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(circ, level="user")()
+            fog.show()
+
+        .. figure:: ../../_static/draw_mpl/level_user.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+        To apply all of the transforms, including those carried out by the differentitation method and the device, use ``level=None``:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(circ, level=None)()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/level_none.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+        Slices can also be passed to the ``level`` argument. So one can, for example, request that only the ``merge_rotations`` transform is applied:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(circ, level=slice(1, 2))()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/level_slice.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
 
     """
     if catalyst_qjit(qnode):
