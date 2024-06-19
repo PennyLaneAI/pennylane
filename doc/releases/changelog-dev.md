@@ -305,6 +305,9 @@
 * Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature of the original function.
   [(#5857)](https://github.com/PennyLaneAI/pennylane/pull/5857)
 
+* `PauliSentence.operation()` now always returns a `LinearCombination` for consistency.
+  [(#5879)](https://github.com/PennyLaneAI/pennylane/pull/5879)
+
 <h4>Community contributions 🥳</h4>
 
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
