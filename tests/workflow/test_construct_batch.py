@@ -46,7 +46,7 @@ def test_expand_fn_transform():
     expected = qml.tape.QuantumScript(
         [qml.S(0), qml.PauliX(0), qml.S(0), qml.T(0)], [qml.expval(qml.PauliZ(0))], shots=50
     )
-    assert qml.equal(batch[0], expected)
+    qml.assert_equal(batch[0], expected)
     assert fn(("a",)) == "a"
 
     assert repr(t) == "<transform: my_expand_fn>"
@@ -245,7 +245,7 @@ class TestConstructBatch:
         expected = qml.tape.QuantumScript(
             expected_ops, [qml.expval(qml.PauliX(0))], shots=10, trainable_params=[]
         )
-        assert qml.equal(batch[0], expected)
+        qml.assert_equal(batch[0], expected)
 
         assert fn(("a",)) == ("a",)
 
@@ -267,7 +267,7 @@ class TestConstructBatch:
         ]
 
         expected = qml.tape.QuantumScript(expected_ops, [qml.expval(qml.PauliX(0))], shots=50)
-        assert qml.equal(batch[0], expected)
+        qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 
     @pytest.mark.parametrize("level", (2, "user"))
@@ -288,7 +288,7 @@ class TestConstructBatch:
         ]
 
         expected = qml.tape.QuantumScript(expected_ops, [qml.expval(qml.PauliX(0))], shots=50)
-        assert qml.equal(batch[0], expected)
+        qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 
     @pytest.mark.parametrize("level", (3, "gradient"))
@@ -306,7 +306,7 @@ class TestConstructBatch:
             ],
             [qml.expval(qml.PauliX(0))],
         )
-        assert qml.equal(batch[0], expected)
+        qml.assert_equal(batch[0], expected)
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
@@ -322,7 +322,7 @@ class TestConstructBatch:
         expected = qml.tape.QuantumScript(
             [qml.RY(1, 0), qml.RX(2, 1), qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))]
         )
-        assert qml.equal(batch[0], expected)
+        qml.assert_equal(batch[0], expected)
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
@@ -343,11 +343,11 @@ class TestConstructBatch:
         expected0 = qml.tape.QuantumScript(
             [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
         )
-        assert qml.equal(expected0, batch[0])
+        qml.assert_equal(expected0, batch[0])
         expected1 = qml.tape.QuantumScript(
             [qml.SWAP((0, 2))], [qml.expval(qml.PauliY(0))], shots=50
         )
-        assert qml.equal(expected1, batch[1])
+        qml.assert_equal(expected1, batch[1])
         assert len(batch) == 2
 
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
@@ -368,11 +368,11 @@ class TestConstructBatch:
         expected0 = qml.tape.QuantumScript(
             [qml.RX(1.0 + np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
         )
-        assert qml.equal(batch[0], expected0)
+        qml.assert_equal(batch[0], expected0)
         expected1 = qml.tape.QuantumScript(
             [qml.RX(1.0 - np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
         )
-        assert qml.equal(batch[1], expected1)
+        qml.assert_equal(batch[1], expected1)
 
         dummy_res = (1.0, 2.0)
         expected_res = (1.0 - 2.0) / 2
@@ -393,10 +393,10 @@ class TestConstructBatch:
         expected0 = qml.tape.QuantumScript(
             [qml.S(0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))], shots=10
         )
-        assert qml.equal(expected0, batch[0])
+        qml.assert_equal(expected0, batch[0])
 
         expected1 = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=10)
-        assert qml.equal(expected1, batch[1])
+        qml.assert_equal(expected1, batch[1])
 
         dummy_res = (("x0", "x1"), "z0")
         expected_res = (("x0", "z0", "x1"),)
@@ -420,7 +420,7 @@ class TestConstructBatch:
             [qml.RX(0.5, 0), qml.RX(0.5, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[]
         )
 
-        assert qml.equal(batch[0], expected)
+        qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 
     def test_qfunc_with_shots_arg(self):
@@ -439,5 +439,5 @@ class TestConstructBatch:
         expected = qml.tape.QuantumScript(
             [qml.S(0), qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=100
         )
-        assert qml.equal(batch[0], expected)
+        qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)

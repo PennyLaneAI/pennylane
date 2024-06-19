@@ -208,7 +208,7 @@ def test_generate_paulis(generators, num_qubits, result):
     assert not any(isinstance(g, qml.Hamiltonian) for g in generators_as_ops)
 
     for p1, p2 in zip(pauli_ops, result):
-        assert qml.equal(p1, p2)
+        qml.assert_equal(p1, p2)
 
 
 @pytest.mark.parametrize(
@@ -552,7 +552,7 @@ def test_taper_obs(symbols, geometry, charge):
         ).toarray()
 
         assert np.isclose(obs_val, obs_val_tapered)
-        assert qml.equal(tapered_obs, tapered_ps)
+        qml.assert_equal(tapered_obs, tapered_ps)
 
 
 @pytest.mark.parametrize(
@@ -761,7 +761,8 @@ def test_consistent_taper_ops(operation, op_gen):
     taper_op2 = taper_operation(
         operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen
     )
-    assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1, taper_op2)])
+    for op1, op2 in zip(taper_op1, taper_op2):
+        qml.assert_equal(op1.base, op2.base)
 
     with qml.queuing.AnnotatedQueue() as q_tape1:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=None)
@@ -774,8 +775,10 @@ def test_consistent_taper_ops(operation, op_gen):
 
     assert len(taper_op1) == len(taper_circuit1)
     assert len(taper_op2) == len(taper_circuit2)
-    assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit1, taper_op1)])
-    assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit2, taper_op2)])
+    for op1, op2 in zip(taper_circuit1, taper_op1):
+        qml.assert_equal(op1.base, op2.base)
+    for op1, op2 in zip(taper_circuit2, taper_op2):
+        qml.assert_equal(op1.base, op2.base)
 
     if taper_op1:
         observables = [
@@ -870,9 +873,8 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
             op_wires=op_wires,
             op_gen=op_gen,
         )
-        assert np.all(
-            [qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op_fn(params), taper_op)]
-        )
+        for op1, op2 in zip(taper_op_fn(params), taper_op):
+            qml.assert_equal(op1.base, op2.base)
 
 
 @pytest.mark.parametrize(
@@ -932,9 +934,8 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
             op_wires=op_wires,
             op_gen=functools.partial(op_gen, phi=params),
         )
-        assert np.all(
-            [qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1(params), taper_op2)]
-        )
+        for op1, op2 in zip(taper_op1(params), taper_op2):
+            qml.assert_equal(op1.base, op2.base)
 
 
 @pytest.mark.parametrize(
