@@ -4,6 +4,8 @@ qml.noise
 This module contains the functionality for building and manipulating insertion-based noise models,
 where noisy gates and channels are inserted based on the target operations.
 
+.. _intro_noise_model:
+
 Overview
 --------
 
@@ -22,7 +24,13 @@ noise-related metadata can also be supplied to construct a noise model using:
 Each conditional in the ``model_map`` evaluates the gate operations in the quantum circuit based on
 some condition of its attributes (e.g., type, parameters, wires, etc.) and use the corresponding
 callable to apply the noise operations, using the user-provided metadata (e.g., hardware topologies
-or relaxation times), whenever the condition results true.
+or relaxation times), whenever the condition results true. A noise model once built can be attached
+to a circuit or device via the following transform:
+
+.. autosummary::
+    :toctree: api
+
+    ~add_noise
 
 .. _intro_boolean_fn:
 
