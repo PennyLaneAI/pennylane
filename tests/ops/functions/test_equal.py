@@ -1467,7 +1467,7 @@ class TestObservablesComparisons:
         assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
         if not res:
-            error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not same")
+            error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not the same")
             with pytest.raises(AssertionError, match=error_message_pattern):
                 assert_equal(H1, H2)
 
@@ -1537,7 +1537,7 @@ class TestObservablesComparisons:
         op2 = qml.Hermitian([[0, 1], [1, 0]], 0)
 
         assert not qml.equal(op1, op2)
-        error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not same")
+        error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not the same")
         with pytest.raises(AssertionError, match=error_message_pattern):
             assert_equal(op1, op2)
 
