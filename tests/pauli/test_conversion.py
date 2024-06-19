@@ -215,12 +215,20 @@ class TestDecomposition:
         import jax
 
         @jax.jit
-        def f(m):
+        def decompose_non_hermitian(m):
             coeffs, unitaries = qml.pauli_decompose(m, check_hermitian=False).terms()
             return coeffs, unitaries
 
         x = jax.numpy.array([[1 + 42j, 5.678 - 1.234j], [5.678 + 1.234j, -1 + 42j]])
-        assert np.allclose(f(x)[0], [42j, 5.678, 1.234, 1])
+        assert np.allclose(decompose_non_hermitian(x)[0], [42j, 5.678, 1.234, 1])
+
+        @jax.jit
+        def decompose_hermitian(m):
+            coeffs, unitaries = qml.pauli_decompose(m).terms()
+            return coeffs, unitaries
+
+        x = jax.numpy.array([[2, 1 - 1j], [1 + 1j, 0]])
+        assert np.allclose(decompose_hermitian(x)[0], [1, 1, 1, 1])
 
 
 class TestPhasedDecomposition:
