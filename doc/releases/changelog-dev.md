@@ -93,6 +93,7 @@
   of_op = openfermion.FermionOperator('0^ 2')
   pl_op = qml.from_openfermion(of_op)
   of_op_new = qml.to_openfermion(pl_op)
+  ```
 
   ```pycon
   >>> print(pl_op)
