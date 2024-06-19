@@ -51,6 +51,7 @@ from pennylane.qchem import (
     taper_operation,
     import_operator,
     from_openfermion,
+    to_openfermion,
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp
