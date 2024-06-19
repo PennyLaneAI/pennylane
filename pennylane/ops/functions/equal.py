@@ -612,18 +612,20 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
 # pylint: disable=unused-argument
 def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
+
     if not isinstance(op2, Observable):
         return f"{op2} is not of type Observable"
 
     if isinstance(op2, (Hamiltonian, LinearCombination, Hermitian)):
-        if not op2.compare(op1):
-            return f"'{op1}' and '{op2}' are not same"
+        return op2.compare(op1) or f"{op1} and {op2} are not same"
 
     if isinstance(op2, Tensor):
-        if not op1._obs_data() == op2._obs_data():  # pylint: disable=protected-access
-            return "op1 and op2 have different _obs_data outputs"
+        return (
+            op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
+            or f"{op1} and {op2} have different _obs_data outputs"
+        )
 
-    return True
+    return f"{op1} and {op2} are not same"
 
 
 @_equal_dispatch.register
