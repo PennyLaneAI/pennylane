@@ -127,7 +127,7 @@ pre-commit==3.7.1
 prometheus_client==0.20.0
 prompt_toolkit==3.0.47
 protobuf==4.25.3
-psutil==5.9.8
+psutil==6.0.0
 ptyprocess==0.7.0
 pure-eval==0.2.2
 py==1.11.0
@@ -136,7 +136,7 @@ pycparser==2.22
 Pygments==2.18.0
 pylint==2.7.4
 pyparsing==3.1.2
-pyperclip==1.8.2
+pyperclip==1.9.0
 pytest==8.2.2
 pytest-benchmark==4.0.0
 pytest-cov==5.0.0
