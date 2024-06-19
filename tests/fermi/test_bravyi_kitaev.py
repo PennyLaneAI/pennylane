@@ -929,6 +929,7 @@ fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
 fw5 = FermiWord({(0, 3): "+", (1, 2): "-"})
+fw6 = FermiWord({(0, 1): "+", (1, 4): "-"})
 
 
 def test_empty_fermi_sentence():
@@ -1009,6 +1010,36 @@ FERMI_AND_PAULI_SENTENCES = [
                 PauliWord({1: "Z", 2: "Y", 3: "Z"}): 0.25,
                 PauliWord({2: "X"}): 0.25j,
                 PauliWord({2: "Y"}): -0.25,
+            }
+        ),
+    ),
+    (
+        FermiSentence({fw6: 1, fw2: 2}),
+        5,
+        PauliSentence(
+            {
+                PauliWord({0: "I"}): 1.0,
+                PauliWord({0: "Z"}): -1.0,
+                PauliWord({0: "Z", 1: "X", 3: "Y", 4: "X"}): -0.25j,
+                PauliWord({0: "Z", 1: "X", 3: "Y", 4: "Y"}): 0.25,
+                PauliWord({1: "Y", 3: "Y", 4: "X"}): -0.25,
+                PauliWord({1: "Y", 3: "Y", 4: "Y"}): -0.25j,
+            }
+        ),
+    ),
+    (
+        FermiSentence({fw5: 1, fw6: 1}),
+        5,
+        PauliSentence(
+            {
+                PauliWord({0: "Z", 1: "X", 3: "Y", 4: "X"}): -0.25j,
+                PauliWord({0: "Z", 1: "X", 3: "Y", 4: "Y"}): 0.25,
+                PauliWord({1: "Y", 3: "Y", 4: "X"}): -0.25,
+                PauliWord({1: "Y", 3: "Y", 4: "Y"}): -0.25j,
+                PauliWord({1: "Z", 2: "X", 3: "Z"}): -0.25,
+                PauliWord({1: "Z", 2: "Y", 3: "Z"}): -0.25j,
+                PauliWord({2: "X"}): 0.25,
+                PauliWord({2: "Y"}): 0.25j,
             }
         ),
     ),
