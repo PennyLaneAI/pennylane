@@ -37,7 +37,8 @@ class TestInitialization:
         assert qs._ops == []
         assert qs._measurements == []
         assert qs._measured_wires == qml.wires.Wires([])
-        assert qs._trainable_params == []
+        assert len(qs.par_info) == 0
+        assert qs._trainable_params is None
         assert qs._graph is None
         assert qs._specs is None
         assert qs._shots.total_shots is None
