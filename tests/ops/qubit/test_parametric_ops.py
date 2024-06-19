@@ -2772,12 +2772,7 @@ class TestPauliRot:
 
         decomp_op = decomp_ops[0]
 
-        assert decomp_op.name == "GlobalPhase"
-
-        # global phase acts on all wires so wire attribute is unused
-        assert decomp_op.wires == Wires([])
-        assert qml.math.allclose(decomp_op.data[0], theta / 2)
-        assert qml.math.allclose(op.matrix(), decomp_op.matrix() * np.eye(4))
+        assert qml.equal(decomp_op, qml.GlobalPhase(theta/2))
 
     def test_PauliRot_all_Identity_broadcasted(self):
         """Test handling of the broadcasted all-identity Pauli."""
