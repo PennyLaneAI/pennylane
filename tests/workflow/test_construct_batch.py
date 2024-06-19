@@ -243,9 +243,7 @@ class TestConstructBatch:
         ]
 
         expected = qml.tape.QuantumScript(
-            expected_ops,
-            [qml.expval(qml.PauliX(0))],
-            shots=10,
+            expected_ops, [qml.expval(qml.PauliX(0))], shots=10, trainable_params=[]
         )
         qml.assert_equal(batch[0], expected)
 
@@ -419,8 +417,9 @@ class TestConstructBatch:
 
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(
-            [qml.RX(0.5, 0), qml.RX(0.5, 0)], [qml.expval(qml.PauliZ(0))]
+            [qml.RX(0.5, 0), qml.RX(0.5, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[]
         )
+
         qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 

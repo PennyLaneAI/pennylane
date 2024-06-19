@@ -15,6 +15,7 @@
 
 """
 import inspect
+from contextlib import nullcontext
 from functools import wraps
 from typing import Callable, Literal, Optional, Tuple, Union
 
@@ -54,16 +55,20 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
 
 def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformProgram":
     program = qml.transforms.core.TransformProgram(qnode.transform_program)
+
     if getattr(qnode.gradient_fn, "expand_transform", False):
         program.add_transform(
             qml.transform(qnode.gradient_fn.expand_transform),
             **qnode.gradient_kwargs,
         )
+
     if isinstance(qnode.device, qml.devices.Device):
         config = _make_execution_config(qnode, qnode.gradient_fn)
         return program + qnode.device.preprocess(config)[0]
+
     program.add_transform(qml.transform(qnode.device.batch_transform))
     program.add_transform(expand_fn_transform(qnode.device.expand_fn))
+
     return program
 
 
@@ -316,28 +321,37 @@ def construct_batch(
         else:
             shots = kwargs.pop("shots", _get_device_shots(qnode.device))
 
+        context_fn = nullcontext
+
         if isinstance(qnode, qml.qnn.KerasLayer):
             # pylint: disable=import-outside-toplevel
             import tensorflow as tf
 
-            with tf.GradientTape() as tape:
-                tape.watch(list(qnode.qnode_weights.values()))
+            context_fn = tf.GradientTape
+
+        if isinstance(qnode, qml.qnn.TorchLayer):
+            x = args[0]
+            kwargs = {
+                **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
+            }
+
+        with context_fn() as cntxt:
+            # If TF tape, use the watch function
+            if hasattr(cntxt, "watch"):
+                cntxt.watch(list(qnode.qnode_weights.values()))
 
                 kwargs = {
                     **{k: 1.0 * w for k, w in qnode.qnode_weights.items()},
                     **kwargs,
                 }
 
-        if isinstance(qnode, qml.qnn.TorchLayer):
-            x = args[0]
-            kwargs = {
-                **{arg: weight.data.to(x) for arg, weight in qnode.qnode_weights.items()},
-            }
-
-        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+            initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+            params = initial_tape.get_parameters(trainable_only=False)
+            initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
         qnode._update_gradient_fn(tape=initial_tape)
         program = get_transform_program(qnode, level=level)
+
         return program((initial_tape,))
 
     return batch_constructor
