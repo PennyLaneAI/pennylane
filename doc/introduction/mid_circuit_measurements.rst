@@ -31,7 +31,7 @@ The function to perform a mid-circuit measurement in PennyLane is
 See the following sections for details on
 :func:`~.pennylane.measure`, :func:`~.pennylane.cond`, and statistics
 of mid-circuit measurements, as well as information about simulation
-strategies and how to configure them <further below>.
+strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
 methods. Also consider our
 :doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`,
@@ -220,6 +220,7 @@ Collecting statistics for sequences of mid-circuit measurements is supported wit
     When collecting statistics for a sequence of mid-circuit measurements, the
     sequence may not contain arithmetic expressions.
 
+.. _simulation_techniques:
 
 Simulation techniques
 ---------------------
