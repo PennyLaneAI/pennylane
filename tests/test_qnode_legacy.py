@@ -1850,7 +1850,7 @@ class TestTapeExpansion:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.3)
 

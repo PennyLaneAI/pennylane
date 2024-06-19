@@ -803,7 +803,7 @@ class TestCreateCustomDecompExpandFn:
 
         for op in decomp_ops:
             assert isinstance(op, qml.ops.op_math.Controlled)
-            assert qml.equal(op.base, qml.T(0))
+            qml.assert_equal(op.base, qml.T(0))
 
         # check that new instances of the operator are not affected by the modifications made to get the decomposition
         assert [op1 == op2 for op1, op2 in zip(CustomOp(0).decomposition(), original_decomp)]

@@ -34,22 +34,18 @@
   [1 1 0]
   ```
 
+* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
+  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
+
+  ```pycon
+  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+  >>> qml.math.expectation_value(operator_matrix, state_vector)
+  tensor(-2.23711432e-17+0.j, requires_grad=True)
+  ```
+
 * The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
-
-* Added `from_openfermion` to convert openfermion `FermionOperator` objects to PennyLane `FermiWord` or
-`FermiSentence` objects.
-[(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
-
-  ```python
-  of_op = openfermion.FermionOperator('0^ 2')
-  pl_op = qml.from_openfermion(of_op)
-
-  ```
-  ```pycon
-  >>> print(pl_op)
-  a⁺(0) a(2)
-  ```
 
 * A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
@@ -65,6 +61,24 @@
   NoiseModel({
     OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
   }, t1 = 0.04)
+  ```
+
+* The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
+  OpenFermion and PennyLane objects.
+  [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
+  [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+
+  ```python
+  of_op = openfermion.FermionOperator('0^ 2')
+  pl_op = qml.from_openfermion(of_op)
+  of_op_new = qml.to_openfermion(pl_op)
+
+  ```
+  ```pycon
+  >>> print(pl_op)
+  a⁺(0) a(2)
+  >>> print(of_op_new)
+  1.0 [0^ 2]
   ```
 
 <h3>Improvements 🛠</h3>
@@ -105,13 +119,21 @@
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
   [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
+  [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
+  [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
-* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
+* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends. The
+  ``molecular_hamiltonian`` and ``molecular_dipole`` functions are moved to ``hamiltonian`` and
+  ``dipole`` modules.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
+  [(#5863)](https://github.com/PennyLaneAI/pennylane/pull/5863)
 
 * `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
    optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
    [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
+
+* Add more fermionic-to-qubit tests to cover cases when the mapped operator is different for various mapping schemes.
+  [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
@@ -212,6 +234,7 @@
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+  [(#5858)](https://github.com/PennyLaneAI/pennylane/pull/5858)
 
 * `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
   traced quantum functions. This feature is used with Catalyst to enable the pattern
@@ -269,6 +292,9 @@
 * The qchem docs are updated with the new qchem improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+  
+* `specs()` can now be requested at any specific point of the transform program through the `level` keyword argument.
+  [(#5781)](https://github.com/PennyLaneAI/pennylane/pull/5781/)
 
 * The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot for unsupported devices.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
@@ -359,7 +385,14 @@
 * The `qml.Tracker` examples are updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
+* The input types for `coupling_map` in `qml.transpile` are updated to reflect all the allowed input types by `nx.to_networkx_graph`.
+  [(#5864)](https://github.com/PennyLaneAI/pennylane/pull/5864)
+
 <h3>Bug fixes 🐛</h3>
+
+* An error is now raised on processing an `AnnotatedQueue` into a `QuantumScript` if the queue
+  contains something other than an `Operator`, `MeasurementProcess`, or `QuantumScript`.
+  [(#5866)](https://github.com/PennyLaneAI/pennylane/pull/5866)
 
 * Fixes a bug in the wire handling on special controlled ops.
   [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
@@ -481,6 +514,7 @@ Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
 Utkarsh Azad,
 Lillian M. A. Frederiksen,
+Ludmila Botelho,
 Gabriel Bottrill,
 Astral Cai,
 Ahmed Darwish,
@@ -488,6 +522,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Daria Van Hende,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
