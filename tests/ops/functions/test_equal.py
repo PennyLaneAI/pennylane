@@ -1481,7 +1481,7 @@ class TestObservablesComparisons:
         """Tensors are not equal because of different observable data"""
         op1 = qml.operation.Tensor(qml.X(0), qml.Y(1))
         op2 = qml.operation.Tensor(qml.Y(0), qml.X(1))
-        with pytest.raises(AssertionError, match="op1 and op2 have different _obs_data outputs"):
+        with pytest.raises(AssertionError, match="have different _obs_data outputs"):
             assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
