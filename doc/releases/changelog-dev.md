@@ -47,20 +47,6 @@
 * The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
-* Added `from_openfermion` to convert openfermion `FermionOperator` objects to PennyLane `FermiWord` or
-`FermiSentence` objects.
-[(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
-
-  ```python
-  of_op = openfermion.FermionOperator('0^ 2')
-  pl_op = qml.from_openfermion(of_op)
-
-  ```
-  ```pycon
-  >>> print(pl_op)
-  a⁺(0) a(2)
-  ```
-
 * A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
@@ -75,6 +61,24 @@
   NoiseModel({
     OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
   }, t1 = 0.04)
+  ```
+
+* The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
+  OpenFermion and PennyLane objects.
+  [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
+  [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+
+  ```python
+  of_op = openfermion.FermionOperator('0^ 2')
+  pl_op = qml.from_openfermion(of_op)
+  of_op_new = qml.to_openfermion(pl_op)
+
+  ```
+  ```pycon
+  >>> print(pl_op)
+  a⁺(0) a(2)
+  >>> print(of_op_new)
+  1.0 [0^ 2]
   ```
 
 <h3>Improvements 🛠</h3>
@@ -127,6 +131,9 @@
 * `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
    optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
    [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
+
+* Add more fermionic-to-qubit tests to cover cases when the mapped operator is different for various mapping schemes.
+  [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
 
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
@@ -231,6 +238,7 @@
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+  [(#5858)](https://github.com/PennyLaneAI/pennylane/pull/5858)
 
 * `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
   traced quantum functions. This feature is used with Catalyst to enable the pattern
@@ -295,6 +303,12 @@
 * Device preprocess transforms now happen inside the ML boundary.
   [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
 
+* The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot for unsupported devices.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* The `qml.Snapshot` operator now accepts sample-based measurements for finite-shot devices.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
 * `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
   [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
 
@@ -310,7 +324,8 @@
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
  
 * Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian`
- [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
+  [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
+  [(#5877)](https://github.com/PennyLaneAI/pennylane/pull/5877)
 
 * `qml.QutritChannel` has been added, enabling the specification of noise using a collection of (3x3) Kraus matrices on the `default.qutrit.mixed` device.
   [(#5793)](https://github.com/PennyLaneAI/pennylane/issues/5793)
@@ -473,6 +488,15 @@
 * `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
   [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
 
+* `qml.snapshots` raises an error when a measurement other than `qml.state` is requested from `default.qubit.legacy` instead of silently returning the statevector.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* Fixes a bug where `default.qutrit` is falsely determined to be natively compatible with `qml.snapshots`.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* Fixes a bug where the measurement of a `qml.Snapshot` instance is not passed on during the `qml.adjoint` and `qml.ctrl` operations.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
 * `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
   [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
 
@@ -487,6 +511,9 @@
 
 * Fix bug where `CompositeOp.overlapping_ops` sometimes puts overlapping ops in different groups, leading to incorrect results returned by `LinearCombination.eigvals()`
   [(#5847)](https://github.com/PennyLaneAI/pennylane/pull/5847)
+
+* `qml.pauli_decompose` now works in a jit-ted context, such as `jax.jit` and `catalyst.qjit`.
+  [(#5878)](https://github.com/PennyLaneAI/pennylane/pull/5878)
 
 <h3>Contributors ✍️</h3>
 
@@ -504,6 +531,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Daria Van Hende,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,

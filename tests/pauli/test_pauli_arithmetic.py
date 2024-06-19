@@ -406,7 +406,7 @@ class TestPauliWord:
         if isinstance(op, qml.ops.Prod):  # pylint: disable=no-member
             pw_tensor_op = pw.operation(get_as_tensor=True)
             expected_tensor_op = qml.operation.Tensor(*op.operands)
-            assert qml.equal(pw_tensor_op, expected_tensor_op)
+            qml.assert_equal(pw_tensor_op, expected_tensor_op)
 
     def test_operation_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity."""
@@ -1001,7 +1001,7 @@ class TestPauliSentence:
         op = ps5.operation(wire_order=["a", "b"])
         id = qml.s_prod(0.0, qml.Identity(wires=["a", "b"]))
 
-        assert qml.equal(op, id)
+        qml.assert_equal(op, id)
 
     tup_ps_hamiltonian = (
         (PauliSentence({PauliWord({0: X}): 1}), qml.Hamiltonian([1], [qml.PauliX(wires=0)])),
@@ -1069,7 +1069,7 @@ class TestPauliSentence:
         op = ps5.hamiltonian(wire_order=["a", "b"])
         id = qml.Hamiltonian([], [])
 
-        assert qml.equal(op, id)
+        qml.assert_equal(op, id)
 
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""
