@@ -617,7 +617,7 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
         return f"{op2} is not of type Observable"
 
     if isinstance(op2, (Hamiltonian, LinearCombination, Hermitian)):
-        return op2.compare(op1) or f"{op1} and {op2} are not same"
+        return op2.compare(op1) or f"{op1} and {op2} are not the same"
 
     if isinstance(op2, Tensor):
         return (
@@ -636,7 +636,7 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
         return f"{op2} is not of type Observable"
 
     if not op1.compare(op2):
-        return f"'{op1}' and '{op2}' are not same"
+        return f"'{op1}' and '{op2}' are not the same"
 
     return True
 

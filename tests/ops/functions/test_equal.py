@@ -1522,6 +1522,15 @@ class TestObservablesComparisons:
         with pytest.raises(AssertionError, match="is not of type Observable"):
             assert_equal(op1, op2)
 
+    def test_tensor_and_observable_not_equal(self):
+        """Tests that comparing a Tensor with an Observable that is not a Tensor returns False"""
+        op1 = qml.PauliX(0) @ qml.PauliY(1)
+        op2 = qml.Z(0)
+        assert qml.equal(op1, op2) is False
+        assert qml.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="is of type <class 'pennylane.operation.Tensor'>"):
+            assert_equal(op1, op2)
+
     def test_tensor_and_unsupported_observable_returns_false(self):
         """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
