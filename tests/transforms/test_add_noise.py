@@ -384,7 +384,7 @@ class TestAddNoiseLevels:
             ("user", slice(0, 4)),
             (None, slice(0, None)),
             (-1, slice(0, -1)),
-            ("device", slice(0, -1)),
+            ("device", slice(0, None)),
         ],
     )
     def test_add_noise_level(self, level1, level2):
@@ -414,7 +414,7 @@ class TestAddNoiseLevels:
         transform_level2 = qml.workflow.get_transform_program(f, level=level2)
         transform_level2.add_transform(add_noise, noise_model=noise_model, level=level1)
 
-        assert len(transform_level1) == len(transform_level2)
+        assert len(transform_level1) == len(transform_level2) + bool(level1 == "user")
         for t1, t2 in zip(transform_level1, transform_level2):
             if t1.transform.__name__ == t2.transform.__name__ == "expand_fn":
                 continue

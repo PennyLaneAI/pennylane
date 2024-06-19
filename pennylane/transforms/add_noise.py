@@ -104,6 +104,8 @@ def add_noise(tape, noise_model, level=None):
 
         .. code-block:: python3
 
+            dev = qml.device("default.mixed", wires=2)
+
             @qml.metric_tensor
             @qml.transforms.undo_swaps
             @qml.transforms.merge_rotations
@@ -117,7 +119,6 @@ def add_noise(tape, noise_model, level=None):
                 qml.RX(z, wires=1)
                 return qml.expval(qml.Z(0) @ qml.Z(1))
 
-            dev = qml.device("default.mixed", wires=2)
             noisy_circuit = qml.transforms.add_noise(circuit, noise_model)
 
         >>> qml.workflow.get_transform_program(circuit)
@@ -140,9 +141,9 @@ def add_noise(tape, noise_model, level=None):
         >>> qml.transforms.add_noise(circuit, noise_model, level="top").transform_program
         TransformProgram(add_noise)
         >>> qml.transforms.add_noise(circuit, noise_model, level="user").transform_program
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise)
+        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, metric_tensor)
         >>> qml.transforms.add_noise(circuit, noise_model, level="device").transform_program
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise)
+        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
 
         Finally, more precise control over the insertion of the transform can be achieved by specifying
         an integer or slice for indexing for extracting the transform program. For example, one can do:
@@ -215,8 +216,6 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     level = tkwargs.get("level", "user")
 
     transform_program = qml.workflow.get_transform_program(qnode, level=level)
-    if "level" not in tkwargs and qnode.transform_program.has_final_transform:
-        transform_program.push_back(qnode.transform_program[-1])
 
     cqnode._transform_program = transform_program
     cqnode.add_transform(
