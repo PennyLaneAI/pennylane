@@ -209,6 +209,7 @@ class TestDecomposition:
         ):
             qml.pauli_decompose(hamiltonian, pauli=pauli, wire_order=wire_order)
 
+    @pytest.mark.jax
     def test_jit(self):
         """Test that pauli_decompose can be used inside a jit context"""
         import jax
