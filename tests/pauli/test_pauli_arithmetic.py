@@ -22,8 +22,8 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops import Prod
 from pennylane.operation import Tensor
+from pennylane.ops import Prod
 from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
 matI = np.eye(2)
