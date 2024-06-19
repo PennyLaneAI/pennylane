@@ -17,7 +17,7 @@ import logging
 # pylint: disable=protected-access
 from collections import Counter
 from functools import partial, singledispatch
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 from numpy.random import default_rng
@@ -407,6 +407,10 @@ def simulate_tree_mcm(
     mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasureMP)])
     n_mcms = len(mcms) - 1
     mcm_current = qml.math.zeros(n_mcms + 1, dtype=bool)
+    mcm_samples = dict(
+        (k + 1, qml.math.empty((circuit.shots.total_shots,), dtype=bool))
+        for k, _ in enumerate(mcms[1:])
+    )
     circuits = []
     circuit_right = circuit
     for _ in mcms[1:]:
@@ -415,10 +419,6 @@ def simulate_tree_mcm(
     circuits.append(circuit_right)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
     counts = [None] * (n_mcms + 1)
-    mcm_samples = dict(
-        (k + 1, qml.math.empty((circuit.shots.total_shots,), dtype=bool))
-        for k, _ in enumerate(mcms[1:])
-    )
     mid_measurements = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
     results_0 = [None] * (n_mcms + 1)
     results_1 = [None] * (n_mcms + 1)
@@ -428,6 +428,7 @@ def simulate_tree_mcm(
     # and to combine them into the final result. Exit the loop once the
     # zero-branch and one-branch measurements are available.
     depth = 0
+    cumcounts = [0] * (n_mcms + 1)
     while results_0[1] is None or results_1[1] is None:
 
         # Combine two leaves once measurements are available
@@ -471,8 +472,9 @@ def simulate_tree_mcm(
         )
         if no_shots or invalid_postselect:
             if invalid_postselect:
+                for d in range(depth + 1, n_mcms + 1):
+                    cumcounts[d] += counts[depth][mcm_current[depth]]
                 counts[depth][mcm_current[depth]] = 0
-                mcm_samples = prune_mcm_samples(mcm_samples, depth, mcm_current)
             measurements = tuple()
         else:
             # If num_shots is non-zero, simulate the current depth circuit segment
@@ -506,10 +508,12 @@ def simulate_tree_mcm(
                 samples = mcms[depth].postselect * qml.math.ones_like(measurements)
             else:
                 samples = qml.math.atleast_1d(measurements)
-            mcm_samples = update_mcm_samples(samples, mcm_samples, depth, mcm_current)
             # Store a copy of the state-vector to project on the one-branch
             states[depth] = state
             counts[depth] = samples_to_counts(samples)
+            mcm_samples, cumcounts = update_mcm_samples(
+                samples, mcm_samples, depth, mcm_current, cumcounts
+            )
             continue
 
         # If at a zero-branch leaf, update measurements and switch to the one-branch
@@ -526,6 +530,7 @@ def simulate_tree_mcm(
         circuits[-1], counts[depth], (results_0[depth], results_1[depth])
     )
     mcm_samples = dict((mcms[i], v) for i, v in mcm_samples.items())
+    mcm_samples = prune_mcm_samples(mcm_samples)
     return combine_measurements(circuit, measurement_dicts, mcm_samples)
 
 
@@ -609,7 +614,7 @@ def prepend_state_prep(circuit, state, interface, wires):
     )
 
 
-def prune_mcm_samples(mcm_samples, depth, mcm_current):
+def prune_mcm_samples(mcm_samples):
     """Removes depth-th invalid mid-measurement samples.
 
     Post-selection on a given mid-circuit measurement leads to ignoring certain branches
@@ -617,18 +622,17 @@ def prune_mcm_samples(mcm_samples, depth, mcm_current):
     must be deleted accordingly. We need to find which samples are
     corresponding to the current branch by looking at all parent nodes.
     """
-    if depth not in mcm_samples:
-        raise KeyError(f"No record of MCM samples at depth {depth}.")
+    if not mcm_samples:
+        return mcm_samples
     mask = qml.math.ones(list(mcm_samples.values())[0].shape, dtype=bool)
-    for d, s in mcm_samples.items():
-        mask = qml.math.logical_and(mask, s == mcm_current[d])
-        if d == depth:
-            break
-    mask = qml.math.logical_not(mask)
+    for mcm, s in mcm_samples.items():
+        if mcm.postselect is None:
+            continue
+        mask = qml.math.logical_and(mask, s == mcm.postselect)
     return dict((k, v[mask]) for k, v in mcm_samples.items())
 
 
-def update_mcm_samples(samples, mcm_samples, depth, mcm_current):
+def update_mcm_samples(samples, mcm_samples, depth, mcm_current, cumcounts):
     """Updates the depth-th mid-measurement samples.
 
     To illustrate how the function works, let's take an example. Suppose there are
@@ -640,17 +644,14 @@ def update_mcm_samples(samples, mcm_samples, depth, mcm_current):
     sequence corresponds to ``[0,1,1,0,0,1]``.
     """
     if depth not in mcm_samples:
-        raise KeyError(f"No record of MCM samples at depth {depth}.")
-    if depth == 1:
-        mcm_samples[depth] = samples
-    else:
-        mask = qml.math.ones(list(mcm_samples.values())[0].shape, dtype=bool)
-        for d, s in mcm_samples.items():
-            if d == depth:
-                mcm_samples[d][mask] = samples
-                break
-            mask = qml.math.logical_and(mask, s == mcm_current[d])
-    return mcm_samples
+        return mcm_samples, cumcounts
+    count1 = qml.math.sum(samples)
+    count0 = samples.size - count1
+    mcm_samples[depth][cumcounts[depth] : cumcounts[depth] + count0] = 0
+    cumcounts[depth] += count0
+    mcm_samples[depth][cumcounts[depth] : cumcounts[depth] + count1] = 1
+    cumcounts[depth] += count1
+    return mcm_samples, cumcounts
 
 
 def circuit_up_to_first_mcm(circuit):
