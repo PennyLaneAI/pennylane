@@ -632,13 +632,11 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
 # pylint: disable=unused-argument
 def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
+
     if not isinstance(op2, Observable):
         return f"{op2} is not of type Observable"
 
-    if not op1.compare(op2):
-        return f"'{op1}' and '{op2}' are not the same"
-
-    return True
+    return op1.compare(op2) or f"'{op1}' and '{op2}' are not the same for an unspecified reason"
 
 
 @_equal_dispatch.register
