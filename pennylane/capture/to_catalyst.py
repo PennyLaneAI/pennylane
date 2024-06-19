@@ -18,10 +18,12 @@ import catalyst
 import jax
 import numpy as np
 from catalyst import jax_primitives as c_prims
+from jax.extend.linear_util import wrap_init
 
 from .capture_qnode import _get_qnode_prim, _get_shapes_for
 from .primitives import _get_abstract_measurement, _get_abstract_operator
 
+qnode_prim = _get_qnode_prim()
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
 
@@ -52,7 +54,14 @@ def _get_device_kwargs(device: "pennylane.devices.Device") -> dict:
     }
 
 
-def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
+def to_catalyst(plxpr):
+    def f(*args):
+        return to_catalyst_interpreter(plxpr.jaxpr, plxpr.consts, *args)
+
+    return jax.make_jaxpr(f)
+
+
+def to_catalyst_interpreter(jaxpr: jax.core.Jaxpr, consts, *args) -> jax.core.Jaxpr:
     """Convert pennylane variant jaxpr to catalyst variant jaxpr.
 
     Args:
@@ -107,411 +116,167 @@ def to_catalyst(jaxpr: jax.core.Jaxpr) -> jax.core.Jaxpr:
         in (b,) }
 
     """
-    new_xpr = jax.core.Jaxpr(
-        constvars=jaxpr.jaxpr.constvars,
-        invars=jaxpr.jaxpr.invars,
-        outvars=jaxpr.jaxpr.outvars,
-        eqns=[],
-    )
+    env = {}
+
+    # Bind args and consts to environment
+    for arg, invar in zip(args, jaxpr.invars):
+        env[invar] = arg
+    for const, constvar in zip(consts, jaxpr.constvars):
+        env[constvar] = const
+
+    # Loop through equations and evaluate primitives using `bind`
     for eqn in jaxpr.eqns:
-        if eqn.primitive != _get_qnode_prim():
-            new_xpr.eqns.append(eqn)
-        else:
-            if eqn.params["shots"] != eqn.params["device"].shots:
-                raise NotImplementedError("catalyst does not support dynamic shots.")
-            invars = eqn.invars
-            outvars = eqn.outvars
-            primitive = c_prims.func_p
+        # Read inputs to equation from environment
+        invals = [_read(invar, env) for invar in eqn.invars]
+        if eqn.primitive == qnode_prim:
+
             call_jaxpr = _qfunc_jaxpr_to_catalyst(
-                eqn.params["qfunc_jaxpr"].jaxpr, eqn.params["device"]
+                eqn.params["qfunc_jaxpr"], eqn.params["device"], *invals
             )
-            params = {"fn": eqn.params["qnode"], "call_jaxpr": call_jaxpr}
 
-            new_eqn = jax.core.JaxprEqn(
-                invars,
-                outvars,
-                primitive,
-                params,
-                effects=jax.core.no_effects,
-                source_info=null_source_info,
-            )
-            new_xpr.eqns.append(new_eqn)
+            def f(*innervals):
+                return bind_catalxpr(
+                    eqn.params["qfunc_jaxpr"].jaxpr,
+                    eqn.params["qfunc_jaxpr"].consts,
+                    eqn.params["device"],
+                    *innervals,
+                )
 
-    return jax.core.ClosedJaxpr(new_xpr, jaxpr.consts)
+            outvals = c_prims.func_p.bind(wrap_init(f), *invals, fn=eqn.params["qnode"])
+        else:
+            outvals = eqn.primitive.bind(*invals, **eqn.params)
+            # Primitives may return multiple outputs or not
+        if not eqn.primitive.multiple_results:
+            outvals = [outvals]
+        # Write the results of the primitive into the environment
+        for outvar, outval in zip(eqn.outvars, outvals):
+            env[outvar] = outval
+    return [env[outvar] for outvar in jaxpr.outvars]
 
 
 def _qfunc_jaxpr_to_catalyst(
-    plxpr: jax.core.Jaxpr, device: "pennylane.devices.Device"
+    plxpr: jax.core.Jaxpr, device: "pennylane.devices.Device", *args
 ) -> jax.core.Jaxpr:
     """Convert qfunc jaxpr and a device to catalyst variant jaxpr."""
 
-    converter = _CatalystConverter(plxpr.constvars, plxpr.invars)
-    converter.add_device_eqn(device)
-    converter.add_qreg_eqn()
-    for eqn in plxpr.eqns:
-        converter.convert_plxpr_eqn(eqn)
-    converter.return_wires()
-    return converter.catalyst_xpr
+    def f(*inner_args):
+        return bind_catalxpr(plxpr.jaxpr, plxpr.consts, device, *inner_args)
+
+    return jax.make_jaxpr(f)(*args)
 
 
-class _CatalystConverter:
-    """A class that manages the conversion of pennylane variant qfunc jaxpr to catalyst variant jaxpr.
+def _read(var, env):
+    return var.val if type(var) is jax.core.Literal else env[var]
 
-    By using this class, we can manage the state of the conversion and the clean up required
-    at the end.
 
-    This class is purely internal to the ``_qfunc_jaxpr_to_catalyst`` helper function. The division into
-    public methods and private methods is designed to improve readability and add an additional level
-    of detail at each level in the stack.  While the public methods have a very particular order
-    to be called in, the tight coupling between ``_CatalystConverter`` and ``_qfunc_jaxpr_to_catalyst``
-    insures that we do not need to worry about the methods being called in a different order. We do
-    not need to be concerned about this class being used in a different context.
-
-    Stateful variables are:
-    * ``catalyst_xpr``
-    * ``_wire_map``: map from wire value to ``AbstractQbit`` produced by earlier operations on the wire
-    * ``_op_math_cache``: operators that are consumed by later equations
-    * ``_count``: number of variables already existing.  Used when creating new variables.
-    * ``_classical_var_map``: map from plxpr classical vars to catalyst classical vars.  Different
-      by count.
-
-    Constants saved between calls are:
-    * ``_qreg``
-    * ``_num_device_wires``
-    * ``_shots``
-
-    """
-
-    def __init__(self, constvars, invars):
-        self._count = len(invars)
-
-        self.catalyst_xpr = jax.core.Jaxpr(
-            constvars=constvars,
-            invars=invars,
-            outvars=[],
-            eqns=[],
+def _operator_eqn(eqn, env, wire_map, qreg):
+    if "n_wires" not in eqn.params:
+        raise NotImplementedError(
+            f"Operator {eqn.primitive.name} not yet supported for catalyst conversion."
         )
-
-        self._qreg = None
-        self._wire_map = {}
-        self._op_math_cache = {}
-        self._num_device_wires = 0
-        self._shots = None
-        self._classical_var_map = {}
-
-    def _make_var(self, aval):
-        """Create a variable from an aval.
-
-        Side Effects:
-            Increments the ``_count`` variable.
-        """
-        out = jax.core.Var(count=self._count, suffix="", aval=aval)
-        self._count += 1
-        return out
-
-    def _get_wire(self, orig_wire):
-        """Get the ``AbstractQubit`` corresponding to a given wire label.
-
-        If the wire has already been acted upon, this will retrieve the ``AbstractQbit`` stored
-        in ``self._wire_map``.  If the wire has not already been acted upon, it adds
-        a qubit extraction equation and returns the ``AbstractQbit`` extracted from the
-        register.
-
-        Side Effects:
-            Adds an extraction equation if needed.
-        """
-        wire = orig_wire.val
-        if wire in self._wire_map:
-            return self._wire_map[wire]
-
-        wire_var = jax.core.Literal(
-            val=wire, aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True)
-        )
-        invars = [self._qreg, wire_var]
-        c_wire = self._make_var(c_prims.AbstractQbit())
-        outvar = [c_wire]
-        qextract_eqn = jax.core.JaxprEqn(
-            invars,
-            outvar,
-            c_prims.qextract_p,
-            {},
-            effects=jax.core.no_effects,
-            source_info=null_source_info,
-        )
-        self.catalyst_xpr.eqns.append(qextract_eqn)
-        return c_wire
-
-    def add_device_eqn(self, device):
-        """Add the equation for setting a device.
-
-        Should be the first method called when populating the catalyst xpr.
-        """
-        self._num_device_wires = len(device.wires)
-        self._shots = device.shots
-        params = _get_device_kwargs(device)
-        device_eqn = jax.core.JaxprEqn(
-            [],
-            [],
-            c_prims.qdevice_p,
-            params,
-            effects=jax.core.no_effects,
-            source_info=null_source_info,
-        )
-        self.catalyst_xpr.eqns.append(device_eqn)
-
-    def add_qreg_eqn(self):
-        """Add an equation for extracting a quantum register.
-
-        Should be the second method called, after ``add_device_eqn``.
-        """
-        invars = [
-            jax.core.Literal(
-                val=self._num_device_wires,
-                aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True),
-            )
-        ]
-        qreg = self._make_var(c_prims.AbstractQreg())
-        self._qreg = qreg
-        qalloc_eqn = jax.core.JaxprEqn(
-            invars,
-            [qreg],
-            c_prims.qalloc_p,
-            {},
-            effects=jax.core.no_effects,
-            source_info=null_source_info,
-        )
-        self.catalyst_xpr.eqns.append(qalloc_eqn)
-
-    def return_wires(self):
-        """Inserts all active qubits back into the original register and de-allocates the register.
-
-        Should be last method called before extracting the final ``catalyst_xpr`` property.
-
-        Side Effects:
-            Adds equations for qubit insertion and register de-allocation.
-
-        """
-        for orig_wire, wire in self._wire_map.items():
-            orig_wire_var = jax.core.Literal(
-                val=orig_wire, aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True)
-            )
-            invars = [self._qreg, orig_wire_var, wire]
-            new_qreg = self._make_var(c_prims.AbstractQreg())
-            outvars = [new_qreg]
-
-            eqn = jax.core.JaxprEqn(
-                invars,
-                outvars,
-                c_prims.qinsert_p,
-                {},
-                effects=jax.core.no_effects,
-                source_info=null_source_info,
-            )
-            self.catalyst_xpr.eqns.append(eqn)
-
-            self._qreg = new_qreg
-
-        eqn = jax.core.JaxprEqn(
-            [self._qreg],
-            [],
-            c_prims.qdealloc_p,
-            {},
-            effects=jax.core.no_effects,
-            source_info=null_source_info,
-        )
-        self.catalyst_xpr.eqns.append(eqn)
-
-    def _add_operator_eqn(self, eqn):
-        """Adds qinst equation corresponding to the input pl variant equation.
-
-        Dispatched to from ``convert_plxpr_eqn``.
-
-        Side effects:
-            Adds a catalyst-variant equation corresponding to the input operation.
-            Updates output ``AbstractQbit`` vars to ``self._wire_map``.
-
-        """
-        if "n_wires" not in eqn.params:
-            raise NotImplementedError(
-                f"Operator {eqn.primitive.name} not yet supported for catalyst conversion."
-            )
-        n_wires = eqn.params["n_wires"]
-
-        orig_wires = eqn.invars[-n_wires:]
-        wires = [self._get_wire(w) for w in orig_wires]
-        invars = wires + eqn.invars[:-n_wires]
-
-        outvars = [self._make_var(c_prims.AbstractQbit()) for _ in range(eqn.params["n_wires"])]
-
-        for w, outvar in zip(orig_wires, outvars):
-            self._wire_map[w.val] = outvar
-
-        primitive = c_prims.qinst_p
-        params = {
-            "op": eqn.primitive.name,
-            "qubits_len": eqn.params["n_wires"],
-            "params_len": len(invars) - eqn.params["n_wires"],
-            "ctrl_len": 0,
-        }
-        new_eqn = jax.core.JaxprEqn(
-            invars,
-            outvars,
-            primitive,
-            params,
-            effects=eqn.source_info,
-            source_info=null_source_info,
-        )
-        self.catalyst_xpr.eqns.append(new_eqn)
-
-    def _add_obs_eqn(self, eqn):
-        """Adds a named obs equation and returns an ``AbstractObs`` variable.
-
-        Used by ``_add_measurement_eqn``.
-
-        """
-        primitive = c_prims.namedobs_p
-
-        if "n_wires" not in eqn.params:
-            raise NotImplementedError(
-                f"Operator {eqn.primitive} not yet supported for catalyst conversion"
-            )
-        n_wires = eqn.params["n_wires"]
-        orig_wires = eqn.invars[-n_wires:]
-        wires = [self._get_wire(w) for w in orig_wires]
-        invars = wires + eqn.invars[:-n_wires]
-
-        outvars = [self._make_var(c_prims.AbstractObs())]
-        params = {"kind": eqn.primitive.name}
-
-        new_eqn = jax.core.JaxprEqn(
-            invars,
-            outvars,
-            primitive,
-            params,
-            effects=jax.core.no_effects,
-            source_info=eqn.source_info,
-        )
-        self.catalyst_xpr.eqns.append(new_eqn)
-        return outvars[0]
-
-    def _add_comp_basis_eqn(self, eqn):
-        """Adds a computational basis observable equation and returns an ``AbstractObs`` variable.
-
-        Used by ``_add_measurement_eqn``.
-        """
-        if len(eqn.invars) == 0:
-            num_wires = self._num_device_wires
-            wires_invars = []
-            for w in range(self._num_device_wires):
-                w_literal = jax.core.Literal(
-                    val=w, aval=jax.core.ShapedArray(dtype=int, shape=(), weak_type=True)
-                )
-                wires_invars.append(self._get_wire(w_literal))
+    n_wires = eqn.params["n_wires"]
+    wire_values = [_read(v, env) for v in eqn.invars[-n_wires:]]
+    wires = []
+    for w in wire_values:
+        if w in wire_map:
+            wires.append(wire_map[w])
         else:
-            num_wires = len(eqn.invars)
-            wires_invars = [self._get_wire(w) for w in eqn.invars]
-        outvars = [
-            self._make_var(c_prims.AbstractObs(num_qubits=num_wires, primitive=c_prims.compbasis_p))
-        ]
-        wires_eqn = jax.core.JaxprEqn(
-            wires_invars,
-            outvars,
-            c_prims.compbasis_p,
-            {},
-            effects=jax.core.no_effects,
-            source_info=null_source_info,
-        )
-        self.catalyst_xpr.eqns.append(wires_eqn)
-        return outvars
+            wires.append(c_prims.qextract_p.bind(qreg, w))
 
-    def _convert_measurement_dtypes(self, invars, final_aval):
-        """Adds a dtype conversion equation to convert invars into the type specified by final_aval.
+    invals = [_read(invar, env) for invar in eqn.invars[:-n_wires]]
+    outvals = c_prims.qinst_p.bind(
+        *wires,
+        *invals,
+        op=eqn.primitive.name,
+        qubits_len=eqn.params["n_wires"],
+        params_len=len(eqn.invars) - eqn.params["n_wires"],
+        ctrl_len=0,
+    )
 
-        Used by ``_add_measurement_eqn``.
-        """
-        c_outvars = [self._make_var(final_aval)]
-        c_eqn = jax.core.JaxprEqn(
-            invars,
-            c_outvars,
-            jax.lax.convert_element_type_p,
-            {"new_dtype": final_aval.dtype, "weak_type": False},
-            effects=jax.core.no_effects,
-            source_info=null_source_info,
-        )
-        self.catalyst_xpr.eqns.append(c_eqn)
-        return c_outvars
+    for wire_values, new_wire in zip(wire_values, outvals):
+        wire_map[wire_values] = new_wire
 
-    def _add_measurement_eqn(self, eqn):
-        """Converts a pl variant measurement eqn into a catalyst one and adds it to ``catalyst_xpr``.
 
-        Called by ``convert_plxpr_eqn``.
+def _return_wires(wire_map, qreg):
+    for orig_wire, wire in wire_map.items():
+        qreg = c_prims.qinsert_p.bind(qreg, orig_wire, wire)
+    c_prims.qdealloc_p.bind(qreg)
 
-        """
-        if eqn.primitive.name not in measurement_map:
-            raise NotImplementedError(
-                f"measurement {eqn.primitive.name} not yet implemented for catalyst conversion."
-            )
-        primitive = measurement_map[eqn.primitive.name]
 
-        if "_wires" in eqn.primitive.name:
-            if eqn.params.get("has_eigvals", False):
-                raise NotImplementedError(
-                    "Measurements with eigvals not yet supported for catalyst conversion."
-                )
-            invars = self._add_comp_basis_eqn(eqn)
-        else:  # obs or mcms
-            invars = []
-            for orig_invar in eqn.invars:
-                if orig_invar not in self._op_math_cache:
-                    raise NotImplementedError(
-                        "Measurements must either be in the computational basis or of an observable"
-                    )
-
-                obs = self._add_obs_eqn(self._op_math_cache[orig_invar])
-                invars.append(obs)
-        outavals = _get_shapes_for(
-            eqn.outvars[0].aval, shots=self._shots, num_device_wires=self._num_device_wires
-        )
-
-        # convert all output dtypes to float64
-        # _convert_measurement_dtypes will add an equation converting float64 to any non-float64 output
-        final_aval = outavals[0]
-        if outavals[0].dtype.name not in {"float64", "complex64", "complex128"}:
-            outavals = [jax.core.ShapedArray(outavals[0].shape, dtype=jax.numpy.float64)]
-
-        outvars = [self._make_var(oa) for oa in outavals]
-
-        new_eqn = jax.core.JaxprEqn(
-            invars,
-            outvars,
-            primitive,
-            {"shots": self._shots.total_shots, "shape": outavals[0].shape},
-            effects=jax.core.no_effects,
-            source_info=eqn.source_info,
-        )
-        self.catalyst_xpr.eqns.append(new_eqn)
-
-        if final_aval is outavals[0]:
-            return outvars
-        return self._convert_measurement_dtypes(outvars, final_aval)
-
-    def _convert_classical_eqn(self, eqn):
+def _measurement_wires_eqn(eqn, env, wire_map, qreg, device):
+    if eqn.primitive.name not in measurement_map:
         raise NotImplementedError
+    primitive = measurement_map[eqn.primitive.name]
+    if eqn.params.get("has_eigvals", False):
+        raise NotImplementedError
+    wires = []
 
-    def convert_plxpr_eqn(self, eqn):
-        """Converts a pl variant equation into a catalyst variant equation and adds it to ``catalyst_xpr``.
+    if eqn.invars:
+        w_vals = [_read(w_var, env) for w_var in eqn.invars]
+    else:
+        w_vals = device.wires
+    for w_val in w_vals:
+        if w_val in wire_map:
+            wires.append(wire_map[w_val])
+        else:
+            wires.append(c_prims.qextract_p.bind(qreg, w_val))
+    compbasis_obs = c_prims.compbasis_p.bind(*wires)
 
-        Dispatches between ``_add_operator_eqn``, ``_op_math_cache``, ``_add_measurement_eqn``, and
-        simply adding the equation to ``catalyst_xpr`` based on the type and contents of the equation.
+    shaped_arrays = _get_shapes_for(
+        eqn.outvars[0].aval, shots=device.shots, num_device_wires=len(device.wires)
+    )
 
-        """
+    return primitive.bind(
+        compbasis_obs, shape=shaped_arrays[0].shape, shots=device.shots.total_shots
+    )
+
+
+def _measurement_obs_eqn(eqn, env, op_math_cache):
+    primitive = measurement_map[eqn.primitive.name]
+    raise NotImplementedError
+
+
+def bind_catalxpr(jaxpr, consts, device, *args):
+    # Mapping from variable -> value
+    env = {}
+    wire_map = {}
+    op_math_cache = {}
+    measurements = []
+    # Bind args and consts to environment
+    for arg, invar in zip(args, jaxpr.invars):
+        env[invar] = arg
+    for const, constvar in zip(consts, jaxpr.constvars):
+        env[constvar] = const
+
+    c_prims.qdevice_p.bind(**_get_device_kwargs(device))
+    qreg = c_prims.qalloc_p.bind(len(device.wires))
+
+    # Loop through equations and evaluate primitives using `bind`
+    for eqn in jaxpr.eqns:
         if isinstance(eqn.outvars[0].aval, AbstractOperator):
             if isinstance(eqn.outvars[0], jax.core.DropVar):
-                self._add_operator_eqn(eqn)
+                _operator_eqn(eqn, env, wire_map, qreg)
             else:
-                self._op_math_cache[eqn.outvars[0]] = eqn
+                op_math_cache[eqn.outvars[0]] = eqn
+
         elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
-            mp_outaval = self._add_measurement_eqn(eqn)
-            self.catalyst_xpr.outvars.extend(mp_outaval)
+            if "_wires" in eqn.primitive.name:
+                mvals = _measurement_wires_eqn(eqn, env, wire_map, qreg, device)
+            else:
+                mvals = _measurement_obs_eqn(eqn, env, op_math_cache)
+            if not eqn.primitive.multiple_results:
+                mvals = [mvals]
+            for outvar, outval in zip(eqn.outvars, mvals):
+                env[outvar] = outval
+                measurements.append(outvar)
         else:
-            self._convert_classical_eqn(eqn)
+            invals = [_read(invar, env) for invar in eqn.invars]
+            outvals = eqn.primitive.bind(*invals, **eqn.params)
+            if not eqn.primitive.multiple_results:
+                outvals = [outvals]
+            for outvar, outval in zip(eqn.outvars, outvals):
+                env[outvar] = outval
+
+    _return_wires(wire_map, qreg)
+    # Read the final result of the Jaxpr from the environment
+    return [_read(outvar, env) for outvar in measurements]

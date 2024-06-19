@@ -99,7 +99,7 @@ class TestErorrs:
         qml.capture.disable()
 
         with pytest.raises(NotImplementedError, match=r"catalyst does not support dynamic shots."):
-            to_catalyst(jaxpr)
+            to_catalyst(jaxpr)()
 
     def test_operator_without_n_wires(self):
         """Test that a NotImplementedError is raised for an operator without a n_wires parameter."""
@@ -119,7 +119,7 @@ class TestErorrs:
             NotImplementedError,
             match=f"Operator Adjoint not yet supported for catalyst conversion.",
         ):
-            to_catalyst(jaxpr)
+            to_catalyst(jaxpr)()
 
     def test_observable_without_n_wires(self):
         """Test that a NotImplementedError is raised for an observable without n_wires."""
@@ -135,7 +135,7 @@ class TestErorrs:
         qml.capture.disable()
 
         with pytest.raises(NotImplementedError, match="not yet supported for catalyst conversion"):
-            to_catalyst(jaxpr)
+            to_catalyst(jaxpr)()
 
     def test_measuring_eigvals_not_supported(self):
         """Test that a NotImplementedError is raised for converting a measurement specified via eigvals and wires."""
@@ -155,7 +155,7 @@ class TestErorrs:
         with pytest.raises(
             NotImplementedError, match="Measurements with eigvals not yet supported"
         ):
-            to_catalyst(jaxpr)
+            to_catalyst(jaxpr)()
 
     def test_measuring_measurement_values(self):
         """Test that measuring a MeasurementValue raises a NotImplementedError."""
@@ -173,7 +173,7 @@ class TestErorrs:
         qml.capture.disable()
 
         with pytest.raises(NotImplementedError):
-            to_catalyst(jaxpr)
+            to_catalyst(jaxpr)()
 
     def test_unsupported_measurement(self):
         """Test that a NotImplementedError is raised if a measurement is not yet supported for conversion."""
@@ -189,7 +189,7 @@ class TestErorrs:
         qml.capture.disable()
 
         with pytest.raises(NotImplementedError):
-            to_catalyst(jaxpr)
+            to_catalyst(jaxpr)()
 
 
 class TestCatalystCompareJaxpr:
@@ -207,7 +207,7 @@ class TestCatalystCompareJaxpr:
         qml.capture.enable()
         plxpr = jax.make_jaxpr(circuit)(0.5)
         qml.capture.disable()
-        converted = to_catalyst(plxpr)
+        converted = to_catalyst(plxpr)(0.5)
 
         assert converted.eqns[0].primitive == catalyst.jax_primitives.func_p
         assert converted.eqns[0].params["fn"] == circuit
@@ -238,7 +238,7 @@ class TestCatalystCompareJaxpr:
         plxpr = jax.make_jaxpr(circuit)(0.5)
         qml.capture.disable()
 
-        converted = to_catalyst(plxpr)
+        converted = to_catalyst(plxpr)(0.5)
 
         assert converted.eqns[0].primitive == catalyst.jax_primitives.func_p
         assert converted.eqns[0].params["fn"] == circuit
@@ -273,7 +273,7 @@ class TestCatalystCompareJaxpr:
         plxpr = jax.make_jaxpr(circuit)(phi)
         qml.capture.disable()
 
-        converted = to_catalyst(plxpr)
+        converted = to_catalyst(plxpr)(0.5)
 
         assert converted.eqns[0].primitive == catalyst.jax_primitives.func_p
         assert converted.eqns[0].params["fn"] == circuit
@@ -312,7 +312,7 @@ class TestCatalystCompareJaxpr:
         plxpr = jax.make_jaxpr(circuit)(x)
         qml.capture.disable()
 
-        converted = to_catalyst(plxpr)
+        converted = to_catalyst(plxpr)(np.array(0.724))
 
         assert converted.eqns[0].primitive == catalyst.jax_primitives.func_p
         assert converted.eqns[0].params["fn"] == circuit
@@ -344,7 +344,7 @@ class TestCatalystCompareJaxpr:
         plxpr = jax.make_jaxpr(circuit)()
         qml.capture.disable()
 
-        converted = to_catalyst(plxpr)
+        converted = to_catalyst(plxpr)()
 
         assert converted.eqns[0].primitive == catalyst.jax_primitives.func_p
         assert converted.eqns[0].params["fn"] == circuit
@@ -378,7 +378,7 @@ class TestCatalystCompareJaxpr:
         plxpr = jax.make_jaxpr(circuit)(x, y, z)
         qml.capture.disable()
 
-        converted = to_catalyst(plxpr)
+        converted = to_catalyst(plxpr)(x, y, z)
 
         assert converted.eqns[0].primitive == catalyst.jax_primitives.func_p
         assert converted.eqns[0].params["fn"] == circuit
@@ -428,7 +428,7 @@ class TestHybridPrograms:
         plxpr = jax.make_jaxpr(workflow)(0.5)
         qml.capture.disable()
 
-        converted = to_catalyst(plxpr)
+        converted = to_catalyst(plxpr)(0.5)
 
         res = catalyst_execute_jaxpr(converted)(0.5)
 
