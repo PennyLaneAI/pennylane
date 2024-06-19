@@ -33,7 +33,7 @@ class TestInitialization:
     def test_no_update_empty_initialization(self):
         """Test initialization if nothing is provided and update does not occur."""
 
-        qs = QuantumScript(_update=False)
+        qs = QuantumScript()
         assert qs.name is None
         assert qs._ops == []
         assert qs._prep == []
