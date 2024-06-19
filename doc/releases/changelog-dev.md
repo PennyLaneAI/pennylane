@@ -296,6 +296,11 @@
 * `specs()` can now be requested at any specific point of the transform program through the `level` keyword argument.
   [(#5781)](https://github.com/PennyLaneAI/pennylane/pull/5781/)
 
+* The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot for unsupported devices.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* The `qml.Snapshot` operator now accepts sample-based measurements for finite-shot devices.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 * Device preprocess transforms now happen inside the ml boundary.
   [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
 
@@ -478,6 +483,15 @@
 * `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
   [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
 
+* `qml.snapshots` raises an error when a measurement other than `qml.state` is requested from `default.qubit.legacy` instead of silently returning the statevector.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* Fixes a bug where `default.qutrit` is falsely determined to be natively compatible with `qml.snapshots`.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* Fixes a bug where the measurement of a `qml.Snapshot` instance is not passed on during the `qml.adjoint` and `qml.ctrl` operations.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
 * `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
   [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
 
@@ -495,6 +509,9 @@
 
 * Implement the correct decomposition for a `qml.PauliRot` with an identity as `pauli_word`, i.e. returns a `qml.GlobalPhase` with half the angle.
   [(#5875)](https://github.com/PennyLaneAI/pennylane/pull/5875)
+
+* `qml.pauli_decompose` now works in a jit-ted context, such as `jax.jit` and `catalyst.qjit`.
+  [(#5878)](https://github.com/PennyLaneAI/pennylane/pull/5878)
 
 <h3>Contributors ✍️</h3>
 
