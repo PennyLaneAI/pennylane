@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as pnp
 from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
 from pennylane.devices.qubit.simulate import combine_measurements_core, measurement_with_no_shots
 from pennylane.transforms.dynamic_one_shot import fill_in_value
@@ -567,45 +566,6 @@ class TestJaxIntegration:
 class TestTorchIntegration:
     """Integration tests for dynamic_one_shot with Torch"""
 
-    @pytest.mark.parametrize("postselect", [None, 1])
-    @pytest.mark.parametrize("diff_method", [None, "best"])
-    @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
-    @pytest.mark.parametrize("meas_obj", [qml.PauliZ(1), [0, 1], "composite_mcm", "mcm_list"])
-    def test_torch_integration(self, postselect, diff_method, measure_f, meas_obj):
-        """Test that native MCM circuits are executed correctly with Torch"""
-        if measure_f in (qml.expval, qml.var) and (
-            isinstance(meas_obj, list) or meas_obj == "mcm_list"
-        ):
-            pytest.skip("Can't use wires/mcm lists with var or expval")
-
-        import torch
-
-        shots = 7000
-        dev = get_device(shots=shots, seed=123456789)
-        param = torch.tensor(np.pi / 3, dtype=torch.float64)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def func(x):
-            qml.RX(x, 0)
-            m0 = qml.measure(0)
-            qml.RX(0.5 * x, 1)
-            m1 = qml.measure(1, postselect=postselect)
-            qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
-            m2 = qml.measure(0)
-
-            mid_measure = 0.5 * m2 if meas_obj == "composite_mcm" else [m1, m2]
-            measurement_key = "wires" if isinstance(meas_obj, list) else "op"
-            measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
-            return measure_f(**{measurement_key: measurement_value})
-
-        func1 = func
-        func2 = qml.defer_measurements(func)
-
-        results1 = func1(param)
-        results2 = func2(param)
-
-        mcm_utils.validate_measurements(measure_f, shots, results1, results2)
-
     def test_grad_basic(self):
         """Test that the gradient is correct in a circuit without postselection
         or classical control"""
@@ -633,43 +593,6 @@ class TestTorchIntegration:
 @pytest.mark.autograd
 class TestAutogradIntegration:
     """Integration tests for dynamic_one_shot with Autograd"""
-
-    @pytest.mark.parametrize("postselect", [None, 1])
-    @pytest.mark.parametrize("diff_method", [None, "best"])
-    @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
-    @pytest.mark.parametrize("meas_obj", [qml.PauliZ(1), [0, 1], "composite_mcm", "mcm_list"])
-    def test_autograd_integration(self, postselect, diff_method, measure_f, meas_obj):
-        """Test that native MCM circuits are executed correctly with Autograd"""
-        if measure_f in (qml.expval, qml.var) and (
-            isinstance(meas_obj, list) or meas_obj == "mcm_list"
-        ):
-            pytest.skip("Can't use wires/mcm lists with var or expval")
-
-        shots = 7000
-        dev = get_device(shots=shots, seed=123456789)
-        param = pnp.array(np.pi / 3, dtype=np.float64)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def func(x):
-            qml.RX(x, 0)
-            m0 = qml.measure(0)
-            qml.RX(0.5 * x, 1)
-            m1 = qml.measure(1, postselect=postselect)
-            qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
-            m2 = qml.measure(0)
-
-            mid_measure = 0.5 * m2 if meas_obj == "composite_mcm" else [m1, m2]
-            measurement_key = "wires" if isinstance(meas_obj, list) else "op"
-            measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
-            return measure_f(**{measurement_key: measurement_value})
-
-        func1 = func
-        func2 = qml.defer_measurements(func)
-
-        results1 = func1(param)
-        results2 = func2(param)
-
-        mcm_utils.validate_measurements(measure_f, shots, results1, results2)
 
     def test_grad_basic(self):
         """Test that the gradient is correct in a circuit without postselection
@@ -699,45 +622,6 @@ class TestAutogradIntegration:
 @pytest.mark.tf
 class TestTensorflowIntegration:
     """Integration tests for dynamic_one_shot with Tensorflow"""
-
-    @pytest.mark.parametrize("postselect", [None, 1])
-    @pytest.mark.parametrize("diff_method", [None, "best"])
-    @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
-    @pytest.mark.parametrize("meas_obj", [qml.PauliZ(1), [0, 1], "composite_mcm", "mcm_list"])
-    def test_tf_integration(self, postselect, diff_method, measure_f, meas_obj):
-        """Test that native MCM circuits are executed correctly with Tensorflow"""
-        if measure_f in (qml.expval, qml.var) and (
-            isinstance(meas_obj, list) or meas_obj == "mcm_list"
-        ):
-            pytest.skip("Can't use wires/mcm lists with var or expval")
-
-        import tensorflow as tf
-
-        shots = 7000
-        dev = get_device(shots=shots, seed=123456789)
-        param = tf.Variable(np.pi / 3, dtype=tf.float64)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def func(x):
-            qml.RX(x, 0)
-            m0 = qml.measure(0)
-            qml.RX(0.5 * x, 1)
-            m1 = qml.measure(1, postselect=postselect)
-            qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
-            m2 = qml.measure(0)
-
-            mid_measure = 0.5 * m2 if meas_obj == "composite_mcm" else [m1, m2]
-            measurement_key = "wires" if isinstance(meas_obj, list) else "op"
-            measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
-            return measure_f(**{measurement_key: measurement_value})
-
-        func1 = func
-        func2 = qml.defer_measurements(func)
-
-        results1 = func1(param)
-        results2 = func2(param)
-
-        mcm_utils.validate_measurements(measure_f, shots, results1, results2)
 
     def test_grad_basic(self):
         """Test that the gradient is correct in a circuit without postselection

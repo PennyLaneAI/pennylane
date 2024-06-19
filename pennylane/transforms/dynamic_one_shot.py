@@ -253,7 +253,9 @@ def parse_native_mid_circuit_measurements(
 
     all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
     n_mcms = len(all_mcms)
-    mcm_samples = qml.math.hstack(tuple(res.reshape((-1, 1)) for res in results[-n_mcms:]))
+    mcm_samples = qml.math.hstack(
+        tuple(qml.math.reshape(res, (-1, 1)) for res in results[-n_mcms:])
+    )
     mcm_samples = qml.math.array(mcm_samples, like=interface)
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
     has_postselect = qml.math.array(
@@ -300,7 +302,10 @@ def parse_native_mid_circuit_measurements(
                 # We return the sum of counts (`result[1]`) weighting by `is_valid`, which is `0` for invalid samples
                 if isinstance(m, CountsMP):
                     normalized_meas.append(
-                        (result[0][0], qml.math.sum(result[1] * is_valid.reshape((-1, 1)), axis=0))
+                        (
+                            result[0][0],
+                            qml.math.sum(result[1] * qml.math.reshape(is_valid, (-1, 1)), axis=0),
+                        )
                     )
                     m_count += 1
                     continue
@@ -388,7 +393,7 @@ def gather_non_mcm(measurement, samples, is_valid):
     if isinstance(measurement, SampleMP):
         is_interface_jax = interface == "jax"
         if is_interface_jax and samples.ndim == 2:
-            is_valid = is_valid.reshape((-1, 1))
+            is_valid = qml.math.reshape(is_valid, (-1, 1))
         return (
             qml.math.where(is_valid, samples, fill_in_value)
             if is_interface_jax
@@ -396,6 +401,9 @@ def gather_non_mcm(measurement, samples, is_valid):
         )
     # VarianceMP
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
+    # Casting needed for tensorflow
+    samples = qml.math.cast_like(samples, expval)
+    is_valid = qml.math.cast_like(is_valid, expval)
     return qml.math.sum((samples - expval) ** 2 * is_valid) / qml.math.sum(is_valid)
 
 
