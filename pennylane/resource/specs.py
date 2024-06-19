@@ -121,71 +121,71 @@ def specs(qnode, **kwargs):
     'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
     'num_gradient_executions': 2}
 
-    Here you can see how the number of gates and their types change as we apply different amounts of transforms
-    through the ``level`` argument:
+    .. details::
+        :title: Usage Details
 
-    .. code-block:: python3
+        Here you can see how the number of gates and their types change as we apply different amounts of transforms
+        through the ``level`` argument:
 
-        @qml.transforms.merge_rotations
-        @qml.transforms.undo_swaps
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
-        def circuit(x):
-            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
-            qml.RX(x, wires=0)
-            qml.RX(-x, wires=0)
-            qml.SWAP((0, 1))
-            qml.X(0)
-            qml.X(0)
-            return qml.expval(qml.X(0) + qml.Y(1))
+        .. code-block:: python3
 
-        return circuit
+            @qml.transforms.merge_rotations
+            @qml.transforms.undo_swaps
+            @qml.transforms.cancel_inverses
+            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+            def circuit(x):
+                qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+                qml.RX(x, wires=0)
+                qml.RX(-x, wires=0)
+                qml.SWAP((0, 1))
+                qml.X(0)
+                qml.X(0)
+                return qml.expval(qml.X(0) + qml.Y(1))
 
-    First, we can check the resource information of the ``QNode`` without any modifications. Note that ``level=top`` would
-    return the same results:
+        First, we can check the resource information of the ``QNode`` without any modifications. Note that ``level=top`` would
+        return the same results:
 
-    >>> qml.specs(circuit, level=0)(0.1)["resources"]
-    Resources(num_wires=2, num_gates=6, gate_types=defaultdict(<class 'int'>, {'RandomLayers': 1, 'RX': 2, 'SWAP': 1, 'PauliX': 2}),
-    gate_sizes=defaultdict(<class 'int'>, {2: 2, 1: 4}), depth=6, shots=Shots(total_shots=None, shot_vector=()))
+        >>> qml.specs(circuit, level=0)(0.1)["resources"]
+        Resources(num_wires=2, num_gates=6, gate_types=defaultdict(<class 'int'>, {'RandomLayers': 1, 'RX': 2, 'SWAP': 1, 'PauliX': 2}),
+        gate_sizes=defaultdict(<class 'int'>, {2: 2, 1: 4}), depth=6, shots=Shots(total_shots=None, shot_vector=()))
 
-    We then check the resources after applying all transforms:
+        We then check the resources after applying all transforms:
 
-    >>> qml.specs(circuit, level=None)(0.1)["resources"]
-    Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RY': 1, 'RX': 1}),
-    gate_sizes=defaultdict(<class 'int'>, {1: 2}), depth=1, shots=Shots(total_shots=None, shot_vector=()))
+        >>> qml.specs(circuit, level=None)(0.1)["resources"]
+        Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RY': 1, 'RX': 1}),
+        gate_sizes=defaultdict(<class 'int'>, {1: 2}), depth=1, shots=Shots(total_shots=None, shot_vector=()))
 
-    We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
+        We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
-    >>> qml.specs(circuit, level=2)(0.1)["resources"]
-    Resources(num_wires=2, num_gates=3, gate_types=defaultdict(<class 'int'>, {'RandomLayers': 1, 'RX': 2}),
-    gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 2}), depth=3, shots=Shots(total_shots=None, shot_vector=()))
+        >>> qml.specs(circuit, level=2)(0.1)["resources"]
+        Resources(num_wires=2, num_gates=3, gate_types=defaultdict(<class 'int'>, {'RandomLayers': 1, 'RX': 2}),
+        gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 2}), depth=3, shots=Shots(total_shots=None, shot_vector=()))
 
-    If we attempt to only apply the ``merge_rotations`` transform, we would end with only one trainable object, which is in ``RandomLayers``:
+        If we attempt to only apply the ``merge_rotations`` transform, we would end with only one trainable object, which is in ``RandomLayers``:
 
-    >>> qml.specs(circuit, level=slice(2, 3))(0.1)["num_trainable_params"]
-    1
+        >>> qml.specs(circuit, level=slice(2, 3))(0.1)["num_trainable_params"]
+        1
 
-    However, if we apply all transforms, ``RandomLayers`` would be decomposed to an ``RY`` and an ``RX``, giving us two trainable objects:
+        However, if we apply all transforms, ``RandomLayers`` would be decomposed to an ``RY`` and an ``RX``, giving us two trainable objects:
 
-    >>> qml.specs(circuit, level=None)(0.1)["num_trainable_params"]
-    2
+        >>> qml.specs(circuit, level=None)(0.1)["num_trainable_params"]
+        2
 
-    If a ``QNode`` with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
-    would be returned for each resulting tapes:
+        If a ``QNode`` with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
+        would be returned for each resulting tapes:
 
-    .. code-block:: python3
+        .. code-block:: python3
 
-        H = qml.Hamiltonian([0.2, -0.543], [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)])
+            H = qml.Hamiltonian([0.2, -0.543], [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)])
 
+            @qml.transforms.hamiltonian_expand
+            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+            def circuit():
+                qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+                return qml.expval(H)
 
-        @qml.transforms.hamiltonian_expand
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
-        def circuit():
-            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
-            return qml.expval(H)
-
-    >>> len(qml.specs(circuit, level="user")())
-    2
+        >>> len(qml.specs(circuit, level="user")())
+        2
     """
 
     specs_level = _determine_spec_level(kwargs, qnode)

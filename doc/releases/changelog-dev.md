@@ -47,20 +47,41 @@
 * The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
-* A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
+* A new `qml.noise` module which contains utility function for building `NoiseModels` 
+  and an `add_noise` tranform for addding it to quantum circuits.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
+  [(#5718)](https://github.com/PennyLaneAI/pennylane/pull/5718)
 
-  ```python
-  fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
-  noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+  ```pycon
+  >>> fcond1 = qml.noise.op_eq(qml.RX) & qml.noise.wires_in([0, 1])
+  >>> noise1 = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+  >>> fcond2 = qml.noise.op_in([qml.RY, qml.RZ])
+  >>> def noise2(op, **kwargs):
+  ...     qml.ThermalRelaxationError(op.parameters[0] * 0.05, kwargs["t1"], 0.2, 0.6, op.wires)
+  >>> noise_model = qml.NoiseModel({fcond1: noise1, fcond2: noise2}, t1=2.0)
+  >>> noise_model
+  NoiseModel({
+      OpEq(RX) & WiresIn([0, 1]) = PhaseDamping(gamma=0.4)
+      OpIn(['RY', 'RZ']) = noise2
+  }, t1 = 2.0)
   ```
 
   ```pycon
-  >>> qml.NoiseModel({fcond: noise}, t1=0.04)
-  NoiseModel({
-    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
-  }, t1 = 0.04)
+  >>> @partial(qml.transforms.add_noise, noise_model=noise_model)
+  ... @qml.qnode(dev)
+  ... def circuit(w, x, y, z):
+  ...    qml.RX(w, wires=0)
+  ...    qml.RY(x, wires=1)
+  ...    qml.CNOT(wires=[0, 1])
+  ...    qml.RY(y, wires=0)
+  ...    qml.RX(z, wires=1)
+  ...    return qml.expval(qml.Z(0) @ qml.Z(1))
+  >>> print(qml.draw(circuit)(0.9, 0.4, 0.5, 0.6))
+  0: ──RX(0.90)──PhaseDamping(0.40)──────────────────────────╭●──RY(0.50)
+  1: ──RY(0.40)──ThermalRelaxationError(0.02,2.00,0.20,0.60)─╰X──RX(0.60)
+  ───ThermalRelaxationError(0.03,2.00,0.20,0.60)─┤ ╭<Z@Z>
+  ───PhaseDamping(0.40)──────────────────────────┤ ╰<Z@Z>
   ```
 
 * The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
@@ -72,8 +93,8 @@
   of_op = openfermion.FermionOperator('0^ 2')
   pl_op = qml.from_openfermion(of_op)
   of_op_new = qml.to_openfermion(pl_op)
-
   ```
+
   ```pycon
   >>> print(pl_op)
   a⁺(0) a(2)
@@ -306,6 +327,9 @@
 
 * `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
   [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
+
+* Circuits can now be plotted at any specific point of the transform program through the `level` keyword argument in `draw()` and `draw_mpl()`.
+  [(#5855)](https://github.com/PennyLaneAI/pennylane/pull/5855)
 
 * Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature of the original function.
   [(#5857)](https://github.com/PennyLaneAI/pennylane/pull/5857)
