@@ -37,7 +37,7 @@ class TestSpecsTransform:
             qml.SWAP((0, 1))
             qml.X(0)
             qml.X(0)
-            return qml.expval(qml.X(0) + qml.Y(1))
+            return qml.expval(qml.sum(qml.X(0), qml.Y(1)))
 
         return circuit
 
