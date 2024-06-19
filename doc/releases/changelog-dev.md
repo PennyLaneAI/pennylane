@@ -527,6 +527,9 @@
 * Fix bug where `CompositeOp.overlapping_ops` sometimes puts overlapping ops in different groups, leading to incorrect results returned by `LinearCombination.eigvals()`
   [(#5847)](https://github.com/PennyLaneAI/pennylane/pull/5847)
 
+* `qml.pauli_decompose` now works in a jit-ted context, such as `jax.jit` and `catalyst.qjit`.
+  [(#5878)](https://github.com/PennyLaneAI/pennylane/pull/5878)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
