@@ -241,7 +241,8 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
             ]
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(d_ops, r_ops))
+        for o1, o2 in zip(d_ops, r_ops):
+            qml.assert_equal(o1, o2)
 
 
 @pytest.mark.parametrize(

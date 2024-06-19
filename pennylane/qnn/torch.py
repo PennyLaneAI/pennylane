@@ -458,7 +458,7 @@ class TorchLayer(Module):
         x = args[0]
         kwargs = {
             self.input_arg: x,
-            **{arg: weight.data.to(x) for arg, weight in self.qnode_weights.items()},
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
         }
         self.qnode.construct((), kwargs)
 

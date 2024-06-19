@@ -1095,43 +1095,43 @@ class TestControlledMethod:
     def test_PauliX(self):
         """Test the PauliX _controlled method."""
         out = qml.PauliX(0)._controlled("a")
-        assert qml.equal(out, qml.CNOT(("a", 0)))
+        qml.assert_equal(out, qml.CNOT(("a", 0)))
 
     def test_PauliY(self):
         """Test the PauliY _controlled method."""
         out = qml.PauliY(0)._controlled("a")
-        assert qml.equal(out, qml.CY(("a", 0)))
+        qml.assert_equal(out, qml.CY(("a", 0)))
 
     def test_PauliZ(self):
         """Test the PauliZ _controlled method."""
         out = qml.PauliZ(0)._controlled("a")
-        assert qml.equal(out, qml.CZ(("a", 0)))
+        qml.assert_equal(out, qml.CZ(("a", 0)))
 
     def test_Hadamard(self):
         """Test the Hadamard _controlled method."""
         out = qml.Hadamard(0)._controlled("a")
-        assert qml.equal(out, qml.CH(("a", 0)))
+        qml.assert_equal(out, qml.CH(("a", 0)))
 
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
         out = qml.CNOT((0, 1))._controlled("a")
-        assert qml.equal(out, qml.Toffoli(("a", 0, 1)))
+        qml.assert_equal(out, qml.Toffoli(("a", 0, 1)))
 
     def test_SWAP(self):
         """Test the SWAP _controlled method."""
         out = qml.SWAP((0, 1))._controlled("a")
-        assert qml.equal(out, qml.CSWAP(("a", 0, 1)))
+        qml.assert_equal(out, qml.CSWAP(("a", 0, 1)))
 
     def test_Barrier(self):
         """Tests the _controlled behavior of Barrier."""
         original = qml.Barrier((0, 1, 2), only_visual=True)
         out = original._controlled("a")
-        assert qml.equal(original, out)
+        qml.assert_equal(original, out)
 
     def test_CZ(self):
         """Test the PauliZ _controlled method."""
         out = qml.CZ(wires=[0, 1])._controlled("a")
-        assert qml.equal(out, qml.CCZ(("a", 0, 1)))
+        qml.assert_equal(out, qml.CCZ(("a", 0, 1)))
 
 
 SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
