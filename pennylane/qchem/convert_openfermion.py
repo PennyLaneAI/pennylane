@@ -159,8 +159,8 @@ def to_openfermion(
     **Example**
 
     >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qmk.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
-    >>> s = qmk.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> of_op = qml.to_openfermion(s)
     >>> of_op
     1.2 [0^ 1] +
