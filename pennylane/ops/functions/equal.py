@@ -625,7 +625,7 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
             or f"{op1} and {op2} have different _obs_data outputs"
         )
 
-    return f"{op1} and {op2} are not same"
+    return f"{op1} is of type {type(op1)} and {op2} is of type {type(op2)}"
 
 
 @_equal_dispatch.register
