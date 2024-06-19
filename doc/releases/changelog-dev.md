@@ -34,22 +34,18 @@
   [1 1 0]
   ```
 
-* The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
-  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
-
-* Added `from_openfermion` to convert openfermion `FermionOperator` objects to PennyLane `FermiWord` or
-`FermiSentence` objects.
-[(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
-
-  ```python
-  of_op = openfermion.FermionOperator('0^ 2')
-  pl_op = qml.from_openfermion(of_op)
-  ```
+* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
+  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
 
   ```pycon
-  >>> print(pl_op)
-  a⁺(0) a(2)
+  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+  >>> qml.math.expectation_value(operator_matrix, state_vector)
+  tensor(-2.23711432e-17+0.j, requires_grad=True)
   ```
+
+* The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
+  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
 * A new `qml.noise` module which contains utility function for building `NoiseModels` 
   and an `add_noise` tranform for addding it to quantum circuits.
@@ -71,7 +67,7 @@
   }, t1 = 2.0)
   ```
 
-  ``` pycon
+  ```pycon
   >>> @partial(qml.transforms.add_noise, noise_model=noise_model)
   ... @qml.qnode(dev)
   ... def circuit(w, x, y, z):
@@ -86,6 +82,23 @@
   1: ──RY(0.40)──ThermalRelaxationError(0.02,2.00,0.20,0.60)─╰X──RX(0.60)
   ───ThermalRelaxationError(0.03,2.00,0.20,0.60)─┤ ╭<Z@Z>
   ───PhaseDamping(0.40)──────────────────────────┤ ╰<Z@Z>
+  ```
+
+* The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
+  OpenFermion and PennyLane objects.
+  [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
+  [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+
+  ```python
+  of_op = openfermion.FermionOperator('0^ 2')
+  pl_op = qml.from_openfermion(of_op)
+  of_op_new = qml.to_openfermion(pl_op)
+
+  ```pycon
+  >>> print(pl_op)
+  a⁺(0) a(2)
+  >>> print(of_op_new)
+  1.0 [0^ 2]
   ```
 
 <h3>Improvements 🛠</h3>
@@ -126,15 +139,29 @@
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
   [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
+  [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
+  [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
-* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends.
+* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends. The
+  ``molecular_hamiltonian`` and ``molecular_dipole`` functions are moved to ``hamiltonian`` and
+  ``dipole`` modules.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
+  [(#5863)](https://github.com/PennyLaneAI/pennylane/pull/5863)
 
 * `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
    optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
    [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
+* Add more fermionic-to-qubit tests to cover cases when the mapped operator is different for various mapping schemes.
+  [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
+
+* The `default.qubit` device implements a depth-first tree-traversal algorithm to
+  accelerate native mid-circuit measurement execution. The new implementation
+  supports classical control, collecting statistics, and post-selection, along
+  with all measurements enabled with `qml.dynamic_one_shot`.
+  [(#5180)](https://github.com/PennyLaneAI/pennylane/pull/5180)
 
 * `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
   These keyword arguments can be used to configure how the device should behave when running circuits with
@@ -227,6 +254,7 @@
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+  [(#5858)](https://github.com/PennyLaneAI/pennylane/pull/5858)
 
 * `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
   traced quantum functions. This feature is used with Catalyst to enable the pattern
@@ -284,7 +312,15 @@
 * The qchem docs are updated with the new qchem improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+  
+* `specs()` can now be requested at any specific point of the transform program through the `level` keyword argument.
+  [(#5781)](https://github.com/PennyLaneAI/pennylane/pull/5781/)
 
+* The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot for unsupported devices.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* The `qml.Snapshot` operator now accepts sample-based measurements for finite-shot devices.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 * Device preprocess transforms now happen inside the ml boundary.
   [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
 
@@ -303,7 +339,8 @@
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
  
 * Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian`
- [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
+  [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
+  [(#5877)](https://github.com/PennyLaneAI/pennylane/pull/5877)
 
 * `qml.QutritChannel` has been added, enabling the specification of noise using a collection of (3x3) Kraus matrices on the `default.qutrit.mixed` device.
   [(#5793)](https://github.com/PennyLaneAI/pennylane/issues/5793)
@@ -369,7 +406,14 @@
 * The `qml.Tracker` examples are updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
+* The input types for `coupling_map` in `qml.transpile` are updated to reflect all the allowed input types by `nx.to_networkx_graph`.
+  [(#5864)](https://github.com/PennyLaneAI/pennylane/pull/5864)
+
 <h3>Bug fixes 🐛</h3>
+
+* An error is now raised on processing an `AnnotatedQueue` into a `QuantumScript` if the queue
+  contains something other than an `Operator`, `MeasurementProcess`, or `QuantumScript`.
+  [(#5866)](https://github.com/PennyLaneAI/pennylane/pull/5866)
 
 * Fixes a bug in the wire handling on special controlled ops.
   [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
@@ -459,6 +503,15 @@
 * `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
   [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
 
+* `qml.snapshots` raises an error when a measurement other than `qml.state` is requested from `default.qubit.legacy` instead of silently returning the statevector.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* Fixes a bug where `default.qutrit` is falsely determined to be natively compatible with `qml.snapshots`.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
+* Fixes a bug where the measurement of a `qml.Snapshot` instance is not passed on during the `qml.adjoint` and `qml.ctrl` operations.
+  [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
 * `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
   [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
 
@@ -482,6 +535,7 @@ Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
 Utkarsh Azad,
 Lillian M. A. Frederiksen,
+Ludmila Botelho,
 Gabriel Bottrill,
 Astral Cai,
 Ahmed Darwish,
@@ -489,6 +543,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Daria Van Hende,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,

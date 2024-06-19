@@ -357,7 +357,7 @@ class TestTransmonInteraction:
         assert H.coeffs[:6] == [2 * np.pi] * 6
         assert all(H.coeffs[6:] == g)
         for o1, o2 in zip(H.ops[:6], [ad(i, 2) @ a(i, 2) for i in wires]):
-            assert qml.equal(o1, o2)
+            qml.assert_equal(o1, o2)
 
     def test_single_callable_qubit_freq_with_explicit_wires(self):
         """Test that a single callable qubit_freq with explicit wires yields the correct Hamiltonian"""
@@ -378,7 +378,7 @@ class TestTransmonInteraction:
         for coeff in H.coeffs[10:]:
             assert coeff([3, 4, 5], 6) == omega([3, 4, 5], 6)
         for o1, o2 in zip(H.ops[10:], [ad(i, 2) @ a(i, 2) for i in wires0]):
-            assert qml.equal(o1, o2)
+            qml.assert_equal(o1, o2)
 
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""

@@ -275,10 +275,10 @@ class TestQNode:
         deferred_tapes, _ = qml.defer_measurements(qnode1.qtape)
         deferred_tape = deferred_tapes[0]
         assert isinstance(deferred_tape.operations[5], Controlled)
-        assert qml.equal(deferred_tape.operations[5].base, qml.PauliZ(2))
+        qml.assert_equal(deferred_tape.operations[5].base, qml.PauliZ(2))
         assert deferred_tape.operations[5].hyperparameters["control_wires"] == qml.wires.Wires(0)
 
-        assert qml.equal(deferred_tape.operations[6], qml.CNOT([1, 2]))
+        qml.assert_equal(deferred_tape.operations[6], qml.CNOT([1, 2]))
 
     def test_new_wires_after_reuse(self, mocker):
         """Test that a new wire is added for every measurement after which
@@ -363,7 +363,7 @@ class TestQNode:
 
         assert len(circ1.qtape) == len(expected_circuit)
         for op, expected_op in zip(circ1.qtape, expected_circuit):
-            assert qml.equal(op, expected_op)
+            qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
     @pytest.mark.parametrize("shots", [None, 1000])
@@ -408,7 +408,7 @@ class TestQNode:
 
         assert len(circ1.qtape) == len(expected_circuit)
         for op, expected_op in zip(circ1.qtape, expected_circuit):
-            assert qml.equal(op, expected_op)
+            qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
     @pytest.mark.parametrize("shots", [None, 1000])
@@ -491,7 +491,7 @@ class TestQNode:
 
         assert len(circ1.qtape) == len(expected_circuit)
         for op, expected_op in zip(circ1.qtape, expected_circuit):
-            assert qml.equal(op, expected_op)
+            qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
     def test_measurement_statistics_single_wire(self, shots):
@@ -716,11 +716,11 @@ class TestConditionalOperations:
         # Check the two underlying Controlled instances
         first_ctrl_op = tape.operations[2]
         assert isinstance(first_ctrl_op, Controlled)
-        assert qml.equal(first_ctrl_op.base, qml.RY(first_par, 1))
+        qml.assert_equal(first_ctrl_op.base, qml.RY(first_par, 1))
 
         sec_ctrl_op = tape.operations[3]
         assert isinstance(sec_ctrl_op, Controlled)
-        assert qml.equal(sec_ctrl_op.base, qml.RZ(sec_par, 1))
+        qml.assert_equal(sec_ctrl_op.base, qml.RZ(sec_par, 1))
 
         assert tape.measurements[0] is terminal_measurement
 
@@ -745,7 +745,7 @@ class TestConditionalOperations:
         # Check the two underlying Controlled instance
         ctrl_op = tape.operations[0]
         assert isinstance(ctrl_op, Controlled)
-        assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
+        qml.assert_equal(ctrl_op.base, qml.RY(first_par, 1))
 
         assert ctrl_op.wires == qml.wires.Wires([0, 1])
 
@@ -771,7 +771,7 @@ class TestConditionalOperations:
         # Check the underlying Controlled instance
         ctrl_op = tape.operations[0]
         assert isinstance(ctrl_op, Controlled)
-        assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
+        qml.assert_equal(ctrl_op.base, qml.RY(first_par, 1))
 
     @pytest.mark.parametrize("rads", np.linspace(0.0, np.pi, 3))
     def test_quantum_teleportation(self, rads):
@@ -849,16 +849,16 @@ class TestConditionalOperations:
         # Check the two underlying Controlled instances
         ctrl_op1 = tape.operations[7]
         assert isinstance(ctrl_op1, Controlled)
-        assert qml.equal(ctrl_op1.base, qml.RX(math.pi, 2))
+        qml.assert_equal(ctrl_op1.base, qml.RX(math.pi, 2))
         assert ctrl_op1.wires == qml.wires.Wires([3, 2])
 
         ctrl_op2 = tape.operations[8]
         assert isinstance(ctrl_op2, Controlled)
-        assert qml.equal(ctrl_op2.base, qml.RZ(math.pi, 2))
+        qml.assert_equal(ctrl_op2.base, qml.RZ(math.pi, 2))
         assert ctrl_op2.wires == qml.wires.Wires([0, 2])
 
         # Check the measurement
-        assert qml.equal(tape.measurements[0], terminal_measurement)
+        qml.assert_equal(tape.measurements[0], terminal_measurement)
 
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
     @pytest.mark.parametrize(
@@ -929,10 +929,10 @@ class TestConditionalOperations:
         # Check the underlying Controlled instances
         first_ctrl_op = tape.operations[2]
         assert isinstance(first_ctrl_op, Controlled)
-        assert qml.equal(first_ctrl_op.base, qml.RY(rads, 4))
+        qml.assert_equal(first_ctrl_op.base, qml.RY(rads, 4))
 
         assert len(tape.measurements) == 1
-        assert qml.equal(tape.measurements[0], measurement)
+        qml.assert_equal(tape.measurements[0], measurement)
 
     def test_hamiltonian_queued(self):
         """Test that the defer_measurements transform works with
@@ -960,10 +960,10 @@ class TestConditionalOperations:
         # Check the underlying Controlled instance
         first_ctrl_op = tape.operations[0]
         assert isinstance(first_ctrl_op, Controlled)
-        assert qml.equal(first_ctrl_op.base, qml.RY(rads, 4))
+        qml.assert_equal(first_ctrl_op.base, qml.RY(rads, 4))
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], qml.measurements.MeasurementProcess)
-        assert qml.equal(tape.measurements[0].obs, H)
+        qml.assert_equal(tape.measurements[0].obs, H)
 
     @pytest.mark.parametrize(
         "device",
@@ -1526,10 +1526,8 @@ class TestQubitReuseAndReset:
         ]
 
         assert len(qnode2.qtape.circuit) == len(expected_circuit)
-        assert all(
-            qml.equal(actual, expected)
-            for actual, expected in zip(qnode2.qtape.circuit, expected_circuit)
-        )
+        for actual, expected in zip(qnode2.qtape.circuit, expected_circuit):
+            qml.assert_equal(actual, expected)
 
     def test_measurements_add_new_qubits(self):
         """Test that qubit reuse related logic is applied if a wire with mid-circuit
@@ -1614,10 +1612,8 @@ class TestQubitReuseAndReset:
         deferred_tapes, _ = qml.defer_measurements(qnode.qtape)
         deferred_tape = deferred_tapes[0]
         assert len(deferred_tape.circuit) == len(expected_circuit)
-        assert all(
-            qml.equal(actual, expected)
-            for actual, expected in zip(deferred_tape.circuit, expected_circuit)
-        )
+        for actual, expected in zip(deferred_tape.circuit, expected_circuit):
+            qml.assert_equal(actual, expected)
 
 
 class TestDrawing:
@@ -1744,9 +1740,9 @@ def test_custom_wire_labels_allowed_without_reuse():
     tape = tapes[0]
 
     assert len(tape) == 3
-    assert qml.equal(tape[0], qml.Hadamard("a"))
-    assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
-    assert qml.equal(tape[2], qml.probs(wires="b"))
+    qml.assert_equal(tape[0], qml.Hadamard("a"))
+    qml.assert_equal(tape[1], qml.CNOT(["a", "b"]))
+    qml.assert_equal(tape[2], qml.probs(wires="b"))
 
 
 def test_custom_wire_labels_fails_with_reset():

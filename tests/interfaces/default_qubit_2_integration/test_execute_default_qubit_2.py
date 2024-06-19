@@ -107,12 +107,12 @@ class TestBatchTransformHelper:
         assert len(res_tapes) == 4
         for i, t in enumerate(res_tapes):
             for op, expected_op in zip(t.operations, expected_ops[i % 2]):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert len(t.measurements) == 1
             if i < 2:
-                assert qml.equal(t.measurements[0], measurements[0])
+                qml.assert_equal(t.measurements[0], measurements[0])
             else:
-                assert qml.equal(t.measurements[0], measurements[1])
+                qml.assert_equal(t.measurements[0], measurements[1])
 
         input = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
         assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
