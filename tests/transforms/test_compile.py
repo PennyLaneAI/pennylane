@@ -108,7 +108,7 @@ class TestCompile:
 
         [out], _ = qml.compile(tape)
         expected = qml.tape.QuantumScript((qml.RX(0.3, 0),), ms, shots=50)
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     def test_compile_mcm(self):
         """Test that compile works with mid circuit measurements and conditionals."""

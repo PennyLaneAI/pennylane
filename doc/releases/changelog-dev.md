@@ -230,6 +230,7 @@
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+  [(#5858)](https://github.com/PennyLaneAI/pennylane/pull/5858)
 
 * `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
   traced quantum functions. This feature is used with Catalyst to enable the pattern

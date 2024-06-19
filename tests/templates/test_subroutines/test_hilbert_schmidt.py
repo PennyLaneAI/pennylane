@@ -49,7 +49,7 @@ def test_flatten_unflatten_standard_checks(op_type):
     assert op.hyperparameters["v_function"] == new_op.hyperparameters["v_function"]
     assert op.hyperparameters["v_wires"] == new_op.hyperparameters["v_wires"]
     for op1, op2 in zip(op.hyperparameters["u_tape"], new_op.hyperparameters["u_tape"]):
-        assert qml.equal(op1, op2)
+        qml.assert_equal(op1, op2)
     assert new_op is not op
 
 
@@ -166,10 +166,10 @@ class TestHilbertSchmidt:
         ]
 
         for op1, op2 in zip(tape_dec.operations, expected_operations):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
         for op1, op2 in zip(decomp, expected_operations):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_v_not_quantum_function(self):
         """Test that we cannot pass a non quantum function to the HS operation"""
@@ -273,8 +273,10 @@ class TestLocalHilbertSchmidt:
 
         tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
 
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(decomp, tape_dec))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(decomp, unqueued_decomp))
+        for o1, o2 in zip(decomp, tape_dec):
+            qml.assert_equal(o1, o2)
+        for o1, o2 in zip(decomp, unqueued_decomp):
+            qml.assert_equal(o1, o2)
 
         expected_operations = [
             qml.Hadamard(wires=[0]),
