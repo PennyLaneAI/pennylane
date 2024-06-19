@@ -23,6 +23,7 @@ from pennylane.measurements import MutualInfo, Shots, State, VnEntropy
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
+from pennylane import StatePrep
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods
 
@@ -34,7 +35,6 @@ class TestInitialization:
         """Test initialization if nothing is provided and update does not occur."""
 
         qs = QuantumScript()
-        assert qs.name is None
         assert qs._ops == []
         assert qs._prep == []
         assert qs._measurements == []
@@ -472,7 +472,7 @@ class TestMeasuredWires:
             qml.expval(qml.PauliX(-1)),
         ]
 
-        return QuantumScript(ops, measurement, prep)
+        return QuantumScript(prep + ops, measurement)
 
     def test_measured_wires(self, make_script):
         """Test that measured_wires property is set when called and not before."""
