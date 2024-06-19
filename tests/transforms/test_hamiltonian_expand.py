@@ -375,8 +375,8 @@ class TestHamiltonianExpand:
             shots=50,
         )
 
-        assert qml.equal(batch[0], tape_0)
-        assert qml.equal(batch[1], tape_1)
+        qml.assert_equal(batch[0], tape_0)
+        qml.assert_equal(batch[1], tape_1)
 
         dummy_res = (1.0, (1.0, 1.0))
         processed_res = fn(dummy_res)
@@ -395,9 +395,9 @@ class TestHamiltonianExpand:
         tape_1 = qml.tape.QuantumScript([], [qml.expval(qml.X(0) @ qml.Y(1))], shots=50)
         tape_2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
 
-        assert qml.equal(batch[0], tape_0)
-        assert qml.equal(batch[1], tape_1)
-        assert qml.equal(batch[2], tape_2)
+        qml.assert_equal(batch[0], tape_0)
+        qml.assert_equal(batch[1], tape_1)
+        qml.assert_equal(batch[2], tape_2)
 
         dummy_res = (1.0, 1.0, 1.0)
         processed_res = fn(dummy_res)
@@ -528,8 +528,8 @@ class TestSumExpand:
         circuit = QuantumScript(measurements=[qml.expval(obs1), qml.expval(obs2)])
         batch, _ = sum_expand(circuit)
         assert len(batch) == 2
-        assert qml.equal(batch[0][0], qml.expval(obs1))
-        assert qml.equal(batch[1][0], qml.expval(obs2))
+        qml.assert_equal(batch[0][0], qml.expval(obs1))
+        qml.assert_equal(batch[1][0], qml.expval(obs2))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):

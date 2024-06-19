@@ -202,10 +202,10 @@ class TestSelect:
         select_decomposition = op.decomposition()
         select_compute_decomposition = op.compute_decomposition(ops, control)
 
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(select_decomposition, expected_gates))
-        assert all(
-            qml.equal(op1, op2) for op1, op2 in zip(select_compute_decomposition, expected_gates)
-        )
+        for op1, op2 in zip(select_decomposition, expected_gates):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(select_compute_decomposition, expected_gates):
+            qml.assert_equal(op1, op2)
 
     def test_copy(self):
         """Test that the copy function of Select works correctly."""
@@ -213,7 +213,7 @@ class TestSelect:
         op = qml.Select(ops, control=[0, 1])
         op_copy = copy.copy(op)
 
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
 
 class TestErrorMessages:

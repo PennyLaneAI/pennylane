@@ -641,7 +641,8 @@ class TestConvertersZX:
 
         tape = qml.transforms.from_zx(graph)
         expected_op = [qml.Hadamard(wires=[1]), qml.CNOT(wires=[1, 0]), qml.Hadamard(wires=[1])]
-        assert np.all([qml.equal(op, op_ex) for op, op_ex in zip(tape.operations, expected_op)])
+        for op, op_ex in zip(tape.operations, expected_op):
+            qml.assert_equal(op, op_ex)
 
     def test_qnode_decorator(self):
         """Test the QNode decorator."""

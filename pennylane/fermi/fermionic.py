@@ -511,6 +511,48 @@ def from_string(fermi_string):
     return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
 
 
+def _to_string(fermi_op, of=False):
+    r"""Return a string representation of the :class:`~.FermiWord` object.
+
+    Args:
+        fermi_op (FermiWord): the fermionic operator
+        of (bool): whether to return a string representation in the same style as OpenFermion using
+                    the shorthand: 'q^' = a^\dagger_q 'q' = a_q. Each operator in the word is
+                    represented by the number of the wire it operates on
+
+    Returns:
+        (str): a string representation of the :class:`~.FermiWord` object
+
+    **Example**
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> _to_string(w)
+    '0+ 1-'
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> _to_string(w, of=True)
+    '0^ 1'
+    """
+    if not isinstance(fermi_op, FermiWord):
+        raise ValueError(f"fermi_op must be a FermiWord, got: {type(fermi_op)}")
+
+    pl_to_of_map = {"+": "^", "-": ""}
+
+    if len(fermi_op) == 0:
+        return "I"
+
+    op_list = ["" for _ in range(len(fermi_op))]
+    for loc, wire in fermi_op:
+        if of:
+            op_str = str(wire) + pl_to_of_map[fermi_op[(loc, wire)]]
+        else:
+            op_str = str(wire) + fermi_op[(loc, wire)]
+
+        op_list[loc] += op_str
+
+    return " ".join(op_list).rstrip()
+
+
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(orbital)
