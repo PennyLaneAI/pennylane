@@ -964,8 +964,8 @@ class TestPauliSentence:
         coeffs, ops = actual.terms()
         for coeff, coeff_expected in zip(coeffs, coeffs_expected):
             assert coeff == coeff_expected
-        for op, op_expected in zip(ops, ops_expected):
-            qml.assert_equal(op, op_expected)
+        for op_actual, op_expected in zip(ops, ops_expected):
+            qml.assert_equal(op_actual, op_expected)
 
     def test_operation_with_identity(self):
         """Test that a PauliSentence with an empty PauliWord can be cast to
