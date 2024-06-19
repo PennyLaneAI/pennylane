@@ -404,13 +404,29 @@ def simulate_tree_mcm(
     #######################
     # main implementation #
     #######################
+    # Parse MCM info
     mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasureMP)])
     n_mcms = len(mcms) - 1
     mcm_current = qml.math.zeros(n_mcms + 1, dtype=bool)
+    measured_mcms = set(
+        op
+        for op in circuit.operations
+        if isinstance(op, MidMeasureMP) and op.postselect is not None
+    )
+    for m in circuit.measurements:
+        if isinstance(m.mv, Sequence):
+            for mv in m.mv:
+                measured_mcms = measured_mcms | set(mv.measurements)
+        elif m.mv:
+            measured_mcms = measured_mcms | set(m.mv.measurements)
+    measured_mcms_indices = [i for i, mcm in enumerate(mcms[1:]) if mcm in measured_mcms]
     mcm_samples = dict(
         (k + 1, qml.math.empty((circuit.shots.total_shots,), dtype=bool))
-        for k, _ in enumerate(mcms[1:])
+        for k in measured_mcms_indices
     )
+    # This is used by `get_final_state::apply_operation` for `Conditional` operations
+    mid_measurements = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
+    # Split circuit into segments
     circuits = []
     circuit_right = circuit
     for _ in mcms[1:]:
@@ -418,8 +434,10 @@ def simulate_tree_mcm(
         circuits.append(circuit_left)
     circuits.append(circuit_right)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
+    # Initialize stacks
     counts = [None] * (n_mcms + 1)
-    mid_measurements = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
+    cumcounts = [0] * (n_mcms + 1)
+    # TODO: combine these two (possibly more) stacks into a list to handle non-binary trees
     results_0 = [None] * (n_mcms + 1)
     results_1 = [None] * (n_mcms + 1)
     states = [None] * (n_mcms + 1)
@@ -428,7 +446,6 @@ def simulate_tree_mcm(
     # and to combine them into the final result. Exit the loop once the
     # zero-branch and one-branch measurements are available.
     depth = 0
-    cumcounts = [0] * (n_mcms + 1)
     while results_0[1] is None or results_1[1] is None:
 
         # Combine two leaves once measurements are available
@@ -440,7 +457,7 @@ def simulate_tree_mcm(
             measurements = combine_measurements(circuits[-1], measurement_dicts, mcm_samples)
             # Reset current branch
             mcm_current[depth:] = False
-            # Clear stack
+            # Clear stacks
             counts[depth] = None
             results_0[depth] = None
             results_1[depth] = None
@@ -453,25 +470,29 @@ def simulate_tree_mcm(
             else:
                 results_1[depth] = measurements
                 mcm_current[depth] = False
+            # Update MCM values
             mid_measurements.update(
                 (k, v) for k, v in zip(mcms[depth:], mcm_current[depth:].tolist())
             )
             continue
 
-        # Parse shots for the current branche
+        # Parse shots for the current branch
         if counts[depth]:
             shots = counts[depth][mcm_current[depth]]
         else:
             shots = circuits[depth].shots.total_shots
         # Update active branch dict
-        no_shots = not bool(shots)  # If num_shots is zero, update measurements with empty tuple
+        no_shots = not bool(shots)
         invalid_postselect = (
             depth > 0
             and mcms[depth].postselect is not None
             and mcm_current[depth] != mcms[depth].postselect
         )
+        # If num_shots is zero or postselecting on the wrong branch, update measurements with an empty tuple
         if no_shots or invalid_postselect:
+            # Adjust counts if `invalid_postselect`
             if invalid_postselect:
+                # Bump downstream cumulative counts before zeroing-out counts
                 for d in range(depth + 1, n_mcms + 1):
                     cumcounts[d] += counts[depth][mcm_current[depth]]
                 counts[depth][mcm_current[depth]] = 0
@@ -508,12 +529,10 @@ def simulate_tree_mcm(
                 samples = mcms[depth].postselect * qml.math.ones_like(measurements)
             else:
                 samples = qml.math.atleast_1d(measurements)
+            counts[depth] = samples_to_counts(samples)
             # Store a copy of the state-vector to project on the one-branch
             states[depth] = state
-            counts[depth] = samples_to_counts(samples)
-            mcm_samples, cumcounts = update_mcm_samples(
-                samples, mcm_samples, depth, mcm_current, cumcounts
-            )
+            mcm_samples, cumcounts = update_mcm_samples(samples, mcm_samples, depth, cumcounts)
             continue
 
         # If at a zero-branch leaf, update measurements and switch to the one-branch
@@ -615,7 +634,7 @@ def prepend_state_prep(circuit, state, interface, wires):
 
 
 def prune_mcm_samples(mcm_samples):
-    """Removes depth-th invalid mid-measurement samples.
+    """Removes invalid mid-measurement samples.
 
     Post-selection on a given mid-circuit measurement leads to ignoring certain branches
     of the tree and samples. The corresponding samples in all other mid-circuit measurement
@@ -632,16 +651,17 @@ def prune_mcm_samples(mcm_samples):
     return dict((k, v[mask]) for k, v in mcm_samples.items())
 
 
-def update_mcm_samples(samples, mcm_samples, depth, mcm_current, cumcounts):
+def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
     """Updates the depth-th mid-measurement samples.
 
     To illustrate how the function works, let's take an example. Suppose there are
     ``2**20`` shots in total and the computation is midway through the circuit at the
     7th MCM, the active branch is ``[0,1,1,0,0,1]`` and each MCM everything happened to
     split the counts 50/50 so there are ``2**14`` samples to update.
-    These samples are not contiguous in general and they are correlated with the parent
+    These samples are correlated with the parent
     branches, so where do they go? They must update the ``2**14`` elements whose parent
-    sequence corresponds to ``[0,1,1,0,0,1]``.
+    sequence corresponds to ``[0,1,1,0,0,1]``. ``cumcounts`` is used for this job and
+    increased by the size of ``samples`` each time this function is called.
     """
     if depth not in mcm_samples:
         return mcm_samples, cumcounts
