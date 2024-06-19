@@ -39,7 +39,7 @@ def catalyst_execute_jaxpr(jaxpr):
             result_treedef = jax.tree_util.tree_structure((0,) * len(jaxpr.out_avals))
             arg_signature = catalyst.tracing.type_signatures.get_abstract_signature(args)
 
-            return jaxpr, result_treedef, arg_signature
+            return jaxpr, None, result_treedef, arg_signature
 
     return JAXPRRunner(fn=lambda: None, compile_options=catalyst.CompileOptions())
 
@@ -447,4 +447,6 @@ class TestHybridPrograms:
         call_jaxpr_pl = converted.eqns[1].params["call_jaxpr"]
         call_jaxpr_c = qjit_obj.jaxpr.eqns[1].params["call_jaxpr"]
 
+        print(call_jaxpr_pl)
+        print(call_jaxpr_c)
         compare_call_jaxprs(call_jaxpr_pl, call_jaxpr_c, skip_eqns=(4, 5, 6))

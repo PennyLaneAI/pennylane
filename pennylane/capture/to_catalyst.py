@@ -34,15 +34,13 @@ measurement_map = {
 }
 
 
-null_source_info = jax.extend.source_info_util.SourceInfo(
-    None, jax.extend.source_info_util.NameStack()
-)
+null_source_info = jax.core.source_info_util.SourceInfo(None, jax.core.source_info_util.NameStack())
 
 
 def _get_device_kwargs(device: "pennylane.devices.Device") -> dict:
     """Calulcate the params for a device equation."""
     features = catalyst.utils.toml.ProgramFeatures(device.shots is not None)
-    capabilities = catalyst.utils.toml.get_device_capabilities(device, features)
+    capabilities = catalyst.device.get_device_capabilities(device, features)
     info = catalyst.device.extract_backend_info(device, capabilities)
     # Note that the value of rtd_kwargs is a string version of the info kwargs, not the info kwargs itself!
     return {
@@ -339,7 +337,9 @@ class _CatalystConverter:
 
         orig_wires = eqn.invars[-n_wires:]
         wires = [self._get_wire(w) for w in orig_wires]
-        invars = wires + eqn.invars[:-n_wires]
+        invars = wires + [
+            self._classical_var_map.get(invar, invar) for invar in eqn.invars[:-n_wires]
+        ]
 
         outvars = [self._make_var(c_prims.AbstractQbit()) for _ in range(eqn.params["n_wires"])]
 
@@ -352,6 +352,7 @@ class _CatalystConverter:
             "qubits_len": eqn.params["n_wires"],
             "params_len": len(invars) - eqn.params["n_wires"],
             "ctrl_len": 0,
+            "adjoint": False,
         }
         new_eqn = jax.core.JaxprEqn(
             invars,
@@ -496,7 +497,21 @@ class _CatalystConverter:
         return self._convert_measurement_dtypes(outvars, final_aval)
 
     def _convert_classical_eqn(self, eqn):
-        raise NotImplementedError
+        new_invars = [
+            (
+                invar
+                if isinstance(invar, jax.core.Literal)
+                else self._classical_var_map.get(invar, invar)
+            )
+            for invar in eqn.invars
+        ]
+        new_outvars = [self._make_var(var.aval) for var in eqn.outvars]
+        for new_outvar, outvar in zip(new_outvars, eqn.outvars):
+            self._classical_var_map[outvar] = new_outvar
+        new_eqn = jax.core.JaxprEqn(
+            new_invars, new_outvars, eqn.primitive, eqn.params, eqn.effects, eqn.source_info
+        )
+        self.catalyst_xpr.eqns.append(new_eqn)
 
     def convert_plxpr_eqn(self, eqn):
         """Converts a pl variant equation into a catalyst variant equation and adds it to ``catalyst_xpr``.
