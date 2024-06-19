@@ -31,7 +31,7 @@ The function to perform a mid-circuit measurement in PennyLane is
 See the following sections for details on
 :func:`~.pennylane.measure`, :func:`~.pennylane.cond`, and statistics
 of mid-circuit measurements, as well as information about simulation
-strategies and how to configure them.
+strategies and how to configure them <further below>.
 Additional information can be found in the documentation of the individual
 methods. Also consider our
 :doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`,
@@ -40,8 +40,11 @@ methods. Also consider our
 and :doc:`how-to on creating dynamic circuits with mid-circuit measurements
 <demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
+Available features
+------------------
+
 Resetting wires
----------------
+***************
 
 Wires can be reused after making mid-circuit measurements. Moreover, a measured wire can be
 reset to the :math:`|0 \rangle` state by setting ``reset=True`` in :func:`~.pennylane.measure`:
@@ -65,7 +68,7 @@ Executing this QNode:
     tensor([0., 1.], requires_grad=True)
 
 Postselecting mid-circuit measurements
---------------------------------------
+**************************************
 
 PennyLane also supports postselecting on mid-circuit measurement outcomes by specifying the
 ``postselect`` keyword argument of :func:`~.pennylane.measure`. By default, postselection
@@ -96,7 +99,7 @@ discarded. This behaviour can be customized, see the section
 :ref:`"Configuring mid-circuit measurements" <mcm_config>`.
 
 Conditional operators / Dynamic circuits
-----------------------------------------
+****************************************
 
 Users can create conditional operators controlled on mid-circuit measurements using
 :func:`~.pennylane.cond`. The condition for a conditional operator may simply be
@@ -128,7 +131,7 @@ and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements
 .. _mid_circuit_measurements_statistics:
 
 Mid-circuit measurement statistics
-----------------------------------
+**********************************
 
 Statistics of mid-circuit measurements can be collected along with terminal measurement statistics.
 Currently, :func:`~.counts`, :func:`~.expval`, :func:`~.probs`, :func:`~.sample`, and :func:`~.var`
@@ -218,8 +221,8 @@ Collecting statistics for sequences of mid-circuit measurements is supported wit
     sequence may not contain arithmetic expressions.
 
 
-Simulation of mid-circuit measurements
-======================================
+Simulation techniques
+---------------------
 
 PennyLane currently offers three methods to simulate mid-circuit measurements
 on classical computers: the deferred measurements principle, dynamic one-shot
@@ -288,7 +291,7 @@ the keyword argument ``mcm_method`` at ``QNode`` creation
 .. _deferred_measurements:
 
 Deferred measurements
----------------------
+*********************
 
 A quantum function with mid-circuit measurements can be executed via the
 `deferred measurement principle <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`__.
@@ -338,7 +341,7 @@ operations become (quantumly) controlled operations.
 .. _one_shot_transform:
 
 Dynamic one-shot sampling
--------------------------
+*************************
 
 Devices that natively support mid-circuit measurements can evaluate dynamic circuits
 by executing them one shot at a time, sampling a dynamic execution path for each shot.
@@ -361,7 +364,7 @@ mid-circuit measurement in the circuit.
 .. _tree_traversal:
 
 Tree-traversal algorithm
-------------------------
+************************
 
 Dynamic circuit execution is akin to traversing a binary tree where each mid-circuit measurement
 corresponds to a node and gates between them correspond to edges. The tree-traversal algorithm
@@ -392,7 +395,7 @@ cost.
 .. _mcm_config:
 
 Configuring mid-circuit measurements
-------------------------------------
+************************************
 
 As described above, there are multiple simulation techniques for circuits with
 mid-circuit measurements in PennyLane. They can be configured when initializing a
