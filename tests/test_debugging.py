@@ -562,7 +562,7 @@ def test_tape():
         executed_tape = qml.debugging.tape()
 
     expected_tape = qml.tape.QuantumScript.from_queue(queue)
-    assert qml.equal(expected_tape, executed_tape)
+    qml.assert_equal(expected_tape, executed_tape)
 
 
 @pytest.mark.parametrize("measurement_process", (qml.expval(qml.Z(0)), qml.state(), qml.probs()))
@@ -577,12 +577,12 @@ def test_measure(mock_method, measurement_process):
     executed_tape = qml.tape.QuantumScript.from_queue(queue)
     expected_tape = qml.tape.QuantumScript(ops, measurements)
 
-    assert qml.equal(expected_tape, executed_tape)  # no unexpected queuing
+    qml.assert_equal(expected_tape, executed_tape)  # no unexpected queuing
 
     expected_debugging_tape = qml.tape.QuantumScript(ops, measurements + [measurement_process])
     executed_debugging_tape = mock_method.call_args.args[0][0]
 
-    assert qml.equal(
+    qml.assert_equal(
         expected_debugging_tape, executed_debugging_tape
     )  # _execute was called with new measurements
 
