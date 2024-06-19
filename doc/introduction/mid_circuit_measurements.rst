@@ -28,7 +28,7 @@ The function to perform a mid-circuit measurement in PennyLane is
         qml.cond(m_0, qml.RY)(y, wires=0)
         return qml.probs(wires=[0]), qml.expval(m_0)
 
-See the following sections for details on 
+See the following sections for details on
 :func:`~.pennylane.measure`, :func:`~.pennylane.cond`, and statistics
 of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them.
@@ -121,7 +121,7 @@ condition based on such values and pass it to ``cond()``:
     >>> qnode_conditional_op_on_zero(*pars)
     tensor([0.88660045, 0.11339955], requires_grad=True)
 
-For more examples, refer to the :func:`~.cond` documentation
+For more examples, refer to the :func:`~.pennylane.cond` documentation
 and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements
 <demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
@@ -132,9 +132,7 @@ Mid-circuit measurement statistics
 
 Statistics of mid-circuit measurements can be collected along with terminal measurement statistics.
 Currently, :func:`~.counts`, :func:`~.expval`, :func:`~.probs`, :func:`~.sample`, and :func:`~.var`
-are supported, and devices that currently support collecting such
-statistics are :class:`~.pennylane.devices.DefaultQubit`, :class:`~.DefaultMixed`,
-and :class:`~.DefaultQubitLegacy`.
+are supported.
 
 .. code-block:: python3
 
@@ -228,7 +226,7 @@ on classical computers: the deferred measurements principle, dynamic one-shot
 sampling, and a tree-traversal approach. These methods differ in their memory requirements
 and computational cost, as well as their compatibility with other features such as
 shots and differentiation methods.
-While the requirements depend on details of the simulation, the expected 
+While the requirements depend on details of the simulation, the expected
 scalings  with respect to the number of mid-circuit measurements (and shots) are
 
 .. role:: gr
@@ -299,7 +297,7 @@ transform :func:`~.pennylane.defer_measurements`.
 
 The deferred measurement principle provides a powerful method to simulate
 mid-circuit measurements, conditional operations and measurement statistics
-in a differentiable and device-independent way. It adds an auxiliary qubit 
+in a differentiable and device-independent way. It adds an auxiliary qubit
 to the circuit for each mid-circuit measurement, leading to overheads of both
 memory and simulation time that scale exponentially with the number of measurements.
 
@@ -367,7 +365,7 @@ Tree-traversal algorithm
 
 Dynamic circuit execution is akin to traversing a binary tree where each mid-circuit measurement
 corresponds to a node and gates between them correspond to edges. The tree-traversal algorithm
-explores this tree depth-first. It improves upon the dynamic one-shot approach above, which 
+explores this tree depth-first. It improves upon the dynamic one-shot approach above, which
 simulates a randomly chosen branch from beginning to end for each shot, by collecting all
 samples at a node or leaf at once.
 
@@ -396,7 +394,7 @@ cost.
 Configuring mid-circuit measurements
 ------------------------------------
 
-As described above, there are multiple simulation techniques for circuits with 
+As described above, there are multiple simulation techniques for circuits with
 mid-circuit measurements in PennyLane. They can be configured when initializing a
 :class:`~pennylane.QNode`, using the following keywords:
 
@@ -414,7 +412,7 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
 
 * ``postselect_mode``: Configures how invalid shots are handled when postselecting
   mid-circuit measurements with finite-shot circuits. Use ``"hw-like"`` to discard invalid samples.
-  In this case, fewer than the total number of shots may be used to process results. Use 
+  In this case, fewer than the total number of shots may be used to process results. Use
   ``"fill-shots"`` to sample the postselected value unconditionally, creating valid samples
   only. This is equivalent to sampling until the number of valid
   samples matches the total number of shots. The default is ``"hw-like"``.
@@ -447,7 +445,7 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
         by ``np.iinfo(np.int32).min``. They will not be used for processing final results (like
         expectation values), but they will appear in the output of ``QNode``\ s that return
         samples directly.
-      
+
       * When using ``jax.jit``, the combination ``"deferred"`` and ``"hw-like"`` is not supported,
         due to limitations of the :func:`~pennylane.defer_measurements` transform. This behaviour
         will change in the future.
