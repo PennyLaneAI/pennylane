@@ -209,6 +209,17 @@ class TestDecomposition:
         ):
             qml.pauli_decompose(hamiltonian, pauli=pauli, wire_order=wire_order)
 
+    def test_jit(self):
+        """Test that pauli_decompose can be used inside a jit context"""
+        import jax
+
+        @jax.jit
+        def f(m):
+            coeffs, unitaries = qml.pauli_decompose(m, check_hermitian=False).terms()
+            return coeffs, unitaries
+        x = jax.numpy.array([[1,1-1j], [1+1j,-1]])
+        assert np.allclose(f(x)[0], [1, 1, 1])
+
 
 class TestPhasedDecomposition:
     """Tests the _generalized_pauli_decompose via pauli_decompose function"""
