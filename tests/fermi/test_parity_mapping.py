@@ -894,7 +894,7 @@ def test_parity_transform_fermi_word_operation(fermionic_op, n_qubits, result):
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op = expected_op.operation(wires)
 
-    assert qml.equal(qubit_op.simplify(), expected_op.simplify())
+    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -907,12 +907,12 @@ def test_parity_transform_fermi_word_operation_legacy(fermionic_op, n_qubits, re
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op = expected_op.operation(wires)
 
-    assert qml.equal(qubit_op.simplify(), expected_op.simplify())
+    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
 
 def test_parity_transform_for_identity():
     """Test that the parity_transform function returns the correct qubit operator for Identity."""
-    assert qml.equal(parity_transform(FermiWord({}), 2), qml.Identity(0))
+    qml.assert_equal(parity_transform(FermiWord({}), 2), qml.Identity(0))
 
 
 def test_parity_transform_for_identity_ps():
@@ -979,7 +979,7 @@ def test_fermi_sentence_identity():
     assert ps_op == ps
 
     result = ps.operation(wire_order=[0])
-    assert qml.equal(qubit_op.simplify(), result.simplify())
+    qml.assert_equal(qubit_op.simplify(), result.simplify())
 
 
 FERMI_AND_PAULI_SENTENCES = [
@@ -1081,7 +1081,7 @@ def test_parity_transform_for_fermi_sentence_operation(fermionic_op, n_qubits, r
     qubit_op = parity_transform(fermionic_op, n_qubits)
     result = result.operation(wires)
 
-    assert qml.equal(qubit_op.simplify(), result.simplify())
+    qml.assert_equal(qubit_op.simplify(), result.simplify())
 
 
 WIRE_MAP_FOR_FERMI_SENTENCE = [

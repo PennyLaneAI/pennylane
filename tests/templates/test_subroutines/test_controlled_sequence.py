@@ -132,7 +132,7 @@ class TestMethods:
 
         assert len(decomp) == len(control_wires)
         for i, op in enumerate(decomp):
-            assert qml.equal(op.base.base, base)
+            qml.assert_equal(op.base.base, base)
             assert isinstance(op, qml.ops.Pow)
             assert op.z == 2 ** (len(control_wires) - i - 1)
 
