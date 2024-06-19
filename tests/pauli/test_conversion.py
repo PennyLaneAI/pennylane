@@ -217,7 +217,8 @@ class TestDecomposition:
         def f(m):
             coeffs, unitaries = qml.pauli_decompose(m, check_hermitian=False).terms()
             return coeffs, unitaries
-        x = jax.numpy.array([[1,1-1j], [1+1j,-1]])
+
+        x = jax.numpy.array([[1, 1 - 1j], [1 + 1j, -1]])
         assert np.allclose(f(x)[0], [1, 1, 1])
 
 
