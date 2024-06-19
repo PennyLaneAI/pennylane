@@ -22,7 +22,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Tensor
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
