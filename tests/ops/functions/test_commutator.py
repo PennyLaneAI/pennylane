@@ -68,9 +68,7 @@ class TestLegacySupport:
         )
         res = qml.commutator(H1, H2).simplify()
         assert isinstance(res, Sum)
-        assert qml.equal(
-            true_res, res
-        )  # issue https://github.com/PennyLaneAI/pennylane/issues/5060 as well as potential fix https://github.com/PennyLaneAI/pennylane/pull/5037
+        qml.assert_equal(true_res, res)
 
 
 def test_alias():
@@ -94,7 +92,7 @@ def test_no_recording_in_context():
         qml.PauliX(0)
         qml.PauliY(0)
 
-    assert qml.equal(tape, tape2)
+    qml.assert_equal(tape, tape2)
 
 
 def test_no_recording_in_context_with_pauli():
@@ -107,7 +105,7 @@ def test_no_recording_in_context_with_pauli():
     with qml.tape.QuantumTape() as tape2:
         qml.PauliX(0)
 
-    assert qml.equal(tape, tape2)
+    qml.assert_equal(tape, tape2)
 
 
 def test_recording_wanted():
@@ -123,7 +121,7 @@ def test_recording_wanted():
         qml.PauliY(0)
         qml.s_prod(2j, qml.PauliZ(0))
 
-    assert qml.equal(tape, tape2)
+    qml.assert_equal(tape, tape2)
 
 
 class TestcommPauli:

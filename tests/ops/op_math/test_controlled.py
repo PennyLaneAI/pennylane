@@ -400,7 +400,7 @@ class TestControlledMiscMethods:
         assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
+        qml.assert_equal(op, new_op)
         assert new_op._name == "C(S)"  # make sure initialization was called
 
     def test_copy(self):
@@ -682,7 +682,7 @@ class TestControlledQueuing:
             op = Controlled(base, (0, 1))
 
         assert base not in q
-        assert qml.equal(q.queue[0], op)
+        qml.assert_equal(q.queue[0], op)
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
@@ -1038,29 +1038,28 @@ class TestDecomposition:
         op = qml.ctrl(qml.RZ(1.2, wires=0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        assert qml.equal(decomp[0], qml.Toffoli(wires=(1, 2, 0)))
+        qml.assert_equal(decomp[0], qml.Toffoli(wires=(1, 2, 0)))
         assert isinstance(decomp[1], qml.QubitUnitary)
-        assert qml.equal(decomp[2], qml.Toffoli(wires=(3, 4, 0)))
+        qml.assert_equal(decomp[2], qml.Toffoli(wires=(3, 4, 0)))
         assert isinstance(decomp[3].base, qml.QubitUnitary)
-        assert qml.equal(decomp[4], qml.Toffoli(wires=(1, 2, 0)))
+        qml.assert_equal(decomp[4], qml.Toffoli(wires=(1, 2, 0)))
         assert isinstance(decomp[5], qml.QubitUnitary)
-        assert qml.equal(decomp[6], qml.Toffoli(wires=(3, 4, 0)))
+        qml.assert_equal(decomp[6], qml.Toffoli(wires=(3, 4, 0)))
         assert isinstance(decomp[7].base, qml.QubitUnitary)
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
 
     def test_differentiable_one_qubit_special_unitary(self):
-        """Assert that a differentiable qubit speical unitary uses the zyz decomposition."""
+        """Assert that a differentiable qubit special unitary uses the zyz decomposition."""
 
-        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1, 2, 3, 4))
+        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1))
         decomp = op.decomposition()
 
-        assert qml.equal(decomp[0], qml.RZ(qml.numpy.array(1.2), 0))
-        assert qml.equal(decomp[1], qml.MultiControlledX(wires=(1, 2, 3, 4, 0)))
-        assert qml.equal(decomp[2], qml.RZ(qml.numpy.array(-0.6), wires=0))
-        assert qml.equal(decomp[3], qml.MultiControlledX(wires=(1, 2, 3, 4, 0)))
-        assert qml.equal(decomp[4], qml.RZ(qml.numpy.array(-0.6), wires=0))
+        qml.assert_equal(decomp[0], qml.PhaseShift(qml.numpy.array(1.2 / 2), 0))
+        qml.assert_equal(decomp[1], qml.CNOT(wires=(1, 0)))
+        qml.assert_equal(decomp[2], qml.PhaseShift(qml.numpy.array(-1.2 / 2), 0))
+        qml.assert_equal(decomp[3], qml.CNOT(wires=(1, 0)))
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
@@ -1153,8 +1152,8 @@ class TestDecomposition:
             op.decomposition()
 
     def test_global_phase_decomp_raises_warning(self):
-        """Test that ctrl(GlobalPhase).decomposition() raises a warning."""
-        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0])
+        """Test that ctrl(GlobalPhase).decomposition() raises a warning with more than one control."""
+        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0, 1])
         with pytest.warns(
             UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
         ):
@@ -1173,14 +1172,14 @@ class TestDecomposition:
         decomp2 = op.expand().circuit
 
         for decomp in [decomp1, decomp2]:
-            assert qml.equal(decomp[0], qml.PauliX(1))
-            assert qml.equal(decomp[1], qml.PauliX(2))
+            qml.assert_equal(decomp[0], qml.PauliX(1))
+            qml.assert_equal(decomp[1], qml.PauliX(2))
 
             assert isinstance(decomp[2], Controlled)
             assert decomp[2].control_values == [True, True, True]
 
-            assert qml.equal(decomp[3], qml.PauliX(1))
-            assert qml.equal(decomp[4], qml.PauliX(2))
+            qml.assert_equal(decomp[3], qml.PauliX(1))
+            qml.assert_equal(decomp[4], qml.PauliX(2))
 
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, _, expected",
@@ -1731,6 +1730,7 @@ class TestCtrl:
 
         if isinstance(op, qml.QubitUnitary):
             pytest.skip("ControlledQubitUnitary can accept any number of control wires.")
+            expected = None  # to pass pylint(possibly-used-before-assignment) error
         elif isinstance(op, Controlled):
             expected = Controlled(
                 op.base,

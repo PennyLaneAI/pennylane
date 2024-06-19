@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit preprocessing."""
-from functools import reduce
-from typing import Iterable, Sequence
+from typing import Sequence
 
+import mcm_utils
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import MidMeasureMP, apply_mid_measure
+from pennylane.devices.qubit.simulate import combine_measurements_core, measurement_with_no_shots
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
@@ -31,110 +32,24 @@ def get_device(**kwargs):
     return qml.device("default.qubit", **kwargs)
 
 
-def validate_counts(shots, results1, results2, batch_size=None):
-    """Compares two counts.
-
-    If the results are ``Sequence``s, loop over entries.
-
-    Fails if a key of ``results1`` is not found in ``results2``.
-    Passes if counts are too low, chosen as ``100``.
-    Otherwise, fails if counts differ by more than ``20`` plus 20 percent.
-    """
-    if isinstance(shots, Sequence):
-        assert isinstance(results1, tuple)
-        assert isinstance(results2, tuple)
-        assert len(results1) == len(results2) == len(shots)
-        for s, r1, r2 in zip(shots, results1, results2):
-            validate_counts(s, r1, r2, batch_size=batch_size)
-        return
-
-    if batch_size is not None:
-        assert isinstance(results1, Iterable)
-        assert isinstance(results2, Iterable)
-        assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2):
-            validate_counts(shots, r1, r2, batch_size=None)
-        return
-
-    for key1, val1 in results1.items():
-        val2 = results2[key1]
-        if abs(val1 + val2) > 100:
-            assert np.allclose(val1, val2, atol=20, rtol=0.2)
+def test_combine_measurements_core():
+    """Test that combine_measurements_core raises for unsupported measurements."""
+    with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
+        _ = combine_measurements_core(qml.classical_shadow(0), None)
 
 
-def validate_samples(shots, results1, results2, batch_size=None):
-    """Compares two samples.
-
-    If the results are ``Sequence``s, loop over entries.
-
-    Fails if the results do not have the same shape, within ``20`` entries plus 20 percent.
-    This is to handle cases when post-selection yields variable shapes.
-    Otherwise, fails if the sums of samples differ by more than ``20`` plus 20 percent.
-    """
-    if isinstance(shots, Sequence):
-        assert isinstance(results1, tuple)
-        assert isinstance(results2, tuple)
-        assert len(results1) == len(results2) == len(shots)
-        for s, r1, r2 in zip(shots, results1, results2):
-            validate_samples(s, r1, r2, batch_size=batch_size)
-        return
-
-    if batch_size is not None:
-        assert isinstance(results1, Iterable)
-        assert isinstance(results2, Iterable)
-        assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2):
-            validate_samples(shots, r1, r2, batch_size=None)
-        return
-
-    sh1, sh2 = results1.shape[0], results2.shape[0]
-    assert np.allclose(sh1, sh2, atol=20, rtol=0.2)
-    assert results1.ndim == results2.ndim
-    if results2.ndim > 1:
-        assert results1.shape[1] == results2.shape[1]
-    np.allclose(qml.math.sum(results1), qml.math.sum(results2), atol=20, rtol=0.2)
-
-
-def validate_expval(shots, results1, results2, batch_size=None):
-    """Compares two expval, probs or var.
-
-    If the results are ``Sequence``s, validate the average of items.
-
-    If ``shots is None``, validate using ``np.allclose``'s default parameters.
-    Otherwise, fails if the results do not match within ``0.01`` plus 20 percent.
-    """
-    if isinstance(shots, Sequence):
-        assert isinstance(results1, tuple)
-        assert isinstance(results2, tuple)
-        assert len(results1) == len(results2) == len(shots)
-        results1 = reduce(lambda x, y: x + y, results1) / len(results1)
-        results2 = reduce(lambda x, y: x + y, results2) / len(results2)
-        validate_expval(sum(shots), results1, results2, batch_size=batch_size)
-        return
-
-    if shots is None:
-        assert np.allclose(results1, results2)
-        return
-
-    if batch_size is not None:
-        assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2):
-            validate_expval(shots, r1, r2, batch_size=None)
-
-    assert np.allclose(results1, results2, atol=0.01, rtol=0.2)
-
-
-def validate_measurements(func, shots, results1, results2, batch_size=None):
-    """Calls the correct validation function based on measurement type."""
-    if func is qml.counts:
-        validate_counts(shots, results1, results2, batch_size=batch_size)
-        return
-
-    if func is qml.sample:
-        validate_samples(shots, results1, results2, batch_size=batch_size)
-        return
-
-    validate_expval(shots, results1, results2, batch_size=batch_size)
+def test_measurement_with_no_shots():
+    """Test that measurement_with_no_shots returns the correct NaNs."""
+    assert np.isnan(measurement_with_no_shots(qml.expval(0)))
+    probs = measurement_with_no_shots(qml.probs(wires=0))
+    assert probs.shape == (2,)
+    assert all(np.isnan(probs).tolist())
+    probs = measurement_with_no_shots(qml.probs(wires=[0, 1]))
+    assert probs.shape == (4,)
+    assert all(np.isnan(probs).tolist())
+    probs = measurement_with_no_shots(qml.probs(op=qml.PauliY(0)))
+    assert probs.shape == (2,)
+    assert all(np.isnan(probs).tolist())
 
 
 def test_apply_mid_measure():
@@ -201,6 +116,41 @@ def test_unsupported_measurement():
         func(*params)
 
 
+@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+def test_tree_traversal_postselect_mode(postselect_mode):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    dev = qml.device("default.qubit", shots=shots)
+
+    @qml.qnode(dev, mcm_method="tree-traversal", postselect_mode=postselect_mode)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    res = f(np.pi / 2)
+
+    if postselect_mode == "hw-like":
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+    assert np.all(res != np.iinfo(np.int32).min)
+
+
+def test_deep_circuit():
+    """Tests that DefaultQubit handles a circuit with more than 1000 mid-circuit measurements."""
+
+    dev = qml.device("default.qubit", shots=10)
+
+    def func(x):
+        for _ in range(600):
+            qml.RX(x, wires=0)
+            m0 = qml.measure(0)
+        return qml.expval(qml.PauliY(0)), qml.expval(m0)
+
+    _ = qml.QNode(func, dev, mcm_method="tree-traversal")(0.1234)
+
+
 # pylint: disable=unused-argument
 def obs_tape(x, y, z, reset=False, postselect=None):
     qml.RX(x, 0)
@@ -220,14 +170,15 @@ def obs_tape(x, y, z, reset=False, postselect=None):
     return m0, m1
 
 
-@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+@pytest.mark.parametrize("shots", [5500, [5500, 5501]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 @pytest.mark.parametrize(
     "meas_obj",
     [qml.PauliZ(0), qml.PauliY(1), [0], [0, 1], [1, 0], "mcm", "composite_mcm", "mcm_list"],
 )
-def test_simple_dynamic_circuit(shots, measure_f, postselect, meas_obj):
+def test_simple_dynamic_circuit(mcm_method, shots, measure_f, postselect, meas_obj):
     """Tests that DefaultQubit handles a simple dynamic circuit with the following measurements:
 
         * qml.counts with obs (comp basis or not), single wire, multiple wires (ordered/unordered), MCM, f(MCM), MCM list
@@ -247,7 +198,6 @@ def test_simple_dynamic_circuit(shots, measure_f, postselect, meas_obj):
     dev = get_device(shots=shots)
     params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
 
-    @qml.qnode(dev)
     def func(x, y, z):
         m0, m1 = obs_tape(x, y, z, postselect=postselect)
         mid_measure = (
@@ -257,18 +207,16 @@ def test_simple_dynamic_circuit(shots, measure_f, postselect, meas_obj):
         measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
         return measure_f(**{measurement_key: measurement_value})
 
-    func1 = func
-    results1 = func1(*params)
+    results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*params)
+    results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
 
-    func2 = qml.defer_measurements(func)
-    results2 = func2(*params)
-
-    validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results0)
 
 
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-def test_multiple_measurements_and_reset(postselect, reset):
+def test_multiple_measurements_and_reset(mcm_method, postselect, reset):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
     and a conditional gate. Multiple measurements of the mid-circuit measurement value are
     performed. This function also tests `reset` parametrizing over the parameter."""
@@ -276,9 +224,11 @@ def test_multiple_measurements_and_reset(postselect, reset):
     dev = get_device(shots=shots)
     params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliY(1)
+    state = qml.math.zeros((4,))
+    state[0] = 1.0
 
-    @qml.qnode(dev)
     def func(x, y, z):
+        qml.StatePrep(state, wires=[0, 1])
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return (
             qml.counts(op=obs),
@@ -288,18 +238,16 @@ def test_multiple_measurements_and_reset(postselect, reset):
             qml.var(op=obs),
         )
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+    results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*params)
+    results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
 
-    results1 = func1(*params)
-    results2 = func2(*params)
-
-    for measure_f, r1, r2 in zip(
-        [qml.counts, qml.expval, qml.probs, qml.sample, qml.var], results1, results2
+    for measure_f, r1, r0 in zip(
+        [qml.counts, qml.expval, qml.probs, qml.sample, qml.var], results1, results0
     ):
-        validate_measurements(measure_f, shots, r1, r2)
+        mcm_utils.validate_measurements(measure_f, shots, r1, r0)
 
 
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 @pytest.mark.parametrize(
     "mcm_f",
     [
@@ -314,7 +262,7 @@ def test_multiple_measurements_and_reset(postselect, reset):
     ],
 )
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
-def test_composite_mcms(mcm_f, measure_f):
+def test_composite_mcms(mcm_method, mcm_f, measure_f):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a composite mid-circuit measurement is performed
     at the end."""
@@ -334,7 +282,6 @@ def test_composite_mcms(mcm_f, measure_f):
     dev = get_device(shots=shots)
     param = np.pi / 3
 
-    @qml.qnode(dev)
     def func(x):
         qml.RX(x, 0)
         m0 = qml.measure(0)
@@ -349,15 +296,13 @@ def test_composite_mcms(mcm_f, measure_f):
         )
         return measure_f(op=obs)
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+    results0 = qml.QNode(func, dev, mcm_method=mcm_method)(param)
+    results1 = qml.QNode(func, dev, mcm_method="deferred")(param)
 
-    results1 = func1(param)
-    results2 = func2(param)
-
-    validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results0)
 
 
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 @pytest.mark.parametrize(
     "mcm_f",
     [
@@ -368,14 +313,13 @@ def test_composite_mcms(mcm_f, measure_f):
         lambda x, y: 4.0 * x + 2.0 * y,
     ],
 )
-def test_counts_return_type(mcm_f):
+def test_counts_return_type(mcm_method, mcm_f):
     """Tests that DefaultQubit returns the same keys for ``qml.counts`` measurements with ``dynamic_one_shot`` and ``defer_measurements``."""
-    shots = 20
+    shots = 500
 
     dev = get_device(shots=shots)
     param = np.pi / 3
 
-    @qml.qnode(dev)
     def func(x):
         qml.RX(x, 0)
         m0 = qml.measure(0)
@@ -384,13 +328,11 @@ def test_counts_return_type(mcm_f):
         qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
         return qml.counts(op=mcm_f(m0, m1))
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+    results0 = qml.QNode(func, dev, mcm_method=mcm_method)(param)
+    results1 = qml.QNode(func, dev, mcm_method="deferred")(param)
 
-    results1 = func1(param)
-    results2 = func2(param)
-    for r1, r2 in zip(results1.keys(), results2.keys()):
-        assert r1 == r2
+    for r1, r0 in zip(results1.keys(), results0.keys()):
+        assert r1 == r0
 
 
 @pytest.mark.parametrize("shots", [5000])
@@ -422,7 +364,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     results1 = func1(*param)
     results2 = func2(*param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results2)
 
     grad1 = qml.grad(func)(*param)
     grad2 = qml.grad(func2)(*param)
@@ -430,10 +372,11 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
     assert np.allclose(grad1, grad2, atol=0.01, rtol=0.3)
 
 
-@pytest.mark.parametrize("shots", [5000, [5000, 5001]])
-@pytest.mark.parametrize("postselect", [None, 0, 1])
-@pytest.mark.parametrize("measure_fn", [qml.expval, qml.sample, qml.probs, qml.counts])
-def test_broadcasting_qnode(shots, postselect, measure_fn):
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+@pytest.mark.parametrize("shots", [5500, [5500, 5501]])
+@pytest.mark.parametrize("postselect", [None, 0])
+@pytest.mark.parametrize("measure_fn", [qml.counts, qml.expval, qml.probs, qml.sample])
+def test_broadcasting_qnode(mcm_method, shots, postselect, measure_fn):
     """Test that executing qnodes with broadcasting works as expected"""
     if measure_fn is qml.sample and postselect is not None:
         pytest.skip("Postselection with samples doesn't work with broadcasting")
@@ -442,29 +385,26 @@ def test_broadcasting_qnode(shots, postselect, measure_fn):
     param = [[np.pi / 3, np.pi / 4], [np.pi / 6, 2 * np.pi / 3]]
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
-    @qml.qnode(dev)
     def func(x, y):
         obs_tape(x, y, None, postselect=postselect)
         return measure_fn(op=obs)
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+    results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*param)
+    results1 = qml.QNode(func, dev, mcm_method="deferred")(*param)
 
-    results1 = func1(*param)
-    results2 = func2(*param)
-
-    validate_measurements(measure_fn, shots, results1, results2, batch_size=2)
+    mcm_utils.validate_measurements(measure_fn, shots, results1, results0, batch_size=2)
 
     if measure_fn is qml.sample and postselect is None:
         for i in range(2):  # batch_size
             if isinstance(shots, list):
-                for s, r1, r2 in zip(shots, results1, results2):
+                for s, r1, r2 in zip(shots, results1, results0):
                     assert len(r1[i]) == len(r2[i]) == s
             else:
-                assert len(results1[i]) == len(results2[i]) == shots
+                assert len(results1[i]) == len(results0[i]) == shots
 
 
-def test_sample_with_broadcasting_and_postselection_error():
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+def test_sample_with_broadcasting_and_postselection_error(mcm_method):
     """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
     tape = qml.tape.QuantumScript(
         [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
@@ -474,42 +414,40 @@ def test_sample_with_broadcasting_and_postselection_error():
 
     dev = get_device(shots=10)
 
-    @qml.qnode(dev)
-    def circuit():
-        qml.RX([0.1, 0.2], 0)
+    @qml.qnode(dev, mcm_method=mcm_method)
+    def circuit(x):
+        qml.RX(x, 0)
         qml.measure(0, postselect=1)
         return qml.sample(wires=0)
 
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
-        _ = circuit()
+        _ = circuit([0.1, 0.2])
 
 
 # pylint: disable=not-an-iterable
 @pytest.mark.jax
-@pytest.mark.parametrize("shots", [100, [100, 101]])
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+@pytest.mark.parametrize("shots", [100, [100, 101], [100, 100, 101]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
-def test_sample_with_prng_key(shots, postselect):
+def test_sample_with_prng_key(mcm_method, shots, postselect):
     """Test that setting a PRNGKey gives the expected behaviour. With separate calls
     to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
     # pylint: disable=import-outside-toplevel
     from jax.random import PRNGKey
 
     dev = get_device(shots=shots, seed=PRNGKey(678))
-    param = [np.pi / 4, np.pi / 3]
+    params = [np.pi / 4, np.pi / 3]
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
-    @qml.qnode(dev)
     def func(x, y):
         obs_tape(x, y, None, postselect=postselect)
         return qml.sample(op=obs)
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+    func0 = qml.QNode(func, dev, mcm_method=mcm_method)
+    results0 = func0(*params)
+    results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
 
-    results1 = func1(*param)
-    results2 = func2(*param)
-
-    validate_measurements(qml.sample, shots, results1, results2, batch_size=None)
+    mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
 
     evals = obs.eigvals()
     for eig in evals:
@@ -521,13 +459,13 @@ def test_sample_with_prng_key(shots, postselect):
         else:
             assert not np.all(np.isclose(results1, eig))
 
-    results3 = func1(*param)
+    results0_2 = func0(*params)
     # Same result expected with multiple executions
     if isinstance(shots, list):
-        for r1, r3 in zip(results1, results3):
-            assert np.allclose(r1, r3)
+        for r0, r0_2 in zip(results0, results0_2):
+            assert np.allclose(r0, r0_2)
     else:
-        assert np.allclose(results1, results3)
+        assert np.allclose(results0, results0_2)
 
 
 # pylint: disable=import-outside-toplevel, not-an-iterable
@@ -638,4 +576,4 @@ def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
     results1 = func1(param)
     results2 = func2(param)
 
-    validate_measurements(measure_f, shots, results1, results2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results2)

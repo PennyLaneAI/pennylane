@@ -98,7 +98,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     - The function uses tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
       to map the resulting fermionic Hamiltonian to the basis of Pauli matrices via the
-      Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit operator is converted
+      Jordan-Wigner, Parity or Bravyi-Kitaev transformation. Finally, the qubit operator is converted
       to a PennyLane observable by the function :func:`~.convert_observable`.
 
     Args:
@@ -109,7 +109,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
             example, this can be used to pass the nuclear-nuclear repulsion energy :math:`V_{nn}`
             which is typically included in the electronic Hamiltonian of molecules.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can
-            be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+            be ``'jordan_wigner'``, ``'parity'``, or ``'bravyi_kitaev'``.
         wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
             to an observable measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
@@ -136,10 +136,10 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     """
     openfermion, _ = _import_of()
 
-    if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
+    if mapping.strip().lower() not in ("jordan_wigner", "parity", "bravyi_kitaev"):
         raise TypeError(
             f"The '{mapping}' transformation is not available. \n "
-            f"Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'."
+            f"Please set 'mapping' to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
         )
 
     # Initialize the FermionOperator
@@ -155,6 +155,15 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     if mapping.strip().lower() == "bravyi_kitaev":
         return qml.qchem.convert.import_operator(
             openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires
+        )
+
+    if mapping.strip().lower() == "parity":
+        qubits = openfermion.count_qubits(mb_obs)
+        if qubits == 0:
+            return 0.0 * qml.I(0)
+        binary_code = openfermion.parity_code(qubits)
+        return qml.qchem.convert.import_operator(
+            openfermion.transforms.binary_code_transform(mb_obs, binary_code), wires=wires
         )
 
     return qml.qchem.convert.import_operator(
@@ -542,7 +551,7 @@ def dipole_of(
             mean field electronic structure problem
         core (list): indices of core orbitals
         active (list): indices of active orbitals
-        mapping (str): transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
+        mapping (str): transformation (``'jordan_wigner'``, ``'parity'``, or ``'bravyi_kitaev'``) used to
             map the fermionic operator to the Pauli basis
         cutoff (float): Cutoff value for including the matrix elements
             :math:`\langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle`. The matrix elements
@@ -742,14 +751,14 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     OpenFermion tools.
 
     This function uses OpenFermion functions to build the second-quantized electronic Hamiltonian
-    of the molecule and map it to the Pauli basis using the Jordan-Wigner or Bravyi-Kitaev
+    of the molecule and map it to the Pauli basis using the Jordan-Wigner, Parity or Bravyi-Kitaev
     transformation.
 
     Args:
         hf_file (str): absolute path to the hdf5-formatted file with the
             Hartree-Fock electronic structure
         mapping (str): Specifies the transformation to map the fermionic Hamiltonian to the
-            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+            Pauli basis. Input values can be ``'jordan_wigner'``, ``'parity'``, or ``'bravyi_kitaev'``.
         core (list): indices of core orbitals, i.e., the orbitals that are
             not correlated in the many-body wave function
         active (list): indices of active orbitals, i.e., the orbitals used to

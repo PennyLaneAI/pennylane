@@ -480,9 +480,11 @@ class TestInsertOp:
         new_tapes = _insert_op(tape, ops, op_idx)
         assert isinstance(new_tapes, list) and len(new_tapes) == len(ops)
         for t, op in zip(new_tapes, ops):
-            assert all(qml.equal(o0, o1) for o0, o1 in zip(t[:op_idx], tape[:op_idx]))
-            assert qml.equal(t[op_idx], op)
-            assert all(qml.equal(o0, o1) for o0, o1 in zip(t[op_idx + 1 :], tape[op_idx:]))
+            for o0, o1 in zip(t[:op_idx], tape[:op_idx]):
+                qml.assert_equal(o0, o1)
+            qml.assert_equal(t[op_idx], op)
+            for o0, o1 in zip(t[op_idx + 1 :], tape[op_idx:]):
+                qml.assert_equal(o0, o1)
 
 
 @pytest.mark.jax
@@ -528,7 +530,8 @@ class TestGenerateTapesAndCoeffs:
                 assert len(t.operations) == len(old_tape.operations) + 1
                 expected_ops = copy.copy(old_tape.operations)
                 expected_ops.insert(insert_idx, qml.PauliRot(sign * np.pi / 2, word, wires))
-                assert all(qml.equal(op, old_op) for op, old_op in zip(t.operations, expected_ops))
+                for op, old_op in zip(t.operations, expected_ops):
+                    qml.assert_equal(op, old_op)
         assert tup[:2] == (start, end)
 
         # Check coefficients
