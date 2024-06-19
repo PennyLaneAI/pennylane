@@ -68,9 +68,7 @@ class TestLegacySupport:
         )
         res = qml.commutator(H1, H2).simplify()
         assert isinstance(res, Sum)
-        qml.assert_equal(
-            true_res, res
-        )  # issue https://github.com/PennyLaneAI/pennylane/issues/5060 as well as potential fix https://github.com/PennyLaneAI/pennylane/pull/5037
+        qml.assert_equal(true_res, res)
 
 
 def test_alias():
