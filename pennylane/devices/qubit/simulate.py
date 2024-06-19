@@ -415,7 +415,10 @@ def simulate_tree_mcm(
     circuits.append(circuit_right)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
     counts = [None] * (n_mcms + 1)
-    mcm_samples = qml.math.empty((n_mcms, circuit.shots.total_shots), dtype=bool)
+    mcm_samples = dict(
+        (k + 1, qml.math.empty((circuit.shots.total_shots,), dtype=bool))
+        for k, _ in enumerate(mcms[1:])
+    )
     mid_measurements = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
     results_0 = [None] * (n_mcms + 1)
     results_1 = [None] * (n_mcms + 1)
@@ -522,7 +525,7 @@ def simulate_tree_mcm(
     measurement_dicts = get_measurement_dicts(
         circuits[-1], counts[depth], (results_0[depth], results_1[depth])
     )
-    mcm_samples = dict((k, v) for k, v in zip(mcms[1:], mcm_samples))
+    mcm_samples = dict((mcms[i], v) for i, v in mcm_samples.items())
     return combine_measurements(circuit, measurement_dicts, mcm_samples)
 
 
@@ -614,11 +617,15 @@ def prune_mcm_samples(mcm_samples, depth, mcm_current):
     must be deleted accordingly. We need to find which samples are
     corresponding to the current branch by looking at all parent nodes.
     """
-    # FASTER than using qml.math.all(x == y, axis=1)
-    mask = mcm_samples[0, :] == mcm_current[1]
-    for i in range(1, depth):
-        mask = qml.math.logical_and(mask, mcm_samples[i, :] == mcm_current[i + 1])
-    return mcm_samples[:, qml.math.logical_not(mask)]
+    if depth not in mcm_samples:
+        raise KeyError(f"No record of MCM samples at depth {depth}.")
+    mask = qml.math.ones(list(mcm_samples.values())[0].shape, dtype=bool)
+    for d, s in mcm_samples.items():
+        mask = qml.math.logical_and(mask, s == mcm_current[d])
+        if d == depth:
+            break
+    mask = qml.math.logical_not(mask)
+    return dict((k, v[mask]) for k, v in mcm_samples.items())
 
 
 def update_mcm_samples(samples, mcm_samples, depth, mcm_current):
@@ -632,14 +639,17 @@ def update_mcm_samples(samples, mcm_samples, depth, mcm_current):
     branches, so where do they go? They must update the ``2**14`` elements whose parent
     sequence corresponds to ``[0,1,1,0,0,1]``.
     """
+    if depth not in mcm_samples:
+        raise KeyError(f"No record of MCM samples at depth {depth}.")
     if depth == 1:
-        mcm_samples[depth - 1, :] = samples
+        mcm_samples[depth] = samples
     else:
-        # FASTER than using qml.math.all(x == y, axis=1)
-        mask = mcm_samples[0, :] == mcm_current[1]
-        for i in range(1, depth - 1):
-            mask = qml.math.logical_and(mask, mcm_samples[i, :] == mcm_current[i + 1])
-        mcm_samples[depth - 1, mask] = samples
+        mask = qml.math.ones(list(mcm_samples.values())[0].shape, dtype=bool)
+        for d, s in mcm_samples.items():
+            if d == depth:
+                mcm_samples[d][mask] = samples
+                break
+            mask = qml.math.logical_and(mask, s == mcm_current[d])
     return mcm_samples
 
 
