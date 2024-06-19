@@ -195,7 +195,7 @@
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
   
-* The `qml.data` module now supports PyTree types as dataset attributes
+* The `qml.data` module now supports PyTree data types as dataset attributes
   [(#5732)](https://github.com/PennyLaneAI/pennylane/pull/5732)
 
 
