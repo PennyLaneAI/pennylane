@@ -110,7 +110,7 @@ def warn_readout_error_state(
     return (tape,), null_postprocessing
 
 
-def get_readout_errors(readout_relaxations=None, readout_misclassifications=None):
+def get_readout_errors(readout_relaxations, readout_misclassifications):
     r"""Get the list of readout errors that should be applied to each measured wire.
 
     Args:
@@ -269,7 +269,8 @@ class DefaultQutritMixed(Device):
         wires=None,
         shots=None,
         seed="global",
-        **readout_probs,
+        readout_relaxations=None,
+        readout_misclassifications=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
@@ -281,7 +282,7 @@ class DefaultQutritMixed(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
-        self.readout_errors = get_readout_errors(**readout_probs)
+        self.readout_errors = get_readout_errors(readout_relaxations, readout_misclassifications)
 
     @debug_logger
     def supports_derivatives(
