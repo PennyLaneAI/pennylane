@@ -20,6 +20,7 @@ from operator import matmul
 from typing import Tuple, Union
 
 import pennylane as qml
+from pennylane.math.utils import is_abstract
 from pennylane.operation import Tensor
 from pennylane.ops import (
     Hamiltonian,
@@ -206,15 +207,17 @@ def _generalized_pauli_decompose(
         ).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
 
-        if not qml.math.allclose(coefficient, 0):
-            observables = (
-                [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
-                if hide_identity and not all(t == I for t in pauli_rep)
-                else [(o, w) for w, o in zip(wire_order, pauli_rep)]
-            )
-            if observables:
-                coeffs.append(coefficient)
-                obs.append(observables)
+        if not is_abstract(matrix) and qml.math.allclose(coefficient, 0):
+            continue
+
+        observables = (
+            [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+            if hide_identity and not all(t == I for t in pauli_rep)
+            else [(o, w) for w, o in zip(wire_order, pauli_rep)]
+        )
+        if observables:
+            coeffs.append(coefficient)
+            obs.append(observables)
 
     coeffs = qml.math.stack(coeffs)
 
