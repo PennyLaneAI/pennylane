@@ -119,7 +119,7 @@ class TestInheritanceMixins:
         unpickled_op = pickle.loads(pickled_adj_op)
 
         assert type(adj_op) is type(unpickled_op)
-        assert qml.equal(adj_op, unpickled_op)
+        qml.assert_equal(adj_op, unpickled_op)
 
 
 class TestInitialization:
@@ -472,7 +472,7 @@ class TestMiscMethods:
         assert metadata == tuple()
 
         new_op = type(adj_op)._unflatten(*adj_op._flatten())
-        assert qml.equal(adj_op, new_op)
+        qml.assert_equal(adj_op, new_op)
 
 
 class TestAdjointOperation:
@@ -498,7 +498,7 @@ class TestAdjointOperation:
         base = qml.RX(1.23, wires=0)
         op = Adjoint(base)
 
-        assert qml.equal(base.generator(), -1.0 * op.generator())
+        qml.assert_equal(base.generator(), -1.0 * op.generator())
 
     def test_no_generator(self):
         """Test that an adjointed non-Operation raises a GeneratorUndefinedError."""
@@ -897,7 +897,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         tape = qml.tape.QuantumScript.from_queue(q)
         assert out is tape[0]
         assert isinstance(out, Adjoint)
-        assert qml.equal(out.base, qml.RX(1.234, "a"))
+        qml.assert_equal(out.base, qml.RX(1.234, "a"))
 
     def test_adjoint_template(self):
         """Test the adjoint transform on a template."""

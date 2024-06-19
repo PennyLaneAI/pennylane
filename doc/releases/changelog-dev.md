@@ -47,20 +47,6 @@
 * The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
 
-* Added `from_openfermion` to convert openfermion `FermionOperator` objects to PennyLane `FermiWord` or
-`FermiSentence` objects.
-[(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
-
-  ```python
-  of_op = openfermion.FermionOperator('0^ 2')
-  pl_op = qml.from_openfermion(of_op)
-
-  ```
-  ```pycon
-  >>> print(pl_op)
-  a⁺(0) a(2)
-  ```
-
 * A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
@@ -75,6 +61,24 @@
   NoiseModel({
     OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
   }, t1 = 0.04)
+  ```
+
+* The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
+  OpenFermion and PennyLane objects.
+  [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
+  [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+
+  ```python
+  of_op = openfermion.FermionOperator('0^ 2')
+  pl_op = qml.from_openfermion(of_op)
+  of_op_new = qml.to_openfermion(pl_op)
+
+  ```
+  ```pycon
+  >>> print(pl_op)
+  a⁺(0) a(2)
+  >>> print(of_op_new)
+  1.0 [0^ 2]
   ```
 
 <h3>Improvements 🛠</h3>
@@ -230,6 +234,7 @@
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+  [(#5858)](https://github.com/PennyLaneAI/pennylane/pull/5858)
 
 * `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
   traced quantum functions. This feature is used with Catalyst to enable the pattern
@@ -504,6 +509,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Daria Van Hende,
 Austin Huang,
 David Ittah,
 Soran Jahangiri,
