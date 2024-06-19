@@ -1012,7 +1012,7 @@ class PauliSentence(dict):
         """Returns a native PennyLane :class:`~pennylane.ops.LinearCombination` representing the PauliSentence."""
 
         if len(self) == 0:
-            return qml.ops.LinearCombination([0], Identity(wires=wire_order))
+            return qml.ops.LinearCombination([0], [Identity(wires=wire_order)])
 
         wire_order = wire_order or self.wires
         ops, coeffs = zip(
