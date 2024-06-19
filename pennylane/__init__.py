@@ -109,6 +109,7 @@ from pennylane.ops.functions import (
     dot,
     eigvals,
     equal,
+    assert_equal,
     evolve,
     generator,
     is_commuting,

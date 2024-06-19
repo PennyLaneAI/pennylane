@@ -564,18 +564,18 @@ class TestSpecialUnitary:
             decomp = qml.SpecialUnitary(theta, wires).decomposition()
             assert len(decomp) == d + 1
             for w, op in zip(words, decomp[:-1]):
-                assert qml.equal(
+                qml.assert_equal(
                     TmpPauliRot(0.0, w, wires=wires),
                     op,
                     check_trainability=False,
                     check_interface=False,
                 )
-            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+            qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
             decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
             mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
             assert len(decomp) == 1
-            assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+            qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
             return theta
 
@@ -596,18 +596,18 @@ class TestSpecialUnitary:
         decomp = qml.SpecialUnitary(theta, wires).decomposition()
         assert len(decomp) == d + 1
         for w, op in zip(words, decomp[:-1]):
-            assert qml.equal(
+            qml.assert_equal(
                 TmpPauliRot(0.0, w, wires=wires),
                 op,
                 check_trainability=False,
                 check_interface=False,
             )
-        assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+        qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
         decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
         mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
         assert len(decomp) == 1
-        assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+        qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n, theta", n_and_theta)
@@ -624,18 +624,18 @@ class TestSpecialUnitary:
             decomp = qml.SpecialUnitary(theta, wires).decomposition()
             assert len(decomp) == d + 1
             for w, op in zip(words, decomp[:-1]):
-                assert qml.equal(
+                qml.assert_equal(
                     TmpPauliRot(0.0, w, wires=wires),
                     op,
                     check_trainability=False,
                     check_interface=False,
                 )
-            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+            qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
             decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
             mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
             assert len(decomp) == 1
-            assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+            qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_adjoint(self, theta, n):
@@ -997,4 +997,4 @@ class TestTmpPauliRot:
         decomp2 = TmpPauliRot.compute_decomposition(x, wires, word)
         for dec in [decomp, decomp2]:
             assert len(dec) == 1
-            assert qml.equal(dec[0], qml.PauliRot(x, word, wires))
+            qml.assert_equal(dec[0], qml.PauliRot(x, word, wires))

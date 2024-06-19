@@ -128,6 +128,9 @@
    optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
    [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
+* Add more fermionic-to-qubit tests to cover cases when the mapped operator is different for various mapping schemes.
+  [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `default.qubit` device implements a depth-first tree-traversal algorithm to
@@ -227,6 +230,7 @@
 
 * Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
+  [(#5858)](https://github.com/PennyLaneAI/pennylane/pull/5858)
 
 * `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
   traced quantum functions. This feature is used with Catalyst to enable the pattern

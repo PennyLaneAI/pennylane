@@ -260,19 +260,19 @@ class TestNoiseFunctions:
         """Test for checking partial_wires work as expected for building callables to make op with correct wires"""
 
         op = qml.noise.partial_wires(qml.RX(1.2, [12]))(qml.RY(1.0, ["wires"]))
-        assert qml.equal(op, qml.RX(1.2, wires=["wires"]))
+        qml.assert_equal(op, qml.RX(1.2, wires=["wires"]))
 
         op = qml.noise.partial_wires(qml.RX, 3.2, [20])(qml.RY(1.0, [0]))
-        assert qml.equal(op, qml.RX(3.2, wires=[0]))
+        qml.assert_equal(op, qml.RX(3.2, wires=[0]))
 
         op = qml.noise.partial_wires(qml.RX, phi=1.2)(qml.RY(1.0, [2]))
-        assert qml.equal(op, qml.RX(1.2, wires=[2]))
+        qml.assert_equal(op, qml.RX(1.2, wires=[2]))
 
         op = qml.noise.partial_wires(qml.PauliRot(1.2, "XY", wires=(0, 1)))(qml.CNOT([2, 1]))
-        assert qml.equal(op, qml.PauliRot(1.2, "XY", wires=(2, 1)))
+        qml.assert_equal(op, qml.PauliRot(1.2, "XY", wires=(2, 1)))
 
         op = qml.noise.partial_wires(qml.RX(1.2, [12]), phi=2.3)(qml.RY(1.0, ["light"]))
-        assert qml.equal(op, qml.RX(2.3, wires=["light"]))
+        qml.assert_equal(op, qml.RX(2.3, wires=["light"]))
 
     def test_partial_wires_error(self):
         """Test for checking partial_wires raise correct error when args are given"""
