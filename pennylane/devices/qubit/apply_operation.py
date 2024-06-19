@@ -14,7 +14,6 @@
 """Functions to apply an operation to a state vector."""
 # pylint: disable=unused-argument, too-many-arguments
 
-import copy
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -230,35 +229,6 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
 
 
 @apply_operation.register
-def apply_controlled_operation(
-    op: qml.ops.op_math.ControlledOp, state, is_state_batched: bool = False, debugger=None, **_
-):  # pylint : disable=protected-access
-    if any(qml.math.get_deep_interface(data) != "numpy" for data in (op.data, state)):
-        return _apply_operation_default(
-            op, state, is_state_batched=is_state_batched, debugger=debugger
-        )
-    base = copy.deepcopy(op.base)
-    slices = [slice(None)] * qml.math.ndim(state)
-    for v, w in zip(op.control_values, op.control_wires):
-        slices[w] = int(v)
-    wires = list(range(qml.math.ndim(state)))
-    for w in reversed(sorted(op.control_wires)):
-        wires.pop(w)
-    op_wires = []
-    for b in base.wires:
-        for i, w in enumerate(wires):
-            if b == w:
-                op_wires.append(i)
-                break
-    base._wires = qml.wires.Wires(op_wires)
-    state = state + 0j
-    slc = state[tuple(slices)]
-    slc = apply_operation(base, slc, is_state_batched=is_state_batched, debugger=debugger)
-    state[tuple(slices)] = slc
-    return state
-
-
-@apply_operation.register
 def apply_conditional(
     op: Conditional,
     state,
@@ -421,19 +391,12 @@ def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None
 @apply_operation.register
 def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply pauliz to state."""
-
-    axis = op.wires[0] + is_state_batched
-    n_dim = math.ndim(state)
-
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
-    sl_0 = _get_slice(0, axis, n_dim)
-    sl_1 = _get_slice(1, axis, n_dim)
-
-    # must be first state and then -1 because it breaks otherwise
-    state1 = math.multiply(state[sl_1], -1)
-    return math.stack([state[sl_0], state1], axis=axis)
+    return apply_operation(
+        qml.PhaseShift(np.pi, op.wires),
+        state,
+        is_state_batched=is_state_batched,
+        debugger=debugger,
+    )
 
 
 @apply_operation.register
