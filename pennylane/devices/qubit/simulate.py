@@ -415,7 +415,7 @@ def simulate_tree_mcm(
     circuits.append(circuit_right)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
     counts = [None] * (n_mcms + 1)
-    mcm_samples = qml.math.empty((circuit.shots.total_shots, n_mcms), dtype=bool)
+    mcm_samples = qml.math.empty((n_mcms, circuit.shots.total_shots), dtype=bool)
     mid_measurements = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
     results_0 = [None] * (n_mcms + 1)
     results_1 = [None] * (n_mcms + 1)
@@ -522,7 +522,7 @@ def simulate_tree_mcm(
     measurement_dicts = get_measurement_dicts(
         circuits[-1], counts[depth], (results_0[depth], results_1[depth])
     )
-    mcm_samples = dict((k, v) for k, v in zip(mcms[1:], mcm_samples.T))
+    mcm_samples = dict((k, v) for k, v in zip(mcms[1:], mcm_samples))
     return combine_measurements(circuit, measurement_dicts, mcm_samples)
 
 
@@ -615,10 +615,10 @@ def prune_mcm_samples(mcm_samples, depth, mcm_current):
     corresponding to the current branch by looking at all parent nodes.
     """
     # FASTER than using qml.math.all(x == y, axis=1)
-    mask = mcm_samples[:, 0] == mcm_current[1]
+    mask = mcm_samples[0, :] == mcm_current[1]
     for i in range(1, depth):
-        mask = qml.math.logical_and(mask, mcm_samples[:, i] == mcm_current[i + 1])
-    return mcm_samples[qml.math.logical_not(mask), :]
+        mask = qml.math.logical_and(mask, mcm_samples[i, :] == mcm_current[i + 1])
+    return mcm_samples[:, qml.math.logical_not(mask)]
 
 
 def update_mcm_samples(samples, mcm_samples, depth, mcm_current):
@@ -633,13 +633,13 @@ def update_mcm_samples(samples, mcm_samples, depth, mcm_current):
     sequence corresponds to ``[0,1,1,0,0,1]``.
     """
     if depth == 1:
-        mcm_samples[:, depth - 1] = samples
+        mcm_samples[depth - 1, :] = samples
     else:
         # FASTER than using qml.math.all(x == y, axis=1)
-        mask = mcm_samples[:, 0] == mcm_current[1]
+        mask = mcm_samples[0, :] == mcm_current[1]
         for i in range(1, depth - 1):
-            mask = qml.math.logical_and(mask, mcm_samples[:, i] == mcm_current[i + 1])
-        mcm_samples[mask, depth - 1] = samples
+            mask = qml.math.logical_and(mask, mcm_samples[i, :] == mcm_current[i + 1])
+        mcm_samples[depth - 1, mask] = samples
     return mcm_samples
 
 
