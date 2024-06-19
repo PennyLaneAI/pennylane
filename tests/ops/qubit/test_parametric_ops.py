@@ -2795,6 +2795,7 @@ class TestPauliRot:
         # global phase acts on all wires so wire attribute is unused
         assert decomp_op.wires == Wires([])
 
+        assert len(decomp_op.data[0]) == len(theta)
         for param, angle in zip(decomp_op.data[0], theta):
             assert qml.math.allclose(param, angle / 2)
 
