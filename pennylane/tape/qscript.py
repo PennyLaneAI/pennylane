@@ -28,9 +28,10 @@ from pennylane.measurements import MeasurementProcess, ProbabilityMP, Shots, Sta
 from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
-_empty_wires = qml.wires.Wires([])
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
+
+_empty_wires = qml.wires.Wires([])
 
 OPENQASM_GATES = {
     "CNOT": "cx",
