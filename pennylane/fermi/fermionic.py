@@ -520,6 +520,11 @@ def _to_string(fermi_op, of=False):
                     the shorthand: 'q^' = a^\dagger_q 'q' = a_q. Each operator in the word is
                     represented by the number of the wire it operates on
 
+    Returns:
+        (str): a string representation of the :class:`~.FermiWord` object
+
+    **Example**
+
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> _to_string(w)
     '0+ 1-'
