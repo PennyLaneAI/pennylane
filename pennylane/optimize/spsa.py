@@ -13,7 +13,9 @@
 # limitations under the License.
 """SPSA optimizer"""
 
-from pennylane import numpy as np
+import numpy as np
+
+from pennylane.measurements import Shots
 
 
 class SPSAOptimizer:
@@ -80,8 +82,8 @@ class SPSAOptimizer:
     For VQE/VQE-like problems, the objective function can be the following:
 
     >>> coeffs = [0.2, -0.543, 0.4514]
-    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2),
-    ...             qml.PauliX(3) @ qml.PauliZ(1)]
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2),
+    ...             qml.X(3) @ qml.Z(1)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> num_qubits = 4
     >>> dev = qml.device("default.qubit", wires=num_qubits)
@@ -117,7 +119,7 @@ class SPSAOptimizer:
     ... def layer_fn_spsa(inputs, weights):
     ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
     ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
-    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...     return qml.expval(qml.Z(0))
     ...
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
     ... def fn(params, tensor_in, tensor_out):
@@ -260,7 +262,15 @@ class SPSAOptimizer:
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
         try:
-            if np.prod(objective_fn.func(*args).shape(objective_fn.device)) > 1:
+            # pylint: disable=protected-access
+            dev_shots = objective_fn.device.shots
+            if isinstance(dev_shots, Shots):
+                shots = dev_shots if dev_shots.has_partitioned_shots else Shots(None)
+            elif objective_fn.device.shot_vector is not None:
+                shots = Shots(objective_fn.device._raw_shot_sequence)  # pragma: no cover
+            else:
+                shots = Shots(None)
+            if np.prod(objective_fn.func(*args).shape(objective_fn.device, shots)) > 1:
                 raise ValueError(
                     "The objective function must be a scalar function for the gradient "
                     "to be computed."

@@ -16,7 +16,7 @@ Contains the BasicEntanglerLayers template.
 """
 # pylint: disable=consider-using-enumerate,too-many-arguments
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class BasicEntanglerLayers(Operation):
@@ -72,7 +72,7 @@ class BasicEntanglerLayers(Operation):
             @qml.qnode(dev)
             def circuit(weights):
                 qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
         [1., 1., -1.]
@@ -101,7 +101,7 @@ class BasicEntanglerLayers(Operation):
             @qml.qnode(dev)
             def circuit(weights):
                 qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi]])
         [-1, 1]
@@ -116,7 +116,7 @@ class BasicEntanglerLayers(Operation):
             @qml.qnode(dev)
             def circuit(weights):
                 qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
@@ -125,7 +125,7 @@ class BasicEntanglerLayers(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires=None, rotation=None, do_queue=True, id=None):
+    def __init__(self, weights, wires=None, rotation=None, id=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
         interface = qml.math.get_interface(weights)
         weights = qml.math.asarray(weights, like=interface)
@@ -144,7 +144,7 @@ class BasicEntanglerLayers(Operation):
             )
 
         self._hyperparameters = {"rotation": rotation or qml.RX}
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

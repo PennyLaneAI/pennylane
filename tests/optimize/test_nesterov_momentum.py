@@ -75,11 +75,7 @@ class TestNesterovMomentumOptimizer:
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
 
         univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [
-            lambda x: np.cos(x),
-            lambda x: np.exp(x / 10.0) / 10.0,
-            lambda x: 2 * x,
-        ]
+        grad_uni_fns = [np.cos, lambda x: np.exp(x / 10.0) / 10.0, lambda x: 2 * x]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
             nesmom_opt.reset()
@@ -143,11 +139,7 @@ class TestNesterovMomentumOptimizer:
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
 
         univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [
-            lambda x: np.cos(x),
-            lambda x: np.exp(x / 10.0) / 10.0,
-            lambda x: 2 * x,
-        ]
+        grad_uni_fns = [np.cos, lambda x: np.exp(x / 10.0) / 10.0, lambda x: 2 * x]
 
         for gradf, f in zip(grad_uni_fns[::-1], univariate_funcs):
             nesmom_opt.reset()

@@ -18,9 +18,7 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 
 import contextlib
 import io
-import importlib
 import re
-import pkg_resources
 
 import pytest
 

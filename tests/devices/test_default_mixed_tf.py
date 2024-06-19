@@ -14,10 +14,11 @@
 """
 Tests for the ``default.mixed`` device for the TensorFlow interface
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
 
-import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed
@@ -163,25 +164,27 @@ class TestOps:
 
         assert np.allclose(res, np.zeros(wires**2))
 
-    def test_full_subsystem(self, mocker):
+    @pytest.mark.parametrize("dtype", [tf.float32, tf.float64, tf.complex128])
+    def test_full_subsystem(self, mocker, dtype):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.0
+        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=dtype) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
-        state = np.outer(state, np.conj(state))
+        state = tf.cast(np.outer(state, np.conj(state)), dtype="complex128")
 
-        assert np.all(tf.reshape(dev._state, (-1,)) == tf.reshape(state, (-1,)))
+        assert qml.math.allclose(tf.reshape(dev._state, (-1,)), tf.reshape(state, (-1,)))
         spy.assert_not_called()
 
-    def test_partial_subsystem(self, mocker):
+    @pytest.mark.parametrize("dtype", [tf.float32, tf.float64, tf.complex128])
+    def test_partial_subsystem(self, mocker, dtype):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.0)
+        state = tf.constant([1, 0, 1, 0], dtype=dtype) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
@@ -189,7 +192,7 @@ class TestOps:
 
         state = np.kron(np.outer(state, np.conj(state)), np.array([[1, 0], [0, 0]]))
 
-        assert np.all(tf.reshape(dev._state, (8, 8)) == state)
+        assert qml.math.allclose(tf.reshape(dev._state, (8, 8)), state)
         spy.assert_called()
 
 
@@ -605,7 +608,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -617,7 +620,7 @@ class TestPassthruIntegration:
         phi = -0.234
         lam = 0.654
 
-        params = tf.Variable([theta, phi, lam], trainable=True)
+        params = tf.Variable([theta, phi, lam], trainable=True, dtype=tf.float64)
 
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
@@ -651,14 +654,16 @@ class TestPassthruIntegration:
 
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     @pytest.mark.parametrize(
-        "dev_name,diff_method,mode",
+        "dev_name,diff_method,grad_on_execution",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
-    def test_ragged_differentiation(self, decorator, interface, dev_name, diff_method, mode, tol):
+    def test_ragged_differentiation(
+        self, decorator, interface, dev_name, diff_method, grad_on_execution, tol
+    ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         # pylint: disable=too-many-arguments
@@ -668,7 +673,9 @@ class TestPassthruIntegration:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qml.qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
+        @qml.qnode(
+            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -774,3 +781,57 @@ class TestHighLevelIntegration:
 
         # compare results to results of non-decorated circuit
         assert np.allclose(circuit(x), res)
+
+
+class TestMeasurements:
+    """Tests for measurements with default.mixed"""
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.counts(qml.PauliZ(0)),
+            qml.counts(wires=[0]),
+            qml.sample(qml.PauliX(0)),
+            qml.sample(wires=[1]),
+        ],
+    )
+    def test_measurements_tf(self, measurement):
+        """Test sampling-based measurements work with `default.mixed` for trainable interfaces"""
+        num_shots = 1024
+        dev = qml.device("default.mixed", wires=2, shots=num_shots)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        res = circuit(tf.Variable(0.5))
+
+        assert len(res) == 2 if isinstance(measurement, qml.measurements.CountsMP) else num_shots
+
+    @pytest.mark.parametrize(
+        "meas_op",
+        [qml.PauliX(0), qml.PauliZ(0)],
+    )
+    def test_measurement_diff(self, meas_op):
+        """Test sequence of single-shot expectation values work for derivatives"""
+        num_shots = 64
+        dev = qml.device("default.mixed", shots=[(1, num_shots)], wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.expval(meas_op)
+
+        def cost(angle):
+            return qml.math.hstack(circuit(angle))
+
+        angle = tf.Variable(0.1234)
+        with tf.GradientTape(persistent=True) as tape:
+            res = cost(angle)
+
+        assert isinstance(res, tf.Tensor)
+        assert isinstance(tape.gradient(res, angle), tf.Tensor)
+        assert isinstance(tape.jacobian(res, angle), tf.Tensor)
+        assert len(res) == num_shots

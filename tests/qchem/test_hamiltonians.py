@@ -14,12 +14,15 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.fermi import from_string
+from pennylane.operation import active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -105,7 +108,7 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeffs_h_ref", "ops_h_ref"),
+    ("symbols", "geometry", "alpha", "h_ref"),
     [
         (
             ["H", "H"],
@@ -115,99 +118,58 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
                 requires_grad=True,
             ),
             # Hamiltonian coefficients and operators computed with OpenFermion using
+            # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
+            # molecule = run_pyscf(molecule, run_scf=1)
             # openfermion.transforms.get_fermion_operator(molecule.get_molecular_hamiltonian())
-            # The "^" symbols in the operators are removed and "," is added for consistency
-            np.array(
-                [
-                    1.0000000000321256,
-                    -1.3902192706002598,
-                    0.35721953951840535,
-                    0.08512072192002007,
-                    0.35721953951840535,
-                    0.08512072192002007,
-                    0.08512072192002007,
-                    0.35092657803574406,
-                    0.08512072192002007,
-                    0.35092657803574406,
-                    0.35721953951840535,
-                    0.08512072192002007,
-                    -1.3902192706002598,
-                    0.35721953951840535,
-                    0.08512072192002007,
-                    0.08512072192002007,
-                    0.35092657803574406,
-                    0.08512072192002007,
-                    0.35092657803574406,
-                    0.35092657803574495,
-                    0.08512072192002007,
-                    0.35092657803574495,
-                    0.08512072192002007,
-                    -0.2916533049477536,
-                    0.08512072192002007,
-                    0.3694183466586136,
-                    0.08512072192002007,
-                    0.3694183466586136,
-                    0.35092657803574495,
-                    0.08512072192002007,
-                    0.35092657803574495,
-                    0.08512072192002007,
-                    0.08512072192002007,
-                    0.3694183466586136,
-                    -0.2916533049477536,
-                    0.08512072192002007,
-                    0.3694183466586136,
-                ]
-            ),
-            [
-                [],
-                [0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 2, 2],
-                [0, 1, 1, 0],
-                [0, 1, 3, 2],
-                [0, 2, 0, 2],
-                [0, 2, 2, 0],
-                [0, 3, 1, 2],
-                [0, 3, 3, 0],
-                [1, 0, 0, 1],
-                [1, 0, 2, 3],
-                [1, 1],
-                [1, 1, 1, 1],
-                [1, 1, 3, 3],
-                [1, 2, 0, 3],
-                [1, 2, 2, 1],
-                [1, 3, 1, 3],
-                [1, 3, 3, 1],
-                [2, 0, 0, 2],
-                [2, 0, 2, 0],
-                [2, 1, 1, 2],
-                [2, 1, 3, 0],
-                [2, 2],
-                [2, 2, 0, 0],
-                [2, 2, 2, 2],
-                [2, 3, 1, 0],
-                [2, 3, 3, 2],
-                [3, 0, 0, 3],
-                [3, 0, 2, 1],
-                [3, 1, 1, 3],
-                [3, 1, 3, 1],
-                [3, 2, 0, 1],
-                [3, 2, 2, 3],
-                [3, 3],
-                [3, 3, 1, 1],
-                [3, 3, 3, 3],
-            ],
+            # The "^" symbols in the operators are replaced with "+"
+            1.0000000206358097 * from_string("")
+            + -1.3902192781338518 * from_string("0+ 0")
+            + 0.35721954051077603 * from_string("0+ 0+ 0 0")
+            + 0.08512072166002102 * from_string("0+ 0+ 2 2")
+            + 0.35721954051077603 * from_string("0+ 1+ 1 0")
+            + 0.08512072166002102 * from_string("0+ 1+ 3 2")
+            + 0.08512072166002102 * from_string("0+ 2+ 0 2")
+            + 0.3509265790433101 * from_string("0+ 2+ 2 0")
+            + 0.08512072166002102 * from_string("0+ 3+ 1 2")
+            + 0.3509265790433101 * from_string("0+ 3+ 3 0")
+            + 0.35721954051077603 * from_string("1+ 0+ 0 1")
+            + 0.08512072166002102 * from_string("1+ 0+ 2 3")
+            + -1.3902192781338518 * from_string("1+ 1")
+            + 0.35721954051077603 * from_string("1+ 1+ 1 1")
+            + 0.08512072166002102 * from_string("1+ 1+ 3 3")
+            + 0.08512072166002102 * from_string("1+ 2+ 0 3")
+            + 0.3509265790433101 * from_string("1+ 2+ 2 1")
+            + 0.08512072166002102 * from_string("1+ 3+ 1 3")
+            + 0.3509265790433101 * from_string("1+ 3+ 3 1")
+            + 0.35092657904330926 * from_string("2+ 0+ 0 2")
+            + 0.08512072166002102 * from_string("2+ 0+ 2 0")
+            + 0.35092657904330926 * from_string("2+ 1+ 1 2")
+            + 0.08512072166002102 * from_string("2+ 1+ 3 0")
+            + -0.29165329244211186 * from_string("2+ 2")
+            + 0.08512072166002102 * from_string("2+ 2+ 0 0")
+            + 0.36941834777609744 * from_string("2+ 2+ 2 2")
+            + 0.08512072166002102 * from_string("2+ 3+ 1 0")
+            + 0.36941834777609744 * from_string("2+ 3+ 3 2")
+            + 0.35092657904330926 * from_string("3+ 0+ 0 3")
+            + 0.08512072166002102 * from_string("3+ 0+ 2 1")
+            + 0.35092657904330926 * from_string("3+ 1+ 1 3")
+            + 0.08512072166002102 * from_string("3+ 1+ 3 1")
+            + 0.08512072166002102 * from_string("3+ 2+ 0 1")
+            + 0.36941834777609744 * from_string("3+ 2+ 2 3")
+            + -0.29165329244211186 * from_string("3+ 3")
+            + 0.08512072166002102 * from_string("3+ 3+ 1 1")
+            + 0.36941834777609744 * from_string("3+ 3+ 3 3"),
         )
     ],
 )
-def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
+def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
     r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
     h = qchem.fermionic_hamiltonian(mol)(*args)
 
-    assert np.allclose(h[0], coeffs_h_ref)
-    assert h[1] == ops_h_ref
+    assert np.allclose(list(h.values()), list(h_ref.values()))
+    assert h.keys() == h_ref.keys()
 
 
 @pytest.mark.parametrize(
@@ -262,18 +224,47 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref
         )
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
 
     mol = qchem.Molecule(symbols, geometry)
     args = []
     h = qchem.diff_hamiltonian(mol)(*args)
-    h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
-    assert np.allclose(h.terms()[0], h_ref.terms()[0])
+    ops = [
+        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+        for op in map(qml.simplify, h_ref_data[1])
+    ]
+    h_ref = qml.Hamiltonian(h_ref_data[0], ops)
+
+    assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
     assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
+
+    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
+
+    wire_order = h_ref.wires
+    assert np.allclose(
+        qml.matrix(h, wire_order=wire_order),
+        qml.matrix(h_ref, wire_order=wire_order),
+    )
+
+
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_diff_hamiltonian_active_space():
+    r"""Test that diff_hamiltonian works when an active space is defined."""
+
+    symbols = ["H", "H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
+
+    mol = qchem.Molecule(symbols, geometry, charge=1)
+    args = [geometry]
+
+    h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
+
+    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
 
 def test_gradient_expvalH():
@@ -324,6 +315,7 @@ def test_gradient_expvalH():
     assert np.allclose(grad_qml[0][0], grad_finitediff)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestJax:
     @pytest.mark.jax
     def test_gradient_expvalH(self):
@@ -359,16 +351,16 @@ class TestJax:
         grad_jax = jax.grad(energy(mol), argnums=0)(*args)
 
         alpha_1 = np.array(
-            [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] -= 0.0001
+            [[3.42425091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        )  # alpha[0][0] -= 0.001
 
         alpha_2 = np.array(
-            [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] += 0.0001
+            [[3.42625091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        )  # alpha[0][0] += 0.001
 
         e_1 = energy(mol)(*[alpha_1])
         e_2 = energy(mol)(*[alpha_2])
 
-        grad_finitediff = (e_2 - e_1) / 0.0002
+        grad_finitediff = (e_2 - e_1) / 0.002
 
         assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)

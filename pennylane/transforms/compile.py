@@ -14,12 +14,13 @@
 """Code for the high-level quantum function transform that executes compilation."""
 # pylint: disable=too-many-branches
 from functools import partial
+from typing import Callable, Sequence
 
-from pennylane import apply
-from pennylane.queuing import QueuingManager
+import pennylane as qml
 from pennylane.ops import __all__ as all_ops
-
-from pennylane.transforms import single_tape_transform, qfunc_transform
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
+from pennylane.transforms.core import TransformDispatcher, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
@@ -27,12 +28,13 @@ from pennylane.transforms.optimization import (
     remove_barrier,
 )
 
-
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
 
 
-@qfunc_transform
-def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
+@transform
+def compile(
+    tape: QuantumTape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5
+) -> (Sequence[QuantumTape], Callable):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
@@ -45,24 +47,51 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
       (:func:`~pennylane.transforms.merge_rotations`)
 
     Args:
-        qfunc (function): A quantum function.
-        pipeline (list[single_tape_transform, qfunc_transform]): A list of
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        pipeline (list[Callable]): A list of
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
-            reached. If no basis set is specified, no expansion will be done.
+            reached. If no basis set is specified, a default of
+            ``pennylane.ops.__all__`` will be used. This decomposes templates and
+            operator arithmetic.
         num_passes (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
             of transforms again may yield further improvement, so the number of
             such passes can be adjusted.
-        expand_depth (int): When ``basis_set`` is specified, the depth to use
-            for tape expansion into the basis gates.
+        expand_depth (int): The depth to use for tape expansion into the basis gates.
 
     Returns:
-        function: the transformed quantum function
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The compiled circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
+
+    >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
+
+    You can apply the transform directly on a :class:`QNode`:
+
+    .. code-block:: python
+
+        @qml.compile
+        @qml.qnode(device=dev)
+        def circuit(x, y, z):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=2)
+            qml.RZ(z, wires=2)
+            qml.CNOT(wires=[2, 1])
+            qml.RX(z, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.RZ(-z, wires=2)
+            qml.RX(y, wires=2)
+            qml.Y(2)
+            qml.CY(wires=[1, 2])
+            return qml.expval(qml.Z(0))
+
+    The default compilation pipeline is applied before execution.
 
     Consider the following quantum function:
 
@@ -80,13 +109,12 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
             qml.CNOT(wires=[1, 0])
             qml.RZ(-z, wires=2)
             qml.RX(y, wires=2)
-            qml.PauliY(wires=2)
+            qml.Y(2)
             qml.CY(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     Visually, the original function looks like this:
 
-    >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.40)────╭X──────────RX(0.20)─╭X────┤  <Z>
@@ -96,8 +124,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     We can compile it down to a smaller set of gates using the ``qml.compile``
     transform.
 
-    >>> compiled_qfunc = qml.compile()(qfunc)
-    >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
+    >>> compiled_qnode = qml.compile(qnode)
     >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.60)─────────────────┤  <Z>
     1: ──H─╭X──────────────────╭●────┤
@@ -111,17 +138,16 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
 
     .. code-block:: python3
 
-        compiled_qfunc = qml.compile(
+        compiled_qnode = qml.compile(
+            qnode,
             pipeline=[
-                qml.transforms.commute_controlled(direction="left"),
-                qml.transforms.merge_rotations(atol=1e-6),
+                partial(qml.transforms.commute_controlled, direction="left"),
+                partial(qml.transforms.merge_rotations, atol=1e-6),
                 qml.transforms.cancel_inverses
             ],
             basis_set=["CNOT", "RX", "RY", "RZ"],
             num_passes=2
-        )(qfunc)
-
-        compiled_qnode = qml.QNode(compiled_qfunc, dev)
+        )
 
         print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
 
@@ -142,7 +168,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     else:
         for p in pipeline:
             p_func = p.func if isinstance(p, partial) else p
-            if not isinstance(p_func, single_tape_transform) and not hasattr(p_func, "tape_fn"):
+            if not isinstance(p_func, TransformDispatcher):
                 raise ValueError("Invalid transform function {p} passed to compile.")
 
     if num_passes < 1 or not isinstance(num_passes, int):
@@ -154,26 +180,37 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     # don't queue anything as a result of the expansion or transform pipeline
 
     with QueuingManager.stop_recording():
-        if basis_set is not None:
-            expanded_tape = tape.expand(
-                depth=expand_depth, stop_at=lambda obj: obj.name in basis_set
-            )
-        else:
-            # Expands out anything that is not a single operation (i.e., the templates)
-            # expand barriers when `only_visual=True`
-            def stop_at(obj):
-                return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+        basis_set = basis_set or all_ops
 
-            expanded_tape = tape.expand(stop_at=stop_at)
+        def stop_at(obj):
+            if not isinstance(obj, qml.operation.Operator):
+                return True
+            if not obj.has_decomposition:
+                return True
+            return obj.name in basis_set and (not getattr(obj, "only_visual", False))
+
+        [expanded_tape], _ = qml.devices.preprocess.decompose(
+            tape,
+            stopping_condition=stop_at,
+            max_expansion=expand_depth,
+            name="compile",
+            error=qml.operation.DecompositionUndefinedError,
+        )
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
-            for transform in pipeline:
-                if isinstance(transform, (single_tape_transform, partial)):
-                    expanded_tape = transform(expanded_tape)
-                else:
-                    expanded_tape = transform.tape_fn(expanded_tape)
+            for transf in pipeline:
+                tapes, _ = transf(expanded_tape)
+                expanded_tape = tapes[0]
 
-    # Queue the operations on the optimized tape
-    for op in expanded_tape.operations + expanded_tape.measurements:
-        apply(op)
+    new_tape = type(tape)(
+        expanded_tape.operations, expanded_tape.measurements, shots=expanded_tape.shots
+    )
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

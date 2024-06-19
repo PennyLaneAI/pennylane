@@ -93,11 +93,6 @@ The basic components of operators are the following:
       [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
       [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
 
-    .. note::
-
-        The :meth:`.Operator.matrix` method is temporary and will be renamed to :meth:`.Operator.matrix` in an
-        upcoming release. It is recommended to use the higher-level :func:`~.matrix` function where possible.
-
    * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
 
      >>> from scipy.sparse.coo import coo_matrix
@@ -153,8 +148,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         # we request parameter-shift (or "analytic") differentiation.
         grad_method = "A"
 
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
-                           do_queue=True, id=None):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
 
             # checking the inputs --------------
 
@@ -182,9 +176,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # The parent class expects all trainable parameters to be fed as positional
             # arguments, and all wires acted on fed as a keyword argument.
             # The id keyword argument allows users to give their instance a custom name.
-            # The do_queue keyword argument specifies whether or not
-            # the operator is queued when created in a tape context.
-            super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+            super().__init__(angle, wires=all_wires, id=id)
 
         @property
         def num_params(self):
@@ -207,6 +199,18 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # the adjoint operator of this gate simply negates the angle
             return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1], do_flip=self.hyperparameters["do_flip"])
 
+        @classmethod
+        def _unflatten(cls, data, metadata):
+            # as the class differs from the standard `__init__` call signature of
+            # (*data, wires=wires, **hyperparameters), the _unflatten method that
+            # must be defined as well
+            # _unflatten recreates a opeartion from the serialized data and metadata of ``Operator._flatten``
+            # copied_op = type(op)._unflatten(*op._flatten())
+            wires = metadata[0]
+            hyperparams = dict(metadata[1])
+            return cls(data[0], wire_rot=wires[0], wire_flip=wires[1], do_flip=hyperparams['do_flip'])
+
+
 The new gate can now be created as follows:
 
 >>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
@@ -217,14 +221,35 @@ FlipAndRotate(0.1, wires=['q3', 'q1'])
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
+Once the class has been created, you can run a suite of validation checks using :func:`.ops.functions.assert_valid`.
+This function will warn you of some common errors in custom operators.
+
+>>> qml.ops.functions.assert_valid(op)
+
+If the above operator omitted the ``_unflatten`` custom definition, it would raise:
+
+.. code-block::
+
+
+    TypeError: FlipAndRotate.__init__() got an unexpected keyword argument 'wires'
+
+
+    The above exception was the direct cause of the following exception:
+
+    AssertionError: FlipAndRotate._unflatten must be able to reproduce the original operation
+    from (0.1,) and (<Wires = ['q3', 'q1']>, (('do_flip', True),)). You may need to override
+    either the _unflatten or _flatten method. 
+    For local testing, try type(op)._unflatten(*op._flatten())
+
+
 The new gate can be used with PennyLane devices. Device support for an operation can be checked via
 ``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.
 
-``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
+``DefaultQubitLegacy`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
 If the Operator doesn't have a matrix, the device then checks if the name of the Operator is explicitly specified in 
-:attr:`~DefaultQubit.operations` or :attr:`~DefaultQubit.observables`.
+:attr:`~DefaultQubitLegacy.operations` or :attr:`~DefaultQubitLegacy.observables`.
 
-Other devices that do not inherit from ``DefaultQubit`` only check if the name is explicitly specified in the ``operations``
+Other devices that do not inherit from ``DefaultQubitLegacy`` only check if the name is explicitly specified in the ``operations``
 property.
 
 - If the device registers support for an operation with the same name,

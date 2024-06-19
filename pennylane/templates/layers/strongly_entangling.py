@@ -16,7 +16,7 @@ Contains the StronglyEntanglingLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class StronglyEntanglingLayers(Operation):
@@ -48,7 +48,7 @@ class StronglyEntanglingLayers(Operation):
         wires (Iterable): wires that the template acts on
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if ``None``
                                 using :math:`r=l \mod M` for the :math:`l` th layer and :math:`M` wires.
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
+        imprimitive (type of pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
     Example:
 
@@ -63,7 +63,7 @@ class StronglyEntanglingLayers(Operation):
             @qml.qnode(dev)
             def circuit(parameters):
                 qml.StronglyEntanglingLayers(weights=parameters, wires=range(4))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
             weights = np.random.random(size=shape)
@@ -101,7 +101,7 @@ class StronglyEntanglingLayers(Operation):
             @qml.qnode(dev)
             def circuit(parameters):
                 qml.StronglyEntanglingLayers(weights=parameters, wires=range(4), ranges=[2, 3], imprimitive=qml.ops.CZ)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
             weights = np.random.random(size=shape)
@@ -129,10 +129,11 @@ class StronglyEntanglingLayers(Operation):
             weights = np.random.random(size=shape)
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True, id=None):
+    def __init__(self, weights, wires, ranges=None, imprimitive=None, id=None):
         shape = qml.math.shape(weights)[-3:]
 
         if shape[1] != len(wires):
@@ -148,10 +149,11 @@ class StronglyEntanglingLayers(Operation):
         if ranges is None:
             if len(wires) > 1:
                 # tile ranges with iterations of range(1, n_wires)
-                ranges = [(l % (len(wires) - 1)) + 1 for l in range(shape[0])]
+                ranges = tuple((l % (len(wires) - 1)) + 1 for l in range(shape[0]))
             else:
-                ranges = [0] * shape[0]
+                ranges = (0,) * shape[0]
         else:
+            ranges = tuple(ranges)
             if len(ranges) != shape[0]:
                 raise ValueError(f"Range sequence must be of length {shape[0]}; got {len(ranges)}")
             for r in ranges:
@@ -162,7 +164,7 @@ class StronglyEntanglingLayers(Operation):
 
         self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or qml.CNOT}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -198,7 +200,7 @@ class StronglyEntanglingLayers(Operation):
         CNOT(wires=['a', 'a']),
         CNOT(wires=['b', 'b'])]
         """
-        n_layers = qml.math.shape(weights)[0]
+        n_layers = qml.math.shape(weights)[-3]
         wires = qml.wires.Wires(wires)
         op_list = []
 

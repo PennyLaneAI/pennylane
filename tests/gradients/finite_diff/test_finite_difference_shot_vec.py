@@ -17,17 +17,16 @@ Tests for the gradients.finite_difference module using shot vectors.
 import numpy
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
-from pennylane._device import _process_shot_sequence, _get_num_copies
+from pennylane import numpy as np
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import finite_diff
-from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
+from pennylane.measurements import Shots
+from pennylane.operation import AnyWires, Observable
 
+# pylint:disable = use-implicit-booleaness-not-comparison
 
 h_val = 0.1
-finite_diff_shot_vec_tol = 0.3
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([1000000] * 3)
@@ -42,25 +41,25 @@ class TestFiniteDiff:
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         # by default all parameters are assumed to be trainable
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
-            finite_diff(tape, _expand=False)
+            finite_diff(tape)
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = finite_diff(tape, h=h_val, shots=default_shot_vector)
+        tapes, fn = finite_diff(tape, h=h_val)
 
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -84,10 +83,10 @@ class TestFiniteDiff:
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = finite_diff(tape, h=h_val, shots=default_shot_vector)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = finite_diff(tape, h=h_val)
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -115,13 +114,11 @@ class TestFiniteDiff:
             qml.RY(weights[1], wires=0)
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.finite_diff(
-                tape, h=h_val, shots=default_shot_vector
-            )
+            g_tapes, post_processing = qml.gradients.finite_diff(tape, h=h_val)
         all_res = post_processing(qml.execute(g_tapes, dev, None))
         assert len(all_res) == len(default_shot_vector)
 
@@ -142,12 +139,10 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.finite_diff(
-                tape, h=h_val, shots=default_shot_vector
-            )
+            g_tapes, post_processing = qml.gradients.finite_diff(tape, h=h_val)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -166,10 +161,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit, h=h_val)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -184,10 +177,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit, h=h_val)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -202,10 +193,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit, h=h_val)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -220,10 +209,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit, h=h_val)(weights)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -237,28 +224,15 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        all_result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        all_result = qml.gradients.finite_diff(circuit, h=h_val)(params)
+
+        assert isinstance(all_result, tuple)
         assert len(all_result) == len(default_shot_vector)
 
         for result in all_result:
-            assert isinstance(result, tuple)
-
-            assert len(result) == 3
-
-            assert isinstance(result[0], numpy.ndarray)
-            assert result[0].shape == (4,)
-            assert np.allclose(result[0], 0)
-
-            assert isinstance(result[1], numpy.ndarray)
-            assert result[1].shape == (4,)
-            assert np.allclose(result[1], 0)
-
-            assert isinstance(result[2], numpy.ndarray)
-            assert result[2].shape == (4,)
-            assert np.allclose(result[2], 0)
-
-            tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
-            assert tapes == []
+            assert isinstance(result, np.ndarray)
+            assert result.shape == (4, 3)
+            assert np.allclose(result, 0)
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -273,60 +247,29 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        all_result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
-        assert len(all_result) == len(default_shot_vector)
+        all_result = qml.gradients.finite_diff(circuit, h=h_val)(params)
+        assert isinstance(all_result, tuple)
+        assert len(all_result) == len(many_shots_shot_vector)
 
-        for result in all_result:
-            assert isinstance(result, tuple)
+        for res in all_result:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r, exp_shape in zip(res, [(3,), (4, 3)]):
+                assert isinstance(r, np.ndarray)
+                assert r.shape == exp_shape
+                assert np.allclose(r, 0)
 
-            assert len(result) == 2
-
-            # First elem
-            assert len(result[0]) == 3
-
-            assert isinstance(result[0][0], numpy.ndarray)
-            assert result[0][0].shape == ()
-            assert np.allclose(result[0][0], 0)
-
-            assert isinstance(result[0][1], numpy.ndarray)
-            assert result[0][1].shape == ()
-            assert np.allclose(result[0][1], 0)
-
-            assert isinstance(result[0][2], numpy.ndarray)
-            assert result[0][2].shape == ()
-            assert np.allclose(result[0][2], 0)
-
-            # Second elem
-            assert len(result[0]) == 3
-
-            assert isinstance(result[1][0], numpy.ndarray)
-            assert result[1][0].shape == (4,)
-            assert np.allclose(result[1][0], 0)
-
-            assert isinstance(result[1][1], numpy.ndarray)
-            assert result[1][1].shape == (4,)
-            assert np.allclose(result[1][1], 0)
-
-            assert isinstance(result[1][2], numpy.ndarray)
-            assert result[1][2].shape == (4,)
-            assert np.allclose(result[1][2], 0)
-
-            tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
-            assert tapes == []
-
-    def test_y0(self, mocker):
+    def test_y0(self):
         """Test that if first order finite differences is used, then
         the tape is executed only once using the current parameter
         values."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = finite_diff(tape, approx_order=1, h=h_val, shots=default_shot_vector)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
+        tapes, _ = finite_diff(tape, approx_order=1, h=h_val)
 
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
@@ -340,9 +283,9 @@ class TestFiniteDiff:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         f0 = dev.execute(tape)
-        tapes, fn = finite_diff(tape, approx_order=1, f0=f0, h=h_val, shots=default_shot_vector)
+        tapes, _ = finite_diff(tape, approx_order=1, f0=f0, h=h_val)
 
         assert len(tapes) == tape.num_params
 
@@ -356,39 +299,40 @@ class TestFiniteDiff:
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        tape1 = qml.tape.QuantumScript.from_queue(q1, shots=many_shots_shot_vector)
         with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(1.0, wires=[0])
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
-        tapes, fn = finite_diff(tape1, approx_order=1, h=h_val, shots=many_shots_shot_vector)
-        j1 = fn(dev.batch_execute(tapes))
+        tape2 = qml.tape.QuantumScript.from_queue(q2, shots=many_shots_shot_vector)
+        tapes, fn = finite_diff(tape1, approx_order=1, h=h_val)
+        with qml.Tracker(dev) as tracker:
+            j1 = fn(dev.execute(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
-        assert dev.num_executions == 2
+        assert tracker.totals["executions"] == 2
 
-        tapes, fn = finite_diff(tape2, approx_order=1, h=h_val, shots=default_shot_vector)
-        j2 = fn(dev.batch_execute(tapes))
+        tapes, fn = finite_diff(tape2, approx_order=1, h=h_val)
+        j2 = fn(dev.execute(tapes))
 
         exp = -np.sin(1)
 
         assert isinstance(j1, tuple)
-        assert len(j1) == len(default_shot_vector)
+        assert len(j1) == len(many_shots_shot_vector)
         assert isinstance(j2, tuple)
-        assert len(j2) == len(default_shot_vector)
+        assert len(j2) == len(many_shots_shot_vector)
 
         for _j1, _j2 in zip(j1, j2):
-            assert np.allclose(_j1, [exp, 0], atol=finite_diff_shot_vec_tol)
-            assert np.allclose(_j2, [0, exp], atol=finite_diff_shot_vec_tol)
+            assert np.allclose(_j1, [exp, 0], atol=0.07)
+            assert np.allclose(_j2, [0, exp], atol=0.07)
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=(1, 1000, 1001))
 
         def cost1(x):
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
         def cost2(x):
@@ -404,7 +348,7 @@ class TestFiniteDiff:
             return qml.probs([0, 1])
 
         def cost5(x):
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return [qml.probs([0, 1])]
 
         def cost6(x):
@@ -414,14 +358,32 @@ class TestFiniteDiff:
         x = np.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
+        transform = [qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x)) for c in circuits]
+        expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
+        assert all(t == q for t, q in zip(transform, expected))
+
+    def test_output_shape_matches_qnode_two_args(self):
+        """Test that the transform output shape matches that of a QNode with multiple args."""
+        dev = qml.device("default.qubit", wires=4, shots=(1, 1000, 1001))
+
+        def cost1(x, y, z):
+            qml.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def cost2(x, y, z):
+            qml.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
+            return qml.probs([0, 1]), qml.probs([2, 3])
+
+        x, y, z = np.random.rand(3, 2)
+        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2)]
+
         transform = [
-            qml.math.shape(qml.gradients.finite_diff(c, h=h_val, shots=default_shot_vector)(x))
-            for c in circuits
+            qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x, y, z)) for c in circuits
         ]
-
-        expected = [(3,), (3,), (2, 3), (3, 4), (3, 4), (2, 3, 4)]
-        expected = [(len(many_shots_shot_vector),) + e for e in expected]
-
+        expected = [
+            (3, 3, 2),  # shot vector, params, param shape
+            (3, 2, 3, 4, 2),  # shot vector, measurements, params, measurement shape, param shape
+        ]
         assert all(t == q for t, q in zip(transform, expected))
 
     def test_special_observable_qnode_differentiation(self):
@@ -449,6 +411,7 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
+        # pylint: disable=too-few-public-methods
         class SpecialObservable(Observable):
             """SpecialObservable"""
 
@@ -458,11 +421,15 @@ class TestFiniteDiff:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupportingSpecialObservable(DefaultQubit):
+        # pylint: disable=too-few-public-methods
+        class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
+            """A device that supports the above SpecialObservable as a return type."""
+
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
+            observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
+            # pylint: disable=unused-argument
             @staticmethod
             def _asarray(arr, dtype=None):
                 return np.array(arr)
@@ -472,6 +439,7 @@ class TestFiniteDiff:
                 self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
+                """Compute the expectation value of an observable."""
                 if self.analytic and isinstance(observable, SpecialObservable):
                     val = super().expval(qml.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
@@ -515,15 +483,14 @@ class TestFiniteDiffIntegration:
             qml.probs(wires=0)
             qml.probs(wires=[1, 2])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            shots=many_shots_shot_vector,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(many_shots_shot_vector)
 
@@ -542,7 +509,7 @@ class TestFiniteDiffIntegration:
             assert res[1][1].shape == (4,)
             assert res[1][2].shape == (4,)
 
-    def test_single_expectation_value(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -555,19 +522,18 @@ class TestFiniteDiffIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            shots=default_shot_vector,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         for res in all_res:
@@ -580,9 +546,9 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.15, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
@@ -596,7 +562,7 @@ class TestFiniteDiffIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         # we choose both trainable parameters
         tapes, fn = finite_diff(
             tape,
@@ -605,12 +571,11 @@ class TestFiniteDiffIntegration:
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            shots=many_shots_shot_vector,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         for res in all_res:
@@ -623,9 +588,9 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.15, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -633,7 +598,7 @@ class TestFiniteDiffIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, seed=1967, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
@@ -643,7 +608,7 @@ class TestFiniteDiffIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         # we choose only 1 trainable parameter
         tapes, fn = finite_diff(
             tape,
@@ -652,12 +617,11 @@ class TestFiniteDiffIntegration:
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            shots=many_shots_shot_vector,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         expected = [0, np.cos(y) * np.cos(x)]
 
@@ -671,11 +635,9 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.12, rtol=0)
 
-    def test_multiple_expectation_value_with_argnum_one(
-        self, approx_order, strategy, validate, tol
-    ):
+    def test_probs_expval_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a multiple measurement, where only one parameter is chosen to
         be trainable.
@@ -683,6 +645,7 @@ class TestFiniteDiffIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
+
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -691,10 +654,10 @@ class TestFiniteDiffIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
             qml.probs(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         # we choose only 1 trainable parameter
         tapes, fn = finite_diff(
             tape,
@@ -703,25 +666,26 @@ class TestFiniteDiffIntegration:
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            shots=many_shots_shot_vector,
         )
-        res = fn(dev.batch_execute(tapes))
-
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
-        expected = [0, np.cos(y) * np.cos(x)]
+        cx, sx, cy, sy = np.cos(x / 2), np.sin(x / 2), np.cos(y / 2), np.sin(y / 2)
+        # probability vector is [cx**2 * cy**2, cx**2 * sy**2, sx**2 * sy**2, sx**2 * cy**2]
+        exp_dprob = np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (sy * cy)
+        exp_probs = [np.zeros(4), exp_dprob]
+        # expval is np.sin(y) * np.cos(x)
+        exp_expval = [0, np.cos(y) * np.cos(x)]
 
         for res in all_res:
             assert isinstance(res, tuple)
-            assert isinstance(res[0], tuple)
-            assert np.allclose(res[0][0], 0)
-            assert isinstance(res[1], tuple)
-            assert np.allclose(res[1][0], 0)
+            assert len(res) == 2  # two measurements
+            assert np.allclose(res[0], exp_probs, atol=0.07)
+            assert np.allclose(res[1], exp_expval, atol=0.2)
 
-    def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_multiple_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -735,19 +699,18 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            shots=many_shots_shot_vector,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         for res in all_res:
             assert isinstance(res, tuple)
@@ -755,17 +718,17 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.15, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(res[1], [0, np.cos(y)], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[1], [0, np.cos(y)], atol=0.15, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
-    def test_var_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_var_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -779,19 +742,18 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            shots=many_shots_shot_vector,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         for res in all_res:
             assert isinstance(res, tuple)
@@ -799,19 +761,17 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.2, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(
-                res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=finite_diff_shot_vec_tol, rtol=0
-            )
+            assert np.allclose(res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=0.2, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
-    def test_prob_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_prob_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -825,19 +785,18 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            shots=many_shots_shot_vector,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         for res in all_res:
             assert isinstance(res, tuple)
@@ -845,9 +804,9 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0][0], -np.sin(x), atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0][0], -np.sin(x), atol=0.1, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
-            assert np.allclose(res[0][1], 0, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0][1], 0, atol=0.1, rtol=0)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
@@ -860,7 +819,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x) * np.sin(y / 2) ** 2) / 2,
                     (np.cos(y / 2) ** 2 * np.sin(x)) / 2,
                 ],
-                atol=finite_diff_shot_vec_tol,
+                atol=0.07,
                 rtol=0,
             )
             assert isinstance(res[1][0], numpy.ndarray)
@@ -872,7 +831,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                     -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                 ],
-                atol=finite_diff_shot_vec_tol,
+                atol=0.08,
                 rtol=0,
             )
             assert isinstance(res[1][1], numpy.ndarray)
@@ -885,10 +844,12 @@ class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    def test_autograd(self, approx_order, strategy, tol):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
+    def test_autograd(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -898,7 +859,7 @@ class TestFiniteDiffGradients:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -906,15 +867,14 @@ class TestFiniteDiffGradients:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
             )
-            jac = np.array(fn(dev.batch_execute(tapes)))
+            jac = np.array(fn(execute_fn(tapes)))
             return jac
 
         all_res = qml.jacobian(cost_fn)(params)
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         for res in all_res:
             x, y = params
@@ -925,13 +885,15 @@ class TestFiniteDiffGradients:
                 ]
             )
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd_ragged(self, approx_order, strategy, tol):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
+    def test_autograd_ragged(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -942,7 +904,7 @@ class TestFiniteDiffGradients:
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -950,29 +912,30 @@ class TestFiniteDiffGradients:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(execute_fn(tapes))
             return jac[1][0]
 
         x, y = params
         all_res = qml.jacobian(cost_fn)(params)[0]
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         for res in all_res:
             expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf(self, approx_order, strategy, tol):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    def test_tf(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
@@ -982,7 +945,7 @@ class TestFiniteDiffGradients:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -990,9 +953,8 @@ class TestFiniteDiffGradients:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
             )
-            jac_0, jac_1 = fn(dev.batch_execute(tapes))
+            jac_0, jac_1 = fn(execute_fn(tapes))
 
         x, y = 1.0 * params
 
@@ -1005,15 +967,17 @@ class TestFiniteDiffGradients:
                 [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
             ]
         )
-        assert np.allclose([res_0, res_1], expected, atol=finite_diff_shot_vec_tol, rtol=0)
+        assert np.allclose([res_0, res_1], expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy, tol):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    def test_tf_ragged(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
@@ -1024,7 +988,7 @@ class TestFiniteDiffGradients:
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -1032,10 +996,9 @@ class TestFiniteDiffGradients:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
             )
 
-            jac_01 = fn(dev.batch_execute(tapes))[1][0]
+            jac_01 = fn(execute_fn(tapes))[1][0]
 
         x, y = 1.0 * params
 
@@ -1043,15 +1006,17 @@ class TestFiniteDiffGradients:
 
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
 
-        assert np.allclose(res_01[0], expected, atol=finite_diff_shot_vec_tol, rtol=0)
+        assert np.allclose(res_01[0], expected, atol=0.3, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, approx_order, strategy, tol):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    def test_torch(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qml.device("default.qubit.torch", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         def cost_fn(params):
@@ -1061,16 +1026,15 @@ class TestFiniteDiffGradients:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tapes, fn = finite_diff(
                 tape,
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(execute_fn(tapes))
             return jac
 
         hess = torch.autograd.functional.jacobian(cost_fn, params)
@@ -1084,24 +1048,19 @@ class TestFiniteDiffGradients:
             ]
         )
 
-        assert np.allclose(
-            hess[0].detach().numpy(), expected[0], atol=finite_diff_shot_vec_tol, rtol=0
-        )
-        assert np.allclose(
-            hess[1].detach().numpy(), expected[1], atol=finite_diff_shot_vec_tol, rtol=0
-        )
+        assert np.allclose(hess[0].detach().numpy(), expected[0], atol=0.3, rtol=0)
+        assert np.allclose(hess[1].detach().numpy(), expected[1], atol=0.3, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, approx_order, strategy, tol):
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    def test_jax(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
-
-        dev = qml.device("default.qubit.jax", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
@@ -1111,7 +1070,7 @@ class TestFiniteDiffGradients:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -1119,15 +1078,14 @@ class TestFiniteDiffGradients:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=h_val,
-                shots=many_shots_shot_vector,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(execute_fn(tapes))
             return jac
 
         all_res = jax.jacobian(cost_fn)(params)
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         x, y = params
         expected = np.array(
@@ -1138,7 +1096,7 @@ class TestFiniteDiffGradients:
         )
         for res in all_res:
             assert isinstance(res, tuple)
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.3, rtol=0)
 
 
 pauliz = qml.PauliZ(wires=0)
@@ -1188,15 +1146,15 @@ class TestReturn:
             )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
             qml.apply(meas)  # Measurements act on wires 0 and 1
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_transform_shots = Shots(shot_vec)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=grad_transform_shots)
         # One trainable param
         tape.trainable_params = {0}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
-        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        all_res = fn(dev.execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         for res in all_res:
@@ -1222,15 +1180,15 @@ class TestReturn:
             qml.var(qml.Projector([1], wires=4))
             qml.var(qml.Hermitian(A, wires=5))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_transform_shots = Shots(shot_vec)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=grad_transform_shots)
         # Multiple trainable params
         tape.trainable_params = {0}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
-        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        all_res = fn(dev.execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
@@ -1256,15 +1214,15 @@ class TestReturn:
             )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
             qml.apply(meas)  # Measurements act on wires 0 and 1
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_transform_shots = Shots(shot_vec)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=grad_transform_shots)
         # Multiple trainable params
         tape.trainable_params = {0, 1}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
-        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        all_res = fn(dev.execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         for param_res in all_res:
@@ -1272,20 +1230,21 @@ class TestReturn:
                 assert isinstance(res, np.ndarray)
                 assert res.shape == shape
 
-    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
     @pytest.mark.parametrize("op_wires", [(0, 1, 2, 3, 4), (5, 5, 5, 5, 5)])
-    def test_N_N(self, shot_vec, meas, shape, op_wires):
+    def test_N_N(self, shot_vec, op_wires):
         """Test multi-param multi-measurement case"""
         dev = qml.device("default.qubit", wires=6, shots=shot_vec)
         params = np.random.random(6)
 
-        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         with qml.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
                 qml.RY(
                     params[idx], wires=[w]
                 )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
 
+            # The following asserts that there actually is a w defined, or raises an
+            # error if op_wires was empty
+            w = op_wires[-1]
             # Extra op - 5 measurements in total
             qml.RY(
                 params[5], wires=[w]
@@ -1297,15 +1256,15 @@ class TestReturn:
             qml.var(qml.Projector([1], wires=3))
             qml.var(qml.Hermitian(A, wires=4))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_transform_shots = Shots(shot_vec)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=grad_transform_shots)
         # Multiple trainable params
         tape.trainable_params = {0, 1, 2, 3, 4}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
-        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
-        all_res = fn(dev.batch_execute(tapes))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        all_res = fn(dev.execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]

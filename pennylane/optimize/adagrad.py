@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adagrad optimizer"""
-from pennylane.numpy import sqrt
+from numpy import sqrt
+
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -42,6 +43,11 @@ class AdagradOptimizer(GradientDescentOptimizer):
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
         eps (float): offset :math:`\epsilon` added for numerical stability
+
+    .. note::
+
+        When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
+
     """
 
     def __init__(self, stepsize=0.01, eps=1e-8):

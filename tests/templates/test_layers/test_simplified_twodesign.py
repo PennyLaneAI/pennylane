@@ -14,10 +14,26 @@
 """
 Unit tests for the SimplifiedTwoDesign template.
 """
-import pytest
 import numpy as np
+
+# pylint: disable=too-many-arguments,too-few-public-methods
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
+
+
+def test_standard_validity():
+    """Run standard checks with the assert_valid function."""
+
+    n_wires = 2
+    weight_shape = (2, 1, 2)
+
+    weights = np.random.random(size=weight_shape)
+    initial_layer = np.random.randn(n_wires)
+
+    op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -68,7 +84,7 @@ class TestDecomposition:
         queue = op.expand().operations
 
         # test the device parameters
-        for l in range(n_layers):
+        for _ in range(n_layers):
             # only select the rotation gates
             ops = [gate for gate in queue if isinstance(gate, qml.RY)]
 
@@ -120,17 +136,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.SimplifiedTwoDesign(initial_layer, weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:

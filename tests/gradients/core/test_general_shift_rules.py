@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.general_shift_rules module."""
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
-
 from pennylane.gradients.general_shift_rules import (
+    _get_shift_rule,
+    _iterate_shift_rule_with_multipliers,
     eigvals_to_frequencies,
     frequencies_to_period,
-    generate_shift_rule,
-    _get_shift_rule,
     generate_multi_shift_rule,
-    generate_shifted_tapes,
     generate_multishifted_tapes,
-    _iterate_shift_rule_with_multipliers,
+    generate_shift_rule,
+    generate_shifted_tapes,
 )
 
 
@@ -84,12 +83,14 @@ class TestIterateShiftRuleWithMultipliers:
 
     @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
     def test_first_order(self, period):
+        """Test first order iteration of a rule with multipliers."""
         rule = [(-0.9, 0.7, -0.2), (0.2, 1.2, 0.4)]
         iterated_rule = _iterate_shift_rule_with_multipliers(rule, 1, period)
         assert np.allclose(iterated_rule, rule)
 
     @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
     def test_second_order(self, period):
+        """Test second order iteration of a rule with multipliers."""
         rule = [(0.2, 1.2, 0.4), (-0.9, 0.7, -0.2)]
         iterated_rule = _iterate_shift_rule_with_multipliers(rule, 2, period)
         expected = np.array(
@@ -107,6 +108,7 @@ class TestIterateShiftRuleWithMultipliers:
 
     @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
     def test_third_order(self, period):
+        """Test third order iteration of a rule with multipliers."""
         rule = [(0.2, 1.2, 0.4), (-0.9, 0.7, -0.2)]
         iterated_rule = _iterate_shift_rule_with_multipliers(rule, 3, period)
         expected = np.array(
@@ -157,7 +159,6 @@ class TestGenerateShiftRule:
 
         frequencies = (1,)
 
-        n_terms = 2
         correct_terms = [[0.5, np.pi / 2], [-0.5, -np.pi / 2]]
         generated_terms = generate_shift_rule(frequencies)
 
@@ -169,7 +170,6 @@ class TestGenerateShiftRule:
 
         frequencies = (1, 2)
 
-        n_terms = 4
         correct_terms = [
             [0.8535533905932737, np.pi / 4],
             [-0.8535533905932737, -np.pi / 4],
@@ -186,8 +186,6 @@ class TestGenerateShiftRule:
         a 2-qubit generator of the form: 1/2*X0Y1 + 5/2*Y0X1."""
 
         frequencies = (1, 4, 5, 6)
-
-        n_terms = 8
 
         correct_terms = [
             [2.8111804455102014, np.pi / 8],
@@ -212,7 +210,6 @@ class TestGenerateShiftRule:
         frequencies = (1, 4, 5, 6)
         custom_shifts = (1 / 13 * np.pi, 3 / 7 * np.pi, 2 / 3 * np.pi, 3 / 4 * np.pi)
 
-        n_terms = 8
         correct_terms = [
             [2.709571194594805, np.pi / 13],
             [-2.709571194594805, -np.pi / 13],
@@ -232,7 +229,6 @@ class TestGenerateShiftRule:
         """Tests the correct four term shift rule is generated given non-integer frequencies."""
 
         frequencies = (1 / 3, 2 / 3)
-        n_terms = 4
 
         correct_terms = [
             [0.2845177968644246, 3 * np.pi / 4],
@@ -255,7 +251,6 @@ class TestGenerateShiftRule:
             np.pi / 3,
             2 * np.pi / 3,
         )
-        n_terms = 6
 
         correct_terms = [
             [1.7548361197453346, 0.7853981633974483],
@@ -292,7 +287,7 @@ class TestGenerateShiftRule:
         properly simplified when custom shift values are provided"""
         frequencies = (1,)
         generated_terms = generate_shift_rule(frequencies, shifts=(np.pi / 4,), order=2)
-        correct_terms = [[-1, 0], [0.5, -np.pi / 2], [0.5, np.pi / 2]]
+        correct_terms = [[-1, 0], [0.5, np.pi / 2], [0.5, -np.pi / 2]]
         assert np.allclose(generated_terms, correct_terms)
 
     def test_second_order_four_term_shift_rule(self):
@@ -302,8 +297,8 @@ class TestGenerateShiftRule:
         generated_terms = generate_shift_rule(frequencies, order=2)
         correct_terms = [
             [-0.375, 0],
-            [0.25, -np.pi],
             [0.25, np.pi],
+            [0.25, -np.pi],
             [-0.125, -2 * np.pi],
         ]
         assert np.allclose(generated_terms, correct_terms)
@@ -315,12 +310,12 @@ class TestGenerateShiftRule:
         generated_terms = generate_shift_rule(frequencies, order=2)
         correct_terms = [
             [-6, 0],
-            [3.91421356, -np.pi / 4],
             [3.91421356, np.pi / 4],
-            [-1, -np.pi / 2],
+            [3.91421356, -np.pi / 4],
             [-1, np.pi / 2],
-            [0.08578644, -3 * np.pi / 4],
+            [-1, -np.pi / 2],
             [0.08578644, 3 * np.pi / 4],
+            [0.08578644, -3 * np.pi / 4],
         ]
         assert np.allclose(generated_terms, correct_terms)
 
@@ -340,7 +335,7 @@ class TestMultiShiftRule:
         assert np.allclose(res, expected)
 
         res = generate_multi_shift_rule([(1,)], orders=[2], shifts=[(np.pi / 4,)])
-        expected = [[-1, 0], [0.5, -np.pi / 2], [0.5, np.pi / 2]]
+        expected = [[-1, 0], [0.5, np.pi / 2], [0.5, -np.pi / 2]]
         assert np.allclose(res, expected)
 
     def test_two_single_frequency(self):
@@ -464,7 +459,7 @@ class TestGenerateMultishiftedTapes:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(0)
-            qml.RX(1, wires=0)
+            qml.RX(1.0, wires=0)
             qml.CNOT(wires=[0, 2])
             qml.Rot(2.0, 3.0, 4.0, wires=0)
             qml.expval(qml.PauliZ(0))

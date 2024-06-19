@@ -15,8 +15,9 @@
 This module contains the template for performing basis transformation defined by a set of fermionic ladder operators.
 """
 
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
 from pennylane.qchem.givens_decomposition import givens_decomposition
 
@@ -99,7 +100,16 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires, unitary_matrix, check=False, do_queue=True, id=None):
+    @classmethod
+    def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
+        # pylint: disable=arguments-differ
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, wires, unitary_matrix, check=check, id=id)  # pragma: no cover
+
+        return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
+
+    def __init__(self, wires, unitary_matrix, check=False, id=None):
         M, N = unitary_matrix.shape
         if M != N:
             raise ValueError(
@@ -118,7 +128,7 @@ class BasisRotation(Operation):
             "unitary_matrix": unitary_matrix,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -175,3 +185,18 @@ class BasisRotation(Operation):
                 op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list
+
+
+# Program capture needs to unpack and re-pack the wires to support dynamic wires. For
+# BasisRotation, the unconventional argument ordering requires custom def_impl code.
+# See capture module for more information on primitives
+# If None, jax isn't installed so the class never got a primitive.
+if BasisRotation._primitive is not None:  # pylint: disable=protected-access
+
+    @BasisRotation._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, **kwargs):
+        # If there are more than two args, we are calling with unpacked wires, so that
+        # we have to repack them. This replaces the n_wires logic in the general case.
+        if len(args) != 2:
+            args = (args[:-1], args[-1])
+        return type.__call__(BasisRotation, *args, **kwargs)

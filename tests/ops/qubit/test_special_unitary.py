@@ -16,17 +16,20 @@ Unit tests for the SpecialUnitary operation and its utility functions.
 """
 # pylint:disable=import-outside-toplevel
 from functools import partial
+
 import numpy as np
-from scipy.linalg import expm
 import pytest
+from scipy.linalg import expm
+
 import pennylane as qml
 from pennylane.ops.qubit.special_unitary import (
-    pauli_basis_matrices,
-    pauli_basis_strings,
     TmpPauliRot,
     _pauli_letters,
     _pauli_matrices,
+    pauli_basis_matrices,
+    pauli_basis_strings,
 )
+from pennylane.transforms.convert_to_numpy_parameters import _convert_op_to_numpy_data
 from pennylane.wires import Wires
 
 
@@ -561,18 +564,18 @@ class TestSpecialUnitary:
             decomp = qml.SpecialUnitary(theta, wires).decomposition()
             assert len(decomp) == d + 1
             for w, op in zip(words, decomp[:-1]):
-                assert qml.equal(
+                qml.assert_equal(
                     TmpPauliRot(0.0, w, wires=wires),
                     op,
                     check_trainability=False,
                     check_interface=False,
                 )
-            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+            qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
             decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
             mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
             assert len(decomp) == 1
-            assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+            qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
             return theta
 
@@ -593,18 +596,18 @@ class TestSpecialUnitary:
         decomp = qml.SpecialUnitary(theta, wires).decomposition()
         assert len(decomp) == d + 1
         for w, op in zip(words, decomp[:-1]):
-            assert qml.equal(
+            qml.assert_equal(
                 TmpPauliRot(0.0, w, wires=wires),
                 op,
                 check_trainability=False,
                 check_interface=False,
             )
-        assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+        qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
         decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
         mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
         assert len(decomp) == 1
-        assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+        qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n, theta", n_and_theta)
@@ -621,18 +624,18 @@ class TestSpecialUnitary:
             decomp = qml.SpecialUnitary(theta, wires).decomposition()
             assert len(decomp) == d + 1
             for w, op in zip(words, decomp[:-1]):
-                assert qml.equal(
+                qml.assert_equal(
                     TmpPauliRot(0.0, w, wires=wires),
                     op,
                     check_trainability=False,
                     check_interface=False,
                 )
-            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+            qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
             decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
             mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
             assert len(decomp) == 1
-            assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+            qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_adjoint(self, theta, n):
@@ -750,6 +753,7 @@ class TestSpecialUnitary:
         assert np.allclose(jac, expected)
 
 
+@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubitLegacy, qml.devices.DefaultQubit])
 class TestSpecialUnitaryIntegration:
     """Test that the operation SpecialUnitary is executable and
     differentiable in a QNode context, both with automatic differentiation
@@ -772,9 +776,9 @@ class TestSpecialUnitaryIntegration:
     state = qml.SpecialUnitary.compute_matrix(x, 2) @ np.eye(4)[0]
     exp = np.vdot(state, qml.matrix(qml.PauliZ(0) @ qml.PauliX(1)) @ state).real
 
-    def test_qnode_numpy(self):
+    def test_qnode_numpy(self, dev_fn):
         """Test that the QNode executes with Numpy."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = dev_fn(wires=2)
         qnode = qml.QNode(self.circuit, dev, interface=None)
 
         res = qnode(self.x)
@@ -782,11 +786,11 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.isclose(res, self.exp)
 
     @pytest.mark.autograd
-    def test_qnode_autograd(self):
+    def test_qnode_autograd(self, dev_fn):
         """Test that the QNode executes with Autograd.
         Neither hardware-ready nor autodiff gradients are available in Autograd."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = dev_fn(wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="autograd")
 
         x = qml.numpy.array(self.x, requires_grad=True)
@@ -797,7 +801,7 @@ class TestSpecialUnitaryIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
-    def test_qnode_jax(self, shots, atol, use_jit):
+    def test_qnode_jax(self, dev_fn, shots, atol, use_jit):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         if use_jit and shots is not None:
@@ -806,7 +810,7 @@ class TestSpecialUnitaryIntegration:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
@@ -838,12 +842,12 @@ class TestSpecialUnitaryIntegration:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
-    def test_qnode_torch(self, shots, atol):
+    def test_qnode_torch(self, dev_fn, shots, atol):
         """Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -870,12 +874,12 @@ class TestSpecialUnitaryIntegration:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
-    def test_qnode_tf(self, shots, atol):
+    def test_qnode_tf(self, dev_fn, shots, atol):
         """Test that the QNode executes and is differentiable with TensorFlow. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
@@ -912,6 +916,12 @@ class TestSpecialUnitaryIntegration:
 class TestTmpPauliRot:
     """Tests for the helper Operation TmpPauliRot."""
 
+    @staticmethod
+    def get_decomposition(x):
+        """A nonsense function that can be trained, to convert x to a trainable value."""
+        decomp = TmpPauliRot.compute_decomposition(x, [0], "X")
+        return float(len(decomp))
+
     def test_has_matrix_false(self):
         """Test that TmpPauliRot reports to not have a matrix."""
         assert TmpPauliRot.has_matrix is False
@@ -936,6 +946,47 @@ class TestTmpPauliRot:
         assert op.decomposition() == []
         assert TmpPauliRot.compute_decomposition(0.0, wires, word) == []
 
+    @pytest.mark.autograd
+    def test_decomposition_at_zero_autograd(self):
+        """Test that the decomposition is a PauliRot if the theta value is trainable."""
+        x = qml.numpy.array(0.0, requires_grad=True)
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.grad(self.get_decomposition)(x)
+        assert q.queue[0] == qml.PauliRot(x, "X", [0])
+
+    @pytest.mark.jax
+    def test_decomposition_at_zero_jax(self):
+        """Test that the decomposition is a PauliRot if the theta value is trainable."""
+        import jax
+
+        x = jax.numpy.array(0.0)
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.grad(self.get_decomposition)(x)
+        assert _convert_op_to_numpy_data(q.queue[0]) == qml.PauliRot(0.0, "X", [0])
+
+    @pytest.mark.tf
+    def test_decomposition_at_zero_tf(self):
+        """Test that the decomposition is a PauliRot if the theta value is trainable."""
+        import tensorflow as tf
+
+        x = tf.Variable(0.0)
+        with qml.queuing.AnnotatedQueue() as q:
+            with tf.GradientTape():
+                num_ops = self.get_decomposition(x)
+        assert num_ops == 1
+        assert q.queue[0] == qml.PauliRot(x, "X", [0])
+
+    @pytest.mark.torch
+    def test_decomposition_at_zero_torch(self):
+        """Test that the decomposition is a PauliRot if the theta value is trainable."""
+        import torch
+
+        x = torch.tensor(0.0, requires_grad=True)
+        with qml.queuing.AnnotatedQueue() as q:
+            num_ops = self.get_decomposition(x)
+        assert num_ops == 1
+        assert q.queue[0] == qml.PauliRot(x, "X", [0])
+
     @pytest.mark.parametrize("word", ["X", "IZ", "YYY"])
     @pytest.mark.parametrize("x", [1.2, 1e-4])
     def test_decomposition_nonzero(self, word, x):
@@ -946,4 +997,4 @@ class TestTmpPauliRot:
         decomp2 = TmpPauliRot.compute_decomposition(x, wires, word)
         for dec in [decomp, decomp2]:
             assert len(dec) == 1
-            assert qml.equal(dec[0], qml.PauliRot(x, word, wires))
+            qml.assert_equal(dec[0], qml.PauliRot(x, word, wires))

@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,1038 +11,877 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-The default.qubit device is PennyLane's standard qubit-based device.
-
-It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
-:mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
-simulation of a qubit-based quantum circuit architecture.
 """
-import functools
-import itertools
-from string import ascii_letters as ABC
-from typing import List
+The default.qubit device is PennyLane's standard qubit-based device.
+"""
+
+import concurrent.futures
+import logging
+from dataclasses import replace
+from functools import partial
+from numbers import Number
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
-from pennylane.operation import Operation
-from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from pennylane.pulse import ParametrizedEvolution
-from pennylane.typing import TensorLike
-from pennylane.wires import WireError
+from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.ops.op_math.condition import Conditional
+from pennylane.tape import QuantumTape
+from pennylane.transforms import convert_to_numpy_parameters
+from pennylane.transforms.core import TransformProgram
+from pennylane.typing import Result, ResultBatch
 
-from .._version import __version__
+from . import Device
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
+from .preprocess import (
+    decompose,
+    mid_circuit_measurements,
+    no_sampling,
+    validate_adjoint_trainable_params,
+    validate_device_wires,
+    validate_measurements,
+    validate_multiprocessing_workers,
+    validate_observables,
+)
+from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp
+from .qubit.sampling import jax_random_split
+from .qubit.simulate import get_final_state, measure_final_state, simulate
 
-ABC_ARRAY = np.array(list(ABC))
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
-# tolerance for numerical errors
-tolerance = 1e-10
-SQRT2INV = 1 / np.sqrt(2)
-TPHASE = np.exp(1j * np.pi / 4)
+Result_or_ResultBatch = Union[Result, ResultBatch]
+QuantumTapeBatch = Sequence[QuantumTape]
+QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
+# always a function from a resultbatch to either a result or a result batch
+PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
-def _get_slice(index, axis, num_axes):
-    """Allows slicing along an arbitrary axis of an array or tensor.
+observables = {
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Hadamard",
+    "Hermitian",
+    "Identity",
+    "Projector",
+    "SparseHamiltonian",
+    "Hamiltonian",
+    "LinearCombination",
+    "Sum",
+    "SProd",
+    "Prod",
+    "Exp",
+    "Evolution",
+}
+
+
+def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+    """Specifies whether or not an observable is accepted by DefaultQubit."""
+    return obs.name in observables
+
+
+def stopping_condition(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device."""
+    if op.name == "QFT" and len(op.wires) >= 6:
+        return False
+    if op.name == "GroverOperator" and len(op.wires) >= 13:
+        return False
+    if op.name == "Snapshot":
+        return True
+    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
+        return False
+
+    return op.has_matrix
+
+
+def stopping_condition_shots(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device with shots."""
+    return isinstance(op, (Conditional, MidMeasureMP)) or stopping_condition(op)
+
+
+def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+    """Specifies whether or not a measurement is accepted when sampling."""
+    return isinstance(
+        m,
+        (
+            qml.measurements.SampleMeasurement,
+            qml.measurements.ClassicalShadowMP,
+            qml.measurements.ShadowExpvalMP,
+        ),
+    )
+
+
+def null_postprocessing(results):
+    """An empty post-processing function."""
+    return results[0]
+
+
+def all_state_postprocessing(results, measurements, wire_order):
+    """Process a state measurement back into the original measurements."""
+    result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
+    return result[0] if len(measurements) == 1 else result
+
+
+@qml.transform
+def adjoint_state_measurements(
+    tape: QuantumTape, device_vjp=False
+) -> Tuple[Tuple[QuantumTape], Callable]:
+    """Perform adjoint measurement preprocessing.
+
+    * Allows a tape with only expectation values through unmodified
+    * Raises an error if non-expectation value measurements exist and any have diagonalizing gates
+    * Turns the circuit into a state measurement + classical postprocesssing for arbitrary measurements
 
     Args:
-        index (int): the index to access
-        axis (int): the axis to slice into
-        num_axes (int): total number of axes
+        tape (QuantumTape): the input circuit
 
-    Returns:
-        tuple[slice or int]: a tuple that can be used to slice into an array or tensor
+    """
+    if all(isinstance(m, qml.measurements.ExpectationMP) for m in tape.measurements):
+        return (tape,), null_postprocessing
+
+    if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
+        raise qml.DeviceError(
+            "adjoint diff supports either all expectation values or only measurements without observables."
+        )
+
+    params = tape.get_parameters()
+
+    if device_vjp:
+        for p in params:
+            if (
+                qml.math.requires_grad(p)
+                and qml.math.get_interface(p) == "tensorflow"
+                and qml.math.get_dtype_name(p) in {"float32", "complex64"}
+            ):
+                raise ValueError(
+                    "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
+                )
+
+    complex_data = [qml.math.cast(p, complex) for p in params]
+    tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
+    new_mp = qml.measurements.StateMP(wires=tape.wires)
+    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
+    return (state_tape,), partial(
+        all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
+    )
+
+
+def adjoint_ops(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator is supported by adjoint differentiation."""
+    return not isinstance(op, MidMeasureMP) and (
+        op.num_params == 0
+        or not qml.operation.is_trainable(op)
+        or (op.num_params == 1 and op.has_generator)
+    )
+
+
+def adjoint_observables(obs: qml.operation.Operator) -> bool:
+    """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
+    return obs.has_matrix
+
+
+def _supports_adjoint(circuit, device_wires, device_name):
+    if circuit is None:
+        return True
+
+    prog = TransformProgram()
+    prog.add_transform(validate_device_wires, device_wires, name=device_name)
+    _add_adjoint_transforms(prog)
+
+    try:
+        prog((circuit,))
+    except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
+        return False
+    return True
+
+
+def _add_adjoint_transforms(program: TransformProgram, device_vjp=False) -> None:
+    """Private helper function for ``preprocess`` that adds the transforms specific
+    for adjoint differentiation.
+
+    Args:
+        program (TransformProgram): where we will add the adjoint differentiation transforms
+
+    Side Effects:
+        Adds transforms to the input program.
+
+    """
+
+    name = "adjoint + default.qubit"
+    program.add_transform(no_sampling, name=name)
+    program.add_transform(
+        decompose, stopping_condition=adjoint_ops, name=name, skip_initial_state_prep=False
+    )
+    program.add_transform(validate_observables, adjoint_observables, name=name)
+    program.add_transform(
+        validate_measurements,
+        name=name,
+    )
+    program.add_transform(adjoint_state_measurements, device_vjp=device_vjp)
+    program.add_transform(qml.transforms.broadcast_expand)
+    program.add_transform(validate_adjoint_trainable_params)
+
+
+@simulator_tracking
+@single_tape_support
+class DefaultQubit(Device):
+    """A PennyLane device written in Python and capable of backpropagation derivatives.
+
+    Args:
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
+            to use in executions involving this device.
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
+            a request to seed from numpy's global random number generator.
+            The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
+            will pull a seed from the OS entropy.
+            If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
+            ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
+            ``numpy.random.default_rng``.
+        max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
+            using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
+            only the current process executes tapes. If you experience any
+            issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
 
     **Example:**
 
-    Accessing the 2 index along axis 1 of a 3-axis array:
-
-    >>> sl = _get_slice(2, 1, 3)
-    >>> sl
-    (slice(None, None, None), 2, slice(None, None, None))
-    >>> a = np.arange(27).reshape((3, 3, 3))
-    >>> a[sl]
-    array([[ 6,  7,  8],
-           [15, 16, 17],
-           [24, 25, 26]])
-    """
-    idx = [slice(None)] * num_axes
-    idx[axis] = index
-    return tuple(idx)
-
-
-# pylint: disable=unused-argument
-class DefaultQubit(QubitDevice):
-    """Default qubit device for PennyLane.
-
-    Args:
-        wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
-            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
-        shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to ``None`` if not specified, which means that the device
-            returns analytical results.
-    """
-
-    name = "Default qubit PennyLane plugin"
-    short_name = "default.qubit"
-    pennylane_requires = __version__
-    version = __version__
-    author = "Xanadu Inc."
-
-    operations = {
-        "Identity",
-        "Snapshot",
-        "BasisState",
-        "QubitStateVector",
-        "QubitUnitary",
-        "ControlledQubitUnitary",
-        "MultiControlledX",
-        "IntegerComparator",
-        "DiagonalQubitUnitary",
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "MultiRZ",
-        "Hadamard",
-        "S",
-        "Adjoint(S)",
-        "T",
-        "Adjoint(T)",
-        "SX",
-        "Adjoint(SX)",
-        "CNOT",
-        "SWAP",
-        "ISWAP",
-        "PSWAP",
-        "Adjoint(ISWAP)",
-        "SISWAP",
-        "Adjoint(SISWAP)",
-        "SQISW",
-        "CSWAP",
-        "Toffoli",
-        "CCZ",
-        "CY",
-        "CZ",
-        "CH",
-        "PhaseShift",
-        "ControlledPhaseShift",
-        "CPhaseShift00",
-        "CPhaseShift01",
-        "CPhaseShift10",
-        "CPhase",
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "CRot",
-        "IsingXX",
-        "IsingYY",
-        "IsingZZ",
-        "IsingXY",
-        "SingleExcitation",
-        "SingleExcitationPlus",
-        "SingleExcitationMinus",
-        "DoubleExcitation",
-        "DoubleExcitationPlus",
-        "DoubleExcitationMinus",
-        "QubitCarry",
-        "QubitSum",
-        "OrbitalRotation",
-        "QFT",
-        "ECR",
-    }
-
-    observables = {
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "Hadamard",
-        "Hermitian",
-        "Identity",
-        "Projector",
-        "SparseHamiltonian",
-        "Hamiltonian",
-        "Sum",
-        "SProd",
-        "Prod",
-        "Exp",
-        "Evolution",
-    }
-
-    def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
-    ):
-        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
-        self._debugger = None
-
-        # Create the initial state. Internally, we store the
-        # state as an array of dimension [2]*wires.
-        self._state = self._create_basis_state(0)
-        self._pre_rotated_state = self._state
-
-        self._apply_ops = {
-            "PauliX": self._apply_x,
-            "PauliY": self._apply_y,
-            "PauliZ": self._apply_z,
-            "Hadamard": self._apply_hadamard,
-            "S": self._apply_s,
-            "T": self._apply_t,
-            "SX": self._apply_sx,
-            "CNOT": self._apply_cnot,
-            "SWAP": self._apply_swap,
-            "CZ": self._apply_cz,
-            "Toffoli": self._apply_toffoli,
-        }
-
-    @property
-    def stopping_condition(self):
-        def accepts_obj(obj):
-            if obj.name == "QFT" and len(obj.wires) >= 6:
-                return False
-            if obj.name == "GroverOperator" and len(obj.wires) >= 13:
-                return False
-            if getattr(obj, "has_matrix", False):
-                # pow operations dont work with backprop or adjoint without decomposition
-                # use class name string so we don't need to use isinstance check
-                return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
-            return obj.name in self.observables.union(self.operations)
-
-        return qml.BooleanFn(accepts_obj)
-
-    @functools.lru_cache()
-    def map_wires(self, wires):
-        # temporarily overwrite this method to bypass
-        # wire map that produces Wires objects
-        try:
-            mapped_wires = [self.wire_map[w] for w in wires]
-        except KeyError as e:
-            raise WireError(
-                f"Did not find some of the wires {wires.labels} on device with wires {self.wires.labels}."
-            ) from e
-
-        return mapped_wires
-
-    def define_wire_map(self, wires):
-        # temporarily overwrite this method to bypass
-        # wire map that produces Wires objects
-        consecutive_wires = range(self.num_wires)
-        wire_map = zip(wires, consecutive_wires)
-        return dict(wire_map)
-
-    # pylint: disable=arguments-differ
-    def _get_batch_size(self, tensor, expected_shape, expected_size):
-        """Determine whether a tensor has an additional batch dimension for broadcasting,
-        compared to an expected_shape."""
-        size = self._size(tensor)
-        if self._ndim(tensor) > len(expected_shape) or size > expected_size:
-            return size // expected_size
-
-        return None
-
-    # pylint: disable=arguments-differ
-    def apply(self, operations, rotations=None, **kwargs):
-        rotations = rotations or []
-
-        # apply the circuit operations
-        for i, operation in enumerate(operations):
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
-                raise DeviceError(
-                    f"Operation {operation.name} cannot be used after other Operations have already been applied "
-                    f"on a {self.short_name} device."
-                )
-
-            if isinstance(operation, QubitStateVector):
-                self._apply_state_vector(operation.parameters[0], operation.wires)
-            elif isinstance(operation, BasisState):
-                self._apply_basis_state(operation.parameters[0], operation.wires)
-            elif isinstance(operation, Snapshot):
-                if self._debugger and self._debugger.active:
-                    state_vector = np.array(self._flatten(self._state))
-                    if operation.tag:
-                        self._debugger.snapshots[operation.tag] = state_vector
-                    else:
-                        self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
-            elif isinstance(operation, ParametrizedEvolution):
-                self._state = self._apply_parametrized_evolution(self._state, operation)
-            else:
-                self._state = self._apply_operation(self._state, operation)
-
-        # store the pre-rotated state
-        self._pre_rotated_state = self._state
-
-        # apply the circuit rotations
-        for operation in rotations:
-            self._state = self._apply_operation(self._state, operation)
-
-    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
-        """Applies a parametrized evolution to the input state.
-
-        Args:
-            state (array[complex]): input state
-            operation (ParametrizedEvolution): operation to apply on the state
-        """
-        raise NotImplementedError(
-            f"The device {self.short_name} cannot execute a ParametrizedEvolution operation. "
-            "Please use the jax interface."
-        )
-
-    def _apply_operation(self, state, operation):
-        """Applies operations to the input state.
-
-        Args:
-            state (array[complex]): input state
-            operation (~.Operation): operation to apply on the device
-
-        Returns:
-            array[complex]: output state
-        """
-        if operation.__class__.__name__ == "Identity":
-            return state
-        wires = operation.wires
-
-        if operation.__class__.__name__ in self._apply_ops:
-            shift = int(self._ndim(state) > self.num_wires)
-            axes = [ax + shift for ax in self.wires.indices(wires)]
-            return self._apply_ops[operation.base_name](state, axes)
-
-        matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
-
-        if operation in diagonal_in_z_basis:
-            return self._apply_diagonal_unitary(state, matrix, wires)
-        if len(wires) <= 2:
-            # Einsum is faster for small gates
-            return self._apply_unitary_einsum(state, matrix, wires)
-
-        return self._apply_unitary(state, matrix, wires)
-
-    def _apply_x(self, state, axes, **kwargs):
-        """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
-
-        Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
-        shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
-        the last index loops back to the first, :math:`|1 \rangle` is transformed to
-        :math:`|0\rangle`.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        return self._roll(state, 1, axes[0])
-
-    def _apply_y(self, state, axes, **kwargs):
-        """Applies a PauliY gate by adding a negative sign to the 1 index along the axis specified
-        in ``axes``, rolling one unit along the same axis, and multiplying the result by 1j.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        return 1j * self._apply_x(self._apply_z(state, axes), axes)
-
-    def _apply_z(self, state, axes, **kwargs):
-        """Applies a PauliZ gate by adding a negative sign to the 1 index along the axis specified
-        in ``axes``.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        return self._apply_phase(state, axes, -1)
-
-    def _apply_hadamard(self, state, axes, **kwargs):
-        """Apply the Hadamard gate by combining the results of applying the PauliX and PauliZ gates.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        state_x = self._apply_x(state, axes)
-        state_z = self._apply_z(state, axes)
-        return self._const_mul(SQRT2INV, state_x + state_z)
-
-    def _apply_s(self, state, axes, inverse=False):
-        return self._apply_phase(state, axes, 1j, inverse)
-
-    def _apply_t(self, state, axes, inverse=False):
-        return self._apply_phase(state, axes, TPHASE, inverse)
-
-    def _apply_sx(self, state, axes, inverse=False):
-        """Apply the Square Root X gate.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        if inverse:
-            return 0.5 * ((1 - 1j) * state + (1 + 1j) * self._apply_x(state, axes))
-
-        return 0.5 * ((1 + 1j) * state + (1 - 1j) * self._apply_x(state, axes))
-
-    def _apply_cnot(self, state, axes, **kwargs):
-        """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then
-        applying an X transformation along the second axis.
-
-        By slicing along the first axis, we are able to select all of the amplitudes with a
-        corresponding :math:`|1\rangle` for the control qubit. This means we then just need to apply
-        a :class:`~.PauliX` (NOT) gate to the result.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        ndim = self._ndim(state)
-        sl_0 = _get_slice(0, axes[0], ndim)
-        sl_1 = _get_slice(1, axes[0], ndim)
-
-        # We will be slicing into the state according to state[sl_1], giving us all of the
-        # amplitudes with a |1> for the control qubit. The resulting array has lost an axis
-        # relative to state and we need to be careful about the axis we apply the PauliX rotation
-        # to. If axes[1] is larger than axes[0], then we need to shift the target axis down by
-        # one, otherwise we can leave as-is. For example: a state has [0, 1, 2, 3], control=1,
-        # target=3. Then, state[sl_1] has 3 axes and target=3 now corresponds to the second axis.
-        if axes[1] > axes[0]:
-            target_axes = [axes[1] - 1]
-        else:
-            target_axes = [axes[1]]
-
-        state_x = self._apply_x(state[sl_1], axes=target_axes)
-        return self._stack([state[sl_0], state_x], axis=axes[0])
-
-    def _apply_toffoli(self, state, axes, **kwargs):
-        """Applies a Toffoli gate by slicing along the axis of the greater control qubit, slicing
-        each of the resulting sub-arrays along the axis of the smaller control qubit, and then applying
-        an X transformation along the axis of the target qubit of the fourth sub-sub-array.
-
-        By performing two consecutive slices in this way, we are able to select all of the amplitudes with
-        a corresponding :math:`|11\rangle` for the two control qubits. This means we then just need to apply
-        a :class:`~.PauliX` (NOT) gate to the result.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        cntrl_max = np.argmax(axes[:2])
-        cntrl_min = cntrl_max ^ 1
-        ndim = self._ndim(state)
-        sl_a0 = _get_slice(0, axes[cntrl_max], ndim)
-        sl_a1 = _get_slice(1, axes[cntrl_max], ndim)
-        sl_b0 = _get_slice(0, axes[cntrl_min], ndim - 1)
-        sl_b1 = _get_slice(1, axes[cntrl_min], ndim - 1)
-
-        # If both controls are smaller than the target, shift the target axis down by two. If one
-        # control is greater and one control is smaller than the target, shift the target axis
-        # down by one. If both controls are greater than the target, leave the target axis as-is.
-        if axes[cntrl_min] > axes[2]:
-            target_axes = [axes[2]]
-        elif axes[cntrl_max] > axes[2]:
-            target_axes = [axes[2] - 1]
-        else:
-            target_axes = [axes[2] - 2]
-
-        # state[sl_a1][sl_b1] gives us all of the amplitudes with a |11> for the two control qubits.
-        state_x = self._apply_x(state[sl_a1][sl_b1], axes=target_axes)
-        state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_min])
-        return self._stack([state[sl_a0], state_stacked_a1], axis=axes[cntrl_max])
-
-    def _apply_swap(self, state, axes, **kwargs):
-        """Applies a SWAP gate by performing a partial transposition along the specified axes.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        all_axes = list(range(len(state.shape)))
-        all_axes[axes[0]] = axes[1]
-        all_axes[axes[1]] = axes[0]
-        return self._transpose(state, all_axes)
-
-    def _apply_cz(self, state, axes, **kwargs):
-        """Applies a CZ gate by slicing along the first axis specified in ``axes`` and then
-        applying a Z transformation along the second axis.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        ndim = self._ndim(state)
-        sl_0 = _get_slice(0, axes[0], ndim)
-        sl_1 = _get_slice(1, axes[0], ndim)
-
-        if axes[1] > axes[0]:
-            target_axes = [axes[1] - 1]
-        else:
-            target_axes = [axes[1]]
-
-        state_z = self._apply_z(state[sl_1], axes=target_axes)
-        return self._stack([state[sl_0], state_z], axis=axes[0])
-
-    def _apply_phase(self, state, axes, parameters, inverse=False):
-        """Applies a phase onto the 1 index along the axis specified in ``axes``.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-            parameters (float): phase to apply
-            inverse (bool): whether to apply the inverse phase
-
-        Returns:
-            array[complex]: output state
-        """
-        ndim = self._ndim(state)
-        sl_0 = _get_slice(0, axes[0], ndim)
-        sl_1 = _get_slice(1, axes[0], ndim)
-
-        phase = self._conj(parameters) if inverse else parameters
-        return self._stack([state[sl_0], self._const_mul(phase, state[sl_1])], axis=axes[0])
-
-    def expval(self, observable, shot_range=None, bin_size=None):
-        """Returns the expectation value of a Hamiltonian observable. When the observable is a
-        ``Hamiltonian`` or ``SparseHamiltonian`` object, the expectation value is computed directly
-        from the sparse matrix representation, which leads to faster execution.
-
-        Args:
-            observable (~.Observable): a PennyLane observable
-            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                to use. If not specified, all samples are used.
-            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                returns the measurement statistic separately over each bin. If not
-                provided, the entire shot range is treated as a single bin.
-
-        Returns:
-            float: returns the expectation value of the observable
+    .. code-block:: python
+
+        n_layers = 5
+        n_wires = 10
+        num_qscripts = 5
+
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+        rng = qml.numpy.random.default_rng(seed=42)
+
+        qscripts = []
+        for i in range(num_qscripts):
+            params = rng.random(shape)
+            op = qml.StronglyEntanglingLayers(params, wires=range(n_wires))
+            qs = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
+            qscripts.append(qs)
+
+    >>> dev = DefaultQubit()
+    >>> program, execution_config = dev.preprocess()
+    >>> new_batch, post_processing_fn = program(qscripts)
+    >>> results = dev.execute(new_batch, execution_config=execution_config)
+    >>> post_processing_fn(results)
+    [-0.0006888975950537501,
+    0.025576307134457577,
+    -0.0038567269892757494,
+    0.1339705146860149,
+    -0.03780669772690448]
+
+    This device currently supports backpropagation derivatives:
+
+    >>> from pennylane.devices import ExecutionConfig
+    >>> dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
+    True
+
+    For example, we can use jax to jit computing the derivative:
+
+    .. code-block:: python
+
+        import jax
+
+        @jax.jit
+        def f(x):
+            qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+            program, execution_config = dev.preprocess()
+            new_batch, post_processing_fn = program([qs])
+            results = dev.execute(new_batch, execution_config=execution_config)
+            return post_processing_fn(results)
+
+    >>> f(jax.numpy.array(1.2))
+    DeviceArray(0.36235774, dtype=float32)
+    >>> jax.grad(f)(jax.numpy.array(1.2))
+    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+
+    .. details::
+        :title: Tracking
+
+        ``DefaultQubit`` tracks:
+
+        * ``executions``: the number of unique circuits that would be required on quantum hardware
+        * ``shots``: the number of shots
+        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
+        * ``batches``: The number of times :meth:`~.execute` is called.
+        * ``results``: The results of each call of :meth:`~.execute`
+        * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
+        * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
+        * ``vjp_batches``: How many times :meth:`~.compute_vjp` is called
+        * ``execute_and_vjp_batches``: How many times :meth:`~.execute_and_compute_vjp` is called
+        * ``jvp_batches``: How many times :meth:`~.compute_jvp` is called
+        * ``execute_and_jvp_batches``: How many times :meth:`~.execute_and_compute_jvp` is called
+        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives`.
+        * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
+        * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
+
+
+    .. details::
+        :title: Accelerate calculations with multiprocessing
+
+        Suppose one has a processor with 5 cores or more, these scripts can be executed in
+        parallel as follows
+
+        >>> dev = DefaultQubit(max_workers=5)
+        >>> program, execution_config = dev.preprocess()
+        >>> new_batch, post_processing_fn = program(qscripts)
+        >>> results = dev.execute(new_batch, execution_config=execution_config)
+        >>> post_processing_fn(results)
+
+        If you monitor your CPU usage, you should see 5 new Python processes pop up to
+        crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
+        This may happen if a single device already uses many cores, if NumPy uses a multi-
+        threaded BLAS library like MKL or OpenBLAS for example. The number of threads per
+        process times the number of processes should not exceed the number of cores on your
+        machine. You can control the number of threads per process with the environment
+        variables:
+
+        * ``OMP_NUM_THREADS``
+        * ``MKL_NUM_THREADS``
+        * ``OPENBLAS_NUM_THREADS``
+
+        where the last two are specific to the MKL and OpenBLAS libraries specifically.
 
         .. warning::
 
-            This function does not support broadcasting if ``observable`` is a
-            :class:``~.Hamiltonian`` and the device interface or the interface of the
-            Hamiltonian is not NumPy or Autograd
+            Multiprocessing may fail depending on your platform and environment (Python shell,
+            script with a protected entry point, Jupyter notebook, etc.) This may be solved
+            changing the so-called start method. The supported start methods are the following:
 
-        """
-        # intercept other Hamiltonians
-        # TODO: Ideally, this logic should not live in the Device, but be moved
-        # to a component that can be re-used by devices as needed.
-        if observable.name not in ("Hamiltonian", "SparseHamiltonian"):
-            return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
+            * Windows (win32): spawn (default).
+            * macOS (darwin): spawn (default), fork, forkserver.
+            * Linux (unix): spawn, fork (default), forkserver.
 
-        assert self.shots is None, f"{observable.name} must be used with shots=None"
+            which can be changed with ``multiprocessing.set_start_method()``. For example,
+            if multiprocessing fails on macOS in your Jupyter notebook environment, try
+            restarting the session and adding the following at the beginning of the file:
 
-        self.map_wires(observable.wires)
-        backprop_mode = (
-            not isinstance(self.state, np.ndarray)
-            or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
-        ) and observable.name == "Hamiltonian"
+            .. code-block:: python
 
-        if backprop_mode:
-            # TODO[dwierichs]: This branch is not adapted to broadcasting yet
-            if self._ndim(self.state) == 2:
-                raise NotImplementedError(
-                    "Expectation values of Hamiltonians for interface!=None are "
-                    "not supported together with parameter broadcasting yet"
-                )
-            # We must compute the expectation value assuming that the Hamiltonian
-            # coefficients *and* the quantum states are tensor objects.
+                import multiprocessing
+                multiprocessing.set_start_method("fork")
 
-            # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
-            # representation of the Pauliword
-            res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
-            interface = qml.math.get_interface(self.state)
+            Additional information can be found in the
+            `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
 
-            # Note: it is important that we use the Hamiltonian's data and not the coeffs
-            # attribute. This is because the .data attribute may be 'unwrapped' as required by
-            # the interfaces, whereas the .coeff attribute will always be the same input dtype
-            # that the user provided.
-            for op, coeff in zip(observable.ops, observable.data):
-                # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
-                Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
-
-                product = (
-                    self._gather(self._conj(self.state), coo.row)
-                    * Hmat
-                    * self._gather(self.state, coo.col)
-                )
-                c = qml.math.convert_like(coeff, product)
-
-                if interface == "tensorflow":
-                    c = qml.math.cast(c, "complex128")
-
-                res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
-
-        else:
-            # Coefficients and the state are not trainable, we can be more
-            # efficient in how we compute the Hamiltonian sparse matrix.
-            Hmat = observable.sparse_matrix(wire_order=self.wires)
-
-            state = qml.math.toarray(self.state)
-            if self._ndim(state) == 2:
-                res = qml.math.array(
-                    [
-                        csr_matrix.dot(
-                            csr_matrix(self._conj(_state)),
-                            csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
-                        ).toarray()[0]
-                        for _state in state
-                    ]
-                )
-            else:
-                res = csr_matrix.dot(
-                    csr_matrix(self._conj(state)),
-                    csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
-                ).toarray()[0]
-
-        if observable.name == "Hamiltonian":
-            res = qml.math.squeeze(res)
-
-        return self._real(res)
-
-    def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal.
-        """
-        if unitary in diagonal_in_z_basis:
-            return unitary.eigvals()
-
-        return unitary.matrix()
-
-    @classmethod
-    def capabilities(cls):
-        capabilities = super().capabilities().copy()
-        capabilities.update(
-            model="qubit",
-            supports_inverse_operations=True,
-            supports_analytic_computation=True,
-            supports_broadcasting=True,
-            returns_state=True,
-            passthru_devices={
-                "tf": "default.qubit.tf",
-                "torch": "default.qubit.torch",
-                "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
-            },
-        )
-        return capabilities
-
-    def _create_basis_state(self, index):
-        """Return a computational basis state over all wires.
-
-        Args:
-            index (int): integer representing the computational basis state
-
-        Returns:
-            array[complex]: complex array of shape ``[2]*self.num_wires``
-            representing the statevector of the basis state
-
-        Note: This function does not support broadcasted inputs yet.
-        """
-        state = np.zeros(2**self.num_wires, dtype=np.complex128)
-        state[index] = 1
-        state = self._asarray(state, dtype=self.C_DTYPE)
-        return self._reshape(state, [2] * self.num_wires)
+    """
 
     @property
-    def state(self):
-        dim = 2**self.num_wires
-        batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
-        # Do not flatten the state completely but leave the broadcasting dimension if there is one
-        shape = (batch_size, dim) if batch_size is not None else (dim,)
-        return self._reshape(self._pre_rotated_state, shape)
+    def name(self):
+        """The name of the device."""
+        return "default.qubit"
 
-    def _apply_state_vector(self, state, device_wires):
-        """Initialize the internal state vector in a specified state.
+    def get_prng_keys(self, num: int = 1):
+        """Get ``num`` new keys with ``jax.random.split``.
+
+        A user may provide a ``jax.random.PRNGKey`` as a random seed.
+        It will be used by the device when executing circuits with finite shots.
+        The JAX RNG is notably different than the NumPy RNG as highlighted in the
+        `JAX documentation <https://jax.readthedocs.io/en/latest/jax-101/05-random-numbers.html>`_.
+        JAX does not keep track of a global seed or key, but needs one anytime it draws from a random number distribution.
+        Generating randomness therefore requires changing the key every time, which is done by "splitting" the key.
+        For example, when executing ``n`` circuits, the ``PRNGkey`` is split ``n`` times into 2 new keys
+        using ``jax.random.split`` to simulate a non-deterministic behaviour.
+        The device seed is modified in-place using the first key, and the second key is fed to the
+        circuit, and hence can be discarded after returning the results.
+        This same key may be split further down the stack if necessary so that no one key is ever
+        reused.
+        """
+        if num < 1:
+            raise ValueError("Argument num must be a positive integer.")
+        if num > 1:
+            return [self.get_prng_keys()[0] for _ in range(num)]
+        self._prng_key, *keys = jax_random_split(self._prng_key)
+        return keys
+
+    def reset_prng_key(self):
+        """Reset the RNG key to its initial value."""
+        self._prng_key = self._prng_seed
+
+    _state_cache: Optional[dict] = None
+    """
+    A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
+    subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
+    """
+
+    _device_options = ("max_workers", "rng", "prng_key")
+    """
+    tuple of string names for all the device options.
+    """
+
+    # pylint:disable = too-many-arguments
+    @debug_logger_init
+    def __init__(
+        self,
+        wires=None,
+        shots=None,
+        seed="global",
+        max_workers=None,
+    ) -> None:
+        super().__init__(wires=wires, shots=shots)
+        self._max_workers = max_workers
+        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        if qml.math.get_interface(seed) == "jax":
+            self._prng_seed = seed
+            self._prng_key = seed
+            self._rng = np.random.default_rng(None)
+        else:
+            self._prng_seed = None
+            self._prng_key = None
+            self._rng = np.random.default_rng(seed)
+        self._debugger = None
+
+    @debug_logger
+    def supports_derivatives(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
+    ) -> bool:
+        """Check whether or not derivatives are available for a given configuration and circuit.
+
+        ``DefaultQubit`` supports backpropagation derivatives with analytic results, as well as
+        adjoint differentiation.
 
         Args:
-            state (array[complex]): normalized input state of length ``2**len(wires)``
-                or broadcasted state of shape ``(batch_size, 2**len(wires))``
-            device_wires (Wires): wires that get initialized in the state
+            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
+            circuit (QuantumTape): An optional circuit to check derivatives support for.
+
+        Returns:
+            Bool: Whether or not a derivative can be calculated provided the given information
+
         """
+        if execution_config is None:
+            return True
 
-        # translate to wire labels used by device
-        device_wires = self.map_wires(device_wires)
-        dim = 2 ** len(device_wires)
+        no_max_workers = (
+            execution_config.device_options.get("max_workers", self._max_workers) is None
+        )
 
-        state = self._asarray(state, dtype=self.C_DTYPE)
-        batch_size = self._get_batch_size(state, (dim,), dim)
-        output_shape = [2] * self.num_wires
-        if batch_size is not None:
-            output_shape.insert(0, batch_size)
+        if execution_config.gradient_method in {"backprop", "best"} and no_max_workers:
+            if circuit is None:
+                return True
+            return not circuit.shots and not any(
+                isinstance(m.obs, qml.SparseHamiltonian) for m in circuit.measurements
+            )
 
-        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
-            # Initialize the entire device state with the input state
-            self._state = self._reshape(state, output_shape)
-            return
+        if execution_config.gradient_method in {"adjoint", "best"}:
+            return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
+        return False
 
-        # generate basis states on subset of qubits via the cartesian product
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+    @debug_logger
+    def preprocess(
+        self,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> Tuple[TransformProgram, ExecutionConfig]:
+        """This function defines the device transform program to be applied and an updated device configuration.
 
-        # get basis states to alter on full set of qubits
-        unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
-        unravelled_indices[:, device_wires] = basis_states
+        Args:
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
+                parameters needed to fully describe the execution.
 
-        # get indices for which the state is changed to input state vector elements
-        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+        Returns:
+            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
+            unset specifications filled in.
 
-        if batch_size is not None:
-            state = self._scatter(
-                (slice(None), ravelled_indices), state, [batch_size, 2**self.num_wires]
+        This device supports any qubit operations that provide a matrix
+
+        """
+        config = self._setup_execution_config(execution_config)
+        transform_program = TransformProgram()
+
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(
+            mid_circuit_measurements,
+            device=self,
+            mcm_config=config.mcm_config,
+            interface=config.interface,
+        )
+        transform_program.add_transform(
+            decompose,
+            stopping_condition=stopping_condition,
+            stopping_condition_shots=stopping_condition_shots,
+            name=self.name,
+        )
+        transform_program.add_transform(
+            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
+        )
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
+        if config.mcm_config.mcm_method == "tree-traversal":
+            transform_program.add_transform(qml.transforms.broadcast_expand)
+        # Validate multi processing
+        max_workers = config.device_options.get("max_workers", self._max_workers)
+        if max_workers:
+            transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
+
+        if config.gradient_method == "backprop":
+            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
+
+        if config.gradient_method == "adjoint":
+            _add_adjoint_transforms(
+                transform_program, device_vjp=config.use_device_jacobian_product
+            )
+
+        return transform_program, config
+
+    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
+        """This is a private helper for ``preprocess`` that sets up the execution config.
+
+        Args:
+            execution_config (ExecutionConfig)
+
+        Returns:
+            ExecutionConfig: a preprocessed execution config
+
+        """
+        updated_values = {}
+
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
+        gradient_method = execution_config.gradient_method
+        if execution_config.gradient_method == "best":
+            no_max_workers = (
+                execution_config.device_options.get("max_workers", self._max_workers) is None
+            )
+            gradient_method = "backprop" if no_max_workers else "adjoint"
+            updated_values["gradient_method"] = gradient_method
+
+        if execution_config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = gradient_method in {
+                "adjoint",
+                "backprop",
+            }
+        if execution_config.use_device_jacobian_product is None:
+            updated_values["use_device_jacobian_product"] = gradient_method == "adjoint"
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = gradient_method == "adjoint"
+
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
+        return replace(execution_config, **updated_values)
+
+    @debug_logger
+    def execute(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> Result_or_ResultBatch:
+        self.reset_prng_key()
+
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        self._state_cache = {} if execution_config.use_device_jacobian_product else None
+        interface = (
+            execution_config.interface
+            if execution_config.gradient_method in {"backprop", None}
+            else None
+        )
+        prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
+
+        if max_workers is None:
+            return tuple(
+                _simulate_wrapper(
+                    c,
+                    {
+                        "rng": self._rng,
+                        "debugger": self._debugger,
+                        "interface": interface,
+                        "state_cache": self._state_cache,
+                        "prng_key": _key,
+                        "mcm_method": execution_config.mcm_config.mcm_method,
+                        "postselect_mode": execution_config.mcm_config.postselect_mode,
+                    },
+                )
+                for c, _key in zip(circuits, prng_keys)
+            )
+
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
+        seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
+        simulate_kwargs = [
+            {
+                "rng": _rng,
+                "prng_key": _key,
+                "mcm_method": execution_config.mcm_config.mcm_method,
+                "postselect_mode": execution_config.mcm_config.postselect_mode,
+            }
+            for _rng, _key in zip(seeds, prng_keys)
+        ]
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            exec_map = executor.map(_simulate_wrapper, vanilla_circuits, simulate_kwargs)
+            results = tuple(exec_map)
+
+        # reset _rng to mimic serial behaviour
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return results
+
+    @debug_logger
+    def compute_derivatives(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        if max_workers is None:
+            return tuple(adjoint_jacobian(circuit) for circuit in circuits)
+
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
+            res = tuple(exec_map)
+
+        # reset _rng to mimic serial behaviour
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return res
+
+    @debug_logger
+    def execute_and_compute_derivatives(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        self.reset_prng_key()
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        if max_workers is None:
+            results = tuple(_adjoint_jac_wrapper(c, debugger=self._debugger) for c in circuits)
+        else:
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
+
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                results = tuple(
+                    executor.map(
+                        _adjoint_jac_wrapper,
+                        vanilla_circuits,
+                    )
+                )
+
+        return tuple(zip(*results))
+
+    @debug_logger
+    def supports_jvp(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
+    ) -> bool:
+        """Whether or not this device defines a custom jacobian vector product.
+
+        ``DefaultQubit`` supports backpropagation derivatives with analytic results, as well as
+        adjoint differentiation.
+
+        Args:
+            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
+            circuit (QuantumTape): An optional circuit to check derivatives support for.
+
+        Returns:
+            bool: Whether or not a derivative can be calculated provided the given information
+        """
+        return self.supports_derivatives(execution_config, circuit)
+
+    @debug_logger
+    def compute_jvp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        tangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        if max_workers is None:
+            return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
+
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
+
+        # reset _rng to mimic serial behaviour
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return res
+
+    @debug_logger
+    def execute_and_compute_jvp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        tangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        self.reset_prng_key()
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        if max_workers is None:
+            results = tuple(
+                _adjoint_jvp_wrapper(c, t, debugger=self._debugger)
+                for c, t in zip(circuits, tangents)
             )
         else:
-            state = self._scatter(ravelled_indices, state, [2**self.num_wires])
-        state = self._reshape(state, output_shape)
-        self._state = self._asarray(state, dtype=self.C_DTYPE)
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
-    def _apply_basis_state(self, state, wires):
-        """Initialize the state vector in a specified computational basis state.
-
-        Args:
-            state (array[int]): computational basis state of shape ``(wires,)``
-                consisting of 0s and 1s.
-            wires (Wires): wires that the provided computational state should be initialized on
-
-        Note: This function does not support broadcasted inputs yet.
-        """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
-
-        # length of basis state parameter
-        n_basis_state = len(state)
-
-        if not set(state.tolist()).issubset({0, 1}):
-            raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
-
-        if n_basis_state != len(device_wires):
-            raise ValueError("BasisState parameter and wires must be of equal length.")
-
-        # get computational basis state number
-        basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
-        basis_states = qml.math.convert_like(basis_states, state)
-        num = int(qml.math.dot(state, basis_states))
-
-        self._state = self._create_basis_state(num)
-
-    def _apply_unitary(self, state, mat, wires):
-        r"""Apply multiplication of a matrix to subsystems of the quantum state.
-
-        Args:
-            state (array[complex]): input state
-            mat (array): matrix to multiply
-            wires (Wires): target wires
-
-        Returns:
-            array[complex]: output state
-
-        Note: This function does not support simultaneously broadcasted states and matrices yet.
-        """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
-
-        dim = 2 ** len(device_wires)
-        mat_batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
-        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires, 2**self.num_wires)
-
-        shape = [2] * (len(device_wires) * 2)
-        state_axes = device_wires
-        # If the matrix is broadcasted, it is reshaped to have leading axis of size mat_batch_size
-        if mat_batch_size:
-            shape.insert(0, mat_batch_size)
-            if state_batch_size:
-                raise NotImplementedError(
-                    "Applying a broadcasted unitary to an already broadcasted state via "
-                    "_apply_unitary is not supported. Broadcasting sizes are "
-                    f"({mat_batch_size}, {state_batch_size})."
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                results = tuple(
+                    executor.map(
+                        _adjoint_jvp_wrapper,
+                        vanilla_circuits,
+                        tangents,
+                    )
                 )
-        # If the state is broadcasted, the affected state axes need to be shifted by 1.
-        if state_batch_size:
-            state_axes = [ax + 1 for ax in state_axes]
-        mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
-        axes = (np.arange(-len(device_wires), 0), state_axes)
-        tdot = self._tensordot(mat, state, axes=axes)
 
-        # tensordot causes the axes given in `wires` to end up in the first positions
-        # of the resulting tensor. This corresponds to a (partial) transpose of
-        # the correct output state
-        # We'll need to invert this permutation to put the indices in the correct place
-        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
-        perm = list(device_wires) + unused_idxs
-        # If the matrix is broadcasted, all but the first dimension are shifted by 1
-        if mat_batch_size:
-            perm = [idx + 1 for idx in perm]
-            perm.insert(0, 0)
-        if state_batch_size:
-            # As the state broadcasting dimension always is the first in the state, it always
-            # ends up in position `len(device_wires)` after the tensordot. The -1 causes it
-            # being permuted to the leading dimension after transposition
-            perm.insert(len(device_wires), -1)
+        return tuple(zip(*results))
 
-        inv_perm = np.argsort(perm)  # argsort gives inverse permutation
-        return self._transpose(tdot, inv_perm)
+    @debug_logger
+    def supports_vjp(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
+    ) -> bool:
+        """Whether or not this device defines a custom vector jacobian product.
 
-    def _apply_unitary_einsum(self, state, mat, wires):
-        r"""Apply multiplication of a matrix to subsystems of the quantum state.
-
-        This function uses einsum instead of tensordot. This approach is only
-        faster for single- and two-qubit gates.
+        ``DefaultQubit`` supports backpropagation derivatives with analytic results, as well as
+        adjoint differentiation.
 
         Args:
-            state (array[complex]): input state
-            mat (array): matrix to multiply
-            wires (Wires): target wires
+            execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
+            circuit (None, QuantumTape): A specific circuit to check differentation for.
 
         Returns:
-            array[complex]: output state
+            bool: Whether or not a derivative can be calculated provided the given information
         """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
+        return self.supports_derivatives(execution_config, circuit)
 
-        dim = 2 ** len(device_wires)
-        batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
-
-        # If the matrix is broadcasted, it is reshaped to have leading axis of size mat_batch_size
-        shape = [2] * (len(device_wires) * 2)
-        if batch_size is not None:
-            shape.insert(0, batch_size)
-        mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
-
-        # Tensor indices of the quantum state
-        state_indices = ABC[: self.num_wires]
-
-        # Indices of the quantum state affected by this operation
-        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
-
-        # All affected indices will be summed over, so we need the same number of new indices
-        new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
-
-        # The new indices of the state are given by the old ones with the affected indices
-        # replaced by the new_indices
-        new_state_indices = functools.reduce(
-            lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-            zip(affected_indices, new_indices),
-            state_indices,
-        )
-
-        # We now put together the indices in the notation numpy's einsum requires
-        # This notation allows for the state, the matrix, or both to be broadcasted
-        einsum_indices = (
-            f"...{new_indices}{affected_indices},...{state_indices}->...{new_state_indices}"
-        )
-
-        return self._einsum(einsum_indices, mat, state)
-
-    def _apply_diagonal_unitary(self, state, phases, wires):
-        r"""Apply multiplication of a phase vector to subsystems of the quantum state.
-
-        This represents the multiplication with diagonal gates in a more efficient manner.
+    @debug_logger
+    def compute_vjp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        cotangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
+        adjoint differentiation method to compute the VJP.
 
         Args:
-            state (array[complex]): input state
-            phases (array): vector to multiply
-            wires (Wires): target wires
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
+            cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
+                of numbers.
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
-            array[complex]: output state
+            tensor-like: A numeric result of computing the vector jacobian product
+
+        **Definition of vjp:**
+
+        If we have a function with jacobian:
+
+        .. math::
+
+            \vec{y} = f(\vec{x}) \qquad J_{i,j} = \frac{\partial y_i}{\partial x_j}
+
+        The vector jacobian product is the inner product of the derivatives of the output ``y`` with the
+        Jacobian matrix. The derivatives of the output vector are sometimes called the **cotangents**.
+
+        .. math::
+
+            \text{d}x_i = \Sigma_{i} \text{d}y_i J_{i,j}
+
+        **Shape of cotangents:**
+
+        The value provided to ``cotangents`` should match the output of :meth:`~.execute`. For computing the full Jacobian,
+        the cotangents can be batched to vectorize the computation. In this case, the cotangents can have the following
+        shapes. ``batch_size`` below refers to the number of entries in the Jacobian:
+
+        * For a state measurement, the cotangents must have shape ``(batch_size, 2 ** n_wires)``
+        * For ``n`` expectation values, the cotangents must have shape ``(n, batch_size)``. If ``n = 1``,
+          then the shape must be ``(batch_size,)``.
+
         """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
-        dim = 2 ** len(device_wires)
-        batch_size = self._get_batch_size(phases, (dim,), dim)
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        if max_workers is None:
 
-        # reshape vectors
-        shape = [2] * len(device_wires)
-        if batch_size is not None:
-            shape.insert(0, batch_size)
-        phases = self._cast(self._reshape(phases, shape), dtype=self.C_DTYPE)
+            def _state(circuit):
+                return (
+                    None if self._state_cache is None else self._state_cache.get(circuit.hash, None)
+                )
 
-        state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
-
-        einsum_indices = f"...{affected_indices},...{state_indices}->...{state_indices}"
-        return self._einsum(einsum_indices, phases, state)
-
-    def reset(self):
-        """Reset the device"""
-        super().reset()
-
-        # init the state vector to |00..0>
-        self._state = self._create_basis_state(0)
-        self._pre_rotated_state = self._state
-
-    def analytic_probability(self, wires=None):
-        if self._state is None:
-            return None
-
-        dim = 2**self.num_wires
-        batch_size = self._get_batch_size(self._state, [2] * self.num_wires, dim)
-        flat_state = self._reshape(
-            self._state, (batch_size, dim) if batch_size is not None else (dim,)
-        )
-        real_state = self._real(flat_state)
-        imag_state = self._imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, wires)
-
-    def classical_shadow(self, obs, circuit):
-        """
-        Returns the measured bits and recipes in the classical shadow protocol.
-
-        The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
-        This measurement process returns the randomized Pauli measurements (the ``recipes``)
-        that are performed for each qubit and snapshot as an integer:
-
-        - 0 for Pauli X,
-        - 1 for Pauli Y, and
-        - 2 for Pauli Z.
-
-        It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
-        is sampled, and 1 if the -1 eigenvalue is sampled.
-
-        The device shots are used to specify the number of snapshots. If ``T`` is the number
-        of shots and ``n`` is the number of qubits, then both the measured bits and the
-        Pauli measurements have shape ``(T, n)``.
-
-        This implementation leverages vectorization and offers a significant speed-up over
-        the generic implementation.
-
-        .. Note::
-
-            This method internally calls ``np.einsum`` which supports at most 52 indices,
-            thus the classical shadow measurement for this device supports at most 52
-            qubits.
-
-        .. seealso:: :func:`~pennylane.classical_shadow`
-
-        Args:
-            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
-            circuit (~.tape.QuantumTape): The quantum tape that is being executed
-
-        Returns:
-            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
-            the measured bits and the second represents the recipes used.
-        """
-        wires = obs.wires
-        seed = obs.seed
-
-        n_qubits = len(wires)
-        n_snapshots = self.shots
-        device_qubits = len(self.wires)
-        mapped_wires = np.array(self.map_wires(wires))
-
-        # seed the random measurement generation so that recipes
-        # are the same for different executions with the same seed
-        rng = np.random.RandomState(seed)
-        recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-
-        obs_list = self._stack(
-            [
-                qml.PauliX.compute_matrix(),
-                qml.PauliY.compute_matrix(),
-                qml.PauliZ.compute_matrix(),
-            ]
-        )
-        uni_list = self._stack(
-            [
-                qml.Hadamard.compute_matrix(),
-                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
-                qml.Identity.compute_matrix(),
-            ]
-        )
-        obs = obs_list[recipes]
-        uni = uni_list[recipes]
-
-        # There's a significant speedup if we use the following iterative
-        # process to perform the randomized Pauli measurements:
-        #   1. Randomly generate Pauli observables for all snapshots for
-        #      a single qubit (e.g. the first qubit).
-        #   2. Compute the expectation of each Pauli observable on the first
-        #      qubit by tracing out all other qubits.
-        #   3. Sample the first qubit based on each Pauli expectation.
-        #   4. For all snapshots, determine the collapsed state of the remaining
-        #      qubits based on the sample result.
-        #   4. Repeat iteratively until no qubits are remaining.
-        #
-        # Observe that after the first iteration, the second qubit will become the
-        # "first" qubit in the process. The advantage to this approach as opposed to
-        # simulataneously computing the Pauli expectations for each qubit is that
-        # the partial traces are computed over iteratively smaller subsystems, leading
-        # to a significant speed-up.
-
-        # transpose the state so that the measured wires appear first
-        unmeasured_wires = [i for i in range(len(self.wires)) if i not in mapped_wires]
-        transposed_state = np.transpose(self._state, axes=mapped_wires.tolist() + unmeasured_wires)
-
-        outcomes = np.zeros((n_snapshots, n_qubits))
-        stacked_state = self._stack([transposed_state for _ in range(n_snapshots)])
-
-        for i in range(n_qubits):
-            # trace out every qubit except the first
-            first_qubit_state = self._einsum(
-                f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
-                f"->{ABC[device_qubits - i + 1]}a{ABC[device_qubits - i]}",
-                stacked_state,
-                self._conj(stacked_state),
+            return tuple(
+                adjoint_vjp(circuit, cots, state=_state(circuit))
+                for circuit, cots in zip(circuits, cotangents)
             )
 
-            # sample the observables on the first qubit
-            probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
-            samples = np.random.uniform(0, 1, size=probs.shape) > probs
-            outcomes[:, i] = samples
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
-            # collapse the state of the remaining qubits; the next qubit in line
-            # becomes the first qubit for the next iteration
-            rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
-            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.int8)]
+        # reset _rng to mimic serial behaviour
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-            # re-normalize the collapsed state
-            norms = np.sqrt(
-                np.sum(
-                    np.abs(stacked_state) ** 2, tuple(range(1, device_qubits - i)), keepdims=True
-                )
+        return res
+
+    @debug_logger
+    def execute_and_compute_vjp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        cotangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        self.reset_prng_key()
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        if max_workers is None:
+            results = tuple(
+                _adjoint_vjp_wrapper(c, t, debugger=self._debugger)
+                for c, t in zip(circuits, cotangents)
             )
-            stacked_state /= norms
+        else:
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                results = tuple(
+                    executor.map(
+                        _adjoint_vjp_wrapper,
+                        vanilla_circuits,
+                        cotangents,
+                    )
+                )
 
-    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> List[Operation]:
-        meas_filtered = [
-            m
-            for m in circuit.measurements
-            if m.obs is None or not isinstance(m.obs, qml.Hamiltonian)
-        ]
-        return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
+        return tuple(zip(*results))
+
+
+def _simulate_wrapper(circuit, kwargs):
+    return simulate(circuit, **kwargs)
+
+
+def _adjoint_jac_wrapper(c, debugger=None):
+    c = c.map_to_standard_wires()
+    state, is_state_batched = get_final_state(c, debugger=debugger)
+    jac = adjoint_jacobian(c, state=state)
+    res = measure_final_state(c, state, is_state_batched)
+    return res, jac
+
+
+def _adjoint_jvp_wrapper(c, t, debugger=None):
+    c = c.map_to_standard_wires()
+    state, is_state_batched = get_final_state(c, debugger=debugger)
+    jvp = adjoint_jvp(c, t, state=state)
+    res = measure_final_state(c, state, is_state_batched)
+    return res, jvp
+
+
+def _adjoint_vjp_wrapper(c, t, debugger=None):
+    c = c.map_to_standard_wires()
+    state, is_state_batched = get_final_state(c, debugger=debugger)
+    vjp = adjoint_vjp(c, t, state=state)
+    res = measure_final_state(c, state, is_state_batched)
+    return res, vjp

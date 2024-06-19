@@ -14,50 +14,53 @@
 """
 Tests for the k-UpCCGSD template.
 """
-from os import killpg
-import pytest
 import numpy as np
+
+# pylint: disable=too-many-arguments,too-few-public-methods
+import pytest
+
 import pennylane as qml
+
+k_delta_sz_init_state_wires = [
+    (1, 0, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),
+    (1, -1, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),
+    (2, 1, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),
+    (2, 0, qml.math.array([1, 1, 0, 0, 0, 0]), qml.math.array([0, 1, 2, 3, 4, 5])),
+    (2, 1, qml.math.array([1, 1, 0, 0, 0, 0, 0, 0]), qml.math.array([0, 1, 2, 3, 4, 5, 6, 7])),
+]
+
+
+@pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
+def test_standard_validity(k, delta_sz, init_state, wires):
+    """Test standard validity criteria for kUpCCGSD."""
+    sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(len(wires))])
+    gen_single_terms_wires = [
+        wires[r : p + 1] if r < p else wires[p : r + 1][::-1]
+        for r in range(len(wires))
+        for p in range(len(wires))
+        if sz[p] - sz[r] == delta_sz and p != r
+    ]
+
+    # wires for generalized pair coupled cluser double exictation terms
+    pair_double_terms_wires = [
+        [wires[r : r + 2], wires[p : p + 2]]
+        for r in range(0, len(wires) - 1, 2)
+        for p in range(0, len(wires) - 1, 2)
+        if p != r
+    ]
+
+    n_excit_terms = len(gen_single_terms_wires) + len(pair_double_terms_wires)
+    weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
+
+    op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
+
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize(
-        ("k", "delta_sz", "init_state", "wires"),
-        [
-            (
-                1,
-                0,
-                qml.math.array([1, 1, 0, 0]),
-                qml.math.array([0, 1, 2, 3]),
-            ),
-            (
-                1,
-                -1,
-                qml.math.array([1, 1, 0, 0]),
-                qml.math.array([0, 1, 2, 3]),
-            ),
-            (
-                2,
-                1,
-                qml.math.array([1, 1, 0, 0]),
-                qml.math.array([0, 1, 2, 3]),
-            ),
-            (
-                2,
-                0,
-                qml.math.array([1, 1, 0, 0, 0, 0]),
-                qml.math.array([0, 1, 2, 3, 4, 5]),
-            ),
-            (
-                2,
-                1,
-                qml.math.array([1, 1, 0, 0, 0, 0, 0, 0]),
-                qml.math.array([0, 1, 2, 3, 4, 5, 6, 7]),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
     def test_kupccgsd_operations(self, k, delta_sz, init_state, wires):
         """Test the correctness of the k-UpCCGSD template including the gate count
         and order, the wires the operation acts on and the correct use of parameters
@@ -137,7 +140,7 @@ class TestDecomposition:
                 delta_sz=0,
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
@@ -148,12 +151,13 @@ class TestDecomposition:
                 delta_sz=0,
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         ("num_qubits", "k", "exp_state"),
@@ -256,9 +260,9 @@ class TestDecomposition:
             qml.kUpCCGSD(weight, wires=wires, k=k, delta_sz=0, init_state=init_state)
             return qml.state()
 
-        circuit(weight)
+        res = circuit(weight)
 
-        assert qml.math.allclose(circuit.device.state, exp_state, atol=tol)
+        assert qml.math.allclose(res, exp_state, atol=tol)
 
     @pytest.mark.parametrize(
         ("wires", "delta_sz", "generalized_singles_wires", "generalized_pair_doubles_wires"),
@@ -424,8 +428,6 @@ class TestInputs:
                 init_state=init_state,
             )
             return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()

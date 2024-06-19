@@ -16,11 +16,13 @@ This module contains the qml.probs measurement.
 """
 from typing import Sequence, Tuple
 
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, Probability, SampleMeasurement, StateMeasurement
+from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .mid_measure import MeasurementValue
 
 
 def probs(wires=None, op=None) -> "ProbabilityMP":
@@ -42,8 +44,9 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable): Observable (with a ``diagonalizing_gates`` attribute) that rotates
-            the computational basis
+        op (Observable or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
+            attribute) that rotates the computational basis, or a  ``MeasurementValue``
+            corresponding to mid-circuit measurements.
 
     Returns:
         ProbabilityMP: Measurement process instance
@@ -76,8 +79,8 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
         @qml.qnode(dev)
         def circuit():
-            qml.PauliZ(wires=0)
-            qml.PauliX(wires=1)
+            qml.Z(0)
+            qml.X(1)
             return qml.probs(op=qml.Hermitian(H, wires=0))
 
     >>> circuit()
@@ -90,16 +93,31 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
     """
+    if isinstance(op, MeasurementValue):
+        if len(op.measurements) > 1:
+            raise ValueError(
+                "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
+                "using arithmetic operators. To collect probabilities for multiple mid-circuit "
+                "measurements, use a list of mid-circuit measurements with qml.probs()."
+            )
+        return ProbabilityMP(obs=op)
 
-    if isinstance(op, qml.Hamiltonian):
+    if isinstance(op, Sequence):
+        if not qml.math.is_abstract(op[0]) and not all(
+            isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op
+        ):
+            raise qml.QuantumFunctionError(
+                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "MeasurementValues manipulated using arithmetic operators cannot be used when "
+                "collecting statistics for a sequence of mid-circuit measurements."
+            )
+
+        return ProbabilityMP(obs=op)
+
+    if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError(
-            "Symbolic Operations are not supported for rotating probabilities yet."
-        )
-
-    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
+    if op is not None and not qml.math.is_abstract(op) and not op.has_diagonalizing_gates:
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
@@ -120,9 +138,9 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`probs` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -131,40 +149,25 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    @property
-    def return_type(self):
-        return Probability
+    return_type = Probability
+
+    @classmethod
+    def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+        n_wires = num_device_wires if n_wires == 0 else n_wires
+        shape = (2**n_wires,)
+        return shape, float
 
     @property
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
+    def shape(self, device, shots):
         num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
         len_wires = len(self.wires)
-        dim = self._get_num_basis_states(len_wires, device)
-
-        return (num_shot_elements, dim)
-
-    def _shape_new(self, device=None):
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-        num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
-        )
-        len_wires = len(self.wires)
+        if len_wires == 0:
+            len_wires = len(device.wires) if device.wires else 0
         dim = self._get_num_basis_states(len_wires, device)
 
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
@@ -205,88 +208,10 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(prob) if bin_size is None else prob
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        num_wires = len(wire_order)
-        dim = 2**num_wires
-        # Compute batch_size
-        expected_shape = [2] * num_wires
-        expected_size = dim
-        size = qml.math.size(state)
-        batch_size = (
-            size // expected_size
-            if qml.math.ndim(state) > len(expected_shape) or size > expected_size
-            else None
-        )
-        flat_state = qml.math.reshape(
-            state, (batch_size, dim) if batch_size is not None else (dim,)
-        )
-        real_state = qml.math.real(flat_state)
-        imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, wire_order, batch_size)
-
-    @staticmethod
-    def _count_samples(indices, batch_size, dim):
-        """Count the occurrences of sampled indices and convert them to relative
-        counts in order to estimate their occurrence probability."""
-        num_bins, bin_size = indices.shape[-2:]
-        if batch_size is None:
-            prob = qml.math.zeros((dim, num_bins), dtype="float64")
-            # count the basis state occurrences, and construct the probability vector for each bin
-            for b, idx in enumerate(indices):
-                basis_states, counts = qml.math.unique(idx, return_counts=True)
-                prob[basis_states, b] = counts / bin_size
-
+        prob = qml.math.real(state) ** 2 + qml.math.imag(state) ** 2
+        if self.wires == Wires([]):
+            # no need to marginalize
             return prob
-
-        prob = qml.math.zeros((batch_size, dim, num_bins), dtype="float64")
-        indices = indices.reshape((batch_size, num_bins, bin_size))
-
-        # count the basis state occurrences, and construct the probability vector
-        # for each bin and broadcasting index
-        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
-            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
-                basis_states, counts = qml.math.unique(idx, return_counts=True)
-                prob[i, basis_states, b] = counts / bin_size
-
-        return prob
-
-    def marginal_prob(self, prob, wire_order, batch_size):
-        r"""Return the marginal probability of the computational basis
-        states by summing the probabilities on the non-specified wires.
-
-        If no wires are specified, then all the basis states representable by
-        the device are considered and no marginalization takes place.
-
-        .. note::
-
-            If the provided wires are not in the order as they appear on the device,
-            the returned marginal probabilities take this permutation into account.
-
-            For example, if the addressable wires on this device are ``Wires([0, 1, 2])`` and
-            this function gets passed ``wires=[2, 0]``, then the returned marginal
-            probability vector will take this 'reversal' of the two wires
-            into account:
-
-            .. math::
-
-                \mathbb{P}^{(2, 0)}
-                            = \left[
-                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
-                              \right]
-
-        Args:
-            prob: The probabilities to return the marginal probabilities
-                for
-            wire_order (Iterable[Number, str], Number, str, Wires): wires to return
-                marginal probabilities for. Wires not provided
-                are traced out of the system.
-
-        Returns:
-            array[float]: array of the resulting marginal probabilities.
-        """
-        # TODO: Add when ``qml.probs()`` is supported
-        # if self.wires == Wires([]):
-        #     # no need to marginalize
-        #     return prob
 
         # determine which subsystems are to be summed over
         inactive_wires = Wires.unique_wires([wire_order, self.wires])
@@ -301,6 +226,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         shape = [2] * num_device_wires
         desired_axes = np.argsort(np.argsort(mapped_wires))
         flat_shape = (-1,)
+        expected_size = 2**num_device_wires
+        batch_size = qml.math.get_batch_size(prob, (expected_size,), expected_size)
         if batch_size is not None:
             # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
             shape.insert(0, batch_size)
@@ -315,3 +242,56 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         prob = qml.math.transpose(prob, desired_axes)
         # flatten and return probabilities
         return qml.math.reshape(prob, flat_shape)
+
+    def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
+        with qml.QueuingManager.stop_recording():
+            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
+        mapped_counts = helper_counts.process_counts(counts, wire_order)
+
+        num_shots = sum(mapped_counts.values())
+        num_wires = len(next(iter(mapped_counts)))
+        dim = 2**num_wires
+
+        # constructs the probability vector
+        # converts outcomes from binary strings to integers (base 10 representation)
+        prob_vector = qml.math.zeros((dim), dtype="float64")
+        for outcome, occurrence in mapped_counts.items():
+            prob_vector[int(outcome, base=2)] = occurrence / num_shots
+
+        return prob_vector
+
+    @staticmethod
+    def _count_samples(indices, batch_size, dim):
+        """Count the occurrences of sampled indices and convert them to relative
+        counts in order to estimate their occurrence probability."""
+        num_bins, bin_size = indices.shape[-2:]
+        interface = qml.math.get_deep_interface(indices)
+
+        if qml.math.is_abstract(indices):
+
+            def _count_samples_core(indices, dim, interface):
+                return qml.math.array(
+                    [[qml.math.sum(idx == p) for idx in indices] for p in range(dim)],
+                    like=interface,
+                )
+
+        else:
+
+            def _count_samples_core(indices, dim, *_):
+                probabilities = qml.math.zeros((dim, num_bins), dtype="float64")
+                for b, idx in enumerate(indices):
+                    basis_states, counts = qml.math.unique(idx, return_counts=True)
+                    probabilities[basis_states, b] = counts
+                return probabilities
+
+        if batch_size is None:
+            return _count_samples_core(indices, dim, interface) / bin_size
+
+        # count the basis state occurrences, and construct the probability vector
+        # for each bin and broadcasting index
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+        probabilities = qml.math.array(
+            [_count_samples_core(_indices, dim, interface) for _indices in indices],
+            like=interface,
+        )
+        return probabilities / bin_size

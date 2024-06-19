@@ -15,45 +15,47 @@
 This file contains preprocessings steps that may be called internally
 during execution.
 """
-import copy
+from typing import Callable, Sequence, Tuple
 
 import pennylane as qml
 from pennylane import math
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
+# pylint: disable=no-member
 def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Operator:
     if math.get_interface(*op.data) == "numpy":
         return op
     # Use operator method to change parameters when it become available
-    copied_op = copy.copy(op)
-    copied_op.data = math.unwrap(op.data)
-    return copied_op
+    return qml.ops.functions.bind_new_parameters(op, math.unwrap(op.data))
 
 
+# pylint: disable=no-member
 def _convert_measurement_to_numpy_data(
     m: qml.measurements.MeasurementProcess,
 ) -> qml.measurements.MeasurementProcess:
-    if m.obs is None or math.get_interface(*m.obs.data) == "numpy":
+    if m.obs is None:
+        if m.eigvals() is None or math.get_interface(m.eigvals()) == "numpy":
+            return m
+        return type(m)(wires=m.wires, eigvals=math.unwrap(m.eigvals()))
+
+    if math.get_interface(*m.obs.data) == "numpy":
         return m
-    # Use measurement method to change parameters when it becomes available
-    copied_m = copy.copy(m)
-    if isinstance(copied_m.obs, qml.operation.Tensor):
-        copied_m.obs.data = math.unwrap([o.data for o in m.obs.obs])
-    else:
-        copied_m.obs.data = math.unwrap(m.obs.data)
-    return copied_m
+    new_obs = qml.ops.functions.bind_new_parameters(m.obs, math.unwrap(m.obs.data))
+    return type(m)(obs=new_obs)
 
 
 # pylint: disable=protected-access
-def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
+@transform
+def convert_to_numpy_parameters(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
     """Transforms a circuit to one with purely numpy parameters.
 
     Args:
         circuit (QuantumScript): a circuit with parameters of any interface
 
     Returns:
-        QuantumScript: A circuit with purely numpy parameters
+        tuple[List[QuantumTape], function]: The transformed circuits along with a dummy post-processing function.
 
     .. seealso::
 
@@ -62,8 +64,8 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
 
     >>> ops = [qml.S(0), qml.RX(torch.tensor(0.1234), 0)]
     >>> measurements = [qml.state(), qml.expval(qml.Hermitian(torch.eye(2), 0))]
-    >>> circuit = qml.tape.QuantumScript(ops, measurements )
-    >>> new_circuit = convert_to_numpy_parameters(circuit)
+    >>> circuit = qml.tape.QuantumScript(ops, measurements)
+    >>> [new_circuit], _ = convert_to_numpy_parameters(circuit)
     >>> new_circuit.circuit
     [S(wires=[0]),
     RX(0.1234000027179718, wires=[0]),
@@ -83,11 +85,16 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
     False
 
     """
-    new_prep = (_convert_op_to_numpy_data(op) for op in circuit._prep)
-    new_ops = (_convert_op_to_numpy_data(op) for op in circuit._ops)
-    new_measurements = (_convert_measurement_to_numpy_data(m) for m in circuit.measurements)
-    new_circuit = circuit.__class__(new_ops, new_measurements, new_prep)
-    # must preserve trainable params as we lose information about the machine learning interface
-    new_circuit.trainable_params = circuit.trainable_params
-    new_circuit._qfunc_output = circuit._qfunc_output
-    return new_circuit
+    new_ops = (_convert_op_to_numpy_data(op) for op in tape.operations)
+    new_measurements = (_convert_measurement_to_numpy_data(m) for m in tape.measurements)
+    new_circuit = tape.__class__(
+        new_ops, new_measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_circuit], null_postprocessing

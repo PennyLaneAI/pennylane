@@ -13,64 +13,78 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 # pylint: disable=too-many-branches
-from pennylane import apply
-from pennylane.transforms import qfunc_transform
+from typing import Callable, Sequence
+
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
-@qfunc_transform
-def remove_barrier(tape):
-    """Quantum function transform to remove Barrier gates.
+@transform
+def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    """Quantum transform to remove Barrier gates.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        function: the transformed quantum function
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
-    Consider the following quantum function:
+    The transform can be applied on :class:`QNode` directly.
 
     .. code-block:: python
 
-        def qfunc(x, y):
+        @remove_barrier
+        @qml.qnode(device=dev)
+        def circuit(x, y):
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=1)
             qml.Barrier(wires=[0,1])
-            qml.PauliX(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.X(0)
+            return qml.expval(qml.Z(0))
 
-    The circuit before optimization:
+    The barrier is then removed before execution.
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(1, 2))
-        0: ──H──╭||──X──┤ ⟨Z⟩
-        1: ──H──╰||─────┤
+    .. details::
+        :title: Usage Details
+
+        Consider the following quantum function:
+
+        .. code-block:: python
+
+            def qfunc(x, y):
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=1)
+                qml.Barrier(wires=[0,1])
+                qml.X(0)
+                return qml.expval(qml.Z(0))
+
+        The circuit before optimization:
+
+        >>> dev = qml.device('default.qubit', wires=2)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)(1, 2))
+            0: ──H──╭||──X──┤ ⟨Z⟩
+            1: ──H──╰||─────┤
 
 
-    We can remove the Barrier by running the ``remove_barrier`` transform:
+        We can remove the Barrier by running the ``remove_barrier`` transform:
 
-    >>> optimized_qfunc = remove_barrier(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2))
-       0: ──H──X──┤ ⟨Z⟩
-       1: ──H─────┤
+        >>> optimized_qfunc = remove_barrier(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(1, 2))
+           0: ──H──X──┤ ⟨Z⟩
+           1: ──H─────┤
 
     """
-    # Make a working copy of the list to traverse
-    list_copy = tape.operations.copy()
+    operations = filter(lambda op: op.name != "Barrier", tape.operations)
+    new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
 
-    while len(list_copy) > 0:
-        current_gate = list_copy[0]
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]  # pragma: no cover
 
-        # Remove Barrier gate
-        if current_gate.name != "Barrier":
-            apply(current_gate)
-
-        list_copy.pop(0)
-        continue
-
-    # Queue the measurements normally
-    for m in tape.measurements:
-        apply(m)
+    return [new_tape], null_postprocessing

@@ -15,69 +15,16 @@
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
-# pylint: disable=protected-access,too-many-branches
-from collections.abc import Iterable
 import functools
 import inspect
 import numbers
-import warnings
 
+# pylint: disable=protected-access,too-many-branches
+from collections.abc import Iterable
 
 import numpy as np
 
 import pennylane as qml
-
-
-def sparse_hamiltonian(H, wires=None):
-    r"""Warning: This method is deprecated. Use :meth:~.Hamiltonian.sparse_matrix` instead.
-
-    Computes the sparse matrix representation a Hamiltonian in the computational basis.
-
-    Args:
-        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
-            computed
-        wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
-            is constructed. If not profided, ``H.wires`` is used.
-
-    Returns:
-        csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
-        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
-
-    **Example:**
-
-    This function can be used by passing a `qml.Hamiltonian` object as:
-
-    >>> coeffs = [1, -0.45]
-    >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
-    >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> H_sparse = sparse_hamiltonian(H)
-    >>> H_sparse
-    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
-        with 2 stored elements in COOrdinate format>
-
-    The resulting sparse matrix can be either used directly or transformed into a numpy array:
-
-    >>> H_sparse.toarray()
-    array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
-           [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
-           [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
-           [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
-
-    """
-    warnings.warn(
-        "The method sparse_hamiltonian is deprecated. Please use the method "
-        "sparse_matrix of the Hamiltonian operator instead.",
-        UserWarning,
-    )
-    if not isinstance(H, qml.Hamiltonian):
-        raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
-
-    if wires is None:  # not sure if this if-else is still necessary
-        wires = H.wires
-    else:
-        wires = qml.wires.Wires(wires)
-
-    return H.sparse_matrix(wire_order=wires)
 
 
 def _flatten(x):
@@ -96,8 +43,7 @@ def _flatten(x):
     elif isinstance(x, qml.wires.Wires):
         # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
         # Since Wires are always flat, just yield.
-        for item in x:
-            yield item
+        yield from x
     elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
         for item in x:
             yield from _flatten(item)
@@ -205,7 +151,7 @@ def pauli_eigs(n):
         list: the eigenvalues of the specified observable
     """
     if n == 1:
-        return np.array([1, -1])
+        return np.array([1.0, -1.0])
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
@@ -221,6 +167,9 @@ def expand_vector(vector, original_wires, expanded_wires):
     Returns:
         array: :math:`2^m` vector where m = len(expanded_wires).
     """
+    if len(original_wires) == 0:
+        val = qml.math.squeeze(vector)
+        return val * qml.math.ones(2 ** len(expanded_wires))
     if isinstance(expanded_wires, numbers.Integral):
         expanded_wires = list(range(expanded_wires))
 
@@ -228,26 +177,26 @@ def expand_vector(vector, original_wires, expanded_wires):
     M = len(expanded_wires)
     D = M - N
 
+    len_vector = qml.math.shape(vector)[0]
+    qudit_order = int(2 ** (np.log2(len_vector) / N))
+
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if qml.math.shape(vector) != (2**N,):
-        raise ValueError("Vector parameter must be of length 2**len(original_wires)")
+    if qml.math.shape(vector) != (qudit_order**N,):
+        raise ValueError(f"Vector parameter must be of length {qudit_order}**len(original_wires)")
 
-    dims = [2] * N
+    dims = [qudit_order] * N
     tensor = qml.math.reshape(vector, dims)
 
     if D > 0:
-        extra_dims = [2] * D
-        ones = qml.math.ones(2**D).reshape(extra_dims)
+        extra_dims = [qudit_order] * D
+        ones = qml.math.ones(qudit_order**D).reshape(extra_dims)
         expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
 
-    wire_indices = []
-    for wire in original_wires:
-        wire_indices.append(expanded_wires.index(wire))
-
+    wire_indices = [expanded_wires.index(wire) for wire in original_wires]
     wire_indices = np.array(wire_indices)
 
     # Order tensor factors according to wires
@@ -256,4 +205,4 @@ def expand_vector(vector, original_wires, expanded_wires):
         expanded_tensor, tuple(original_indices), tuple(wire_indices)
     )
 
-    return qml.math.reshape(expanded_tensor, 2**M)
+    return qml.math.reshape(expanded_tensor, (qudit_order**M,))

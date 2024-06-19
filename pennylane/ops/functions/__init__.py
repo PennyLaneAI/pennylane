@@ -19,8 +19,13 @@ This module contains functions that act on operators and tapes.
 .. autosummary::
     :toctree: api
 
+    ~ops.functions.bind_new_parameters
+    ~ops.functions.assert_valid
+    ~dot
     ~eigvals
     ~equal
+    ~assert_equal
+    ~evolve
     ~generator
     ~is_commuting
     ~is_hermitian
@@ -28,18 +33,23 @@ This module contains functions that act on operators and tapes.
     ~map_wires
     ~matrix
     ~simplify
-    ~evolve
-    ~dot
+    ~iterative_qpe
+    ~commutator
+    ~comm
 
 """
+from .assert_valid import assert_valid
+from .bind_new_parameters import bind_new_parameters
+from .commutator import comm, commutator
 from .dot import dot
 from .eigvals import eigvals
-from .equal import equal
+from .equal import equal, assert_equal
 from .evolve import evolve
 from .generator import generator
 from .is_commuting import is_commuting
 from .is_hermitian import is_hermitian
 from .is_unitary import is_unitary
+from .iterative_qpe import iterative_qpe
 from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify

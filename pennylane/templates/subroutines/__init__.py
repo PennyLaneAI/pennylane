@@ -33,3 +33,14 @@ from .kupccgsd import kUpCCGSD
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .basis_rotation import BasisRotation
+from .qsvt import QSVT, qsvt
+from .select import Select
+from .qdrift import QDrift
+from .controlled_sequence import ControlledSequence
+from .trotter import TrotterProduct
+from .aqft import AQFT
+from .fable import FABLE
+from .reflection import Reflection
+from .amplitude_amplification import AmplitudeAmplification
+from .qubitization import Qubitization
+from .qrom import QROM

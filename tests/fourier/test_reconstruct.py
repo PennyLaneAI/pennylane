@@ -14,17 +14,21 @@
 """
 Tests for the Fourier reconstruction transform.
 """
-import pytest
-from inspect import signature
-from itertools import chain, combinations
 from functools import reduce
+
+# pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
+from inspect import signature
+from itertools import chain
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.fourier.reconstruct import (
+    _prepare_jobs,
     _reconstruct_equ,
     _reconstruct_gen,
-    _prepare_jobs,
     reconstruct,
 )
 from pennylane.fourier.utils import join_spectra
@@ -192,9 +196,9 @@ class TestReconstructEqu:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
+
         # Convert fun to have integer frequencies
         _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency, interface="jax")
@@ -422,9 +426,9 @@ class TestReconstructGen:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
+
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="jax")
         grad = jax.grad(rec)
@@ -584,10 +588,9 @@ class TestPrepareJobs:
         return True
 
     def ids_match(self, ids_in, ids_out):
-        if type(ids_in) == dict:
+        if isinstance(ids_in, dict):
             return ids_in == ids_out
-        else:
-            return all(id_ in ids_in for id_ in ids_out)
+        return all(id_ in ids_in for id_ in ids_out)
 
     @pytest.mark.parametrize("ids", all_ids)
     @pytest.mark.parametrize("shifts", all_shifts)
@@ -679,11 +682,9 @@ class TestPrepareJobs:
         assert need_f0 == any(np.isclose(_shift, 0.0, atol=tol, rtol=0) for _shift in _all_shifts)
 
     @pytest.mark.parametrize("ids", all_ids)
-    @pytest.mark.parametrize("spectra", all_spectra)
     @pytest.mark.parametrize("nums_frequency", all_nums_frequency)
-    def test_with_nums_frequency(self, ids, spectra, nums_frequency, tol):
+    def test_with_nums_frequency(self, ids, nums_frequency, tol):
         """Test the prepared jobs when using nums_frequency."""
-        """Test ``_prepare_jobs`` with a large variety of test cases (cheap)."""
 
         ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
             ids,
@@ -748,6 +749,7 @@ def qnode_3(X, Y):
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
+# pylint: disable=unused-argument
 def qnode_4(x):
     return qml.expval(qml.PauliX(0))
 
@@ -761,12 +763,12 @@ def qnode_5(Z, y):
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-x = 0.1
-y = 2.3
+_x = 0.1
+_y = 2.3
 
-X = pnp.array([i**1.2 - 2.0 / i for i in range(1, 6)])
-Y = pnp.array([i**0.9 - 1.0 / i for i in range(1, 6)])
-Z = pnp.array(
+_X = pnp.array([i**1.2 - 2.0 / i for i in range(1, 6)])
+_Y = pnp.array([i**0.9 - 1.0 / i for i in range(1, 6)])
+_Z = pnp.array(
     [
         [0.3, 9.1, -0.2, 0.6, 1.2],
         [0.9, -0.1, 1.6, 2.3, -1.5],
@@ -775,31 +777,31 @@ Z = pnp.array(
 )
 
 test_cases_qnodes = [
-    (qnode_0, (x,), "x", None, {"x": {(): [0.0, 1.0]}}, None, 3),
+    (qnode_0, (_x,), "x", None, {"x": {(): [0.0, 1.0]}}, None, 3),
     (
         qnode_0,
-        (x,),
+        (_x,),
         {"x": [()]},
         None,
         {"x": {(): [0.0, 1.0]}},
         {"x": {(): [-np.pi / 3, 0.0, np.pi / 3]}},
         3,
     ),
-    (qnode_0, (x,), "x", {"x": {(): 1}}, None, None, 3),
-    (qnode_1, (X,), {"X"}, None, {"X": {(0,): [0.0, 1.0, 2.0], (1,): [0.0, 2.0]}}, None, 7),
+    (qnode_0, (_x,), "x", {"x": {(): 1}}, None, None, 3),
+    (qnode_1, (_X,), {"X"}, None, {"X": {(0,): [0.0, 1.0, 2.0], (1,): [0.0, 2.0]}}, None, 7),
     (
         qnode_1,
-        (X,),
+        (_X,),
         "X",
         None,
         {"X": {(0,): [0.0, 2.0]}},
         {"X": {(0,): [-np.pi / 2, -0.1, np.pi / 5]}},
         3,
     ),
-    (qnode_1, (X,), ["X"], {"X": {(0,): 2, (1,): 2}}, None, None, 9),
+    (qnode_1, (_X,), ["X"], {"X": {(0,): 2, (1,): 2}}, None, None, 9),
     (
         qnode_2,
-        (X, y),
+        (_X, _y),
         ["X", "y"],
         None,
         {"X": {(0,): [0.0, 0.5, 1.0, 1.5], (2,): [0.0, 1.0]}, "y": {(): [0.0, 1.0]}},
@@ -808,18 +810,19 @@ test_cases_qnodes = [
     ),
     (
         qnode_3,
-        (X, Y),
+        (_X, _Y),
         {"X": [(0,), (3,)], "Y": ((4,), (1,))},
         {"X": {(i,): 2 for i in range(5)}, "Y": {(i,): 1 for i in range(5)}},
         None,
         None,
         13,
     ),
-    (qnode_4, (x,), ["x"], {"x": {(): 0}}, None, None, 1),
-    (qnode_5, (Z, y), ["Z"], {"Z": {(0, 1): 1, (2, 4): 1, (1, 3): 0}}, None, None, 5),
+    (qnode_4, (_x,), ["x"], {"x": {(): 0}}, None, None, 1),
+    (qnode_5, (_Z, _y), ["Z"], {"Z": {(0, 1): 1, (2, 4): 1, (1, 3): 0}}, None, None, 5),
 ]
 
 
+# pylint: disable=cell-var-from-loop
 class TestReconstruct:
     """Tests the integration of ``_reconstruct_equ`` and ``_reconstruct_gen`` via
     the full ``reconstruct`` function as well as the differentiability of the
@@ -829,9 +832,7 @@ class TestReconstruct:
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
     )
-    def test_with_qnode(
-        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
-    ):
+    def test_with_qnode(self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls):
         """Run a full reconstruction on a QNode."""
         qnode = qml.QNode(qnode, dev_1, interface="autograd")
 
@@ -868,7 +869,7 @@ class TestReconstruct:
         test_cases_qnodes,
     )
     def test_differentiability_autograd(
-        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with autograd."""
         qnode = qml.QNode(qnode, dev_1, interface="autograd")
@@ -903,7 +904,7 @@ class TestReconstruct:
                     # Dirichlet reconstruction
                     assert np.isclose(
                         grad(pnp.array(x0, requires_grad=True)),
-                        exp_qnode_grad(*pnp.array(params, requires_grad=True))[inner_key],
+                        exp_qnode_grad(*params)[inner_key],
                     )
                 assert np.isclose(
                     grad(pnp.array(x0 + 0.1, requires_grad=True)),
@@ -917,13 +918,13 @@ class TestReconstruct:
         test_cases_qnodes,
     )
     def test_differentiability_jax(
-        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with JAX."""
         import jax
-        from jax.config import config
 
-        config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
+
         params = tuple(jax.numpy.array(par) for par in params)
         qnode = qml.QNode(qnode, dev_1, interface="jax")
         with qml.Tracker(qnode.device) as tracker:
@@ -962,10 +963,10 @@ class TestReconstruct:
         test_cases_qnodes,
     )
     def test_differentiability_tensorflow(
-        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with TensorFlow."""
-        if qnode == qnode_4:
+        if qnode is qnode_4:
             pytest.skip("Gradients are empty in TensorFlow for independent functions.")
         import tensorflow as tf
 
@@ -1041,7 +1042,7 @@ class TestReconstruct:
         test_cases_qnodes,
     )
     def test_differentiability_torch(
-        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with Torch."""
         import torch

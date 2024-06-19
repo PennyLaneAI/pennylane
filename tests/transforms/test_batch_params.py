@@ -14,7 +14,9 @@
 """
 Unit tests for the batch params transform.
 """
+# pylint:disable=comparison-with-callable
 import functools
+
 import pytest
 
 import pennylane as qml
@@ -39,7 +41,7 @@ def test_simple_circuit(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -63,7 +65,34 @@ def test_simple_circuit_one_batch(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
+    res = circuit(data, x, weights)
+    assert res.shape == (batch_size, 4)
+    assert len(spy.call_args[0][0]) == batch_size
+
+
+def test_simple_circuit_with_prep(mocker):
+    """Test that batching works for a simple circuit with a state preparation"""
+    dev = qml.device("default.qubit", wires=3)
+
+    init_state = np.array([0, 0, 0, 0, 1, 0, 0, 0], requires_grad=False)
+
+    @qml.batch_params
+    @qml.qnode(dev, interface="autograd")
+    def circuit(data, x, weights):
+        qml.StatePrep(init_state, wires=[0, 1, 2])
+        qml.RX(x, wires=0)
+        qml.RY(0.2, wires=1)
+        qml.RZ(data, wires=1)
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 2])
+
+    batch_size = 5
+    data = np.random.random((batch_size,))
+    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -83,7 +112,7 @@ def test_basic_entangler_layers(mocker):
     batch_size = 5
     weights = np.random.random((batch_size, 2, 2))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -103,7 +132,7 @@ def test_angle_embedding(mocker):
     batch_size = 5
     data = np.random.random((batch_size, 3))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -127,7 +156,7 @@ def test_mottonenstate_preparation(mocker):
     data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
     weights = np.random.random((batch_size, 10, 3, 3))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
@@ -162,7 +191,7 @@ def test_basis_state_preparation(mocker):
     data = np.random.randint(2, size=(batch_size, 4))
     weights = np.random.random((batch_size, 10, 4, 3))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -173,6 +202,42 @@ def test_basis_state_preparation(mocker):
         qml.templates.BasisStatePreparation(data, wires=[0, 1, 2, 3])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2, 3])
         return qml.probs(wires=[0, 1, 2, 3])
+
+    indiv_res = []
+    for state, weight in zip(data, weights):
+        indiv_res.append(circuit2(state, weight))
+    assert np.allclose(res, indiv_res)
+
+
+def test_qubit_state_prep(mocker):
+    """Test that batching works for StatePrep"""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.batch_params
+    @qml.qnode(dev, interface="autograd")
+    def circuit(data, weights):
+        qml.StatePrep(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    batch_size = 3
+
+    # create a batched input statevector
+    data = np.random.random((batch_size, 2**3))
+    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    weights = np.random.random((batch_size, 10, 3, 3))
+
+    spy = mocker.spy(circuit.device, "execute")
+    res = circuit(data, weights)
+    assert res.shape == (batch_size, 2**3)
+    assert len(spy.call_args[0][0]) == batch_size
+
+    # check the results against individually executed circuits (no batching)
+    @qml.qnode(dev)
+    def circuit2(data, weights):
+        qml.StatePrep(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
 
     indiv_res = []
     for state, weight in zip(data, weights):
@@ -209,19 +274,20 @@ def test_multi_returns():
 
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
+    # pylint:disable=not-an-iterable
     dev = qml.device("default.qubit", wires=3, shots=(100, (200, 3), 300))
 
     @qml.batch_params
     @qml.qnode(dev)
     def circuit(data, x, weights):
-        qml.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
+        qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
         qml.RX(x, wires=0)
         qml.RY(0.2, wires=1)
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 2])
 
     batch_size = 6
-    data = np.random.random((batch_size, 8))
+    data = np.random.random((batch_size, 3))
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
@@ -229,6 +295,7 @@ def test_shot_vector():
 
     assert isinstance(res, tuple)
     assert len(res) == 5
+    # pylint:disable=not-an-iterable
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 
@@ -240,14 +307,14 @@ def test_multi_returns_shot_vector():
     @qml.batch_params
     @qml.qnode(dev)
     def circuit(data, x, weights):
-        qml.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
+        qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
         qml.RX(x, wires=0)
         qml.RY(0.2, wires=1)
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 2])
 
     batch_size = 6
-    data = np.random.random((batch_size, 8))
+    data = np.random.random((batch_size, 3))
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
@@ -493,7 +560,7 @@ class TestDiffMulti:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.batch_params(all_operations=True)
+        @functools.partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -543,7 +610,7 @@ class TestDiffMulti:
         dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
-        @qml.batch_params(all_operations=True)
+        @functools.partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -737,7 +804,7 @@ def test_all_operations(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=False)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(x, weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -796,3 +863,35 @@ def test_no_batch_param_error():
     x = [0.2, 0.6, 3]
     with pytest.raises(ValueError, match="There are no operations to transform"):
         circuit(x)
+
+
+def test_unbatched_not_copied():
+    """Test that operators containing unbatched parameters are not copied"""
+
+    batch_size = 5
+    data = np.random.random((batch_size, 8))
+    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    x = np.array(0.4, requires_grad=False)
+
+    ops = [
+        qml.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True),
+        qml.RX(x, wires=0),
+        qml.RY(0.2, wires=1),
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2]),
+    ]
+    meas = [qml.probs(wires=[0, 2])]
+
+    tape = qml.tape.QuantumScript(ops, meas)
+    tape.trainable_params = [0, 3]
+
+    new_tapes = qml.batch_params(tape)[0]
+    assert len(new_tapes) == batch_size
+
+    for new_tape in new_tapes:
+        # same instance of RX and RY operators
+        assert new_tape.operations[1] is tape.operations[1]
+        assert new_tape.operations[2] is tape.operations[2]
+
+        # different instance of AmplitudeEmbedding and StronglyEntanglingLayers
+        assert new_tape.operations[0] is not tape.operations[0]
+        assert new_tape.operations[3] is not tape.operations[3]

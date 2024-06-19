@@ -15,9 +15,10 @@ r"""
 Contains the BasisEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
+
 import pennylane as qml
-import pennylane.numpy as np
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -71,7 +72,16 @@ class BasisEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, do_queue=True, id=None):
+    def _flatten(self):
+        basis_state = self.hyperparameters["basis_state"]
+        basis_state = tuple(basis_state) if isinstance(basis_state, list) else basis_state
+        return tuple(), (self.wires, basis_state)
+
+    @classmethod
+    def _unflatten(cls, _, metadata) -> "BasisEmbedding":
+        return cls(features=metadata[1], wires=metadata[0])
+
+    def __init__(self, features, wires, id=None):
         if isinstance(features, list):
             features = qml.math.stack(features)
 
@@ -104,7 +114,7 @@ class BasisEmbedding(Operation):
 
         self._hyperparameters = {"basis_state": features}
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -131,14 +141,14 @@ class BasisEmbedding(Operation):
 
         >>> features = torch.tensor([1, 0, 1])
         >>> qml.BasisEmbedding.compute_decomposition(features, wires=["a", "b", "c"])
-        [PauliX(wires=['a']),
-         PauliX(wires=['c'])]
+        [X('a'),
+         X('c')]
         """
         if not qml.math.is_abstract(basis_state):
             ops_list = []
             for wire, bit in zip(wires, basis_state):
                 if bit == 1:
-                    ops_list.append(qml.PauliX(wire))
+                    ops_list.append(qml.X(wire))
             return ops_list
 
         ops_list = []

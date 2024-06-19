@@ -14,17 +14,16 @@
 """
 Unit tests for the eigvals transform
 """
+# pylint: disable=too-few-public-methods
 from functools import reduce
 
 import pytest
 import scipy
+from gate_data import CNOT, H, I, S, X, Y, Z
 
 import pennylane as qml
-from gate_data import CNOT, H, I
-from gate_data import Roty as RY
-from gate_data import S, X, Y, Z
 from pennylane import numpy as np
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import TransformError
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -37,6 +36,15 @@ one_qubit_no_parameter = [
 ]
 
 one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
+
+
+def test_invalid_argument():
+    """Assert error raised when input is neither a tape, QNode, nor quantum function"""
+    with pytest.raises(
+        TransformError,
+        match="Input is not an Operator, tape, QNode, or quantum function",
+    ):
+        _ = qml.eigvals(None)
 
 
 class TestSingleOperation:
@@ -100,7 +108,9 @@ class TestSingleOperation:
         rounding_precision = 6
         res = qml.eigvals(qml.adjoint(op_class))(0.54, wires=0)
         expected = op_class(-0.54, wires=0).eigvals()
-        assert set(np.around(res, rounding_precision)) == set(np.around(res, rounding_precision))
+        assert set(np.around(res, rounding_precision)) == set(
+            np.around(expected, rounding_precision)
+        )
 
     def test_ctrl(self):
         """Test that the ctrl is correctly taken into account"""
@@ -108,18 +118,35 @@ class TestSingleOperation:
         expected = np.linalg.eigvals(qml.matrix(qml.CNOT(wires=[0, 1])))
         assert np.allclose(np.sort(res), np.sort(expected))
 
-    def test_tensor_product(self):
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_tensor_product_legacy_opmath(self):
         """Test a tensor product"""
         res = qml.eigvals(qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(1))
         expected = reduce(np.kron, [[1, -1], [1, 1], [1, -1]])
         assert np.allclose(res, expected)
 
+    def test_tensor_product(self):
+        """Test a tensor product"""
+        res = qml.eigvals(qml.prod(qml.PauliX(0), qml.Identity(1), qml.PauliZ(1), lazy=False))
+        expected = [1.0, -1.0, -1.0, 1.0]
+        assert np.allclose(res, expected)
+
     def test_hamiltonian(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
-        H = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
+        ham = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
+
+        res = qml.eigvals(ham)
+
+        expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
+        assert np.allclose(res, expected)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_hamiltonian_legacy_opmath(self):
+        """Test that the matrix of a Hamiltonian is correctly returned"""
+        ham = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            res = qml.eigvals(H)
+            res = qml.eigvals(ham)
 
         expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
         assert np.allclose(res, expected)
@@ -142,7 +169,7 @@ class TestSingleOperation:
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
-        ("row", "col", "dat", "val_ref"),
+        ("row", "col", "dat"),
         [
             (
                 # coordinates and values of a sparse Hamiltonian computed for H2
@@ -173,35 +200,10 @@ class TestSingleOperation:
                         0.93441394 + 0.0j,
                     ]
                 ),
-                # eigenvalues of the same matrix computed with np.linalg.eigh(H_dense)
-                np.array(
-                    [
-                        -1.13730605,
-                        -0.5363422,
-                        -0.5363422,
-                        -0.52452264,
-                        -0.52452264,
-                        -0.52452264,
-                        -0.44058792,
-                        -0.44058792,
-                        -0.16266858,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.2481941,
-                        0.2481941,
-                        0.36681148,
-                        0.36681148,
-                        0.49523726,
-                        0.72004228,
-                        0.93441394,
-                    ]
-                ),
             ),
         ],
     )
-    def test_sparse_hamiltonian(self, row, col, dat, val_ref):
+    def test_sparse_hamiltonian(self, row, col, dat):
         """Test that the eigenvalues of a sparse Hamiltonian are correctly returned"""
         # N x N matrix with N = 16
         h_mat = scipy.sparse.csr_matrix((dat, (row, col)), shape=(16, 16))

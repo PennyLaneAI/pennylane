@@ -63,6 +63,7 @@ class TestRotoselectOptimizer:
 
         assert np.all(res == expected)
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("x_start", [[1.2, 0.2], [-0.62, -2.1], [0.05, 0.8]])
     @pytest.mark.parametrize(
         "generators", [list(tup) for tup in it.product([qml.RX, qml.RY, qml.RZ], repeat=2)]
@@ -101,7 +102,9 @@ class TestRotoselectOptimizer:
             X_1 = circuit_2(params, generators=generators)
             return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
-        f_best_gen = lambda x: cost_fn(x, optimal_generators)
+        def f_best_gen(x):
+            return cost_fn(x, optimal_generators)
+
         optimal_x_start = x_start.copy()
 
         # after four steps the optimzer should find the optimal generators/x_start values
@@ -116,14 +119,13 @@ class TestRotoselectOptimizer:
         """Tests that step my raise an error."""
         rotoselect_opt = RotoselectOptimizer()
 
-        def cost_fn(params, generators):
-            Z_1, Y_2 = circuit_1(params, generators=generators)
-            X_1 = circuit_2(params, generators=generators)
-            return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
+        def cost_fn():
+            return None
 
         with pytest.raises(ValueError, match="must be equal to the number of generators"):
             rotoselect_opt.step(cost_fn, [0.2], [qml.PauliX, qml.PauliZ])
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("x_start", [[1.2, 0.2], [-0.62, -2.1], [0.05, 0.8]])
     def test_keywords_rotoselect(self, x_start, tol):
         """test rotoselect accepts keywords"""
@@ -154,9 +156,7 @@ class TestRotoselectOptimizer:
             X_1 = circuit_2(params, generators=generators)
             return 0.5 * (Y_2 - shift) ** 2 + 0.8 * (Z_1 - shift) ** 2 - 0.2 * (X_1 - shift) ** 2
 
-        params_new, _, res_new = rotoselect_opt.step_and_cost(
-            cost_fn, x_start, generators, shift=0.0
-        )
+        params_new, *_ = rotoselect_opt.step_and_cost(cost_fn, x_start, generators, shift=0.0)
         params_new2, _, res_new2 = rotoselect_opt.step_and_cost(
             cost_fn, x_start, generators, shift=1.0
         )

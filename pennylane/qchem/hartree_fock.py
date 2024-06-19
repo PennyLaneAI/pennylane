@@ -110,12 +110,17 @@ def scf(mol, n_steps=50, tol=1e-8):
         r"""Perform the self-consistent-field iterations.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             tuple(array[float]): eigenvalues of the Fock matrix, molecular orbital coefficients,
             Fock matrix, core matrix
         """
+        if mol.n_electrons % 2 == 1 or mol.mult != 1:
+            raise ValueError(
+                "Open-shell systems are not supported. Change the charge or spin multiplicity of the molecule."
+            )
+
         basis_functions = mol.basis_set
         charges = mol.nuclear_charges
         r = mol.coordinates
@@ -203,7 +208,7 @@ def nuclear_energy(charges, r):
         r"""Compute the nuclear-repulsion energy.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             array[float]: nuclear-repulsion energy
@@ -246,7 +251,7 @@ def hf_energy(mol):
         r"""Compute the Hartree-Fock energy.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             float: the Hartree-Fock energy

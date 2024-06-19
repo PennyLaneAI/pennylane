@@ -17,10 +17,10 @@ This module contains the functions needed for computing integrals over basis fun
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import itertools as it
 
+import numpy as np
 from scipy.special import factorial2 as fac2
 
 import pennylane as qml
-from pennylane import numpy as np
 
 
 def primitive_norm(l, alpha):
@@ -56,10 +56,11 @@ def primitive_norm(l, alpha):
     array([1.79444183])
     """
     lx, ly, lz = l
+
     n = (
         (2 * alpha / np.pi) ** 0.75
         * (4 * alpha) ** (sum(l) / 2)
-        / qml.math.sqrt(fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1))
+        / qml.math.sqrt(_fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1))
     )
     return n
 
@@ -102,12 +103,28 @@ def contracted_norm(l, alpha, a):
     0.39969026908800853
     """
     lx, ly, lz = l
-    c = np.pi**1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
+
+    c = np.pi**1.5 / 2 ** sum(l) * _fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1)
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
     n = 1 / qml.math.sqrt(c * s)
     return n
+
+
+def _fac2(n):
+    """Compute the double factorial of an integer.
+
+    The function uses the definition :math:`(-1)!! = 1`.
+
+    Args:
+        n (int): number for which the double factorial is computed
+
+    Returns:
+        int: the computed double factorial
+
+    """
+    return int(fac2(n) if n != -1 else 1)
 
 
 def _generate_params(params, args):
@@ -282,7 +299,7 @@ def overlap_integral(basis_a, basis_b, normalize=True):
         r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the overlap integral between two contracted Gaussian orbitals
@@ -475,7 +492,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
         r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the multipole moment integral between two contracted Gaussian orbitals
@@ -650,7 +667,7 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
         r"""Compute the kinetic integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the kinetic integral between two contracted Gaussian orbitals
@@ -757,7 +774,7 @@ def _hermite_coulomb(t, u, v, n, p, dr):
     Returns:
         array[float]: value of the Hermite integral
     """
-    x, y, z = dr[0], dr[1], dr[2]
+    x, y, z = dr[0:3]
     T = p * (dr**2).sum(axis=0)
     r = 0
 
@@ -858,7 +875,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
         r"""Compute the electron-nuclear attraction integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the electron-nuclear attraction integral
@@ -950,12 +967,17 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         + delta * rd[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
     ) / (gamma + delta)
 
-    g_t = [expansion(l1, l2, ra[0], rb[0], alpha, beta, t) for t in range(l1 + l2 + 1)]
-    g_u = [expansion(m1, m2, ra[1], rb[1], alpha, beta, u) for u in range(m1 + m2 + 1)]
-    g_v = [expansion(n1, n2, ra[2], rb[2], alpha, beta, v) for v in range(n1 + n2 + 1)]
-    g_r = [expansion(l3, l4, rc[0], rd[0], gamma, delta, r) for r in range(l3 + l4 + 1)]
-    g_s = [expansion(m3, m4, rc[1], rd[1], gamma, delta, s) for s in range(m3 + m4 + 1)]
-    g_w = [expansion(n3, n4, rc[2], rd[2], gamma, delta, w) for w in range(n3 + n4 + 1)]
+    ra0, ra1, ra2 = ra[0:3]
+    rb0, rb1, rb2 = rb[0:3]
+    rc0, rc1, rc2 = rc[0:3]
+    rd0, rd1, rd2 = rd[0:3]
+
+    g_t = [expansion(l1, l2, ra0, rb0, alpha, beta, t) for t in range(l1 + l2 + 1)]
+    g_u = [expansion(m1, m2, ra1, rb1, alpha, beta, u) for u in range(m1 + m2 + 1)]
+    g_v = [expansion(n1, n2, ra2, rb2, alpha, beta, v) for v in range(n1 + n2 + 1)]
+    g_r = [expansion(l3, l4, rc0, rd0, gamma, delta, r) for r in range(l3 + l4 + 1)]
+    g_s = [expansion(m3, m4, rc1, rd1, gamma, delta, s) for s in range(m3 + m4 + 1)]
+    g_w = [expansion(n3, n4, rc2, rd2, gamma, delta, w) for w in range(n3 + n4 + 1)]
 
     g = 0.0
     lengths = [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1, l3 + l4 + 1, m3 + m4 + 1, n3 + n4 + 1]
@@ -1003,7 +1025,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
         r"""Compute the electron-electron repulsion integral for four contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the electron repulsion integral between four contracted Gaussian functions

@@ -16,13 +16,13 @@ Contains the QAOAEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access, consider-using-enumerate
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class QAOAEmbedding(Operation):
     r"""
     Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
-    circuit that is inspired by the QAOA ansatz.
+    circuit that is inspired by the QAOA ansatz proposed by `Killoran et al. (2020) <https://arxiv.org/abs/2001.03622>`_.
 
     A single layer applies two circuits or "Hamiltonians": The first encodes the features, and the second is
     a variational ansatz inspired by a 1-dimensional Ising model. The feature-encoding circuit associates features with
@@ -64,7 +64,8 @@ class QAOAEmbedding(Operation):
         features (tensor_like): tensor of features to encode
         weights (tensor_like): tensor of weights
         wires (Iterable): wires that the template acts on
-        local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
+        local_field (str, type): type of local field used, either one of ``'X'``, ``'Y'``, or ``'Z'`` or
+            :class:`~.RX`, :class:`~.RY`, or :class:`~.RZ`.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -84,7 +85,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(weights, f=None):
                 qml.QAOAEmbedding(features=f, weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             features = [1., 2.]
             layer1 = [0.1, -0.3, 1.5]
@@ -128,7 +129,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit2(weights, features):
                 qml.QAOAEmbedding(features=features, weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
 
             features = [1., 2.]
@@ -149,7 +150,7 @@ class QAOAEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(weights, f=None):
                 qml.QAOAEmbedding(features=f, weights=weights, wires=range(2), local_field='Z')
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         Choosing ``'Z'`` fields implements a QAOAEmbedding where the second Hamiltonian is a
         1-dimensional Ising model.
@@ -159,14 +160,16 @@ class QAOAEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, weights, wires, local_field="Y", do_queue=True, id=None):
+    def __init__(self, features, weights, wires, local_field="Y", id=None):
         if local_field == "Z":
             local_field = qml.RZ
         elif local_field == "X":
             local_field = qml.RX
         elif local_field == "Y":
             local_field = qml.RY
-        else:
+        elif not (
+            isinstance(local_field, type) and issubclass(local_field, (qml.RX, qml.RY, qml.RZ))
+        ):
             raise ValueError(f"did not recognize local field {local_field}")
 
         shape = qml.math.shape(features)
@@ -203,7 +206,7 @@ class QAOAEmbedding(Operation):
             raise ValueError(f"Weights tensor must be of shape {exp_shape}; got {shape}")
 
         self._hyperparameters = {"local_field": local_field}
-        super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(features, weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -230,7 +233,7 @@ class QAOAEmbedding(Operation):
             features (tensor_like): tensor of features to encode
             weights (tensor_like): tensor of weights
             wires (Any or Iterable[Any]): wires that the template acts on
-            local_field (.Operator): class of local field gate
+            local_field (type): type of :class:`~.Operator` for local field gate
 
         Returns:
             list[.Operator]: decomposition of the operator

@@ -14,10 +14,23 @@
 """
 Unit tests for the ParticleConservingU2 template.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
+
+
+@pytest.mark.parametrize("init_state", [np.array([1, 1, 0, 0]), None])
+def test_standard_validity(init_state):
+    """Run standard checks with the assert_valid function."""
+
+    layers = 2
+    qubits = 4
+
+    weights = np.random.normal(0, 2 * np.pi, (layers, 2 * qubits - 1))
+    op = qml.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -111,11 +124,9 @@ class TestDecomposition:
         def circuit(weight):
             qml.BasisState(init_state, wires=wires)
             qml.particle_conserving_u2.u2_ex_gate(weight, wires)
-            return qml.expval(qml.PauliZ(0))
+            return qml.state()
 
-        circuit(weight)
-
-        assert np.allclose(circuit.device.state, exp_state, atol=tol)
+        assert np.allclose(circuit(weight), exp_state, atol=tol)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -128,17 +139,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.ParticleConservingU2(weights, wires=range(3), init_state=init_state)
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.ParticleConservingU2(weights, wires=["z", "a", "k"], init_state=init_state)
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:

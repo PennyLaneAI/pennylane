@@ -19,10 +19,24 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-import numpy as onp
-
 
 np.random.seed(42)
+
+
+def test_grad_no_ints():
+    """Test that grad raises a `ValueError` if the trainable parameter is an int."""
+
+    x = qml.numpy.array(2)
+
+    def f(x):
+        return x**2
+
+    with pytest.raises(ValueError, match="Autograd does not support differentiation of ints."):
+        qml.grad(f)(x)
+
+    y = qml.numpy.array([2, 2])
+    with pytest.raises(ValueError, match="Autograd does not support differentiation of ints."):
+        qml.jacobian(f)(y)
 
 
 class TestGradientUnivar:
@@ -192,13 +206,14 @@ class TestGradientMultivarMultidim:
         x_vec = np.random.uniform(-5, 5, size=(2))
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
-        gradf = lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]], dtype=np.float64)
+        gradf = lambda x: ([[np.cos(x[0, 0])], [-np.sin(x[[1]])]])
         f = lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0])
 
         g = qml.grad(f, 0)
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
-        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
+        assert np.allclose(auto_grad[0], correct_grad[0], atol=tol, rtol=0)
+        assert np.allclose(auto_grad[1], correct_grad[1], atol=tol, rtol=0)
 
     def test_exp(self, tol):
         """Tests gradients with multivariate multidimensional exp and tanh."""
@@ -247,6 +262,7 @@ class TestGrad:
         with pytest.raises(TypeError, match="only applies to real scalar-output functions"):
             grad_fn(arr1)
 
+    # pylint: disable=no-value-for-parameter
     def test_agrees_with_autograd(self, tol):
         """Test that the grad function agrees with autograd"""
 
@@ -271,7 +287,7 @@ class TestGrad:
 
         assert grad_fn.forward is None
 
-        grad = grad_fn(params)
+        grad_fn(params)
 
         res = grad_fn.forward
         expected = cost(params)
@@ -279,7 +295,7 @@ class TestGrad:
 
         # change the parameters
         params2 = np.array([1.4, 1.0, 2.0], requires_grad=True)
-        grad = grad_fn(params2)
+        grad_fn(params2)
 
         res = grad_fn.forward
         expected = cost(params2)

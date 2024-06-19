@@ -15,10 +15,14 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 # pylint: disable=too-many-arguments
+import copy
+
 import numpy as np
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import QubitUnitary
+from pennylane.wires import Wires
 
 
 def probs_to_unitary(probs):
@@ -228,41 +232,6 @@ class QuantumMonteCarlo(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    The algorithm proceeds as follows:
-
-    #. The probability distribution :math:`p(i)` is encoded using a unitary :math:`\mathcal{A}`
-       applied to the first :math:`m` qubits specified by ``target_wires``.
-    #. The function :math:`f(i)` is encoded onto the last qubit of ``target_wires`` using a unitary
-       :math:`\mathcal{R}`.
-    #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
-       :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
-       value through the equation :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1
-       and 2 prepares an equal superposition over the two states corresponding to the eigenvalues
-       :math:`e^{\pm 2 \pi i \theta}`.
-    #. The :func:`~.QuantumPhaseEstimation` circuit is applied so that :math:`\pm\theta` can be
-       estimated by finding the probabilities of the :math:`n` estimation wires. This in turn allows
-       for the estimation of :math:`\mu`.
-
-    Visit `Rebentrost et al. (2018) <https://arxiv.org/abs/1805.00109>`__ for further details. In
-    this algorithm, the number of applications :math:`N` of the :math:`\mathcal{Q}` unitary scales
-    as :math:`2^{n}`. However, due to the use of quantum phase estimation, the error
-    :math:`\epsilon` scales as :math:`\mathcal{O}(2^{-n})`. Hence,
-
-    .. math::
-
-        N = \mathcal{O}\left(\frac{1}{\epsilon}\right).
-
-    This scaling can be compared to standard Monte Carlo estimation, where :math:`N` samples are
-    generated from the probability distribution and the average over :math:`f` is taken. In that
-    case,
-
-    .. math::
-
-        N =  \mathcal{O}\left(\frac{1}{\epsilon^{2}}\right).
-
-    Hence, the quantum Monte Carlo algorithm has a quadratically improved time complexity with
-    :math:`N`.
-
     Args:
         probs (array): input probability distribution as a flat array
         func (callable): input function :math:`f` defined on the set of integers
@@ -285,9 +254,44 @@ class QuantumMonteCarlo(Operation):
     .. details::
         :title: Usage Details
 
+        The algorithm proceeds as follows:
+
+        #. The probability distribution :math:`p(i)` is encoded using a unitary :math:`\mathcal{A}`
+           applied to the first :math:`m` qubits specified by ``target_wires``.
+        #. The function :math:`f(i)` is encoded onto the last qubit of ``target_wires`` using a unitary
+           :math:`\mathcal{R}`.
+        #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
+           :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
+           value through the equation :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1
+           and 2 prepares an equal superposition over the two states corresponding to the eigenvalues
+           :math:`e^{\pm 2 \pi i \theta}`.
+        #. The :func:`~.QuantumPhaseEstimation` circuit is applied so that :math:`\pm\theta` can be
+           estimated by finding the probabilities of the :math:`n` estimation wires. This in turn allows
+           for the estimation of :math:`\mu`.
+
+        Visit `Rebentrost et al. (2018) <https://arxiv.org/abs/1805.00109>`__ for further details. In
+        this algorithm, the number of applications :math:`N` of the :math:`\mathcal{Q}` unitary scales
+        as :math:`2^{n}`. However, due to the use of quantum phase estimation, the error
+        :math:`\epsilon` scales as :math:`\mathcal{O}(2^{-n})`. Hence,
+
+        .. math::
+
+            N = \mathcal{O}\left(\frac{1}{\epsilon}\right).
+
+        This scaling can be compared to standard Monte Carlo estimation, where :math:`N` samples are
+        generated from the probability distribution and the average over :math:`f` is taken. In that
+        case,
+
+        .. math::
+
+            N =  \mathcal{O}\left(\frac{1}{\epsilon^{2}}\right).
+
+        Hence, the quantum Monte Carlo algorithm has a quadratically improved time complexity with
+        :math:`N`. An example use case is given below.
+
         Consider a standard normal distribution :math:`p(x)` and a function
         :math:`f(x) = \sin ^{2} (x)`. The expectation value of :math:`f(x)` is
-        :math:`\int_{-\infty}^{\infty}f(x)p(x) \approx 0.432332`. This number can be approximated by
+        :math:`\int_{-\infty}^{\infty}f(x)p(x)dx \approx 0.432332`. This number can be approximated by
         discretizing the problem and using the quantum Monte Carlo algorithm.
 
         First, the problem is discretized:
@@ -336,10 +340,24 @@ class QuantumMonteCarlo(Operation):
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
         0.4327096457464369
     """
+
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, probs, func, target_wires, estimation_wires, do_queue=True, id=None):
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls.__new__(cls)
+        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
+
+        # call operation.__init__ to initialize private properties like _name, _id, _pauli_rep, etc.
+        Operation.__init__(new_op, *data, wires=metadata[0])
+        return new_op
+
+    def __init__(self, probs, func, target_wires, estimation_wires, id=None):
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
             raise ValueError("The probability distribution must be specified as a flat array")
 
@@ -352,8 +370,8 @@ class QuantumMonteCarlo(Operation):
                 "The probability distribution must have a length that is a power of two"
             )
 
-        target_wires = list(target_wires)
-        estimation_wires = list(estimation_wires)
+        target_wires = tuple(target_wires)
+        estimation_wires = tuple(estimation_wires)
         wires = target_wires + estimation_wires
 
         if num_target_wires != len(target_wires):
@@ -367,7 +385,17 @@ class QuantumMonteCarlo(Operation):
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
-        super().__init__(A, R, Q, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, R, Q, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        for key in ["estimation_wires", "target_wires"]:
+            new_op._hyperparameters[key] = tuple(
+                wire_map.get(w, w) for w in self._hyperparameters[key]
+            )
+        return new_op
 
     @property
     def num_params(self):

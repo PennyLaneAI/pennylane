@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a PyTorch implementation of the :class:`~.DefaultQubit`
+"""This module contains a PyTorch implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
+import inspect
+import logging
 import warnings
-import semantic_version
+
+from packaging.version import Version
 
 try:
     import torch
 
-    VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
+    VERSION_SUPPORT = Version(torch.__version__) >= Version(
+        "1.8.1",
+    )
     if not VERSION_SUPPORT:  # pragma: no cover
         raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
@@ -28,12 +33,17 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
+
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from . import DefaultQubit
+
+from . import DefaultQubitLegacy
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
-class DefaultQubitTorch(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written using PyTorch.
+class DefaultQubitTorch(DefaultQubitLegacy):
+    """Simulator plugin based on ``"default.qubit.legacy"``, written using PyTorch.
 
     **Short name:** ``default.qubit.torch``
 
@@ -65,7 +75,7 @@ class DefaultQubitTorch(DefaultQubit):
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True)
     >>> res = circuit(weights)
@@ -94,7 +104,7 @@ class DefaultQubitTorch(DefaultQubit):
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> weights = torch.tensor([0.2, 0.5, 0.1], requires_grad=True, device='cuda')
     >>> res = circuit(weights)
@@ -203,9 +213,17 @@ class DefaultQubitTorch(DefaultQubit):
         return par_torch_device
 
     def execute(self, circuit, **kwargs):
-        ops_and_obs = circuit.operations + circuit.observables
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(circuit=%s, kwargs=%s) called by=%s",
+                circuit,
+                kwargs,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
 
-        par_torch_device = self._get_parameter_torch_device(ops_and_obs)
+        par_torch_device = self._get_parameter_torch_device(circuit.operations)
 
         if not self._torch_device_specified:
             self._torch_device = par_torch_device

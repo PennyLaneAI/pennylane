@@ -21,6 +21,21 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+@pytest.mark.parametrize("include_pi", (True, False))
+def test_standard_validity(include_pi):
+    """Check the operation using the assert_valid function."""
+
+    layers = 2
+    qubits = 6
+    init_state = qml.math.array([1, 1, 0, 0, 0, 0])
+
+    weights = np.random.normal(0, 2 * np.pi, (layers, qubits // 2 - 1, 2))
+
+    op = qml.GateFabric(weights, wires=range(qubits), init_state=init_state, include_pi=include_pi)
+
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -484,11 +499,9 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit(weight):
             qml.GateFabric(weight, wires, init_state=init_state)
-            return qml.expval(qml.PauliZ(0))
+            return qml.state()
 
-        circuit(weight)
-
-        assert qml.math.allclose(circuit.device.state, exp_state, atol=tol)
+        assert qml.math.allclose(circuit(weight), exp_state, atol=tol)
 
     @pytest.mark.parametrize(
         ("num_qubits", "layers", "exp_state"),
@@ -608,9 +621,7 @@ class TestDecomposition:
             qml.GateFabric(weight, wires, init_state=init_state, include_pi=True)
             return qml.state()
 
-        circuit(weight)
-
-        assert qml.math.allclose(circuit.device.state, exp_state, atol=tol)
+        assert qml.math.allclose(circuit(weight), exp_state, atol=tol)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -623,17 +634,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.GateFabric(weights, wires=range(4), init_state=init_state)
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.GateFabric(weights, wires=["z", "a", "k", "r"], init_state=init_state)
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert qml.math.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -741,7 +753,7 @@ class TestAttributes:
         """Test that the shape function warns if there are not enough qubits."""
 
         with pytest.raises(
-            ValueError, match="This template requires the number of qubits to be greater than four"
+            ValueError, match="This template requires the number of qubits to be at least four"
         ):
             qml.GateFabric.shape(3, 1)
 

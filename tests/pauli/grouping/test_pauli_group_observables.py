@@ -14,13 +14,15 @@
 """
 Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``/pauli/grouping/group_observables.py``.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import numpy as pnp
+from pennylane.operation import Tensor
 from pennylane.pauli import are_identical_pauli_words
 from pennylane.pauli.grouping.group_observables import PauliGroupingStrategy, group_observables
-from pennylane import numpy as pnp
 
 
 class TestPauliGroupingStrategy:
@@ -131,6 +133,13 @@ class TestPauliGroupingStrategy:
 observables_list = [
     [PauliX(0) @ PauliZ(1), PauliY(2) @ PauliZ(1), PauliX(1), PauliY(0), PauliZ(1) @ PauliZ(2)],
     [
+        qml.s_prod(1.5, qml.prod(PauliX(0), PauliZ(1))),
+        qml.prod(PauliY(2), PauliZ(1)),
+        PauliX(1),
+        PauliY(0),
+        qml.prod(PauliZ(1), PauliZ(2)),
+    ],
+    [
         Identity(1) @ Identity(0),
         PauliX(1) @ PauliY(0) @ Identity(2),
         PauliZ(2),
@@ -139,10 +148,24 @@ observables_list = [
         PauliX(0) @ PauliX(1),
     ],
     [
+        qml.prod(Identity(1), Identity(0)),
+        qml.prod(PauliX(1), PauliY(0), Identity(2)),
+        PauliZ(2),
+        qml.s_prod(-2.0, Identity(0)),
+        qml.prod(PauliZ(2), Identity(0)),
+        qml.prod(PauliX(0), PauliX(1)),
+    ],
+    [
         PauliX("a") @ Identity("b"),
         PauliX("a") @ PauliZ("b"),
         PauliX("b") @ PauliZ("a"),
         PauliZ("a") @ PauliZ("b") @ PauliZ("c"),
+    ],
+    [
+        qml.prod(PauliX("a"), Identity("b")),
+        qml.s_prod(0.5, qml.prod(PauliX("a"), PauliZ("b"))),
+        qml.s_prod(0.5, qml.prod(PauliX("b"), PauliZ("a"))),
+        qml.prod(PauliZ("a"), PauliZ("b") @ PauliZ("c")),
     ],
     [PauliX([(0, 0)]), PauliZ([(0, 0)])],
 ]
@@ -152,6 +175,21 @@ qwc_sols = [
         [PauliX(wires=[1]), PauliY(wires=[0])],
         [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
         [PauliZ(wires=[1]) @ PauliZ(wires=[2])],
+    ],
+    [
+        [PauliX(wires=[1]), PauliY(wires=[0])],
+        [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
+        [PauliZ(wires=[1]) @ PauliZ(wires=[2])],
+    ],
+    [
+        [
+            Identity(wires=[1]),
+            PauliX(wires=[1]) @ PauliY(wires=[0]),
+            PauliZ(wires=[2]),
+            Identity(wires=[1]),
+            PauliZ(wires=[2]),
+        ],
+        [PauliX(wires=[1]) @ PauliX(wires=[0])],
     ],
     [
         [
@@ -168,10 +206,20 @@ qwc_sols = [
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
         [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
     ],
+    [
+        [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
+        [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
+        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
+    ],
     [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
 
 commuting_sols = [
+    [
+        [PauliX(wires=[1]), PauliY(wires=[0])],
+        [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
+        [PauliZ(wires=[1]) @ PauliZ(wires=[2])],
+    ],
     [
         [PauliX(wires=[1]), PauliY(wires=[0])],
         [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
@@ -186,6 +234,21 @@ commuting_sols = [
             PauliZ(wires=[2]),
         ],
         [PauliX(wires=[1]) @ PauliX(wires=[0])],
+    ],
+    [
+        [
+            Identity(wires=[1]),
+            PauliX(wires=[1]) @ PauliY(wires=[0]),
+            PauliZ(wires=[2]),
+            Identity(wires=[1]),
+            PauliZ(wires=[2]),
+        ],
+        [PauliX(wires=[1]) @ PauliX(wires=[0])],
+    ],
+    [
+        [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
+        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
+        [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
     [
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
@@ -205,11 +268,33 @@ anticommuting_sols = [
         ],
     ],
     [
+        [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliY(wires=[0])],
+        [
+            PauliZ(wires=[1]) @ PauliY(wires=[2]),
+            PauliX(wires=[1]),
+            PauliZ(wires=[1]) @ PauliZ(wires=[2]),
+        ],
+    ],
+    [
         [Identity(wires=[1])],
         [PauliZ(wires=[2])],
         [Identity(wires=[1])],
         [PauliZ(wires=[2])],
         [PauliX(wires=[1]) @ PauliY(wires=[0]), PauliX(wires=[1]) @ PauliX(wires=[0])],
+    ],
+    [
+        [Identity(wires=[1])],
+        [PauliZ(wires=[2])],
+        [Identity(wires=[1])],
+        [PauliZ(wires=[2])],
+        [PauliX(wires=[1]) @ PauliY(wires=[0]), PauliX(wires=[1]) @ PauliX(wires=[0])],
+    ],
+    [
+        [
+            PauliX(wires=["a"]) @ PauliZ(wires=["b"]),
+            PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"]),
+        ],
+        [PauliX(wires=["a"]), PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
     [
         [
@@ -227,7 +312,7 @@ class TestGroupObservables:
     Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
-    qwc_tuples = [(obs, sol) for obs, sol in zip(observables_list, qwc_sols)]
+    qwc_tuples = list(zip(observables_list, qwc_sols))
 
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):
@@ -238,14 +323,14 @@ class TestGroupObservables:
         assert len(qwc_partitions) == n_partitions
         # assert each partition is of the correct length:
         assert all(
-            [len(qwc_partitions[i]) == len(qwc_partitions_sol[i]) for i in range(n_partitions)]
+            len(part) == len(part_sol) for part, part_sol in zip(qwc_partitions, qwc_partitions_sol)
         )
         # assert each partition contains the same Pauli terms as the solution partition:
         for i, partition in enumerate(qwc_partitions):
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, qwc_partitions_sol[i][j])
 
-    com_tuples = [(obs, sol) for obs, sol in zip(observables_list, commuting_sols)]
+    com_tuples = list(zip(observables_list, commuting_sols))
 
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
@@ -255,15 +340,13 @@ class TestGroupObservables:
         n_partitions = len(com_partitions_sol)
         assert len(com_partitions) == n_partitions
         # assert each partition is of the correct length:
-        assert all(
-            [len(com_partitions[i]) == len(com_partitions_sol[i]) for i in range(n_partitions)]
-        )
+        assert all(len(p) == len(p_sol) for p, p_sol in zip(com_partitions, com_partitions_sol))
         # assert each partition contains the same Pauli terms as the solution partition:
         for i, partition in enumerate(com_partitions):
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, com_partitions_sol[i][j])
 
-    anticom_tuples = [(obs, sols) for obs, sols in zip(observables_list, anticommuting_sols)]
+    anticom_tuples = list(zip(observables_list, anticommuting_sols))
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
@@ -274,10 +357,7 @@ class TestGroupObservables:
         assert len(anticom_partitions) == n_partitions
         # assert each partition is of the correct length:
         assert all(
-            [
-                len(anticom_partitions[i]) == len(anticom_partitions_sol[i])
-                for i in range(n_partitions)
-            ]
+            len(p) == len(p_sol) for p, p_sol in zip(anticom_partitions, anticom_partitions_sol)
         )
         # assert each partition contains the same Pauli terms as the solution partition:
         for i, partition in enumerate(anticom_partitions):
@@ -295,6 +375,7 @@ class TestGroupObservables:
     def test_binary_repr_custom_wire_map(self):
         """Tests that the ``binary_repr`` method sets a custom
         wire map correctly."""
+        # pylint: disable=protected-access
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
@@ -312,6 +393,94 @@ class TestGroupObservables:
         coeffs = [1.0, 2.0]
         _, grouped_coeffs = group_observables(obs, coeffs)
         assert isinstance(grouped_coeffs[0], list)
+
+    def test_return_new_opmath(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        new_observables = [
+            qml.prod(PauliX(0), PauliZ(1)),
+            qml.prod(PauliY(2), PauliZ(1)),
+            qml.s_prod(1.5, qml.prod(PauliZ(1), PauliZ(2))),
+        ]
+        mixed_observables = [
+            Tensor(PauliX(0), PauliZ(1)),
+            qml.prod(PauliY(2), PauliZ(1)),
+            qml.s_prod(1.5, qml.prod(PauliZ(1), PauliZ(2))),
+        ]
+
+        new_groups = group_observables(new_observables)
+        mixed_groups = group_observables(mixed_observables)
+
+        assert all(isinstance(o, qml.ops.Prod) for g in new_groups for o in g)
+        assert all(isinstance(o, qml.ops.Prod) for g in mixed_groups for o in g)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_return_new_opmath_legacy_opmath(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        old_observables = [
+            Tensor(PauliX(0), PauliZ(1)),
+            Tensor(PauliY(2), PauliZ(1)),
+            Tensor(PauliZ(1), PauliZ(2)),
+        ]
+
+        old_groups = group_observables(old_observables)
+
+        assert all(isinstance(o, Tensor) for g in old_groups for o in g)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_return_deactive_opmath_prod(self):
+        """Test that using new opmath causes grouped observables to have Prods instead of
+        Tensors"""
+        observables = [
+            qml.prod(PauliX(0), PauliZ(1)),
+            qml.prod(PauliY(2), PauliZ(1)),
+            qml.prod(PauliZ(1), PauliZ(2)),
+        ]
+
+        old_groups = group_observables(observables)
+
+        assert all(isinstance(o, qml.ops.Prod) for g in old_groups for o in g)
+
+    def test_observables_on_no_wires(self):
+        """Test that observables on no wires are stuck in the first group."""
+
+        observables = [
+            qml.I(),
+            qml.X(0) @ qml.Y(1),
+            qml.Z(0),
+            2 * qml.I(),
+        ]
+
+        groups = group_observables(observables)
+        assert groups == [[qml.X(0) @ qml.Y(1), qml.I(), 2 * qml.I()], [qml.Z(0)]]
+
+    def test_no_observables_with_wires(self):
+        """Test when only observables with no wires are present."""
+
+        observables = [qml.I(), 2 * qml.I()]
+        groups = group_observables(observables)
+        assert groups == [observables]
+
+        groups, coeffs = group_observables(observables, [1, 2])
+        assert groups == [observables]
+        assert coeffs == [[1, 2]]
+
+    @pytest.mark.usefixtures("new_opmath_only")
+    def test_observables_on_no_wires_coeffs(self):
+        """Test that observables on no wires are stuck in the first group and
+        coefficients are tracked when provided."""
+
+        observables = [
+            qml.X(0),
+            qml.Z(0),
+            2 * qml.I(),
+            qml.I() @ qml.I(),
+        ]
+        coeffs = [1, 2, 3, 4]
+        groups, out_coeffs = group_observables(observables, coeffs)
+        assert groups == [[qml.X(0), 2 * qml.I(), qml.I() @ qml.I()], [qml.Z(0)]]
+        assert out_coeffs == [[1, 3, 4], [2]]
 
 
 class TestDifferentiable:

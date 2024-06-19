@@ -15,10 +15,12 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 import functools
-from collections.abc import Iterable, Sequence
 import itertools
+from collections.abc import Iterable, Sequence
 
 import numpy as np
+
+from pennylane.pytrees import register_pytree
 
 
 class WireError(Exception):
@@ -89,9 +91,24 @@ class Wires(Sequence):
 
     Indexing an instance of this class will return a wire label.
 
+    .. warning::
+
+        In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
+        For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
+        will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+
     Args:
          wires (Any): the wire label(s)
     """
+
+    def _flatten(self):
+        """Serialize Wires into a flattened representation according to the PyTree convension."""
+        return self._labels, ()
+
+    @classmethod
+    def _unflatten(cls, data, _metadata):
+        """De-serialize flattened representation back into the Wires object."""
+        return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
         if _override:
@@ -475,3 +492,7 @@ class Wires(Sequence):
                     unique.append(wire)
 
         return Wires(tuple(unique), _override=True)
+
+
+# Register Wires as a PyTree-serializable class
+register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access

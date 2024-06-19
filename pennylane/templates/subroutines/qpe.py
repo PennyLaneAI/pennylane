@@ -15,12 +15,16 @@
 Contains the QuantumPhaseEstimation template.
 """
 # pylint: disable=too-many-arguments,arguments-differ
+import copy
+
 import pennylane as qml
+from pennylane.operation import AnyWires, Operator
 from pennylane.queuing import QueuingManager
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.wires import Wires
 
 
-class QuantumPhaseEstimation(Operation):
+class QuantumPhaseEstimation(ErrorOperation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -33,24 +37,6 @@ class QuantumPhaseEstimation(Operation):
         :align: center
         :width: 60%
         :target: javascript:void(0);
-
-    This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
-    of the following steps:
-
-    #. Prepare ``target_wires`` in a given state. If ``target_wires`` are prepared in an eigenstate
-       of :math:`U` that has corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase
-       :math:`\theta \in [0, 1)`, this algorithm will measure :math:`\theta`. Other input states can
-       be prepared more generally.
-    #. Apply the ``QuantumPhaseEstimation`` circuit.
-    #. Measure ``estimation_wires`` using :func:`~.probs`, giving a probability distribution over
-       measurement outcomes in the computational basis.
-    #. Find the index of the largest value in the probability distribution and divide that number by
-       :math:`2^{n}`. This number will be an estimate of :math:`\theta` with an error that decreases
-       exponentially with the number of qubits :math:`n`.
-
-    Note that if :math:`\theta \in (-1, 0]`, we can estimate the phase by again finding the index
-    :math:`i` found in step 4 and calculating :math:`\theta \approx \frac{1 - i}{2^{n}}`. The
-    usage details below give an example of this case.
 
     Args:
         unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
@@ -67,6 +53,24 @@ class QuantumPhaseEstimation(Operation):
 
     .. details::
         :title: Usage Details
+
+        This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
+        of the following steps:
+
+        #. Prepare ``target_wires`` in a given state. If ``target_wires`` are prepared in an eigenstate
+           of :math:`U` that has corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase
+           :math:`\theta \in [0, 1)`, this algorithm will measure :math:`\theta`. Other input states can
+           be prepared more generally.
+        #. Apply the ``QuantumPhaseEstimation`` circuit.
+        #. Measure ``estimation_wires`` using :func:`~.probs`, giving a probability distribution over
+           measurement outcomes in the computational basis.
+        #. Find the index of the largest value in the probability distribution and divide that number by
+           :math:`2^{n}`. This number will be an estimate of :math:`\theta` with an error that decreases
+           exponentially with the number of qubits :math:`n`.
+
+        Note that if :math:`\theta \in (-1, 0]`, we can estimate the phase by again finding the index
+        :math:`i` found in step 4 and calculating :math:`\theta \approx \frac{1 - i}{2^{n}}`. An example
+        of this case is below.
 
         Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
 
@@ -126,7 +130,7 @@ class QuantumPhaseEstimation(Operation):
 
             @qml.qnode(dev)
             def circuit():
-                qml.QubitStateVector(eigenvector, wires=target_wires)
+                qml.StatePrep(eigenvector, wires=target_wires)
                 QuantumPhaseEstimation(
                     unitary,
                     estimation_wires=estimation_wires,
@@ -136,10 +140,25 @@ class QuantumPhaseEstimation(Operation):
             phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, unitary, target_wires=None, estimation_wires=None, do_queue=True, id=None):
+    # pylint: disable=no-member
+    def _flatten(self):
+        data = (self.hyperparameters["unitary"],)
+        metadata = (self.hyperparameters["estimation_wires"],)
+        return data, metadata
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
+    def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
+        return cls(data[0], estimation_wires=metadata[0])
+
+    def __init__(self, unitary, target_wires=None, estimation_wires=None, id=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
@@ -162,8 +181,8 @@ class QuantumPhaseEstimation(Operation):
         if estimation_wires is None:
             raise qml.QuantumFunctionError("No estimation wires specified.")
 
-        target_wires = list(target_wires)
-        estimation_wires = list(estimation_wires)
+        target_wires = qml.wires.Wires(target_wires)
+        estimation_wires = qml.wires.Wires(estimation_wires)
         wires = target_wires + estimation_wires
 
         if any(wire in target_wires for wire in estimation_wires):
@@ -177,7 +196,7 @@ class QuantumPhaseEstimation(Operation):
             "estimation_wires": estimation_wires,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def target_wires(self):
@@ -189,19 +208,47 @@ class QuantumPhaseEstimation(Operation):
         """The estimation wires of the QPE"""
         return self._hyperparameters["estimation_wires"]
 
+    def error(self):
+        """The QPE error computed from the spectral norm error of the input unitary operator.
+
+        **Example**
+
+        >>> class CustomOP(qml.resource.ErrorOperation):
+        ...    def error(self):
+        ...       return qml.resource.SpectralNormError(0.005)
+        >>> Op = CustomOP(wires=[0])
+        >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
+        >>> QPE.error()
+        SpectralNormError(0.075)
+
+        """
+        base_unitary = self._hyperparameters["unitary"]
+        if not isinstance(base_unitary, ErrorOperation):
+            return SpectralNormError(0.0)
+
+        unitary_error = base_unitary.error().error
+
+        sequence_error = qml.math.array(
+            [unitary_error * (2**i) for i in range(len(self.estimation_wires) - 1, -1, -1)],
+            like=qml.math.get_interface(unitary_error),
+        )
+
+        additive_error = qml.math.sum(sequence_error)
+
+        return SpectralNormError(additive_error)
+
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
-        new_op = super().map_wires(wire_map)
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["unitary"] = qml.map_wires(
             new_op._hyperparameters["unitary"], wire_map
         )
 
-        new_op._hyperparameters["estimation_wires"] = [
-            wire_map.get(wire, wire) for wire in self.estimation_wires
-        ]
-        new_op._hyperparameters["target_wires"] = [
-            wire_map.get(wire, wire) for wire in self.target_wires
-        ]
+        for key in ["estimation_wires", "target_wires"]:
+            new_op._hyperparameters[key] = [
+                wire_map.get(wire, wire) for wire in self.hyperparameters[key]
+            ]
 
         return new_op
 

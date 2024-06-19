@@ -19,7 +19,8 @@ import pytest
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
-from pennylane import qchem
+from pennylane import qchem, simplify
+from pennylane.operation import Tensor, active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -106,6 +107,7 @@ from pennylane import qchem
 def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
     r"""Test the calculation of the matrix elements of the two-particle spin operator
     :math:`\hat{s}_1 \cdot \hat{s}_2` implemented by the function `'_spin2_matrix_elements'`"""
+    # pylint: disable=protected-access
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
@@ -114,6 +116,7 @@ def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
     assert np.allclose(s2_me_result, matrix_ref)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("electrons", "orbitals", "coeffs_ref", "ops_ref"),
     [
@@ -172,9 +175,16 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     built by the function `'spin2'`.
     """
     s2 = qchem.spin.spin2(electrons, orbitals)
-    s2_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
+    sops = [Tensor(*op) if isinstance(op, qml.ops.Prod) else op for op in map(simplify, ops_ref)]
+    s2_ref = qml.Hamiltonian(coeffs_ref, sops)
+    assert s2_ref.compare(s2)
+    assert isinstance(s2, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
-    assert s2.compare(s2_ref)
+    wire_order = s2_ref.wires
+    assert np.allclose(
+        qml.matrix(s2, wire_order=wire_order),
+        qml.matrix(s2_ref, wire_order=wire_order),
+    )
 
 
 @pytest.mark.parametrize(
@@ -194,6 +204,7 @@ def test_exception_spin2(electrons, orbitals, msg_match):
         qchem.spin.spin2(electrons, orbitals)
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("orbitals", "coeffs_ref", "ops_ref"),
     [
@@ -222,8 +233,14 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     """
     sz = qchem.spin.spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
+    assert sz_ref.compare(sz)
+    assert isinstance(sz, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
-    assert sz.compare(sz_ref)
+    wire_order = sz_ref.wires
+    assert np.allclose(
+        qml.matrix(sz, wire_order=wire_order),
+        qml.matrix(sz_ref, wire_order=wire_order),
+    )
 
 
 @pytest.mark.parametrize(

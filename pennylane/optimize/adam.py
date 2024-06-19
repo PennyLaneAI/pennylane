@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adam optimizer"""
-from pennylane.numpy import sqrt
+from numpy import sqrt
+
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -47,6 +48,10 @@ class AdamOptimizer(GradientDescentOptimizer):
         beta1 (float): hyperparameter governing the update of the first and second moment
         beta2 (float): hyperparameter governing the update of the first and second moment
         eps (float): offset :math:`\epsilon` added for numerical stability
+
+    .. note::
+
+        When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
 
     """
 

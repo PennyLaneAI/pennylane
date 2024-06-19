@@ -16,18 +16,20 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
-import contextlib
 import copy
 import functools
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Optional
-
-import numpy as np
+from typing import Optional, Sequence, Tuple, Union
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.math.utils import is_abstract
+from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
+from pennylane.pytrees import register_pytree
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
+
+from .shots import Shots
 
 # =============================================================================
 # ObservableReturnTypes types
@@ -110,14 +112,14 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess(ABC):
+class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue, Sequence[.MeasurementValue]]): The observable that
+            is to be measured as part of the measurement process. Not all measurement processes
+            require observables (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -126,19 +128,128 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    # pylint:disable=too-many-instance-attributes
+
+    _obs_primitive: Optional["jax.core.Primitive"] = None
+    _wires_primitive: Optional["jax.core.Primitive"] = None
+    _mcm_primitive: Optional["jax.core.Primitive"] = None
+
+    def __init_subclass__(cls, **_):
+        register_pytree(cls, cls._flatten, cls._unflatten)
+        name = getattr(cls.return_type, "value", cls.__name__)
+        cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
+        cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
+        cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
+
+    @classmethod
+    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
+        """Called instead of ``type.__call__`` if ``qml.capture.enabled()``.
+
+        Measurements have three "modes":
+
+        1) Wires or wires + eigvals
+        2) Observable
+        3) Mid circuit measurements
+
+        Not all measurements support all three modes. For example, ``VNEntropyMP`` does not
+        allow being specified via an observable. But we handle the generic case here.
+
+        """
+        if cls._obs_primitive is None:
+            # safety check if primitives aren't set correctly.
+            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id, **kwargs)
+        if obs is None:
+            wires = () if wires is None else wires
+            if eigvals is None:
+                return cls._wires_primitive.bind(*wires, **kwargs)  # wires
+            return cls._wires_primitive.bind(
+                *wires, eigvals, has_eigvals=True, **kwargs
+            )  # wires + eigvals
+
+        if isinstance(obs, Operator) or isinstance(
+            getattr(obs, "aval", None), qml.capture.AbstractOperator
+        ):
+            return cls._obs_primitive.bind(obs, **kwargs)
+        if isinstance(obs, (list, tuple)):
+            return cls._mcm_primitive.bind(*obs, **kwargs)  # iterable of mcms
+        return cls._mcm_primitive.bind(obs, **kwargs)  # single mcm
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ) -> tuple[tuple, type]:
+        """Calculate the shape and dtype that will be returned when a measurement is performed.
+
+        This information is similar to ``numeric_type`` and ``shape``, but is provided through
+        a class method and does not require the creation of an instance.
+
+        Note that ``shots`` should strictly be ``None`` or ``int``. Shot vectors are handled higher
+        in the stack.
+
+        If ``n_wires is None``, then the measurement process contains an observable. An integer
+        ``n_wires`` can correspond either to the number of wires or to the number of mid circuit
+        measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
+
+        >>> ProbabilityMP._abstract_eval(n_wires=2)
+        ((4,), float)
+        >>> ProbabilityMP._abstract_eval(n_wires=0, num_device_wires=2)
+        ((4,), float)
+        >>> SampleMP._abstract_eval(n_wires=0, shots=50, num_device_wires=2)
+        ((50, 2), int)
+        >>> SampleMP._abstract_eval(n_wires=4, has_eigvals=True, shots=50)
+        ((50,), float)
+        >>> SampleMP._abstract_eval(n_wires=None, shots=50)
+        ((50,), float)
+
+        """
+        return (), float
+
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires),)
+        return (self.obs or self.mv, self._eigvals), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        if data[0] is not None:
+            return cls(obs=data[0], **dict(metadata))
+        if data[1] is not None:
+            return cls(eigvals=data[1], **dict(metadata))
+        return cls(**dict(metadata))
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        obs: Optional[Operator] = None,
+        obs: Optional[
+            Union[
+                Operator,
+                "qml.measurements.MeasurementValue",
+                Sequence["qml.measurements.MeasurementValue"],
+            ]
+        ] = None,
         wires: Optional[Wires] = None,
-        eigvals=None,
+        eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
     ):
-        self.obs = obs
+        if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
+            # Cast sequence of measurement values to list
+            self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
+            self.obs = None
+        elif is_abstract(obs):  # Catalyst program with qml.sample(m, wires=i)
+            self.mv = obs
+            self.obs = None
+        else:
+            self.obs = obs
+            self.mv = None
+
         self.id = id
 
         if wires is not None:
-            if len(wires) == 0:
+            if not qml.capture.enabled() and len(wires) == 0:
                 raise ValueError("Cannot set an empty list of wires.")
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")
@@ -152,20 +263,7 @@ class MeasurementProcess(ABC):
             if obs is not None:
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
-            self._eigvals = np.array(eigvals)
-
-        # TODO: remove the following lines once devices
-        # have been refactored to accept and understand receiving
-        # measurement processes rather than specific observables.
-
-        # The following lines are only applicable for measurement processes
-        # that do not have corresponding observables (e.g., Probability). We use
-        # them to 'trick' the device into thinking it has received an observable.
-
-        # Below, we imitate an identity observable, so that the
-        # device undertakes no action upon receiving this observable.
-        self.name = "Identity"
-        self.data = []
+            self._eigvals = qml.math.asarray(eigvals)
 
         # Queue the measurement process
         self.queue()
@@ -190,49 +288,14 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, device=None):
+    def shape(self, device, shots: Shots) -> Tuple:
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when:
-
-        * The measurement type is either ``ProbabilityMP``, ``StateMP`` (from :func:`.state`) or
-          ``SampleMP``;
-        * The shot vector was defined in the device.
-
-        For example, assuming a device with ``shots=None``, expectation values
-        and variances define ``shape=(1,)``, whereas probabilities in the qubit
-        model define ``shape=(1, 2**num_wires)`` where ``num_wires`` is the
-        number of wires the measurement acts on.
-
-        Note that the shapes for vector-valued measurements such as
-        ``ProbabilityMP`` and ``StateMP`` are adjusted to the output of
-        ``qml.execute`` and may have an extra first element that is squeezed
-        when using QNodes.
-
-        Args:
-            device (pennylane.Device): a PennyLane device to use for determining the shape
-
-        Returns:
-            tuple: the output shape
-
-        Raises:
-            QuantumFunctionError: the return type of the measurement process is
-                unrecognized and cannot deduce the numeric type
-        """
-        if qml.active_return():
-            return self._shape_new(device=device)
-        raise qml.QuantumFunctionError(
-            f"The shape of the measurement {self.__class__.__name__} is not defined"
-        )
-
-    def _shape_new(self, device=None):
-        """The expected output shape of the MeasurementProcess.
-
-        Note that the output shape is dependent on the device when:
+        Note that the output shape is dependent on the shots or device when:
 
         * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
           ``_Sample``;
-        * The shot vector was defined in the device.
+        * The shot vector was defined.
 
         For example, assuming a device with ``shots=None``, expectation values
         and variances define ``shape=(,)``, whereas probabilities in the qubit
@@ -241,6 +304,7 @@ class MeasurementProcess(ABC):
 
         Args:
             device (pennylane.Device): a PennyLane device to use for determining the shape
+            shots (~.Shots): object defining the number and batches of shots
 
         Returns:
             tuple: the output shape
@@ -276,6 +340,7 @@ class MeasurementProcess(ABC):
         base = 2 if cutoff is None else cutoff
         return base**num_wires
 
+    @qml.QueuingManager.stop_recording()
     def diagonalizing_gates(self):
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
@@ -283,24 +348,26 @@ class MeasurementProcess(ABC):
         Returns:
             List[.Operation]: the operations that diagonalize the observables
         """
-        try:
-            # pylint: disable=no-member
-            return self.expand().operations
-        except qml.operation.DecompositionUndefinedError:
-            return []
+        return self.obs.diagonalizing_gates() if self.obs else []
+
+    def __eq__(self, other):
+        return qml.equal(self, other)
+
+    def __hash__(self):
+        return self.hash
 
     def __repr__(self):
         """Representation of this class."""
-        if self.obs is None:
-            if self._eigvals is None:
-                return f"{self.return_type.value}(wires={self.wires.tolist()})"
-            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
+        name_str = self.return_type.value if self.return_type else type(self).__name__
+        if self.mv:
+            return f"{name_str}({repr(self.mv)})"
+        if self.obs:
+            return f"{name_str}({self.obs})"
+        if self._eigvals is not None:
+            return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if getattr(self.obs, "return_type", None) is None:
-            return f"{self.return_type.value}({self.obs})"
-
-        return f"{self.obs}"
+        return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -320,12 +387,17 @@ class MeasurementProcess(ABC):
 
         This is the union of all the Wires objects of the measurement.
         """
+        if self.mv is not None and not is_abstract(self.mv):
+            if isinstance(self.mv, list):
+                return qml.wires.Wires.all_wires([m.wires for m in self.mv])
+            return self.mv.wires
+
         if self.obs is not None:
             return self.obs.wires
 
         return (
             Wires.all_wires(self._wires)
-            if isinstance(self._wires, list)
+            if isinstance(self._wires, (tuple, list))
             else self._wires or Wires([])
         )
 
@@ -352,16 +424,25 @@ class MeasurementProcess(ABC):
 
         **Example:**
 
-        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
+        >>> m = MeasurementProcess(Expectation, obs=qml.X(1))
         >>> m.eigvals()
         array([1, -1])
 
         Returns:
             array: eigvals representation
         """
+        if self.mv is not None:
+            if getattr(self.mv, "name", None) == "MeasurementValue":
+                # Indexing a MeasurementValue gives the output of the processing function
+                # for the binary number corresponding to the index.
+                return qml.math.asarray([self.mv[i] for i in range(2 ** len(self.wires))])
+            return qml.math.arange(0, 2 ** len(self.wires), 1)
+
         if self.obs is not None:
-            with contextlib.suppress(qml.operation.EigvalsUndefinedError):
-                return self.obs.eigvals()
+            try:
+                return qml.eigvals(self.obs)
+            except DecompositionUndefinedError as e:
+                raise EigvalsUndefinedError from e
         return self._eigvals
 
     @property
@@ -372,7 +453,7 @@ class MeasurementProcess(ABC):
         # If self.obs is not None, `expand` queues the diagonalizing gates of self.obs,
         # which we have to check to be defined. The subsequent creation of the new
         # `MeasurementProcess` within `expand` should never fail with the given parameters.
-        return False if self.obs is None else self.obs.has_diagonalizing_gates
+        return self.obs.has_diagonalizing_gates if self.obs is not None else False
 
     @property
     def samples_computational_basis(self):
@@ -445,6 +526,7 @@ class MeasurementProcess(ABC):
         fingerprint = (
             self.__class__.__name__,
             getattr(self.obs, "hash", "None"),
+            getattr(self.mv, "hash", "None"),
             str(self._eigvals),  # eigvals() could be expensive to compute for large observables
             tuple(self.wires.tolist()),
         )
@@ -471,9 +553,15 @@ class MeasurementProcess(ABC):
             .MeasurementProcess: new measurement process
         """
         new_measurement = copy.copy(self)
-        if self.obs is not None:
+        if self.mv is not None:
+            new_measurement.mv = (
+                self.mv.map_wires(wire_map=wire_map)
+                if getattr(self.mv, "name", None) == "MeasurementValue"
+                else [m.map_wires(wire_map=wire_map) for m in self.mv]
+            )
+        elif self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
-        else:
+        elif self._wires is not None:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 
@@ -505,10 +593,10 @@ class SampleMeasurement(MeasurementProcess):
     >>> dev = qml.device("default.qubit", wires=2, shots=1000)
     >>> @qml.qnode(dev)
     ... def circuit():
-    ...     qml.PauliX(0)
+    ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
     >>> circuit()
-    tensor([1000,    0], requires_grad=True)
+    (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
 
     @abstractmethod
@@ -531,6 +619,17 @@ class SampleMeasurement(MeasurementProcess):
                 provided, the entire shot range is treated as a single bin.
         """
 
+    @abstractmethod
+    def process_counts(self, counts: dict, wire_order: Wires):
+        """Calculate the measurement given a counts histogram dictionary.
+
+        Args:
+            counts (dict): a dictionary matching the format returned by :class:`~.CountsMP`
+            wire_order (Wires): the wire order used in producing the counts
+
+        Note that the input dictionary may only contain states with non-zero entries (``all_outcomes=False``).
+        """
+
 
 class StateMeasurement(MeasurementProcess):
     """State-based measurement process.
@@ -538,7 +637,8 @@ class StateMeasurement(MeasurementProcess):
     Any class inheriting from ``StateMeasurement`` should define its own ``process_state`` method,
     which should have the following arguments:
 
-    * state (Sequence[complex]): quantum state
+    * state (Sequence[complex]): quantum state with a flat shape. It may also have an
+        optional batch dimension
     * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
         dimension :math:`2^n` acts on a subspace of :math:`n` wires
 
@@ -570,7 +670,8 @@ class StateMeasurement(MeasurementProcess):
         """Process the given quantum state.
 
         Args:
-            state (Sequence[complex]): quantum state
+            state (Sequence[complex]): quantum state with a flat shape. It may also have an
+                optional batch dimension
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """

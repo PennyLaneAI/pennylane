@@ -88,8 +88,8 @@ instantiated using the :func:`device <pennylane.device>` loader.
     dev = qml.device('default.qubit', wires=2, shots=1000)
 
 PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
-and ``'default.gaussian'`` simulators; additional devices can be installed as plugins (see
-`available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
+``'default.gaussian'``, ``'default.clifford'``, and ``'default.tensor'`` simulators; additional devices can be installed as plugins
+(see `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
 
@@ -147,6 +147,12 @@ Allowed wire labels can be of any type that is hashable, which allows two wires 
     The iterable of labels passed to the device's ``wires``
     argument must match this expected number of wires.
 
+.. warning::
+
+    In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
+    For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
+    will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+
 Shots
 *****
 
@@ -155,7 +161,7 @@ to estimate statistical quantities. On some supported simulator devices, ``shots
 measurement statistics *exactly*.
 
 Note that this argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
-will temporarily evaluate ``my_qnode`` using three shots. This is a feature of each QNode and it is not 
+will temporarily evaluate ``my_qnode`` using three shots. This is a feature of each QNode and it is not
 necessary to manually implement the ``shots`` keyword argument of the quantum function.
 
 It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
@@ -177,17 +183,22 @@ For example:
 
     @qml.qnode(dev)
     def circuit(x):
-      qml.RX(x, wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+        qml.RX(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-Executing this, we will get an output of size ``(3, 2)``:
+Executing this, we will get an output of shape ``(3, 2)``:
 
->>> circuit(0.5)
-tensor([[ 1.   ,  1.   ],
-        [ 0.2  ,  1.   ],
-        [-0.022,  0.876]], requires_grad=True)
+>>> results = circuit(0.5)
+>>> results
+((array(0.6), array(1.)),
+ (array(-0.4), array(1.)),
+ (array(0.048), array(0.902)))
 
+We can index into this tuple and retrieve the results computed with only 5 shots:
+
+>>> results[0]
+(array(0.6), array(1.))
 
 .. _intro_vcirc_qnode:
 
@@ -314,7 +325,6 @@ be loaded by using the following functions:
 
     ~pennylane.from_qiskit
     ~pennylane.from_qasm
-    ~pennylane.from_qasm_file
     ~pennylane.from_pyquil
     ~pennylane.from_quil
     ~pennylane.from_quil_file
@@ -324,7 +334,7 @@ be loaded by using the following functions:
 .. note::
 
     To use these conversion functions, the latest version of the PennyLane-Qiskit
-    and PennyLane-Forest plugins need to be installed.
+    and PennyLane-Rigetti plugins need to be installed.
 
 Objects for quantum circuits can be loaded outside or directly inside of a
 :class:`~.pennylane.QNode`. Circuits that contain unbound parameters are also
@@ -369,7 +379,7 @@ while using the :class:`~.pennylane.QNode` decorator:
 
 Furthermore, loaded templates can be used with any supported device, any number of times.
 For instance, in the following example a template is loaded from a QASM string,
-and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
+and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Rigetti:
 
 .. code-block:: python
 

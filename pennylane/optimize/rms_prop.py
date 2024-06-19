@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Root mean square propagation optimizer"""
-from pennylane.numpy import sqrt
+from numpy import sqrt
+
 from .adagrad import AdagradOptimizer
 
 

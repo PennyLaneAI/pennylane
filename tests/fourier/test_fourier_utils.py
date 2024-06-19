@@ -14,14 +14,11 @@
 """
 Tests for the Fourier module helper functions.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane.fourier.utils import (
-    format_nvec,
-    get_spectrum,
-    join_spectra,
-)
+from pennylane.fourier.utils import format_nvec, get_spectrum, join_spectra
 
 
 @pytest.mark.parametrize(
@@ -70,6 +67,7 @@ def test_get_spectrum(op, expected):
 def test_get_spectrum_complains_no_generator():
     """Test that an error is raised if the operator has no generator defined."""
 
+    # pylint: disable=too-few-public-methods
     class CustomOp(qml.operation.Operation):
         num_wires = 1
         num_params = 1

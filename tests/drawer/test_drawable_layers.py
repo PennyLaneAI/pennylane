@@ -20,12 +20,15 @@ import pytest
 import pennylane as qml
 from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
+    _recursive_find_mcm_stats_layer,
     drawable_layers,
 )
+from pennylane.measurements import MidMeasureMP
+from pennylane.queuing import AnnotatedQueue
 
 
 class TestRecursiveFindLayer:
-    """Tests for `_recursive_find_layer`"""
+    """Tests for ``_recursive_find_layer`` and ``_recursive_find_mcm_stats_layer``"""
 
     def test_first_layer(self):
         """Test operation remains in 0th layer if not blocked"""
@@ -55,6 +58,55 @@ class TestRecursiveFindLayer:
         )
         assert out == 2
 
+    def test_first_mcm_stats_layer(self):
+        """Test operation remains in 0th layer if not blocked"""
+        mp0 = qml.measurements.MidMeasureMP(0, id="foo")
+        mp1 = qml.measurements.MidMeasureMP(1, id="bar")
+        bit_map = {mp0: 0, mp1: 1}
+
+        out = _recursive_find_mcm_stats_layer(
+            layer_to_check=0, op_occupied_cwires={0}, used_cwires_per_layer=[{1}], bit_map=bit_map
+        )
+        assert out == 0
+
+    def test_blocked_mcm_stats_layer(self):
+        """Test operation moved to higher layer if blocked on 0th layer."""
+        mp = qml.measurements.MidMeasureMP(0)
+        bit_map = {mp: 0}
+
+        out = _recursive_find_mcm_stats_layer(
+            layer_to_check=0, op_occupied_cwires={0}, used_cwires_per_layer=[{0}], bit_map=bit_map
+        )
+        assert out == 1
+
+    def test_recursion_no_block_mcm_stats(self):
+        """Test recursion to zero if start in higher layer and not blocked"""
+        mp0 = qml.measurements.MidMeasureMP(0)
+        mp1 = qml.measurements.MidMeasureMP(1)
+        bit_map = {mp0: 0, mp1: 1}
+
+        out = _recursive_find_mcm_stats_layer(
+            layer_to_check=2,
+            op_occupied_cwires={0},
+            used_cwires_per_layer=[{1}, {1}, {1}],
+            bit_map=bit_map,
+        )
+        assert out == 0
+
+    def test_recursion_block_mcm_stats(self):
+        """Test blocked on layer 1 gives placement on layer 2"""
+        mp0 = qml.measurements.MidMeasureMP(0)
+        mp1 = qml.measurements.MidMeasureMP(1)
+        bit_map = {mp0: 0, mp1: 1}
+
+        out = _recursive_find_mcm_stats_layer(
+            layer_to_check=3,
+            op_occupied_cwires={0},
+            used_cwires_per_layer=[{1}, {0}, {1}, {1}],
+            bit_map=bit_map,
+        )
+        assert out == 2
+
 
 class TestDrawableLayers:
     """Tests for `drawable_layers`"""
@@ -66,7 +118,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [set(ops)]
+        assert layers == [ops]
 
     def test_single_wires_blocking(self):
         """Test single wire gates blocking each other"""
@@ -75,7 +127,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     def test_barrier_only_visual(self):
         """Test the barrier is always drawn"""
@@ -87,21 +139,21 @@ class TestDrawableLayers:
             qml.PauliX(0),
         ]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}, {ops[3]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]], [ops[3]]]
 
     def test_barrier_block(self):
         """Test the barrier blocking operators"""
 
         ops = [qml.PauliX(0), qml.Barrier(wires=[0, 1]), qml.PauliX(1)]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     def test_wirecut_block(self):
         """Test the wirecut blocking operators"""
 
         ops = [qml.PauliX(0), qml.WireCut(wires=[0, 1]), qml.PauliX(1)]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     @pytest.mark.parametrize(
         "multiwire_gate",
@@ -124,7 +176,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops, wire_map=wire_map)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     @pytest.mark.parametrize("measurement", (qml.state(), qml.sample()))
     def test_all_wires_measurement(self, measurement):
@@ -134,4 +186,48 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
+
+    def test_mid_measure_custom_wires(self):
+        """Test that custom wires do not break the drawing of mid-circuit measurements."""
+        mp0 = MidMeasureMP("A", id="foo")
+        mp1 = MidMeasureMP("a", id="bar")
+        m0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
+        m1 = qml.measurements.MeasurementValue([mp1], lambda v: v)
+
+        def teleport(state):
+            qml.QubitStateVector(state, wires=["A"])
+            qml.Hadamard(wires="a")
+            qml.CNOT(wires=["a", "B"])
+            qml.CNOT(wires=["A", "a"])
+            qml.Hadamard(wires="A")
+            qml.apply(mp0)
+            qml.apply(mp1)
+            qml.cond(m1, qml.PauliX)("B")
+            qml.cond(m0, qml.PauliZ)("B")
+
+        tape_custom = qml.tape.make_qscript(teleport)([0, 1])
+        [tape_standard], _ = qml.map_wires(tape_custom, {"A": 0, "a": 1, "B": 2})
+        ops = tape_standard.operations
+        bit_map = {MidMeasureMP(0, id="foo"): None, MidMeasureMP(1, id="bar"): None}
+        layers = drawable_layers(ops, bit_map=bit_map)
+        assert layers == [ops[:2]] + [[op] for op in ops[2:]]
+
+
+class TestMidMeasure:
+    """Tests the various changes from mid-circuit measurements."""
+
+    def test_basic_mid_measure(self):
+        """Tests a simple case with mid-circuit measurement."""
+        with AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(1)
+
+        bit_map = {q.queue[0]: None}
+
+        assert drawable_layers(q.queue, bit_map=bit_map) == [[q.queue[0]], [q.queue[1]]]
+
+    def test_cannot_draw_multi_wire_MidMeasureMP(self):
+        """Tests that MidMeasureMP is only supported with one wire."""
+        with pytest.raises(ValueError, match="mid-circuit measurements with more than one wire."):
+            drawable_layers([MidMeasureMP([0, 1])])

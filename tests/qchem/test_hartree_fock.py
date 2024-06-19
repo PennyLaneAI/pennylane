@@ -14,6 +14,7 @@
 """
 Unit tests for Hartree-Fock functions.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -34,7 +35,7 @@ def test_scf_leaves_random_seed_unchanged():
     args = [alpha]
 
     initial_numpy_state = np.random.get_state()
-    v_fock, coeffs, fock_matrix, h_core, rep_tensor = qchem.scf(mol)(*args)
+    qchem.scf(mol)(*args)
     final_numpy_state = np.random.get_state()
 
     assert initial_numpy_state[0] == final_numpy_state[0]
@@ -76,6 +77,16 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
     assert np.allclose(f, fock_matrix)
     assert np.allclose(h, h_core)
     assert np.allclose(e, repulsion_tensor)
+
+
+def test_scf_openshell_error():
+    r"""Test that scf raises an error when an open-shell molecule is provided."""
+    symbols = ["H", "H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]], requires_grad=False)
+    mol = qchem.Molecule(symbols, geometry)
+
+    with pytest.raises(ValueError, match="Open-shell systems are not supported."):
+        qchem.scf(mol)()
 
 
 @pytest.mark.parametrize(

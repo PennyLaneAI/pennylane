@@ -14,15 +14,16 @@
 """
 This module contains the qml.map_wires function.
 """
-from functools import wraps
-from typing import Callable, Union
+from functools import partial
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
+from pennylane import transform
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
-from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, make_qscript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.workflow import QNode
 
 
 def map_wires(
@@ -35,15 +36,16 @@ def map_wires(
     wire map.
 
     Args:
-        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
-            quantum tape, or function that applies quantum operations
+        input (Operator or QNode or QuantumTape or Callable): an operator or a quantum circuit.
         wire_map (dict): dictionary containing the old wires as keys and the new wires as values
         queue (bool): Whether or not to queue the object when recording. Defaults to False.
         replace (bool): When ``queue=True``, if ``replace=True`` the input operators will be
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        (.Operator, pennylane.QNode, .QuantumTape, or Callable): input with changed wires
+        operator (Operator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The transformed circuit or operator with updated wires in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
 
@@ -56,7 +58,7 @@ def map_wires(
         ... @qml.qnode(dev)
         ... def func(x):
         ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         ...
         >>> print(qml.draw(func)(0.1))
         10: ──RX(0.10)─┤  <Z>
@@ -66,26 +68,26 @@ def map_wires(
 
     Given an operator, ``qml.map_wires`` returns a copy of the operator with its wires changed:
 
-    >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
+    >>> op = qml.RX(0.54, wires=0) + qml.X(1) + (qml.Z(2) @ qml.RY(1.23, wires=3))
     >>> op
-    (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
+    (RX(0.54, wires=[0]) + X(1)) + (Z(2) @ RY(1.23, wires=[3]))
     >>> wire_map = {0: 3, 1: 2, 2: 1, 3: 0}
     >>> qml.map_wires(op, wire_map)
-    (RX(0.54, wires=[3]) + PauliX(wires=[2])) + (PauliZ(wires=[1]) @ RY(1.23, wires=[0]))
+    (RX(0.54, wires=[3]) + X(2)) + (Z(1) @ RY(1.23, wires=[0]))
 
     Moreover, ``qml.map_wires`` can be used to change the wires of QNodes or quantum functions:
 
     >>> dev = qml.device("default.qubit", wires=4)
     >>> @qml.qnode(dev)
     ... def circuit():
-    ...    qml.RX(0.54, wires=0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.RY(1.23, wires=3)
+    ...    qml.RX(0.54, wires=0) @ qml.X(1) @ qml.Z(2) @ qml.RY(1.23, wires=3)
     ...    return qml.probs(wires=0)
     ...
     >>> mapped_circuit = qml.map_wires(circuit, wire_map)
     >>> mapped_circuit()
     tensor([0.92885434, 0.07114566], requires_grad=True)
     >>> list(mapped_circuit.tape)
-    [((RX(0.54, wires=[3]) @ PauliX(wires=[2])) @ PauliZ(wires=[1])) @ RY(1.23, wires=[0]), probs(wires=[3])]
+    [((RX(0.54, wires=[3]) @ X(2)) @ Z(1)) @ RY(1.23, wires=[0]), probs(wires=[3])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingManager.recording():
@@ -97,34 +99,32 @@ def map_wires(
                 qml.apply(new_op)
             return new_op
         return input.map_wires(wire_map=wire_map)
-
-    if isinstance(input, QuantumScript):
-        ops = [qml.map_wires(op, wire_map) for op in input._ops]  # pylint: disable=protected-access
-        measurements = [qml.map_wires(m, wire_map) for m in input.measurements]
-        prep = [qml.map_wires(p, wire_map) for p in input._prep]  # pylint: disable=protected-access
-
-        return input.__class__(ops=ops, measurements=measurements, prep=prep)
-
-    if callable(input):
-        func = input.func if isinstance(input, QNode) else input
-
-        @wraps(func)
-        def qfunc(*args, **kwargs):
-            qscript = make_qscript(func)(*args, **kwargs)
-            _ = [qml.map_wires(op, wire_map=wire_map, queue=True) for op in qscript.operations]
-            m = tuple(qml.map_wires(m, wire_map=wire_map, queue=True) for m in qscript.measurements)
-            return m[0] if len(m) == 1 else m
-
-        if isinstance(input, QNode):
-            return QNode(
-                func=qfunc,
-                device=input.device,
-                interface=input.interface,
-                diff_method=input.diff_method,
-                expansion_strategy=input.expansion_strategy,
-                **input.execute_kwargs,
-                **input.gradient_kwargs,
-            )
-        return qfunc
+    if isinstance(input, (QuantumScript, QNode)) or callable(input):
+        return _map_wires_transform(input, wire_map=wire_map, queue=queue)
 
     raise ValueError(f"Cannot map wires of object {input} of type {type(input)}.")
+
+
+@partial(transform)
+def _map_wires_transform(
+    tape: qml.tape.QuantumTape, wire_map=None, queue=False
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    ops = [
+        (
+            map_wires(op, wire_map, queue=queue)
+            if not isinstance(op, QuantumScript)
+            else map_wires(op, wire_map, queue=queue)[0][0]
+        )
+        for op in tape.operations
+    ]
+    measurements = [map_wires(m, wire_map, queue=queue) for m in tape.measurements]
+
+    out = tape.__class__(
+        ops=ops, measurements=measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
+
+    def processing_fn(res):
+        """Defines how matrix works if applied to a tape containing multiple operations."""
+        return res[0]
+
+    return [out], processing_fn

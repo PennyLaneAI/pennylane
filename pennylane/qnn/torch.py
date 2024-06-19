@@ -13,13 +13,15 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Torch Module
 API."""
+
+import contextlib
 import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Dict, Union, Any
+from typing import Any, Callable, Dict, Union
 
-from pennylane.qnode import QNode
+from pennylane import QNode
 
 try:
     import torch
@@ -36,7 +38,7 @@ except ImportError:
 
 
 class TorchLayer(Module):
-    r"""Converts a :func:`~.QNode` to a Torch layer.
+    r"""Converts a :class:`~.QNode` to a Torch layer.
 
     The result can be used within the ``torch.nn``
     `Sequential <https://pytorch.org/docs/stable/nn.html#sequential>`__ or
@@ -69,7 +71,7 @@ class TorchLayer(Module):
             qml.Rot(*weights_0, wires=0)
             qml.RY(weight_1, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
     The signature of the QNode **must** contain an ``inputs`` named argument for input data,
     with all other arguments to be treated as internal weights. We can then convert to a Torch
@@ -102,6 +104,48 @@ class TorchLayer(Module):
         - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
           or ``**kwargs`` present in the signature.
 
+        **Output shape**
+
+        If the QNode returns a single measurement, then the output of the ``KerasLayer`` will have
+        shape ``(batch_dim, *measurement_shape)``, where ``measurement_shape`` is the output shape
+        of the measurement:
+
+        .. code-block::
+
+            def print_output_shape(measurements):
+                n_qubits = 2
+                dev = qml.device("default.qubit", wires=n_qubits, shots=100)
+
+                @qml.qnode(dev)
+                def qnode(inputs, weights):
+                    qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                    qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
+                    if len(measurements) == 1:
+                        return qml.apply(measurements[0])
+                    return [qml.apply(m) for m in measurements]
+
+                weight_shapes = {"weights": (3, n_qubits, 3)}
+                qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+
+                batch_dim = 5
+                x = torch.zeros((batch_dim, n_qubits))
+                return qlayer(x).shape
+
+        >>> print_output_shape([qml.expval(qml.Z(0))])
+        torch.Size([5])
+        >>> print_output_shape([qml.probs(wires=[0, 1])])
+        torch.Size([5, 4])
+        >>> print_output_shape([qml.sample(wires=[0, 1])])
+        torch.Size([5, 100, 2])
+
+        If the QNode returns multiple measurements, then the measurement results will be flattened
+        and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
+
+        >>> print_output_shape([qml.expval(qml.Z(0)), qml.probs(wires=[0, 1])])
+        torch.Size([5, 5])
+        >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
+        torch.Size([5, 204])
+
         **Initializing weights**
 
         If ``init_method`` is not specified, weights are randomly initialized from the uniform
@@ -129,7 +173,7 @@ class TorchLayer(Module):
                 qml.RY(weight_3, wires=1)
                 qml.RZ(weight_4, wires=1)
                 qml.CNOT(wires=[0, 1])
-                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
 
             weight_shapes = {
@@ -142,13 +186,58 @@ class TorchLayer(Module):
 
             init_method = {
                 "weights_0": torch.nn.init.normal_,
-                "weights_1": torch.nn.init.uniform,
+                "weights_1": torch.nn.init.uniform_,
                 "weights_2": torch.tensor([1., 2., 3.]),
                 "weight_3": torch.tensor(1.),  # scalar when shape is not an iterable and is <= 1
                 "weight_4": torch.tensor([1.]),
             }
 
             qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes, init_method=init_method)
+
+        **Model saving**
+
+        Instances of ``TorchLayer`` can be saved using the usual ``torch.save()`` utility:
+
+        .. code-block::
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
+            torch.save(qlayer.state_dict(), SAVE_PATH)
+
+        To load the layer again, an instance of the class must be created first before calling ``torch.load()``,
+        as required by PyTorch:
+
+        .. code-block::
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
+            qlayer.load_state_dict(torch.load(SAVE_PATH))
+            qlayer.eval()
+
+        .. note::
+
+            Currently ``TorchLayer`` objects cannot be saved using the ``torch.save(qlayer, SAVE_PATH)``
+            syntax. In order to save a ``TorchLayer`` object, the object's ``state_dict`` should be
+            saved instead.
+
+        PyTorch modules that contain ``TorchLayer`` objects can also be saved and loaded.
+
+        Saving:
+
+        .. code-block::
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
+            clayer = torch.nn.Linear(2, 2)
+            model = torch.nn.Sequential(qlayer, clayer)
+            torch.save(model.state_dict(), SAVE_PATH)
+
+        Loading:
+
+        .. code-block::
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
+            clayer = torch.nn.Linear(2, 2)
+            model = torch.nn.Sequential(qlayer, clayer)
+            model.load_state_dict(torch.load(SAVE_PATH))
+            model.eval()
 
         **Full code example**
 
@@ -172,7 +261,7 @@ class TorchLayer(Module):
             def qnode(inputs, weights):
                 qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+                return [qml.expval(qml.Z(0)), qml.expval(qml.Z(1))]
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
@@ -260,12 +349,15 @@ class TorchLayer(Module):
         # validate the QNode signature, and convert to a Torch QNode.
         # TODO: update the docstring regarding changes to restrictions when tape mode is default.
         self._signature_validation(qnode, weight_shapes)
+
         self.qnode = qnode
-        self.qnode.interface = "torch"
+        if self.qnode.interface not in ("auto", "torch", "pytorch"):
+            raise ValueError(f"Invalid interface '{self.qnode.interface}' for TorchLayer")
 
         self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
 
         self._init_weights(init_method=init_method, weight_shapes=weight_shapes)
+        self._initialized = True
 
     def _signature_validation(self, qnode: QNode, weight_shapes: dict):
         sig = inspect.signature(qnode.func).parameters
@@ -301,16 +393,26 @@ class TorchLayer(Module):
         Returns:
             tensor: output data
         """
+        has_batch_dim = len(inputs.shape) > 1
 
-        if len(inputs.shape) > 1:
-            # If the input size is not 1-dimensional, unstack the input along its first dimension,
-            # recursively call the forward pass on each of the yielded tensors, and then stack the
-            # outputs back into the correct shape
-            reconstructor = [self.forward(x) for x in torch.unbind(inputs)]
-            return torch.stack(reconstructor)
+        # in case the input has more than one batch dimension
+        if has_batch_dim:
+            batch_dims = inputs.shape[:-1]
+            inputs = torch.reshape(inputs, (-1, inputs.shape[-1]))
 
-        # If the input is 1-dimensional, calculate the forward pass as usual
-        return self._evaluate_qnode(inputs)
+        # calculate the forward pass as usual
+        results = self._evaluate_qnode(inputs)
+
+        if isinstance(results, tuple):
+            if has_batch_dim:
+                results = [torch.reshape(r, (*batch_dims, *r.shape[1:])) for r in results]
+            return torch.stack(results, dim=0)
+
+        # reshape to the correct number of batch dims
+        if has_batch_dim:
+            results = torch.reshape(results, (*batch_dims, *results.shape[1:]))
+
+        return results
 
     def _evaluate_qnode(self, x):
         """Evaluates the QNode for a single input datapoint.
@@ -330,7 +432,51 @@ class TorchLayer(Module):
         if isinstance(res, torch.Tensor):
             return res.type(x.dtype)
 
-        return torch.hstack(res).type(x.dtype)
+        def _combine_dimensions(_res):
+            if len(x.shape) > 1:
+                _res = [torch.reshape(r, (x.shape[0], -1)) for r in _res]
+            return torch.hstack(_res).type(x.dtype)
+
+        if isinstance(res, tuple) and len(res) > 1:
+            if all(isinstance(r, torch.Tensor) for r in res):
+                return tuple(_combine_dimensions([r]) for r in res)  # pragma: no cover
+            return tuple(_combine_dimensions(r) for r in res)
+
+        return _combine_dimensions(res)
+
+    def construct(self, args, kwargs):
+        """Constructs the wrapped QNode on input data using the initialized weights.
+
+        This method was added to match the QNode interface. The provided args
+        must contain a single item, which is the input to the layer. The provided
+        kwargs is unused.
+
+        Args:
+            args (tuple): A tuple containing one entry that is the input to this layer
+            kwargs (dict): Unused
+        """
+        x = args[0]
+        kwargs = {
+            self.input_arg: x,
+            **{arg: weight.data.to(x) for arg, weight in self.qnode_weights.items()},
+        }
+        self.qnode.construct((), kwargs)
+
+    def __getattr__(self, item):
+        """If the qnode is initialized, first check to see if the attribute is on the qnode."""
+        if self._initialized:
+            with contextlib.suppress(AttributeError):
+                return getattr(self.qnode, item)
+
+        return super().__getattr__(item)
+
+    def __setattr__(self, item, val):
+        """If the qnode is initialized and item is already a qnode property, update it on the qnode, else
+        just update the torch layer itself."""
+        if self._initialized and item in self.qnode.__dict__:
+            setattr(self.qnode, item, val)
+        else:
+            super().__setattr__(item, val)
 
     def _init_weights(
         self,
@@ -390,8 +536,19 @@ class TorchLayer(Module):
     __repr__ = __str__
 
     _input_arg = "inputs"
+    _initialized = False
 
     @property
     def input_arg(self):
         """Name of the argument to be used as the input to the Torch layer. Set to ``"inputs"``."""
         return self._input_arg
+
+    @staticmethod
+    def set_input_argument(input_name: str = "inputs") -> None:
+        """
+        Set the name of the input argument.
+
+        Args:
+            input_name (str): Name of the input argument
+        """
+        TorchLayer._input_arg = input_name

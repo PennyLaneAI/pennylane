@@ -16,8 +16,9 @@ Contains the quantum-number-preserving GateFabric template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class GateFabric(Operation):
@@ -66,8 +67,8 @@ class GateFabric(Operation):
         weights (tensor_like): Array of weights of shape ``(D, L, 2)``\,
             where ``D`` is the number of gate fabric layers and ``L = N/2-1``
             is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
-        wires (Iterable): wires that the template acts on
-        init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
+        wires (Iterable): wires that the template acts on.
+        init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
             in the Jordan-Wigner representation.
         include_pi (boolean): If True, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
@@ -170,10 +171,11 @@ class GateFabric(Operation):
         (2, 1, 2)
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, init_state, include_pi=False, do_queue=True, id=None):
+    def __init__(self, weights, wires, init_state, include_pi=False, id=None):
         if len(wires) < 4:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than four; got wires {wires}"
@@ -200,11 +202,11 @@ class GateFabric(Operation):
             )
 
         self._hyperparameters = {
-            "init_state": qml.math.toarray(init_state),
+            "init_state": tuple(init_state),
             "include_pi": include_pi,
         }
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -226,8 +228,8 @@ class GateFabric(Operation):
             weights (tensor_like): Array of weights of shape ``(D, L, 2)``,
                 where ``D`` is the number of gate fabric layers and ``L = N/2-1``
                 is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
+            wires (Any or Iterable[Any]): wires that the operator acts on.
+            init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
                 in the Jordan-Wigner representation.
             include_pi (boolean): If ``True``, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
                 Default value is :math:`\hat{I}`.
@@ -279,7 +281,7 @@ class GateFabric(Operation):
 
         if n_wires < 4:
             raise ValueError(
-                f"This template requires the number of qubits to be greater than four; got 'n_wires' = {n_wires}"
+                f"This template requires the number of qubits to be at least four; got 'n_wires' = {n_wires}"
             )
 
         if n_wires % 2:

@@ -28,18 +28,19 @@ class TestTrackerCoreBehavior:
 
         tracker = Tracker()
 
-        assert tracker.persistent == False
+        assert tracker.persistent is False
         assert tracker.callback is None
 
         assert tracker.history == dict()
         assert tracker.totals == dict()
         assert tracker.latest == dict()
 
-        assert tracker.active == False
+        assert tracker.active is False
 
     def test_device_assignment(self):
         """Assert gets assigned to device"""
 
+        # pylint: disable=too-few-public-methods
         class TempDevice:
             short_name = "temp"
 
@@ -55,6 +56,7 @@ class TestTrackerCoreBehavior:
     def test_incompatible_device_assignment_no_tracker(self):
         """Assert exception raised when `supports_tracker` not True"""
 
+        # pylint: disable=too-few-public-methods
         class TempDevice:
             short_name = "temp"
 
@@ -69,6 +71,7 @@ class TestTrackerCoreBehavior:
     def test_incompatible_device_assignment_explicit_false(self):
         """Assert exception raised when `supports_tracker` is False"""
 
+        # pylint: disable=too-few-public-methods
         class TempDevice:
             short_name = "temp"
 
@@ -103,7 +106,7 @@ class TestTrackerCoreBehavior:
         returned = tracker.__enter__()
 
         assert id(tracker) == id(returned)
-        assert tracker.active == True
+        assert tracker.active is True
 
         assert tracker.totals == dict()
         assert tracker.history == dict()
@@ -111,16 +114,16 @@ class TestTrackerCoreBehavior:
 
         tracker.__exit__(None, None, None)
 
-        assert tracker.active == False
+        assert tracker.active is False
 
     def test_context(self):
         """Assert works with runtime context"""
 
         with Tracker() as tracker:
             assert isinstance(tracker, Tracker)
-            assert tracker.active == True
+            assert tracker.active is True
 
-        assert tracker.active == False
+        assert tracker.active is False
 
     def test_update(self):
         """Checks update stores to history and totals"""
@@ -137,6 +140,7 @@ class TestTrackerCoreBehavior:
         assert tracker.latest == {"a": 2, "b": "b2", "c": 1}
 
     def test_record_callback(self, mocker):
+        # pylint: disable=too-few-public-methods
         class callback_wrapper:
             @staticmethod
             def callback(totals, history, latest):
@@ -175,7 +179,7 @@ dev_gaussian = qml.device("default.gaussian", wires=1)
 
 @qml.qnode(dev_gaussian)
 def circuit_gaussian():
-    return qml.expval(qml.X(0))
+    return qml.expval(qml.QuadX(0))
 
 
 @pytest.mark.xfail
@@ -190,9 +194,10 @@ class TestDefaultTrackerIntegration:
     def test_single_execution_default(self, circuit, mocker):
         """Test correct behavior with single circuit execution"""
 
+        # pylint: disable=too-few-public-methods
         class callback_wrapper:
             @staticmethod
-            def callback(totals=dict(), history=dict(), latest=dict()):
+            def callback(totals=None, history=None, latest=None):
                 pass
 
         wrapper = callback_wrapper()
@@ -215,9 +220,10 @@ class TestDefaultTrackerIntegration:
     def test_shots_execution_default(self, circuit, mocker):
         """Test correct tracks shots as well."""
 
+        # pylint: disable=too-few-public-methods
         class callback_wrapper:
             @staticmethod
-            def callback(totals=dict(), history=dict(), latest=dict()):
+            def callback(totals=None, history=None, latest=None):
                 pass
 
         wrapper = callback_wrapper()
@@ -241,9 +247,10 @@ class TestDefaultTrackerIntegration:
     def test_batch_execution(self, circuit, mocker):
         """Tests that batch execute also updates information stored."""
 
+        # pylint: disable=too-few-public-methods
         class callback_wrapper:
             @staticmethod
-            def callback(totals=dict(), history=dict(), latest=dict()):
+            def callback(totals=None, history=None, latest=None):
                 pass
 
         wrapper = callback_wrapper()

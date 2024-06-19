@@ -60,6 +60,7 @@ Operator to Operator functions
     ~pennylane.map_wires
     ~pennylane.dot
     ~pennylane.evolve
+    ~pennylane.iterative_qpe
 
 These operator functions act on operators to produce new operators.
 
@@ -67,7 +68,7 @@ These operator functions act on operators to produce new operators.
 >>> op = qml.sum(qml.Hadamard(0), op)
 >>> op = qml.s_prod(1.2, op)
 >>> op
-1.2*(Hadamard(wires=[0]) + (PauliX(wires=[0]) @ PauliZ(wires=[1])))
+1.2 * (Hadamard(wires=[0]) + X(0) @ Z(1))
 
 Operator to Other functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -109,7 +110,7 @@ quantum functions, QNodes or tapes:
 
 >>> def circuit(theta):
 ...     qml.RX(theta, wires=1)
-...     qml.PauliZ(wires=0)
+...     qml.Z(wires=0)
 >>> qml.matrix(circuit)(np.pi / 4)
 array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
 [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
@@ -123,17 +124,17 @@ Matrix to Operator functions
 .. autosummary::
 
     ~pennylane.pauli_decompose
+    ~pennylane.qsvt
 
-These functions take the matrix representation of an operator and return
-the equivalent native PennyLane operator.
+These functions take a matrix and return an associated native PennyLane operator.
+For example:
 
 >>> mat = np.array([[1, 1], [1, -1]])
 >>> h = qml.pauli_decompose(mat)
 >>> type(h)
-<class 'pennylane.ops.qubit.hamiltonian.Hamiltonian'>
+pennylane.ops.op_math.linear_combination.LinearCombination
 >>> print(h)
-(1.0) [X0]
-+ (1.0) [Z0]
+1.0 * X(0) + 1.0 * Z(0)
 
 .. _intro_ref_ops_qubit:
 
@@ -162,6 +163,7 @@ Non-parametrized gates
     ~pennylane.CNOT
     ~pennylane.CZ
     ~pennylane.CY
+    ~pennylane.CH
     ~pennylane.SWAP
     ~pennylane.ISWAP
     ~pennylane.ECR
@@ -195,6 +197,7 @@ Parametrized gates
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
     ~pennylane.CPhase
+    ~pennylane.PCPhase
     ~pennylane.CPhaseShift00
     ~pennylane.CPhaseShift01
     ~pennylane.CPhaseShift10
@@ -210,6 +213,7 @@ Parametrized gates
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
     ~pennylane.PSWAP
+    ~pennylane.GlobalPhase
 
 :html:`</div>`
 
@@ -254,6 +258,7 @@ Gates constructed from a matrix
     ~pennylane.ControlledQubitUnitary
     ~pennylane.DiagonalQubitUnitary
     ~pennylane.SpecialUnitary
+    ~pennylane.BlockEncode
 
 :html:`</div>`
 
@@ -287,7 +292,7 @@ State preparation
     :nosignatures:
 
     ~pennylane.BasisState
-    ~pennylane.QubitStateVector
+    ~pennylane.StatePrep
     ~pennylane.QubitDensityMatrix
 
 :html:`</div>`
@@ -411,10 +416,10 @@ CV observables
     ~pennylane.Identity
     ~pennylane.NumberOperator
     ~pennylane.TensorN
-    ~pennylane.P
+    ~pennylane.QuadP
     ~pennylane.PolyXP
     ~pennylane.QuadOperator
-    ~pennylane.X
+    ~pennylane.QuadX
 
 :html:`</div>`
 
@@ -455,6 +460,56 @@ Qutrit gates constructed from a matrix
 
     ~pennylane.QutritUnitary
     ~pennylane.ControlledQutritUnitary
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_param:
+
+Qutrit parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.TRX
+    ~pennylane.TRY
+    ~pennylane.TRZ
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_stateprep:
+
+Qutrit State preparation
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritBasisState
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_channels:
+
+Qutrit noisy channels
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritDepolarizingChannel
+    ~pennylane.QutritAmplitudeDamping
+    ~pennylane.TritFlip
+    ~pennylane.QutritChannel
 
 :html:`</div>`
 

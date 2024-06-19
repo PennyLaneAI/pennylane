@@ -21,16 +21,18 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
 """
+import cmath
+
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
 import math
-import cmath
-import numpy as np
 
+import numpy as np
 from scipy.special import factorial as fac
 
 import pennylane as qml
-from pennylane.ops import Identity
 from pennylane import Device
+from pennylane.ops import Identity
+
 from .._version import __version__
 
 # tolerance for numerical errors
@@ -648,6 +650,7 @@ class DefaultGaussian(Device):
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
     """
+
     name = "Default Gaussian PennyLane plugin"
     short_name = "default.gaussian"
     pennylane_requires = __version__
@@ -675,8 +678,8 @@ class DefaultGaussian(Device):
 
     _observable_map = {
         "NumberOperator": photon_number,
-        "X": homodyne(0),
-        "P": homodyne(np.pi / 2),
+        "QuadX": homodyne(0),
+        "QuadP": homodyne(np.pi / 2),
         "QuadOperator": homodyne(None),
         "PolyXP": poly_quad_expectations,
         "FockStateProjector": fock_expectation,
@@ -833,9 +836,9 @@ class DefaultGaussian(Device):
         if len(wires) != 1:
             raise ValueError("Only one mode can be measured in homodyne.")
 
-        if observable == "X":
+        if observable == "QuadX":
             phi = 0.0
-        elif observable == "P":
+        elif observable == "QuadP":
             phi = np.pi / 2
         elif observable == "QuadOperator":
             phi = par[0]
@@ -891,14 +894,11 @@ class DefaultGaussian(Device):
 
     # pylint: disable=arguments-differ
     def execute(self, operations, observables):
-        if qml.active_return():
-            if len(observables) > 1:
-                raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
+        if len(observables) > 1:
+            raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
         return super().execute(operations, observables)
 
     def batch_execute(self, circuits):
-        if not qml.active_return():
-            return super().batch_execute(circuits)
         results = super().batch_execute(circuits)
         results = [qml.math.squeeze(res) for res in results]
         return results

@@ -14,10 +14,62 @@
 """
 Unit tests for the RandomLayers template.
 """
-import pytest
 import numpy as np
+
+# pylint: disable=too-few-public-methods
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
+
+
+def test_standard_validity():
+    """Run standard checks with the assert_valid function."""
+
+    weights = np.array([[0.1, -2.1, 1.4]])
+    op = qml.RandomLayers(weights, wires=(0, 1))
+    qml.ops.functions.assert_valid(op)
+
+
+def test_hyperparameters():
+    """Test that the hyperparmaeters are set as expected."""
+    weights = np.array([[0.1, -2.1, 1.4]])
+    op = qml.RandomLayers(weights, wires=(0, 1))
+
+    assert op.hyperparameters == {
+        "ratio_imprim": 0.3,
+        "imprimitive": qml.CNOT,
+        "rotations": (qml.RX, qml.RY, qml.RZ),
+        "seed": 42,
+    }
+
+    op2 = qml.RandomLayers(
+        weights, wires=(0, 1), ratio_imprim=1.0, imprimitive=qml.CZ, rotations=(qml.RX,), seed=None
+    )
+
+    assert op2.hyperparameters == {
+        "ratio_imprim": 1.0,
+        "imprimitive": qml.CZ,
+        "rotations": (qml.RX,),
+        "seed": None,
+    }
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the behavior of the flatten and unflatten methods."""
+    weights = np.array([[0.1, -2.1, 1.4]])
+    op = qml.RandomLayers(weights, wires=(0, 1))
+
+    data, metadata = op._flatten()
+
+    assert qml.math.allclose(data[0], weights)
+    # check metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    qml.assert_equal(new_op, op)
+    assert new_op is not op
 
 
 class TestDecomposition:
@@ -32,11 +84,21 @@ class TestDecomposition:
         op3 = qml.RandomLayers(weights, wires=range(2), seed=42)
 
         queue1 = op1.expand().operations
+        decomp1 = op1.compute_decomposition(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
         queue2 = op2.expand().operations
+        decomp2 = op2.compute_decomposition(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
         queue3 = op3.expand().operations
+        decomp3 = op3.compute_decomposition(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
 
         assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2))
         assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3))
+
+        for op1, op2 in zip(queue1, decomp1):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(queue2, decomp2):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(queue3, decomp3):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("n_layers, n_rots", [(3, 4), (1, 2)])
     def test_number_gates(self, n_layers, n_rots):
@@ -50,13 +112,13 @@ class TestDecomposition:
         assert len(gate_names) - gate_names.count("CNOT") == n_layers * n_rots
 
     @pytest.mark.parametrize("ratio", [0.2, 0.6])
-    def test_ratio_imprimitive(self, ratio):
+    def test_ratio_imprim(self, ratio):
         """Test the ratio of imprimitive gates."""
         n_rots = 500
         weights = np.random.random(size=(1, n_rots))
 
         op = qml.RandomLayers(weights, wires=range(2), ratio_imprim=ratio)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         gate_names = [gate.name for gate in queue]
         ratio_impr = gate_names.count("CNOT") / len(gate_names)
@@ -87,17 +149,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.RandomLayers(weights, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.RandomLayers(weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -176,7 +239,7 @@ class TestInterfaces:
         ]
 
         for op1, op2 in zip(decomp, expected):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_autograd(self, tol):
         """Tests the autograd interface."""

@@ -14,23 +14,16 @@
 """
 Unit tests for :mod:`fourier` visualization functions.
 """
+# pylint: disable=too-few-public-methods,too-many-arguments
 
 import pytest
 
-matplotlib = pytest.importorskip("matplotlib")
-import matplotlib.pyplot as plt
-
 from pennylane import numpy as np
+from pennylane.fourier.visualize import _validate_coefficients, bar, box, panel, radial_box, violin
 
-from pennylane.fourier.visualize import _validate_coefficients
+matplotlib = pytest.importorskip("matplotlib")
 
-from pennylane.fourier.visualize import (
-    violin,
-    bar,
-    box,
-    panel,
-    radial_box,
-)
+plt = matplotlib.pyplot
 
 
 coeffs_1D_valid_1 = np.array([0.5, 0, 0.25j, 0.25j, 0])

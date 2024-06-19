@@ -14,6 +14,7 @@ for Pauli-word partitioning functionality used in measurement optimization.
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
+    :skip: lie_closure, structure_constants, center
 
 PauliWord and PauliSentence
 ---------------------------
@@ -36,44 +37,77 @@ approach to represent Pauli words. A :class:`~pennylane.pauli.PauliWord` can be
 instantiated by passing a dictionary of wires and their associated Pauli operators.
 
 >>> from pennylane.pauli import PauliWord
->>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})  # X@Z
->>> pw2 = qml.pauli.PauliWord({0:"Y", 1:"Z"})  # Y@Z
+>>> pw1 = PauliWord({0:"X", 1:"Z"})  # X@Z
+>>> pw2 = PauliWord({0:"Y", 1:"Z"})  # Y@Z
 >>> pw1, pw2
 (X(0) @ Z(1), Y(0) @ Z(1))
 
 The purpose of this class is to efficiently compute products of Pauli words and
 obtain the matrix representation.
 
->>> pw1 * pw2
-(Z(0), 1j)
+>>> pw1 @ pw2
+1j * Z(0)
 >>> pw1.to_mat(wire_order=[0, 1])
 array([[ 0,  0,  1,  0],
        [ 0,  0,  0, -1],
        [ 1,  0,  0,  0],
        [ 0, -1,  0,  0]])
 
-
 The :class:`~pennylane.pauli.PauliSentence` class represents linear combinations of
 Pauli words. Using a similar dictionary based approach we can efficiently add, multiply
 and extract the matrix of operators in this representation.
 
->>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
->>> ps2 = qml.pauli.PauliSentence({pw1: -1.2})
+>>> ps1 = PauliSentence({pw1: 1.2, pw2: 0.5j})
+>>> ps2 = PauliSentence({pw1: -1.2})
 >>> ps1
 1.2 * X(0) @ Z(1)
 + 0.5j * Y(0) @ Z(1)
+
 >>> ps1 + ps2
 0.0 * X(0) @ Z(1)
 + 0.5j * Y(0) @ Z(1)
->>> ps1 * ps2
+
+>>> ps1 @ ps2
 -1.44 * I
 + (-0.6+0j) * Z(0)
+
 >>> (ps1 + ps2).to_mat(wire_order=[0, 1])
 array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
        [ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j],
        [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
        [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
 
+We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of :class:`~pennylane.pauli.PauliWord`
+and :class:`~pennylane.pauli.PauliSentence` objects like the spin-1/2 XXZ model Hamiltonian,
+
+.. math:: H_\text{XXZ} = \sum_j [J^\bot (X_j X_{j+1} + Y_j Y_{j+1}) + J^\text{ZZ} Z_j Z_{j+1} + h Z_j].
+
+Here we look at the simple topology of a one-dimensional chain with periodic boundary conditions
+(i.e. qubit number :math:`n \equiv 0` for pythonic numbering of wires, e.g. ``[0, 1, 2, 3]`` for ``n=4``).
+In code we can do this via the following example with 4 qubits.
+
+.. code-block:: python3
+
+    n = 4
+    J_orthogonal = 1.5
+    ops = [
+        J_orthogonal * (PauliWord({i:"X", (i+1)%n:"X"}) + PauliWord({i:"Y", (i+1)%n:"Y"}))
+        for i in range(n)
+    ]
+
+    J_zz = 0.5
+    ops += [J_zz * PauliWord({i:"Z", (i+1)%n:"Z"}) for i in range(n)]
+
+    h = 2.
+    ops += [h * PauliWord({i:"Z"}) for i in range(n)]
+
+    H = sum(ops)
+
+We can also displace the Hamiltonian by an arbitrary amount. Here, for example, such that the ground state energy is 0.
+
+>>> H = H - np.min(np.linalg.eigvalsh(H.to_mat()))
+
+.. _graph_colouring:
 
 Graph colouring
 ---------------
@@ -98,7 +132,7 @@ groupings according to a binary relation (e.g., qubit-wise commuting):
 >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
 >>> obs_groupings = group_observables(observables)
 >>> obs_groupings
-[[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
+[[PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0]), PauliZ(wires=[1])]]
 
 The :math:`C_{J}` coefficients for each :math:`P_J` Pauli word making up a
@@ -111,7 +145,25 @@ the groups of observables:
 >>> coeffs = [1.43, 4.21, 0.97]
 >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'qwc', 'rlf')
 >>> obs_groupings
-[[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
+[[PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0]), PauliZ(wires=[1])]]
 >>> coeffs_groupings
 [[4.21], [1.43, 0.97]]
+
+For a larger example of how grouping can be used with PennyLane, check out the
+`Measurement Optimization demo <https://pennylane.ai/qml/demos/tutorial_measurement_optimize/>`_.
+
+Dynamical Lie Algebras
+----------------------
+
+PennyLane provides support for working with dynamical Lie algebras (DLA) of Pauli operators.
+See our `introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~lie_closure
+    ~structure_constants
+    ~center

@@ -14,28 +14,24 @@
 """
 Unit tests for the available qubit operations for quantum chemistry purposes.
 """
-import pytest
 import numpy as np
+
+# pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
+import pytest
+from gate_data import (
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    FermionicSWAP,
+    OrbitalRotation,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+)
 from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qml
 from pennylane import numpy as pnp
-
-from gate_data import (
-    X,
-    StateZeroProjector,
-    StateOneProjector,
-    ControlledPhaseShift,
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
-    OrbitalRotation,
-    FermionicSWAP,
-)
-
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qml.SingleExcitation(0.14, wires=[0, 1]),
@@ -50,6 +46,7 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 
 
 class TestParameterFrequencies:
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not qml.operation.has_gen(op):
@@ -60,9 +57,7 @@ class TestParameterFrequencies:
         try:
             mat = gen.matrix()
         except (AttributeError, qml.operation.MatrixUndefinedError):
-            if isinstance(gen, qml.Hamiltonian):
-                mat = qml.utils.sparse_hamiltonian(gen).toarray()
-            elif isinstance(gen, qml.SparseHamiltonian):
+            if isinstance(gen, (qml.Hamiltonian, qml.SparseHamiltonian)):
                 mat = gen.sparse_matrix().toarray()
             else:
                 pytest.skip(f"Operation {op.name}'s generator does not define a matrix.")
@@ -205,7 +200,7 @@ class TestSingleExcitation:
         assert pow_ops[0].__class__ is qml.SingleExcitation
 
         mat = qml.matrix(op)
-        pow_mat = qml.matrix(op.pow)(n)
+        pow_mat = qml.matrix(op.pow, wire_order=op.wires)(n)
 
         mat_then_pow = fractional_matrix_power(mat, n)
         assert qml.math.allclose(pow_mat, mat_then_pow)
@@ -305,7 +300,7 @@ class TestSingleExcitation:
 
         dev = qml.device("default.qubit.autograd", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
@@ -394,19 +389,6 @@ class TestDoubleExcitation:
         assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_double_excitation_decomp(self, phi):
-        """Tests that the DoubleExcitation operation calculates the correct decomposition"""
-        decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
-        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
-
-        for decomp in [decomp1, decomp2]:
-            mats = [m.matrix() for m in decomp]
-            decomposed_matrix = mats[0] @ mats[1]
-            exp = DoubleExcitation(phi)
-
-            assert np.allclose(decomposed_matrix, exp)
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_generator(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct generator"""
         op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
@@ -427,7 +409,7 @@ class TestDoubleExcitation:
         assert pow_ops[0].__class__ is qml.DoubleExcitation
 
         mat = qml.matrix(op)
-        pow_mat = qml.matrix(op.pow)(n)
+        pow_mat = qml.matrix(op.pow, wire_order=op.wires)(n)
 
         mat_then_pow = fractional_matrix_power(mat, n)
         assert qml.math.allclose(pow_mat, mat_then_pow)
@@ -443,38 +425,8 @@ class TestDoubleExcitation:
         decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
         decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
-        from functools import reduce
-
-        # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
-        # CU  = |0><0| \otimes I + |1><1| \otimes U
-        def cnot_four_qubits(wires):
-            proj_0_term = [StateZeroProjector if idx == wires[0] else np.eye(2) for idx in range(4)]
-
-            proj_1_term = [np.eye(2) for idx in range(4)]
-            proj_1_term[wires[0]] = StateOneProjector
-            proj_1_term[wires[1]] = X
-
-            proj_0_kron = reduce(np.kron, proj_0_term)
-            proj_1_kron = reduce(np.kron, proj_1_term)
-
-            return proj_0_kron + proj_1_kron
-
-        # Inserts a single-qubit matrix into a four-qubit matrix at the right place
-        def single_mat_four_qubits(mat, wire):
-            individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
-            return reduce(np.kron, individual_mats)
-
         for decomp in [decomp1, decomp2]:
-            mats = []
-            for i in reversed(decomp):
-                # Single-qubit gate
-                if len(i.wires.tolist()) == 1:
-                    mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
-                    mats.append(mat)
-                # Two-qubit gate
-                else:
-                    mat = cnot_four_qubits(i.wires.tolist())
-                    mats.append(mat)
+            mats = [op.matrix(wire_order=list(range(4))) for op in decomp]
 
             decomposed_matrix = np.linalg.multi_dot(mats)
             exp = DoubleExcitation(phi)
@@ -773,7 +725,7 @@ class TestOrbitalRotation:
         wires = (0, 1, 2, 3)
         op = qml.OrbitalRotation(phi, wires=wires)
         adj_op = qml.adjoint(op, lazy=False)
-        assert qml.equal(adj_op, qml.OrbitalRotation(-phi, wires=wires))
+        qml.assert_equal(adj_op, qml.OrbitalRotation(-phi, wires=wires))
 
     def test_adjoint_integration(self):
         """Test that the adjoint correctly inverts the orbital rotation operation"""
@@ -896,8 +848,6 @@ class TestOrbitalRotation:
         """Tests that operations are computed correctly using the
         jax interface"""
 
-        import jax
-
         dev = qml.device("default.qubit.jax", wires=4)
         state = np.array(
             [
@@ -934,8 +884,6 @@ class TestOrbitalRotation:
     def test_torch(self):
         """Tests that operations are computed correctly using the
         torch interface"""
-
-        import torch
 
         dev = qml.device("default.qubit.torch", wires=4)
         state = np.array(
@@ -1118,7 +1066,7 @@ class TestFermionicSWAP:
         assert pow_ops[0].__class__ is qml.FermionicSWAP
 
         mat = qml.matrix(op)
-        pow_mat = qml.matrix(op.pow)(n)
+        pow_mat = qml.matrix(op.pow, wire_order=op.wires)(n)
 
         mat_then_pow = fractional_matrix_power(mat, n)
         assert qml.math.allclose(pow_mat, mat_then_pow)
@@ -1130,7 +1078,7 @@ class TestFermionicSWAP:
         wires = (0, 1)
         op = qml.FermionicSWAP(phi, wires=wires)
         adj_op = qml.adjoint(op, lazy=False)
-        assert qml.equal(adj_op, qml.FermionicSWAP(-phi, wires=wires))
+        qml.assert_equal(adj_op, qml.FermionicSWAP(-phi, wires=wires))
 
     def test_adjoint_integration(self):
         """Test that the adjoint correctly inverts the fermionic swap operation"""
@@ -1191,7 +1139,7 @@ class TestFermionicSWAP:
 
         dev = qml.device("default.qubit.autograd", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.FermionicSWAP(phi, wires=[0, 1])
@@ -1280,3 +1228,15 @@ def test_label_method(op, label1, label2, label3):
     assert op.label() == label1
     assert op.label(decimals=2) == label2
     assert op.label(decimals=0) == label3
+
+
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+@pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
+def test_generators(op):
+    """Check that the type of the generator returned by the qchem ops is
+    the same as the type pointed to by qml.Hamiltonian (either Hamiltonian
+    or LinearCombiantion) for both legacy and new opmath"""
+    if isinstance(op, (qml.ops.DoubleExcitationPlus, qml.ops.DoubleExcitationMinus)):
+        pytest.skip(reason="Operator has SparseHamiltonian generator instead")
+
+    assert isinstance(op.generator(), qml.Hamiltonian)

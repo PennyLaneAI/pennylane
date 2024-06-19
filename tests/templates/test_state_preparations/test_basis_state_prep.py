@@ -14,9 +14,23 @@
 """
 Unit tests for the BasisStatePreparation template.
 """
-import pytest
 import numpy as np
+
+# pylint: disable=too-many-arguments
+import pytest
+
 import pennylane as qml
+
+
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    basis_state = [0, 1]
+    wires = [0, 1]
+
+    op = qml.BasisStatePreparation(basis_state, wires)
+
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -61,10 +75,10 @@ class TestDecomposition:
         ([1, 0, 1], [0, 1, 2], [1, 0, 1]),
     ])
     # fmt: on
-    def test_state_preparation(self, tol, qubit_device_3_wires, basis_state, wires, target_state):
+    def test_state_preparation(self, tol, basis_state, wires, target_state):
         """Tests that the template produces the correct expectation values."""
 
-        @qml.qnode(qubit_device_3_wires)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.BasisStatePreparation(basis_state, wires)
 
@@ -85,13 +99,11 @@ class TestDecomposition:
             ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
         ],
     )
-    def test_state_preparation_jax_jit(
-        self, tol, qubit_device_3_wires, basis_state, wires, target_state
-    ):
+    def test_state_preparation_jax_jit(self, tol, basis_state, wires, target_state):
         """Tests that the template produces the correct expectation values."""
         import jax
 
-        @qml.qnode(qubit_device_3_wires, interface="jax")
+        @qml.qnode(qml.device("default.qubit"), interface="jax")
         def circuit(state):
             qml.BasisStatePreparation(state, wires)
 
@@ -114,14 +126,12 @@ class TestDecomposition:
             ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
         ],
     )
-    def test_state_preparation_tf_autograph(
-        self, tol, qubit_device_3_wires, basis_state, wires, target_state
-    ):
+    def test_state_preparation_tf_autograph(self, tol, basis_state, wires, target_state):
         """Tests that the template produces the correct expectation values."""
         import tensorflow as tf
 
         @tf.function
-        @qml.qnode(qubit_device_3_wires, interface="tf")
+        @qml.qnode(qml.device("default.qubit"), interface="tf")
         def circuit(state):
             qml.BasisStatePreparation(state, wires)
 
@@ -143,17 +153,30 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.BasisStatePreparation(basis_state, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.BasisStatePreparation(basis_state, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+    def test_batched_decomposition_fails(self):
+        """Test that attempting to decompose a BasisStatePreparation operation with
+        broadcasting raises an error."""
+        state = np.array([[1, 0], [1, 1]])
+
+        op = qml.BasisStatePreparation(state, wires=[0, 1])
+        with pytest.raises(ValueError, match="Broadcasting with BasisStatePreparation"):
+            _ = op.decomposition()
+
+        with pytest.raises(ValueError, match="Broadcasting with BasisStatePreparation"):
+            _ = qml.BasisStatePreparation.compute_decomposition(state, qml.wires.Wires([0, 1]))
 
 
 class TestInputs:

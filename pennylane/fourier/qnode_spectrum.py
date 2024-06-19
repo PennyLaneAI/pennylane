@@ -69,7 +69,7 @@ def _process_ids(encoding_args, argnum, qnode):
 
     >>> @qml.qnode(dev)
     >>> def circuit(a, b, c, x=2):
-    ...     return qml.expval(qml.PauliX(0))
+    ...     return qml.expval(qml.X(0))
 
     which takes arguments:
 
@@ -242,7 +242,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 qml.RY(2.3*y[i], wires=i)
                 qml.Rot(w[1,i,0], w[1,i,1], w[1,i,2], wires=i)
                 qml.RX(z, wires=i)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qml.expval(qml.Z(0))
 
     This circuit looks as follows:
 
@@ -325,7 +325,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
             def circuit(x):
                 qml.RX(0.4*x[0], wires=0)
                 qml.PhaseShift(x[1]*np.pi, wires=0)
-                return qml.expval(qml.PauliZ(wires=0))
+                return qml.expval(qml.Z(0))
 
             x = tf.Variable([1., 2.])
             res = qml.fourier.qnode_spectrum(circuit)(x)
@@ -346,7 +346,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 qml.RY(2.3*y, wires=1, id="y0")
                 qml.CNOT(wires=[1,0])
                 qml.RY(z, wires=0, id="y1")
-                return qml.expval(qml.PauliZ(wires=0))
+                return qml.expval(qml.Z(0))
 
         First, note that we assigned ``id`` labels to the gates for which we will use
         ``circuit_spectrum``. This allows us to choose these gates in the computation:
@@ -389,7 +389,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        jac_fn = qml.transforms.classical_jacobian(
+        jac_fn = qml.gradients.classical_jacobian(
             qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
         )
         # Compute classical Jacobian and assert preprocessing is linear
@@ -409,7 +409,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         cjacs = jac_fn(*args, **kwargs)
         spectra = {}
         tape = qml.transforms.expand_multipar(qnode.qtape)
-        par_info = tape._par_info
+        par_info = tape.par_info
 
         # Iterate over jacobians per argument
         for jac_idx, cjac in enumerate(cjacs):

@@ -15,8 +15,9 @@
 This module contains the functions needed for performing basis transformations defined by a set of fermionic ladder operators.
 """
 
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 
 
 def _givens_matrix(a, b, left=True, tol=1e-8):

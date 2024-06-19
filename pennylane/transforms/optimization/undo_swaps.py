@@ -14,95 +14,103 @@
 
 """Transform that eliminates the swap operators by reordering the wires."""
 # pylint: disable=too-many-branches
-from pennylane import apply
-from pennylane.transforms import qfunc_transform
-from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager
+from typing import Callable, Sequence
+
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
-@qfunc_transform
-def undo_swaps(tape):
+def null_postprocessing(results):
+    """A postprocesing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
+@transform
+def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform to remove SWAP gates by running from right
     to left through the circuit changing the position of the qubits accordingly.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        function: the transformed quantum function
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
-    Consider the following quantum function:
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    You can apply the transform directly on a :class:`QNode`
 
     .. code-block:: python
 
-        def qfunc():
+        @undo_swaps
+        @qml.qnode(device=dev)
+        def circuit():
             qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
+            qml.X(1)
             qml.SWAP(wires=[0,1])
             qml.SWAP(wires=[0,2])
-            qml.PauliY(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.Y(0)
+            return qml.expval(qml.Z(0))
 
-    The circuit before optimization:
+    The SWAP gates are removed before execution.
 
-    >>> dev = qml.device('default.qubit', wires=3)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)())
-        0: ──H──╭SWAP──╭SWAP──Y──┤ ⟨Z⟩
-        1: ──X──╰SWAP──│─────────┤
-        2: ────────────╰SWAP─────┤
+    .. details::
+        :title: Usage Details
+
+        Consider the following quantum function:
+
+        .. code-block:: python
+
+            def qfunc():
+                qml.Hadamard(wires=0)
+                qml.X(1)
+                qml.SWAP(wires=[0,1])
+                qml.SWAP(wires=[0,2])
+                qml.Y(0)
+                return qml.expval(qml.Z(0))
+
+        The circuit before optimization:
+
+        >>> dev = qml.device('default.qubit', wires=3)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)())
+            0: ──H──╭SWAP──╭SWAP──Y──┤ ⟨Z⟩
+            1: ──X──╰SWAP──│─────────┤
+            2: ────────────╰SWAP─────┤
 
 
-    We can remove the SWAP gates by running the ``undo_swap`` transform:
+        We can remove the SWAP gates by running the ``undo_swap`` transform:
 
-    >>> optimized_qfunc = undo_swaps(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2))
-        0: ──Y──┤ ⟨Z⟩
-        1: ──H──┤
-        2: ──X──┤
+        >>> optimized_qfunc = undo_swaps(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)())
+            0: ──Y──┤ ⟨Z⟩
+            1: ──H──┤
+            2: ──X──┤
 
     """
-    # Make a working copy of the list to traverse
-    list_copy = tape.operations.copy()
-    list_copy.reverse()
 
-    map_wires = {wire: wire for wire in tape.wires}
+    wire_map = {wire: wire for wire in tape.wires}
     gates = []
 
-    def _change_wires(wires):
-        change_wires = Wires([])
-        wires = wires.toarray()
-        for wire in wires:
-            change_wires += map_wires[wire]
-        return change_wires
+    for current_gate in reversed(tape.operations):
+        if current_gate.name == "SWAP":
+            swap_wires_0, swap_wires_1 = current_gate.wires
+            wire_map[swap_wires_0], wire_map[swap_wires_1] = (
+                wire_map[swap_wires_1],
+                wire_map[swap_wires_0],
+            )
+        else:
+            gates.append(current_gate.map_wires(wire_map))
 
-    with QueuingManager.stop_recording():
-        while len(list_copy) > 0:
-            current_gate = list_copy[0]
-            params = current_gate.parameters
-            if current_gate.name != "SWAP":
-                if len(params) == 0:
-                    gates.append(type(current_gate)(wires=_change_wires(current_gate.wires)))
-                else:
-                    gates.append(
-                        type(current_gate)(*params, wires=_change_wires(current_gate.wires))
-                    )
+    gates.reverse()
 
-            else:
-                swap_wires_0, swap_wires_1 = current_gate.wires
-                map_wires[swap_wires_0], map_wires[swap_wires_1] = (
-                    map_wires[swap_wires_1],
-                    map_wires[swap_wires_0],
-                )
-            list_copy.pop(0)
+    new_tape = type(tape)(
+        gates, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
 
-        gates.reverse()
-
-        for m in tape.measurements:
-            gates.append(m)
-
-    for gate in gates:
-        apply(gate)
+    return [new_tape], null_postprocessing

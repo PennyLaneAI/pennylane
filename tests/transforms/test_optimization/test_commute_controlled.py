@@ -11,17 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``commute_controlled``.
+"""
 import pytest
-from pennylane import numpy as np
-import pennylane as qml
-from pennylane.wires import Wires
+from utils import check_matrix_equivalence, compare_operation_lists
 
+import pennylane as qml
+from pennylane import numpy as np
 from pennylane.transforms.optimization import commute_controlled
-from utils import (
-    compare_operation_lists,
-    check_matrix_equivalence,
-)
+from pennylane.wires import Wires
 
 
 class TestCommuteControlled:
@@ -35,10 +34,10 @@ class TestCommuteControlled:
             qml.CNOT(wires=[0, 2])
             qml.RX(0.2, wires=2)
 
-        transformed_qfunc = commute_controlled(direction="sideways")(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction="sideways")
 
         with pytest.raises(ValueError, match="must be 'left' or 'right'"):
-            ops = qml.tape.make_qscript(transformed_qfunc)().operations
+            qml.tape.make_qscript(transformed_qfunc)()
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_gate_with_no_basis(self, direction):
@@ -49,7 +48,7 @@ class TestCommuteControlled:
             qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), control_wires=0, wires=2)
             qml.PauliX(wires=2)
 
-        transformed_qfunc = commute_controlled(direction=direction)(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction=direction)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -66,7 +65,7 @@ class TestCommuteControlled:
             qml.CNOT(wires=[2, "b"])
             qml.PauliY(wires="b")
 
-        transformed_qfunc = commute_controlled(direction=direction)(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction=direction)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -86,7 +85,7 @@ class TestCommuteControlled:
             qml.PauliX(wires=1)
             qml.CRX(0.1, wires=[0, 1])
 
-        transformed_qfunc = commute_controlled()(qfunc)
+        transformed_qfunc = commute_controlled(qfunc)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -114,7 +113,7 @@ class TestCommuteControlled:
             qml.SX(wires=1)
             qml.PauliX(wires=1)
 
-        transformed_qfunc = commute_controlled(direction="left")(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction="left")
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -148,7 +147,7 @@ class TestCommuteControlled:
             qml.RX(0.2, wires="a")
             qml.Toffoli(wires=["c", "a", "b"])
 
-        transformed_qfunc = commute_controlled(direction=direction)(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction=direction)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -166,7 +165,7 @@ class TestCommuteControlled:
             qml.RY(0.3, wires=1)
             qml.CY(wires=["a", 1])
 
-        transformed_qfunc = commute_controlled()(qfunc)
+        transformed_qfunc = commute_controlled(qfunc)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -184,7 +183,7 @@ class TestCommuteControlled:
             qml.CY(wires=["a", 1])
             qml.RY(0.3, wires=1)
 
-        transformed_qfunc = commute_controlled(direction="left")(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction="left")
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -203,7 +202,7 @@ class TestCommuteControlled:
             qml.CY(wires=["a", 1])
             qml.RY(0.3, wires="a")
 
-        transformed_qfunc = commute_controlled()(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction=direction)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -226,7 +225,7 @@ class TestCommuteControlled:
             qml.PauliZ(wires=0)
             qml.CRZ(0.5, wires=[0, 1])
 
-        transformed_qfunc = commute_controlled()(qfunc)
+        transformed_qfunc = commute_controlled(qfunc)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -253,7 +252,7 @@ class TestCommuteControlled:
             qml.T(wires=0)
             qml.PauliZ(wires=0)
 
-        transformed_qfunc = commute_controlled(direction="left")(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction="left")
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -268,6 +267,7 @@ class TestCommuteControlled:
     def test_push_mixed_with_matrix(self, direction):
         """Test that arbitrary gates after controlled gates on controls *and*
         targets get properly pushed."""
+        # pylint:disable=too-many-function-args
 
         def qfunc():
             qml.PauliX(wires=1)
@@ -285,7 +285,7 @@ class TestCommuteControlled:
             qml.PauliX(wires=1)
             qml.CRY(0.2, wires=[1, 0])
 
-        transformed_qfunc = commute_controlled()(qfunc)
+        transformed_qfunc = commute_controlled(qfunc, direction=direction)
 
         original_ops = qml.tape.make_qscript(qfunc)().operations
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
@@ -306,7 +306,7 @@ class TestCommuteControlled:
 dev = qml.device("default.qubit", wires=3)
 
 
-def qfunc(theta):
+def qfunc_all_ops(theta):
     qml.PauliX(wires=2)
     qml.S(wires=0)
     qml.CNOT(wires=[0, 1])
@@ -318,7 +318,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliZ(0))
 
 
-transformed_qfunc = commute_controlled()(qfunc)
+transformed_qfunc_all_ops = commute_controlled(qfunc_all_ops)
 
 expected_op_list = ["PauliX", "CNOT", "CRY", "PauliY", "Toffoli", "S", "PhaseShift", "T"]
 expected_wires_list = [
@@ -340,8 +340,8 @@ class TestCommuteControlledInterfaces:
     def test_commute_controlled_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2], requires_grad=True)
 
@@ -362,8 +362,8 @@ class TestCommuteControlledInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([1.2, -0.35], requires_grad=True)
         transformed_input = torch.tensor([1.2, -0.35], requires_grad=True)
@@ -389,8 +389,8 @@ class TestCommuteControlledInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.8, -0.6])
         transformed_input = tf.Variable([0.8, -0.6])
@@ -422,13 +422,8 @@ class TestCommuteControlledInterfaces:
         import jax
         from jax import numpy as jnp
 
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
-
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.3, 0.4], dtype=jnp.float64)
 
@@ -443,3 +438,99 @@ class TestCommuteControlledInterfaces:
         # Check operation list
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+
+### Tape
+with qml.queuing.AnnotatedQueue() as q:
+    qml.PauliX(wires=2)
+    qml.CNOT(wires=[0, 2])
+    qml.RX(0.2, wires=2)
+    qml.Toffoli(wires=[0, 1, 2])
+    qml.SX(wires=1)
+    qml.PauliX(wires=1)
+    qml.CRX(0.1, wires=[0, 1])
+
+tape_circuit = qml.tape.QuantumTape.from_queue(q)
+
+
+### QFunc
+def qfunc_circuit():
+    """Qfunc circuit"""
+    qml.PauliX(wires=2)
+    qml.CNOT(wires=[0, 2])
+    qml.RX(0.2, wires=2)
+    qml.Toffoli(wires=[0, 1, 2])
+    qml.SX(wires=1)
+    qml.PauliX(wires=1)
+    qml.CRX(0.1, wires=[0, 1])
+
+
+### QNode
+dev = qml.devices.DefaultQubit()
+
+
+@qml.qnode(device=dev)
+def qnode_circuit():
+    qml.PauliX(wires=2)
+    qml.CNOT(wires=[0, 2])
+    qml.RX(0.2, wires=2)
+    qml.Toffoli(wires=[0, 1, 2])
+    qml.SX(wires=1)
+    qml.PauliX(wires=1)
+    qml.CRX(0.1, wires=[0, 1])
+    return qml.expval(qml.PauliY(1) @ qml.PauliZ(2))
+
+
+class TestTransformDispatch:
+    """Test commute controlled on tape, qfunc and QNode."""
+
+    def test_tape(self):
+        """Test the transform on tape."""
+        tapes, _ = commute_controlled(tape_circuit)
+        assert len(tapes) == 1
+        tape = tapes[0]
+        assert len(tape.operations) == 7
+
+        names_expected = ["CNOT", "Toffoli", "PauliX", "RX", "CRX", "SX", "PauliX"]
+        wires_expected = [
+            Wires([0, 2]),
+            Wires([0, 1, 2]),
+            Wires(2),
+            Wires(2),
+            Wires([0, 1]),
+            Wires(1),
+            Wires(1),
+        ]
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
+
+    def test_qfunc(self):
+        """Test the transform on a qfunc inside a qnode."""
+
+        @qml.qnode(device=dev)
+        def new_circuit():
+            commute_controlled(qfunc_circuit)()
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+
+        new_circuit()
+        assert len(new_circuit.tape.operations) == 7
+
+        names_expected = ["CNOT", "Toffoli", "PauliX", "RX", "CRX", "SX", "PauliX"]
+        wires_expected = [
+            Wires([0, 2]),
+            Wires([0, 1, 2]),
+            Wires(2),
+            Wires(2),
+            Wires([0, 1]),
+            Wires(1),
+            Wires(1),
+        ]
+        compare_operation_lists(new_circuit.tape.operations, names_expected, wires_expected)
+
+    def test_qnode(self):
+        """Test the transform on a qnode directly."""
+        transformed_qnode = commute_controlled(qnode_circuit)
+        assert not transformed_qnode.transform_program.is_empty()
+        assert len(transformed_qnode.transform_program) == 1
+        res = transformed_qnode()
+        expected = qnode_circuit()
+        assert np.allclose(res, expected)

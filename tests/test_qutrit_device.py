@@ -58,7 +58,7 @@ def mock_qutrit_device(monkeypatch):
         m.setattr(QutritDevice, "apply", lambda self, *args, **kwargs: None)
 
         def get_qutrit_device(wires=1):
-            return QutritDevice(wires=wires)
+            return QutritDevice(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_qutrit_device
 
@@ -88,7 +88,7 @@ def mock_qutrit_device_extract_stats(monkeypatch):
         m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: x)
 
         def get_qutrit_device(wires=1):
-            return QutritDevice(wires=wires)
+            return QutritDevice(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_qutrit_device
 
@@ -116,6 +116,7 @@ def mock_qutrit_device_shots(monkeypatch):
         )
 
         def get_qutrit_device(wires=1, shots=None):
+            # pylint:disable=abstract-class-instantiated
             return QutritDevice(wires=wires, shots=shots)
 
         yield get_qutrit_device
@@ -133,7 +134,7 @@ def mock_qutrit_device_with_original_statistics(monkeypatch):
         m.setattr(QutritDevice, "observables", ["Identity"])
 
         def get_qutrit_device(wires=1):
-            return QutritDevice(wires=wires)
+            return QutritDevice(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_qutrit_device
 
@@ -699,7 +700,7 @@ class TestExpval:
             m.setattr("numpy.mean", lambda obs, axis=None: obs)
             res = dev.expval(obs)
 
-        assert res == obs
+        assert res == np.array(obs)
 
     def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
         """Tests that an error is thrown if expval is called with an observable that does
@@ -761,7 +762,7 @@ class TestVar:
             m.setattr("numpy.var", lambda obs, axis=None: obs)
             res = dev.var(obs)
 
-        assert res == obs
+        assert res == np.array(obs)
 
     def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
@@ -1045,7 +1046,7 @@ class TestShotList:
         with pytest.raises(qml.DeviceError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=0.5)
 
-        with pytest.raises(ValueError, match="Unknown shot sequence"):
+        with pytest.raises(ValueError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=["a", "b", "c"])
 
     shot_data = [

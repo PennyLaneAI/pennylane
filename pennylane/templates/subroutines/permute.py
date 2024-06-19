@@ -14,16 +14,18 @@
 r"""
 Contains the Permute template.
 """
+import copy
 
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import SWAP
+from pennylane.wires import Wires
 
 
 class Permute(Operation):
     r"""Applies a permutation to a set of wires.
 
     Args:
-        permutation (list): A list of wire labels that represents the new ordering of wires
+        permutation (Sequence): A list of wire labels that represents the new ordering of wires
             after the permutation. The list may consist of integers or strings, so long as
             they match the labels of ``wires``.
         wires (Iterable or Wires): Wires that the permutation acts on. Accepts an iterable
@@ -44,7 +46,7 @@ class Permute(Operation):
         def apply_perm():
             # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
             qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     See "Usage Details" for further examples.
 
@@ -63,7 +65,7 @@ class Permute(Operation):
             @qml.qnode(dev)
             def apply_perm():
                 qml.Permute([3, 2, 0, 1], dev.wires)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> print(qml.draw(apply_perm, expansion_strategy="device")())
         0: ─╭SWAP─────────────┤  <Z>
@@ -80,8 +82,8 @@ class Permute(Operation):
 
             import pennylane as qml
 
-            with qml.tape.QuantumTape() as tape:
-                qml.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+            op = qml.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+            tape = qml.tape.QuantumTape([op])
 
         >>> tape_expanded = qml.tape.tape.expand_tape(tape)
         >>> print(qml.drawer.tape_text(tape_expanded, wire_order=range(5)))
@@ -102,7 +104,7 @@ class Permute(Operation):
             @qml.qnode(dev)
             def circuit():
                 qml.Permute(["c", 3,"a",2,0], wires=wire_labels)
-                return qml.expval(qml.PauliZ("c"))
+                return qml.expval(qml.Z("c"))
 
         The permuted circuit is:
 
@@ -125,7 +127,7 @@ class Permute(Operation):
             def circuit():
                 # Only permute the order of 3 of them
                 qml.Permute(["c", 2, 0], wires=[2, 0, "c"])
-                return qml.expval(qml.PauliZ("c"))
+                return qml.expval(qml.Z("c"))
 
         will permute only the second, third, and fifth wires as follows:
 
@@ -138,10 +140,13 @@ class Permute(Operation):
 
     """
 
+    def __repr__(self):
+        return f"Permute({self.hyperparameters['permutation']}, wires={self.wires.tolist()})"
+
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, permutation, wires, do_queue=True, id=None):
+    def __init__(self, permutation, wires, id=None):
         if len(permutation) <= 1 or len(wires) <= 1:
             raise ValueError("Permutations must involve at least 2 qubits.")
 
@@ -158,8 +163,17 @@ class Permute(Operation):
             if label not in wires:
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
-        self._hyperparameters = {"permutation": permutation}
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        self._hyperparameters = {"permutation": tuple(permutation)}
+        super().__init__(wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["permutation"] = tuple(
+            wire_map.get(w, w) for w in new_op._hyperparameters["permutation"]
+        )
+        return new_op
 
     @property
     def num_params(self):

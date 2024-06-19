@@ -1,12 +1,15 @@
 numpy
-scipy
+scipy<1.13.0
+cvxpy
+cvxopt
 networkx
 rustworkx
 autograd
 toml
 appdirs
 semantic_version
-dask[delayed]
-autoray
+packaging
+autoray>=0.6.1,<0.6.10
 matplotlib
 requests
+tomli # Drop once minimum Python version is 3.11

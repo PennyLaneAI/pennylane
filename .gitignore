@@ -5,10 +5,10 @@ build
 dist
 qit.egg-info
 .idea
-*.ipynp
+*.ipynb
 *.ipynb_checkpoints
 *.egg-info*
-.coverage
+.coverage*
 coverage_html_report/*
 notebooks/*
 .pytest_cache/*
@@ -24,3 +24,6 @@ benchmark/revisions/
 venv
 config.toml
 .envrc
+qml_debug.log
+datasets/*
+.benchmarks/*

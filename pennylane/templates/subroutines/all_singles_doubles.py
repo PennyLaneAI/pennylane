@@ -15,10 +15,14 @@ r"""
 Contains the AllSinglesDoubles template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BasisState
+from pennylane.wires import Wires
 
 
 class AllSinglesDoubles(Operation):
@@ -105,7 +109,7 @@ class AllSinglesDoubles(Operation):
             @qml.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
                 qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             # Evaluate the QNode for a given set of parameters
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
@@ -115,9 +119,7 @@ class AllSinglesDoubles(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(
-        self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True, id=None
-    ):
+    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
@@ -142,16 +144,28 @@ class AllSinglesDoubles(Operation):
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
+        if hf_state[0].dtype != np.dtype("int"):
+            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state[0].dtype}")
+
+        singles = tuple(tuple(s) for s in singles)
+        doubles = tuple(tuple(d) for d in doubles)
+
         self._hyperparameters = {
-            "hf_state": qml.math.toarray(hf_state),
+            "hf_state": tuple(hf_state),
             "singles": singles,
             "doubles": doubles,
         }
 
-        if hf_state.dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
+        super().__init__(weights, wires=wires, id=id)
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        for key in ["singles", "doubles"]:
+            new_op._hyperparameters[key] = tuple(
+                tuple(wire_map[w] for w in wires) for wires in new_op._hyperparameters[key]
+            )
+        return new_op
 
     @property
     def num_params(self):

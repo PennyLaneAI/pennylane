@@ -16,7 +16,7 @@ Contains the hardware-efficient ParticleConservingU2 template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 def u2_ex_gate(phi, wires=None):
@@ -93,13 +93,12 @@ class ParticleConservingU2(Operation):
         weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
             layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
             ``(N-1)`` gates per layer.
-        wires (Iterable): wires that the template acts on
+        wires (Iterable): wires that the template acts on.
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
-            used to initialize the wires.
+            used to initialize the wires. If ``None``, a tuple of zeros is selected as initial state.
 
     .. details::
         :title: Usage Details
-
 
         #. The number of wires has to be equal to the number of spin orbitals included in
            the active space.
@@ -126,10 +125,13 @@ class ParticleConservingU2(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(qml.ParticleConservingU2, init_state=ref_state)
+            ansatz = partial(qml.ParticleConservingU2, init_state=ref_state, wires=dev.wires)
 
             # Define the cost function
-            cost_fn = qml.ExpvalCost(ansatz, h, dev)
+            @qml.qnode(dev)
+            def cost_fn(params):
+                ansatz(params)
+                return qml.expval(h)
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 1
@@ -152,7 +154,7 @@ class ParticleConservingU2(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
+    def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than one;"
@@ -169,9 +171,11 @@ class ParticleConservingU2(Operation):
                 f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
             )
 
-        self._hyperparameters = {"init_state": qml.math.toarray(init_state)}
+        init_state = tuple(0 for _ in wires) if init_state is None else init_state
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        self._hyperparameters = {"init_state": tuple(init_state)}
+
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

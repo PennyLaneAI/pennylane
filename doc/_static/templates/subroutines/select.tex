@@ -1,0 +1,15 @@
+\documentclass{standalone}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{quantikz}
+
+
+\begin{document}
+
+\begin{quantikz}
+    & \ctrl[open]{3} & \ctrl[open]{3} & \ \ldots\ & \ctrl{3} & \qw \\
+     & \ctrl[open]{2} & \ctrl[open]{2} & \ \ldots\ & \ctrl{2} & \qw \\
+     & \ctrl[open]{1} & \ctrl{1} & \ \ldots\ & \ctrl{1} & \qw\\
+    & \gate{U_0}& \gate{U_1} & \ \ldots\ & \gate{U_7} & \qw
+\end{quantikz}
+
+\end{document}

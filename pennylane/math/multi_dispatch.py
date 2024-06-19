@@ -16,6 +16,7 @@
 import functools
 from collections.abc import Sequence
 
+# pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -160,6 +161,14 @@ def kron(*args, like=None, **kwargs):
     """The kronecker/tensor product of args."""
     if like == "scipy":
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
+
+    if like == "torch":
+        mats = [
+            ar.numpy.asarray(arg, like="torch") if isinstance(arg, onp.ndarray) else arg
+            for arg in args
+        ]
+        return ar.numpy.kron(*mats)
+
     return ar.numpy.kron(*args, like=like, **kwargs)
 
 
@@ -179,7 +188,7 @@ def block_diag(values, like=None):
     >>> t = [
     ...     np.array([[1, 2], [3, 4]]),
     ...     torch.tensor([[1, 2, 3], [-1, -6, -3]]),
-    ...     torch.tensor(5)
+    ...     torch.tensor([[5]])
     ... ]
     >>> qml.math.block_diag(t)
     tensor([[ 1,  2,  0,  0,  0,  0],
@@ -217,8 +226,9 @@ def concatenate(values, axis=0, like=None):
     >>> y = tf.Variable([0.1, 0.2, 0.3])
     >>> z = np.array([5., 8., 101.])
     >>> concatenate([x, y, z])
-    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
-    array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01, 5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
+    <tf.Tensor: shape=(9,), dtype=float32, numpy=
+    array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01,
+           5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
     """
 
     if like == "torch":
@@ -309,8 +319,9 @@ def matmul(tensor1, tensor2, like=None):
 def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.
 
-    * If both tensors are 0-dimensional, elementwise multiplication
-      is performed and a 0-dimensional scalar returned.
+    * If either tensor is 0-dimensional, elementwise multiplication
+      is performed and a 0-dimensional scalar or a tensor with the
+      same dimensions as the other tensor is returned.
 
     * If both tensors are 1-dimensional, the dot product is returned.
 
@@ -319,7 +330,7 @@ def dot(tensor1, tensor2, like=None):
 
     * If both tensors are 2-dimensional, the matrix product is returned.
 
-    * Finally, if the the first array is N-dimensional and the second array
+    * Finally, if the first array is N-dimensional and the second array
       M-dimensional, a sum product over the last dimension of the first array,
       and the second-to-last dimension of the second array is returned.
 
@@ -333,7 +344,8 @@ def dot(tensor1, tensor2, like=None):
     x, y = np.coerce([tensor1, tensor2], like=like)
 
     if like == "torch":
-        if x.ndim == 0 and y.ndim == 0:
+
+        if x.ndim == 0 or y.ndim == 0:
             return x * y
 
         if x.ndim <= 2 and y.ndim <= 2:
@@ -341,14 +353,18 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
-    if like == "tensorflow":
-        if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
+    if like in {"tensorflow", "autograd"}:
+
+        ndim_y = len(np.shape(y))
+        ndim_x = len(np.shape(x))
+
+        if ndim_x == 0 or ndim_y == 0:
             return x * y
 
-        if len(np.shape(y)) == 1:
+        if ndim_y == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=like)
 
-        if len(np.shape(x)) == 2 and len(np.shape(y)) == 2:
+        if ndim_x == 2 and ndim_y == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
@@ -401,11 +417,12 @@ def get_trainable_indices(values, like=None):
 
     **Example**
 
+    >>> from pennylane import numpy as pnp
     >>> def cost_fn(params):
     ...     print("Trainable:", qml.math.get_trainable_indices(params))
     ...     return np.sum(np.sin(params[0] * params[1]))
-    >>> values = [np.array([0.1, 0.2], requires_grad=True),
-    ... np.array([0.5, 0.2], requires_grad=False)]
+    >>> values = [pnp.array([0.1, 0.2], requires_grad=True),
+    ... pnp.array([0.5, 0.2], requires_grad=False)]
     >>> cost_fn(values)
     Trainable: {0}
     tensor(0.0899685, requires_grad=True)
@@ -439,7 +456,7 @@ def ones_like(tensor, dtype=None):
 
     >>> x = torch.tensor([1., 2.])
     >>> ones_like(x)
-    tensor([1, 1])
+    tensor([1., 1.])
     >>> y = tf.Variable([[0], [5]])
     >>> ones_like(y, dtype=np.complex128)
     <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
@@ -486,7 +503,7 @@ def stack(values, axis=0, like=None):
     return np.stack(values, axis=axis, like=like)
 
 
-def einsum(indices, *operands, like=None):
+def einsum(indices, *operands, like=None, optimize=None):
     """Evaluates the Einstein summation convention on the operands.
 
     Args:
@@ -494,7 +511,7 @@ def einsum(indices, *operands, like=None):
             subscript labels. An implicit (classical Einstein summation) calculation is
             performed unless the explicit indicator ‘->’ is included as well as subscript
             labels of the precise output form.
-        operands (tuple[tensor_like]): The tensors for the operation.
+        *operands (tuple[tensor_like]): The tensors for the operation.
 
     Returns:
         tensor_like: The calculation based on the Einstein summation convention.
@@ -535,11 +552,21 @@ def einsum(indices, *operands, like=None):
     if like is None:
         like = get_interface(*operands)
     operands = np.coerce(operands, like=like)
-    return np.einsum(indices, *operands, like=like)
+    if optimize is None or like == "torch":
+        # torch einsum doesn't support the optimize keyword argument
+        return np.einsum(indices, *operands, like=like)
+    if like == "tensorflow":
+        # Unpacking and casting necessary for higher order derivatives,
+        # and avoiding implicit fp32 down-conversions.
+        op1, op2 = operands
+        op1 = array(op1, like=op1[0], dtype=op1[0].dtype)
+        op2 = array(op2, like=op2[0], dtype=op2[0].dtype)
+        return np.einsum(indices, op1, op2, like=like)
+    return np.einsum(indices, *operands, like=like, optimize=optimize)
 
 
 def where(condition, x=None, y=None):
-    """Returns elements chosen from x or y depending on a boolean tensor condition,
+    r"""Returns elements chosen from x or y depending on a boolean tensor condition,
     or the indices of entries satisfying the condition.
 
     The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
@@ -570,12 +597,10 @@ def where(condition, x=None, y=None):
         The output format for ``x=None`` and ``y=None`` follows the respective
         interface and differs between TensorFlow and all other interfaces:
         For TensorFlow, the output is a tensor with shape
-        ``(num_true, len(condition.shape))`` where ``num_true`` is the number
+        ``(len(condition.shape), num_true)`` where ``num_true`` is the number
         of entries in ``condition`` that are ``True`` .
-        The entry at position ``(i, j)`` is the ``j`` th entry of the ``i`` th
-        index.
         For all other interfaces, the output is a tuple of tensor-like objects,
-        with the ``j`` th object indicating the ``j`` th entries of all indices.
+        with the ``j``\ th object indicating the ``j``\ th entries of all indices.
         Also see the examples below.
 
     **Example with single argument**
@@ -590,13 +615,10 @@ def where(condition, x=None, y=None):
     ``(2, 4)`` . For TensorFlow, on the other hand:
 
     >>> math.where(tf.constant(a) < 1)
-    tf.Tensor(
-    [[0 0]
-     [0 1]
-     [1 1]
-     [1 2]], shape=(4, 2), dtype=int64)
+    <tf.Tensor: shape=(2, 4), dtype=int64, numpy=
+    array([[0, 0, 1, 1],
+           [0, 1, 1, 2]])>
 
-    As we can see, the dimensions are swapped and the output is a single Tensor.
     Note that the number of dimensions of the output does *not* depend on the input
     shape, it is always two-dimensional.
 
@@ -743,33 +765,49 @@ def unwrap(values, max_depth=None):
     ...     return np.sum(np.sin(params))
     >>> params = np.array([0.1, 0.2, 0.3])
     >>> grad = autograd.grad(cost_fn)(params)
-    Unwrapped: [(0.1, <class 'float'>), (0.2, <class 'float'>), (0.3, <class 'float'>)]
+    Unwrapped: [(0.1, <class 'numpy.float64'>), (0.2, <class 'numpy.float64'>), (0.3, <class 'numpy.float64'>)]
     >>> print(grad)
     [0.99500417 0.98006658 0.95533649]
     """
 
     def convert(val):
-        if isinstance(val, list):
+        if isinstance(val, (tuple, list)):
             return unwrap(val)
         new_val = (
             np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
         )
         return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
-    return [convert(val) for val in values]
+    if isinstance(values, (tuple, list)):
+        return type(values)(convert(val) for val in values)
+    return (
+        np.to_numpy(values, max_depth=max_depth)
+        if isinstance(values, ArrayBox)
+        else np.to_numpy(values)
+    )
 
 
-@multi_dispatch(argnum=[0])
+@multi_dispatch(argnum=[0, 1])
 def add(*args, like=None, **kwargs):
     """Add arguments element-wise."""
     if like == "scipy":
         return onp.add(*args, **kwargs)  # Dispatch scipy add to numpy backed specifically.
-    try:
-        return np.add(*args, **kwargs)
-    except TypeError:
-        # catch arg1 = torch, arg2=numpy error
-        # works fine with opposite order
-        return np.add(args[1], args[0], *args[2:], **kwargs)
+
+    arg_interfaces = {get_interface(args[0]), get_interface(args[1])}
+
+    # case of one torch tensor and one vanilla numpy array
+    if like == "torch" and len(arg_interfaces) == 2:
+        # In autoray 0.6.5, np.add dispatches to torch instead of
+        # numpy if one parameter is a torch tensor and the other is
+        # a numpy array. torch.add raises an Exception if one of the
+        # arguments is a numpy array, so here we cast both arguments
+        # to be tensors.
+        dev = getattr(args[0], "device", None) or getattr(args[1], "device")
+        arg0 = np.asarray(args[0], device=dev, like=like)
+        arg1 = np.asarray(args[1], device=dev, like=like)
+        return np.add(arg0, arg1, *args[2:], **kwargs)
+
+    return np.add(*args, **kwargs, like=like)
 
 
 @multi_dispatch()
@@ -813,6 +851,92 @@ def expm(tensor, like=None):
     from scipy.linalg import expm as scipy_expm
 
     return scipy_expm(tensor)
+
+
+@multi_dispatch()
+def norm(tensor, like=None, **kwargs):
+    """Compute the norm of a tensor in each interface."""
+    if like == "jax":
+        from jax.numpy.linalg import norm
+
+    elif like == "tensorflow":
+        from tensorflow import norm
+
+    elif like == "torch":
+        from torch.linalg import norm
+
+        if "axis" in kwargs:
+            axis_val = kwargs.pop("axis")
+            kwargs["dim"] = axis_val
+
+    elif (
+        like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
+    ):
+        norm = _flat_autograd_norm
+
+    else:
+        from scipy.linalg import norm
+
+    return norm(tensor, **kwargs)
+
+
+@multi_dispatch(argnum=[0])
+def svd(tensor, like=None, **kwargs):
+    r"""Compute the singular value decomposition of a tensor in each interface.
+
+    The singular value decomposition for a matrix :math:`A` consist of three matrices :math:`S`,
+    :math:`U` and :math:`V_h`, such that:
+
+    .. math::
+
+        A = U \cdot Diag(S) \cdot V_h
+
+    Args:
+        tensor (tensor_like): input tensor
+        compute_uv (bool):  if ``True``, the full decomposition is returned
+
+
+    Returns:
+        :math:`S`, :math:`U` and :math:`V_h` or :math:`S`: full decomposition
+        if ``compute_uv`` is ``True`` or ``None``, or only the singular values
+        if ``compute_uv`` is ``False``
+    """
+    if like == "tensorflow":
+        from tensorflow.linalg import adjoint, svd
+
+        # Tensorflow results need some post-processing to keep it similar to other frameworks.
+
+        if kwargs.get("compute_uv", True):
+            S, U, V = svd(tensor, **kwargs)
+            return U, S, adjoint(V)
+        return svd(tensor, **kwargs)
+
+    if like == "jax":
+        from jax.numpy.linalg import svd
+
+    elif like == "torch":
+        # Torch is deprecating torch.svd() in favour of torch.linalg.svd().
+        # The new UI is slightly different and breaks the logic for the multi dispatching.
+        # This small workaround restores the compute_uv control argument.
+        if kwargs.get("compute_uv", True) is False:
+            from torch.linalg import svdvals as svd
+        else:
+            from torch.linalg import svd
+        if kwargs.get("compute_uv", None) is not None:
+            kwargs.pop("compute_uv")
+
+    else:
+        from numpy.linalg import svd
+
+    return svd(tensor, **kwargs)
+
+
+def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
+    """Helper function for computing the norm of an autograd tensor when the order or axes are not
+    specified. This is used for differentiability."""
+    x = np.ravel(tensor)
+    sq_norm = np.dot(x, np.conj(x))
+    return np.real(np.sqrt(sq_norm))
 
 
 @multi_dispatch(argnum=[1])
@@ -880,35 +1004,39 @@ def detach(tensor, like=None):
     return tensor
 
 
-def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
+def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
-    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behaviour
     of Jax in order to mark trainable parameters.
 
     Args:
         qnode(qml.QNode): the quantum node.
         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
-        expand_fn(callable): the function that is expanding the tape.
+        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+
 
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
     """
     import jax
 
-    with jax.core.new_main(jax.ad.JVPTrace) as main:
-        trace = jax.ad.JVPTrace(main, 0)
+    with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
+        trace = jax.interpreters.ad.JVPTrace(main, 0)
 
     args_jvp = [
-        jax.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape)) if i in argnums else arg
+        (
+            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+            if i in argnums
+            else arg
+        )
         for i, arg in enumerate(args)
     ]
 
     qnode.construct(args_jvp, kwargs)
     tape = qnode.qtape
-    tape = expand_fn(tape)
-    params = tape.get_parameters(trainable_only=False)
+    tapes, _ = program((tape,))
     del trace
-    return params
+    return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
 
 
 @multi_dispatch(tensor_list=[1])

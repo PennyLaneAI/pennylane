@@ -15,8 +15,9 @@ r"""
 Contains the MottonenStatePreparation template.
 """
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 # pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
@@ -81,7 +82,6 @@ def compute_theta(alpha):
         (tensor_like): rotation angles theta
     """
     ln = alpha.shape[-1]
-    k = np.log2(ln)
 
     M_trans = np.zeros(shape=(ln, ln))
     for i in range(len(M_trans)):
@@ -90,7 +90,7 @@ def compute_theta(alpha):
 
     theta = qml.math.transpose(qml.math.dot(M_trans, qml.math.transpose(alpha)))
 
-    return theta / 2**k
+    return theta / ln
 
 
 def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
@@ -123,7 +123,11 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
-        if qml.math.is_abstract(theta) or qml.math.all(theta[..., 0] != 0.0):
+        if (
+            qml.math.is_abstract(theta)
+            or qml.math.requires_grad(theta)
+            or qml.math.all(theta[..., 0] != 0.0)
+        ):
             op_list.append(gate(theta[..., 0], wires=[target_wire]))
         return op_list
 
@@ -136,7 +140,11 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     ]
 
     for i, control_index in enumerate(control_indices):
-        if qml.math.is_abstract(theta) or qml.math.all(theta[..., i] != 0.0):
+        if (
+            qml.math.is_abstract(theta)
+            or qml.math.requires_grad(theta)
+            or qml.math.all(theta[..., i] != 0.0)
+        ):
             op_list.append(gate(theta[..., i], wires=[target_wire]))
         op_list.append(qml.CNOT(wires=[control_wires[control_index], target_wire]))
     return op_list
@@ -233,10 +241,6 @@ class MottonenStatePreparation(Operation):
 
     This code is adapted from code written by Carsten Blank for PennyLane-Qiskit.
 
-    .. note::
-
-        The final state is only equal to the input state vector up to a global phase.
-
     .. warning::
 
         Due to non-trivial classical processing of the state vector,
@@ -271,23 +275,22 @@ class MottonenStatePreparation(Operation):
             1: ──RY(2.09)─╰X──RY(0.21)─╰X─╭●───────────│────────────╭●───────────│─
             2: ──RY(1.88)─────────────────╰X──RY(0.10)─╰X──RY(0.08)─╰X──RY(0.15)─╰X
 
-            ──╭●────────╭●────╭●────╭●─┤  State
-            ──╰X────────╰X─╭●─│──╭●─│──┤  State
-            ───RZ(1.57)────╰X─╰X─╰X─╰X─┤  State
+            ──╭●────────╭●────╭●────╭●─╭GlobalPhase(-0.79)─┤ ╭State
+            ──╰X────────╰X─╭●─│──╭●─│──├GlobalPhase(-0.79)─┤ ├State
+            ───RZ(1.57)────╰X─╰X─╰X─╰X─╰GlobalPhase(-0.79)─┤ ╰State
 
         The state preparation can be checked by running:
 
-        >>> print(np.allclose(state * np.exp(1j * -0.785396), circuit(state)))
-            True
-
-        The state is equal to the input state upto a global phase. This phase is given by ``np.exp(1j * -0.785396)`` in this example.
+        >>> print(np.allclose(state, circuit(state)))
+        True
 
     """
 
     num_wires = AnyWires
     grad_method = None
+    ndim_params = (1,)
 
-    def __init__(self, state_vector, wires, do_queue=True, id=None):
+    def __init__(self, state_vector, wires, id=None):
         # check if the `state_vector` param is batched
         batched = len(qml.math.shape(state_vector)) > 1
 
@@ -312,10 +315,10 @@ class MottonenStatePreparation(Operation):
                 norm = qml.math.sum(qml.math.abs(state) ** 2)
                 if not qml.math.allclose(norm, 1.0, atol=1e-3):
                     raise ValueError(
-                        f"State vectors have to be of norm 1.0, vector {i} has norm {norm}"
+                        f"State vectors have to be of norm 1.0, vector {i} has squared norm {norm}"
                     )
 
-        super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state_vector, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -347,6 +350,12 @@ class MottonenStatePreparation(Operation):
         CNOT(wires=['a', 'b']),
         CNOT(wires=['a', 'b'])]
         """
+        if len(qml.math.shape(state_vector)) > 1:
+            raise ValueError(
+                "Broadcasting with MottonenStatePreparation is not supported. Please use the "
+                "qml.transforms.broadcast_expand transform to use broadcasting with "
+                "MottonenStatePreparation."
+            )
 
         a = qml.math.abs(state_vector)
         omega = qml.math.angle(state_vector)
@@ -364,7 +373,11 @@ class MottonenStatePreparation(Operation):
             op_list.extend(_apply_uniform_rotation_dagger(qml.RY, alpha_y_k, control, target))
 
         # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
-        if qml.math.is_abstract(omega) or not qml.math.allclose(omega, 0):
+        if (
+            qml.math.is_abstract(omega)
+            or qml.math.requires_grad(omega)
+            or not qml.math.allclose(omega, 0)
+        ):
             for k in range(len(wires_reverse), 0, -1):
                 alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
                 control = wires_reverse[k:]
@@ -373,5 +386,8 @@ class MottonenStatePreparation(Operation):
                     op_list.extend(
                         _apply_uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
                     )
+
+            global_phase = qml.math.sum(-1 * qml.math.angle(state_vector) / len(state_vector))
+            op_list.extend([qml.GlobalPhase(global_phase, wires=wires)])
 
         return op_list

@@ -16,12 +16,12 @@ import contextlib
 
 # pylint: disable=import-outside-toplevel, too-few-public-methods
 import sys
-from typing import Union
+from typing import Dict, Tuple, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox]
+_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
 
 class TensorLikeMETA(type):
@@ -73,6 +73,7 @@ class TensorLike(metaclass=TensorLikeMETA):
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
+    # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
             import jax
@@ -81,9 +82,11 @@ def _is_jax(other, subclass=False):
 
             JaxTensor = Union[
                 ndarray,
-                jax.Array  # TODO: keep this after jax>=0.4 is required
-                if hasattr(jax, "Array")
-                else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer],
+                (
+                    jax.Array  # TODO: keep this after jax>=0.4 is required
+                    if hasattr(jax, "Array")
+                    else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer]
+                ),  # pylint: disable=c-extension-no-member
             ]
             check = issubclass if subclass else isinstance
 
@@ -114,3 +117,8 @@ def _is_torch(other, subclass=False):
 
             return check(other, torchTensor)
     return False
+
+
+Result = TypeVar("Result", Dict, Tuple, TensorLike)
+
+ResultBatch = Tuple[Result]

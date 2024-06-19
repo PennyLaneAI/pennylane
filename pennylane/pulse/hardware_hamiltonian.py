@@ -17,16 +17,13 @@ Hardware Hamiltonians"""
 from dataclasses import dataclass
 from typing import Callable, List, Union
 
-import pennylane as qml
-from pennylane.wires import Wires
-from pennylane.operation import Operator
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
+import numpy as np
 
+import pennylane as qml
+from pennylane.operation import Operator
+from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-
-# from .transmon import TransmonSettings
-# from .rydberg import RydbergSettings
 
 
 def drive(amplitude, phase, wires):
@@ -74,7 +71,7 @@ def drive(amplitude, phase, wires):
     .. code-block:: python3
 
         wires = [0, 1, 2, 3]
-        H_int = sum([qml.PauliX(i) @ qml.PauliX((i+1)%len(wires)) for i in wires])
+        H_int = sum([qml.X(i) @ qml.X((i+1)%len(wires)) for i in wires])
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
@@ -86,7 +83,7 @@ def drive(amplitude, phase, wires):
     + (1) [X2 X3]
     + (1) [X3 X0]
     >>> H_d
-    ParametrizedHamiltonian: terms=2
+    HardwareHamiltonian:: terms=2
 
     The terms of the drive Hamiltonian ``H_d`` correspond to the two terms
     :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
@@ -103,7 +100,7 @@ def drive(amplitude, phase, wires):
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H_int + H_d)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     >>> params = [2.4]
     >>> circuit(params)
@@ -126,7 +123,7 @@ def drive(amplitude, phase, wires):
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         p_global = 2.4
         p_amp = [1.3, -2.0]
@@ -164,6 +161,9 @@ def drive(amplitude, phase, wires):
         Note that a potential anharmonicity term, as is common for transmon systems when taking into account higher energy
         levels, is unaffected by this transformation.
 
+        Further, note that the factor :math:`\frac{1}{2}` is a matter of convention. We keep it for ``drive()`` as well as :func:`~.rydberg_drive`,
+        but ommit it in :func:`~.transmon_drive`, as is common in the respective fields.
+
     .. details::
         **Neutral Atom Rydberg systems**
 
@@ -188,7 +188,7 @@ def drive(amplitude, phase, wires):
             H_d = qml.pulse.drive(amplitude, phase, wires)
 
             # detuning term
-            H_z = qml.dot([-3*np.pi/4]*len(wires), [qml.PauliZ(i) for i in wires])
+            H_z = qml.dot([-3*np.pi/4]*len(wires), [qml.Z(i) for i in wires])
 
 
         The total Hamiltonian of that evolution is given by
@@ -205,7 +205,7 @@ def drive(amplitude, phase, wires):
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H_i + H_z + H_d)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(1))
+                return qml.expval(qml.Z(1))
 
         >>> params = [2.4]
         >>> circuit(params)
@@ -222,8 +222,8 @@ def drive(amplitude, phase, wires):
         amplitude_and_phase(qml.math.sin, amplitude, phase),
     ]
 
-    drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+    drive_x_term = qml.Hamiltonian([0.5] * len(wires), [qml.X(wire) for wire in wires])
+    drive_y_term = qml.Hamiltonian([-0.5] * len(wires), [qml.Y(wire) for wire in wires])
 
     observables = [drive_x_term, drive_y_term]
 
@@ -318,11 +318,17 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         params = self.reorder_fn(params, self.coeffs_parametrized)
         return super().__call__(params, t)
 
-    def __add__(self, other):
+    def __repr__(self):
+        return f"HardwareHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+
+    def __add__(self, other):  # pylint: disable=too-many-return-statements
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
                 raise ValueError(
-                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. This is likely due to an attempt to add hardware compatible Hamiltonians for different target systems."
+                    "Cannot add two HardwareHamiltonians with different reorder functions. "
+                    f"Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. This is "
+                    "likely due to an attempt to add hardware compatible Hamiltonians for "
+                    "different target systems."
                 )
             if self.settings is None and other.settings is None:
                 new_settings = None
@@ -346,7 +352,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         settings = self.settings
         pulses = self.pulses
 
-        if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
+        if isinstance(
+            other, (qml.ops.Hamiltonian, qml.ops.LinearCombination, ParametrizedHamiltonian)
+        ):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return HardwareHamiltonian(
@@ -363,6 +371,19 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, Operator):
             new_coeffs = coeffs + [1]
             new_ops = ops + [other]
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+            )
+
+        if isinstance(other, (int, float)):
+            if other in (0, 0.0):
+                return HardwareHamiltonian(
+                    coeffs, ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+                )
+            new_coeffs = coeffs + [other]
+            with qml.queuing.QueuingManager.stop_recording():
+                new_ops = ops + [qml.Identity(self.wires[0])]
+
             return HardwareHamiltonian(
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
             )
@@ -428,12 +449,13 @@ class HardwarePulse:
         )
 
 
-def amplitude_and_phase(trig_fn, amp, phase):
-    """Wrapper function for combining amplitude and phase into a single callable
-    (or constant if neither amplitude nor phase are callable)."""
+def amplitude_and_phase(trig_fn, amp, phase, hz_to_rads=2 * np.pi):
+    r"""Wrapper function for combining amplitude and phase into a single callable
+    (or constant if neither amplitude nor phase are callable). The factor of :math:`2 \pi` converts
+    amplitude in Hz to amplitude in radians/second."""
     if not callable(amp) and not callable(phase):
-        return amp * trig_fn(phase)
-    return AmplitudeAndPhase(trig_fn, amp, phase)
+        return hz_to_rads * amp * trig_fn(phase)
+    return AmplitudeAndPhase(trig_fn, amp, phase, hz_to_rads=hz_to_rads)
 
 
 # pylint:disable = too-few-public-methods
@@ -441,18 +463,19 @@ class AmplitudeAndPhase:
     """Class storing combined amplitude and phase callable if either or both
     of amplitude or phase are callable."""
 
-    def __init__(self, trig_fn, amp, phase):
+    def __init__(self, trig_fn, amp, phase, hz_to_rads=2 * np.pi):
+        # The factor of 2pi converts amplitude in Hz to amplitude in radians/second
         self.amp_is_callable = callable(amp)
         self.phase_is_callable = callable(phase)
 
         def callable_amp_and_phase(params, t):
-            return amp(params[0], t) * trig_fn(phase(params[1], t))
+            return hz_to_rads * amp(params[0], t) * trig_fn(phase(params[1], t))
 
         def callable_amp(params, t):
-            return amp(params, t) * trig_fn(phase)
+            return hz_to_rads * amp(params, t) * trig_fn(phase)
 
         def callable_phase(params, t):
-            return amp * trig_fn(phase(params, t))
+            return hz_to_rads * amp * trig_fn(phase(params, t))
 
         if self.amp_is_callable and self.phase_is_callable:
             self.func = callable_amp_and_phase

@@ -15,7 +15,7 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -56,7 +56,7 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
 
     >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_entropy)(param)
-    0.6232252401402305
+    tensor(0.62322524, requires_grad=True)
 
     .. note::
 
@@ -83,6 +83,10 @@ class VnEntropyMP(StateMeasurement):
         log_base (float): Base for the logarithm.
     """
 
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires), ("log_base", self.log_base))
+        return (None, None), metadata
+
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
@@ -108,21 +112,14 @@ class VnEntropyMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None or device.shot_vector is None:
-            return (1,)
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
-        return (num_shot_elements,)
-
-    def _shape_new(self, device=None):
-        if device is None or device.shot_vector is None:
+    def shape(self, device, shots):
+        if not shots.has_partitioned_shots:
             return ()
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
+        state = qml.math.dm_from_state_vector(state)
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
         )

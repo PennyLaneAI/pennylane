@@ -15,9 +15,11 @@
 """
 This submodule contains the ParametrizedHamiltonian class
 """
+from copy import copy
+
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.ops import Sum
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -66,7 +68,7 @@ class ParametrizedHamiltonian:
         f1 = lambda p, t: p[0] * jnp.sin(p[1] * t)
         f2 = lambda p, t: p * t
         coeffs = [2., f1, f2]
-        observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+        observables =  [qml.X(0), qml.Y(0), qml.Z(0)]
         H = qml.dot(coeffs, observables)
 
     The resulting object can be passed parameters, and will return an :class:`~.Operator` representing the
@@ -80,7 +82,11 @@ class ParametrizedHamiltonian:
         params = [p1, p2]  # p1 is passed to f1, and p2 to f2
 
     >>> H(params, t=1.)
-    (2.0*(PauliX(wires=[0]))) + ((0.8414709568023682*(PauliY(wires=[0]))) + (1.0*(PauliZ(wires=[0]))))
+    (
+        2.0 * X(0)
+      + 0.8414709848078965 * Y(0)
+      + 1.0 * Z(0)
+    )
 
     .. note::
         To be able to compute the time evolution of the Hamiltonian with :func:`~.pennylane.evolve`,
@@ -91,9 +97,9 @@ class ParametrizedHamiltonian:
     parameters to obtain an :class:`~.Operator`:
 
     >>> H.H_fixed()
-    2.0*(PauliX(wires=[0]))
+    2.0 * X(0)
     >>> H.H_parametrized([[1.2, 2.3], 4.5], 0.5)
-    (1.095316767692566*(PauliY(wires=[0]))) + (2.25*(PauliZ(wires=[0])))
+    1.095316728312625 * Y(0) + 2.25 * Z(0)
 
 
     .. details::
@@ -110,7 +116,7 @@ class ParametrizedHamiltonian:
             def f2(p, t):
                 return p * jnp.cos(t)
 
-            H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
+            H = 2 * qml.X(0) + f1 * qml.Y(0) + f2 * qml.Z(0)
 
         .. note::
             Whichever method is used for initializing a :class:`~.ParametrizedHamiltonian`, the terms defined with fixed
@@ -123,7 +129,11 @@ class ParametrizedHamiltonian:
 
             >>> params = [[4.6, 2.3], 1.2]
             >>> H(params, t=0.5)
-            (2*(PauliX(wires=[0]))) + ((3.212763786315918*(PauliY(wires=[0]))) + (1.0530991554260254*(PauliZ(wires=[0]))))
+            (
+                2 * X(0)
+              + 3.212763940260521 * Y(0)
+              + 1.0530990742684472 * Z(0)
+            )
 
             Internally we are computing ``f1([4.6, 2.3], 0.5)`` and ``f2(1.2, 0.5)``.
 
@@ -190,19 +200,24 @@ class ParametrizedHamiltonian:
         .. code-block:: python3
 
             coeffs = [lambda p, t: jnp.sin(p*t) for _ in range(2)]
-            ops = [qml.PauliX(0), qml.PauliY(1)]
+            ops = [qml.X(0), qml.Y(1)]
             H1 = qml.dot(coeffs, ops)
 
             def f1(p, t): return t + p
             def f2(p, t): return p[0] * jnp.sin(p[1] * t**2)
-            H2 = f1 * qml.PauliY(0) + f2 * qml.PauliX(1)
+            H2 = f1 * qml.Y(0) + f2 * qml.X(1)
 
             params1 = [2., 3.]
             params2 = [4., [5., 6.]]
 
         >>> H3 = H2 + H1
         >>> H3([4., [5., 6.], 2., 3.], t=1)
-        (((5.0*(PauliY(wires=[0]))) + (-1.3970774909946293*(PauliX(wires=[1])))) + (0.9092974268256817*(PauliX(wires=[0])))) + (0.1411200080598672*(PauliY(wires=[1])))
+        (
+            5.0 * Y(0)
+          + -1.3970774909946293 * X(1)
+          + 0.9092974268256817 * X(0)
+          + 0.1411200080598672 * Y(1)
+        )
 
     """
 
@@ -234,13 +249,51 @@ class ParametrizedHamiltonian:
     def __call__(self, params, t):
         if len(params) != len(self.coeffs_parametrized):
             raise ValueError(
-                "The length of the params argument and the number of scalar-valued functions must be the same."
-                f"Received len(params) = {len(params)} but expected {len(self.coeffs_parametrized)}"
+                "The length of the params argument and the number of scalar-valued functions "
+                f"must be the same. Received len(params) = {len(params)} parameters but "
+                f"expected {len(self.coeffs_parametrized)} parameters."
             )
-        return self.H_fixed() + self.H_parametrized(params, t)
+        H_fixed = self.H_fixed()
+        H_param = self.H_parametrized(params, t)
+        if H_param == 0:
+            return H_fixed
+        if H_fixed == 0:
+            return H_param
+        return qml.sum(self.H_fixed(), self.H_parametrized(params, t))
 
     def __repr__(self):
-        return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+        terms = []
+
+        for coeff, op in zip(self.coeffs_fixed, self.ops_fixed):
+            term = f"{coeff} * {op}"
+            terms.append(term)
+
+        for i, (coeff, op) in enumerate(zip(self.coeffs_parametrized, self.ops_parametrized)):
+            op_repr = f"({op})" if isinstance(op, Sum) else str(op)
+            named_coeff = coeff if callable(coeff) and hasattr(coeff, "__name__") else type(coeff)
+            term = f"{named_coeff.__name__}(params_{i}, t) * {op_repr}"
+            terms.append(term)
+
+        res = "\n  + ".join(terms)
+        return f"(\n    {res}\n)"
+
+    def map_wires(self, wire_map):
+        """Returns a copy of the current ParametrizedHamiltonian with its wires changed according
+        to the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .ParametrizedHamiltonian: A new instance with mapped wires
+        """
+        new_ph = copy(self)
+        new_ph.ops_parametrized = [op.map_wires(wire_map) for op in self.ops_parametrized]
+        new_ph.ops_fixed = [op.map_wires(wire_map) for op in self.ops_fixed]
+        new_ph.wires = Wires.all_wires(
+            [op.wires for op in new_ph.ops_fixed] + [op.wires for op in new_ph.ops_parametrized]
+        )
+        return new_ph
 
     def H_fixed(self):
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
@@ -289,7 +342,7 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (Hamiltonian, ParametrizedHamiltonian)):
+        if isinstance(H, (qml.ops.Hamiltonian, qml.ops.LinearCombination, ParametrizedHamiltonian)):
             # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = coeffs + list(H.coeffs.copy())
             new_ops = ops + H.ops.copy()
@@ -314,7 +367,7 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (Hamiltonian, ParametrizedHamiltonian)):
+        if isinstance(H, (qml.ops.Hamiltonian, qml.ops.LinearCombination, ParametrizedHamiltonian)):
             # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = list(H.coeffs.copy()) + coeffs
             new_ops = H.ops.copy() + ops

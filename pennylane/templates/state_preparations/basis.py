@@ -15,9 +15,10 @@ r"""
 Contains the BasisStatePreparation template.
 """
 
+import numpy as np
+
 import pennylane as qml
-import pennylane.numpy as np
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class BasisStatePreparation(Operation):
@@ -43,16 +44,21 @@ class BasisStatePreparation(Operation):
         @qml.qnode(dev)
         def circuit(basis_state):
             qml.BasisStatePreparation(basis_state, wires=range(4))
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(4)]
+            return [qml.expval(qml.Z(i)) for i in range(4)]
 
         basis_state = [0, 1, 1, 0]
-        print(circuit(basis_state)) # [ 1. -1. -1.  1.]
+
+    >>> print(circuit(basis_state))
+    [ 1. -1. -1.  1.]
+
     """
+
     num_params = 1
     num_wires = AnyWires
     grad_method = None
+    ndim_params = (1,)
 
-    def __init__(self, basis_state, wires, do_queue=True, id=None):
+    def __init__(self, basis_state, wires, id=None):
         basis_state = qml.math.stack(basis_state)
 
         # check if the `basis_state` param is batched
@@ -83,7 +89,7 @@ class BasisStatePreparation(Operation):
         # TODO: basis_state should be a hyperparameter, not a trainable parameter.
         # However, this breaks a test that ensures compatibility with batch_transform.
         # The transform should be rewritten to support hyperparameters as well.
-        super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(basis_state, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(basis_state, wires):  # pylint: disable=arguments-differ
@@ -103,14 +109,21 @@ class BasisStatePreparation(Operation):
         **Example**
 
         >>> qml.BasisStatePreparation.compute_decomposition(basis_state=[1, 1], wires=["a", "b"])
-        [PauliX(wires=['a']),
-        PauliX(wires=['b'])]
+        [X('a'),
+        X('b')]
         """
+        if len(qml.math.shape(basis_state)) > 1:
+            raise ValueError(
+                "Broadcasting with BasisStatePreparation is not supported. Please use the "
+                "qml.transforms.broadcast_expand transform to use broadcasting with "
+                "BasisStatePreparation."
+            )
+
         if not qml.math.is_abstract(basis_state):
             op_list = []
             for wire, state in zip(wires, basis_state):
                 if state == 1:
-                    op_list.append(qml.PauliX(wire))
+                    op_list.append(qml.X(wire))
             return op_list
 
         op_list = []

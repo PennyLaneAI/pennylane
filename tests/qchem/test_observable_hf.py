@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.fermi import from_string
 
 
 @pytest.mark.parametrize(
@@ -44,88 +45,43 @@ from pennylane import qchem
             ),
             # computed with openfermion for H2 (format is modified):
             # get_fermion_operator(run_pyscf(molecule).get_molecular_hamiltonian())
-            (
-                np.array(
-                    [
-                        0.52917721092,
-                        -1.1108441798837276,
-                        0.31320124976475916,
-                        0.09839529174273519,
-                        0.31320124976475916,
-                        0.09839529174273519,
-                        0.09839529174273519,
-                        0.3108533815598568,
-                        0.09839529174273519,
-                        0.3108533815598568,
-                        0.31320124976475916,
-                        0.09839529174273519,
-                        -1.1108441798837276,
-                        0.31320124976475916,
-                        0.09839529174273519,
-                        0.09839529174273519,
-                        0.3108533815598568,
-                        0.09839529174273519,
-                        0.3108533815598568,
-                        0.3108533815598569,
-                        0.09839529174273519,
-                        0.3108533815598569,
-                        0.09839529174273519,
-                        -0.5891210037060831,
-                        0.09839529174273519,
-                        0.32653537347128725,
-                        0.09839529174273519,
-                        0.32653537347128725,
-                        0.3108533815598569,
-                        0.09839529174273519,
-                        0.3108533815598569,
-                        0.09839529174273519,
-                        0.09839529174273519,
-                        0.32653537347128725,
-                        -0.5891210037060831,
-                        0.09839529174273519,
-                        0.32653537347128725,
-                    ]
-                ),
-                [
-                    [],
-                    [0, 0],
-                    [0, 0, 0, 0],
-                    [0, 0, 2, 2],
-                    [0, 1, 1, 0],
-                    [0, 1, 3, 2],
-                    [0, 2, 0, 2],
-                    [0, 2, 2, 0],
-                    [0, 3, 1, 2],
-                    [0, 3, 3, 0],
-                    [1, 0, 0, 1],
-                    [1, 0, 2, 3],
-                    [1, 1],
-                    [1, 1, 1, 1],
-                    [1, 1, 3, 3],
-                    [1, 2, 0, 3],
-                    [1, 2, 2, 1],
-                    [1, 3, 1, 3],
-                    [1, 3, 3, 1],
-                    [2, 0, 0, 2],
-                    [2, 0, 2, 0],
-                    [2, 1, 1, 2],
-                    [2, 1, 3, 0],
-                    [2, 2],
-                    [2, 2, 0, 0],
-                    [2, 2, 2, 2],
-                    [2, 3, 1, 0],
-                    [2, 3, 3, 2],
-                    [3, 0, 0, 3],
-                    [3, 0, 2, 1],
-                    [3, 1, 1, 3],
-                    [3, 1, 3, 1],
-                    [3, 2, 0, 1],
-                    [3, 2, 2, 3],
-                    [3, 3],
-                    [3, 3, 1, 1],
-                    [3, 3, 3, 3],
-                ],
-            ),
+            0.52917721092 * from_string("")
+            - 1.1108441798837276 * from_string("0+ 0-")
+            + 0.31320124976475916 * from_string("0+ 0+ 0- 0-")
+            + 0.09839529174273519 * from_string("0+ 0+ 2- 2-")
+            + 0.31320124976475916 * from_string("0+ 1+ 1- 0-")
+            + 0.09839529174273519 * from_string("0+ 1+ 3- 2-")
+            + 0.09839529174273519 * from_string("0+ 2+ 0- 2-")
+            + 0.3108533815598568 * from_string("0+ 2+ 2- 0-")
+            + 0.09839529174273519 * from_string("0+ 3+ 1- 2-")
+            + 0.3108533815598568 * from_string("0+ 3+ 3- 0-")
+            + 0.31320124976475916 * from_string("1+ 0+ 0- 1-")
+            + 0.09839529174273519 * from_string("1+ 0+ 2- 3-")
+            - 1.1108441798837276 * from_string("1+ 1-")
+            + 0.31320124976475916 * from_string("1+ 1+ 1- 1-")
+            + 0.09839529174273519 * from_string("1+ 1+ 3- 3-")
+            + 0.09839529174273519 * from_string("1+ 2+ 0- 3-")
+            + 0.3108533815598568 * from_string("1+ 2+ 2- 1-")
+            + 0.09839529174273519 * from_string("1+ 3+ 1- 3-")
+            + 0.3108533815598568 * from_string("1+ 3+ 3- 1-")
+            + 0.3108533815598569 * from_string("2+ 0+ 0- 2-")
+            + 0.09839529174273519 * from_string("2+ 0+ 2- 0-")
+            + 0.3108533815598569 * from_string("2+ 1+ 1- 2-")
+            + 0.09839529174273519 * from_string("2+ 1+ 3- 0-")
+            - 0.5891210037060831 * from_string("2+ 2-")
+            + 0.09839529174273519 * from_string("2+ 2+ 0- 0-")
+            + 0.32653537347128725 * from_string("2+ 2+ 2- 2-")
+            + 0.09839529174273519 * from_string("2+ 3+ 1- 0-")
+            + 0.32653537347128725 * from_string("2+ 3+ 3- 2-")
+            + 0.3108533815598569 * from_string("3+ 0+ 0- 3-")
+            + 0.09839529174273519 * from_string("3+ 0+ 2- 1-")
+            + 0.3108533815598569 * from_string("3+ 1+ 1- 3-")
+            + 0.09839529174273519 * from_string("3+ 1+ 3- 1-")
+            + 0.09839529174273519 * from_string("3+ 2+ 0- 1-")
+            + 0.32653537347128725 * from_string("3+ 2+ 2- 3-")
+            - 0.5891210037060831 * from_string("3+ 3-")
+            + 0.09839529174273519 * from_string("3+ 3+ 1- 1-")
+            + 0.32653537347128725 * from_string("3+ 3+ 3- 3-"),
         ),
         (
             np.array([2.869]),
@@ -138,86 +94,61 @@ from pennylane import qchem
             ),
             None,
             # computed with PL-QChem dipole (format is modified)
-            (
-                np.array(
-                    [
-                        2.869,
-                        0.956224634652776,
-                        0.782727697897828,
-                        -0.532222940905614,
-                        0.956224634652776,
-                        0.782727697897828,
-                        -0.532222940905614,
-                        0.782727697897828,
-                        1.42895581236226,
-                        0.234699175620383,
-                        0.782727697897828,
-                        1.42895581236226,
-                        0.234699175620383,
-                        -0.532222940905614,
-                        0.234699175620383,
-                        0.483819552892797,
-                        -0.532222940905614,
-                        0.234699175620383,
-                        0.483819552892797,
-                    ]
-                ),
-                [
-                    [],
-                    [0, 0],
-                    [0, 2],
-                    [0, 4],
-                    [1, 1],
-                    [1, 3],
-                    [1, 5],
-                    [2, 0],
-                    [2, 2],
-                    [2, 4],
-                    [3, 1],
-                    [3, 3],
-                    [3, 5],
-                    [4, 0],
-                    [4, 2],
-                    [4, 4],
-                    [5, 1],
-                    [5, 3],
-                    [5, 5],
-                ],
-            ),
+            2.869 * from_string("")
+            + 0.956224634652776 * from_string("0+ 0-")
+            + 0.782727697897828 * from_string("0+ 2-")
+            - 0.532222940905614 * from_string("0+ 4-")
+            + 0.956224634652776 * from_string("1+ 1-")
+            + 0.782727697897828 * from_string("1+ 3-")
+            - 0.532222940905614 * from_string("1+ 5-")
+            + 0.782727697897828 * from_string("2+ 0-")
+            + 1.42895581236226 * from_string("2+ 2-")
+            + 0.234699175620383 * from_string("2+ 4-")
+            + 0.782727697897828 * from_string("3+ 1-")
+            + 1.42895581236226 * from_string("3+ 3-")
+            + 0.234699175620383 * from_string("3+ 5-")
+            - 0.532222940905614 * from_string("4+ 0-")
+            + 0.234699175620383 * from_string("4+ 2-")
+            + 0.483819552892797 * from_string("4+ 4-")
+            - 0.532222940905614 * from_string("5+ 1-")
+            + 0.234699175620383 * from_string("5+ 3-")
+            + 0.483819552892797 * from_string("5+ 5-"),
         ),
     ],
 )
 def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
     r"""Test that fermionic_observable returns the correct fermionic observable."""
     f = qchem.fermionic_observable(core_constant, integral_one, integral_two)
-    assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
-    assert f[1] == f_ref[1]  # fermionic operators
+
+    assert np.allclose(list(f.values()), list(f_ref.values()))
+    assert f.keys() == f_ref.keys()
 
 
 @pytest.mark.parametrize(
     ("f_observable", "q_observable"),
     [
         (
-            (np.array([1.0]), [[0, 0]]),
+            from_string("0+ 0-"),
             # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
             [[0.5 + 0j, -0.5 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
         ),
         (
-            (np.array([1.0, 1.0]), [[0, 0], [0, 0]]),
+            from_string("0+ 0-") + from_string("0+ 0-"),
             # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
             [[1.0 + 0j, -1.0 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
         ),
         (
-            (np.array([1.0]), [[2, 0, 2, 0]]),
-            # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            from_string("2+ 0+ 2- 0-"),
+            # obtained with openfermion: jordan_wigner(FermionOperator('2^ 0^ 2 0', 1)) and reformatted
             [
                 [-0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
                 [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(2)],
             ],
         ),
         (
-            (np.array([1.0, 1.0]), [[2, 0, 2, 0], [2, 0]]),
-            # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            from_string("2+ 0+ 2- 0-") + from_string("2+ 0-"),
+            # obtained with openfermion: jordan_wigner(FermionOperator('2^ 0^ 2 0', 1)) and
+            # jordan_wigner(FermionOperator('2^ 0', 1)) and reformatted
             [
                 [-0.25 + 0j, 0.25 + 0j, -0.25j, 0.25j, 0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
                 [
@@ -232,184 +163,45 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
                 ],
             ],
         ),
+        (1.23 * from_string(""), [[1.23], [qml.Identity(0)]]),
     ],
 )
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
-    h = qchem.qubit_observable(f_observable)
-    h_ref = qml.Hamiltonian(q_observable[0], q_observable[1])
+    h_as_op = qchem.qubit_observable(f_observable)
+    ops = [
+        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
+        for op in map(qml.simplify, q_observable[1])
+    ]
+    h_ref = qml.Hamiltonian(q_observable[0], ops)
 
-    assert h.compare(h_ref)
-
-
-@pytest.mark.parametrize(
-    ("f_obs", "q_obs", "notation"),
-    [
-        (
-            [0],
-            # trivial case of a creation operator, 0^ -> (X_0 - iY_0) / 2
-            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
-            ([(0.5 + 0j), (0.0 - 0.5j)], [qml.PauliX(0), qml.PauliY(0)]),
-            None,
-        ),
-        (
-            [0, 0],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('0^ 0', 1))
-            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
-            ([(0.5 + 0j), (-0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
-            None,
-        ),
-        (
-            [3, 0],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 0', 1))
-            # reformatted the original openfermion output
-            (
-                [(0.25 + 0j), -0.25j, 0.25j, (0.25 + 0j)],
-                [
-                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
-                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
-                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
-                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
-                ],
-            ),
-            None,
-        ),
-        (
-            [1, 4],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 4', 1))
-            # reformatted the original openfermion output
-            (
-                [(0.25 + 0j), 0.25j, -0.25j, (0.25 + 0j)],
-                [
-                    qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                    qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                    qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                    qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                ],
-            ),
-            None,
-        ),
-        (
-            [1, 1, 1, 1],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1^ 1 1', 1))
-            ([0], [qml.Identity(1)]),
-            "physicist",
-        ),
-        (
-            [3, 1, 3, 1],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 1^ 3 1', 1))
-            # reformatted the original openfermion output
-            (
-                [(-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j), (0.25 + 0j)],
-                [qml.Identity(0), qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(3), qml.PauliZ(3)],
-            ),
-            "physicist",
-        ),
-        (
-            [3, 1, 3, 1],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 1 3^ 1', 1))
-            ([0], [qml.Identity(1)]),
-            "chemist",
-        ),
-        (
-            [1, 0, 1, 1],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 0 1^ 1', 1))
-            ([0], [qml.Identity(0)]),
-            "chemist",
-        ),
-        (
-            [1, 1, 0, 0],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1 0^ 0', 1))
-            (
-                [(0.25 + 0j), (-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j)],
-                [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1)],
-            ),
-            "chemist",
-        ),
-        (
-            [5, 5, 5, 5],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('5^ 5 5^ 5', 1))
-            (
-                [(0.5 + 0j), (-0.5 + 0j)],
-                [qml.Identity(0), qml.PauliZ(5)],
-            ),
-            "chemist",
-        ),
-        (
-            [3, 3, 3, 1],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 3 3^ 1', 1))
-            (
-                [(0.25 + 0j), (-0.25j), (0.25j), (0.25 + 0j)],
-                [
-                    qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliX(3),
-                    qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliY(3),
-                    qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliX(3),
-                    qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliY(3),
-                ],
-            ),
-            "chemist",
-        ),
-        (
-            [3, 0, 2, 1],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 0 2^ 1', 1))
-            (
-                [
-                    (-0.0625 + 0j),
-                    0.0625j,
-                    0.0625j,
-                    (0.0625 + 0j),
-                    -0.0625j,
-                    (-0.0625 + 0j),
-                    (-0.0625 + 0j),
-                    0.0625j,
-                    -0.0625j,
-                    (-0.0625 + 0j),
-                    (-0.0625 + 0j),
-                    0.0625j,
-                    (0.0625 + 0j),
-                    -0.0625j,
-                    -0.0625j,
-                    (-0.0625 + 0j),
-                ],
-                [
-                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
-                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
-                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
-                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
-                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
-                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
-                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
-                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
-                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
-                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
-                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
-                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
-                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
-                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
-                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
-                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
-                ],
-            ),
-            "chemist",
-        ),
-    ],
-)
-def test_jordan_wigner(f_obs, q_obs, notation):
-    r"""Test that jordan_wigner returns the correct operator."""
-    res = qchem.jordan_wigner(f_obs, notation=notation)
-    assert qml.Hamiltonian(res[0], res[1]).compare(qml.Hamiltonian(q_obs[0], q_obs[1]))
+    assert h_ref.compare(h_as_op)
+    assert np.allclose(
+        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref, wire_order=[0, 1, 2])
+    )
 
 
 @pytest.mark.parametrize(
-    ("f_obs", "notation"),
+    ("f_observable", "cut_off"),
     [
         (
-            [1, 1, 1, 1],
-            "random_notation",
+            0.01 * from_string("0+ 0-"),
+            0.1,
+        ),
+        (
+            from_string("0+ 0+ 1- 1-"),  # should produce the 0 operator
+            0.1,
         ),
     ],
 )
-def test_jordan_wigner_error(f_obs, notation):
-    r"""Test that an error is raised if a wrong/not-supported notation is used."""
-    with pytest.raises(ValueError, match="the only supported notations for the two-body terms are"):
-        qchem.jordan_wigner(f_obs, notation=notation)
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_qubit_observable_cutoff(f_observable, cut_off):
+    """Test that qubit_observable returns the correct operator when a cutoff is provided."""
+    h_ref, h_ref_op = (qml.Hamiltonian([], []), qml.s_prod(0, qml.Identity(0)))
+    h_as_op = qchem.qubit_observable(f_observable, cutoff=cut_off)
+
+    assert h_ref.compare(h_as_op)
+    assert np.allclose(
+        qml.matrix(h_ref_op, wire_order=[0, 1, 2]), qml.matrix(h_as_op, wire_order=[0, 1, 2])
+    )

@@ -241,7 +241,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             @qml.qnode(dev)
             def circuit(pars):
                 broadcast(unitary=qml.RX, pattern="single", wires=[0,1,2], parameters=pars)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             circuit([1, 1, 2])
 
@@ -254,7 +254,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 qml.RX(pars[0], wires=[0])
                 qml.RX(pars[1], wires=[1])
                 qml.RX(pars[2], wires=[2])
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             circuit([1, 1, 2])
 
@@ -273,7 +273,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             @qml.qnode(dev)
             def circuit(pars):
                 broadcast(unitary=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             print(circuit([1, 1, 0.1]))
 
@@ -289,7 +289,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             @qml.qnode(dev)
             def circuit():
                 broadcast(unitary=qml.Hadamard, pattern="single", wires=[0,1,2])
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             circuit()
 
@@ -308,7 +308,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             @qml.qnode(dev)
             def circuit(pars):
                 broadcast(unitary=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
 
@@ -338,7 +338,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             @qml.qnode(dev)
             def circuit(pars):
                 broadcast(unitary=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
 
@@ -354,7 +354,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             @qml.qnode(dev)
             def circuit(pars):
                 broadcast(unitary=mytemplate, pattern="single", wires=[0, 1, 2], parameters=pars)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> circuit([1, 2, 3]))
         TypeError: mytemplate() missing 1 required positional argument: 'pars2'
@@ -373,7 +373,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             @qml.qnode(dev)
             def circuit(hadamard=None):
                 broadcast(unitary=mytemplate, pattern="single", wires=[0, 1, 2], kwargs={'h': hadamard})
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             circuit(hadamard=False)
 
@@ -391,7 +391,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='double',
                             wires=[0,1,2,3], parameters=pars)
-                  return qml.expval(qml.PauliZ(0))
+                  return qml.expval(qml.Z(0))
 
               pars1 = [-1, 2.5, 3]
               pars2 = [-1, 4, 2]
@@ -408,7 +408,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='double_odd',
                             wires=[0,1,2,3], parameters=pars)
-                  return qml.expval(qml.PauliZ(0))
+                  return qml.expval(qml.Z(0))
 
               pars1 = [-5.3, 2.3, 3]
 
@@ -424,7 +424,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='chain',
                             wires=[0,1,2,3], parameters=pars)
-                  return qml.expval(qml.PauliZ(0))
+                  return qml.expval(qml.Z(0))
 
               pars1 = [1.8, 2, 3]
               pars2 = [-1, 3, 1]
@@ -445,7 +445,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='ring',
                             wires=[0,1,2], parameters=pars)
-                  return qml.expval(qml.PauliZ(0))
+                  return qml.expval(qml.Z(0))
 
               pars1 = [1, -2.2, 3]
               pars2 = [-1, 3, 1]
@@ -465,7 +465,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='ring',
                             wires=[0,1], parameters=pars)
-                  return qml.expval(qml.PauliZ(0))
+                  return qml.expval(qml.Z(0))
 
               pars1 = [-3.2, 2, 1.2]
 
@@ -481,7 +481,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='pyramid',
                             wires=[0,1,2,3], parameters=pars)
-                  return qml.expval(qml.PauliZ(0))
+                  return qml.expval(qml.Z(0))
 
               pars1 = [1.1, 2, 3]
               pars2 = [-1, 3, 1]
@@ -499,7 +499,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern="all_to_all",
                             wires=[0,1,2,3], parameters=pars)
-                  return qml.expval(qml.PauliZ(0))
+                  return qml.expval(qml.Z(0))
 
               pars1 = [1, 2, 3]
               pars2 = [-1, 3, 1]
@@ -525,7 +525,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               def circuit():
                   broadcast(unitary=qml.CNOT, pattern=pattern,
                             wires=range(5))
-                  return qml.expval(qml.PauliZ(0))
+                  return qml.expval(qml.Z(0))
 
               circuit()
 
@@ -540,7 +540,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 def circuit(pars):
                     broadcast(unitary=qml.CRot, pattern=pattern,
                               wires=range(5), parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+                    return qml.expval(qml.Z(0))
 
                 pars1 = [1, 2, 3]
                 pars2 = [-1, 3, 1]

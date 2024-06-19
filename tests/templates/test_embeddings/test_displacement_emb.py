@@ -14,10 +14,36 @@
 """
 Tests for the DisplacementEmbedding template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+
+# pylint: disable=protected-access
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
+
+
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    feature_vector = [1, 2, 3]
+    op = qml.DisplacementEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
+    qml.ops.functions.assert_valid(op)
+
+
+def test_flatten_unflatten_methods():
+    """Test the _flatten and _unflatten methods."""
+    feature_vector = [1, 2, 3]
+    op = qml.DisplacementEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
+    data, metadata = op._flatten()
+    assert op.data == data
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    qml.assert_equal(new_op, op)
+    assert new_op is not op
+    assert new_op._name == "DisplacementEmbedding"  # make sure initialized
 
 
 class TestDecomposition:
@@ -103,7 +129,7 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit(x=None):
             qml.DisplacementEmbedding(features=x, wires=range(n_wires), method="phase")
-            return [qml.expval(qml.X(i)) for i in range(n_wires)]
+            return [qml.expval(qml.QuadX(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be of"):
             circuit(x=[0.2, 0.3, 0.4])
@@ -117,7 +143,7 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit(x=None):
             qml.DisplacementEmbedding(features=x, wires=range(n_wires), method="A")
-            return [qml.expval(qml.X(i)) for i in range(n_wires)]
+            return [qml.expval(qml.QuadX(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="did not recognize"):
             circuit(x=[1, 2])
@@ -131,7 +157,7 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit(x=None):
             qml.DisplacementEmbedding(features=x, wires=[0, 1])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(x=[[1], [0]])
@@ -146,7 +172,7 @@ def circuit_template(features):
     qml.DisplacementEmbedding(features, range(3))
     qml.Beamsplitter(0.5, 0, wires=[2, 1])
     qml.Beamsplitter(0.5, 0, wires=[1, 0])
-    return qml.expval(qml.X(0))
+    return qml.expval(qml.QuadX(0))
 
 
 def circuit_decomposed(features):
@@ -155,7 +181,7 @@ def circuit_decomposed(features):
     qml.Displacement(features[2], 0.1, wires=2)
     qml.Beamsplitter(0.5, 0, wires=[2, 1])
     qml.Beamsplitter(0.5, 0, wires=[1, 0])
-    return qml.expval(qml.X(0))
+    return qml.expval(qml.QuadX(0))
 
 
 class TestInterfaces:

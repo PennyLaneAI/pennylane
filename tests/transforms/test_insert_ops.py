@@ -14,13 +14,12 @@
 """
 Tests for the insert transform.
 """
-from copy import deepcopy
+from functools import partial
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.transforms.insert_ops
 from pennylane.measurements import Expectation
 from pennylane.tape import QuantumScript
 from pennylane.transforms.insert_ops import insert
@@ -39,7 +38,7 @@ class TestInsert:
 
     tape = QuantumScript.from_queue(q_tape)
     with qml.queuing.AnnotatedQueue() as q_tape_with_prep:
-        qml.QubitStateVector([1, 0], wires=0)
+        qml.StatePrep([1, 0], wires=0)
         qml.RX(0.9, wires=0)
         qml.RY(0.4, wires=1)
         qml.CNOT(wires=[0, 1])
@@ -62,17 +61,18 @@ class TestInsert:
     def test_multiwire_op(self):
         """Tests if a ValueError is raised when multiqubit operations are requested"""
         with pytest.raises(ValueError, match="Only single-qubit operations can be inserted into"):
-            insert(qml.CNOT, [])(self.tape)
+            insert(self.tape, qml.CNOT, [])
 
     @pytest.mark.parametrize("pos", [1, ["all", qml.RY, int], "ABC", str])
     def test_invalid_position(self, pos):
         """Test if a ValueError is raised when an invalid position is requested"""
         with pytest.raises(ValueError, match="Position must be either 'start', 'end', or 'all'"):
-            insert(qml.AmplitudeDamping, 0.4, position=pos)(self.tape)
+            insert(self.tape, qml.AmplitudeDamping, 0.4, position=pos)
 
     def test_start(self):
         """Test if the expected tape is returned when the start position is requested"""
-        tape = insert(qml.AmplitudeDamping, 0.4, position="start")(self.tape)
+        tapes, _ = insert(self.tape, qml.AmplitudeDamping, 0.4, position="start")
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
             qml.AmplitudeDamping(0.4, wires=0)
@@ -92,13 +92,18 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
     def test_all(self):
         """Test if the expected tape is returned when the all position is requested"""
-        tape = insert(qml.PhaseDamping, 0.4, position="all")(self.tape)
+        tapes, _ = insert(self.tape, qml.PhaseDamping, 0.4, position="all")
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
             qml.RX(0.9, wires=0)
@@ -122,14 +127,18 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
     def test_before(self):
         """Test if the expected tape is returned when the before argument is True"""
-        tape = insert(qml.PhaseDamping, 0.4, position="all", before=True)(self.tape)
-
+        tapes, _ = insert(self.tape, qml.PhaseDamping, 0.4, position="all", before=True)
+        tape = tapes[0]
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
             qml.PhaseDamping(0.4, wires=0)
             qml.RX(0.9, wires=0)
@@ -152,7 +161,11 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -161,7 +174,8 @@ class TestInsert:
     @pytest.mark.parametrize("op", op_lst)
     def test_operation_as_position(self, op):
         """Test if expected tape is returned when an operation is passed in position"""
-        tape = insert(qml.PhaseDamping, 0.4, position=op, before=True)(self.custom_tape)
+        tapes, _ = insert(self.custom_tape, qml.PhaseDamping, 0.4, position=op, before=True)
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
             if op == qml.RX:
@@ -190,13 +204,18 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
     def test_operation_list_as_position(self):
         """Test if expected tape is returned when an operation list is passed in position"""
-        tape = insert(qml.PhaseDamping, 0.4, position=[qml.RX, qml.RY])(self.tape)
+        tapes, _ = insert(self.tape, qml.PhaseDamping, 0.4, position=[qml.RX, qml.RY])
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
             qml.RX(0.9, wires=0)
@@ -218,13 +237,18 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
     def test_end(self):
         """Test if the expected tape is returned when the end position is requested"""
-        tape = insert(qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end")(self.tape)
+        tapes, _ = insert(self.tape, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end")
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
             qml.RX(0.9, wires=0)
@@ -244,17 +268,22 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
     def test_start_with_state_prep(self):
         """Test if the expected tape is returned when the start position is requested in a tape
         that has state preparation"""
-        tape = insert(qml.AmplitudeDamping, 0.4, position="start")(self.tape_with_prep)
+        tapes, _ = insert(self.tape_with_prep, qml.AmplitudeDamping, 0.4, position="start")
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.AmplitudeDamping(0.4, wires=0)
             qml.AmplitudeDamping(0.4, wires=1)
             qml.RX(0.9, wires=0)
@@ -272,17 +301,22 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
     def test_all_with_state_prep(self):
         """Test if the expected tape is returned when the all position is requested in a tape
         that has state preparation"""
-        tape = insert(qml.PhaseDamping, 0.4, position="all")(self.tape_with_prep)
+        tapes, _ = insert(self.tape_with_prep, qml.PhaseDamping, 0.4, position="all")
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.RX(0.9, wires=0)
             qml.PhaseDamping(0.4, wires=0)
             qml.RY(0.4, wires=1)
@@ -304,19 +338,24 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
     def test_end_with_state_prep(self):
         """Test if the expected tape is returned when the end position is requested in a tape
         that has state preparation"""
-        tape = insert(qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end")(
-            self.tape_with_prep
+        tapes, _ = insert(
+            self.tape_with_prep, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end"
         )
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.RX(0.9, wires=0)
             qml.RY(0.4, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -334,7 +373,11 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -346,7 +389,8 @@ class TestInsert:
             qml.RX(x, wires=wires)
             qml.PhaseShift(y, wires=wires)
 
-        tape = insert(op, [0.4, 0.5], position="end")(self.tape)
+        tapes, _ = insert(self.tape, op=op, op_args=[0.4, 0.5], position="end")
+        tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
             qml.RX(0.9, wires=0)
@@ -368,7 +412,11 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert (
+            tape.observables[0].name == "Prod"
+            if qml.operation.active_new_opmath()
+            else ["PauliZ", "PauliZ"]
+        )
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -378,8 +426,8 @@ def test_insert_qnode():
     without."""
     dev = qml.device("default.mixed", wires=2)
 
+    @partial(insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
     @qml.qnode(dev)
-    @insert(qml.AmplitudeDamping, 0.2, position="end")
     def f_noisy(w, x, y, z):
         qml.RX(w, wires=0)
         qml.RY(x, wires=1)
@@ -402,8 +450,70 @@ def test_insert_qnode():
     assert not np.isclose(f_noisy(*args), f(*args))
 
 
-def test_insert_dev(mocker, monkeypatch):
-    """Test if a device transformed by the insert function does successfully add noise to
+def test_insert_dev():
+    """Test if an device transformed by the insert function does successfully add noise to
+    subsequent circuit executions"""
+    with qml.queuing.AnnotatedQueue() as q_in_tape:
+        qml.RX(0.9, wires=0)
+        qml.RY(0.4, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(0.5, wires=0)
+        qml.RX(0.6, wires=1)
+        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        qml.expval(qml.PauliZ(0))
+
+    in_tape = QuantumScript.from_queue(q_in_tape)
+    dev = qml.device("default.qubit", wires=2)
+    program, _ = dev.preprocess()
+    res_without_noise = qml.execute(
+        [in_tape], dev, qml.gradients.param_shift, transform_program=program
+    )
+
+    new_dev = insert(dev, qml.PhaseShift, 0.4)
+    new_program, _ = new_dev.preprocess()
+    tapes, _ = new_program([in_tape])
+    tape = tapes[0]
+    res_with_noise = qml.execute([in_tape], new_dev, qml.gradients, transform_program=new_program)
+
+    with qml.queuing.AnnotatedQueue() as q_tape_exp:
+        qml.RX(0.9, wires=0)
+        qml.PhaseShift(0.4, wires=0)
+        qml.RY(0.4, wires=1)
+        qml.PhaseShift(0.4, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(0.4, wires=0)
+        qml.PhaseShift(0.4, wires=1)
+        qml.RY(0.5, wires=0)
+        qml.PhaseShift(0.4, wires=0)
+        qml.RX(0.6, wires=1)
+        qml.PhaseShift(0.4, wires=1)
+        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        qml.expval(qml.PauliZ(0))
+
+    tape_exp = QuantumScript.from_queue(q_tape_exp)
+    assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+    assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+    assert all(
+        np.allclose(o1.parameters, o2.parameters)
+        for o1, o2 in zip(tape.operations, tape_exp.operations)
+    )
+    assert len(tape.measurements) == 2
+    assert (
+        tape.observables[0].name == "Prod"
+        if qml.operation.active_new_opmath()
+        else ["PauliZ", "PauliZ"]
+    )
+    assert tape.observables[0].wires.tolist() == [0, 1]
+    assert tape.measurements[0].return_type is Expectation
+    assert tape.observables[1].name == "PauliZ"
+    assert tape.observables[1].wires.tolist() == [0]
+    assert tape.measurements[1].return_type is Expectation
+
+    assert not np.allclose(res_without_noise, res_with_noise)
+
+
+def test_insert_old_dev(mocker):
+    """Test if a old device transformed by the insert function does successfully add noise to
     subsequent circuit executions"""
     with qml.queuing.AnnotatedQueue() as q_in_tape:
         qml.RX(0.9, wires=0)
@@ -418,7 +528,7 @@ def test_insert_dev(mocker, monkeypatch):
     dev = qml.device("default.mixed", wires=2)
     res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
 
-    new_dev = insert(qml.PhaseDamping, 0.4)(dev)
+    new_dev = insert(dev, qml.PhaseDamping, 0.4)
     spy = mocker.spy(new_dev, "default_expand_fn")
 
     res_with_noise = qml.execute([in_tape], new_dev, qml.gradients.param_shift)
@@ -447,7 +557,11 @@ def test_insert_dev(mocker, monkeypatch):
         for o1, o2 in zip(tape.operations, tape_exp.operations)
     )
     assert len(tape.measurements) == 2
-    assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+    assert (
+        tape.observables[0].name == "Prod"
+        if qml.operation.active_new_opmath()
+        else ["PauliZ", "PauliZ"]
+    )
     assert tape.observables[0].wires.tolist() == [0, 1]
     assert tape.measurements[0].return_type is Expectation
     assert tape.observables[1].name == "PauliZ"
@@ -461,8 +575,8 @@ def test_insert_template():
     """Test that ops are inserted correctly into a decomposed template"""
     dev = qml.device("default.mixed", wires=2)
 
+    @partial(insert, op=qml.PhaseDamping, op_args=0.3, position="all")
     @qml.qnode(dev)
-    @insert(qml.PhaseDamping, 0.3, position="all")
     def f1(w1, w2):
         qml.SimplifiedTwoDesign(w1, w2, wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
@@ -488,26 +602,32 @@ def test_insert_template():
     assert np.allclose(f1(w1, w2), f2(w1, w2))
 
 
-def test_insert_decorator_causes_custom_insert_error_non_qwc_obs():
+def test_insert_transform_works_with_non_qwc_obs():
     """Test that the insert transform catches and reports errors from the enclosed function."""
 
-    def noise(noise_param, wires):
+    def op(noise_param, wires):
+        # pylint: disable=unused-argument
         qml.CRX(noise_param, wires=[0, 1])
         qml.CNOT(wires=[1, 0])
 
-    dev = qml.device("default.mixed", wires=2)
+    dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev)
-    @qml.transforms.insert(noise, 0.3, position="all")
+    @partial(insert, op=op, op_args=0.3, position="all")
     def noisy_circuit(circuit_param):
         qml.RY(circuit_param, wires=0)
         qml.Hadamard(wires=0)
         qml.T(wires=0)
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
-    # This tape's expansion fails, but shouldn't cause a downstream IndexError. See issue #3103
-    with pytest.raises(
-        qml.QuantumFunctionError,
-        match="The insert transform cannot transform a circuit measuring non-commuting observables",
-    ):
-        noisy_circuit(0.4)
+    @qml.qnode(dev)
+    def explicit_circuit(circuit_param):
+        qml.RY(circuit_param, wires=0)
+        op(0.3, None)
+        qml.Hadamard(wires=0)
+        op(0.3, None)
+        qml.T(wires=0)
+        op(0.3, None)
+        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
+
+    assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))

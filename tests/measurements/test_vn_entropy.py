@@ -18,10 +18,11 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.interfaces import INTERFACE_MAP
-from pennylane.measurements import VnEntropy
+from pennylane.measurements import Shots, VnEntropy
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
+
+# pylint: disable=too-many-arguments, no-member
 
 
 def expected_entropy_ising_xx(param):
@@ -78,17 +79,10 @@ class TestInitialization:
 
         @qml.qnode(dev, interface=interface)
         def circuit():
-            qml.QubitStateVector(state_vector, wires=[0, 1])
+            qml.StatePrep(state_vector, wires=[0, 1])
             return qml.vn_entropy(wires=0)
 
-        res = circuit()
-        new_res = qml.vn_entropy(wires=0).process_state(
-            state=circuit.device.state, wire_order=circuit.device.wires
-        )
-        assert qml.math.allclose(res, expected)
-        assert qml.math.allclose(new_res, expected)
-        assert INTERFACE_MAP.get(qml.math.get_interface(new_res)) == interface
-        assert res.dtype == new_res.dtype
+        assert qml.math.allclose(circuit(), expected)
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -121,7 +115,7 @@ class TestInitialization:
         meas = qml.vn_entropy(wires=0)
         dev = qml.device("default.qubit", wires=1, shots=shots)
 
-        assert meas.shape(dev) == shape
+        assert meas.shape(dev, Shots(shots)) == shape
 
 
 class TestIntegration:
@@ -140,12 +134,12 @@ class TestIntegration:
 
     check_state = [True, False]
 
-    devices = ["default.qubit", "default.mixed"]
     diff_methods = ["backprop", "finite-diff"]
 
-    def test_shot_vec_error(self):
+    @pytest.mark.parametrize("shots", [1000, [1, 10, 10, 1000]])
+    def test_finite_shots_error(self, shots):
         """Test an error is raised when using shot vectors with vn_entropy."""
-        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(device=dev)
         def circuit(x):
@@ -154,7 +148,7 @@ class TestIntegration:
             return qml.vn_entropy(wires=[0])
 
         with pytest.raises(
-            NotImplementedError, match="Von Neumann entropy is not supported with shot vectors"
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
         ):
             circuit(0.5)
 
@@ -228,8 +222,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["torch"])
-    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method, interface):
+    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method):
         """Test entropy for a QNode gradient with torch."""
         import torch
 
@@ -351,7 +344,7 @@ class TestIntegration:
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5
 
-        assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -400,19 +393,14 @@ class TestIntegration:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_qnode_entropy_no_custom_wires(self, device):
-        """Test that entropy cannot be returned with custom wires."""
+    def test_qnode_entropy_custom_wires(self):
+        """Test that entropy can be returned with custom wires."""
 
-        dev = qml.device(device, wires=["a", 1])
+        dev = qml.device("default.qubit", wires=["a", 1])
 
         @qml.qnode(dev)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=["a", 1])
             return qml.vn_entropy(wires=["a"])
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Returning the Von Neumann entropy is not supported when using custom wire labels",
-        ):
-            circuit_entropy(0.1)
+        assert np.isclose(circuit_entropy(0.1), expected_entropy_ising_xx(0.1))

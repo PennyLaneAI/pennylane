@@ -15,7 +15,8 @@
 """
 This module contains the qml.mutual_info measurement.
 """
-from typing import Sequence, Optional
+from copy import copy
+from typing import Optional, Sequence
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -64,7 +65,7 @@ def mutual_info(wires0, wires1, log_base=None):
 
     >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_mutual)(param)
-    1.2464504802804612
+    tensor(1.24645048, requires_grad=True)
 
     .. note::
 
@@ -78,11 +79,13 @@ def mutual_info(wires0, wires1, log_base=None):
     wires1 = qml.wires.Wires(wires1)
 
     # the subsystems cannot overlap
-    if [wire for wire in wires0 if wire in wires1]:
+    if not any(qml.math.is_abstract(w) for w in wires0 + wires1) and [
+        wire for wire in wires0 if wire in wires1
+    ]:
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
-    return MutualInfoMP(wires=[wires0, wires1], log_base=log_base)
+    return MutualInfoMP(wires=(wires0, wires1), log_base=log_base)
 
 
 class MutualInfoMP(StateMeasurement):
@@ -98,6 +101,10 @@ class MutualInfoMP(StateMeasurement):
 
     """
 
+    def _flatten(self):
+        metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
+        return (None, None), metadata
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -107,6 +114,14 @@ class MutualInfoMP(StateMeasurement):
     ):
         self.log_base = log_base
         super().__init__(wires=wires, id=id)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, wires: Sequence, **kwargs):
+        if cls._wires_primitive is None:  # pragma: no cover
+            # just a safety check
+            return type.__call__(cls, wires=wires, **kwargs)  # pragma: no cover
+        return cls._wires_primitive.bind(*wires[0], *wires[1], n_wires0=len(wires[0]), **kwargs)
 
     def __repr__(self):
         return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
@@ -131,21 +146,21 @@ class MutualInfoMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None or device.shot_vector is None:
-            return (1,)
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
-        return (num_shot_elements,)
+    def map_wires(self, wire_map: dict):
+        new_measurement = copy(self)
+        new_measurement._wires = [
+            Wires([wire_map.get(wire, wire) for wire in wires]) for wires in self.raw_wires
+        ]
+        return new_measurement
 
-    def _shape_new(self, device=None):
-        if device is None or device.shot_vector is None:
+    def shape(self, device, shots):
+        if not shots.has_partitioned_shots:
             return ()
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
+        state = qml.math.dm_from_state_vector(state)
         return qml.math.mutual_info(
             state,
             indices0=list(self._wires[0]),
@@ -153,3 +168,12 @@ class MutualInfoMP(StateMeasurement):
             c_dtype=state.dtype,
             base=self.log_base,
         )
+
+
+if MutualInfoMP._wires_primitive is not None:
+
+    @MutualInfoMP._wires_primitive.def_impl
+    def _(*all_wires, n_wires0, **kwargs):
+        wires0 = all_wires[:n_wires0]
+        wires1 = all_wires[n_wires0:]
+        return type.__call__(MutualInfoMP, wires=(wires0, wires1), **kwargs)

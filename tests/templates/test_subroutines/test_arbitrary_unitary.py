@@ -14,15 +14,27 @@
 """
 Tests for the ArbitraryUnitary template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+
+# pylint: disable=too-few-public-methods
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
-    _tuple_to_word,
     _n_k_gray_code,
+    _tuple_to_word,
 )
+
+
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    shape = (3,)
+    weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
+    op = qml.ArbitraryUnitary(weights, wires=[0])
+    qml.ops.functions.assert_valid(op)
+
 
 # fmt: off
 PAULI_WORD_TEST_DATA = [
@@ -91,18 +103,21 @@ class TestHelpers:
         ],
     )
     def test_tuple_to_word(self, tuple, expected_word):
+        """Test that tuples of indices are correctly mapped to words."""
         assert _tuple_to_word(tuple) == expected_word
 
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    def test_correct_gates_single_wire(self):
+    @pytest.mark.parametrize("batch_dim", [None, 1, 2])
+    def test_correct_gates_single_wire(self, batch_dim):
         """Test that the correct gates are applied on a single wire."""
-        weights = np.arange(3, dtype=float)
+        shape = (3,) if batch_dim is None else (batch_dim, 3)
+        weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
 
         op = qml.ArbitraryUnitary(weights, wires=[0])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for gate in queue:
             assert gate.name == "PauliRot"
@@ -111,15 +126,17 @@ class TestDecomposition:
         pauli_words = ["X", "Y", "Z"]
 
         for i, op in enumerate(queue):
-            assert op.data[0] == weights[i]
+            assert np.allclose(op.data[0], weights[..., i])
             assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
-    def test_correct_gates_two_wires(self):
+    @pytest.mark.parametrize("batch_dim", [None, 1, 2])
+    def test_correct_gates_two_wires(self, batch_dim):
         """Test that the correct gates are applied on two wires."""
-        weights = np.arange(15, dtype=float)
+        shape = (15,) if batch_dim is None else (batch_dim, 15)
+        weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
 
         op = qml.ArbitraryUnitary(weights, wires=[0, 1])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for gate in queue:
             assert gate.name == "PauliRot"
@@ -144,7 +161,7 @@ class TestDecomposition:
         ]
 
         for i, op in enumerate(queue):
-            assert op.data[0] == weights[i]
+            assert np.allclose(op.data[0], weights[..., i])
             assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_custom_wire_labels(self, tol):
@@ -157,23 +174,25 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.ArbitraryUnitary(weights, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.ArbitraryUnitary(weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    def test_exception_wrong_dim(self):
+    @pytest.mark.parametrize("shape", [(5,), (1, 2, 3), (15, 3)])
+    def test_exception_wrong_dim(self, shape):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
         dev = qml.device("default.qubit", wires=2)
@@ -184,7 +203,7 @@ class TestInputs:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
-            weights = np.array([0, 1])
+            weights = np.zeros(shape)
             circuit(weights)
 
     def test_id(self):

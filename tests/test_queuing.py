@@ -15,17 +15,15 @@
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
 from multiprocessing.dummy import Pool as ThreadPool
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
-
-from pennylane.queuing import (
-    AnnotatedQueue,
-    QueuingManager,
-    QueuingError,
-)
+from pennylane.queuing import AnnotatedQueue, QueuingError, QueuingManager, WrappedObj
 
 
+# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
 class TestStopRecording:
     """Test the stop_recording method of QueuingManager."""
 
@@ -136,6 +134,15 @@ class TestStopRecording:
         result = my_circuit()
         assert result == -1.0
 
+    def test_stop_recording_within_tape_cleans_up(self):
+        """Test if some error is raised within a stop_recording context, the previously
+        active contexts are still returned to avoid popping from an empty deque"""
+
+        with pytest.raises(ValueError):
+            with AnnotatedQueue():
+                with QueuingManager.stop_recording():
+                    raise ValueError
+
 
 class TestQueuingManager:
     """Test the logic associated with the QueuingManager class."""
@@ -201,6 +208,7 @@ class TestAnnotatedQueue:
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_append_tensor_ops_overloaded(self):
         """Test that Tensor ops created using `@`
         are successfully added to the queue, as well as the `Tensor` object."""
@@ -211,6 +219,18 @@ class TestAnnotatedQueue:
             tensor_op = A @ B
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
+
+    @pytest.mark.usefixtures("use_new_opmath")
+    def test_append_prod_ops_overloaded(self):
+        """Test that Prod ops created using `@`
+        are successfully added to the queue, as well as the `Prod` object."""
+
+        with AnnotatedQueue() as q:
+            A = qml.PauliZ(0)
+            B = qml.PauliY(1)
+            prod_op = A @ B
+        assert q.queue == [prod_op]
+        assert prod_op.operands == (A, B)
 
     def test_get_info(self):
         """Test that get_info correctly returns an annotation"""
@@ -431,12 +451,71 @@ class TestApplyOp:
                 op1 = qml.apply(5)
                 op2 = qml.apply(6, q1)
 
-            tape2 = qml.tape.QuantumScript.from_queue(q2)
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert q1.queue == [op2]
         assert q2.queue == [op1]
 
-        # note that tapes don't know how to process integers,
-        # so they are not included after queue processing
-        assert tape1.operations == []
-        assert tape2.operations == []
+
+class TestWrappedObj:
+    """Tests for the ``WrappedObj`` class"""
+
+    @pytest.mark.parametrize(
+        "obj", [qml.PauliX(0), qml.expval(qml.PauliZ(0)), [0, 1, 2], ("a", "b")]
+    )
+    def test_wrapped_obj_init(self, obj):
+        """Test that ``WrappedObj`` is initialized correctly"""
+        wo = WrappedObj(obj)
+        assert wo.obj is obj
+
+    @pytest.mark.parametrize(
+        "obj1, obj2",
+        [(qml.PauliX(0), qml.PauliZ(0)), (qml.PauliX(0), qml.PauliX(0)), ((1,), (1, 2))],
+    )
+    def test_wrapped_obj_eq_false(self, obj1, obj2):
+        """Test that ``WrappedObj.__eq__`` returns False when expected."""
+        wo1 = WrappedObj(obj1)
+        wo2 = WrappedObj(obj2)
+        assert wo1 != wo2
+
+    def test_wrapped_obj_eq_false_other_obj(self):
+        """Test that WrappedObj.__eq__ returns False when the object being compared is not
+        a WrappedObj."""
+        op = qml.PauliX(0)
+        wo = WrappedObj(op)
+        assert wo != op
+
+    def test_wrapped_obj_eq_true(self):
+        """Test that ``WrappedObj.__eq__`` returns True when expected."""
+        op = qml.PauliX(0)
+        assert WrappedObj(op) == WrappedObj(op)
+
+    @pytest.mark.parametrize(
+        "obj", [qml.PauliX(0), qml.expval(qml.PauliZ(0)), [0, 1, 2], ("a", "b")]
+    )
+    def test_wrapped_obj_hash(self, obj):
+        """Test that ``WrappedObj.__hash__`` is the object id."""
+        wo = WrappedObj(obj)
+        assert wo.__hash__() == id(obj)
+
+    def test_wrapped_obj_repr(self):
+        """Test that the ``WrappedObj` representation is equivalent to the repr of the
+        object it wraps."""
+
+        class Dummy:  # pylint: disable=too-few-public-methods
+            """Dummy class with custom repr"""
+
+            def __repr__(self):
+                return "test_repr"
+
+        obj = Dummy()
+        wo = WrappedObj(obj)
+        assert wo.__repr__() == "Wrapped(test_repr)"
+
+
+def test_process_queue_error_if_not_operator_or_measurement():
+    """Test that a QueuingError is raised if process queue encounters an object that does not have a
+    _queue_category property
+    """
+    q = AnnotatedQueue()
+    q.append(1)
+    with pytest.raises(QueuingError, match="not an object that can be processed"):
+        qml.queuing.process_queue(q)

@@ -14,12 +14,14 @@
 """
 Unit tests for :mod:`pennylane.wires`.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError, Wires
 
 
+# pylint: disable=too-many-public-methods
 class TestWires:
     """Tests for the ``Wires`` class."""
 
@@ -103,8 +105,8 @@ class TestWires:
         wires = Wires(iterable)
 
         # check single index
-        for i in range(len(iterable)):
-            assert wires[i] == iterable[i]
+        for wire, item in zip(wires, iterable):
+            assert wire == item
         # check slicing
         assert wires[:2] == Wires(iterable[:2])
 
@@ -134,12 +136,12 @@ class TestWires:
         assert 0 in wires
         assert Wires([4, 5]) in wires
         assert None in wires
-        assert not Wires([1]) in wires
-        assert not Wires([0, 3]) in wires
-        assert not Wires([0, 4]) in wires
+        assert Wires([1]) not in wires
+        assert Wires([0, 3]) not in wires
+        assert Wires([0, 4]) not in wires
 
-        assert not [0, 4] in wires
-        assert not [4] in wires
+        assert [0, 4] not in wires
+        assert [4] not in wires
 
     def test_contains_wires(
         self,
@@ -274,7 +276,7 @@ class TestWires:
 
         # error when labels not in wire_map dictionary
         with pytest.raises(WireError, match="No mapping for wire label"):
-            wires.map({-1: Wires(4)}) == expected
+            wires.map({-1: Wires(4)})
 
         # error for non-unique wire labels
         with pytest.raises(WireError, match="Failed to implement wire map"):
@@ -354,9 +356,24 @@ class TestWires:
         assert Wires([1, 2, 3]) != (1, 5, 3)
         assert (1, 5, 3) != Wires([1, 2, 3])
 
+    # pylint: disable=protected-access
     def test_hash_cached(self):
         """Test that the hash of a Wires object is being cached."""
         wires = Wires([0, 1])
         assert wires._hash is None
         h = hash(wires)
         assert wires._hash == h
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "source", [1, -2, "a", "q1", -1.4, np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)]
+    )
+    def test_wires_pytree(self, source):
+        """Test that Wires class supports the PyTree flattening interface"""
+        from jax.tree_util import tree_flatten, tree_unflatten
+
+        wires = Wires(source)
+        wires_flat, tree = tree_flatten(wires)
+        wires2 = tree_unflatten(tree, wires_flat)
+        assert isinstance(wires2, Wires), f"{wires2} is not Wires"
+        assert wires == wires2, f"{wires} != {wires2}"

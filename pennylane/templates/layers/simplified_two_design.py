@@ -16,7 +16,7 @@ Contains the SimplifiedTwoDesign template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class SimplifiedTwoDesign(Operation):
@@ -74,7 +74,7 @@ class SimplifiedTwoDesign(Operation):
             @qml.qnode(dev)
             def circuit(init_weights, weights):
                 qml.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
 
             init_weights = [pi, pi, pi]
             weights_layer1 = [[0., pi],
@@ -98,10 +98,11 @@ class SimplifiedTwoDesign(Operation):
             weights = [np.random.random(size=shape) for shape in shapes]
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, initial_layer_weights, weights, wires, do_queue=True, id=None):
+    def __init__(self, initial_layer_weights, weights, wires, id=None):
         shape = qml.math.shape(weights)
 
         if len(shape) > 1:
@@ -123,7 +124,7 @@ class SimplifiedTwoDesign(Operation):
 
         self.n_layers = shape[0]
 
-        super().__init__(initial_layer_weights, weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(initial_layer_weights, weights, wires=wires, id=id)
 
     @property
     def num_params(self):

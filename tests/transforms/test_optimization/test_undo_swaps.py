@@ -11,18 +11,46 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``undo_swaps``.
+"""
 import pytest
-from pennylane import numpy as np
+from utils import compare_operation_lists
 
 import pennylane as qml
-from pennylane.wires import Wires
+from pennylane import numpy as np
 from pennylane.transforms.optimization import undo_swaps
-from utils import compare_operation_lists
+from pennylane.wires import Wires
 
 
 class TestUndoSwaps:
     """Test that check the main functionalities of the `undo_swaps` transform"""
+
+    def test_transform_non_standard_operations(self):
+        """Test that the transform works on non-standard operations with nesting or hyperparameters."""
+
+        ops = [
+            qml.adjoint(qml.S(0)),
+            qml.PauliRot(1.2, "XY", wires=(0, 2)),
+            qml.ctrl(qml.PauliX(0), [2, 3], control_values=[0, 0]),
+            qml.SWAP((0, 1)),
+        ]
+
+        tape = qml.tape.QuantumScript(ops, [qml.state()], shots=100)
+        batch, fn = qml.transforms.undo_swaps(tape)
+
+        expected_ops = [
+            qml.adjoint(qml.S(1)),
+            qml.PauliRot(1.2, "XY", wires=(1, 2)),
+            qml.ctrl(qml.PauliX(1), [2, 3], control_values=[0, 0]),
+        ]
+        assert len(batch) == 1
+        assert batch[0].shots == tape.shots
+
+        assert fn(["a"]) == "a"
+
+        for op1, expected in zip(batch[0].operations, expected_ops):
+            assert op1 == expected
 
     def test_one_qubit_gates_transform(self):
         """Test that a single-qubit gate changes correctly with a SWAP."""
@@ -38,6 +66,20 @@ class TestUndoSwaps:
         tape = qml.tape.make_qscript(transformed_qfunc)()
         res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
+        assert np.allclose(res[0], 0.5)
+
+    def test_one_qubit_gates_transform_qnode(self):
+        """Test that a single-qubit gate changes correctly with a SWAP."""
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=1)
+            qml.SWAP(wires=[0, 1])
+            return qml.probs(1)
+
+        transformed_qnode = undo_swaps(circuit)
+        res = transformed_qnode()
         assert np.allclose(res[0], 0.5)
 
     def test_two_qubits_gates_transform(self):
@@ -109,11 +151,13 @@ class TestUndoSwaps:
 
         assert np.allclose(res1, res2)
 
-    def test_decorator(self):
-        dev = qml.device("default.qubit", wires=3)
+    def test_decorator(self, mocker):
+        """Test that the decorator works on a QNode."""
 
-        @qml.qnode(dev)
+        spy = mocker.spy(dev, "execute")
+
         @undo_swaps
+        @qml.qnode(dev)
         def qfunc():
             qml.Hadamard(wires=0)
             qml.PauliX(wires=1)
@@ -122,8 +166,9 @@ class TestUndoSwaps:
             qml.PauliY(wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qfunc()
-        assert len(qfunc.qtape.operations) == 3
+        assert np.allclose(qfunc(), -1)
+        [[tape]], _ = spy.call_args
+        assert tape.operations == [qml.Hadamard(1), qml.PauliX(2), qml.PauliY(0)]
 
 
 # Example QNode and device for interface testing
@@ -131,7 +176,7 @@ dev = qml.device("default.qubit", wires=3)
 
 
 # Test each of single-qubit, two-qubit, and Rot gates
-def qfunc(theta):
+def qfunc_all_ops(theta):
     qml.Hadamard(wires=0)
     qml.RX(theta[0], wires=1)
     qml.SWAP(wires=[0, 1])
@@ -140,7 +185,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliZ(0))
 
 
-transformed_qfunc = undo_swaps(qfunc)
+transformed_qfunc_all_ops = undo_swaps(qfunc_all_ops)
 
 expected_op_list = ["Hadamard", "RX", "RY"]
 expected_wires_list = [
@@ -157,8 +202,8 @@ class TestUndoSwapsInterfaces:
     def test_undo_swaps_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2], requires_grad=True)
 
@@ -179,8 +224,8 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([0.1, 0.2], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -206,8 +251,8 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.1, 0.2])
         transformed_input = tf.Variable([0.1, 0.2])
@@ -239,13 +284,8 @@ class TestUndoSwapsInterfaces:
         import jax
         from jax import numpy as jnp
 
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
-
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.1, 0.2], dtype=jnp.float64)
 

@@ -28,8 +28,6 @@ from .utils import (
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
     pauli_group,
-    pauli_mult,
-    pauli_mult_with_phase,
     partition_pauli_group,
     qwc_rotation,
     diagonalize_pauli_word,
@@ -37,6 +35,8 @@ from .utils import (
     diagonalize_qwc_groupings,
     simplify,
 )
+
+from .pauli_interface import pauli_word_prefactor
 
 from .conversion import (
     pauli_decompose,
@@ -49,3 +49,5 @@ from .grouping import (
     optimize_measurements,
     graph_colouring,
 )
+
+from .dla import PauliVSpace, lie_closure, structure_constants, center

@@ -14,21 +14,24 @@
 """
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
+from typing import Callable, Sequence
+
 import pennylane as qml
-from pennylane.transforms import qfunc_transform
-from pennylane.transforms.decompositions import zyz_decomposition, two_qubit_decomposition
+from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
-@qfunc_transform
-def unitary_to_rot(tape):
+@transform
+def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     r"""Quantum function transform to decomposes all instances of single-qubit and
     select instances of two-qubit :class:`~.QubitUnitary` operations to
     parametrized single-qubit operations.
 
-    For single-qubit gates, diagonal operations will be converted to a single
-    :class:`.RZ` gate, while non-diagonal operations will be converted to a
-    :class:`.Rot` gate that implements the original operation up to a global
-    phase. Two-qubit gates will be decomposed according to the
+    Single-qubit gates will be converted to a sequence of Y and Z rotations in the form
+    :math:`RZ(\omega) RY(\theta) RZ(\phi)` that implements the original operation up
+    to a global phase. Two-qubit gates will be decomposed according to the
     :func:`pennylane.transforms.two_qubit_decomposition` function.
 
     .. warning::
@@ -37,7 +40,10 @@ def unitary_to_rot(tape):
         operations. See usage details below.
 
     Args:
-        qfunc (function): a quantum function
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -57,13 +63,13 @@ def unitary_to_rot(tape):
 
         def qfunc():
             qml.QubitUnitary(U, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
     The original circuit is:
 
     >>> dev = qml.device('default.qubit', wires=1)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode, show_matrices=True)())
+    >>> print(qml.draw(qnode)())
     0: ──U(M0)─┤  <Z>
     M0 =
     [[-0.17111489+0.58564875j -0.69352236-0.38309524j]
@@ -74,7 +80,7 @@ def unitary_to_rot(tape):
     >>> transformed_qfunc = unitary_to_rot(qfunc)
     >>> transformed_qnode = qml.QNode(transformed_qfunc, dev)
     >>> print(qml.draw(transformed_qnode)())
-    0: ──Rot(-1.35,1.83,-0.61)─┤  <Z>
+    0: ──RZ(-1.35)──RY(1.83)──RZ(-0.61)─┤  <Z>
 
 
     .. details::
@@ -94,7 +100,7 @@ def unitary_to_rot(tape):
                 qml.RX(angles[0], wires="a")
                 qml.RY(angles[1], wires="b")
                 qml.CNOT(wires=["b", "a"])
-                return qml.expval(qml.PauliZ(wires="a"))
+                return qml.expval(qml.Z("a"))
 
             dev = qml.device('default.qubit', wires=["a", "b"])
             transformed_qfunc = qml.transforms.unitary_to_rot(circuit)
@@ -127,18 +133,30 @@ def unitary_to_rot(tape):
                 qml.QubitUnitary(U, wires=["a", "b"])
 
                 qml.CNOT(wires=["b", "a"])
-                return qml.expval(qml.PauliX(wires="a"))
+                return qml.expval(qml.X("a"))
     """
-
-    for op in tape:
+    operations = []
+    for op in tape.operations:
         if isinstance(op, qml.QubitUnitary):
             # Single-qubit unitary operations
             if qml.math.shape(op.parameters[0]) == (2, 2):
-                zyz_decomposition(op.parameters[0], op.wires[0])
+                with QueuingManager.stop_recording():
+                    operations.extend(one_qubit_decomposition(op.parameters[0], op.wires[0]))
             # Two-qubit unitary operations
             elif qml.math.shape(op.parameters[0]) == (4, 4):
-                two_qubit_decomposition(op.parameters[0], op.wires)
+                with QueuingManager.stop_recording():
+                    operations.extend(two_qubit_decomposition(op.parameters[0], op.wires))
             else:
-                qml.apply(op)
+                operations.append(op)
         else:
-            qml.apply(op)
+            operations.append(op)
+
+    new_tape = type(tape)(operations, measurements=tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

@@ -14,7 +14,9 @@
 """
 This module contains the functions needed for computing the spin observables.
 """
-from pennylane import numpy as np
+import numpy as np
+
+from pennylane.fermi import FermiSentence, FermiWord
 
 from .observable_hf import qubit_observable
 
@@ -139,26 +141,28 @@ def spin2(electrons, orbitals):
 
     >>> electrons = 2
     >>> orbitals = 4
-    >>> print(spin2(electrons, orbitals))
-    (0.75) [I0]
-    + (0.375) [Z1]
-    + (-0.375) [Z0 Z1]
-    + (0.125) [Z0 Z2]
-    + (0.375) [Z0]
-    + (-0.125) [Z0 Z3]
-    + (-0.125) [Z1 Z2]
-    + (0.125) [Z1 Z3]
-    + (0.375) [Z2]
-    + (0.375) [Z3]
-    + (-0.375) [Z2 Z3]
-    + (0.125) [Y0 X1 Y2 X3]
-    + (0.125) [Y0 Y1 X2 X3]
-    + (0.125) [Y0 Y1 Y2 Y3]
-    + (-0.125) [Y0 X1 X2 Y3]
-    + (-0.125) [X0 Y1 Y2 X3]
-    + (0.125) [X0 X1 X2 X3]
-    + (0.125) [X0 X1 Y2 Y3]
-    + (0.125) [X0 Y1 X2 Y3]
+    >>> spin2(electrons, orbitals)
+    (
+        0.75 * I(0)
+      + 0.375 * Z(0)
+      + 0.375 * Z(1)
+      + -0.375 * (Z(0) @ Z(1))
+      + 0.375 * Z(2)
+      + 0.125 * (Z(0) @ Z(2))
+      + 0.375 * Z(3)
+      + -0.125 * (Z(0) @ Z(3))
+      + -0.125 * (Z(1) @ Z(2))
+      + 0.125 * (Z(1) @ Z(3))
+      + -0.375 * (Z(2) @ Z(3))
+      + 0.125 * (Y(0) @ Y(2) @ X(3) @ X(1))
+      + 0.125 * (Y(0) @ X(2) @ X(3) @ Y(1))
+      + 0.125 * (Y(0) @ Y(2) @ Y(3) @ Y(1))
+      + -0.125 * (Y(0) @ X(2) @ Y(3) @ X(1))
+      + -0.125 * (X(0) @ Y(2) @ X(3) @ Y(1))
+      + 0.125 * (X(0) @ X(2) @ X(3) @ X(1))
+      + 0.125 * (X(0) @ Y(2) @ Y(3) @ X(1))
+      + 0.125 * (X(0) @ X(2) @ Y(3) @ Y(1))
+    )
     """
 
     if electrons <= 0:
@@ -171,14 +175,24 @@ def spin2(electrons, orbitals):
 
     table = _spin2_matrix_elements(sz)
 
-    s2_coeff = np.array([3 / 4 * electrons])
-    s2_op = [[]]
+    sentence = FermiSentence({FermiWord({}): 3 / 4 * electrons})
 
     for i in table:
-        s2_coeff = np.concatenate((s2_coeff, np.array([i[4]])))
-        s2_op.append([int(i[0]), int(i[1]), int(i[2]), int(i[3])])
+        sentence.update(
+            {
+                FermiWord(
+                    {
+                        (0, int(i[0])): "+",
+                        (1, int(i[1])): "+",
+                        (2, int(i[2])): "-",
+                        (3, int(i[3])): "-",
+                    }
+                ): i[4]
+            }
+        )
+    sentence.simplify()
 
-    return qubit_observable((s2_coeff, s2_op))
+    return qubit_observable(sentence)
 
 
 def spinz(orbitals):
@@ -210,10 +224,12 @@ def spinz(orbitals):
 
     >>> orbitals = 4
     >>> print(spinz(orbitals))
-    (-0.25) [Z0]
-    + (0.25) [Z1]
-    + (-0.25) [Z2]
-    + (0.25) [Z3]
+    (
+        -0.25 * Z(0)
+      + 0.25 * Z(1)
+      + -0.25 * Z(2)
+      + 0.25 * Z(3)
+    )
     """
 
     if orbitals <= 0:
@@ -223,11 +239,19 @@ def spinz(orbitals):
     sz_orb = np.where(r % 2 == 0, 0.5, -0.5)
     table = np.vstack([r, r, sz_orb]).T
 
-    sz_coeff = np.array([])
-    sz_op = []
+    sentence = FermiSentence({})
 
     for i in table:
-        sz_coeff = np.concatenate((sz_coeff, np.array([i[2]])))
-        sz_op.append([int(i[0]), int(i[1])])
+        sentence.update(
+            {
+                FermiWord(
+                    {
+                        (0, int(i[0])): "+",
+                        (1, int(i[1])): "-",
+                    }
+                ): i[2]
+            }
+        )
+    sentence.simplify()
 
-    return qubit_observable((sz_coeff, sz_op))
+    return qubit_observable(sentence)

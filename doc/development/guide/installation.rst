@@ -6,7 +6,7 @@ Dependencies
 
 PennyLane requires the following libraries be installed:
 
-* `Python <http://python.org/>`_ >= 3.7
+* `Python <http://python.org/>`_ >= 3.9
 
 The following Python packages are hard dependencies, and will automatically
 be installed alongside PennyLane:
@@ -18,12 +18,11 @@ be installed alongside PennyLane:
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
-* `autoray <https://github.com/jcmgray/autoray>`__
+* `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.11
+* `packaging <https://github.com/pypa/packaging>`_
 
 The following Python packages are optional:
 
-* `dask["parallel"] <https://dask.org/>`_, for parallel QNodeCollection execution
-* `tensornetwork <https://github.com/google/TensorNetwork>`_ >= 0.3, for the ``default.tensor`` plugin
 * `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qml.qchem`` module
 
 If you currently do not have Python 3 installed, we recommend
@@ -67,6 +66,14 @@ importing PennyLane in Python.
     plugins, changes to PennyLane device class locations or shortnames
     requires ``pip install -e .`` to be re-run in the plugin repository
     for the changes to take effect.
+
+Apart from the core packages needed to run PennyLane. Some extra packages need
+to be installed for several development processes, such as linting, testing, and
+pre-commit quality checks. Those can be installed easily via ``pip``:
+
+.. code-block:: bash
+
+    pip install -r requirements-dev.txt
 
 Docker
 ------

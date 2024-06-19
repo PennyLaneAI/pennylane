@@ -18,10 +18,10 @@ device by checking expectation values.
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
-from math import sqrt, pi
+from math import pi, sqrt
 
-import pytest
 import numpy as np
+import pytest
 from flaky import flaky
 
 import pennylane as qml
@@ -52,7 +52,7 @@ class TestGatesQubitExpval:
         @qml.qnode(dev)
         def circuit():
             qml.BasisState(np.array(par), wires=wires)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -83,8 +83,8 @@ class TestGatesQubitExpval:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(par, wires=wires)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+            qml.StatePrep(par, wires=wires)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -146,7 +146,7 @@ class TestGatesQubitExpval:
         @qml.qnode(dev)
         def circuit():
             op(*par, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -213,9 +213,9 @@ class TestGatesQubitExpval:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
+            qml.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
             op(*par, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -239,7 +239,7 @@ class TestGatesQubitExpval:
         @qml.qnode(dev)
         def circuit():
             op(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -258,14 +258,14 @@ class TestGatesQubitExpval:
         dev = device(n_wires)
 
         op = getattr(qml.ops, name)
-        if not dev.supports_operation(op):
+        if isinstance(dev, qml.Device) and not dev.supports_operation(op):
             pytest.skip("operation not supported")
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
+            qml.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
             op(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -286,6 +286,6 @@ class TestGatesQubitExpval:
         def circuit():
             qml.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
             op(wires=[0, 1, 2])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))

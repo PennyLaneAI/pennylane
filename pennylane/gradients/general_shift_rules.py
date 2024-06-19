@@ -16,10 +16,16 @@ helper methods for processing shift rules as well as for creating tapes with
 shifted parameters."""
 import functools
 import itertools
+import numbers
 import warnings
 
 import numpy as np
+from scipy.linalg import solve as linalg_solve
+
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess
+from pennylane.ops.functions import bind_new_parameters
+from pennylane.tape import QuantumScript
 
 
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):
@@ -53,6 +59,7 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
 
     - Finally, the terms are sorted according to the absolute value of ``shift``,
       This ensures that a zero-shift term, if it exists, is returned first.
+      For equal absolute values of two shifts, the positive shift is sorted to come first.
     """
     # set all small coefficients, multipliers if present, and shifts to zero.
     rule[np.abs(rule) < tol] = 0
@@ -72,8 +79,9 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
             coeffs = [np.sum(rule[slc, 0]) for slc in matches.T]
             rule = np.hstack([np.stack(coeffs)[:, np.newaxis], unique_mods])
 
-    # sort columns according to abs(shift)
-    return rule[np.argsort(np.abs(rule[:, -1]))]
+    # sort columns according to abs(shift), ties are resolved with the sign,
+    # positive shifts being returned before negative shifts.
+    return rule[np.lexsort((-np.sign(rule[:, -1]), np.abs(rule[:, -1])))]
 
 
 @functools.lru_cache(maxsize=None)
@@ -174,7 +182,7 @@ def _get_shift_rule(frequencies, shifts=None):
                 "may give unstable results for the parameter shift rules."
             )
 
-        coeffs = -2 * np.linalg.solve(sin_matrix.T, frequencies)
+        coeffs = -2 * linalg_solve(sin_matrix.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
     shifts = np.concatenate((shifts, -shifts))  # pylint: disable=invalid-unary-operand-type
@@ -305,7 +313,7 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
            [ 0.5       , -3.14159265]])
 
     This corresponds to the shift rule
-    :math:`\frac{\partial^2 f}{\partial phi^2} = \frac{1}{2} \left[f(\phi) - f(\phi-\pi)\right]`.
+    :math:`\frac{\partial^2 f}{\partial \phi^2} = \frac{1}{2} \left[f(\phi) - f(\phi-\pi)\right]`.
     """
     frequencies = tuple(f for f in frequencies if f > 0)
     rule = _get_shift_rule(frequencies, shifts=shifts)
@@ -363,9 +371,12 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     .. math::
 
+        \begin{align*}
         \frac{\partial^2 f}{\partial x\partial y} &= \frac{1}{4}
-        \left[f(x+\pi/2, y+\pi/2) - f(x+\pi/2, y-\pi/2)\\
-        &~~~- f(x-\pi/2, y+\pi/2) + f(x-\pi/2, y-\pi/2) \right].
+        [f(x+\pi/2, y+\pi/2) - f(x+\pi/2, y-\pi/2)\\
+        &\phantom{\frac{1}{4}[}-f(x-\pi/2, y+\pi/2) + f(x-\pi/2, y-\pi/2) ].
+        \end{align*}
+
     """
     rules = []
     shifts = shifts or [None] * len(frequencies)
@@ -376,6 +387,46 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
         rules.append(process_shifts(rule))
 
     return _combine_shift_rules(rules)
+
+
+def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
+    """Create a copy of a tape and of parameters, and set the new tape to the parameters
+    rescaled and shifted as indicated by ``indices``, ``multipliers`` and ``shifts``."""
+    all_ops = tape.circuit
+
+    for idx, shift, multiplier in zip(indices, shifts, multipliers):
+        _, op_idx, p_idx = tape.get_operation(idx)
+        op = (
+            all_ops[op_idx].obs
+            if isinstance(all_ops[op_idx], MeasurementProcess)
+            else all_ops[op_idx]
+        )
+
+        # Shift copied parameter
+        new_params = list(op.data)
+        if not isinstance(new_params[p_idx], numbers.Integral):
+            multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
+            multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
+            shift = qml.math.convert_like(shift, new_params[p_idx])
+            shift = qml.math.cast_like(shift, new_params[p_idx])
+        new_params[p_idx] = new_params[p_idx] * multiplier
+        new_params[p_idx] = new_params[p_idx] + shift
+        if cast:
+            dtype = getattr(new_params[p_idx], "dtype", float)
+            new_params[p_idx] = qml.math.cast(new_params[p_idx], dtype)
+
+        # Create operator with shifted parameter and put into shifted tape
+        shifted_op = bind_new_parameters(op, new_params)
+        if op_idx < len(tape.operations):
+            all_ops[op_idx] = shifted_op
+        else:
+            mp = all_ops[op_idx].__class__
+            all_ops[op_idx] = mp(obs=shifted_op)
+
+    # pylint: disable=protected-access
+    ops = all_ops[: len(tape.operations)]
+    meas = all_ops[len(tape.operations) :]
+    return QuantumScript(ops=ops, measurements=meas, shots=tape.shots)
 
 
 def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=False):
@@ -403,27 +454,17 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
 
-    def _copy_and_shift_params(tape, params, idx, shift, mult):
-        """Create a copy of a tape and of parameters, and set the new tape to the parameters
-        rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
-        new_params = params.copy()
-        new_params[idx] = new_params[idx] * qml.math.convert_like(
-            mult, new_params[idx]
-        ) + qml.math.convert_like(shift, new_params[idx])
+    if len(shifts) == 0:
+        return tuple()
 
-        shifted_tape = tape.copy(copy_operations=True)
-        shifted_tape.set_parameters(new_params)
-        return shifted_tape
-
-    params = list(tape.get_parameters())
     if multipliers is None:
         multipliers = np.ones_like(shifts)
 
     if broadcast:
-        return (_copy_and_shift_params(tape, params, index, shifts, multipliers),)
+        return (_copy_and_shift_params(tape, [index], [shifts], [multipliers]),)
 
     return tuple(
-        _copy_and_shift_params(tape, params, index, shift, multiplier)
+        _copy_and_shift_params(tape, [index], [shift], [multiplier])
         for shift, multiplier in zip(shifts, multipliers)
     )
 
@@ -450,22 +491,12 @@ def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
             of tapes will match the summed lengths of all inner sequences in ``shifts``
             and ``multipliers`` (if provided).
     """
-    params = list(tape.get_parameters())
     if multipliers is None:
         multipliers = np.ones_like(shifts)
 
-    tapes = []
-
-    for _shifts, _multipliers in zip(shifts, multipliers):
-        new_params = params.copy()
-        shifted_tape = tape.copy(copy_operations=True)
-        for idx, shift, multiplier in zip(indices, _shifts, _multipliers):
-            dtype = getattr(new_params[idx], "dtype", float)
-            new_params[idx] = new_params[idx] * qml.math.convert_like(multiplier, new_params[idx])
-            new_params[idx] = new_params[idx] + qml.math.convert_like(shift, new_params[idx])
-            new_params[idx] = qml.math.cast(new_params[idx], dtype)
-
-        shifted_tape.set_parameters(new_params)
-        tapes.append(shifted_tape)
+    tapes = [
+        _copy_and_shift_params(tape, indices, _shifts, _multipliers, cast=True)
+        for _shifts, _multipliers in zip(shifts, multipliers)
+    ]
 
     return tapes

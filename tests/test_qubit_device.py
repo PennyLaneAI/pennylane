@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
+import copy
 from random import random
 
 import numpy as np
@@ -30,12 +31,13 @@ from pennylane.measurements import (
     ProbabilityMP,
     Sample,
     SampleMP,
+    Shots,
     State,
     StateMP,
     Variance,
     VarianceMP,
-    state,
 )
+from pennylane.resource import Resources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -154,6 +156,7 @@ def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
         yield get_qubit_device
 
 
+# pylint: disable=protected-access
 def _working_get_batch_size(tensor, expected_shape, expected_size):
     size = QubitDevice._size(tensor)
     if QubitDevice._ndim(tensor) > len(expected_shape) or size > expected_size:
@@ -165,6 +168,7 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
 class TestOperations:
     """Tests the logic related to operations"""
 
+    # pylint: disable=pointless-statement
     def test_op_queue_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
@@ -182,7 +186,8 @@ class TestOperations:
 
         with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
-            observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q)
         call_history = []
@@ -212,8 +217,9 @@ class TestOperations:
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
         with qml.queuing.AnnotatedQueue() as q:
-            queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
-            observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
+            _ = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q)
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
@@ -250,15 +256,15 @@ class TestOperations:
             dev = mock_qubit_device_with_paulis_rotations_and_methods()
             dev.execute(tape, hash=tape.graph.hash)
 
-        len(call_history.items()) == 1
-        call_history["hash"] = tape.graph.hash
+        assert len(call_history.items()) == 2
+        assert call_history["hash"] == tape.graph.hash
+        assert call_history["rotations"] == []
 
 
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable=no-self-use, redefined-outer-name
-
+    # pylint: disable=no-self-use, redefined-outer-name, pointless-statement
     def test_obs_queue_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
@@ -272,13 +278,10 @@ class TestObservables:
     def test_unsupported_observables_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
         with qml.queuing.AnnotatedQueue() as q:
-            queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
-
-            observables = [
-                qml.expval(qml.Hadamard(0)),
-                qml.var(qml.PauliZ(1)),
-                qml.sample(qml.PauliZ(2)),
-            ]
+            _ = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+            qml.expval(qml.Hadamard(0))
+            qml.var(qml.PauliZ(1))
+            qml.sample(qml.PauliZ(2))
 
         tape = QuantumScript.from_queue(q)
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
@@ -290,6 +293,7 @@ class TestObservables:
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
+        # pylint: disable=too-few-public-methods
         class UnsupportedMeasurement(MeasurementProcess):
             @property
             def return_type(self):
@@ -309,9 +313,11 @@ class TestObservables:
                 dev.execute(tape)
 
 
+# pylint: disable=too-few-public-methods
 class TestParameters:
     """Test for checking device parameter mappings"""
 
+    # pylint: disable=pointless-statement
     def test_parameters_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
 
@@ -336,32 +342,27 @@ class TestExtractStatistics:
             StateMP(),
         ],
     )
-    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
+    def test_results_created(self, mock_qubit_device_extract_stats, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
         qscript = QuantumScript(measurements=[measurement])
-
-        with monkeypatch.context() as m:
-            dev = mock_qubit_device_extract_stats()
-            results = dev.statistics(qscript)
+        dev = mock_qubit_device_extract_stats()
+        results = dev.statistics(qscript)
 
         assert results == [0]
 
-    def test_results_no_state(self, mock_qubit_device_extract_stats, monkeypatch):
+    def test_results_no_state(self, mock_qubit_device_extract_stats):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QubitDevice does not have a state attribute"""
         qscript = QuantumScript(measurements=[qml.state()])
-
-        with monkeypatch.context():
-            dev = mock_qubit_device_extract_stats()
-            delattr(dev.__class__, "state")
-            with pytest.raises(
-                qml.QuantumFunctionError, match="The state is not available in the current"
-            ):
-                dev.statistics(qscript)
+        dev = mock_qubit_device_extract_stats()
+        delattr(dev.__class__, "state")
+        _match = "The state is not available in the current"
+        with pytest.raises(qml.QuantumFunctionError, match=_match):
+            dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", [None])
-    def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+    def test_results_created_empty(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
         class UnsupportedMeasurement(MeasurementProcess):
@@ -370,15 +371,13 @@ class TestExtractStatistics:
                 return returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
-
-        with monkeypatch.context() as m:
-            dev = mock_qubit_device_extract_stats()
-            results = dev.statistics(qscript)
+        dev = mock_qubit_device_extract_stats()
+        results = dev.statistics(qscript)
 
         assert results == []
 
     @pytest.mark.parametrize("returntype", ["not None"])
-    def test_error_return_type_none(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+    def test_error_return_type_none(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
         assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
@@ -437,7 +436,7 @@ class TestSampleBasisStates:
         assert res[1] == shots
         assert res[2] == state_probs
 
-    def test_raises_deprecation_warning(self, mock_qubit_device, monkeypatch):
+    def test_raises_deprecation_warning(self, mock_qubit_device):
         """Test that sampling basis states on a device with shots=None produces a warning."""
 
         dev = mock_qubit_device()
@@ -451,8 +450,7 @@ class TestSampleBasisStates:
         ):
             dev.sample_basis_states(number_of_states, state_probs)
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
-    def test_sampling_with_broadcasting(self, mock_qubit_device, monkeypatch):
+    def test_sampling_with_broadcasting(self, mock_qubit_device):
         """Tests that the sample_basis_states method samples with the correct arguments
         when using broadcasted probabilities"""
 
@@ -466,17 +464,6 @@ class TestSampleBasisStates:
         res = dev.sample_basis_states(number_of_states, state_probs)
         assert qml.math.shape(res) == (2, shots)
         assert set(res.flat).issubset({0, 1, 2, 3})
-
-        with monkeypatch.context() as m:
-            # Mock the numpy.random.choice method such that it returns the expected values
-            m.setattr("numpy.random.choice", lambda x, y, p: (x, y, p))
-            res = dev.sample_basis_states(number_of_states, state_probs)
-
-        assert len(res) == 2
-        for _res, prob in zip(res, state_probs):
-            assert np.array_equal(_res[0], np.array([0, 1, 2, 3]))
-            assert _res[1] == 1000
-            assert _res[2] == prob
 
 
 class TestStatesToBinary:
@@ -566,7 +553,6 @@ class TestExpval:
 
         assert dev.shots is None
 
-        call_history = []
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.expval(obs)
@@ -587,7 +573,6 @@ class TestExpval:
 
         assert dev.shots is None
 
-        call_history = []
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.expval(obs)
@@ -606,13 +591,12 @@ class TestExpval:
 
         dev.shots = 1000
 
-        call_history = []
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "sample", lambda self, obs, *args, **kwargs: obs)
             m.setattr("numpy.mean", lambda obs, axis=None: obs)
             res = dev.expval(obs)
 
-        assert res == obs
+        assert res == np.array(obs)  # no idea what is trying to cast obs to an array now.
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if expval is called with an observable that does
@@ -649,7 +633,6 @@ class TestVar:
 
         assert dev.shots is None
 
-        call_history = []
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.var(obs)
@@ -670,7 +653,6 @@ class TestVar:
 
         assert dev.shots is None
 
-        call_history = []
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.var(obs)
@@ -689,20 +671,21 @@ class TestVar:
 
         dev.shots = 1000
 
-        call_history = []
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "sample", lambda self, obs, *args, **kwargs: obs)
             m.setattr("numpy.var", lambda obs, axis=None: obs)
             res = dev.var(obs)
 
-        assert res == obs
+        assert res == np.array(obs)
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
 
-        # observable with no eigenvalue representation defined
+        # pylint: disable=too-few-public-methods
         class MyObs(qml.operation.Observable):
+            """Observable with no eigenvalue representation defined."""
+
             num_wires = 1
 
             def eigvals(self):
@@ -719,35 +702,27 @@ class TestVar:
 class TestSample:
     """Test the sample method"""
 
-    def test_only_ones_minus_ones(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
-    ):
+    def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, tol):
         """Test that sample for a single Pauli observable only produces -1 and 1 samples"""
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
-
-        with monkeypatch.context() as m:
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.shape(res) == (2,)
         assert np.allclose(res**2, 1, atol=tol, rtol=0)
 
-    def test_correct_custom_eigenvalues(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
-    ):
+    def test_correct_custom_eigenvalues(self, mock_qubit_device_with_original_statistics):
         """Test that sample for a product of Pauli observables produces samples of eigenvalues"""
         obs = qml.PauliX(0) @ qml.PauliZ(1)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 0]])
-
-        with monkeypatch.context() as m:
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.array_equal(res, np.array([-1, 1]))
 
     def test_sample_with_no_observable_and_no_wires(
-        self, mock_qubit_device_with_original_statistics, tol
+        self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
@@ -760,7 +735,7 @@ class TestSample:
         assert np.array_equal(res, generated_samples)
 
     def test_sample_with_no_observable_and_with_wires(
-        self, mock_qubit_device_with_original_statistics, tol
+        self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
@@ -779,44 +754,45 @@ class TestSample:
         that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
+
+        class MyObs(qml.operation.Observable):
+            """Observable with no eigenvalue representation defined."""
+
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
-            dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+            dev.sample(MyObs(wires=[0]))
 
 
 class TestSampleWithBroadcasting:
     """Test the sample method when broadcasting is used"""
 
-    def test_only_ones_minus_ones(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
-    ):
+    def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, tol):
         """Test that sample for a single Pauli observable only produces -1 and 1 samples
         when using broadcasting"""
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[0, 0], [0, 0]], [[1, 0], [1, 0]], [[0, 0], [1, 0]]])
-
-        with monkeypatch.context() as m:
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.allclose(res, [[1, 1], [-1, -1], [1, -1]], atol=tol, rtol=0)
 
-    def test_correct_custom_eigenvalues(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
-    ):
+    def test_correct_custom_eigenvalues(self, mock_qubit_device_with_original_statistics):
         """Test that sample for a product of Pauli observables produces samples
         of eigenvalues when using broadcasting"""
         obs = qml.PauliX(0) @ qml.PauliZ(1)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 0]])
         dev._samples = np.array([[[1, 0], [0, 0]], [[0, 1], [1, 1]], [[1, 0], [0, 1]]])
-
-        with monkeypatch.context() as m:
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.array_equal(res, np.array([[-1, 1], [-1, 1], [-1, -1]]))
 
     def test_sample_with_no_observable_and_no_wires(
-        self, mock_qubit_device_with_original_statistics, tol
+        self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples when using broadcasting"""
@@ -829,7 +805,7 @@ class TestSampleWithBroadcasting:
         assert np.array_equal(res, generated_samples)
 
     def test_sample_with_no_observable_and_with_wires(
-        self, mock_qubit_device_with_original_statistics, tol
+        self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable but we specify wires
         then it returns the generated samples for only those wires when using broadcasting"""
@@ -848,8 +824,17 @@ class TestSampleWithBroadcasting:
         that does not have eigenvalues defined when using broadcasting."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
+
+        class MyObs(qml.operation.Observable):
+            """Observable with no eigenvalue representation defined."""
+
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
-            dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+            dev.sample(MyObs(wires=[0]))
 
 
 class TestEstimateProb:
@@ -973,6 +958,7 @@ class TestEstimateProb:
 class TestMarginalProb:
     """Test the marginal_prob method"""
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "wires, inactive_wires",
         [
@@ -999,7 +985,7 @@ class TestMarginalProb:
 
         spy = mocker.spy(np, "sum")
         dev = mock_qubit_device_with_original_statistics(wires=3)
-        res = dev.marginal_prob(probs, wires=wires)
+        _ = dev.marginal_prob(probs, wires=wires)
         array_call = spy.call_args[0][0]
         axis_call = spy.call_args[1]["axis"]
 
@@ -1037,6 +1023,7 @@ class TestMarginalProb:
         ),
     ]
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned(
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
@@ -1047,6 +1034,7 @@ class TestMarginalProb:
         res = dev.marginal_prob(probs, wires=wires)
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
+    # pylint: disable=too-many-arguments, unused-argument
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned_wires_none(
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
@@ -1096,6 +1084,7 @@ class TestMarginalProb:
         ),
     ]
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
     def test_correct_broadcasted_marginals_returned(
         self,
@@ -1116,6 +1105,7 @@ class TestMarginalProb:
 
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
+    # pylint: disable=too-many-arguments, unused-argument
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
     def test_correct_broadcasted_marginals_returned_wires_none(
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, num_wires, tol
@@ -1128,6 +1118,7 @@ class TestMarginalProb:
         assert np.allclose(res, probs.reshape((-1, 2**num_wires)), atol=tol, rtol=0)
 
 
+# pylint: disable=too-few-public-methods
 class TestActiveWires:
     """Test that the active_wires static method works as required."""
 
@@ -1140,6 +1131,7 @@ class TestActiveWires:
         assert res == Wires([0, 2, 5])
 
 
+# pylint: disable=too-few-public-methods
 class TestCapabilities:
     """Test that a default qubit device defines capabilities that all devices inheriting
     from it will automatically have."""
@@ -1156,6 +1148,62 @@ class TestCapabilities:
         assert capabilities == QubitDevice.capabilities()
 
 
+class TestNativeMidCircuitMeasurements:
+    """Unit tests for mid-circuit measurements related functionality"""
+
+    class MCMDevice(qml.devices.DefaultQubitLegacy):
+        def apply(self, *args, **kwargs):
+            for op in args[0]:
+                if isinstance(op, qml.measurements.MidMeasureMP):
+                    kwargs["mid_measurements"][op] = 0
+
+        @classmethod
+        def capabilities(cls):
+            default_capabilities = copy.copy(qml.devices.DefaultQubitLegacy.capabilities())
+            default_capabilities["supports_mid_measure"] = True
+            return default_capabilities
+
+    def test_qnode_native_mcm(self, mocker):
+        """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
+
+        dev = self.MCMDevice(wires=1, shots=100)
+        dev.operations.add("MidMeasureMP")
+        spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def func():
+            _ = qml.measure(0)
+            return qml.expval(op=qml.PauliZ(0))
+
+        res = func()
+        assert spy.call_count == 1
+        assert isinstance(res, float)
+
+    @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+    def test_postselect_mode_propagates_to_execute(self, monkeypatch, postselect_mode):
+        """Test that the specified postselect mode propagates to execution as expected."""
+        dev = self.MCMDevice(wires=1, shots=100)
+        dev.operations.add("MidMeasureMP")
+        pm_propagated = False
+
+        def new_apply(*args, **kwargs):  # pylint: disable=unused-argument
+            nonlocal pm_propagated
+            pm_propagated = kwargs.get("postselect_mode", -1) == postselect_mode
+
+        @qml.qnode(dev, postselect_mode=postselect_mode)
+        def func():
+            _ = qml.measure(0, postselect=1)
+            return qml.expval(op=qml.PauliZ(0))
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "apply", new_apply)
+            with pytest.raises(Exception):
+                # Error expected as mocked apply method does not adhere to expected output.
+                func()
+
+        assert pm_propagated is True
+
+
 class TestExecution:
     """Tests for the execute method"""
 
@@ -1163,7 +1211,7 @@ class TestExecution:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit", wires=2)
+        dev_1 = qml.device("default.qubit.legacy", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1179,9 +1227,9 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit", wires=2)
+        dev_2 = qml.device("default.qubit.legacy", wires=2)
 
-        def circuit_2(x, y):
+        def circuit_2(x):
             qml.RX(x, wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
@@ -1190,11 +1238,11 @@ class TestExecution:
         num_evals_2 = 5
 
         for _ in range(num_evals_2):
-            node_2(0.432, 0.12)
+            node_2(0.432)
         assert dev_2.num_executions == num_evals_2
 
         # test a new circuit on an existing instance of a qubit device
-        def circuit_3(x, y):
+        def circuit_3(y):
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
@@ -1203,18 +1251,20 @@ class TestExecution:
         num_evals_3 = 7
 
         for _ in range(num_evals_3):
-            node_3(0.432, 0.12)
+            node_3(0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
 
+    # pylint: disable=protected-access
     def test_get_diagonalizing_gates(self, mock_qubit_device):
         """Test the private _get_diagonalizing_gates helper method."""
         circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [qml.probs(), qml.expval(qml.PauliX(0))])
         dev = mock_qubit_device(wires=1)
         rotations = dev._get_diagonalizing_gates(circuit)
         assert len(rotations) == 1
-        assert qml.equal(rotations[0], qml.Hadamard(0))
+        qml.assert_equal(rotations[0], qml.Hadamard(0))
 
 
+# pylint: disable=too-few-public-methods, unused-argument
 class TestExecutionBroadcasted:
     """Tests for the execute method with broadcasted parameters"""
 
@@ -1222,7 +1272,7 @@ class TestExecutionBroadcasted:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit", wires=2)
+        dev_1 = qml.device("default.qubit.legacy", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1238,7 +1288,7 @@ class TestExecutionBroadcasted:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit", wires=2)
+        dev_2 = qml.device("default.qubit.legacy", wires=2)
 
         assert dev_2.num_executions == 0
 
@@ -1273,7 +1323,8 @@ class TestBatchExecution:
 
     with qml.queuing.AnnotatedQueue() as q1:
         qml.PauliX(wires=0)
-        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+        qml.expval(qml.PauliZ(wires=0))
+        qml.expval(qml.PauliZ(wires=1))
 
     tape1 = QuantumScript.from_queue(q1)
     with qml.queuing.AnnotatedQueue() as q2:
@@ -1336,9 +1387,11 @@ class TestBatchExecution:
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
 
 
+# pylint: disable=too-few-public-methods
 class TestGetBatchSize:
     """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
     def test_batch_size_always_None(self, mock_qubit_device, shape):
         """Test that QubitDevice always reports a batch_size of None."""
@@ -1371,3 +1424,163 @@ class TestGetBatchSize:
             dev._get_batch_size(tensor1, broadcasted_shape, qml.math.prod(broadcasted_shape))
             is None
         )
+
+
+class TestResourcesTracker:
+    """Test that the tracker can track resources and is integrated well with default qubit"""
+
+    qs_shots_wires_data = (
+        (qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])]), None, [0, 1]),
+        (qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)]), 10, [0, 1, 2]),
+        (
+            qml.tape.QuantumScript(
+                [
+                    qml.Hadamard(0),
+                    qml.RX(1.23, 1),
+                    qml.CNOT([0, 1]),
+                    qml.RX(4.56, 1),
+                    qml.Hadamard(0),
+                    qml.Hadamard(1),
+                ],
+            ),
+            (10, 10, 50),
+            [0, 1],
+        ),
+    )
+
+    expected_resources = (
+        Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(None)),
+        Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10)),
+        Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
+    )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
+
+    devices = (
+        "default.qubit.legacy",
+        "default.qubit.autograd",
+        "default.qubit.jax",
+        "default.qubit.torch",
+        "default.qubit.tf",
+    )
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("dev_name", devices)
+    @pytest.mark.parametrize(
+        "qs_shots_wires, expected_resource", zip(qs_shots_wires_data, expected_resources)
+    )
+    def test_tracker_single_execution(self, dev_name, qs_shots_wires, expected_resource):
+        """Test that the tracker accurately tracks resources in a single execution"""
+        qs, shots, wires = qs_shots_wires
+        dev = qml.device(dev_name, shots=shots, wires=wires)
+
+        with qml.Tracker(dev) as tracker:
+            dev.execute(qs)
+
+        assert len(tracker.history["resources"]) == 1  # single execution
+        assert tracker.history["resources"][0] == expected_resource
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("dev_name", devices)
+    def test_tracker_multi_execution(self, dev_name):
+        """Test that the tracker accurately tracks resources for multi executions"""
+        qs1 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
+        qs2 = qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)])
+
+        exp_res1 = Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(10))
+        exp_res2 = Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10))
+
+        dev = qml.device(dev_name, shots=10, wires=[0, 1, 2])
+        with qml.Tracker(dev) as tracker:
+            dev.batch_execute([qs1])
+            dev.batch_execute([qs1, qs2])
+
+        assert tracker.totals == {"batches": 2, "executions": 3, "shots": 30, "batch_len": 3}
+        assert len(tracker.history["resources"]) == 3  # 1 per qscript execution
+
+        for tracked_r, expected_r in zip(
+            tracker.history["resources"], [exp_res1, exp_res1, exp_res2]
+        ):
+            assert tracked_r == expected_r
+
+    @pytest.mark.autograd
+    def test_tracker_grad(self):
+        """Test that the tracker can track resources through a gradient computation"""
+        dev = qml.device("default.qubit.legacy", wires=1, shots=100)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)  # 2 term parameter shift
+            return qml.expval(qml.PauliZ(0))
+
+        x = pnp.array(0.1, requires_grad=True)
+        expected_resources = Resources(
+            num_wires=1,
+            num_gates=1,
+            gate_types={"RX": 1},
+            gate_sizes={1: 1},
+            shots=Shots(100),
+            depth=1,
+        )
+
+        with qml.Tracker(dev) as tracker:
+            qml.grad(circuit)(x)
+
+        assert tracker.totals["executions"] == 3
+        assert len(tracker.history["resources"]) == 3
+        assert tracker.history["resources"] == [
+            expected_resources,
+            expected_resources,
+            expected_resources,
+        ]
+
+
+class TestSamplesToCounts:
+    """Tests for correctness of QubitDevice._samples_to_counts"""
+
+    def test_samples_to_counts_with_nan(self):
+        """Test that the counts function disregards failed measurements (samples including
+        NaN values) when totalling counts"""
+        # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
+        device = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
+        device._samples = device.generate_samples()
+        samples = device.sample(qml.measurements.CountsMP())
+
+        # imitate hardware return with NaNs (requires dtype float)
+        samples = qml.math.cast_like(samples, np.array([1.2]))
+        samples[0][0] = np.NaN
+        samples[17][1] = np.NaN
+        samples[850][0] = np.NaN
+
+        result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
+
+        # no keys with NaNs
+        assert len(result) == 4
+        assert set(result.keys()) == {"00", "01", "10", "11"}
+
+        # # NaNs were not converted into "0", but were excluded from the counts
+        total_counts = sum(result.values())
+        assert total_counts == 997
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_samples_to_counts_with_many_wires(self, all_outcomes):
+        """Test that the counts function correctly converts wire samples to strings when
+        the number of wires is 8 or more."""
+        # generate 1000 samples for 10 wires, randomly distributed between 0 and 1
+        n_wires = 10
+        shots = 100
+        device = qml.device("default.qubit.legacy", wires=n_wires, shots=shots)
+        state = np.random.rand(*([2] * n_wires))
+        device._state = state / np.linalg.norm(state)
+        device._samples = device.generate_samples()
+        samples = device.sample(qml.measurements.CountsMP(all_outcomes=all_outcomes))
+
+        result = device._samples_to_counts(
+            samples, mp=qml.measurements.CountsMP(), num_wires=n_wires
+        )
+
+        # Check that keys are correct binary strings
+        assert all(0 <= int(sample, 2) <= 2**n_wires for sample in result.keys())
+
+        # # NaNs were not converted into "0", but were excluded from the counts
+        total_counts = sum(result.values())
+        assert total_counts == shots

@@ -14,14 +14,20 @@
 """
 Pytest configuration file for PennyLane test suite.
 """
+# pylint: disable=unused-import
+import contextlib
 import os
 import pathlib
+import sys
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
+from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 # defaults
 TOL = 1e-3
@@ -29,11 +35,18 @@ TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
 
 
+# pylint: disable=too-few-public-methods
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
 
     _operation_map = DefaultGaussian._operation_map.copy()
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
+
+
+@pytest.fixture(autouse=True)
+def set_numpy_seed():
+    np.random.seed(9872653)
+    yield
 
 
 @pytest.fixture(scope="session")
@@ -60,34 +73,40 @@ def n_layers(request):
     return request.param
 
 
-@pytest.fixture(scope="session", params=[2, 3])
-def n_subsystems(request):
+@pytest.fixture(scope="session", params=[2, 3], name="n_subsystems")
+def n_subsystems_fixture(request):
     """Number of qubits or qumodes."""
     return request.param
 
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    return qml.device("default.qubit", wires=n_subsystems)
+    return qml.device("default.qubit.legacy", wires=n_subsystems)
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qubit_device_1_wire(request):
-    return qml.device("default.qubit", wires=1, r_dtype=request.param[0], c_dtype=request.param[1])
+    return qml.device(
+        "default.qubit.legacy", wires=1, r_dtype=request.param[0], c_dtype=request.param[1]
+    )
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qubit_device_2_wires(request):
-    return qml.device("default.qubit", wires=2, r_dtype=request.param[0], c_dtype=request.param[1])
+    return qml.device(
+        "default.qubit.legacy", wires=2, r_dtype=request.param[0], c_dtype=request.param[1]
+    )
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qubit_device_3_wires(request):
-    return qml.device("default.qubit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
+    return qml.device(
+        "default.qubit.legacy", wires=3, r_dtype=request.param[0], c_dtype=request.param[1]
+    )
 
 
-"""The following 3 fixtures are for default.qutrit devices to be used for testing with various
-real and complex dtypes."""
+# The following 3 fixtures are for default.qutrit devices to be used
+# for testing with various real and complex dtypes.
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
@@ -129,28 +148,6 @@ def gaussian_device_4modes():
     return DummyDevice(wires=4)
 
 
-############### Package Support ##########################
-
-
-@pytest.fixture(scope="session")
-def dask_support():
-    """Boolean fixture for dask support"""
-    try:
-        import dask
-
-        dask_support = True
-    except ImportError as e:
-        dask_support = False
-
-    return dask_support
-
-
-@pytest.fixture()
-def skip_if_no_dask_support(dask_support):
-    if not dask_support:
-        pytest.skip("Skipped, no dask support")
-
-
 #######################################################################
 
 
@@ -170,19 +167,71 @@ def mock_device(monkeypatch):
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.Device(wires=2)
+        yield qml.Device(wires=2)  # pylint:disable=abstract-class-instantiated
 
 
+# pylint: disable=protected-access
 @pytest.fixture
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
 
 
+# pylint: disable=protected-access
 @pytest.fixture
 def tear_down_thermitian():
     yield None
     qml.THermitian._eigs = {}
+
+
+#######################################################################
+# Fixtures for testing under new and old opmath
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
+    )
+
+
+# pylint: disable=eval-used
+@pytest.fixture(scope="session", autouse=True)
+def disable_opmath_if_requested(request):
+    disable_opmath = request.config.getoption("--disable-opmath")
+    # value from yaml file is a string, convert to boolean
+    if eval(disable_opmath):
+        qml.operation.disable_new_opmath(warn=True)
+
+
+@pytest.fixture(scope="function")
+def use_legacy_opmath():
+    with disable_new_opmath_cm() as cm:
+        yield cm
+
+
+# pylint: disable=contextmanager-generator-missing-cleanup
+@pytest.fixture(scope="function")
+def use_new_opmath():
+    with enable_new_opmath_cm() as cm:
+        yield cm
+
+
+@pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")
+def use_legacy_and_new_opmath(request):
+    with request.param() as cm:
+        yield cm
+
+
+@pytest.fixture
+def new_opmath_only():
+    if not qml.operation.active_new_opmath():
+        pytest.skip("This feature only works with new opmath enabled")
+
+
+@pytest.fixture
+def legacy_opmath_only():
+    if qml.operation.active_new_opmath():
+        pytest.skip("This test exclusively tests legacy opmath")
 
 
 #######################################################################
@@ -211,6 +260,12 @@ except ImportError as e:
     jax_available = False
 
 
+# pylint: disable=unused-argument
+def pytest_generate_tests(metafunc):
+    if jax_available:
+        jax.config.update("jax_enable_x64", True)
+
+
 def pytest_collection_modifyitems(items, config):
     rootdir = pathlib.Path(config.rootdir)
     for item in items:
@@ -218,14 +273,14 @@ def pytest_collection_modifyitems(items, config):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
-        if "legacy" in rel_path.parts:
-            mark = getattr(pytest.mark, "legacy")
-            item.add_marker(mark)
         if "finite_diff" in rel_path.parts:
             mark = getattr(pytest.mark, "finite-diff")
             item.add_marker(mark)
         if "parameter_shift" in rel_path.parts:
             mark = getattr(pytest.mark, "param-shift")
+            item.add_marker(mark)
+        if "data" in rel_path.parts:
+            mark = getattr(pytest.mark, "data")
             item.add_marker(mark)
 
     # Tests that do not have a specific suite marker are marked `core`
@@ -236,15 +291,16 @@ def pytest_collection_modifyitems(items, config):
                 elem
                 in [
                     "autograd",
+                    "data",
                     "torch",
                     "tf",
                     "jax",
                     "qchem",
                     "qcut",
                     "all_interfaces",
-                    "legacy",
                     "finite-diff",
                     "param-shift",
+                    "external",
                 ]
                 for elem in markers
             )

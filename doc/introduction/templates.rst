@@ -103,12 +103,20 @@ state preparation is typically used as the first operation.
     :figure: _static/templates/state_preparations/basis.png
 
 .. gallery-item::
+    :description: :doc:`QutritBasisStatePreparation <../code/api/pennylane.QutritBasisStatePreparation>`
+    :figure: _static/templates/state_preparations/basis_qutrit.png
+
+.. gallery-item::
     :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
     :figure: _static/templates/state_preparations/mottonen.png
 
 .. gallery-item::
     :description: :doc:`ArbitraryStatePreparation <../code/api/pennylane.ArbitraryStatePreparation>`
     :figure: _static/templates/subroutines/arbitrarystateprep.png
+
+.. gallery-item::
+    :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
+    :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
 
 .. raw:: html
 
@@ -204,6 +212,14 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/grover.svg
 
 .. gallery-item::
+    :description: :doc:`Reflection Operator <../code/api/pennylane.Reflection>`
+    :figure: _static/templates/subroutines/reflection.png
+
+.. gallery-item::
+    :description: :doc:`Amplitude Amplification <../code/api/pennylane.AmplitudeAmplification>`
+    :figure: _static/templates/subroutines/ampamp.png
+
+.. gallery-item::
     :description: :doc:`Interferometer <../code/api/pennylane.Interferometer>`
     :figure: _static/templates/subroutines/interferometer.png
 
@@ -224,6 +240,14 @@ Other useful templates which do not belong to the previous categories can be fou
   :figure: _static/templates/subroutines/approx_time_evolution.png
 
 .. gallery-item::
+  :description: :doc:`QDrift <../code/api/pennylane.QDrift>`
+  :figure: _static/templates/subroutines/qdrift.png
+
+.. gallery-item::
+  :description: :doc:`TrotterProduct <../code/api/pennylane.TrotterProduct>`
+  :figure: _static/templates/subroutines/trotter_product.png
+
+.. gallery-item::
   :description: :doc:`Permute <../code/api/pennylane.Permute>`
   :figure: _static/templates/subroutines/permute.png
 
@@ -240,6 +264,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/qft.svg
 
 .. gallery-item::
+    :description: :doc:`Approximate QFT<../code/api/pennylane.AQFT>`
+    :figure: _static/templates/subroutines/aqft.png
+
+.. gallery-item::
     :description: :doc:`CommutingEvolution <../code/api/pennylane.CommutingEvolution>`
     :figure: _static/templates/subroutines/commuting_evolution.png
 
@@ -254,6 +282,31 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`FlipSign operator<../code/api/pennylane.FlipSign>`
     :figure: _static/templates/subroutines/flip_sign.png
+
+.. gallery-item::
+    :description: :doc:`QSVT<../code/api/pennylane.QSVT>`
+    :figure: _static/templates/subroutines/qsvt.png
+
+.. gallery-item::
+    :description: :doc:`Select<../code/api/pennylane.Select>`
+    :figure: _static/templates/subroutines/select.png
+
+.. gallery-item::
+    :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
+    :figure: _static/templates/subroutines/small_ctrl.png
+
+.. gallery-item::
+    :description: :doc:`FABLE <../code/api/pennylane.FABLE>`
+    :figure: _static/templates/subroutines/fable.png
+
+.. gallery-item::
+    :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
+    :figure: _static/templates/qubitization/thumbnail_qubitization.png
+
+.. gallery-item::
+    :description: :doc:`QROM <../code/api/pennylane.QROM>`
+    :figure: _static/templates/qrom/qrom_thumbnail.png
+
 
 .. raw:: html
 

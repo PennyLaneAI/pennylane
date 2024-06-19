@@ -16,11 +16,12 @@
 This module contains the qml.purity measurement.
 """
 
-from typing import Sequence, Optional
+from typing import Optional, Sequence
+
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement, Purity
+from .measurements import Purity, StateMeasurement
 
 
 def purity(wires) -> "PurityMP":
@@ -84,21 +85,14 @@ class PurityMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None or device.shot_vector is None:
-            return (1,)
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
-        return (num_shot_elements,)
-
-    def _shape_new(self, device=None):
-        if device is None or device.shot_vector is None:
+    def shape(self, device, shots):
+        if not shots.has_partitioned_shots:
             return ()
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
+        state = qml.math.dm_from_state_vector(state)
         return qml.math.purity(state, indices=indices, c_dtype=state.dtype)

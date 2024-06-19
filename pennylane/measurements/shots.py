@@ -12,14 +12,24 @@
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
 # pylint:disable=inconsistent-return-statements
-from collections import namedtuple
-from typing import Sequence, Tuple
+from typing import NamedTuple, Sequence, Tuple
 
-ShotCopies = namedtuple("ShotCopies", ["shots", "copies"])
-"""A namedtuple that represents a shot quantity being repeated some number of times.
 
-For example, ``ShotCopies(shots=10, copies=2)`` indicates two executions with 10 shots each for 20 shots total.
-"""
+class ShotCopies(NamedTuple):
+    """A namedtuple that represents a shot quantity being repeated some number of times.
+    For example, ``ShotCopies(10 shots x 2)`` indicates two executions with 10 shots each for 20 shots total.
+    """
+
+    shots: int
+    copies: int
+
+    def __str__(self):
+        """The string representation of the class"""
+        return f"{self.shots} shots{' x '+str(self.copies) if self.copies > 1 else ''}"
+
+    def __repr__(self):
+        """The representation of the class"""
+        return f"ShotCopies({self.shots} shots x {self.copies})"
 
 
 def valid_int(s):
@@ -46,7 +56,7 @@ class Shots:
     * A positive integer
     * A sequence consisting of either positive integers or a tuple-pair of positive integers of the form ``(shots, copies)``
 
-    The tuple-pair of the form ``(shots, copies)`` is represented internally by a namedtuple called
+    The tuple-pair of the form ``(shots, copies)`` is represented internally by a NamedTuple called
     :class:`~ShotCopies`. The first value is the number of shots to execute, and the second value is the
     number of times to repeat a circuit with that number of shots.
 
@@ -57,7 +67,11 @@ class Shots:
 
     Instances of this class are static. If an instance is passed to the constructor, that same
     instance is returned. If an instance is constructed with a ``None`` value, ``total_shots``
-    will be ``None``.  This indicates analytic execution.
+    will be ``None``.  This indicates analytic execution. A ``Shots`` object created with a
+    ``None`` value is Falsy, while any other value results in a Truthy object:
+
+    >>> bool(Shots(None)), bool(Shots(1))
+    (False, True)
 
     **Examples**
 
@@ -71,7 +85,7 @@ class Shots:
 
     >>> shots = Shots(100)
     >>> shots.total_shots, shots.shot_vector
-    (100, (ShotCopies(shots=100, copies=1),))
+    (100, (ShotCopies(100 shots),))
 
     Example constructing a Shots instance with another instance:
 
@@ -83,13 +97,13 @@ class Shots:
 
     >>> shots = Shots([100, 200])
     >>> shots.total_shots, shots.shot_vector
-    (300, (ShotCopies(shots=100, copies=1), ShotCopies(shots=200, copies=1)))
+    (300, (ShotCopies(100 shots x 1), ShotCopies(200 shots x 1)))
 
     Example constructing a Shots instance with a sequence of tuple-pairs:
 
     >>> shots = Shots(((100, 3), (200, 4),))
     >>> shots.total_shots, shots.shot_vector
-    (1100, (ShotCopies(shots=100, copies=3), ShotCopies(shots=200, copies=4)))
+    (1100, (ShotCopies(100 shots x 3), ShotCopies(200 shots x 4)))
 
     Example constructing a Shots instance with a sequence of both ints and tuple-pairs.
     Note that the first stand-alone ``100`` gets absorbed into the subsequent tuple because the
@@ -97,7 +111,14 @@ class Shots:
 
     >>> shots = Shots((10, 100, (100, 3), (200, 4),))
     >>> shots.total_shots, shots.shot_vector
-    (1210, (ShotCopies(shots=10, copies=1), ShotCopies(shots=100, copies=4), ShotCopies(shots=200, copies=4)))
+    (1210, (ShotCopies(10 shots x 1), ShotCopies(100 shots x 4), ShotCopies(200 shots x 4)))
+
+    Example constructing a Shots instance by multiplying an existing one by an int or float:
+
+    >>> Shots(100) * 2
+    Shots(total_shots=200, shot_vector=(ShotCopies(200 shots x 1),))
+    >>> Shots([7, (100, 2)]) * 1.5
+    Shots(total_shots=310, shot_vector=(ShotCopies(10 shots x 1), ShotCopies(150 shots x 2)))
 
     One should also note that specifying a single tuple of length 2 is considered two different
     shot values, and *not* a tuple-pair representing shots and copies to avoid special behaviour
@@ -105,11 +126,11 @@ class Shots:
 
     >>> shots = Shots((100, 2))
     >>> shots.total_shots, shots.shot_vector
-    (102, (ShotCopies(shots=100, copies=1), ShotCopies(shots=2, copies=1)))
+    (102, (ShotCopies(100 shots x 1), ShotCopies(2 shots x 1)))
 
     >>> shots = Shots(((100, 2),))
     >>> shots.total_shots, shots.shot_vector
-    (200, (ShotCopies(shots=100, copies=2),))
+    (200, (ShotCopies(100 shots x 2),))
     """
 
     total_shots: int = None
@@ -124,7 +145,7 @@ class Shots:
 
     _frozen = False
 
-    def __new__(cls, shots):
+    def __new__(cls, shots=None):
         return shots if isinstance(shots, cls) else object.__new__(cls)
 
     def __setattr__(self, name, value):
@@ -134,7 +155,7 @@ class Shots:
             )
         return super().__setattr__(name, value)
 
-    def __init__(self, shots):
+    def __init__(self, shots=None):
         if shots is None:
             self.total_shots = None
             self.shot_vector = ()
@@ -154,6 +175,42 @@ class Shots:
 
         self._frozen = True
 
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        memo[id(self)] = self
+        return self
+
+    def __str__(self):
+        """The string representation of the class"""
+        if not self.has_partitioned_shots:
+            return f"Shots(total={self.total_shots})"
+
+        shot_copy_str = ", ".join([str(sc) for sc in self.shot_vector]) or None
+        return f"Shots(total={self.total_shots}, vector=[{shot_copy_str}])"
+
+    def __repr__(self):
+        """The representation of the class"""
+        return f"Shots(total_shots={self.total_shots}, shot_vector={self.shot_vector})"
+
+    def __eq__(self, other):
+        """Equality between Shot instances."""
+        return (
+            isinstance(other, Shots)
+            and self.total_shots == other.total_shots
+            and self.shot_vector == other.shot_vector
+        )
+
+    def __hash__(self):
+        """Hash for a given Shot instance."""
+        return hash(self.shot_vector)
+
+    def __iter__(self):
+        for shot_copy in self.shot_vector:
+            for _ in range(shot_copy.copies):
+                yield shot_copy.shots
+
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
         total_shots = 0
@@ -168,6 +225,24 @@ class Shots:
         self.shot_vector = tuple(res + [ShotCopies(current_shots, current_copies)])
         self.total_shots = total_shots + current_shots * current_copies
 
+    def __bool__(self):
+        return self.total_shots is not None
+
+    def __mul__(self, scalar):
+        if not isinstance(scalar, (int, float)):
+            raise TypeError("Can't multiply Shots with non-integer or float type.")
+        if self.total_shots is None:
+            return self
+
+        scaled_shot_vector = tuple(
+            ShotCopies(int(i.shots * scalar), i.copies) for i in self.shot_vector
+        )
+
+        return self.__class__(scaled_shot_vector)
+
+    def __rmul__(self, scalar):
+        return self.__mul__(scalar)
+
     @property
     def has_partitioned_shots(self):
         """
@@ -175,8 +250,30 @@ class Shots:
         quantities, or the same shot quantity repeated multiple times.
 
         Returns:
-            bool: whether or not shots are partitioned
+            bool: whether shots are partitioned
         """
-        if self.total_shots is None:
+        if not self:
             return False
         return len(self.shot_vector) > 1 or self.shot_vector[0].copies > 1
+
+    @property
+    def num_copies(self):
+        """The total number of copies of any shot quantity."""
+        return sum(s.copies for s in self.shot_vector)
+
+    def bins(self):
+        """
+        Yields:
+            tuple: A tuple containing the lower and upper bounds for each shot quantity in shot_vector.
+
+        Example:
+            >>> shots = Shots((1, 1, 2, 3))
+            >>> list(shots.bins())
+            [(0,1), (1,2), (2,4), (4,7)]
+        """
+        lower_bound = 0
+        for sc in self.shot_vector:
+            for _ in range(sc.copies):
+                upper_bound = lower_bound + sc.shots
+                yield lower_bound, upper_bound
+                lower_bound = upper_bound

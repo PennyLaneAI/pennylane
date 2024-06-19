@@ -42,16 +42,16 @@ def constant(scalar, time):
 
     The ``constant`` function can be used to create a parametrized Hamiltonian
 
-    >>> H = qml.pulse.constant * qml.PauliX(0)
+    >>> H = qml.pulse.constant * qml.X(0)
 
     When calling the parametrized Hamiltonian, ``constant`` will always return the input parameter
 
     >>> params = [5]
     >>> H(params, t=8)
-    5*(PauliX(wires=[0]))
+    5 * X(0)
 
     >>> H(params, t=5)
-    5*(PauliX(wires=[0]))
+    5 * X(0)
 
     We can differentiate the parametrized Hamiltonian with respect to the constant parameter:
 
@@ -61,7 +61,7 @@ def constant(scalar, time):
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=2)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
 
     >>> params = jnp.array([5.0])
@@ -131,44 +131,44 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
 
     ``rect`` can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 
-    >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
+    >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.X(0)
 
     The resulting Hamiltonian will be non-zero only inside the window.
 
     >>> H([[1, 3]], t=2)  # inside the window
-    5.0*(PauliX(wires=[0]))
+    5.0 * X(0)
 
     >>> H([[1, 3]], t=0.5 )  # outside the window
-    0.0*(PauliX(wires=[0]))
+    0.0 * X(0)
 
     It is also possible to define multiple windows for the same function:
 
     .. code-block:: python
 
         windows = [(1, 7), (9, 14)]
-        H = qml.pulse.rect(jnp.polyval, windows) * qml.PauliX(0)
+        H = qml.pulse.rect(jnp.polyval, windows) * qml.X(0)
 
     When calling the :class:`.ParametrizedHamiltonian`, ``rect`` will evaluate the given function only
     inside the time windows, and otherwise return 0.
 
     One can also pass a scalar to the ``rect`` function
 
-    >>> H = qml.pulse.rect(10, (1, 7)) * qml.PauliX(0)
+    >>> H = qml.pulse.rect(10, (1, 7)) * qml.X(0)
 
     In this case, ``rect`` will return the given scalar only when the time is inside the provided
     time windows
 
     >>> params = [None]  # the parameter value won't be used!
     >>> H(params, t=8)
-    0.0*(PauliX(wires=[0]))
+    0.0 * X(0)
 
     >>> H(params, t=5)
-    10.0*(PauliX(wires=[0]))
+    10.0 * X(0)
     """
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax==0.4.3 jaxlib==0.4.3"
+            "You can install jax via: pip install jax==0.4.10 jaxlib==0.4.10"
         )
     if windows is not None:
         is_nested = any(hasattr(w, "__len__") for w in windows)
@@ -234,7 +234,7 @@ def pwc(timespan):
         time = jnp.linspace(0, 10, 1000)
         timespan=(2, 7)
         y = qml.pulse.pwc(timespan)(params, time)
-        plt.plot(time, y, label=f"params={params},\ntimespan={timespan}")
+        plt.plot(time, y, label=f"params={params}, timespan={timespan}")
         plt.legend()
         plt.show()
 
@@ -258,7 +258,7 @@ def pwc(timespan):
 
     >>> timespan = (2, 7)
     >>> f1 = qml.pulse.pwc(timespan)
-    >>> H = f1 * qml.PauliX(0)
+    >>> H = f1 * qml.X(0)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piece-wise function, and select the constant corresponding
@@ -268,16 +268,16 @@ def pwc(timespan):
     interval ``t=2`` to ``t=7``. The time ``t`` is then used to select one of the array values based on this distribution.
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=2.3)
-    11.0*(PauliX(wires=[0]))
+    11.0 * X(0)
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=2.5) # different time, same bin, same result
-    11.0*(PauliX(wires=[0]))
+    11.0 * X(0)
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=3.1) # next bin
-    12.0*(PauliX(wires=[0]))
+    12.0 * X(0)
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=8) # outside the window returns 0
-    0.0*(PauliX(wires=[0]))
+    0.0 * X(0)
 
     """
     if not has_jax:
@@ -287,16 +287,16 @@ def pwc(timespan):
         )
 
     if isinstance(timespan, (tuple, list)):
-        t1, t2 = timespan
+        t0, t1 = timespan
     else:
-        t1 = 0
-        t2 = timespan
+        t0 = 0
+        t1 = timespan
 
     def func(params, t):
         num_bins = len(params)
         params = jnp.concatenate([jnp.array(params), jnp.zeros(1)])
         # get idx from timestamp, then set idx=0 if idx is out of bounds for the array
-        idx = num_bins / (t2 - t1) * (t - t1)
+        idx = num_bins / (t1 - t0) * (t - t0)
         idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
 
         return params[idx]
@@ -361,18 +361,18 @@ def pwc_from_function(timespan, num_bins):
         )
 
     if isinstance(timespan, tuple):
-        t1, t2 = timespan
+        t0, t1 = timespan
     else:
-        t1 = 0
-        t2 = timespan
+        t0 = 0
+        t1 = timespan
 
     def inner(fn):
-        time_bins = np.linspace(t1, t2, num_bins)
+        time_bins = np.linspace(t0, t1, num_bins)
 
         def wrapper(params, t):
             constants = jnp.array(list(fn(params, time_bins)) + [0])
 
-            idx = num_bins / (t2 - t1) * (t - t1)
+            idx = num_bins / (t1 - t0) * (t - t0)
             # check interval is within 0 to num_bins, then cast to int, to avoid casting outcomes between -1 and 0 as 0
             idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
 

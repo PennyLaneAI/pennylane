@@ -14,10 +14,14 @@
 """
 Contains the quantum_monte_carlo transform.
 """
-from functools import wraps
-from pennylane import PauliX, Hadamard, MultiControlledX, CZ, adjoint
-from pennylane.wires import Wires
+from copy import copy
+from typing import Callable, Sequence
+
+import pennylane as qml
+from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
 from pennylane.templates import QFT
+from pennylane.transforms.core import transform
+from pennylane.wires import Wires
 
 
 def _apply_controlled_z(wires, control_wire, work_wires):
@@ -27,7 +31,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
     The multi-qubit gate :math:`Z = I - 2|0\rangle \langle 0|` can be performed using the
     conventional multi-controlled-Z gate with an additional bit flip on each qubit before and after.
 
-    This function performs the multi-controlled-Z gate via a multi-controlled-X gate by picking an
+    This function returns the multi-controlled-Z gate via a multi-controlled-X gate by picking an
     arbitrary target wire to perform the X and adding a Hadamard on that wire either side of the
     transformation.
 
@@ -39,19 +43,24 @@ def _apply_controlled_z(wires, control_wire, work_wires):
         work_wires (Wires): the work wires used in the decomposition
     """
     target_wire = wires[0]
-    PauliX(target_wire)
-    Hadamard(target_wire)
+    updated_operations = []
+    updated_operations.append(PauliX(target_wire))
+    updated_operations.append(Hadamard(target_wire))
 
-    control_values = "0" * (len(wires) - 1) + "1"
+    control_values = [0] * (len(wires) - 1) + [1]
     control_wires = wires[1:] + control_wire
-    MultiControlledX(
-        wires=[*control_wires, target_wire],
-        control_values=control_values,
-        work_wires=work_wires,
+    updated_operations.append(
+        MultiControlledX(
+            wires=[*control_wires, target_wire],
+            control_values=control_values,
+            work_wires=work_wires,
+        )
     )
 
-    Hadamard(target_wire)
-    PauliX(target_wire)
+    updated_operations.append(Hadamard(target_wire))
+    updated_operations.append(PauliX(target_wire))
+
+    return updated_operations
 
 
 def _apply_controlled_v(target_wire, control_wire):
@@ -67,14 +76,17 @@ def _apply_controlled_v(target_wire, control_wire):
         target_wire (Wires): the ancilla wire in which the expectation value is encoded
         control_wire (Wires): the control wire from the register of phase estimation qubits
     """
-    CZ(wires=[control_wire[0], target_wire[0]])
+    return [CZ(wires=[control_wire[0], target_wire[0]])]
 
 
-def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
-    r"""Provides the circuit to apply a controlled version of the :math:`\mathcal{Q}` unitary
+@transform
+def apply_controlled_Q(
+    tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    r"""Applies the transform that performs a controlled version of the :math:`\mathcal{Q}` unitary
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
-    The input ``fn`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
+    The input ``tape`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
     in the paper above. This function transforms this circuit into a controlled version of the
     :math:`\mathcal{Q}` unitary, which forms part of the quantum Monte Carlo algorithm. The
     :math:`\mathcal{Q}` unitary encodes the target expectation value as a phase in one of its
@@ -82,8 +94,8 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
     :class:`~.QuantumPhaseEstimation` for more details).
 
     Args:
-        fn (Callable): a quantum function that applies quantum operations according to the
-            :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
+        tape (QNode or QuantumTape or Callable): the quantum circuit that applies quantum operations
+            according to the :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
         wires (Union[Wires or Sequence[int]]): the wires acted upon by the ``fn`` circuit
         target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
             contained within ``wires``.
@@ -93,41 +105,57 @@ def apply_controlled_Q(fn, wires, target_wire, control_wire, work_wires):
             decomposing :math:`\mathcal{Q}`
 
     Returns:
-        function: The input function transformed to the :math:`\mathcal{Q}` unitary
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will perform control on :math:`\mathcal{Q}` unitary.
 
     Raises:
         ValueError: if ``target_wire`` is not in ``wires``
     """
-    fn_inv = adjoint(fn)
+    operations = tape.operations.copy()
+    updated_operations = []
 
-    wires = Wires(wires)
-    target_wire = Wires(target_wire)
-    control_wire = Wires(control_wire)
-    work_wires = Wires(work_wires)
+    with qml.queuing.QueuingManager.stop_recording():
+        op_inv = [adjoint(copy(op)) for op in reversed(operations)]
 
-    if not wires.contains_wires(target_wire):
-        raise ValueError("The target wire must be contained within wires")
+        wires = Wires(wires)
+        target_wire = Wires(target_wire)
+        control_wire = Wires(control_wire)
+        work_wires = Wires(work_wires) if work_wires is not None else Wires([])
 
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
-        fn_inv(*args, **kwargs)
-        _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
-        fn(*args, **kwargs)
+        if not wires.contains_wires(target_wire):
+            raise ValueError("The target wire must be contained within wires")
 
-        _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
-        fn_inv(*args, **kwargs)
-        _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
-        fn(*args, **kwargs)
+        updated_operations.extend(
+            _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
+        )
+        updated_operations.extend(op_inv)
+        updated_operations.extend(
+            _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
+        )
+        updated_operations.extend(operations)
+        updated_operations.extend(
+            _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
+        )
+        updated_operations.extend(op_inv)
+        updated_operations.extend(
+            _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
+        )
+        updated_operations.extend(operations)
 
-    return wrapper
+    tape = type(tape)(updated_operations, tape.measurements, shots=tape.shots)
+    return [tape], lambda x: x[0]
 
 
-def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
-    r"""Provides the circuit to perform the
+@transform
+def quantum_monte_carlo(
+    tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    r"""Applies the transform
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 
-    The input ``fn`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
+    The input `tape`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
     in the paper above. This unitary encodes the probability distribution and random variable onto
     ``wires`` so that measurement of the ``target_wire`` provides the expectation value to be
     estimated. The quantum Monte Carlo algorithm then estimates the expectation value using quantum
@@ -146,7 +174,7 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
         simulators, but may perform faster and is suited to quick prototyping.
 
     Args:
-        fn (Callable): a quantum function that applies quantum operations according to the
+        tape (QNode or QuantumTape or Callable): the quantum circuit that applies quantum operations according to the
             :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
         wires (Union[Wires or Sequence[int]]): the wires acted upon by the ``fn`` circuit
         target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
@@ -154,7 +182,11 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
         estimation_wires (Union[Wires, Sequence[int], or int]): the wires used for phase estimation
 
     Returns:
-        function: The circuit for quantum Monte Carlo estimation
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will perform the quantum Monte Carlo estimation.
+
 
     Raises:
         ValueError: if ``wires`` and ``estimation_wires`` share a common wire
@@ -246,7 +278,7 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
 
         Consider a standard normal distribution :math:`p(x)` and a function
         :math:`f(x) = \sin ^{2} (x)`. The expectation value of :math:`f(x)` is
-        :math:`\int_{-\infty}^{\infty}f(x)p(x) \approx 0.432332`. This number can be approximated by
+        :math:`\int_{-\infty}^{\infty}f(x)p(x)dx \approx 0.432332`. This number can be approximated by
         discretizing the problem and using the quantum Monte Carlo algorithm.
 
         First, the problem is discretized:
@@ -305,31 +337,24 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
         algorithm
 
         >>> qml.specs(qmc, expansion_strategy="device")()
-        {'gate_sizes': defaultdict(int, {1: 15943, 2: 15812, 7: 126, 6: 1}),
-        'gate_types': defaultdict(int,
-                    {'RY': 7747,
-                    'CNOT': 7874,
-                    'Hadamard': 258,
-                    'CZ': 126,
-                    'Adjoint(CNOT)': 7812,
-                    'Adjoint(RY)': 7686,
-                    'PauliX': 252,
-                    'MultiControlledX': 126,
-                    'Adjoint(QFT)': 1}),
-        'num_operations': 31882,
-        'num_observables': 1,
-        'num_diagonalizing_gates': 0,
-        'num_used_wires': 12,
-        'depth': 30610,
-        'num_trainable_params': 15433,
-        'num_device_wires': 12,
-        'device_name': 'default.qubit.autograd',
-        'expansion_strategy': 'gradient',
-        'gradient_options': {},
-        'interface': 'autograd',
-        'diff_method': 'best',
-        'gradient_fn': 'backprop'}
+        {'resources': Resources(
+            num_wires=12,
+            num_gates=31882,
+            gate_types=defaultdict(<class 'int'>, {'RY': 7747, 'CNOT': 7874, 'Hadamard': 258, 'CZ': 126, 'Adjoint(CNOT)': 7812, 'Adjoint(RY)': 7686, 'PauliX': 252, 'MultiControlledX': 126, 'Adjoint(QFT)': 1}),
+            gate_sizes=defaultdict(<class 'int'>, {1: 15943, 2: 15812, 7: 126, 6: 1}), depth=30610, shots=Shots(total_shots=None, shot_vector=()),
+         ),
+         'num_observables': 1,
+         'num_diagonalizing_gates': 0,
+         'num_trainable_params': 15433,
+         'num_device_wires': 12,
+         'device_name': 'default.qubit',
+         'expansion_strategy': 'gradient',
+         'gradient_options': {},
+         'interface': 'auto',
+         'diff_method': 'best',
+         'gradient_fn': 'backprop'}
     """
+    operations = tape.operations.copy()
     wires = Wires(wires)
     target_wire = Wires(target_wire)
     estimation_wires = Wires(estimation_wires)
@@ -337,27 +362,27 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
     if Wires.shared_wires([wires, estimation_wires]):
         raise ValueError("No wires can be shared between the wires and estimation_wires registers")
 
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        fn(*args, **kwargs)
+    updated_operations = []
+    with qml.queuing.QueuingManager.stop_recording():
+        updated_operations.extend(operations)
         for i, control_wire in enumerate(estimation_wires):
-            Hadamard(control_wire)
+            updated_operations.append(Hadamard(control_wire))
 
             # Find wires eligible to be used as helper wires
             work_wires = estimation_wires.toset() - {control_wire}
             n_reps = 2 ** (len(estimation_wires) - (i + 1))
 
-            q = apply_controlled_Q(
-                fn,
+            tapes_q, _ = apply_controlled_Q(
+                tape,
                 wires=wires,
                 target_wire=target_wire,
                 control_wire=control_wire,
                 work_wires=work_wires,
             )
-
+            tape_q = tapes_q[0]
             for _ in range(n_reps):
-                q(*args, **kwargs)
+                updated_operations.extend(tape_q.operations)
 
-        adjoint(QFT(wires=estimation_wires))
-
-    return wrapper
+        updated_operations.append(adjoint(QFT(wires=estimation_wires), lazy=False))
+    updated_tape = type(tape)(updated_operations, tape.measurements, shots=tape.shots)
+    return [updated_tape], lambda x: x[0]

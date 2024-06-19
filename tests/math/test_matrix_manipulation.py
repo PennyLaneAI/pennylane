@@ -12,15 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for matrix expand functions."""
+# pylint: disable=too-few-public-methods,too-many-public-methods
 from functools import reduce
 
 import numpy as np
 import pytest
-from gate_data import CNOT, II, SWAP, I, Toffoli, X
+from gate_data import CNOT, II, SWAP, I, Toffoli
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
+
+# Define a list of dtypes to test
+dtypes = ["complex64", "complex128"]
+
+ml_frameworks_list = [
+    "numpy",
+    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("jax", marks=pytest.mark.jax),
+    pytest.param("torch", marks=pytest.mark.torch),
+    pytest.param("tensorflow", marks=pytest.mark.tf),
+]
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -485,9 +497,12 @@ class TestExpandMatrix:
         )
 
         class DummyOp(qml.operation.Operator):
+            """Dummy operator for testing the expand_matrix method."""
+
             num_wires = 2
 
-            def compute_matrix(*params, **hyperparams):
+            @staticmethod
+            def compute_matrix():
                 return self.base_matrix_2
 
         op = DummyOp(wires=[0, 2])
@@ -514,9 +529,14 @@ class TestExpandMatrix:
         expanded_matrix = np.moveaxis(expanded_matrix, 0, -2)
 
         class DummyOp(qml.operation.Operator):
+            """Dummy operator for testing the expand_matrix method."""
+
             num_wires = 2
 
-            def compute_matrix(*params, **hyperparams):
+            # pylint: disable=arguments-differ
+            @staticmethod
+            def compute_matrix():
+                """Compute the matrix of the DummyOp."""
                 return self.base_matrix_2_broadcasted
 
         op = DummyOp(wires=[0, 2])
@@ -539,7 +559,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]]))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -551,14 +571,14 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]]))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
         res = qml.math.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
-        assert type(res) == type(self.base_matrix_2)
+        assert isinstance(res, type(self.base_matrix_2))
         assert all(res.data == self.base_matrix_2.data)
         assert all(res.indices == self.base_matrix_2.indices)
 
@@ -571,7 +591,7 @@ class TestExpandMatrixSparse:
         )
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -582,7 +602,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.array([[1, 2, 0, 0], [3, 4, 0, 0], [0, 0, 1, 2], [0, 0, 3, 4]]))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -591,11 +611,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.array([[1, 0, 2, 0], [0, 1, 0, 2], [3, 0, 4, 0], [0, 3, 0, 4]]))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_one(self, tol):
+    def test_expand_one(self):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
         U = np.array(
             [
@@ -610,7 +630,7 @@ class TestExpandMatrixSparse:
         res.sort_indices()
         expected = csr_matrix(np.kron(np.kron(U, I), I))
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -620,7 +640,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(I, U), I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -629,11 +649,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(I, I), U))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_two_consecutive_wires(self, tol):
+    def test_expand_two_consecutive_wires(self):
         """Test that a 2 qubit gate on consecutive wires correctly
         expands to 4 qubits."""
         U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
@@ -645,7 +665,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(U2, I), I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -655,7 +675,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(I, U2), I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -665,11 +685,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(I, I), U2))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_two_reversed_wires(self, tol):
+    def test_expand_two_reversed_wires(self):
         """Test that a 2 qubit gate on reversed consecutive wires correctly
         expands to 4 qubits."""
         # CNOT with target on wire 1
@@ -679,11 +699,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(CNOT[:, rows][rows], I), I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_three_consecutive_wires(self, tol):
+    def test_expand_three_consecutive_wires(self):
         """Test that a 3 qubit gate on consecutive
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,1,2
@@ -692,7 +712,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(Toffoli, I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -702,11 +722,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(I, Toffoli))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_three_nonconsecutive_ascending_wires(self, tol):
+    def test_expand_three_nonconsecutive_ascending_wires(self):
         """Test that a 3 qubit gate on non-consecutive but ascending
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,2,3
@@ -715,7 +735,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(SWAP, II) @ np.kron(I, Toffoli) @ np.kron(SWAP, II))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -725,11 +745,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(II, SWAP) @ np.kron(Toffoli, I) @ np.kron(II, SWAP))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
+    def test_expand_three_nonconsecutive_nonascending_wires(self):
         """Test that a 3 qubit gate on non-consecutive non-ascending
         wires correctly expands to 4 qubits"""
         # test applied to wire 3, 1, 2
@@ -741,7 +761,7 @@ class TestExpandMatrixSparse:
         expected.sort_indices()
         res.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -752,16 +772,17 @@ class TestExpandMatrixSparse:
         expected.sort_indices()
         res.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, type(expected))
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
     def test_sparse_swap_mat(self):
         """Test the swap matrix generated is as expected."""
+        # pylint: disable=protected-access
         n = 4
-        for i in range(0, n):
-            for j in range(0, n):
-                if not (i == j):
+        for i in range(n):
+            for j in range(n):
+                if i != j:
                     expected_mat = qml.SWAP(wires=[i, j]).matrix()
                     expected_mat = qml.math.expand_matrix(expected_mat, [i, j], wire_order=range(n))
                     computed_mat = qml.math.matrix_manipulation._sparse_swap_mat(i, j, n).toarray()
@@ -769,6 +790,7 @@ class TestExpandMatrixSparse:
 
     def test_sparse_swap_mat_same_index(self):
         """Test that if the indices are the same then the identity is returned."""
+        # pylint: disable=protected-access
         computed_mat = qml.math.matrix_manipulation._sparse_swap_mat(2, 2, 3).toarray()
         expected_mat = np.eye(8)
         assert np.allclose(expected_mat, computed_mat)
@@ -813,3 +835,107 @@ class TestReduceMatrices:
         assert final_wires == expected_wires
         assert qml.math.allclose(reduced_mat, expected_matrix)
         assert reduced_mat.shape == (2**5, 2**5)
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+class TestPartialTrace:
+    """Unit tests for the partial_trace function."""
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_single_density_matrix(self, ml_framework, c_dtype):
+        """Test partial trace on a single density matrix."""
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
+        )
+
+        # Expected result after tracing out the second qubit
+        expected = qml.math.asarray(np.array([[[1, 0], [0, 0]]], dtype=c_dtype), like=ml_framework)
+
+        # Perform the partial trace
+        result = qml.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_batched_density_matrices(self, ml_framework, c_dtype):
+        """Test partial trace on a batch of density matrices."""
+        # Define a batch of 2-qubit density matrices
+        rho = qml.math.asarray(
+            np.array(
+                [
+                    [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                    [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                ]
+            ),
+            like=ml_framework,
+        )
+
+        # rho = qml.math.asarrays(rho)
+        # Expected result after tracing out the first qubit for each matrix
+        expected = qml.math.asarray(
+            np.array([[[1, 0], [0, 0]], [[1, 0], [0, 0]]], dtype=c_dtype), like=ml_framework
+        )
+
+        # Perform the partial trace
+        result = qml.math.quantum.partial_trace(rho, [1], c_dtype=c_dtype)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_partial_trace_over_no_wires(self, ml_framework, c_dtype):
+        """Test that tracing over no wires returns the original matrix."""
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]], dtype=c_dtype),
+            like=ml_framework,
+        )
+
+        # Perform the partial trace over no wires
+        result = qml.math.quantum.partial_trace(rho, [], c_dtype=c_dtype)
+        assert qml.math.allclose(result, rho)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_partial_trace_over_all_wires(self, ml_framework, c_dtype):
+        """Test that tracing over all wires returns the trace of the matrix."""
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
+        )
+        # Expected result after tracing out all qubits
+        expected = qml.math.asarray(np.array([1], dtype=c_dtype), like=ml_framework)
+
+        # Perform the partial trace over all wires
+        result = qml.math.quantum.partial_trace(rho, [0, 1], c_dtype=c_dtype)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_invalid_wire_selection(self, ml_framework, c_dtype):
+        """Test that an error is raised for an invalid wire selection."""
+
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
+        )
+
+        # Attempt to trace over an invalid wire
+        with pytest.raises(Exception) as e:
+            import tensorflow as tf  # pylint: disable=Import outside toplevel (tensorflow) (import-outside-toplevel)
+
+            qml.math.quantum.partial_trace(rho, [2], c_dtype=c_dtype)
+            assert e.type in (
+                ValueError,
+                IndexError,
+                tf.python.framework.errors_impl.InvalidArgumentError,
+            )
+
+    @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_partial_trace_single_matrix(self, ml_framework, c_dtype):
+        """Test that partial_trace works on a single matrix."""
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), like=ml_framework
+        )
+
+        result = qml.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype)
+        expected = qml.math.asarray(np.array([[1, 0], [0, 0]], dtype=c_dtype), like=ml_framework)
+
+        assert qml.math.allclose(result, expected)

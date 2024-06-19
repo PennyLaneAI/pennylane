@@ -11,16 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains an autograd implementation of the :class:`~.DefaultQubit`
+"""This module contains an autograd implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
-from pennylane import numpy as np
+from pennylane import numpy as pnp
+from pennylane.devices import DefaultQubitLegacy
 
-from pennylane.devices import DefaultQubit
 
-
-class DefaultQubitAutograd(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written using Autograd.
+class DefaultQubitAutograd(DefaultQubitLegacy):
+    """Simulator plugin based on ``"default.qubit.legacy"``, written using Autograd.
 
     **Short name:** ``default.qubit.autograd``
 
@@ -49,7 +48,7 @@ class DefaultQubitAutograd(DefaultQubit):
     ... def circuit(x):
     ...     qml.RX(x[1], wires=0)
     ...     qml.Rot(x[0], x[1], x[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> weights = np.array([0.2, 0.5, 0.1], requires_grad=True)
     >>> grad_fn = qml.grad(circuit)
     >>> print(grad_fn(weights))
@@ -79,39 +78,34 @@ class DefaultQubitAutograd(DefaultQubit):
     name = "Default qubit (Autograd) PennyLane plugin"
     short_name = "default.qubit.autograd"
 
-    _dot = staticmethod(np.dot)
-    _abs = staticmethod(np.abs)
-    _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
-    _reshape = staticmethod(np.reshape)
+    _dot = staticmethod(pnp.dot)
+    _abs = staticmethod(pnp.abs)
+    _reduce_sum = staticmethod(lambda array, axes: pnp.sum(array, axis=tuple(axes)))
+    _reshape = staticmethod(pnp.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
-    _einsum = staticmethod(np.einsum)
-    _cast = staticmethod(np.asarray)
-    _transpose = staticmethod(np.transpose)
-    _tensordot = staticmethod(np.tensordot)
-    _conj = staticmethod(np.conj)
-    _real = staticmethod(np.real)
-    _imag = staticmethod(np.imag)
-    _roll = staticmethod(np.roll)
-    _stack = staticmethod(np.stack)
-    _size = staticmethod(np.size)
-    _ndim = staticmethod(np.ndim)
+    _einsum = staticmethod(pnp.einsum)
+    _cast = staticmethod(pnp.asarray)
+    _transpose = staticmethod(pnp.transpose)
+    _tensordot = staticmethod(pnp.tensordot)
+    _conj = staticmethod(pnp.conj)
+    _real = staticmethod(pnp.real)
+    _imag = staticmethod(pnp.imag)
+    _roll = staticmethod(pnp.roll)
+    _stack = staticmethod(pnp.stack)
+    _size = staticmethod(pnp.size)
+    _ndim = staticmethod(pnp.ndim)
 
     @staticmethod
     def _asarray(array, dtype=None):
-        res = np.asarray(array, dtype=dtype)
-
-        if res.dtype is np.dtype("O"):
-            return np.hstack(array).flatten().astype(dtype)
-
-        return res
+        return pnp.asarray(array, dtype=dtype)
 
     @staticmethod
     def _const_mul(constant, array):
         return constant * array
 
     def __init__(self, wires, *, shots=None, analytic=None):
-        r_dtype = np.float64
-        c_dtype = np.complex128
+        r_dtype = pnp.float64
+        c_dtype = pnp.complex128
         super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
@@ -128,6 +122,6 @@ class DefaultQubitAutograd(DefaultQubit):
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
-        new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
+        new_array = pnp.zeros(new_dimensions, dtype=array.dtype.type)
         new_array[indices] = array
         return new_array

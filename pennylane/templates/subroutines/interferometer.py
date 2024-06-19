@@ -15,12 +15,13 @@ r"""
 Contains the ``Interferometer`` template.
 """
 from itertools import product
+
 import pennylane as qml
+from pennylane.operation import AnyWires, CVOperation
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import Beamsplitter, Rotation
 from pennylane.wires import Wires
-from pennylane.operation import CVOperation, AnyWires
 
 
 class Interferometer(CVOperation):
@@ -169,7 +170,6 @@ class Interferometer(CVOperation):
         wires,
         mesh="rectangular",
         beamsplitter="pennylane",
-        do_queue=True,
         id=None,
     ):
         wires = Wires(wires)
@@ -193,7 +193,7 @@ class Interferometer(CVOperation):
             "mesh": mesh,
             "beamsplitter": beamsplitter,
         }
-        super().__init__(theta, phi, varphi, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(theta, phi, varphi, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(

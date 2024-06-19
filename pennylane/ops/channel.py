@@ -18,7 +18,7 @@ quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
 
-import pennylane.math as np
+from pennylane import math as np
 from pennylane.operation import AnyWires, Channel
 
 
@@ -51,16 +51,15 @@ class AmplitudeDamping(Channel):
     Args:
         gamma (float): amplitude damping probability
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
-        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, gamma, wires, id=None):
+        super().__init__(gamma, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -131,16 +130,15 @@ class GeneralizedAmplitudeDamping(Channel):
         gamma (float): amplitude damping probability
         p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, p, wires, do_queue=True, id=None):
-        super().__init__(gamma, p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, gamma, p, wires, id=None):
+        super().__init__(gamma, p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma, p):  # pylint:disable=arguments-differ
@@ -213,12 +211,13 @@ class PhaseDamping(Channel):
         gamma (float): phase damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
-        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, gamma, wires, id=None):
+        super().__init__(gamma, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -296,17 +295,16 @@ class DepolarizingChannel(Channel):
     Args:
         p (float): Each Pauli gate is applied with probability :math:`\frac{p}{3}`
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
-        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -371,17 +369,16 @@ class BitFlip(Channel):
     Args:
         p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
-        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -455,16 +452,15 @@ class ResetError(Channel):
         p_0 (float): The probability that a reset to 0 error occurs.
         p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p0, p1, wires, do_queue=True, id=None):
-        super().__init__(p0, p1, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, p0, p1, wires, id=None):
+        super().__init__(p0, p1, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p_0, p_1):  # pylint:disable=arguments-differ
@@ -547,8 +543,6 @@ class PauliError(Channel):
         operators (str): The Pauli operators acting on the specified (groups of) wires
         p (float): The probability of the operator being applied
         wires (Sequence[int] or int): The wires the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -562,14 +556,15 @@ class PauliError(Channel):
         array([[0.        , 0.70710678],
                [0.70710678, 0.        ]])
     """
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, operators, p, wires=None, do_queue=True, id=None):
-        super().__init__(operators, p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, operators, p, wires=None, id=None):
+        super().__init__(operators, p, wires=wires, id=id)
 
         # check if the specified operators are legal
         if not set(operators).issubset({"X", "Y", "Z"}):
@@ -661,17 +656,16 @@ class PhaseFlip(Channel):
     Args:
         p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
-        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -713,44 +707,52 @@ class QubitChannel(Channel):
     Args:
         K_list (list[array[complex]]): list of Kraus matrices
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, K_list, wires=None, do_queue=True, id=None):
-        super().__init__(*K_list, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, K_list, wires=None, id=None):
+        super().__init__(*K_list, wires=wires, id=id)
 
         # check all Kraus matrices are square matrices
-        if not all(K.shape[0] == K.shape[1] for K in K_list):
+        if any(K.shape[0] != K.shape[1] for K in K_list):
             raise ValueError(
                 "Only channels with the same input and output Hilbert space dimensions can be applied."
             )
 
         # check all Kraus matrices have the same shape
-        if not all(K.shape == K_list[0].shape for K in K_list):
+        if any(K.shape != K_list[0].shape for K in K_list):
             raise ValueError("All Kraus matrices must have the same shape.")
 
         # check the dimension of all Kraus matrices are valid
-        if not all(K.ndim == 2 for K in K_list):
+        if any(K.ndim != 2 for K in K_list):
             raise ValueError(
                 "Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires)."
             )
 
         # check that the channel represents a trace-preserving map
-        K_arr = np.array(K_list)
-        Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
-        if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
-            raise ValueError("Only trace preserving channels can be applied.")
+        if not any(np.is_abstract(K) for K in K_list):
+            K_arr = np.array(K_list)
+            Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
+            if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
+                raise ValueError("Only trace preserving channels can be applied.")
+
+    def _flatten(self):
+        return (self.data,), (self.wires, ())
+
+    # pylint: disable=arguments-differ, unused-argument
+    @classmethod
+    def _primitive_bind_call(cls, K_list, wires=None, id=None):
+        return super()._primitive_bind_call(*K_list, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(*kraus_matrices):  # pylint:disable=arguments-differ
         """Kraus matrices representing the QubitChannel channel.
 
         Args:
-            K_list (list[array[complex]]): list of Kraus matrices
+            *K_list (list[array[complex]]): list of Kraus matrices
 
         Returns:
             list (array): list of Kraus matrices
@@ -763,6 +765,18 @@ class QubitChannel(Channel):
         True
         """
         return list(kraus_matrices)
+
+
+# The primitive will be None if jax is not installed in the environment
+# If defined, we need to update the implementation to repack matrices
+# See capture module for more information
+if QubitChannel._primitive is not None:  # pylint: disable=protected-access
+
+    @QubitChannel._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, n_wires):
+        K_list = args[:-n_wires]
+        wires = args[-n_wires:]
+        return type.__call__(QubitChannel, K_list, wires=wires)
 
 
 class ThermalRelaxationError(Channel):
@@ -841,16 +855,15 @@ class ThermalRelaxationError(Channel):
         t2 (float): the :math:`T_2` dephasing constant. Must be less than :math:`2 T_1`
         tg (float): the gate time for relaxation error
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+
     num_params = 4
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tq, wires, do_queue=True, id=None):
-        super().__init__(pe, t1, t2, tq, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, pe, t1, t2, tq, wires, id=None):
+        super().__init__(pe, t1, t2, tq, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ
@@ -911,13 +924,16 @@ class ThermalRelaxationError(Channel):
             e1 = -p_reset * pe + p_reset
             v1 = np.array([[0, 1], [0, 0]])
             K1 = np.sqrt(e1 + np.eps) * v1
-            common_term = np.sqrt(
-                4 * eT2**2
-                + 4 * p_reset**2 * pe**2
-                - 4 * p_reset**2 * pe
-                + p_reset**2
-                + np.eps
+            base = sum(
+                (
+                    4 * eT2**2,
+                    4 * p_reset**2 * pe**2,
+                    -4 * p_reset**2 * pe,
+                    p_reset**2,
+                    np.eps,
+                )
             )
+            common_term = np.sqrt(base)
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
             v2 = (term2 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(

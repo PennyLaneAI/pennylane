@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for purities."""
-
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -21,10 +21,7 @@ from pennylane import numpy as np
 
 def expected_purity_ising_xx(param):
     """Returns the analytical purity for subsystems of the IsingXX"""
-
-    eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
-    eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
-    return eig_1**2 + eig_2**2
+    return np.cos(param / 2) ** 4 + np.sin(param / 2) ** 4
 
 
 def expected_purity_grad_ising_xx(param):
@@ -62,6 +59,23 @@ class TestPurity:
     probs = np.array([0.001, 0.01, 0.1, 0.2])
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
+
+    def test_purity_cannot_specify_device(self):
+        """Test that an error is raised if a device or device wires are given
+        to the purity transform manually."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
+            _ = qml.qinfo.purity(circuit, wires=[0], device=dev)
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+            _ = qml.qinfo.purity(circuit, wires=[0], device_wires=dev.wires)
 
     def test_qnode_not_returning_state(self):
         """Test that the QNode of reduced_dm function must return state."""
@@ -233,6 +247,8 @@ class TestPurity:
         import jax
         import jax.numpy as jnp
 
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device(device, wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -375,3 +391,40 @@ class TestPurity:
         grad_purity = tape.gradient(purity, param)
 
         assert qml.math.allclose(grad_purity, grad_expected_purity)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_purity_wire_labels(self, device, tol):
+        """Test that purity is correct with custom wire labels"""
+        param = np.array(1.234)
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit_state(x):
+            qml.PauliX(wires=wires[0])
+            qml.IsingXX(x, wires=wires)
+            return qml.state()
+
+        purity0 = qml.qinfo.purity(circuit_state, wires=[wires[0]])(param)
+        purity1 = qml.qinfo.purity(circuit_state, wires=[wires[1]])(param)
+        expected = expected_purity_ising_xx(param)
+
+        assert qml.math.allclose(purity0, expected, atol=tol)
+        assert qml.math.allclose(purity1, expected, atol=tol)
+
+
+@pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+def test_broadcasting(device):
+    """Test that the purity transform supports broadcasting"""
+    dev = qml.device(device, wires=2)
+
+    @qml.qnode(dev)
+    def circuit_state(x):
+        qml.IsingXX(x, wires=[0, 1])
+        return qml.state()
+
+    x = np.array([0.4, 0.6, 0.8])
+    purity = qml.qinfo.purity(circuit_state, wires=[0])(x)
+
+    expected = expected_purity_ising_xx(x)
+    assert qml.math.allclose(purity, expected)

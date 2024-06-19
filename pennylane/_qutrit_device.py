@@ -384,7 +384,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
-        name = observable.name  # pylint: disable=unused-variable
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
         no_observable_provided = isinstance(observable, MeasurementProcess)
 

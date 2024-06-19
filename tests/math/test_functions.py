@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the TensorBox functional API in pennylane.fn.fn
+"""Unit tests for pennylane.math.single_dispatch
 """
 # pylint: disable=import-outside-toplevel
 import itertools
@@ -134,6 +134,12 @@ class TestGetMultiTensorbox:
         res = fn.get_interface(y, x)
         assert res == "numpy"
 
+    def test_get_deep_interface(self):
+        """Test get_deep_interface returns the interface of deep values."""
+        assert fn.get_deep_interface([()]) == "builtins"
+        assert fn.get_deep_interface(([1, 2], [3, 4])) == "builtins"
+        assert fn.get_deep_interface([[jnp.array(1.1)]]) == "jax"
+
 
 test_abs_data = [
     (1, -2, 3 + 4j),
@@ -164,6 +170,16 @@ test_data = [
     tf.constant([1, 2, 3]),
 ]
 
+unequal_test_data = [
+    (2, 2, 3),
+    [1, 21, 3],
+    onp.array([1, 2, 39]),
+    np.array([1, 2, 4]),
+    torch.tensor([1, 20, 3]),
+    tf.Variable([2, 21, 3]),
+    tf.constant([2, 1, 3]),
+]
+
 
 @pytest.mark.parametrize("t1,t2", list(itertools.combinations(test_data, r=2)))
 def test_allequal(t1, t2):
@@ -180,11 +196,48 @@ def test_allequal(t1, t2):
     assert res == expected
 
 
+test_all_vectors = [
+    ((False, False, False), False),
+    ((True, True, False), False),
+    ((True, True, True), True),
+]
+
+
+@pytest.mark.parametrize(
+    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
+)
+@pytest.mark.parametrize("t1, expected", test_all_vectors)
+def test_all(array_fn, t1, expected):
+    """Test that the all function works for a variety of inputs."""
+    res = fn.all(array_fn(t1))
+
+    assert res == expected
+
+
+test_any_vectors = [
+    ((False, False, False), False),
+    ((True, True, False), True),
+    ((True, True, True), True),
+]
+
+
+@pytest.mark.parametrize(
+    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
+)
+@pytest.mark.parametrize("t1, expected", test_any_vectors)
+def test_any(array_fn, t1, expected):
+    """Test that the any function works for a variety of inputs."""
+    res = fn.any(array_fn(t1))
+
+    assert res == expected
+
+
 @pytest.mark.parametrize(
     "t1,t2",
     list(
         itertools.combinations(test_data + [torch.tensor([1.0, 2.0, 3.0], requires_grad=True)], r=2)
-    ),
+    )
+    + [(t1, t2) for t1 in test_data for t2 in unequal_test_data],
 )
 def test_allclose(t1, t2):
     """Test that the allclose function works for a variety of inputs."""
@@ -1095,7 +1148,8 @@ class TestRequiresGrad:
 
     @pytest.mark.slow
     def test_jax_jit(self):
-        """JAX Arrays differentiability depends on the argnums argument with Jitting."""
+        """JAX Arrays differentiability does not depends on the argnums argument with Jitting because it is
+        differentiability is set in the custom jvp."""
         res = None
 
         def cost_fn(t, s):
@@ -1107,10 +1161,10 @@ class TestRequiresGrad:
         s = jnp.array([-2.0, -3.0, -4.0])
 
         jax.jit(jax.grad(cost_fn, argnums=0))(t, s)
-        assert res == [True, False]
+        assert res == [True, True]
 
         jax.jit(jax.grad(cost_fn, argnums=1))(t, s)
-        assert res == [False, True]
+        assert res == [True, True]
 
         jax.jit(jax.grad(cost_fn, argnums=[0, 1]))(t, s)
         assert res == [True, True]
@@ -1326,6 +1380,36 @@ def test_shape(shape, interface, create_array):
     assert fn.shape(t) == shape
 
 
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+def test_shape_and_ndim_deep(interface):
+    val = [[fn.asarray(1, like=interface)]]
+    assert fn.shape(val) == (1, 1)
+    assert fn.ndim(val) == 2
+
+
+@pytest.mark.parametrize(
+    "x, expected",
+    (
+        (1.0, "float64"),
+        (1, "int64"),
+        (onp.array(0.5), "float64"),
+        (onp.array(1.0, dtype="float32"), "float32"),
+        (ArrayBox(1, "a", "b"), "int64"),
+        (np.array(0.5), "float64"),
+        (np.array(0.5, dtype="complex64"), "complex64"),
+        # skip jax as output is dependent on global configuration
+        (tf.Variable(0.1, dtype="float32"), "float32"),
+        (tf.Variable(0.1, dtype="float64"), "float64"),
+        (torch.tensor(0.1, dtype=torch.float32), "float32"),
+        (torch.tensor(0.5, dtype=torch.float64), "float64"),
+        (torch.tensor(0.1, dtype=torch.complex128), "complex128"),
+    ),
+)
+def test_get_dtype_name(x, expected):
+    """Test that get_dtype_name returns the a string for the datatype."""
+    assert fn.get_dtype_name(x) == expected
+
+
 @pytest.mark.parametrize("t", test_data)
 def test_sqrt(t):
     """Test that the square root function works for a variety
@@ -1513,7 +1597,7 @@ class TestTake:
     def test_array_indexing_autograd(self):
         """Test that indexing with a sequence properly extracts
         the elements from the flattened tensor"""
-        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=np.float64)
         indices = [0, 2, 3, 6, -2]
 
         def cost_fn(t):
@@ -1556,7 +1640,7 @@ class TestTake:
     def test_multidimensional_indexing_along_axis_autograd(self):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
-        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=np.float64)
         indices = np.array([[0, 0], [1, 0]])
 
         def cost_fn(t):
@@ -1571,6 +1655,12 @@ class TestTake:
         grad = qml.grad(cost_fn)(t)
         expected = np.array([[[3, 3], [1, 1], [0, 0]], [[3, 3], [1, 1], [0, 0]]])
         assert fn.allclose(grad, expected)
+
+    @pytest.mark.torch
+    def test_last_axis_support_torch(self):
+        """Test that _torch_take correctly sets the last axis"""
+        x = fn.arange(8, like="torch").reshape((2, 4))
+        assert np.array_equal(fn.take(x, indices=3, axis=-1), [3, 7])
 
 
 where_data = [
@@ -2539,11 +2629,17 @@ class TestSize:
         ([[0], [1], [2], [3], [4], [5]], 6),
     ]
 
-    @pytest.mark.torch
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            pytest.param("torch", marks=pytest.mark.torch),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ],
+    )
     @pytest.mark.parametrize(("array", "size"), array_and_size)
-    def test_size_torch(self, array, size):
-        """Test size function with the torch interface."""
-        r = fn.size(torch.tensor(array))
+    def test_size_torch_and_tf(self, array, size, interface):
+        """Test size function with the torch and tf interfaces."""
+        r = fn.size(fn.asarray(array, like=interface))
         assert r == size
 
 

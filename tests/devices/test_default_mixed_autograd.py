@@ -18,9 +18,9 @@ Tests for the ``default.mixed`` device for the Autograd interface
 import pytest
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane import numpy as np
 from pennylane.devices.default_mixed import DefaultMixed
-from pennylane import DeviceError
 
 pytestmark = pytest.mark.autograd
 
@@ -530,7 +530,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -573,9 +573,9 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
     def test_multiple_measurements_differentiation(self, dev_name, diff_method, mode, tol):
@@ -585,7 +585,7 @@ class TestPassthruIntegration:
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd", grad_on_execution=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -642,6 +642,7 @@ class TestPassthruIntegration:
         assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
 
 
+# pylint: disable=too-few-public-methods
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
@@ -660,19 +661,52 @@ class TestHighLevelIntegration:
         grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
 
-    def test_qnode_collection_integration(self):
-        """Test that QNodeCollections does not work with the new return system."""
-        dev = qml.device("default.mixed", wires=2)
 
-        def ansatz(weights, **kwargs):
-            # pylint: disable=unused-argument
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
+class TestMeasurements:
+    """Tests for measurements with default.mixed"""
 
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="QNodeCollections does not support the new return system.",
-        ):
-            qml.map(ansatz, obs_list, dev, interface="autograd")
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.counts(qml.PauliZ(0)),
+            qml.counts(wires=[0]),
+            qml.sample(qml.PauliX(0)),
+            qml.sample(wires=[1]),
+        ],
+    )
+    def test_measurements_tf(self, measurement):
+        """Test sampling-based measurements work with `default.mixed` for trainable interfaces"""
+        num_shots = 1024
+        dev = qml.device("default.mixed", wires=2, shots=num_shots)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        res = circuit(np.array(0.5))
+
+        assert len(res) == 2 if isinstance(measurement, qml.measurements.CountsMP) else num_shots
+
+    @pytest.mark.parametrize(
+        "meas_op",
+        [qml.PauliX(0), qml.PauliZ(0)],
+    )
+    def test_measurement_diff(self, meas_op):
+        """Test sequence of single-shot expectation values work for derivatives"""
+        num_shots = 64
+        dev = qml.device("default.mixed", shots=[(1, num_shots)], wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(angle):
+            qml.RX(angle, wires=0)
+            return qml.expval(meas_op)
+
+        def cost(angle):
+            return qml.math.hstack(circuit(angle))
+
+        angle = np.array(0.1234)
+
+        assert isinstance(qml.jacobian(cost)(angle), np.ndarray)
+        assert len(cost(angle)) == num_shots

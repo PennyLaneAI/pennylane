@@ -15,10 +15,12 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 # pylint: disable=protected-access
 import json
 from os import path
-from functools import partial
+from typing import Callable, Sequence
+
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms import transform
 
 
 def controlled_pauli_evolution(theta, wires, pauli_word, controls):
@@ -184,23 +186,20 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
         operations = tape.operations + added_operations
 
         if tape.measurements[0].return_type == qml.measurements.Expectation:
-            measurements = [qml.expval(-1 * qml.PauliZ(controls[0]))]
+            measurements = [qml.expval(-1 * qml.Z(controls[0]))]
         else:
-            measurements = [qml.var(qml.PauliZ(controls[0]))]
+            measurements = [qml.var(qml.Z(controls[0]))]
 
-        new_tape = qml.tape.QuantumScript(operations, measurements)
+        new_tape = qml.tape.QuantumScript(operations, measurements, shots=tape.shots)
 
         tapes.append(new_tape)
     return tapes
 
 
-batch_transform_with_diff_false = partial(batch_transform, differentiable=False)
-
-
-@batch_transform_with_diff_false
+@transform
 def sign_expand(  # pylint: disable=too-many-arguments
-    tape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
-):
+    tape: qml.tape.QuantumTape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
     the Xi or sgn decomposition, and provides a function to recombine the results.
@@ -210,7 +209,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     For the calculation of variances, one assumes an even distribution of shots among the groups.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value of the Hamiltonian
+        tape (QNode or QuantumTape): the quantum circuit used when calculating the expectation value of the Hamiltonian
         circuit (bool): Toggle the calculation of the analytical Xi decomposition or if True
           constructs the circuits of the approximate sign decomposition to measure the expectation
           value
@@ -221,9 +220,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
           Hadamard test and the quantum signal processing part on, have to be wires on the device
 
     Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of quantum tapes
-          to be evaluated, and a function to be applied to these tape executions to compute the
-          expectation value.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -231,7 +228,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-        H = qml.PauliZ(0) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
+        H = qml.Z(0) + 0.5 * qml.Z(2) + qml.Z(1)
 
     a device with auxiliary qubits,
 
@@ -248,7 +245,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
+            qml.X(2)
             return qml.expval(H)
 
     >>> circuit()
@@ -258,7 +255,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.PauliX(wires=2)]
+            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
             measurements = [qml.expval(H)]
             tape = qml.tape.QuantumTape(operations, measurements)
 
@@ -271,7 +268,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     one wants to make the circuit approximation of the decomposition:
 
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
-    >>> res = dev.batch_execute(tapes)
+    >>> res = dev.execute(tapes)
     >>> fn(res)
     -0.4999999999999999
 
@@ -280,7 +277,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     >>> tapes, fn = qml.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
-    >>> dev.batch_execute(tapes)
+    >>> dev.execute(tapes)
     >>> fn(res)
     -0.24999999999999994
 
@@ -291,13 +288,13 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     .. code-block:: python3
 
-            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.PauliX(wires=2)]
+            operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.X(2)]
             measurements = [qml.var(H)]
             tape = qml.tape.QuantumTape(operations, measurements)
 
     >>> tapes, fn = qml.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
-    >>> res = dev.batch_execute(tapes)
+    >>> res = dev.execute(tapes)
     >>> fn(res)
     10.108949481425782
 
@@ -314,7 +311,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     if (
-        not isinstance(hamiltonian, qml.Hamiltonian)
+        not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
         or len(tape.measurements) > 1
         or tape.measurements[0].return_type
         not in [qml.measurements.Expectation, qml.measurements.Variance]
@@ -353,7 +350,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
         else:
             measurements = [qml.var(qml.Hermitian(proj, wires=wires))]
 
-        new_tape = qml.tape.QuantumScript(tape.operations, measurements)
+        new_tape = qml.tape.QuantumScript(tape.operations, measurements, shots=tape.shots)
 
         tapes.append(new_tape)
 

@@ -14,16 +14,14 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
-from collections.abc import Sequence
 from types import FunctionType
-from typing import Type, Union
+from typing import Callable, Sequence, Type, Union
 
 import pennylane as qml
-from pennylane import Device, apply
 from pennylane.operation import Operation
-from pennylane.tape import QuantumTape
-from pennylane.transforms.qfunc_transforms import qfunc_transform
 from pennylane.ops.op_math import Adjoint
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 # pylint: disable=too-many-branches
 
@@ -51,14 +49,14 @@ def _check_position(position):
     return not_op, req_ops
 
 
-@qfunc_transform
+@transform
 def insert(
-    circuit: Union[callable, QuantumTape, Device],
+    tape: QuantumTape,
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
     position: Union[str, list, Type[Operation]] = "all",
     before: bool = False,
-) -> Union[callable, QuantumTape]:
+) -> (Sequence[QuantumTape], Callable):
     """Insert an operation into specified points in an input circuit.
 
     Circuits passed through this transform will be updated to have the operation, specified by the
@@ -71,8 +69,7 @@ def insert(
     for more information).
 
     Args:
-        circuit (callable or QuantumTape or pennylane.Device): the input circuit to be transformed, or a
-            device
+        tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit to be transformed.
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
@@ -86,11 +83,12 @@ def insert(
             Default is ``False`` and the operation is inserted after.
 
     Returns:
-        callable or QuantumTape or pennylane.Device: the updated version of the input circuit or an updated
-        device which will transform circuits before execution
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
 
     Raises:
-        QuantumFunctionError: if some observables in the tape are not qubit-wise commuting
         ValueError: if a single operation acting on multiple wires is passed to ``op``
         ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
             ``'all'`` OR PennyLane Operation
@@ -101,17 +99,19 @@ def insert(
 
     .. code-block:: python3
 
+        from functools import partial
+
         dev = qml.device("default.mixed", wires=2)
 
+        @partial(qml.transforms.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
         @qml.qnode(dev)
-        @qml.transforms.insert(qml.AmplitudeDamping, 0.2, position="end")
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.RY(y, wires=0)
             qml.RX(z, wires=1)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
     Executions of this circuit will differ from the noise-free value:
 
@@ -142,14 +142,14 @@ def insert(
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            @qml.transforms.insert(op, [0.2, 0.3], position="end")
+            @partial(qml.transforms.insert, op=op, op_args=[0.2, 0.3], position="end")
             def f(w, x, y, z):
                 qml.RX(w, wires=0)
                 qml.RY(x, wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.RY(y, wires=0)
                 qml.RX(z, wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                return qml.expval(qml.Z(0) @ qml.Z(1))
 
         To check this, let's print out the circuit:
 
@@ -163,18 +163,20 @@ def insert(
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
-                qml.RX(0.9, wires=0)
-                qml.RY(0.4, wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.RY(0.5, wires=0)
+            ops = [
+                qml.RX(0.9, wires=0),
+                qml.RY(0.4, wires=1),
+                qml.CNOT((0,1)),
+                qml.RY(0.5, wires=0),
                 qml.RX(0.6, wires=1)
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            ]
+            measurements = [qml.expval(qml.Z(0) @ qml.Z(1))]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
         >>> from pennylane.transforms import insert
-        >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(tape)
+        >>> [noisy_tape], _ = insert(tape, qml.AmplitudeDamping, 0.05, position="end")
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
         0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>
@@ -193,7 +195,7 @@ def insert(
                 qml.CNOT(wires=[0, 1])
                 qml.RY(y, wires=0)
                 qml.RX(z, wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                return qml.expval(qml.Z(0) @ qml.Z(1))
 
             qnode = qml.QNode(f, dev)
 
@@ -204,22 +206,23 @@ def insert(
 
         However, noise can be easily added to the device:
 
-        >>> dev_noisy = qml.transforms.insert(qml.AmplitudeDamping, 0.2)(dev)
+        >>> dev_noisy = qml.transforms.insert(dev, qml.AmplitudeDamping, 0.2)
         >>> qnode_noisy = qml.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
     """
-    # decompose templates and their adjoints (which fixes a bug in the tutorial_error_mitigation demo)
-    # TODO: change this to be cleaner and more robust
-    try:
-        circuit = circuit.expand(
-            stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
-        )
-    except qml.QuantumFunctionError as e:
-        raise qml.QuantumFunctionError(
-            "The insert transform cannot transform a circuit measuring non-commuting observables. "
-            "Consider wrapping the gates in their own function and transforming only that function."
-        ) from e
+
+    # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo
+    def stop_at(obj):
+        if not isinstance(obj, qml.operation.Operator):
+            return True
+        if not obj.has_decomposition:
+            return True
+        return not (hasattr(qml.templates, obj.name) or isinstance(obj, Adjoint))
+
+    error_type = (qml.operation.DecompositionUndefinedError,)
+    decompose = qml.devices.preprocess.decompose
+    [tape], _ = decompose(tape, stopping_condition=stop_at, name="insert", error=error_type)
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
@@ -233,36 +236,45 @@ def insert(
 
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
-
-    num_preps = len(circuit._prep)  # pylint: disable=protected-access
-
-    for i in range(num_preps):
-        apply(circuit.operations[i])
+    new_operations = []
+    for prep_op in tape.operations[: tape.num_preps]:
+        new_operations.append(prep_op)
 
     if position == "start":
-        for w in circuit.wires:
-            op(*op_args, wires=w)
+        for w in tape.wires:
+            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+            new_operations.extend(sub_tape.operations)
 
-    for circuit_op in circuit.operations[num_preps:]:
+    for circuit_op in tape.operations[tape.num_preps :]:
         if not before:
-            apply(circuit_op)
+            new_operations.append(circuit_op)
 
         if position == "all":
             for w in circuit_op.wires:
-                op(*op_args, wires=w)
+                sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+                new_operations.extend(sub_tape.operations)
 
         if req_ops:
             for operation in req_ops:
                 if operation == type(circuit_op):
                     for w in circuit_op.wires:
-                        op(*op_args, wires=w)
+                        sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+                        new_operations.extend(sub_tape.operations)
 
         if before:
-            apply(circuit_op)
+            new_operations.append(circuit_op)
 
     if position == "end":
-        for w in circuit.wires:
-            op(*op_args, wires=w)
+        for w in tape.wires:
+            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+            new_operations.extend(sub_tape.operations)
 
-    for m in circuit.measurements:
-        apply(m)
+    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

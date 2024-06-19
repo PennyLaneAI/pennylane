@@ -15,9 +15,23 @@
 Tests for the BasisRotation template.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
+
+
+@pytest.mark.xfail  # to be fixed by shortcut story 49160
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    weights = np.array(
+        [
+            [-0.618452, -0.68369054 - 0.38740723j],
+            [-0.78582258, 0.53807284 + 0.30489424j],
+        ]
+    )
+    op = qml.BasisRotation(wires=range(2), unitary_matrix=weights)
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -101,7 +115,7 @@ class TestDecomposition:
                 wires=range(2),
                 unitary_matrix=weights,
             )
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
@@ -110,12 +124,13 @@ class TestDecomposition:
                 wires=["z", "a"],
                 unitary_matrix=weights,
             )
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
@@ -248,7 +263,7 @@ class TestDecomposition:
             qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix)
             return qml.state()
 
-        assert np.allclose([qml.math.fidelity(circuit(), exp_state)], [1.0], atol=1e-6)
+        assert np.allclose([qml.math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=1e-6)
 
 
 class TestInputs:

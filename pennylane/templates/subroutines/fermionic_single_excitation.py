@@ -15,10 +15,11 @@ r"""
 Contains the FermionicSingleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
-from pennylane.operation import Operation, AnyWires
-from pennylane.ops import RZ, RX, CNOT, Hadamard
+from pennylane.operation import AnyWires, Operation
+from pennylane.ops import CNOT, RX, RZ, Hadamard
 
 
 class FermionicSingleExcitation(Operation):
@@ -105,7 +106,7 @@ class FermionicSingleExcitation(Operation):
             @qml.qnode(dev)
             def circuit(weight, wires=None):
                 qml.FermionicSingleExcitation(weight, wires=wires)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             weight = 0.56
             print(circuit(weight, wires=[0, 1, 2]))
@@ -116,7 +117,7 @@ class FermionicSingleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, weight, wires=None, do_queue=True, id=None):
+    def __init__(self, weight, wires=None, id=None):
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
 
@@ -124,7 +125,7 @@ class FermionicSingleExcitation(Operation):
         if shape != ():
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
-        super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weight, wires=wires, id=id)
 
     @property
     def num_params(self):

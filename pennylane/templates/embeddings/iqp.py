@@ -15,10 +15,12 @@ r"""
 Contains the IQPEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
 from itertools import combinations
 
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
+from pennylane.wires import Wires
 
 
 class IQPEmbedding(Operation):
@@ -93,7 +95,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3))
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -106,7 +108,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3), n_repeats=4)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -124,7 +126,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features):
                 qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -140,7 +142,7 @@ class IQPEmbedding(Operation):
             @qml.qnode(dev)
             def circuit(features, pattern):
                 qml.IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+                return [qml.expval(qml.Z(w)) for w in range(3)]
 
             res1 = circuit([1., 2., 3.], pattern=pattern1)
             res2 = circuit([1., 2., 3.], pattern=pattern2)
@@ -166,7 +168,7 @@ class IQPEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True, id=None):
+    def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
         shape = qml.math.shape(features)
 
         if len(shape) not in {1, 2}:
@@ -181,11 +183,19 @@ class IQPEmbedding(Operation):
 
         if pattern is None:
             # default is an all-to-all pattern
-            pattern = combinations(wires, 2)
-
+            pattern = tuple(combinations(wires, 2))
         self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
-        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(features, wires=wires, id=id)
+
+    def map_wires(self, wire_map):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["pattern"] = [
+            [wire_map.get(w, w) for w in wires] for wires in new_op._hyperparameters["pattern"]
+        ]
+        return new_op
 
     @property
     def num_params(self):

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Nesterov momentum optimizer"""
 from pennylane._grad import grad as get_gradient
+
 from .momentum import MomentumOptimizer
 
 
@@ -34,6 +35,11 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     Args:
         stepsize (float): user-defined hyperparameter :math:`\eta`
         momentum (float): user-defined hyperparameter :math:`m`
+
+    .. note::
+
+        When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
+
     """
 
     def compute_grad(

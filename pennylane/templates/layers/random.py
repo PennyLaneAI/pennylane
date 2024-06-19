@@ -15,9 +15,11 @@ r"""
 Contains the RandomLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 
 
 class RandomLayers(Operation):
@@ -52,7 +54,7 @@ class RandomLayers(Operation):
         wires (Iterable): wires that the template acts on
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
+        rotations (tuple[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
         seed (int): seed to generate random architecture, defaults to 42
@@ -77,12 +79,12 @@ class RandomLayers(Operation):
             @qml.qnode(dev)
             def circuit1(weights):
                 qml.RandomLayers(weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             @qml.qnode(dev)
             def circuit2(weights):
                 qml.RandomLayers(weights=weights, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
         >>> np.allclose(circuit1(weights), circuit2(weights))
         True
@@ -106,7 +108,7 @@ class RandomLayers(Operation):
         >>> @qml.qnode(dev)
         ... def circuit(weights, seed=None):
         ...     qml.RandomLayers(weights=weights, wires=range(2), seed=seed)
-        ...     return qml.expval(qml.PauliZ(0))
+        ...     return qml.expval(qml.Z(0))
         >>> np.allclose(circuit(weights, seed=9), circuit(weights, seed=12))
         False
         >>>  print(qml.draw(circuit, expansion_strategy="device")(weights, seed=9))
@@ -130,7 +132,7 @@ class RandomLayers(Operation):
             @qml.qnode(dev)
             def circuit_rnd(weights):
                 qml.RandomLayers(weights=weights, wires=range(2), seed=None)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             first_call = circuit_rnd(weights)
             second_call = circuit_rnd(weights)
@@ -145,7 +147,7 @@ class RandomLayers(Operation):
             @qml.qnode(dev, mutable=False)
             def circuit_rnd(weights):
                 qml.RandomLayers(weights=weights, wires=range(2), seed=None)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             first_call = circuit_rnd(weights)
             second_call = circuit_rnd(weights)
@@ -176,7 +178,6 @@ class RandomLayers(Operation):
         imprimitive=None,
         rotations=None,
         seed=42,
-        do_queue=True,
         id=None,
     ):
         shape = qml.math.shape(weights)
@@ -184,13 +185,13 @@ class RandomLayers(Operation):
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
         self._hyperparameters = {
-            "ratio_imprimitive": ratio_imprim,
+            "ratio_imprim": ratio_imprim,
             "imprimitive": imprimitive or qml.CNOT,
-            "rotations": rotations or [qml.RX, qml.RY, qml.RZ],
+            "rotations": tuple(rotations) if rotations else (qml.RX, qml.RY, qml.RZ),
             "seed": seed,
         }
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -198,7 +199,7 @@ class RandomLayers(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, ratio_imprimitive, imprimitive, rotations, seed
+        weights, wires, ratio_imprim, imprimitive, rotations, seed
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -223,8 +224,8 @@ class RandomLayers(Operation):
 
         >>> weights = torch.tensor([[0.1, -2.1, 1.4]])
         >>> rotations=[qml.RY, qml.RX]
-        >>> qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprimitive=0.3,
-        ..                                         imprimitive=qml.CNOT, rotations=rotations, seed=42)
+        >>> qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprim=0.3,
+        ...                                         imprimitive=qml.CNOT, rotations=rotations, seed=42)
         [RY(tensor(0.1000), wires=['b']),
          RY(tensor(-2.1000), wires=['b']),
          CNOT(wires=['b', 'a']),
@@ -241,7 +242,7 @@ class RandomLayers(Operation):
         for l in range(n_layers):
             i = 0
             while i < shape[1]:
-                if rng.random() > ratio_imprimitive:
+                if rng.random() > ratio_imprim:
                     # apply a random rotation gate to a random wire
                     gate = rng.choice(rotations)
                     rnd_wire = wires.select_random(1, seed=rng)

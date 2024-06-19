@@ -14,10 +14,12 @@
 """
 Unit tests for the ``AdaptiveOptimizer``.
 """
+import copy
+
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 
 symbols = ["H", "H", "H"]
 geometry = np.array(
@@ -53,12 +55,13 @@ def initial_circuit():
 )
 def test_private_circuit(circuit, params, gates, energy_ref):
     r"""Test that _circuit returns the correct output."""
+    # pylint: disable=protected-access
     qnode = qml.QNode(qml.AdaptiveOptimizer._circuit, dev)
     energy = qnode(params, gates, circuit.func)
     assert np.allclose(energy, energy_ref)
 
 
-pool = [
+pool_exc = [
     qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
     qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
     qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
@@ -73,7 +76,7 @@ pool = [
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
-        (initial_circuit, energy_first_step, pool),
+        (initial_circuit, energy_first_step, pool_exc),
     ],
 )
 def test_step(circuit, energy_ref, pool):
@@ -84,29 +87,18 @@ def test_step(circuit, energy_ref, pool):
     assert np.allclose(energy, energy_ref)
 
 
-pool = [
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
-    qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
-    qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
-    qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
-    qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
-]
-
-
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
-        (initial_circuit, energy_h3p, pool),
+        (initial_circuit, energy_h3p, pool_exc),
     ],
 )
 def test_step_and_cost_drain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is True."""
     opt = qml.AdaptiveOptimizer()
-    for i in range(4):
-        circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=True)
+    for _ in range(4):
+        circuit, energy, _ = opt.step_and_cost(circuit, copy.copy(pool), drain_pool=True)
 
     _ = circuit()
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
@@ -116,31 +108,20 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
     assert len(set(selected_excitations)) == len(selected_excitations)
 
 
-pool = [
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
-    qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
-    qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
-    qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
-    qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
-]
-
-
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
-        (initial_circuit, energy_h3p, pool),
+        (initial_circuit, energy_h3p, pool_exc),
     ],
 )
 def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qml.AdaptiveOptimizer()
-    for i in range(4):
-        circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=False)
+    for _ in range(4):
+        circuit, energy, _ = opt.step_and_cost(circuit, pool, drain_pool=False)
 
-    _ = circuit()
+    circuit()
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
 
     assert np.allclose(energy, energy_ref, rtol=1e-4)
@@ -148,29 +129,13 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     assert len(set(selected_excitations)) < len(selected_excitations)
 
 
-@pytest.mark.parametrize(
-    "circuit",
-    [
-        (initial_circuit),
-    ],
-)
+@pytest.mark.parametrize("circuit", [(initial_circuit)])
 def test_largest_gradient(circuit):
     """Test that step function selects the gate with the largest gradient."""
 
-    pool = [
-        qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
-        qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
-        qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
-        qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
-        qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
-        qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
-        qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
-        qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
-    ]
-
     opt = qml.AdaptiveOptimizer()
-    circuit = opt.step(circuit, pool)
-    _ = circuit()
+    circuit = opt.step(circuit, pool_exc)
+    circuit()
     selected_gate = circuit.tape.operations[-1]
 
     #  the reference gate is obtained manually
@@ -188,11 +153,15 @@ def test_append_gate(circuit):
     param = np.array([0.0])
     gate = qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3])
 
-    final_circuit = qml.optimize.adaptive.append_gate(param, [gate])(initial_circuit.func)
+    final_circuit = qml.optimize.adaptive.append_gate(circuit.func, param, [gate])
     qnode = qml.QNode(final_circuit, dev)
     _ = qnode()
+    qml.assert_equal(qnode.tape.operations[-1], gate)
 
-    assert qml.equal(qnode.tape.operations[-1], gate)
+    final_circuit, fn = qml.optimize.adaptive.append_gate(qnode.tape, param, [gate])
+
+    assert isinstance(final_circuit, list)
+    assert isinstance(fn(final_circuit), qml.tape.QuantumScript)
 
 
 @qml.qnode(dev)
@@ -214,7 +183,7 @@ def test_qubit_rotation(circuit):
 
     #  rotation around X with np.pi gives expval(Z) = -1
     assert np.allclose(expval, -1)
-    assert qml.equal(circuit.tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
+    qml.assert_equal(circuit.tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
 
 
 @pytest.mark.parametrize(
@@ -232,7 +201,7 @@ def test_circuit_args(interface, diff_method):
         return qml.expval(qml.PauliZ(0))
 
     opt = qml.AdaptiveOptimizer()
-    circuit, _, _ = opt.step_and_cost(circuit, pool)
+    circuit, _, _ = opt.step_and_cost(circuit, pool_exc)
 
     assert circuit.interface == interface
     assert circuit.diff_method == diff_method

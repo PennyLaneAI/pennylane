@@ -14,11 +14,11 @@
 """
 Contains the Grover Operation template.
 """
-import itertools
-import functools
 import numpy as np
+
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops import Hadamard, PauliZ, MultiControlledX
+from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
+from pennylane.wires import Wires
 
 
 class GroverOperator(Operation):
@@ -98,16 +98,27 @@ class GroverOperator(Operation):
     Optimally, the oracle-operator pairing should be repeated :math:`\lceil \frac{\pi}{4}\sqrt{2^{n}} \rceil` times.
 
     """
+
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires=None, work_wires=None, do_queue=True, id=None):
+    def __repr__(self):
+        return f"GroverOperator(wires={self.wires.tolist()}, work_wires={self.hyperparameters['work_wires'].tolist()})"
+
+    def _flatten(self):
+        hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
+        return tuple(), (self.wires, hyperparameters)
+
+    def __init__(self, wires=None, work_wires=None, id=None):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
-        self._hyperparameters = {"n_wires": len(wires), "work_wires": work_wires}
+        self._hyperparameters = {
+            "n_wires": len(wires),
+            "work_wires": Wires(work_wires) if work_wires is not None else Wires([]),
+        }
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -133,7 +144,7 @@ class GroverOperator(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        ctrl_str = "0" * (len(wires) - 1)
+        ctrl_values = [0] * (len(wires) - 1)
 
         op_list = []
 
@@ -143,7 +154,7 @@ class GroverOperator(Operation):
         op_list.append(PauliZ(wires[-1]))
         op_list.append(
             MultiControlledX(
-                control_values=ctrl_str,
+                control_values=ctrl_values,
                 wires=wires,
                 work_wires=work_wires,
             )
@@ -154,17 +165,34 @@ class GroverOperator(Operation):
         for wire in wires[:-1]:
             op_list.append(Hadamard(wire))
 
+        op_list.append(GlobalPhase(np.pi, wires))
+
         return op_list
 
     @staticmethod
-    @functools.lru_cache()
     def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
-        # s1 = H|0>, Hadamard on a single qubit in the ground state
-        s1 = np.array([1, 1]) / np.sqrt(2)
+        r"""Representation of the operator as a canonical matrix in the computational basis
+        (static method).
 
-        # uniform superposition state |s>
-        s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        # Grover diffusion operator
-        G = 2 * np.outer(s, s) - np.identity(2**n_wires)
-        return G
+        .. seealso:: :meth:`.GroverOperator.matrix` and :func:`qml.matrix() <pennylane.matrix>`
+
+        Args:
+            n_wires (int): Number of wires the ``GroverOperator`` acts on
+            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist decompositions.
+                *Unused argument*.
+
+        Returns:
+            tensor_like: matrix representation
+
+        The Grover diffusion operator is :math:`2|+\rangle\langle +| - \mathbb{I}`.
+        The first term is an all-ones matrix multiplied with two times the squared
+        normalization factor of the all-plus state, i.e. all entries of the first term are
+        :math:`2^{1-N}` for :math:`N` wires.
+        """
+        dim = 2**n_wires
+        # Grover diffusion operator. Realize the all-ones entry via broadcasting when subtracting
+        # the second term.
+        return 2 / dim - np.eye(dim)

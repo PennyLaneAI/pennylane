@@ -16,8 +16,15 @@ Unit tests for the pennylane.drawer.utils` module.
 """
 
 import pytest
+
 import pennylane as qml
-from pennylane.drawer.utils import default_wire_map, convert_wire_order, unwrap_controls
+from pennylane.drawer.utils import (
+    convert_wire_order,
+    cwire_connections,
+    default_bit_map,
+    default_wire_map,
+    unwrap_controls,
+)
 from pennylane.wires import Wires
 
 
@@ -45,6 +52,32 @@ class TestDefaultWireMap:
 
         wire_map = default_wire_map(ops)
         assert wire_map == {"a": 0, "b": 1, "c": 2}
+
+
+class TestDefaultBitMap:
+    """Tests ``default_bit_map`` helper function."""
+
+    def test_empty(self):
+        """Test creating empty bit map"""
+        # pylint: disable=use-implicit-booleaness-not-comparison
+        bit_map = default_bit_map([])
+        assert bit_map == {}
+
+        bit_map = default_bit_map([qml.measurements.MidMeasureMP(0)])
+        assert bit_map == {}
+
+    def test_simple(self):
+        """Test that the bit_map contains only measurements that are used."""
+
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2 = qml.measure(2)
+        cond0 = qml.ops.Conditional(m0, qml.S(0))
+        mp0 = qml.expval(m1)
+
+        queue = [m0.measurements[0], m1.measurements[0], m2.measurements[0], cond0, mp0]
+        bit_map = default_bit_map(queue)
+        assert bit_map == {m0.measurements[0]: 0, m1.measurements[0]: 1}
 
 
 class TestConvertWireOrder:
@@ -105,7 +138,7 @@ class TestUnwrapControls:
         "op,expected_control_wires,expected_control_values",
         [
             (qml.PauliX(wires="a"), Wires([]), None),
-            (qml.CNOT(wires=["a", "b"]), Wires("a"), None),
+            (qml.CNOT(wires=["a", "b"]), Wires("a"), [True]),
             (qml.ctrl(qml.PauliX(wires="b"), control="a"), Wires("a"), [True]),
             (
                 qml.ctrl(qml.PauliX(wires="b"), control=["a", "c", "d"]),
@@ -157,3 +190,68 @@ class TestUnwrapControls:
 
         assert control_wires == expected_control_wires
         assert control_values == expected_control_values
+
+
+# pylint: disable=use-implicit-booleaness-not-comparison
+class TestCwireConnections:
+    """Tests for the cwire_connections helper method."""
+
+    def test_null_circuit(self):
+        """Test null behavior with an empty circuit."""
+        layers, wires = cwire_connections([[]], {})
+        assert layers == []
+        assert wires == []
+
+    def test_single_measure(self):
+        """Test a single meassurment that does not have a conditional."""
+        layers, wires = cwire_connections([qml.measure(0).measurements], {})
+        assert layers == []
+        assert wires == []
+
+    def test_single_measure_single_cond(self):
+        """Test a case with a single measurement and a single conditional."""
+        m = qml.measure(0)
+        cond = qml.ops.Conditional(m, qml.PauliX(0))
+        layers = [m.measurements, [cond]]
+        bit_map = {m.measurements[0]: 0}
+
+        clayers, wires = cwire_connections(layers, bit_map)
+        assert clayers == [[0, 1]]
+        assert wires == [[0, 0]]
+
+    def test_multiple_measure_multiple_cond(self):
+        """Test a case with multiple measurments and multiple conditionals."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2_nonused = qml.measure(2)
+
+        cond0 = qml.ops.Conditional(m0 + m1, qml.PauliX(1))
+        cond1 = qml.ops.Conditional(m1, qml.PauliY(2))
+        bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
+
+        layers = [m0.measurements, m1.measurements, [cond0], m2_nonused.measurements, [cond1]]
+        clayers, wires = cwire_connections(layers, bit_map)
+        assert clayers == [[0, 2], [1, 2, 4]]
+        assert wires == [[0, 1], [1, 1, 2]]
+
+    def test_measurements_layer(self):
+        """Test cwire_connections works if measurement layers are appended at the end."""
+
+        m0 = qml.measure(0)
+        cond0 = qml.ops.Conditional(m0, qml.S(0))
+        layers = [m0.measurements, [cond0], [qml.expval(qml.PauliX(0))]]
+        bit_map = {m0.measurements[0]: 0}
+        clayers, wires = cwire_connections(layers, bit_map)
+        assert clayers == [[0, 1]]
+        assert wires == [[0, 0]]
+
+    def test_mid_measure_stats_layer(self):
+        """Test cwire_connections works if layers contain terminal measurements using measurement
+        values"""
+
+        m0 = qml.measure(0)
+        layers = [m0.measurements, [qml.expval(m0)]]
+        bit_map = {m0.measurements[0]: 0}
+        clayers, wires = cwire_connections(layers, bit_map)
+        assert clayers == [[0, 1]]
+        assert wires == [[0]]

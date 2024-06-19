@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
+from typing import Callable, Sequence
 
-from pennylane import apply
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 from pennylane.wires import Wires
-from pennylane.transforms import qfunc_transform
 
 from .optimization_utils import find_next_gate
 
@@ -41,7 +42,7 @@ def _commute_controlled_right(op_list):
         # We are looking only at the gates that can be pushed through
         # controls/targets; these are single-qubit gates with the basis
         # property specified.
-        if current_gate.basis is None or len(current_gate.wires) != 1:
+        if getattr(current_gate, "basis", None) is None or len(current_gate.wires) != 1:
             current_location -= 1
             continue
 
@@ -55,7 +56,7 @@ def _commute_controlled_right(op_list):
             next_gate = op_list[new_location + next_gate_idx + 1]
 
             # Only go ahead if information is available
-            if next_gate.basis is None:
+            if getattr(next_gate, "basis", None) is None:
                 break
 
             # If the next gate does not have control_wires defined, it is not
@@ -151,35 +152,39 @@ def _commute_controlled_left(op_list):
     return op_list
 
 
-@qfunc_transform
-def commute_controlled(tape, direction="right"):
-    """Quantum function transform to move commuting gates past
-    control and target qubits of controlled operations.
+@transform
+def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[QuantumTape], Callable):
+    """Quantum transform to move commuting gates past control and target qubits of controlled operations.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
         direction (str): The direction in which to move single-qubit gates.
             Options are "right" (default), or "left". Single-qubit gates will
             be pushed through controlled operations as far as possible in the
             specified direction.
 
     Returns:
-        function: the transformed quantum function
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
 
-        def qfunc(theta):
+        @partial(commute_controlled, direction="right")
+        @qml.qnode(device=dev)
+        def circuit(theta):
             qml.CZ(wires=[0, 2])
-            qml.PauliX(wires=2)
+            qml.X(2)
             qml.S(wires=0)
 
             qml.CNOT(wires=[0, 1])
 
-            qml.PauliY(wires=1)
+            qml.Y(1)
             qml.CRY(theta, wires=[0, 1])
             qml.PhaseShift(theta/2, wires=0)
 
@@ -187,28 +192,54 @@ def commute_controlled(tape, direction="right"):
             qml.T(wires=0)
             qml.RZ(theta/2, wires=1)
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
-    >>> dev = qml.device('default.qubit', wires=3)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(0.5))
-    0: ─╭●──S─╭●────╭●─────────Rϕ(0.25)─╭●──T────────┤  <Z>
-    1: ─│─────╰X──Y─╰RY(0.50)───────────├●──RZ(0.25)─┤
-    2: ─╰Z──X───────────────────────────╰X───────────┤
+    >>> circuit(0.5)
+    0.9999999999999999
 
-    Diagonal gates on either side of control qubits do not affect the outcome
-    of controlled gates; thus we can push all the single-qubit gates on the
-    first qubit together on the right (and fuse them if desired). Similarly, X
-    gates commute with the target of ``CNOT`` and ``Toffoli`` (and ``PauliY``
-    with ``CRY``). We can use the transform to push single-qubit gates as
-    far as possible through the controlled operations:
+    .. details::
+        :title: Usage Details
 
-    >>> optimized_qfunc = commute_controlled(direction="right")(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(0.5))
-    0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>
-    1: ─│──╰X─╰RY(0.50)──Y─├●──RZ(0.25)──────────────┤
-    2: ─╰Z─────────────────╰X──X─────────────────────┤
+        You can also apply it on quantum function.
+
+        .. code-block:: python
+
+            def qfunc(theta):
+                qml.CZ(wires=[0, 2])
+                qml.X(2)
+                qml.S(wires=0)
+
+                qml.CNOT(wires=[0, 1])
+
+                qml.Y(1)
+                qml.CRY(theta, wires=[0, 1])
+                qml.PhaseShift(theta/2, wires=0)
+
+                qml.Toffoli(wires=[0, 1, 2])
+                qml.T(wires=0)
+                qml.RZ(theta/2, wires=1)
+
+                return qml.expval(qml.Z(0))
+
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)(0.5))
+        0: ─╭●──S─╭●────╭●─────────Rϕ(0.25)─╭●──T────────┤  <Z>
+        1: ─│─────╰X──Y─╰RY(0.50)───────────├●──RZ(0.25)─┤
+        2: ─╰Z──X───────────────────────────╰X───────────┤
+
+        Diagonal gates on either side of control qubits do not affect the outcome
+        of controlled gates; thus we can push all the single-qubit gates on the
+        first qubit together on the right (and fuse them if desired). Similarly, X
+        gates commute with the target of ``CNOT`` and ``Toffoli`` (and ``PauliY``
+        with ``CRY``). We can use the transform to push single-qubit gates as
+        far as possible through the controlled operations:
+
+        >>> optimized_qfunc = commute_controlled(qfunc, direction="right")
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(0.5))
+        0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>
+        1: ─│──╰X─╰RY(0.50)──Y─├●──RZ(0.25)──────────────┤
+        2: ─╰Z─────────────────╰X──X─────────────────────┤
 
     """
     if direction not in ("left", "right"):
@@ -219,6 +250,12 @@ def commute_controlled(tape, direction="right"):
     else:
         op_list = _commute_controlled_left(tape.operations)
 
-    # Once the list is rearranged, queue all the operations
-    for op in op_list + tape.measurements:
-        apply(op)
+    new_tape = type(tape)(op_list, tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

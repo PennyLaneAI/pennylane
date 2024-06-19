@@ -13,12 +13,13 @@
 # limitations under the License.
 """ Assertion test for multi_dispatch function/decorator
 """
+# pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods,wrong-import-order
 import autoray
 import numpy as onp
 import pytest
-import scipy as s
 from autoray import numpy as anp
 
+from pennylane import grad as qml_grad
 from pennylane import math as fn
 from pennylane import numpy as np
 
@@ -26,6 +27,7 @@ pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 test_multi_dispatch_stack_data = [
@@ -130,10 +132,6 @@ def test_multi_dispatch_decorate_non_dispatch(values):
 @pytest.mark.all_interfaces
 def test_unwrap():
     """Test that unwrap converts lists to lists and interface variables to numpy."""
-    import tensorflow as tf
-    import torch
-    from jax import numpy as jnp
-
     params = [
         [torch.tensor(2)],
         [[3, 4], torch.tensor([5, 6])],
@@ -157,18 +155,6 @@ def test_unwrap():
     assert fn.get_interface(out[3][1]) == "numpy"
 
     assert out[4] == 0.5
-
-
-def test_kron():
-    """Test that a deprecation warning is avoided when arrays
-    are dispatched to scipy.kron."""
-    m1 = s.array([[0, 1], [1, 0]])
-    m2 = s.array([[1, 0], [0, 1]])
-    expected_result = onp.kron(m1, m2)
-
-    assert np.allclose(expected_result, fn.kron(m1, m2, like="scipy"))
-    with pytest.warns(DeprecationWarning):
-        _ = s.kron(m1, m2)
 
 
 @pytest.mark.parametrize(
@@ -198,11 +184,77 @@ def test_gammainc(n, t, gamma_ref):
     assert np.allclose(gamma, gamma_ref)
 
 
+def test_dot_autograd():
+
+    x = np.array([1.0, 2.0], requires_grad=False)
+    y = np.array([2.0, 3.0], requires_grad=True)
+
+    res = fn.dot(x, y)
+    assert isinstance(res, np.tensor)
+    assert res.requires_grad
+    assert fn.allclose(res, 8)
+
+    assert fn.allclose(qml_grad(fn.dot)(x, y), x)
+
+
+def test_dot_autograd_with_scalar():
+
+    x = np.array(1.0, requires_grad=False)
+    y = np.array([2.0, 3.0], requires_grad=True)
+
+    res = fn.dot(x, y)
+    assert isinstance(res, np.tensor)
+    assert res.requires_grad
+    assert fn.allclose(res, [2.0, 3.0])
+
+    res = fn.dot(y, x)
+    assert isinstance(res, np.tensor)
+    assert res.requires_grad
+    assert fn.allclose(res, [2.0, 3.0])
+
+
+def test_dot_tf_with_scalar():
+
+    x = tf.Variable(1.0)
+    y = tf.Variable([2.0, 3.0])
+
+    res = fn.dot(x, y)
+    assert isinstance(res, tf.Tensor)
+    assert fn.allclose(res, [2.0, 3.0])
+
+    res = fn.dot(y, x)
+    assert isinstance(res, tf.Tensor)
+    assert fn.allclose(res, [2.0, 3.0])
+
+
+def test_dot_torch_with_scalar():
+
+    x = torch.tensor(1.0)
+    y = torch.tensor([2.0, 3.0])
+
+    res = fn.dot(x, y)
+    assert isinstance(res, torch.Tensor)
+    assert fn.allclose(res, [2.0, 3.0])
+
+    res = fn.dot(y, x)
+    assert isinstance(res, torch.Tensor)
+    assert fn.allclose(res, [2.0, 3.0])
+
+
+def test_kron():
+    """Test the kronecker product function."""
+    x = torch.tensor([[1, 2], [3, 4]])
+    y = np.array([[0, 5], [6, 7]])
+
+    res = fn.kron(x, y)
+    expected = torch.tensor([[0, 5, 0, 10], [6, 7, 12, 14], [0, 15, 0, 20], [18, 21, 24, 28]])
+
+    assert fn.allclose(res, expected)
+
+
 class TestMatmul:
     @pytest.mark.torch
     def test_matmul_torch(self):
-        import torch
-
         m1 = torch.tensor([[1, 0], [0, 1]])
         m2 = [[1, 2], [3, 4]]
         assert fn.allequal(fn.matmul(m1, m2), m2)
@@ -235,7 +287,6 @@ class TestDetach:
     @pytest.mark.parametrize("use_jit", [True, False])
     def test_jax(self, use_jit):
         """Test that detach works with JAX."""
-        import jax
 
         x = jax.numpy.array(0.3)
         func = jax.jit(fn.detach, static_argnums=1) if use_jit else fn.detach
@@ -244,7 +295,6 @@ class TestDetach:
 
     def test_torch(self):
         """Test that detach works with Torch."""
-        import torch
 
         x = torch.tensor(0.3, requires_grad=True)
         assert x.requires_grad is True
@@ -255,7 +305,6 @@ class TestDetach:
 
     def test_tf(self):
         """Test that detach works with Tensorflow."""
-        import tensorflow as tf
 
         x = tf.Variable(0.3)
         assert x.trainable is True
@@ -265,3 +314,142 @@ class TestDetach:
             out = fn.detach(x)
         jac = t.jacobian(out, x)
         assert jac is None
+
+
+@pytest.mark.all_interfaces
+class TestNorm:
+    mats_intrf_norm = (
+        (np.array([0.5, -1, 2]), "numpy", np.array(2), {}),
+        (np.array([[5, 6], [-2, 3]]), "numpy", np.array(11), {}),
+        (torch.tensor([0.5, -1, 2]), "torch", torch.tensor(2), {}),
+        (torch.tensor([[5.0, 6.0], [-2.0, 3.0]]), "torch", torch.tensor(11), {"axis": (0, 1)}),
+        (tf.Variable([0.5, -1, 2]), "tensorflow", tf.Variable(2), {}),
+        (tf.Variable([[5, 6], [-2, 3]]), "tensorflow", tf.Variable(11), {"axis": [-2, -1]}),
+        (jnp.array([0.5, -1, 2]), "jax", jnp.array(2), {}),
+        (jnp.array([[5, 6], [-2, 3]]), "jax", jnp.array(11), {}),
+    )
+
+    @pytest.mark.parametrize("arr, expected_intrf, expected_norm, kwargs", mats_intrf_norm)
+    def test_inf_norm(self, arr, expected_intrf, expected_norm, kwargs):
+        """Test that inf norm is correct and works for each interface."""
+        computed_norm = fn.norm(arr, ord=np.inf, **kwargs)
+        assert np.allclose(computed_norm, expected_norm)
+        assert fn.get_interface(computed_norm) == expected_intrf
+
+    @pytest.mark.parametrize(
+        "arr",
+        [
+            np.array([1.0, 2.0, 3.0, 4.0, 5.0]),
+            np.array(
+                [
+                    [[0.123, 0.456, 0.789], [-0.123, -0.456, -0.789]],
+                    [[1.23, 4.56, 7.89], [-1.23, -4.56, -7.89]],
+                ]
+            ),
+            np.array(
+                [
+                    [
+                        [0.123 - 0.789j, 0.456 + 0.456j, 0.789 - 0.123j],
+                        [-0.123 + 0.789j, -0.456 - 0.456j, -0.789 + 0.123j],
+                    ],
+                    [
+                        [1.23 + 4.56j, 4.56 - 7.89j, 7.89 + 1.23j],
+                        [-1.23 - 7.89j, -4.56 + 1.23j, -7.89 - 4.56j],
+                    ],
+                ]
+            ),
+        ],
+    )
+    def test_autograd_norm_gradient(self, arr):
+        """Test that qml.math.norm has the correct gradient with autograd
+        when the order and axis are not specified."""
+        norm = fn.norm(arr)
+        expected_norm = onp.linalg.norm(arr)
+        assert np.isclose(norm, expected_norm)
+
+        grad = qml_grad(fn.norm)(arr)
+        expected_grad = (norm**-1) * arr.conj()
+        assert fn.allclose(grad, expected_grad)
+
+
+@pytest.mark.all_interfaces
+class TestSVD:
+    mat = [
+        [-0.00707107 + 0.0j, 1.00707107 + 0.0j],
+        [0.99292893 + 0.0j, -0.00707107 + 0.0j],
+    ]
+
+    mats_interface = (
+        (
+            onp.array(mat),
+            "numpy",
+        ),
+        (
+            torch.tensor(mat),
+            "torch",
+        ),
+        (
+            tf.Variable(mat),
+            "tensorflow",
+        ),
+        (
+            jnp.array(mat),
+            "jax",
+        ),
+    )
+
+    @pytest.mark.parametrize("mat, expected_intrf", mats_interface)
+    @pytest.mark.parametrize(
+        "expected_results",
+        [
+            (
+                [
+                    [
+                        [0.92388093 + 0.0j, -0.38268036 + 0.0j],
+                        [-0.38268048 + 0.0j, -0.9238808 + 0.0j],
+                    ],
+                    [1.0100001, 0.98999995],
+                    [[-0.3826802 + 0.0j, 0.9238809 + 0.0j], [-0.9238809 + 0.0j, -0.3826802 + 0.0j]],
+                ],
+            ),
+        ],
+    )
+    def test_svd_full(self, mat, expected_intrf, expected_results):
+        """Test that svd is correct and works for each interface. Asking for the full decomposition"""
+        results_svd = fn.svd(mat, compute_uv=True)
+        for n in range(len(expected_results)):
+            assert fn.get_interface(results_svd[n]) == expected_intrf
+        if expected_intrf == "tensorflow":
+            recovered_matrix = fn.matmul(
+                fn.matmul(
+                    results_svd[0],
+                    fn.diag(np.array(results_svd[1], dtype="complex128"), like=expected_intrf),
+                ),
+                results_svd[2],
+                like=expected_intrf,
+            )
+        else:
+            recovered_matrix = fn.matmul(
+                fn.matmul(
+                    results_svd[0],
+                    fn.diag(results_svd[1], like=expected_intrf),
+                ),
+                results_svd[2],
+                like=expected_intrf,
+            )
+
+        assert np.allclose(mat, recovered_matrix, rtol=1e-04)
+
+    @pytest.mark.parametrize("mat, expected_intrf", mats_interface)
+    @pytest.mark.parametrize(
+        "expected_results",
+        [
+            ([[1.0100001, 0.98999995]]),
+        ],
+    )
+    def test_svd_only_sv(self, mat, expected_intrf, expected_results):
+        """Test that svd is correct and works for each interface. Asking only for singular values."""
+        results_svd = fn.svd(mat, compute_uv=False)
+
+        assert np.allclose(results_svd, expected_results)
+        assert fn.get_interface(results_svd) == expected_intrf

@@ -14,17 +14,18 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 """
+# pylint: disable=protected-access,too-many-arguments,too-few-public-methods
 import math
 
 import pytest
 from flaky import flaky
+from gate_data import GELL_MANN, OMEGA, TADD, TCLOCK, TSHIFT, TSWAP
+from scipy.stats import unitary_group
+
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qutrit import DefaultQutrit
-from pennylane.wires import Wires, WireError
-
-from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
-
+from pennylane import DeviceError
+from pennylane import numpy as np
+from pennylane.wires import WireError, Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
@@ -107,6 +108,26 @@ class TestApply:
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
 
+    @pytest.mark.parametrize("operation, expected_output, input, subspace", test_data_no_parameters)
+    def test_apply_operation_single_wire_no_parameters_adjoint(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an adjoint operation yields the expected output state for single wire
+        operations that have no parameters."""
+        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.apply(
+            [
+                (
+                    qml.adjoint(operation(wires=[0]))
+                    if subspace is None
+                    else qml.adjoint(operation(wires=[0], subspace=subspace))
+                )
+            ]
+        )
+
+        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
     test_data_two_wires_no_parameters = [
         (qml.TSWAP, [0, 1, 0, 0, 0, 0, 0, 0, 0], np.array([0, 0, 0, 1, 0, 0, 0, 0, 0]), None),
         (
@@ -155,9 +176,37 @@ class TestApply:
         )
         qutrit_device_2_wires.apply(
             [
-                operation(wires=[0, 1])
-                if subspace is None
-                else operation(wires=[0, 1], subspace=subspace)
+                (
+                    operation(wires=[0, 1])
+                    if subspace is None
+                    else operation(wires=[0, 1], subspace=subspace)
+                )
+            ]
+        )
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+
+    @pytest.mark.parametrize(
+        "operation,expected_output,input, subspace", all_two_wires_no_parameters
+    )
+    def test_apply_operation_two_wires_no_parameters_adjoint(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an adjoint operation yields the expected output state for two wire
+        operations that have no parameters."""
+        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
+            (3, 3)
+        )
+        qutrit_device_2_wires.apply(
+            [
+                (
+                    qml.adjoint(operation(wires=[0, 1]))
+                    if subspace is None
+                    else qml.adjoint(operation(wires=[0, 1], subspace=subspace))
+                )
             ]
         )
 
@@ -168,49 +217,88 @@ class TestApply:
 
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters = [
-        (qml.QutritUnitary, [1, 0, 0], [1, 1, 0] / np.sqrt(2), U_thadamard_01),
-        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], U_x_02),
-        (qml.QutritUnitary, [1, 0, 0], [1, 0, 0], U_z_12),
-        (qml.QutritUnitary, [0, 1, 0], [0, 1, 0], U_x_02),
-        (qml.QutritUnitary, [0, 0, 1], [0, 0, -1], U_z_12),
-        (qml.QutritUnitary, [0, 1, 0], [0, 0, 1], TSHIFT),
-        (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], TCLOCK),
+        (qml.QutritUnitary, [1, 0, 0], [1, 1, 0] / np.sqrt(2), [U_thadamard_01], None),
+        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], [U_x_02], None),
+        (qml.QutritUnitary, [1, 0, 0], [1, 0, 0], [U_z_12], None),
+        (qml.QutritUnitary, [0, 1, 0], [0, 1, 0], [U_x_02], None),
+        (qml.QutritUnitary, [0, 0, 1], [0, 0, -1], [U_z_12], None),
+        (qml.QutritUnitary, [0, 1, 0], [0, 0, 1], [TSHIFT], None),
+        (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], [TCLOCK], None),
+        (qml.TRX, [1, 0, 0], [1 / math.sqrt(2), -1j / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
+        (qml.TRX, [1, 0, 0], [0, 0, -1j], [math.pi], [0, 2]),
+        (
+            qml.TRX,
+            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+            [0, 1 / 2 - 1j / 2, 1 / 2 - 1j / 2],
+            np.array([math.pi / 2]),
+            [1, 2],
+        ),
+        (qml.TRY, [1, 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
+        (qml.TRY, [1, 0, 0], [0, 0, 1], [math.pi], [0, 2]),
+        (qml.TRY, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 0, 1], [math.pi / 2], [1, 2]),
+        (qml.TRZ, [1, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0], [math.pi / 2], [0, 1]),
+        (qml.TRZ, [1, 0, 0], [-1j, 0, 0], [math.pi], [0, 2]),
+        (
+            qml.TRZ,
+            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+            [0, 1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
+            [math.pi / 2],
+            [1, 2],
+        ),
     ]
 
     @pytest.mark.parametrize(
-        "operation, input, expected_output, par", test_data_single_wire_with_parameters
+        "operation, input, expected_output, par, subspace", test_data_single_wire_with_parameters
     )
     def test_apply_operation_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
     ):
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
 
         qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
 
-        qutrit_device_1_wire.apply([operation(par, wires=[0])])
+        kwargs = {} if subspace is None else {"subspace": subspace}
+        qutrit_device_1_wire.apply([operation(*par, wires=[0], **kwargs)])
+
+        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
+    @pytest.mark.parametrize(
+        "operation, expected_output, input, par, subspace", test_data_single_wire_with_parameters
+    )
+    def test_apply_operation_single_wire_with_parameters_adjoint(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
+    ):
+        """Tests that applying an adjoint operation yields the expected output state for single wire
+        operations that have parameters."""
+
+        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+
+        kwargs = {} if subspace is None else {"subspace": subspace}
+        qutrit_device_1_wire.apply([qml.adjoint(operation(*par, wires=[0], **kwargs))])
 
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
 
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters = [
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TSWAP),
-        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], TSWAP),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], [TSWAP]),
+        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], [TSWAP]),
         (
             qml.QutritUnitary,
             [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
             [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
-            TSWAP,
+            [TSWAP],
         ),
         (
             qml.QutritUnitary,
             np.multiply(0.5, [0, 1, 1, 0, 0, 0, 0, 1, 1]),
             np.multiply(0.5, [0, 0, 0, 1, 0, 1, 1, 0, 1]),
-            TSWAP,
+            [TSWAP],
         ),
-        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], TADD),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], TADD),
+        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], [TADD]),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], [TADD]),
     ]
 
     @pytest.mark.parametrize(
@@ -225,14 +313,33 @@ class TestApply:
         qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
             (3, 3)
         )
-        qutrit_device_2_wires.apply([operation(par, wires=[0, 1])])
+        qutrit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
             qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
         assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
-    def test_apply_rotations_one_wire(self, qutrit_device_1_wire, tol):
+    @pytest.mark.parametrize(
+        "operation,expected_output,input,par", test_data_two_wires_with_parameters
+    )
+    def test_apply_operation_two_wires_with_parameters_adjoint(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+    ):
+        """Tests that applying an adjoint operation yields the expected output state for two wire
+        operations that have parameters."""
+
+        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
+            (3, 3)
+        )
+        qutrit_device_2_wires.apply([qml.adjoint(operation(*par, wires=[0, 1]))])
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+
+    def test_apply_rotations_one_wire(self, qutrit_device_1_wire):
         """Tests that rotations are applied in correct order after operations"""
 
         state = [1, 0, 0]
@@ -251,7 +358,48 @@ class TestApply:
 
         assert np.allclose(qutrit_device_1_wire._state.flatten(), state)
 
-    # TODO: Add tests for state preperation ops after they're implemented
+    @pytest.mark.parametrize(
+        "operation,expected_output,par",
+        [
+            (qml.QutritBasisState, [0, 1, 0, 0, 0, 0, 0, 0, 0], [0, 1]),
+            (qml.QutritBasisState, [0, 0, 0, 0, 1, 0, 0, 0, 0], [1, 1]),
+            (qml.QutritBasisState, [0, 0, 0, 0, 0, 0, 0, 1, 0], [2, 1]),
+        ],
+    )
+    def test_apply_operation_state_preparation(
+        self, qutrit_device_2_wires, tol, operation, expected_output, par
+    ):
+        """Tests that applying an operation yields the expected output state for single wire
+        operations that have no parameters."""
+
+        par = np.array(par)
+        qutrit_device_2_wires.reset()
+        qutrit_device_2_wires.apply([operation(par, wires=[0, 1])])
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+        )
+
+    def test_apply_errors_basis_state(self, qutrit_device_2_wires):
+        with pytest.raises(
+            ValueError, match="QutritBasisState parameter must consist of 0, 1 or 2 integers."
+        ):
+            qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
+
+        with pytest.raises(
+            ValueError, match="QutritBasisState parameter and wires must be of equal length."
+        ):
+            qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([0, 1]), wires=[0])])
+
+        with pytest.raises(
+            DeviceError,
+            match="Operation QutritBasisState cannot be used after other operations have already been applied "
+            "on a default.qutrit device.",
+        ):
+            qutrit_device_2_wires.reset()
+            qutrit_device_2_wires.apply(
+                [qml.TClock(wires=0), qml.QutritBasisState(np.array([1, 1]), wires=[0, 1])]
+            )
 
 
 class TestExpval:
@@ -595,6 +743,12 @@ class TestDefaultQutritIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": False,
+            "passthru_devices": {
+                "autograd": "default.qutrit",
+                "tf": "default.qutrit",
+                "torch": "default.qutrit",
+                "jax": "default.qutrit",
+            },
         }
         assert cap == capabilities
 
@@ -643,6 +797,35 @@ class TestDefaultQutritIntegration:
 
         state = circuit(mat)
         assert np.allclose(state, expected_out, atol=tol)
+
+    def test_qutrit_circuit_adjoint_integration(self):
+        """Test that using qml.adjoint in a `default.qutrit` qnode works as expected."""
+        dev = qml.device("default.qutrit", wires=3)
+
+        def ansatz(phi, theta, omega, U):
+            qml.TShift(0)
+            qml.TAdd([0, 1])
+            qml.TRX(phi, wires=2, subspace=(0, 1))
+            qml.TClock(1)
+            qml.TRY(theta, wires=0, subspace=(1, 2))
+            qml.TSWAP([0, 2])
+            qml.QutritUnitary(U, wires=[2, 1])
+            qml.TRZ(omega, wires=1, subspace=(0, 2))
+
+        @qml.qnode(dev)
+        def circuit():
+            phi, theta, omega = np.random.rand(3) * 2 * np.pi
+            U = unitary_group.rvs(9, random_state=10)
+
+            ansatz(phi, theta, omega, U)
+            qml.adjoint(ansatz)(phi, theta, omega, U)
+            return qml.state()
+
+        expected = np.zeros(27)
+        expected[0] = 1
+        res = circuit()
+
+        assert np.allclose(res, expected)
 
 
 class TestTensorExpval:
@@ -927,6 +1110,7 @@ class TestTensorSample:
 class TestProbabilityIntegration:
     """Test probability method for when computation is/is not analytic"""
 
+    # pylint: disable=unused-argument
     def mock_analytic_counter(self, wires=None):
         self.analytic_counter += 1
         return np.array([1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=float)
@@ -952,6 +1136,7 @@ class TestProbabilityIntegration:
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
         assert not np.array_equal(prob_analytic(x), prob(x))
 
+    # pylint: disable=attribute-defined-outside-init
     def test_call_generate_samples(self, monkeypatch):
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
@@ -1035,14 +1220,14 @@ class TestWiresIntegration:
             dev.execute(tape)
 
     wires_to_try = [
-        (1, Wires([0]), Wires([0])),
-        (4, Wires([1, 3]), Wires([1, 3])),
-        (["a", 2], Wires([2]), Wires([1])),
-        (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+        (1, Wires([0])),
+        (4, Wires([1, 3])),
+        (["a", 2], Wires([2])),
+        (["a", 2], Wires([2, "a"])),
     ]
 
-    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
-    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+    @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map):
         """Test that multiple calls to map_wires will use caching."""
         dev = qml.device("default.qutrit", wires=dev_wires)
 
@@ -1124,6 +1309,7 @@ class TestApplyOperationUnit:
         class TestSwap(qml.operation.Operation):
             num_wires = 2
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return TSWAP
@@ -1136,7 +1322,9 @@ class TestApplyOperationUnit:
 
         # Set the internal _apply_unitary_tensordot
         history = []
-        mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
+
+        def mock_apply_tensordot(state, matrix, wires):
+            history.append((state, matrix, wires))
 
         with monkeypatch.context() as m:
             m.setattr(dev, "_apply_unitary", mock_apply_tensordot)
@@ -1176,11 +1364,12 @@ class TestApplyOperationUnit:
 
         # Create a dummy operation
         expected_test_output = np.ones(1)
-        supported_gate_application = lambda *args, **kwargs: expected_test_output
 
         with monkeypatch.context() as m:
             # Set the internal ops implementations dict
-            m.setattr(dev, "_apply_ops", {"QutritUnitary": supported_gate_application})
+            m.setattr(
+                dev, "_apply_ops", {"QutritUnitary": lambda *args, **kwargs: expected_test_output}
+            )
 
             test_state = np.array([1, 0, 0])
             op = qml.QutritUnitary(TSHIFT, wires=0)
@@ -1215,3 +1404,562 @@ class TestDensityMatrix:
         qutrit_device_2_wires.apply(ops)
 
         assert np.allclose(qutrit_device_2_wires.density_matrix(wires), expected)
+
+
+# JAX integration tests
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("use_jit", [True, False])
+class TestQNodeIntegrationJax:
+    """Integration tests for default.qutrit with JAX. This test ensures it integrates
+    properly with the PennyLane UI, in particular the QNode."""
+
+    def test_qutrit_circuit(self, tol, use_jit):
+        """Test that the device provides the correct
+        result for a simple circuit."""
+        import jax
+        from jax import numpy as jnp
+
+        p = jnp.array(0.543)
+
+        dev = qml.device("default.qutrit", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 5))
+
+        if use_jit:
+            circuit = jax.jit(circuit)
+
+        expected = -np.sin(p)
+
+        assert circuit.gradient_fn == "backprop"
+        assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
+
+    def test_correct_state(self, tol, use_jit):
+        """Test that the device state is correct after evaluating a
+        quantum function on the device"""
+        from jax import numpy as jnp
+
+        if use_jit:
+            pytest.skip()
+
+        dev = qml.device("default.qutrit", wires=1)
+
+        state = dev.state
+        expected = np.zeros(3)
+        expected[0] = 1
+        assert np.allclose(state, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(a):
+            qml.THadamard(wires=0)
+            qml.TRZ(a, wires=0)
+            return qml.expval(qml.GellMann(0, 3))
+
+        circuit(jnp.array(np.pi / 4))
+        state = dev.state
+
+        amplitude = jnp.exp(-1j * np.pi / 8)
+        expected = (-1j / jnp.sqrt(3)) * jnp.array([amplitude, jnp.conj(amplitude), 1])
+
+        assert jnp.allclose(state, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("use_jit", [True, False])
+class TestDtypePreservedJax:
+    """Test that the user-defined dtype of the device is preserved for QNode
+    evaluation"""
+
+    @pytest.mark.parametrize("enable_x64, r_dtype", [(False, np.float32), (True, np.float64)])
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.expval(qml.GellMann(0, 2)),
+            qml.var(qml.GellMann(0, 2)),
+            qml.probs(wires=[1]),
+            qml.probs(wires=[2, 0]),
+        ],
+    )
+    def test_real_dtype(self, enable_x64, r_dtype, measurement, use_jit):
+        """Test that the user-defined dtype of the device is preserved
+        for QNodes with real-valued outputs"""
+        import jax
+        from jax import numpy as jnp
+
+        jax.config.update("jax_enable_x64", enable_x64)
+        p = jnp.array(0.543)
+        dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0)
+            return qml.apply(measurement)
+
+        if use_jit:
+            circuit = jax.jit(circuit)
+
+        res = circuit(p)
+        assert res.dtype == r_dtype
+
+    @pytest.mark.parametrize("enable_x64, c_dtype", [(False, np.complex64), (True, np.complex128)])
+    def test_complex_dtype(self, enable_x64, c_dtype, use_jit):
+        """Test that the user-defined dtype of the device is preserved
+        for QNodes with complex-valued outputs"""
+        import jax
+        from jax import numpy as jnp
+
+        jax.config.update("jax_enable_x64", enable_x64)
+        p = jnp.array(0.543)
+        dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0)
+            return qml.state()
+
+        if use_jit:
+            circuit = jax.jit(circuit)
+
+        res = circuit(p)
+        assert res.dtype == c_dtype
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("use_jit", [True, False])
+class TestPassthruIntegrationJax:
+    """Tests for integration with the PassthruQNode"""
+
+    def test_backprop_gradient(self, tol, use_jit):
+        """Tests that the gradient of the qnode is correct"""
+        import jax
+        from jax import numpy as jnp
+
+        dev = qml.device("default.qutrit", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit(a, b):
+            qml.TRX(a, wires=0)
+            qml.TAdd(wires=[0, 1])
+            qml.TRY(b, wires=1, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+
+        if use_jit:
+            circuit = jax.jit(circuit)
+
+        a = jnp.array(-0.234)
+        b = jnp.array(0.654)
+
+        res = circuit(a, b)
+        expected_cost = 0.25 * (jnp.cos(a) * jnp.cos(b) - jnp.cos(a) + jnp.cos(b) + 3)
+        assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
+        res = jax.grad(circuit, argnums=(0, 1))(a, b)
+        expected_grad = jnp.array(
+            [
+                -0.25 * (jnp.sin(a) * jnp.cos(b) - jnp.sin(a)),
+                -0.25 * (jnp.cos(a) * jnp.sin(b) + jnp.sin(b)),
+            ]
+        )
+
+        assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
+
+    def test_backprop_gradient_broadcasted(self, tol, use_jit):
+        """Tests that the gradient of the broadcasted qnode is correct"""
+        import jax
+        from jax import numpy as jnp
+
+        if use_jit:
+            pytest.skip()
+
+        dev = qml.device("default.qutrit", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit(a, b):
+            qml.TRX(a, wires=0)
+            qml.TAdd(wires=[0, 1])
+            qml.TRY(b, wires=1, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+
+        a = jnp.array(0.12)
+        b = jnp.array([0.54, 0.32, 1.2])
+
+        res = circuit(a, b)
+        expected_cost = 0.25 * (jnp.cos(a) * jnp.cos(b) - jnp.cos(a) + jnp.cos(b) + 3)
+        print(res, "\n")
+        print(expected_cost)
+        assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
+
+        res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
+        expected = jnp.array(
+            [
+                -0.25 * (jnp.sin(a) * jnp.cos(b) - jnp.sin(a)),
+                -0.25 * (jnp.cos(a) * jnp.sin(b) + jnp.sin(b)),
+            ]
+        )
+        expected = (expected[0], jnp.diag(expected[1]))
+        assert all(jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+
+
+# TENSORFLOW integration tests
+
+
+@pytest.mark.tf
+class TestQNodeIntegrationTF:
+    """Integration tests for default.qutrit with TensorFlow. This test ensures it integrates
+    properly with the PennyLane UI, in particular the QNode."""
+
+    def test_qutrit_circuit(self, tol):
+        """Test that the device provides the correct
+        result for a simple circuit."""
+        import tensorflow as tf
+
+        p = tf.Variable(0.543)
+
+        dev = qml.device("default.qutrit", wires=1)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 5))
+
+        expected = -np.sin(p)
+
+        assert circuit.gradient_fn == "backprop"
+        assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
+
+    def test_correct_state(self, tol):
+        """Test that the device state is correct after evaluating a
+        quantum function on the device"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qutrit", wires=1)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(a):
+            qml.THadamard(wires=0)
+            qml.TRZ(a, wires=0)
+            return qml.expval(qml.GellMann(0, 3))
+
+        circuit(tf.constant(np.pi / 4))
+        state = dev.state
+
+        amplitude = np.exp(-1j * np.pi / 8)
+        expected = (-1j / np.sqrt(3)) * np.array([amplitude, np.conj(amplitude), 1])
+
+        assert np.allclose(state, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.tf
+class TestDtypePreservedTF:
+    """Test that the user-defined dtype of the device is preserved for QNode
+    evaluation"""
+
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.expval(qml.GellMann(0, 2)),
+            qml.var(qml.GellMann(0, 2)),
+            qml.probs(wires=[1]),
+            qml.probs(wires=[2, 0]),
+        ],
+    )
+    def test_real_dtype(self, r_dtype, measurement):
+        """Test that the user-defined dtype of the device is preserved
+        for QNodes with real-valued outputs"""
+        import tensorflow as tf
+
+        p = tf.constant(0.543)
+        dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0)
+            return qml.apply(measurement)
+
+        res = circuit(p)
+        assert res.dtype == r_dtype
+
+    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+    def test_complex_dtype(self, c_dtype):
+        """Test that the user-defined dtype of the device is preserved
+        for QNodes with complex-valued outputs"""
+        import tensorflow as tf
+
+        p = tf.constant(0.543)
+        dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0)
+            return qml.state()
+
+        res = circuit(p)
+        assert res.dtype == c_dtype
+
+
+@pytest.mark.tf
+class TestPassthruIntegrationTF:
+    """Tests for integration with the PassthruQNode"""
+
+    def test_backprop_gradient(self, tol):
+        """Tests that the gradient of the qnode is correct"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qutrit", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.TRX(a, wires=0)
+            qml.TAdd(wires=[0, 1])
+            qml.TRY(b, wires=1, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+
+        a = -0.234
+        b = 0.654
+
+        a_tf = tf.Variable(a, dtype=tf.float64)
+        b_tf = tf.Variable(b, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            tape.watch([a_tf, b_tf])
+            res = circuit(a_tf, b_tf)
+
+        # the analytic result of evaluating circuit(a, b)
+        expected_cost = 0.25 * (np.cos(a) * np.cos(b) - np.cos(a) + np.cos(b) + 3)
+
+        # the analytic result of evaluating grad(circuit(a, b))
+        expected_grad = np.array(
+            [
+                -0.25 * (np.sin(a) * np.cos(b) - np.sin(a)),
+                -0.25 * (np.cos(a) * np.sin(b) + np.sin(b)),
+            ]
+        )
+
+        assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
+
+        res = tape.gradient(res, [a_tf, b_tf])
+        assert np.allclose(res, expected_grad, atol=tol, rtol=0)
+
+    def test_backprop_gradient_broadcasted(self, tol):
+        """Tests that the gradient of the broadcasted qnode is correct"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qutrit", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.TRX(a, wires=0)
+            qml.TAdd(wires=[0, 1])
+            qml.TRY(b, wires=1, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+
+        a = np.array(0.12)
+        b = np.array([0.54, 0.32, 1.2])
+
+        a_tf = tf.Variable(a, dtype=tf.float64)
+        b_tf = tf.Variable(b, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            tape.watch([a_tf, b_tf])
+            res = circuit(a_tf, b_tf)
+
+        # the analytic result of evaluating circuit(a, b)
+        expected_cost = 0.25 * (np.cos(a) * np.cos(b) - np.cos(a) + np.cos(b) + 3)
+
+        # the analytic result of evaluating grad(circuit(a, b))
+        expected_jac = np.array(
+            [
+                -0.25 * (np.sin(a) * np.cos(b) - np.sin(a)),
+                -0.25 * (np.cos(a) * np.sin(b) + np.sin(b)),
+            ]
+        )
+
+        assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
+
+        jac = tape.jacobian(res, [a_tf, b_tf])
+        assert np.allclose(jac[0], expected_jac[0], atol=tol, rtol=0)
+        assert np.allclose(qml.math.diag(jac[1].numpy()), expected_jac[1], atol=tol, rtol=0)
+
+
+# TORCH integration tests
+
+
+@pytest.mark.torch
+class TestQNodeIntegrationTorch:
+    """Integration tests for default.qutrit with Torch. This test ensures it integrates
+    properly with the PennyLane UI, in particular the QNode."""
+
+    def test_qutrit_circuit(self, tol):
+        """Test that the device provides the correct
+        result for a simple circuit."""
+        import torch
+
+        p = torch.tensor(0.543)
+        dev = qml.device("default.qutrit", wires=1)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 5))
+
+        expected = -np.sin(p)
+
+        assert circuit.gradient_fn == "backprop"
+        assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
+
+    def test_correct_state(self, tol):
+        """Test that the device state is correct after evaluating a
+        quantum function on the device"""
+        import torch
+
+        dev = qml.device("default.qutrit", wires=1)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(a):
+            qml.THadamard(wires=0)
+            qml.TRZ(a, wires=0)
+            return qml.expval(qml.GellMann(0, 3))
+
+        circuit(torch.tensor(np.pi / 4))
+        state = dev.state
+
+        amplitude = np.exp(-1j * np.pi / 8)
+        expected = (-1j / np.sqrt(3)) * np.array([amplitude, np.conj(amplitude), 1])
+
+        assert np.allclose(state, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.torch
+class TestDtypePreservedTorch:
+    """Test that the user-defined dtype of the device is preserved for QNode
+    evaluation"""
+
+    @pytest.mark.parametrize(
+        "r_dtype, r_dtype_torch", [(np.float32, "torch32"), (np.float64, "torch64")]
+    )
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.expval(qml.GellMann(0, 2)),
+            qml.var(qml.GellMann(0, 2)),
+            qml.probs(wires=[1]),
+            qml.probs(wires=[2, 0]),
+        ],
+    )
+    def test_real_dtype(self, r_dtype, r_dtype_torch, measurement):
+        """Test that the user-defined dtype of the device is preserved
+        for QNodes with real-valued outputs"""
+        import torch
+
+        p = torch.tensor(0.543)
+
+        if r_dtype_torch == "torch32":
+            r_dtype_torch = torch.float32
+        else:
+            r_dtype_torch = torch.float64
+
+        dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0)
+            return qml.apply(measurement)
+
+        res = circuit(p)
+        assert res.dtype == r_dtype_torch
+
+    @pytest.mark.parametrize(
+        "c_dtype, c_dtype_torch",
+        [(np.complex64, "torchc64"), (np.complex128, "torchc128")],
+    )
+    def test_complex_dtype(self, c_dtype, c_dtype_torch):
+        """Test that the user-defined dtype of the device is preserved
+        for QNodes with complex-valued outputs"""
+        import torch
+
+        if c_dtype_torch == "torchc64":
+            c_dtype_torch = torch.complex64
+        else:
+            c_dtype_torch = torch.complex128
+
+        p = torch.tensor(0.543)
+
+        dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(x):
+            qml.TRX(x, wires=0)
+            return qml.state()
+
+        res = circuit(p)
+        assert res.dtype == c_dtype_torch
+
+
+@pytest.mark.torch
+class TestPassthruIntegrationTorch:
+    """Tests for integration with the PassthruQNode"""
+
+    def test_backprop_gradient(self, tol):
+        """Tests that the gradient of the qnode is correct"""
+        import torch
+
+        dev = qml.device("default.qutrit", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        def circuit(a, b):
+            qml.TRX(a, wires=0)
+            qml.TAdd(wires=[0, 1])
+            qml.TRY(b, wires=1, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+
+        a = torch.tensor(-0.234, dtype=torch.float64, requires_grad=True)
+        b = torch.tensor(0.654, dtype=torch.float64, requires_grad=True)
+
+        res = circuit(a, b)
+        res.backward()
+
+        # the analytic result of evaluating circuit(a, b)
+        expected_cost = 0.25 * (torch.cos(a) * torch.cos(b) - torch.cos(a) + torch.cos(b) + 3)
+        expected = [
+            -0.25 * (torch.sin(a) * torch.cos(b) - torch.sin(a)),
+            -0.25 * (torch.cos(a) * torch.sin(b) + torch.sin(b)),
+        ]
+
+        assert torch.allclose(res, expected_cost, atol=tol, rtol=0)
+
+        assert torch.allclose(a.grad, expected[0], atol=tol, rtol=0)
+        assert torch.allclose(b.grad, expected[1])
+
+    def test_backprop_gradient_broadcasted(self, tol):
+        """Tests that the gradient of the broadcasted qnode is correct"""
+        import torch
+
+        dev = qml.device("default.qutrit", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        def circuit(a, b):
+            qml.TRX(a, wires=0)
+            qml.TAdd(wires=[0, 1])
+            qml.TRY(b, wires=1, subspace=[0, 2])
+            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+
+        a = torch.tensor(-0.234, dtype=torch.float64, requires_grad=True)
+        b = torch.tensor([0.54, 0.32, 1.2], dtype=torch.float64, requires_grad=True)
+
+        res = circuit(a, b)
+        # the analytic result of evaluating circuit(a, b)
+        expected_cost = 0.25 * (torch.cos(a) * torch.cos(b) - torch.cos(a) + torch.cos(b) + 3)
+        expected = [
+            -0.25 * (torch.sin(a) * torch.cos(b) - torch.sin(a)),
+            -0.25 * (torch.cos(a) * torch.sin(b) + torch.sin(b)),
+        ]
+
+        assert torch.allclose(res, expected_cost, atol=tol, rtol=0)
+
+        jac = torch.autograd.functional.jacobian(circuit, (a, b))
+        assert torch.allclose(jac[0], expected[0], atol=tol, rtol=0)
+        assert torch.allclose(qml.math.diag(jac[1]), expected[1])

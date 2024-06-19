@@ -14,14 +14,14 @@
 """
 Unit tests for computing Autograd gradients of quantum functions.
 """
-# pylint: disable=no-member,redefined-outer-name,too-few-public-methods,no-value-for-parameter,not-callable,no-self-use,unexpected-keyword-arg
+# pylint: disable=no-value-for-parameter
 
-import pytest
 import autograd
 import numpy as np
-import pennylane.numpy as anp  # only to be used inside classical computational nodes
-import pennylane as qml
+import pytest
 
+import pennylane as qml
+import pennylane.numpy as anp  # only to be used inside classical computational nodes
 
 alpha = 0.5  # displacement in tests
 hbar = 2
@@ -30,75 +30,75 @@ thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 sqz_vals = np.linspace(0.0, 1.0, 5)
 
 
+# pylint: disable=too-few-public-methods
 class PolyN(qml.ops.PolyXP):
     "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
 
     def __init__(self, wires):
-        hbar = 2
         q = np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
         super().__init__(q, wires=wires)
         self.name = "PolyXP"
 
 
-@pytest.fixture(scope="module")
-def gaussian_dev():
+@pytest.fixture(scope="module", name="gaussian_dev")
+def gaussian_dev_fixture():
     """Gaussian device."""
     return qml.device("default.gaussian", wires=2)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_R(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_R")
+def grad_fn_R_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Rotation(y, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_BS(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_BS")
+def grad_fn_BS_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Beamsplitter(y, 0, wires=[0, 1])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_D(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_D")
+def grad_fn_D_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
     def circuit(r, phi):
         qml.Displacement(r, phi, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_S(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_S")
+def grad_fn_S_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Squeezing(y, 0.0, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_S_Fock(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_S_Fock")
+def grad_fn_S_Fock_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
@@ -160,7 +160,7 @@ class TestCVGradient:
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("O", [qml.ops.X, qml.ops.NumberOperator])
+    @pytest.mark.parametrize("O", [qml.ops.QuadX, qml.ops.NumberOperator])
     @pytest.mark.parametrize(
         "make_gate",
         [lambda x: qml.Rotation(x, wires=0), lambda x: qml.ControlledPhase(x, wires=[0, 1])],
@@ -237,7 +237,7 @@ class TestCVGradient:
         def qf(x, y):
             qml.Displacement(x, 0, wires=[0])
             qml.Squeezing(y, -1.3 * y, wires=[0])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         q = qml.QNode(qf, gaussian_dev)
         q(*par)
@@ -249,11 +249,14 @@ class TestCVGradient:
         assert qml.math.allclose(grad_A, grad_F, atol=tol, rtol=0)
         assert qml.math.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     def test_cv_gradients_parameters_inside_array(self, gaussian_dev, tol):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
-        par = anp.array([0.4, 1.3], requires_grad=True)
+        import jax
 
+        par = jax.numpy.array([0.4, 1.3])
+
+        @qml.qnode(device=gaussian_dev, diff_method="finite-diff")
         def qf(x, y):
             qml.Displacement(0.5, 0, wires=[0])
             qml.Squeezing(x, 0, wires=[0])
@@ -263,12 +266,19 @@ class TestCVGradient:
             M[2, 1] = 1.0
             return qml.expval(qml.PolyXP(M, [0, 1]))
 
-        q = qml.QNode(qf, gaussian_dev)
-        q(*par)
-        grad_F = qml.gradients.finite_diff(q, hybrid=False)(*par)
-        grad_A2 = qml.gradients.param_shift_cv(
-            q, dev=gaussian_dev, force_order2=True, hybrid=False
-        )(*par)
+        grad_F = jax.grad(qf)(*par)
+
+        @qml.qnode(device=gaussian_dev, diff_method="parameter-shift", force_order2=True)
+        def qf2(x, y):
+            qml.Displacement(0.5, 0, wires=[0])
+            qml.Squeezing(x, 0, wires=[0])
+            M = np.zeros((5, 5))
+            M[1, 1] = y
+            M[1, 2] = 1.0
+            M[2, 1] = 1.0
+            return qml.expval(qml.PolyXP(M, [0, 1]))
+
+        grad_A2 = jax.grad(qf2)(*par)
 
         # the different methods agree
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -282,7 +292,7 @@ class TestCVGradient:
             qml.Displacement(x, 0, wires=[0])
             qml.Rotation(y, wires=[0])
             qml.Displacement(0, x, wires=[0])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         q = qml.QNode(circuit, gaussian_dev)
         q(*par)
@@ -316,7 +326,7 @@ class TestCVGradient:
         def circuit(x):
             qml.Displacement(x, 0, wires=0)
             qml.InterferometerUnitary(U, wires=[0, 1])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         qnode = qml.QNode(circuit, gaussian_dev)
         qnode(x)
@@ -337,7 +347,7 @@ class TestCVGradient:
             qml.Displacement(x, 0, wires=[0])
             qml.Rotation(y, wires=[0])
             qml.Displacement(0, x, wires=[0])
-            return qml.expval(qml.X(0)), qml.expval(qml.NumberOperator(0))
+            return qml.expval(qml.QuadX(0)), qml.expval(qml.NumberOperator(0))
 
         q = qml.QNode(circuit, gaussian_dev)
 

@@ -14,18 +14,61 @@
 """
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
+# TODO: Fix the latter two pylint warnings
+# pylint: disable=too-many-arguments, too-many-branches, too-many-statements
+
+from dataclasses import dataclass
+from typing import Optional
 
 import pennylane as qml
-from pennylane.measurements import Expectation, Probability, Sample, Variance, State
+from pennylane.measurements import (
+    Counts,
+    Expectation,
+    MidMeasureMP,
+    Probability,
+    Sample,
+    State,
+    Variance,
+)
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls
+from .utils import (
+    convert_wire_order,
+    cwire_connections,
+    default_bit_map,
+    transform_deferred_measurements_tape,
+    unwrap_controls,
+)
 
 
-def _add_grouping_symbols(op, layer_str, wire_map):
+@dataclass
+class _Config:
+    """Dataclass containing attributes needed for updating the strings to be drawn for each layer"""
+
+    wire_map: dict
+    """Map between wire labels and their place in order"""
+
+    bit_map: dict
+    """Map between mid-circuit measurements and their corresponding bit in order"""
+
+    cur_layer: Optional[int] = None
+    """Current layer index that is being updated"""
+
+    cwire_layers: Optional[list] = None
+    """A list of layers used (mid measure or conditional) for each classical wire."""
+
+    decimals: Optional[int] = None
+    """Specifies how to round the parameters of operators"""
+
+    cache: Optional[dict] = None
+    """dictionary that carries information between label calls in the same drawing"""
+
+
+def _add_grouping_symbols(op, layer_str, config):  # pylint: disable=unused-argument
     """Adds symbols indicating the extent of a given object."""
+
     if len(op.wires) > 1:
-        mapped_wires = [wire_map[w] for w in op.wires]
+        mapped_wires = [config.wire_map[w] for w in op.wires]
         min_w, max_w = min(mapped_wires), max(mapped_wires)
         layer_str[min_w] = "╭"
         layer_str[max_w] = "╰"
@@ -36,32 +79,95 @@ def _add_grouping_symbols(op, layer_str, wire_map):
     return layer_str
 
 
-def _bool_control_value(val):
-    """Converts a control value to a boolean."""
-    return (val == "1") if isinstance(val, str) else val
+def _add_cond_grouping_symbols(op, layer_str, config):
+    """Adds symbols indicating the extent of a given object for conditional
+    operators"""
+    n_wires = len(config.wire_map)
+
+    mapped_wires = [config.wire_map[w] for w in op.wires]
+    mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
+    max_w = max(mapped_wires)
+    max_b = max(mapped_bits) + n_wires
+
+    ctrl_symbol = "╩" if config.cur_layer != config.cwire_layers[max(mapped_bits)][-1] else "╝"
+    layer_str[max_b] = f"═{ctrl_symbol}"
+
+    for w in range(max_w + 1, max(config.wire_map.values()) + 1):
+        layer_str[w] = "─║"
+
+    for b in range(n_wires, max_b):
+        if b - n_wires in mapped_bits:
+            intersection = "╣" if config.cur_layer == config.cwire_layers[b - n_wires][-1] else "╬"
+            layer_str[b] = f"═{intersection}"
+        else:
+            filler = " " if layer_str[b][-1] == " " else "═"
+            layer_str[b] = f"{filler}║"
+
+    return layer_str
 
 
-def _add_op(op, layer_str, wire_map, decimals, cache):
+def _add_mid_measure_grouping_symbols(op, layer_str, config):
+    """Adds symbols indicating the extent of a given object for mid-measure
+    operators"""
+    if op not in config.bit_map:
+        return layer_str
+
+    n_wires = len(config.wire_map)
+    mapped_wire = config.wire_map[op.wires[0]]
+    bit = config.bit_map[op] + n_wires
+    layer_str[bit] += " ╚"
+
+    for w in range(mapped_wire + 1, n_wires):
+        layer_str[w] += "─║"
+
+    for b in range(n_wires, bit):
+        filler = " " if layer_str[b][-1] == " " else "═"
+        layer_str[b] += f"{filler}║"
+
+    return layer_str
+
+
+def _add_op(op, layer_str, config):
     """Updates ``layer_str`` with ``op`` operation."""
-    layer_str = _add_grouping_symbols(op, layer_str, wire_map)
+    if isinstance(op, qml.ops.Conditional):  # pylint: disable=no-member
+        layer_str = _add_cond_grouping_symbols(op, layer_str, config)
+        return _add_op(op.base, layer_str, config)
+
+    if isinstance(op, MidMeasureMP):
+        return _add_mid_measure_op(op, layer_str, config)
+
+    layer_str = _add_grouping_symbols(op, layer_str, config)
 
     control_wires, control_values = unwrap_controls(op)
 
     if control_values:
         for w, val in zip(control_wires, control_values):
-            layer_str[wire_map[w]] += "●" if _bool_control_value(val) else "○"
+            layer_str[config.wire_map[w]] += "●" if val else "○"
     else:
         for w in control_wires:
-            layer_str[wire_map[w]] += "●"
+            layer_str[config.wire_map[w]] += "●"
 
-    label = op.label(decimals=decimals, cache=cache).replace("\n", "")
+    label = op.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
     if len(op.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
-        for i, s in enumerate(layer_str):
+        n_wires = len(config.wire_map)
+        for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + label
     else:
         for w in op.wires:
             if w not in control_wires:
-                layer_str[wire_map[w]] += label
+                layer_str[config.wire_map[w]] += label
+
+    return layer_str
+
+
+def _add_mid_measure_op(op, layer_str, config):
+    """Updates ``layer_str`` with ``op`` operation when ``op`` is a
+    ``qml.measurements.MidMeasureMP``."""
+    layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
+    label = op.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
+
+    for w in op.wires:
+        layer_str[config.wire_map[w]] += label
 
     return layer_str
 
@@ -70,27 +176,69 @@ measurement_label_map = {
     Expectation: lambda label: f"<{label}>",
     Probability: lambda label: f"Probs[{label}]" if label else "Probs",
     Sample: lambda label: f"Sample[{label}]" if label else "Sample",
+    Counts: lambda label: f"Counts[{label}]" if label else "Counts",
     Variance: lambda label: f"Var[{label}]",
     State: lambda label: "State",
 }
 
 
-def _add_measurement(m, layer_str, wire_map, decimals, cache):
+def _add_cwire_measurement_grouping_symbols(mcms, layer_str, config):
+    """Adds symbols indicating the extent of a given object for mid-circuit measurement
+    statistics."""
+    if len(mcms) > 1:
+        n_wires = len(config.wire_map)
+        mapped_bits = [config.bit_map[m] for m in mcms]
+        min_b, max_b = min(mapped_bits) + n_wires, max(mapped_bits) + n_wires
+
+        layer_str[min_b] = "╭"
+        layer_str[max_b] = "╰"
+
+        for b in range(min_b + 1, max_b):
+            layer_str[b] = "├" if b - n_wires in mapped_bits else "│"
+
+    return layer_str
+
+
+def _add_cwire_measurement(m, layer_str, config):
+    """Updates ``layer_str`` with the ``m`` measurement when it is used
+    for collecting mid-circuit measurement statistics."""
+    mcms = [v.measurements[0] for v in m.mv] if isinstance(m.mv, list) else m.mv.measurements
+    layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
+
+    mv_label = "MCM"
+    meas_label = measurement_label_map[m.return_type](mv_label)
+
+    n_wires = len(config.wire_map)
+    for mcm in mcms:
+        ind = config.bit_map[mcm] + n_wires
+        layer_str[ind] += meas_label
+
+    return layer_str
+
+
+def _add_measurement(m, layer_str, config):
     """Updates ``layer_str`` with the ``m`` measurement."""
-    layer_str = _add_grouping_symbols(m, layer_str, wire_map)
+    if m.mv is not None:
+        return _add_cwire_measurement(m, layer_str, config)
+
+    layer_str = _add_grouping_symbols(m, layer_str, config)
 
     if m.obs is None:
         obs_label = None
     else:
-        obs_label = m.obs.label(decimals=decimals, cache=cache).replace("\n", "")
-    meas_label = measurement_label_map[m.return_type](obs_label)
+        obs_label = m.obs.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
+    if m.return_type in measurement_label_map:
+        meas_label = measurement_label_map[m.return_type](obs_label)
+    else:
+        meas_label = m.return_type.value
 
     if len(m.wires) == 0:  # state or probability across all wires
-        for i, s in enumerate(layer_str):
+        n_wires = len(config.wire_map)
+        for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + meas_label
 
     for w in m.wires:
-        layer_str[wire_map[w]] += meas_label
+        layer_str[config.wire_map[w]] += meas_label
     return layer_str
 
 
@@ -101,7 +249,7 @@ def tape_text(
     show_all_wires=False,
     decimals=None,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     cache=None,
 ):
     """Text based diagram for a Quantum Tape.
@@ -116,7 +264,7 @@ def tape_text(
             Default ``None`` will omit parameters from operation labels.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
+        show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
         cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
             and ``'matrices'``.
 
@@ -127,16 +275,19 @@ def tape_text(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QFT(wires=(0, 1, 2))
-            qml.RX(1.234, wires=0)
-            qml.RY(1.234, wires=1)
-            qml.RZ(1.234, wires=2)
+        ops = [
+            qml.QFT(wires=(0, 1, 2)),
+            qml.RX(1.234, wires=0),
+            qml.RY(1.234, wires=1),
+            qml.RZ(1.234, wires=2),
             qml.Toffoli(wires=(0, 1, "aux"))
-
-            qml.expval(qml.PauliZ("aux"))
-            qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
+        ]
+        measurements = [
+            qml.expval(qml.Z("aux")),
+            qml.var(qml.Z(0) @ qml.Z(1)),
             qml.probs(wires=(0, 1, 2, "aux"))
+        ]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))
       0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
@@ -204,16 +355,18 @@ def tape_text(
 
     Matrix valued parameters are always denoted by ``M`` followed by an integer corresponding to
     unique matrices.  The list of unique matrices can be printed at the end of the diagram by
-    selecting ``show_matrices=True``:
+    selecting ``show_matrices=True`` (the default):
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitUnitary(np.eye(2), wires=0)
+        ops = [
+            qml.QubitUnitary(np.eye(2), wires=0),
             qml.QubitUnitary(np.eye(2), wires=1)
-            qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
+        ]
+        measurements = [qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape, show_matrices=True))
+    >>> print(qml.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
@@ -230,7 +383,7 @@ def tape_text(
     tape offset.
 
     >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(qml.drawer.tape_text(tape, show_matrices=True, cache=cache))
+    >>> print(qml.drawer.tape_text(tape, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =
@@ -263,7 +416,7 @@ def tape_text(
 
         with qml.tape.QuantumTape() as tape:
             with qml.tape.QuantumTape() as tape_inner:
-                qml.PauliX(0)
+                qml.X(0)
 
         cache = {'tape_offset': 3}
         print(qml.drawer.tape_text(tape, cache=cache))
@@ -279,62 +432,132 @@ def tape_text(
         New tape offset:  4
 
     """
+    tape = transform_deferred_measurements_tape(tape)
     cache = cache or {}
     cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])
     tape_cache = []
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    bit_map = default_bit_map(tape)
     n_wires = len(wire_map)
+    n_bits = len(bit_map)
     if n_wires == 0:
         return ""
-
-    totals = [f"{wire}: " for wire in wire_map]
-    line_length = max(len(s) for s in totals)
-    totals = [s.rjust(line_length, " ") for s in totals]
 
     # Used to store lines that are hitting the maximum length
     finished_lines = []
 
-    layers_list = [
-        drawable_layers(tape.operations, wire_map=wire_map),
-        drawable_layers(tape.measurements, wire_map=wire_map),
-    ]
-    add_list = [_add_op, _add_measurement]
-    fillers = ["─", " "]
-    enders = [True, False]  # add "─┤" after all operations
+    layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
+    final_operations_layer = len(layers) - 1
+    layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
 
-    for layers, add, filler, ender in zip(layers_list, add_list, fillers, enders):
-        for layer in layers:
-            layer_str = [filler] * n_wires
+    # Update bit map and collect information about connections between mid-circuit measurements,
+    # classical conditions, and terminal measurements for processing mid-circuit measurements.
+    cwire_layers, _ = cwire_connections(layers, bit_map)
 
-            for op in layer:
-                if isinstance(op, qml.tape.QuantumScript):
-                    layer_str = _add_grouping_symbols(op, layer_str, wire_map)
-                    label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
-                    for w in op.wires:
-                        layer_str[wire_map[w]] += label
-                    tape_cache.append(op)
+    wire_totals = [f"{wire}: " for wire in wire_map]
+    bit_totals = ["" for _ in range(n_bits)]
+    line_length = max(len(s) for s in wire_totals)
+
+    wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
+    bit_totals = [s.rjust(line_length, " ") for s in bit_totals]
+
+    # Collect information needed for drawing layers
+    config = _Config(
+        wire_map=wire_map,
+        bit_map=bit_map,
+        cur_layer=-1,
+        cwire_layers=cwire_layers,
+        decimals=decimals,
+        cache=cache,
+    )
+
+    for i, layer in enumerate(layers):
+        # Update fillers and helper function
+        w_filler = "─" if i <= final_operations_layer else " "
+        b_filler = "═" if i <= final_operations_layer else " "
+        add_fn = _add_op if i <= final_operations_layer else _add_measurement
+
+        # Create initial strings for the current layer using wire and cwire fillers
+        layer_str = [w_filler] * n_wires + [" "] * n_bits
+        for b in bit_map.values():
+            cur_b_filler = b_filler if min(cwire_layers[b]) < i < max(cwire_layers[b]) else " "
+            layer_str[b + n_wires] = cur_b_filler
+
+        config.cur_layer = i
+
+        ##########################################
+        # Update current layer strings with labels
+        ##########################################
+        for op in layer:
+            if isinstance(op, qml.tape.QuantumScript):
+                layer_str = _add_grouping_symbols(op, layer_str, config)
+                label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
+                for w in op.wires:
+                    layer_str[wire_map[w]] += label
+                tape_cache.append(op)
+            else:
+                layer_str = add_fn(op, layer_str, config)
+
+        #################################################
+        # Left justify layer strings and pad on the right
+        #################################################
+        # Adjust width for wire filler on unused wires
+        max_label_len = max(len(s) for s in layer_str)
+        for w in range(n_wires):
+            layer_str[w] = layer_str[w].ljust(max_label_len, w_filler)
+
+        # Adjust width for bit filler on unused bits
+        for b in range(n_bits):
+            cur_b_filler = b_filler if cwire_layers[b][0] <= i < cwire_layers[b][-1] else " "
+            layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
+
+        line_length += max_label_len + 1  # one for the filler character
+
+        ##################
+        # Create new lines
+        ##################
+        if line_length > max_length:
+            # move totals into finished_lines and reset totals
+            finished_lines += wire_totals + bit_totals
+            finished_lines[-1] += "\n"
+            wire_totals = [w_filler] * n_wires
+
+            # Bit totals for new lines for warped drawings need to be consistent with the
+            # current bit filler
+            bit_totals = []
+            for b in range(n_bits):
+                cur_b_filler = b_filler if cwire_layers[b][0] < i <= cwire_layers[b][-1] else " "
+                bit_totals.append(cur_b_filler)
+
+            line_length = 2 + max_label_len
+
+        ###################################################
+        # Join current layer with lines for previous layers
+        ###################################################
+        # Joining is done by adding a filler at the end of the previous layer
+        wire_totals = [w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires])]
+
+        for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
+            cur_b_filler = b_filler if cwire_layers[j][0] < i <= cwire_layers[j][-1] else " "
+            bit_totals[j] = cur_b_filler.join([bt, s])
+
+        ################################################
+        # Add ender characters to final operations layer
+        ################################################
+        if i == final_operations_layer:
+            wire_totals = [f"{s}─┤" for s in wire_totals]
+            for b in range(n_bits):
+                if cwire_layers[b][-1] > final_operations_layer:
+                    bit_totals[b] += "═╡"
                 else:
-                    layer_str = add(op, layer_str, wire_map, decimals, cache)
+                    bit_totals[b] += "  "
 
-            max_label_len = max(len(s) for s in layer_str)
-            layer_str = [s.ljust(max_label_len, filler) for s in layer_str]
-
-            line_length += max_label_len + 1  # one for the filler character
-            if line_length > max_length:
-                # move totals into finished_lines and reset totals
-                finished_lines += totals
-                finished_lines[-1] += "\n"
-                totals = [filler] * n_wires
-                line_length = 2 + max_label_len
-
-            totals = [filler.join([t, s]) for t, s in zip(totals, layer_str)]
-        if ender:
-            totals = [s + "─┤" for s in totals]
+            line_length += 2
 
     # Recursively handle nested tapes #
-    tape_totals = "\n".join(finished_lines + totals)
+    tape_totals = "\n".join(finished_lines + wire_totals + bit_totals)
     current_tape_offset = cache["tape_offset"]
     cache["tape_offset"] += len(tape_cache)
     for i, nested_tape in enumerate(tape_cache):

@@ -17,12 +17,12 @@ different optimization problems.
 """
 # pylint: disable=unnecessary-lambda-assignment
 from typing import Iterable, Union
+
 import networkx as nx
 import rustworkx as rx
 
 import pennylane as qml
 from pennylane import qaoa
-
 
 ########################
 # Hamiltonian components
@@ -53,9 +53,7 @@ def bit_driver(wires: Union[Iterable, qaoa.Wires], b: int):
     >>> wires = range(3)
     >>> hamiltonian = qaoa.bit_driver(wires, 1)
     >>> print(hamiltonian)
-      (1) [Z0]
-    + (1) [Z1]
-    + (1) [Z2]
+    1 * Z(0) + 1 * Z(1) + 1 * Z(2)
     """
     if b == 0:
         coeffs = [-1 for _ in wires]
@@ -64,7 +62,7 @@ def bit_driver(wires: Union[Iterable, qaoa.Wires], b: int):
     else:
         raise ValueError(f"'b' must be either 0 or 1, got {b}")
 
-    ops = [qml.PauliZ(w) for w in wires]
+    ops = [qml.Z(w) for w in wires]
     return qml.Hamiltonian(coeffs, ops)
 
 
@@ -96,12 +94,7 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
-      (0.25) [Z0]
-    + (0.25) [Z1]
-    + (0.25) [Z1]
-    + (0.25) [Z2]
-    + (0.25) [Z0 Z1]
-    + (0.25) [Z1 Z2]
+    0.25 * (Z(0) @ Z(1)) + 0.25 * Z(0) + 0.25 * Z(1) + 0.25 * (Z(1) @ Z(2)) + 0.25 * Z(1) + 0.25 * Z(2)
 
     >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
@@ -109,12 +102,7 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
     >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
     >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
-      (0.25) [Z0]
-    + (0.25) [Z1]
-    + (0.25) [Z1]
-    + (0.25) [Z2]
-    + (0.25) [Z0 Z1]
-    + (0.25) [Z1 Z2]
+    0.25 * (Z(0) @ Z(1)) + 0.25 * Z(0) + 0.25 * Z(1) + 0.25 * (Z(1) @ Z(2)) + 0.25 * Z(1) + 0.25 * Z(2)
 
     In the above example, ``"11"``, ``"10"``, and ``"01"`` are assigned a lower
     energy than ``"00"``. For example, a quick calculation of expectation values gives us:
@@ -211,25 +199,25 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
                 coeffs.extend([0.25 * sign, 0.25 * sign, 0.25 * sign])
                 ops.extend(
                     [
-                        qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])),
-                        qml.PauliZ(get_nvalue(e[0])),
-                        qml.PauliZ(get_nvalue(e[1])),
+                        qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])),
+                        qml.Z(get_nvalue(e[0])),
+                        qml.Z(get_nvalue(e[1])),
                     ]
                 )
 
         if reward == "10":
             for e in graph_edges:
                 coeffs.append(-0.5 * sign)
-                ops.append(qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])))
+                ops.append(qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])))
 
         if reward == "11":
             for e in graph_edges:
                 coeffs.extend([0.25 * sign, -0.25 * sign, -0.25 * sign])
                 ops.extend(
                     [
-                        qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])),
-                        qml.PauliZ(get_nvalue(e[0])),
-                        qml.PauliZ(get_nvalue(e[1])),
+                        qml.Z(get_nvalue(e[0])) @ qml.Z(get_nvalue(e[1])),
+                        qml.Z(get_nvalue(e[0])),
+                        qml.Z(get_nvalue(e[1])),
                     ]
                 )
 
@@ -275,13 +263,9 @@ def maxcut(graph: Union[nx.Graph, rx.PyGraph]):
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
     >>> print(cost_h)
-      (-1.0) [I0]
-    + (0.5) [Z0 Z1]
-    + (0.5) [Z1 Z2]
+    0.5 * (Z(0) @ Z(1)) + 0.5 * (Z(1) @ Z(2)) + -0.5 * (I(0) @ I(1)) + -0.5 * (I(1) @ I(2))
     >>> print(mixer_h)
-      (1) [X0]
-    + (1) [X1]
-    + (1) [X2]
+    1 * X(0) + 1 * X(1) + 1 * X(2)
 
     >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
@@ -289,13 +273,9 @@ def maxcut(graph: Union[nx.Graph, rx.PyGraph]):
     >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
     >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
     >>> print(cost_h)
-      (-1.0) [I0]
-    + (0.5) [Z0 Z1]
-    + (0.5) [Z1 Z2]
+    0.5 * (Z(0) @ Z(1)) + 0.5 * (Z(1) @ Z(2)) + -0.5 * (I(0) @ I(1)) + -0.5 * (I(1) @ I(2))
     >>> print(mixer_h)
-      (1) [X0]
-    + (1) [X1]
-    + (1) [X2]
+    1 * X(0) + 1 * X(1) + 1 * X(2)
     """
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):

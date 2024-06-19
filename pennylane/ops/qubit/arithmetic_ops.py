@@ -22,9 +22,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires
 from pennylane.ops import Identity
-from pennylane.ops.qubit.non_parametric_ops import MultiControlledX
+from pennylane.wires import Wires
 
 
 class QubitCarry(Operation):
@@ -92,6 +91,7 @@ class QubitCarry(Operation):
     >>> carry
     1
     """
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -171,12 +171,11 @@ class QubitCarry(Operation):
         [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
 
         """
-        decomp_ops = [
+        return [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
         ]
-        return decomp_ops
 
 
 class QubitSum(Operation):
@@ -236,6 +235,7 @@ class QubitSum(Operation):
     >>> abc_sum
     1
     """
+
     num_wires = 3
     """int: Number of wires that the operator acts on."""
 
@@ -348,10 +348,11 @@ class IntegerComparator(Operation):
     ...     qml.IntegerComparator(value, geq=geq, wires=range(3))
     ...     return qml.state()
     >>> circuit([1, 0, 1], 1, True).reshape(2, 2, 2)[1, 0, 0]
-    (1+0j)
+    tensor(1.+0.j, requires_grad=True)
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
-    (1+0j)
+    tensor(1.+0.j, requires_grad=True)
     """
+
     is_self_inverse = True
     num_wires = AnyWires
     num_params = 0
@@ -359,15 +360,17 @@ class IntegerComparator(Operation):
 
     grad_method = None
 
+    def _flatten(self):
+        hp = self.hyperparameters
+        metadata = (
+            ("work_wires", hp["work_wires"]),
+            ("value", hp["value"]),
+            ("geq", hp["geq"]),
+        )
+        return tuple(), (hp["control_wires"] + hp["target_wires"], metadata)
+
     # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        value,
-        geq=True,
-        wires=None,
-        work_wires=None,
-        do_queue=True,
-    ):
+    def __init__(self, value, geq=True, wires=None, work_wires=None):
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
         if wires is None:
@@ -395,7 +398,7 @@ class IntegerComparator(Operation):
         self.geq = geq
         self.value = value
 
-        super().__init__(wires=total_wires, do_queue=do_queue)
+        super().__init__(wires=total_wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
@@ -461,7 +464,8 @@ class IntegerComparator(Operation):
             control_values_list = [format(n, binary) for n in values]
             mat = np.eye(2 ** (len(control_wires) + 1))
             for control_values in control_values_list:
-                mat = mat @ MultiControlledX.compute_matrix(
+                control_values = [int(n) for n in control_values]
+                mat = mat @ qml.MultiControlledX.compute_matrix(
                     control_wires, control_values=control_values
                 )
 
@@ -488,10 +492,10 @@ class IntegerComparator(Operation):
         **Example:**
 
         >>> print(qml.IntegerComparator.compute_decomposition(4, wires=[0, 1, 2, 3]))
-        [MultiControlledX(wires=[0, 1, 2, 3], control_values="100"),
-         MultiControlledX(wires=[0, 1, 2, 3], control_values="101"),
-         MultiControlledX(wires=[0, 1, 2, 3], control_values="110"),
-         MultiControlledX(wires=[0, 1, 2, 3], control_values="111")]
+        [MultiControlledX(wires=[0, 1, 2, 3], control_values=[1, 0, 0]),
+         MultiControlledX(wires=[0, 1, 2, 3], control_values=[1, 0, 1]),
+         MultiControlledX(wires=[0, 1, 2, 3], control_values=[1, 1, 0]),
+         MultiControlledX(wires=[0, 1, 2, 3], control_values=[1, 1, 1])]
         """
 
         if not isinstance(value, int):
@@ -509,17 +513,17 @@ class IntegerComparator(Operation):
         small_val = not geq and value == 0
         large_val = geq and value > 2 ** len(control_wires) - 1
         if small_val or large_val:
-            gates = [Identity(0)]
+            gates = [Identity(wires[0])]
 
         else:
-            binary = "0" + str(len(control_wires)) + "b"
             values = range(value, 2 ** (len(control_wires))) if geq else range(value)
             binary = "0" + str(len(control_wires)) + "b"
             control_values_list = [format(n, binary) for n in values]
             gates = []
             for control_values in control_values_list:
+                control_values = [int(n) for n in control_values]
                 gates.append(
-                    MultiControlledX(
+                    qml.MultiControlledX(
                         wires=control_wires + wires,
                         control_values=control_values,
                         work_wires=work_wires,

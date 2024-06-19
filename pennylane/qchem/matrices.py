@@ -17,8 +17,9 @@ This module contains the functions needed for computing matrices.
 # pylint: disable= too-many-branches
 import itertools as it
 
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 
 from .integrals import (
     attraction_integral,
@@ -85,7 +86,7 @@ def overlap_matrix(basis_functions):
         r"""Construct the overlap matrix for a given set of basis functions.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             array[array[float]]: the overlap matrix
@@ -136,7 +137,7 @@ def moment_matrix(basis_functions, order, idx):
         r"""Construct the multipole moment matrix for a given set of basis functions.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             array[array[float]]: the multipole moment matrix
@@ -184,7 +185,7 @@ def kinetic_matrix(basis_functions):
         r"""Construct the kinetic matrix for a given set of basis functions.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             array[array[float]]: the kinetic matrix
@@ -235,7 +236,7 @@ def attraction_matrix(basis_functions, charges, r):
         r"""Construct the electron-nuclear attraction matrix for a given set of basis functions.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             array[array[float]]: the electron-nuclear attraction matrix
@@ -307,7 +308,7 @@ def repulsion_tensor(basis_functions):
         Journal of Quantum Chemistry, 1971, 5, 657-668].
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             array[array[float]]: the electron repulsion tensor
@@ -373,7 +374,7 @@ def core_matrix(basis_functions, charges, r):
         r"""Construct the core matrix for a given set of basis functions.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             array[array[float]]: the core matrix

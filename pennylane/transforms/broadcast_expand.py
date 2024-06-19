@@ -13,12 +13,42 @@
 # limitations under the License.
 """This module contains the tape expansion function for expanding a
 broadcasted tape into multiple tapes."""
+from typing import Callable, Sequence
+
 import pennylane as qml
-from .batch_transform import batch_transform
+from pennylane.measurements import MidMeasureMP, SampleMP
+
+from .core import transform
 
 
-@batch_transform
-def broadcast_expand(tape):
+def _split_operations(ops, num_tapes):
+    """
+    Given a list of operators, return a list containing lists
+    of new operators with length num_tapes, with the parameters split.
+    """
+    # for some reason pylint thinks "qml.ops" is a set
+    # pylint: disable=no-member
+    new_ops = [[] for _ in range(num_tapes)]
+    for op in ops:
+        # determine if any parameters of the operator are batched
+        if op.batch_size:
+            for b in range(num_tapes):
+                new_params = tuple(
+                    p if qml.math.ndim(p) == op.ndim_params[j] else p[b]
+                    for j, p in enumerate(op.data)
+                )
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+                new_ops[b].append(new_op)
+        else:
+            # no batching in the operator; don't copy
+            for b in range(num_tapes):
+                new_ops[b].append(op)
+
+    return new_ops
+
+
+@transform
+def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Expand a broadcasted tape into multiple tapes
     and a function that stacks and squeezes the results.
 
@@ -27,12 +57,14 @@ def broadcast_expand(tape):
         Currently, not all templates have been updated to support broadcasting.
 
     Args:
-        tape (.QuantumTape): Broadcasted tape to be expanded
+        tape (QNode or QuantumTape or Callable): Broadcasted tape to be expanded
 
     Returns:
-        function or tuple[list[.QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object resembling the (broadcasted) input QNode
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+        - If the input is a QNode, the broadcasted input QNode
           that computes the QNode output serially with multiple circuit evaluations and
           stacks (and squeezes) the results into one batch of results.
 
@@ -57,7 +89,7 @@ def broadcast_expand(tape):
     >>> @qml.qnode(dev)
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
 
     We can then call ``broadcast_expand`` on the QNode and store the
     expanded ``QNode``:
@@ -81,42 +113,79 @@ def broadcast_expand(tape):
 
     We also can call the transform manually on a tape:
 
-    >>> with qml.tape.QuantumTape() as tape:
-    >>>     qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)
-    >>>     qml.expval(qml.PauliZ(0))
+    >>> ops = [qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)]
+    >>> measurements = [qml.expval(qml.Z(0))]
+    >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tapes, fn = qml.transforms.broadcast_expand(tape)
     >>> tapes
     [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>]
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
-    array([0.98006658, 0.82533561, 0.54030231])
+    tensor([0.98006658, 0.82533561, 0.54030231], requires_grad=True)
     """
+    if tape.batch_size is None:
+        output_tapes = [tape]
 
-    num_tapes = tape.batch_size
-    if num_tapes is None:
-        raise ValueError("The provided tape is not broadcasted.")
+        def null_postprocessing(results):
+            """A postprocesing function returned by a transform that only converts the batch of results
+            into a result for a single ``QuantumTape``.
+            """
+            return results[0]
 
-    # Note that these unbatched_params will have shape (#params, num_tapes)
-    unbatched_params = []
-    for op in tape.operations + tape.observables:
-        for j, p in enumerate(op.data):
-            if op.batch_size and qml.math.ndim(p) != op.ndim_params[j]:
-                unbatched_params.append(qml.math.unstack(p))
-            else:
-                unbatched_params.append([p] * num_tapes)
+        processing_fn = null_postprocessing
+    else:
 
-    output_tapes = []
-    for p in zip(*unbatched_params):
-        new_tape = tape.copy(copy_operations=True)
-        new_tape.set_parameters(p, trainable_only=False)
-        output_tapes.append(new_tape)
+        has_postselect = any(
+            op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+        )
+        has_sample = any(isinstance(op, SampleMP) for op in tape.measurements)
+        if has_postselect and has_sample:
+            raise ValueError(
+                "Returning qml.sample is not supported when using post-selected mid-circuit measurements and parameters broadcasting."
+            )
 
-    def processing_fn(results):
-        if len(tape.measurements) > 1 and qml.active_return():
-            processed_results = [
-                qml.math.squeeze(qml.math.stack([results[b][i] for b in range(tape.batch_size)]))
-                for i in range(len(tape.measurements))
-            ]
-            return tuple(processed_results)
-        return qml.math.squeeze(qml.math.stack(results))
+        num_tapes = tape.batch_size
+        new_ops = _split_operations(tape.operations, num_tapes)
+
+        output_tapes = []
+        for ops in new_ops:
+            new_tape = qml.tape.QuantumScript(
+                ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+            )
+            output_tapes.append(new_tape)
+
+        def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
+            # The shape of the results should be as follows: results[s][m][b], where s is the shot
+            # vector index, m is the measurement index, and b is the batch index. The shape that
+            # the processing function receives is results[b][s][m].
+
+            if tape.shots.has_partitioned_shots:
+                if len(tape.measurements) > 1:
+                    return tuple(
+                        tuple(
+                            qml.math.squeeze(
+                                qml.math.stack([results[b][s][m] for b in range(tape.batch_size)])
+                            )
+                            for m in range(len(tape.measurements))
+                        )
+                        for s in range(tape.shots.num_copies)
+                    )
+
+                # Only need to transpose results[b][s] -> results[s][b]
+                return tuple(
+                    qml.math.squeeze(
+                        qml.math.stack([results[b][s] for b in range(tape.batch_size)])
+                    )
+                    for s in range(tape.shots.num_copies)
+                )
+
+            if len(tape.measurements) > 1:
+                # Only need to transpose results[b][m] -> results[m][b]
+                return tuple(
+                    qml.math.squeeze(
+                        qml.math.stack([results[b][m] for b in range(tape.batch_size)])
+                    )
+                    for m in range(len(tape.measurements))
+                )
+            return qml.math.squeeze(qml.math.stack(results))
 
     return output_tapes, processing_fn

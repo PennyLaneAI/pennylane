@@ -25,9 +25,9 @@ PennyLane Documentation
 
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-            PennyLane is a cross-platform Python library for differentiable
-            programming of quantum computers. Train a quantum computer the same
-            way as a neural network.
+          PennyLane is a cross-platform Python library for quantum computing,
+          quantum machine learning, and quantum chemistry.
+          Train a quantum computer the same way as a neural network.
         </p>
         <div class="row mt-3">
 
@@ -54,7 +54,7 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/header.png
+.. image:: _static/header-tall.png
     :align: left
     :width: 450px
     :target: javascript:void(0);
@@ -68,6 +68,12 @@ Features
 - *Best of both worlds*.
   Support for **hybrid quantum and classical** models; connect quantum
   hardware with PyTorch, TensorFlow, and NumPy.
+
+..
+
+- *Just in time compilation*. Compile your **entire hybrid workflow**, with support for
+  adaptive circuits, real-time measurement feedback, unbounded loops, and more. See
+  `Catalyst <https://github.com/pennylaneai/catalyst>`__ for more details.
 
 ..
 
@@ -106,8 +112,9 @@ PennyLane-compatible quantum device.
 
 Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
 available for running your hybrid optimizations—these include
-IBM Q, provided by the `PennyLane-Qiskit <https://pennylaneqiskit.rtfd.io>`__ plugin,
-as well as the Rigetti Aspen QPU provided by `PennyLane-Forest <https://pennylane-forest.rtfd.io>`__.
+IBM Q, provided by the `PennyLane-Qiskit <https://docs.pennylane.ai/projects/qiskit/en/stable/>`__
+plugin, as well as the Rigetti Aspen QPU provided by `PennyLane-Rigetti
+<https://docs.pennylane.ai/projects/rigetti/en/stable/>`__.
 
 How to cite
 -----------
@@ -155,8 +162,20 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/templates
    introduction/inspecting_circuits
    introduction/compiling_circuits
+   introduction/compiling_workflows
+   introduction/importing_workflows
    introduction/chemistry
    introduction/data
+   introduction/logging
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Release news
+   :hidden:
+
+   development/release_notes.md
+   development/deprecations
+   news/new_opmath
 
 .. toctree::
    :maxdepth: 1
@@ -166,8 +185,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    development/guide
    development/plugins
    development/adding_operators
-   development/deprecations
-   development/release_notes.md
 
 .. toctree::
    :maxdepth: 1
@@ -175,16 +192,21 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
+   code/qml_compiler
    code/qml_data
    code/qml_drawer
+   code/qml_fermi
    code/qml_fourier
    code/qml_gradients
    code/qml_kernels
+   code/qml_logging
    code/qml_math
+   code/qml_noise
    code/qml_numpy
    code/qml_ops_op_math
    code/qml_pauli
    code/qml_pulse
+   code/qml_qcut
    code/qml_qinfo
    code/qml_resource
    code/qml_shadows
@@ -198,11 +220,12 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Internals
    :hidden:
 
+   code/qml_capture
    code/qml_devices
-   code/qml_interfaces
    code/qml_measurements
    code/qml_operation
    code/qml_queuing
    code/qml_tape
    code/qml_utils
    code/qml_wires
+   code/qml_workflow

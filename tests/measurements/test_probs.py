@@ -12,47 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the probs module"""
+from typing import Sequence
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import (
-    MeasurementProcess,
-    MeasurementShapeError,
-    Probability,
-    ProbabilityMP,
-)
+from pennylane.measurements import MeasurementProcess, Probability, ProbabilityMP, Shots
 from pennylane.queuing import AnnotatedQueue
-
-
-# TODO: Remove this when new CustomMP are the default
-def custom_measurement_process(device, spy):
-    assert len(spy.call_args_list) > 0  # make sure method is mocked properly
-
-    samples = device._samples  # pylint: disable=protected-access
-    state = device._state  # pylint: disable=protected-access
-    call_args_list = list(spy.call_args_list)
-    for call_args in call_args_list:
-        wires, shot_range, bin_size = (
-            call_args.kwargs["wires"],
-            call_args.kwargs["shot_range"],
-            call_args.kwargs["bin_size"],
-        )
-        # no need to use op, because the observable has already been applied to ``dev._state``
-        meas = qml.probs(wires=wires)
-        old_res = device.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
-        if device.shots is None:
-            new_res = meas.process_state(state=state, wire_order=device.wires)
-        else:
-            new_res = meas.process_samples(
-                samples=samples,
-                wire_order=device.wires,
-                shot_range=shot_range,
-                bin_size=bin_size,
-            )
-        assert qml.math.allequal(old_res, new_res)
-
 
 # make the test deterministic
 np.random.seed(42)
@@ -99,7 +67,17 @@ class TestProbs:
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.probs(wires=wires)
-        assert res.shape(dev) == (2 ** len(wires),)
+        assert res.shape(dev, Shots(shots)) == (2 ** len(wires),)
+
+    def test_shape_empty_wires(self):
+        """Test that shape works when probs is broadcasted onto all available wires."""
+        dev = qml.device("default.qubit", wires=(1, 2, 3))
+        res = qml.probs()
+        assert res.shape(dev, Shots(None)) == (8,)
+
+        dev2 = qml.device("default.qubit")
+        res = qml.probs()
+        assert res.shape(dev2, Shots(None)) == (1,)
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     def test_shape_shot_vector(self, wires):
@@ -107,20 +85,11 @@ class TestProbs:
         res = qml.probs(wires=wires)
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == ((2 ** len(wires),), (2 ** len(wires),), (2 ** len(wires),))
-
-    @pytest.mark.parametrize(
-        "measurement",
-        [qml.probs(wires=[0]), qml.state(), qml.sample(qml.PauliZ(0))],
-    )
-    def test_shape_no_device_error(self, measurement):
-        """Test that an error is raised if a device is not passed when querying
-        the shape of certain measurements."""
-        with pytest.raises(
-            MeasurementShapeError,
-            match="The device argument is required to obtain the shape of the measurement",
-        ):
-            measurement.shape()
+        assert res.shape(dev, Shots(shot_vector)) == (
+            (2 ** len(wires),),
+            (2 ** len(wires),),
+            (2 ** len(wires),),
+        )
 
     @pytest.mark.parametrize("wires", [[0], [0, 1], [1, 0, 2]])
     def test_annotating_probs(self, wires):
@@ -152,34 +121,30 @@ class TestProbs:
 
         assert qml.math.allequal(res, [1, 0, 0, 0, 0, 0, 0, 0])
 
-    def test_full_prob(self, init_state, tol, mocker):
+    def test_full_prob(self, init_state, tol):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=4)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         state = init_state(4)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=range(4))
 
         res = circuit()
         expected = np.abs(state) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
-
-    def test_marginal_prob(self, init_state, tol, mocker):
+    def test_marginal_prob(self, init_state, tol):
         """Test that the correct marginal probability is returned."""
         dev = qml.device("default.qubit", wires=4)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         state = init_state(4)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=[1, 3])
 
         res = circuit()
@@ -187,18 +152,15 @@ class TestProbs:
         expected = np.einsum("ijkl->jl", expected).flatten()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
-
-    def test_marginal_prob_more_wires(self, init_state, mocker, tol):
+    def test_marginal_prob_more_wires(self, init_state, tol):
         """Test that the correct marginal probability is returned, when the
         states_to_binary method is used for probability computations."""
         dev = qml.device("default.qubit", wires=4)
-        spy_probs = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=[1, 0, 3])
 
         res = circuit()
@@ -206,8 +168,6 @@ class TestProbs:
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
         expected = np.einsum("ijkl->jil", expected).flatten()
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        custom_measurement_process(dev, spy_probs)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
@@ -251,10 +211,9 @@ class TestProbs:
         assert subset_probs.shape == qml.math.shape(expected)
         assert qml.math.allclose(subset_probs, expected)
 
-    def test_integration(self, tol, mocker):
+    def test_integration(self, tol):
         """Test the probability is correct for a known state preparation."""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit():
@@ -269,14 +228,41 @@ class TestProbs:
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
+    @pytest.mark.jax
+    @pytest.mark.parametrize("shots", (None, 500))
+    @pytest.mark.parametrize("obs", ([0, 1], qml.PauliZ(0) @ qml.PauliZ(1)))
+    @pytest.mark.parametrize("params", ([np.pi / 2], [np.pi / 2, np.pi / 2, np.pi / 2]))
+    def test_integration_jax(self, tol_stochastic, shots, obs, params):
+        """Test the probability is correct for a known state preparation when jitted with JAX."""
+        jax = pytest.importorskip("jax")
+
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=jax.random.PRNGKey(0))
+        params = jax.numpy.array(params)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit(x):
+            qml.PhaseShift(x, wires=1)
+            qml.RX(x, wires=1)
+            qml.PhaseShift(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            if isinstance(obs, Sequence):
+                return qml.probs(wires=obs)
+            return qml.probs(op=obs)
+
+        # expected probability, using [00, 01, 10, 11]
+        # ordering, is [0.5, 0.5, 0, 0]
+
+        assert "pure_callback" not in str(jax.make_jaxpr(circuit)(params))
+
+        res = jax.jit(circuit)(params)
+        expected = np.array([0.5, 0.5, 0, 0])
+        assert np.allclose(res, expected, atol=tol_stochastic, rtol=0)
 
     @pytest.mark.parametrize("shots", [100, [1, 10, 100]])
-    def test_integration_analytic_false(self, tol, mocker, shots):
+    def test_integration_analytic_false(self, tol, shots):
         """Test the probability is correct for a known state preparation when the
         analytic attribute is set to False."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit():
@@ -287,13 +273,106 @@ class TestProbs:
         expected = np.array([0, 0, 0, 0, 1, 0, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_measurement_value(
+        self, shots, phi, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that probs for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.probs(op=m0)
+
+        atol = tol if shots is None else tol_stochastic
+        expected = np.array([np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+
+        for func in [circuit, qml.defer_measurements(circuit)]:
+            res = func(phi)
+            if not isinstance(shots, list):
+                assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+            else:
+                for r in res:  # pylint: disable=not-an-iterable
+                    assert np.allclose(r, expected, atol=atol, rtol=0)
+
+    @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
+    @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])
+    def test_observable_is_measurement_value_list(
+        self, shots, phi, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that probs for mid-circuit measurement values
+        are correct for a measurement value list."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2.0 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.probs(op=[m0, m1, m2])
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2.0 * phi, 2)
+            return qml.probs(wires=[0, 1, 2])
+
+        expected = expected_circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+
+        if not isinstance(shots, list):
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        else:
+            for r in res:  # pylint: disable=not-an-iterable
+                assert np.allclose(r, expected, atol=atol, rtol=0)
+
+    def test_composite_measurement_value_not_allowed(self):
+        """Test that measuring composite mid-circuit measurement values raises
+        an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(ValueError, match=r"Cannot use qml.probs\(\) when measuring multiple"):
+            _ = qml.probs(op=m0 + m1)
+
+    def test_mixed_lists_as_op_not_allowed(self):
+        """Test that passing a list not containing only measurement values raises an error."""
+        m0 = qml.measure(0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.probs(op=[m0, qml.PauliZ(0)])
+
+    def test_composed_measurement_value_lists_not_allowed(self):
+        """Test that passing a list containing measurement values composed with arithmetic
+        raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2 = qml.measure(2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.probs(op=[m0 + m1, m2])
 
     @pytest.mark.parametrize("shots", [None, 100])
-    def test_batch_size(self, mocker, shots):
+    def test_batch_size(self, shots):
         """Test the probability is correct for a batched input."""
         dev = qml.device("default.qubit", wires=1, shots=shots)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit(x):
@@ -305,15 +384,33 @@ class TestProbs:
         expected = [[1.0, 0.0], [0.5, 0.5]]
         assert np.allclose(res, expected, atol=0.1, rtol=0.1)
 
-        custom_measurement_process(dev, spy)
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "prep_op, expected",
+        [
+            (None, [1, 0]),
+            (qml.StatePrep([[0, 1], [1, 0]], 0), [[0, 1], [1, 0]]),
+        ],
+    )
+    def test_process_state_tf_autograph(self, prep_op, expected):
+        """Test that process_state passes when decorated with tf.function."""
+        import tensorflow as tf
+
+        wires = qml.wires.Wires([0])
+
+        @tf.function
+        def probs_from_state(state):
+            return qml.probs(wires=wires).process_state(state, wires)
+
+        state = qml.devices.qubit.create_initial_state(wires, prep_operation=prep_op)
+        assert np.allclose(probs_from_state(state), expected)
 
     @pytest.mark.autograd
-    def test_numerical_analytic_diff_agree(self, tol, mocker):
+    def test_numerical_analytic_diff_agree(self, tol):
         """Test that the finite difference and parameter shift rule
         provide the same Jacobian."""
         w = 4
         dev = qml.device("default.qubit", wires=w)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         def circuit(x, y, z):
             for i in range(w):
@@ -343,13 +440,10 @@ class TestProbs:
         # Check that they agree up to numeric tolerance
         assert all(np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A))
 
-        custom_measurement_process(dev, spy)
-
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
-    def test_prob_generalize_param_one_qubit(self, hermitian, tol, mocker):
+    def test_prob_generalize_param_one_qubit(self, hermitian, tol):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit(x):
@@ -363,20 +457,17 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0])(0.56)
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 1)
         expected = expected.flatten()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
-
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
-    def test_prob_generalize_param(self, hermitian, tol, mocker):
+    def test_prob_generalize_param(self, hermitian, tol):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=3)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -396,19 +487,16 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2])(0.56, 0.1)
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 3)
         expected = np.einsum("ijk->i", expected).flatten()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
-
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
-    def test_prob_generalize_param_multiple(self, hermitian, tol, mocker):
+    def test_prob_generalize_param_multiple(self, hermitian, tol):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=3)
-        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -433,7 +521,7 @@ class TestProbs:
             qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
         state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-        matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2])(0.56, 0.1)
         state = np.dot(matrix, state)
 
         expected = np.reshape(np.abs(state) ** 2, [2] * 3)
@@ -445,20 +533,18 @@ class TestProbs:
         assert np.allclose(res[1], expected_1, atol=tol, rtol=0)
         assert np.allclose(res[2], expected_2, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
-
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
-    def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol, mocker):
+    def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol):
         """Test that the correct probability is returned."""
         # pylint:disable=too-many-arguments
         dev = qml.device("default.qubit", wires=4)
-        spy = mocker.spy(qml.QubitDevice, "probability")
+
         state = init_state(4)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
             qml.PauliX(wires=2)
@@ -474,7 +560,7 @@ class TestProbs:
             qml.PauliX(wires=3)
             qml.Hermitian(hermitian, wires=wire).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -489,20 +575,18 @@ class TestProbs:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
-
     @pytest.mark.parametrize("operation", [qml.PauliX, qml.PauliY, qml.Hadamard])
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
-    def test_operation_prob(self, operation, wire, init_state, tol, mocker):
+    def test_operation_prob(self, operation, wire, init_state, tol):
         "Test the rotated probability with different wires and rotating operations."
         # pylint:disable=too-many-arguments
         dev = qml.device("default.qubit", wires=4)
-        spy = mocker.spy(qml.QubitDevice, "probability")
+
         state = init_state(4)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)
@@ -518,7 +602,7 @@ class TestProbs:
             qml.PauliZ(wires=3)
             operation(wires=wire).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -533,18 +617,16 @@ class TestProbs:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        custom_measurement_process(dev, spy)
-
     @pytest.mark.parametrize("observable", [(qml.PauliX, qml.PauliY)])
-    def test_observable_tensor_prob(self, observable, init_state, tol, mocker):
+    def test_observable_tensor_prob(self, observable, init_state, tol):
         "Test the rotated probability with a tensor observable."
         dev = qml.device("default.qubit", wires=4)
-        spy = mocker.spy(qml.QubitDevice, "probability")
+
         state = init_state(4)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)
@@ -561,15 +643,13 @@ class TestProbs:
             observable[0](wires=0).diagonalizing_gates()
             observable[1](wires=1).diagonalizing_gates()
 
-        matrix = qml.matrix(circuit_rotated)()
+        matrix = qml.matrix(circuit_rotated, wire_order=[0, 1, 2, 3])()
         state = np.dot(matrix, state)
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
         expected = np.einsum("ijkl->ij", expected).flatten()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        custom_measurement_process(dev, spy)
 
     @pytest.mark.parametrize("coeffs, obs", [([1, 1], [qml.PauliX(wires=0), qml.PauliX(wires=1)])])
     def test_hamiltonian_error(self, coeffs, obs, init_state):
@@ -581,7 +661,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)
@@ -670,7 +750,31 @@ class TestProbs:
 
         assert np.allclose(res, expected)
 
-    def test_non_commuting_probs_raises_error(self):
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            (
+                (0, 1, 2),
+                [0.1, 0.2, 0.0, 0.1, 0.0, 0.2, 0.1, 0.3],
+            ),
+            (
+                (0, 1),
+                [0.3, 0.1, 0.2, 0.4],
+            ),
+        ],
+    )
+    def test_estimate_probability_with_counts(self, wires, expected):
+        """Tests the estimate_probability method with sampling information in the form of a counts dictionary"""
+        counts = {"101": 2, "100": 2, "111": 3, "000": 1, "011": 1, "110": 1}
+
+        wire_order = qml.wires.Wires((2, 1, 0))
+
+        res = qml.probs(wires=wires).process_counts(counts=counts, wire_order=wire_order)
+
+        assert np.allclose(res, expected)
+
+    def test_non_commuting_probs_does_not_raises_error(self):
+        """Tests that non-commuting probs with expval does not raise an error."""
         dev = qml.device("default.qubit", wires=5)
 
         @qml.qnode(dev)
@@ -678,12 +782,10 @@ class TestProbs:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(0)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="Only observables that are qubit-wise commuting"
-        ):
-            circuit(1, 2)
+        res = circuit(1, 2)
+        assert isinstance(res, tuple) and len(res) == 2
 
     def test_commuting_probs_in_computational_basis(self):
         """Test that `qml.probs` can be used in the computational basis with other commuting observables."""

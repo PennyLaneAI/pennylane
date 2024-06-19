@@ -14,15 +14,16 @@
 """
 Unit tests for the qutrit matrix-based operations.
 """
-import pytest
 import numpy as np
+
+# pylint: disable=protected-access
+import pytest
+from gate_data import TSWAP
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
-
-from gate_data import TSWAP
+from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
@@ -303,7 +304,7 @@ class TestQutritUnitary:
         expected = qml.ControlledQutritUnitary(U, control_wires="a", wires=0)
 
         out = base._controlled("a")
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
 
 class TestControlledQutritUnitary:
@@ -586,7 +587,7 @@ class TestControlledQutritUnitary:
         expected = qml.ControlledQutritUnitary(U, control_wires=(0, 1, "a"), wires=[4, 2])
 
         out = original._controlled("a")
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
         original = qml.ControlledQutritUnitary(
             U, control_wires=(0, 1), wires=[4, 2], control_values="01"
@@ -596,7 +597,7 @@ class TestControlledQutritUnitary:
         )
 
         out = original._controlled("a")
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     def test_adjoint(self):
         """Tests the metadata and unitary for an adjoint ControlledQutritUnitary operation."""
@@ -625,6 +626,7 @@ label_data = [
 
 @pytest.mark.parametrize("mat, op", label_data)
 class TestUnitaryLabels:
+    # pylint: disable=unused-argument
     def test_no_cache(self, mat, op):
         """Test labels work without a provided cache."""
         assert op.label() == "U"

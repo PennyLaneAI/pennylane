@@ -16,16 +16,16 @@ import itertools
 
 import numpy as np
 import pytest
-from scipy.stats import unitary_group, norm
+from scipy.stats import norm, unitary_group
 
 import pennylane as qml
+from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.transforms.qmc import (
-    _apply_controlled_z,
     _apply_controlled_v,
+    _apply_controlled_z,
     apply_controlled_Q,
     quantum_monte_carlo,
 )
-from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.wires import Wires
 
 
@@ -85,7 +85,7 @@ def get_unitary(circ, n_wires):
         return qml.state()
 
     bitstrings = list(itertools.product([0, 1], repeat=n_wires))
-    u = [unitary_z(np.array(bitstring)).numpy() for bitstring in bitstrings]
+    u = [unitary_z(np.array(bitstring)) for bitstring in bitstrings]
     u = np.array(u).T
     return u
 
@@ -176,7 +176,7 @@ class TestApplyControlledQ:
         with pytest.raises(ValueError, match="The target wire must be contained within wires"):
             apply_controlled_Q(
                 lambda: ..., wires=range(3), target_wire=4, control_wire=5, work_wires=None
-            )
+            )()
 
 
 class TestQuantumMonteCarlo:
@@ -225,7 +225,7 @@ class TestQuantumMonteCarlo:
         with pytest.raises(ValueError, match="No wires can be shared between the wires"):
             quantum_monte_carlo(
                 lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires
-            )
+            )()
 
     @pytest.mark.slow
     def test_integration(self):
@@ -258,30 +258,21 @@ class TestQuantumMonteCarlo:
             fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires
         )
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qmc_circuit()
-            qml.probs(estimation_wires)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=2)
-
-        for op in tape.operations:
-            unexpanded = (
-                isinstance(op, qml.MultiControlledX)
-                or isinstance(op, qml.templates.QFT)
-                or isinstance(op, qml.tape.QuantumScript)
-            )
-            assert not unexpanded
-
         dev = qml.device("default.qubit", wires=wires + estimation_wires)
-        res = dev.execute(tape)
 
         @qml.qnode(dev)
         def circuit():
+            qmc_circuit()
+            return qml.probs(estimation_wires)
+
+        @qml.qnode(dev)
+        def circuit_expected():
             qml.templates.QuantumMonteCarlo(
                 probs, func, target_wires=wires, estimation_wires=estimation_wires
             )
             return qml.probs(estimation_wires)
 
-        res_expected = circuit()
+        res = circuit()
+        res_expected = circuit_expected()
+
         assert np.allclose(res, res_expected)

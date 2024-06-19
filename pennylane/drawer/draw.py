@@ -16,12 +16,18 @@
 """
 Contains the drawing function.
 """
-from functools import wraps
 import warnings
+from functools import wraps
 
 import pennylane as qml
+
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+
+
+def catalyst_qjit(qnode):
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
 def draw(
@@ -30,14 +36,16 @@ def draw(
     show_all_wires=False,
     decimals=2,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     expansion_strategy=None,
 ):
     """Create a function that draws the given qnode or quantum function.
 
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
+           If not provided, the wire order defaults to the device wires. If device wires are not
+           available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             ``None`` will omit parameters from operation labels.
@@ -66,13 +74,13 @@ def draw(
         def circuit(a, w):
             qml.Hadamard(0)
             qml.CRX(a, wires=[0, 1])
-            qml.Rot(*w, wires=[1])
+            qml.Rot(*w, wires=[1], id="arbitrary")
             qml.CRX(-a, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.expval(qml.Z(0) @ qml.Z(1))
 
     >>> print(qml.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●─────────────────────────────╭●─────────┤ ╭<Z@Z>
-    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
+    0: ──H─╭●─────────────────────────────────────────╭●─────────┤ ╭<Z@Z>
+    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╰RX(-2.30)─┤ ╰<Z@Z>
 
     .. details::
         :title: Usage Details
@@ -81,14 +89,14 @@ def draw(
     By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
 
     >>> print(qml.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●─────────────────────────────────────╭●───────────┤ ╭<Z@Z>
-    1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000)─╰RX(-2.3000)─┤ ╰<Z@Z>
+    0: ──H─╭●─────────────────────────────────────────────────╭●───────────┤ ╭<Z@Z>
+    1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000,"arbitrary")─╰RX(-2.3000)─┤ ╰<Z@Z>
 
     Parameters can be omitted by requesting ``decimals=None``:
 
     >>> print(qml.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●───────╭●──┤ ╭<Z@Z>
-    1: ────╰RX──Rot─╰RX─┤ ╰<Z@Z>
+    0: ──H─╭●────────────────────╭●──┤ ╭<Z@Z>
+    1: ────╰RX──Rot("arbitrary")─╰RX─┤ ╰<Z@Z>
 
     If the parameters are not acted upon by classical processing like ``-a``, then
     ``qml.draw`` can handle string-valued parameters as well:
@@ -96,19 +104,19 @@ def draw(
     >>> @qml.qnode(qml.device('lightning.qubit', wires=1))
     ... def circuit2(x):
     ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit2)("x"))
     0: ──RX(x)─┤  <Z>
 
-    When requested with ``show_matrices=True``, matrix valued parameters are printed below the
-    circuit:
+    When requested with ``show_matrices=True`` (the default), matrix valued parameters
+    are printed below the circuit. For ``show_matrices=False``, they are not printed:
 
     >>> @qml.qnode(qml.device('default.qubit', wires=2))
     ... def circuit3():
     ...     qml.QubitUnitary(np.eye(2), wires=0)
     ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
     ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
-    >>> print(qml.draw(circuit3, show_matrices=True)())
+    >>> print(qml.draw(circuit3)())
     0: ──U(M0)─╭U(M1)─┤
     1: ────────╰U(M1)─┤  <𝓗(M0)>
     M0 =
@@ -119,6 +127,9 @@ def draw(
     [-0. -1. -0. -0.]
     [-0. -0. -1. -0.]
     [-0. -0. -0. -1.]]
+    >>> print(qml.draw(circuit3, show_matrices=False)())
+    0: ──U(M0)─╭U(M1)─┤
+    1: ────────╰U(M1)─┤  <𝓗(M0)>
 
     The ``max_length`` keyword warps long circuits:
 
@@ -131,7 +142,7 @@ def draw(
         @qml.qnode(qml.device('lightning.qubit', wires=3))
         def longer_circuit(params):
             qml.StronglyEntanglingLayers(params, wires=range(3))
-            return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+            return [qml.expval(qml.Z(i)) for i in range(3)]
 
         print(qml.draw(longer_circuit, max_length=60)(params))
 
@@ -155,7 +166,7 @@ def draw(
     If the device or ``wire_order`` has wires not used by operations, those wires are omitted
     unless requested with ``show_all_wires=True``
 
-    >>> empty_qfunc = lambda : qml.expval(qml.PauliZ(0))
+    >>> empty_qfunc = lambda : qml.expval(qml.Z(0))
     >>> empty_circuit = qml.QNode(empty_qfunc, qml.device('lightning.qubit', wires=3))
     >>> print(qml.draw(empty_circuit, show_all_wires=True)())
     0: ───┤  <Z>
@@ -166,11 +177,13 @@ def draw(
 
     .. code-block:: python
 
-        @qml.gradients.param_shift(shifts=[(0.1,)])
-        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        from functools import partial
+
+        @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+        @qml.qnode(qml.device('default.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
 
@@ -192,6 +205,9 @@ def draw(
     1: ───────────╰X─┤
 
     """
+    if catalyst_qjit(qnode):
+        qnode = qnode.user_function
+
     if hasattr(qnode, "construct"):
         return _draw_qnode(
             qnode,
@@ -212,7 +228,14 @@ def draw(
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
-        _wire_order = wire_order or tape.wires
+
+        if wire_order:
+            _wire_order = wire_order
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_text(
             tape,
@@ -232,20 +255,38 @@ def _draw_qnode(
     show_all_wires=False,
     decimals=2,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     expansion_strategy=None,
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        if isinstance(qnode.device, qml.devices.Device) and (
+            expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
+        ):
+            qnode.construct(args, kwargs)
+            tapes = qnode.transform_program([qnode.tape])[0]
+            program, _ = qnode.device.preprocess()
+            tapes = program(tapes)[0]
+        else:
+            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+            try:
+                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+                tapes = qnode.construct(args, kwargs)
+                program = qnode.transform_program
+                tapes = program([qnode.tape])[0]
 
-        try:
-            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-            tapes = qnode.construct(args, kwargs)
-        finally:
-            qnode.expansion_strategy = original_expansion_strategy
+            finally:
+                qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        if wire_order:
+            _wire_order = wire_order
+        elif qnode.device.wires:
+            _wire_order = qnode.device.wires
+        else:
+            try:
+                _wire_order = sorted(tapes[0].wires)
+            except TypeError:
+                _wire_order = tapes[0].wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -259,12 +300,14 @@ def _draw_qnode(
                     max_length=max_length,
                     cache=cache,
                 )
-                for t in tapes[0]
+                for t in tapes
             ]
-            if show_matrices:
-                mat_str = "\n"
+            if show_matrices and cache["matrices"]:
+                mat_str = ""
                 for i, mat in enumerate(cache["matrices"]):
                     mat_str += f"\nM{i} = \n{mat}"
+                if mat_str:
+                    mat_str = "\n" + mat_str
                 return "\n\n".join(res) + mat_str
             return "\n\n".join(res)
 
@@ -286,7 +329,9 @@ def draw_mpl(
     show_all_wires=False,
     decimals=None,
     expansion_strategy=None,
-    style="black_white",
+    style=None,
+    *,
+    fig=None,
     **kwargs,
 ):
     """Draw a qnode with matplotlib
@@ -295,14 +340,17 @@ def draw_mpl(
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
 
     Keyword Args:
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
+           If not provided, the wire order defaults to the device wires. If device wires are not
+           available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
-            'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            ``'black_white'`` style will be used. Setting style does not modify matplotlib global plotting settings.
-            If ``None``, the current matplotlib settings will be used.
+            'pennylane', 'pennylane_sketch', 'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``.
+            If no style is specified, the global style set with :func:`~.use_style` will be used, and the
+            initial default is 'black_white'. If you would like to use your environment's current rcParams,
+            set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -319,7 +367,7 @@ def draw_mpl(
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
-
+        fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -337,10 +385,13 @@ def draw_mpl(
             qml.QFT(wires=(0,1,2,3))
             qml.IsingXX(1.234, wires=(0,2))
             qml.Toffoli(wires=(0,1,2))
+            mcm = qml.measure(1)
+            mcm_out = qml.measure(2)
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)
+            qml.cond(mcm, qml.RY)(np.pi / 4, wires=3)
             qml.CRZ(z, wires=(3,0))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0)), qml.probs(op=mcm_out)
 
 
         fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
@@ -365,7 +416,7 @@ def draw_mpl(
             def circuit2(x, y):
                 qml.RX(x, wires=0)
                 qml.Rot(*y, wires=0)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.Z(0))
 
             fig, ax = qml.draw_mpl(circuit2, decimals=2)(1.23456, [1.2345,2.3456,3.456])
             fig.show()
@@ -416,8 +467,12 @@ def draw_mpl(
             box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
             ax.add_patch(box1)
 
-            ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
+            ax.annotate("CSWAP", xy=(5, 2.5), xycoords='data', xytext=(5.8,1.5), textcoords='data',
                         arrowprops={'facecolor': 'black'}, fontsize=14)
+
+            ax.annotate("classical control flow", xy=(3.5, 4.2), xycoords='data', xytext=(0.8,4.2),
+                        textcoords='data', arrowprops={'facecolor': 'blue'}, fontsize=14,
+                        va="center")
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/postprocessing.png
@@ -446,7 +501,7 @@ def draw_mpl(
         You can also control the appearance with matplotlib's provided tools, see the
         `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
         For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
-        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style=None``:
+        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style="rcParams"``:
 
         .. code-block:: python
 
@@ -457,10 +512,10 @@ def draw_mpl(
             plt.rcParams['patch.linewidth'] = 4
             plt.rcParams['patch.force_edgecolor'] = True
             plt.rcParams['lines.color'] = 'indigo'
-            plt.rcParams['lines.linewidth'] = 5
+            plt.rcParams['lines.linewidth'] = 2
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-            fig, ax = qml.draw_mpl(circuit, style=None)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/rcparams.png
@@ -484,6 +539,8 @@ def draw_mpl(
                 :target: javascript:void(0);
 
     """
+    if catalyst_qjit(qnode):
+        qnode = qnode.user_function
     if hasattr(qnode, "construct"):
         return _draw_mpl_qnode(
             qnode,
@@ -492,6 +549,7 @@ def draw_mpl(
             decimals=decimals,
             expansion_strategy=expansion_strategy,
             style=style,
+            fig=fig,
             **kwargs,
         )
 
@@ -504,7 +562,13 @@ def draw_mpl(
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
-        _wire_order = wire_order or tape.wires
+        if wire_order:
+            _wire_order = wire_order
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_mpl(
             tape,
@@ -512,6 +576,7 @@ def draw_mpl(
             show_all_wires=show_all_wires,
             decimals=decimals,
             style=style,
+            fig=fig,
             **kwargs,
         )
 
@@ -525,26 +590,46 @@ def _draw_mpl_qnode(
     decimals=None,
     expansion_strategy=None,
     style="black_white",
+    *,
+    fig=None,
     **kwargs,
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
+            qnode.construct(args, kwargs)
+            tapes, _ = qnode.transform_program([qnode.tape])
+            program, _ = qnode.device.preprocess()
+            tapes, _ = program(tapes)
+            tape = tapes[0]
+        else:
+            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
-        try:
-            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-            qnode.construct(args, kwargs_qnode)
-        finally:
-            qnode.expansion_strategy = original_expansion_strategy
+            try:
+                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+                qnode.construct(args, kwargs_qnode)
+                program = qnode.transform_program
+                [tape], _ = program([qnode.tape])
+            finally:
+                qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        if wire_order:
+            _wire_order = wire_order
+        elif qnode.device.wires:
+            _wire_order = qnode.device.wires
+        else:
+            try:
+                _wire_order = sorted(tape.wires)
+            except TypeError:
+                _wire_order = tape.wires
 
         return tape_mpl(
-            qnode.qtape,
+            tape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
             style=style,
+            fig=fig,
             **kwargs,
         )
 

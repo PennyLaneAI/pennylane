@@ -30,8 +30,8 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
         ...
 
 .. note::
-    If no interface is specified, PennyLane will default to the NumPy interface (powered by the
-    `autograd <https://github.com/HIPS/autograd>`_ library).
+    If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
+    See ``qml.workflow.SUPPORTED_INTERFACES`` for a list of all accepted interface strings.
 
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
@@ -129,8 +129,9 @@ NumPy
 ~~~~~
 
 When using the standard NumPy framework, PennyLane offers some built-in optimizers.
-Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`
-:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, :class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
+Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`,
+:class:`~.RiemannianGradientOptimizer`, :class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`,
+:class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
 
 :html:`<div class="summary-table">`
 
@@ -141,10 +142,10 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
     ~pennylane.AdamOptimizer
     ~pennylane.AdaptiveOptimizer
     ~pennylane.GradientDescentOptimizer
-    ~pennylane.LieAlgebraOptimizer
     ~pennylane.MomentumOptimizer
     ~pennylane.NesterovMomentumOptimizer
     ~pennylane.QNGOptimizer
+    ~pennylane.RiemannianGradientOptimizer
     ~pennylane.RMSPropOptimizer
     ~pennylane.RotosolveOptimizer
     ~pennylane.RotoselectOptimizer
@@ -199,7 +200,7 @@ Simulation-based differentiation
 The following methods use `reverse accumulation
 <https://en.wikipedia.org/wiki/Automatic_differentiation#Reverse_accumulation>`__ to compute
 gradients; a well-known example of this approach is backpropagation. These methods are **not** hardware compatible; they are only supported on
-*statevector* simulator devices such as :class:`default.qubit <~.DefaultQubit>`.
+*statevector* simulator devices such as :class:`default.qubit <pennylane.devices.DefaultQubit>`.
 
 However, for rapid prototyping on simulators, these methods typically out-perform forward-mode
 accumulators such as the parameter-shift rule and finite-differences. For more details, see the
@@ -209,7 +210,7 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
 
   This differentiation method is only allowed on simulator
   devices that are classically end-to-end differentiable, for example
-  :class:`default.qubit <~.DefaultQubit>`. This method does *not* work on devices
+  :class:`default.qubit <pennylane.devices.DefaultQubit>`. This method does *not* work on devices
   that estimate measurement statistics using a finite number of shots; please use
   the ``parameter-shift`` rule instead.
 
@@ -225,9 +226,9 @@ Hardware-compatible differentiation
 
 The following methods support both quantum hardware and simulators, and are examples of `forward
 accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__.
-However, when using a simulator, you may notice that the time required to compute the gradients
-with these methods :doc:`scales linearly <demos/tutorial_backprop>` with the number of trainable circuit
-parameters.
+However, when using a simulator, you may notice that the number of circuit executions required to
+compute the gradients with these methods :doc:`scales linearly <demos/tutorial_backprop>`
+with the number of trainable circuit parameters.
 
 * ``"parameter-shift"``: Use the analytic :doc:`parameter-shift rule
   <glossary/parameter_shift>` for all supported quantum operation arguments, with
@@ -236,6 +237,11 @@ parameters.
 * ``"finite-diff"``: Use numerical finite-differences for all quantum operation arguments.
 
 * ``"hadamard"``: Use hadamard tests on the generators for all compatible quantum operations arguments.
+
+* :func:`qml.gradients.stoch_pulse_grad <pennylane.gradients.stoch_pulse_grad>`: Use a stochastic variant of the
+  parameter-shift rule for pulse programs.
+
+* :func:`qml.gradients.pulse_odegen <pennylane.gradients.pulse_odegen>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
 
 
 Device gradients
@@ -285,8 +291,9 @@ rules; these can be applied *directly* to QNodes:
 >>> circuit(weights)
 tensor([0.9658079, 0.0341921], requires_grad=True)
 >>> qml.gradients.param_shift(circuit)(weights)
-tensor([[-0.04673668, -0.09442394, -0.14409127],
-        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+(tensor([-0.04673668,  0.04673668], requires_grad=True),
+ tensor([-0.09442394,  0.09442394], requires_grad=True),
+ tensor([-0.14409127,  0.14409127], requires_grad=True))
 
 Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
 this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
@@ -319,8 +326,12 @@ gradients to be computed:
 >>> circuit(weights)
 tensor(0.9316158, requires_grad=True)
 >>> qml.gradients.param_shift(circuit)(weights)  # gradient
-array([[-0.09347337, -0.18884787, -0.28818254]])
->>> qml.jacobian(qml.gradients.param_shift(circuit))(weights)  # hessian
+(tensor(-0.09347337, requires_grad=True),
+ tensor(-0.18884787, requires_grad=True),
+ tensor(-0.28818254, requires_grad=True))
+>>> def f(weights):
+...     return np.stack(qml.gradients.param_shift(circuit)(weights))
+>>> qml.jacobian(f)(weights)  # hessian
 array([[[-0.9316158 ,  0.01894799,  0.0289147 ],
         [ 0.01894799, -0.9316158 ,  0.05841749],
         [ 0.0289147 ,  0.05841749, -0.9316158 ]]])
@@ -390,25 +401,25 @@ At the moment, it takes into account the following parameters:
 +==================+==============================+==============+===============+==============+==============+===============+================+================+=============+=============+=============+
 | **Interface**    |**Differentiation method**    | state        |density matrix |  probs       | sample       |expval (obs)   | expval (herm)  | expval (proj)  | var         | vn entropy  | mutual info |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-| ``None``         | ``"device"``                 |    :rd:`1`   |      :rd:`1`  |   :rd:`1`    | :rd:`1`      |  :rd:`1`      | :rd:`1`        | :rd:`1`        | :rd:`1`     | :rd:`1`     | :rd:`1`     |
+| ``None``         | ``"device"``                 |    :rd:`1`   |      :rd:`1`  |   :rd:`1`    | :rd:`9`      |  :rd:`1`      | :rd:`1`        | :rd:`1`        | :rd:`1`     | :rd:`1`     | :rd:`1`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"backprop"``               |    :rd:`1`   |      :rd:`1`  |   :rd:`1`    | :rd:`1`      |  :rd:`1`      | :rd:`1`        | :rd:`1`        | :rd:`1`     | :rd:`1`     | :rd:`1`     |
+|                  | ``"backprop"``               |    :rd:`1`   |      :rd:`1`  |   :rd:`1`    | :rd:`9`      |  :rd:`1`      | :rd:`1`        | :rd:`1`        | :rd:`1`     | :rd:`1`     | :rd:`1`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
+|                  | ``"adjoint"``                |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`9`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"parameter-shift"``        |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
+|                  | ``"parameter-shift"``        |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`9`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"finite-diff"``            |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
+|                  | ``"finite-diff"``            |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`9`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"spsa"``                   |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
+|                  | ``"spsa"``                   |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`9`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"hadamard"``               |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
+|                  | ``"hadamard"``               |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`9`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-| ``"autograd"``   | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
+| ``"autograd"``   | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`9`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |     :gr:`4`  |   :gr:`4`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     | :rd:`6`     | :rd:`6`     |
+|                  | ``"adjoint"``                |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`9`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -418,11 +429,11 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"hadamard"``               |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-| ``"jax"``        | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
+| ``"jax"``        | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`9`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     | :rd:`6`     | :rd:`6`     |
+|                  | ``"adjoint"``                |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`9`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -432,11 +443,11 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"hadamard"``               |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-| ``"tf"``         | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
+| ``"tf"``         | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`9`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     | :rd:`6`     | :rd:`6`     |
+|                  | ``"adjoint"``                |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`9`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -446,11 +457,11 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"hadamard"``               |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-| ``"torch"``      | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
+| ``"torch"``      | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`9`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     | :rd:`6`     | :rd:`6`     |
+|                  | ``"adjoint"``                |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`9`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -472,9 +483,9 @@ At the moment, it takes into account the following parameters:
    directly. However, any real scalar-valued post-processing done to the output of the
    circuit will be differentiable. See :ref:`State gradients <State gradients>` for details.
 5. Supported, but only when ``shots=None``. See :ref:`Backpropagation <Analytic backpropagation>` for details.
-6. Not supported. The adjoint differentiation algorithm is only implemented for computing the expectation values of observables. See
+6. Not supported. The adjoint differentiation algorithm is only implemented for analytic simulation. See
    :ref:`Adjoint differentation <Adjoint differentation>` for details.
-7. Supported. Raises warning when ``shots>0`` since the gradient is always computed analytically. See
+7. Supported. Raises error when ``shots>0`` since the gradient is always computed analytically. See
    :ref:`Adjoint differentation <Adjoint differentation>` for details.
 8. Supported.
 9. Not supported. The discretization of the output caused by wave function collapse is

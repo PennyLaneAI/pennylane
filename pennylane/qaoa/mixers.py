@@ -14,9 +14,10 @@
 r"""
 Methods for constructing QAOA mixer Hamiltonians.
 """
+import functools
+
 # pylint: disable=unnecessary-lambda-assignment
 import itertools
-import functools
 from typing import Iterable, Union
 
 import networkx as nx
@@ -53,15 +54,13 @@ def x_mixer(wires: Union[Iterable, Wires]):
     >>> wires = range(3)
     >>> mixer_h = qaoa.x_mixer(wires)
     >>> print(mixer_h)
-      (1) [X0]
-    + (1) [X1]
-    + (1) [X2]
+    1 * X(0) + 1 * X(1) + 1 * X(2)
     """
 
     wires = Wires(wires)
 
     coeffs = [1 for w in wires]
-    obs = [qml.PauliX(w) for w in wires]
+    obs = [qml.X(w) for w in wires]
 
     H = qml.Hamiltonian(coeffs, obs)
     # store the valuable information that all observables are in one commuting group
@@ -131,8 +130,8 @@ def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
 
     obs = []
     for node1, node2 in edges:
-        obs.append(qml.PauliX(get_nvalue(node1)) @ qml.PauliX(get_nvalue(node2)))
-        obs.append(qml.PauliY(get_nvalue(node1)) @ qml.PauliY(get_nvalue(node2)))
+        obs.append(qml.X(get_nvalue(node1)) @ qml.X(get_nvalue(node2)))
+        obs.append(qml.Y(get_nvalue(node1)) @ qml.Y(get_nvalue(node2)))
 
     return qml.Hamiltonian(coeffs, obs)
 
@@ -172,15 +171,17 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     >>> from networkx import Graph
     >>> graph = Graph([(0, 1), (1, 2)])
     >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
-    >>> print(mixer_h)
-      (0.25) [X1]
-    + (0.5) [X0]
-    + (0.5) [X2]
-    + (0.25) [X1 Z2]
-    + (0.25) [X1 Z0]
-    + (0.5) [X0 Z1]
-    + (0.5) [X2 Z1]
-    + (0.25) [X1 Z0 Z2]
+    >>> mixer_h
+    (
+        0.5 * X(0)
+      + 0.5 * (X(0) @ Z(1))
+      + 0.25 * X(1)
+      + 0.25 * (X(1) @ Z(2))
+      + 0.25 * (X(1) @ Z(0))
+      + 0.25 * (X(1) @ Z(0) @ Z(2))
+      + 0.5 * X(2)
+      + 0.5 * (X(2) @ Z(1))
+    )
 
     >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
@@ -188,14 +189,16 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
     >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
     >>> print(mixer_h)
-      (0.25) [X1]
-    + (0.5) [X0]
-    + (0.5) [X2]
-    + (0.25) [X1 Z0]
-    + (0.25) [X1 Z2]
-    + (0.5) [X0 Z1]
-    + (0.5) [X2 Z1]
-    + (0.25) [X1 Z2 Z0]
+    (
+        0.5 * X(0)
+      + 0.5 * (X(0) @ Z(1))
+      + 0.25 * X(1)
+      + 0.25 * (X(1) @ Z(2))
+      + 0.25 * (X(1) @ Z(0))
+      + 0.25 * (X(1) @ Z(0) @ Z(2))
+      + 0.5 * X(2)
+      + 0.5 * (X(2) @ Z(1))
+    )
     """
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
@@ -222,8 +225,8 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
         neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
         degree = len(neighbours)
 
-        n_terms = [[qml.PauliX(get_nvalue(i))]] + [
-            [qml.Identity(get_nvalue(n)), qml.PauliZ(get_nvalue(n))] for n in neighbours
+        n_terms = [[qml.X(get_nvalue(i))]] + [
+            [qml.Identity(get_nvalue(n)), qml.Z(get_nvalue(n))] for n in neighbours
         ]
         n_coeffs = [[1, sign] for n in neighbours]
 

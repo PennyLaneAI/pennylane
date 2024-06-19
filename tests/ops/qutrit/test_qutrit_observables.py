@@ -14,8 +14,9 @@
 """Unit tests for qutrit observables."""
 import functools
 from unittest.mock import PropertyMock, patch
-import pytest
+
 import numpy as np
+import pytest
 from gate_data import GELL_MANN
 
 import pennylane as qml
@@ -370,6 +371,19 @@ class TestGellMann:
 
         assert np.allclose(res_static, mat)
         assert np.allclose(res_dynamic, mat)
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_obs_data(self):
+        """Test that the _obs_data() method of qml.GellMann returns the correct
+        observable data."""
+        ob1 = qml.GellMann(wires=0, index=2)
+        ob2 = qml.GellMann(wires=0, index=2) @ qml.GellMann(wires=1, index=1)
+
+        assert ob1._obs_data() == {("GellMann", qml.wires.Wires(0), (2,))}
+        assert ob2._obs_data() == {
+            ("GellMann", qml.wires.Wires(0), (2,)),
+            ("GellMann", qml.wires.Wires(1), (1,)),
+        }
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_eigvals(self, index, mat, eigs, tol):

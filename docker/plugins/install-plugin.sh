@@ -29,10 +29,10 @@ case $PLUGIN_NAME in
   echo "##########-Installing" "$PLUGIN_NAME" "Plugin-##########"
   pip3 install amazon-braket-pennylane-plugin
   ;;
- # Build SF Plugin
-  "sf")
+ # Build QuantumInspire Plugin
+  "quantuminspire")
   echo "##########-Installing" "$PLUGIN_NAME" "Plugin-##########"
-  pip3 install pennylane-sf
+  pip3 install pennylane-quantuminspire
   ;;
 # Build Cirq Plugin
   "cirq")
