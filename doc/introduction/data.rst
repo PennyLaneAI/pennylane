@@ -151,7 +151,7 @@ We can then write this :class:`~pennylane.data.Dataset` to storage and read it a
 array([-1.5, -0.5,  0.5,  1.5])
 
 For more details on reading and writing custom datasets, including metadata, please
-see the :mod:`~.data` subpackage documentation.
+see the :mod:`~.data` module documentation.
 
 :html:`<div class="summary-table">`
 
