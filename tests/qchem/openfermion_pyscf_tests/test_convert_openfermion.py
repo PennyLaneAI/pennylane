@@ -23,7 +23,6 @@ import pytest
 import pennylane as qml
 from pennylane import fermi
 from pennylane import numpy as np
-from pennylane.qchem.convert_openfermion import _from_openfermion_qubit
 
 openfermion = pytest.importorskip("openfermion")
 
@@ -72,7 +71,7 @@ class TestFromOpenFermion:
     @pytest.mark.parametrize("of_op, pl_op", OPS)
     def test_convert_qubit(self, of_op, pl_op):
         """Test conversion from ``QubitOperator`` to PennyLane."""
-        converted_pl_op = _from_openfermion_qubit(of_op)
+        converted_pl_op = qml.from_openfermion(of_op)
         assert converted_pl_op.compare(pl_op)
 
     def test_tol_qubit(self):
@@ -81,31 +80,27 @@ class TestFromOpenFermion:
             "Z1", complex(1.3, 1e-8)
         )
 
-        pl_op = _from_openfermion_qubit(q_op, tol=1e-6)
+        pl_op = qml.from_openfermion(q_op, tol=1e-6)
         assert not np.any(pl_op.coeffs.imag)
 
-        pl_op = _from_openfermion_qubit(q_op, tol=1e-10)
+        pl_op = qml.from_openfermion(q_op, tol=1e-10)
         assert np.any(pl_op.coeffs.imag)
 
     def test_sum_qubit(self):
-        """Test that the from_openfermion_qubit method yields a :class:`~.Sum` object if requested."""
+        """Test that from_openfermion yields a :class:`~.Sum` object."""
         q_op = openfermion.QubitOperator("X0 X1", 0.25) + openfermion.QubitOperator("Z1 Z0", 0.75)
 
-        assert isinstance(_from_openfermion_qubit(q_op), qml.ops.LinearCombination)
-        assert isinstance(
-            _from_openfermion_qubit(q_op, format="LinearCombination"), qml.ops.LinearCombination
-        )
-        assert isinstance(_from_openfermion_qubit(q_op, format="Sum"), qml.ops.Sum)
+        assert isinstance(qml.from_openfermion(q_op), qml.ops.Sum)
 
-    def test_invalid_format_qubit(self):
-        """Test if error is raised if format is invalid."""
-        q_op = openfermion.QubitOperator("X0")
-
-        with pytest.raises(
-            ValueError,
-            match="format must be a Sum or LinearCombination, got: invalid_format",
-        ):
-            _from_openfermion_qubit(q_op, format="invalid_format")
+    # def test_invalid_format_qubit(self):
+    #     """Test if error is raised if format is invalid."""
+    #     q_op = openfermion.QubitOperator("X0")
+    #
+    #     with pytest.raises(
+    #         ValueError,
+    #         match="format must be a Sum or LinearCombination, got: invalid_format",
+    #     ):
+    #         _from_openfermion_qubit(q_op, format="invalid_format")
 
     # PennyLane operators were obtained from openfermion operators manually
     @pytest.mark.parametrize(
