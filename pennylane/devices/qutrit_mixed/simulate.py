@@ -196,7 +196,7 @@ def simulate(  # pylint: disable=too-many-arguments
 
     """
     state, is_state_batched = get_final_state(
-      circuit, debugger=debugger, interface=interface, rng=rng, prng_key=prng_key
+        circuit, debugger=debugger, interface=interface, rng=rng, prng_key=prng_key
     )
     return measure_final_state(
         circuit,
