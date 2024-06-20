@@ -80,6 +80,10 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
     openfermion = _import_of()
 
     if isinstance(openfermion_op, openfermion.FermionOperator):
+
+        if wires:
+            raise ValueError(f"Custom wire mapping is not supported for fermionic operators.")
+
         typemap = {0: "-", 1: "+"}
 
         fermi_words = []
@@ -154,12 +158,18 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
 def _(ops: FermiWord, wires=None, tol=1.0e-16):
     openfermion = _import_of()
 
+    if wires:
+        raise ValueError(f"Custom wire mapping is not supported for fermionic operators.")
+
     return openfermion.ops.FermionOperator(qml.fermi.fermionic._to_string(ops, of=True))
 
 
 @_to_openfermion_dispatch.register
 def _(pl_op: FermiSentence, wires=None, tol=1.0e-16):
     openfermion = _import_of()
+
+    if wires:
+        raise ValueError(f"Custom wire mapping is not supported for fermionic operators.")
 
     fermion_op = openfermion.ops.FermionOperator()
     for fermi_word in pl_op:
