@@ -141,4 +141,15 @@ def __getattr__(key):
         from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
 
         return _get_abstract_operator()
+
+    if key == "AbstractMeasurement":
+        from .primitives import _get_abstract_measurement  # pylint: disable=import-outside-toplevel
+
+        return _get_abstract_measurement()
+
+    if key == "qnode_prim":
+        from .capture_qnode import _get_qnode_prim  # pylint: disable=import-outside-toplevel
+
+        return _get_qnode_prim()
+
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
