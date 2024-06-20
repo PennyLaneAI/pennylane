@@ -15,9 +15,11 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
+import warnings
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
+import pennylane as qml
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -407,7 +409,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
-def from_qasm(quantum_circuit: str, measurements=None):
+def from_qasm(quantum_circuit: str, measurements=False):
     """Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
@@ -436,8 +438,16 @@ def from_qasm(quantum_circuit: str, measurements=None):
         that will **override** any terminal measurements present in the QASM code,
         so that they are not performed before the operations specified in ``measurements``.
 
-    If the existing QASM code already contains measurements, ``from_qasm``
-    will return those measurements, provided that they are not overriden as shown above.
+    If the existing QASM code already contains measurements, set `measurements=None` so that
+    `from_qasm` returns those measurements. By default, `from_qasm` will remove any measurements
+    that are present in the QASM code.
+
+    .. warnings::
+
+        The current default behaviour of excluding measurements in the QASM code is deprecated
+        and will be changed in a future release. Starting in version ``0.38``, ``from_qasm``
+        will keep the measurements from the QASM code by default. To remove all measurements,
+        set ``measurements=[]`` which overrides the existing measurements with an empty list.
 
     Mid-circuit measurements inside the QASM code can also be interpreted.
 
@@ -485,12 +495,23 @@ def from_qasm(quantum_circuit: str, measurements=None):
         quantum_circuit (str): a QASM string containing a valid quantum circuit
         measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
             measurement or list of PennyLane measurements that overrides any terminal measurements
-            that may be present in the input circuit
+            that may be present in the input circuit. If set to ``None``, existing measurements
+            in the input circuit will be used.
 
     Returns:
         function: the PennyLane template created based on the QASM string
+
     """
     plugin_converter = plugin_converters["qasm"].load()
+    if measurements is False:
+        warnings.warn(
+            "The current default behaviour of removing measurements in the QASM code is "
+            "deprecated. Set measurements=None to keep the existing measurements in the QASM "
+            "code or set measurements=[] to remove them from the returned circuit. Starting "
+            "in version 0.38, measurements=None will be the new default.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        measurements = []
     return plugin_converter(quantum_circuit, measurements=measurements)
 
 
