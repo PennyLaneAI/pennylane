@@ -415,6 +415,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `hadamard_grad` returned a wrong shape for `qml.probs()` without wires.
+  [(#5860)](https://github.com/PennyLaneAI/pennylane/pull/5860)
+
 * An error is now raised on processing an `AnnotatedQueue` into a `QuantumScript` if the queue
   contains something other than an `Operator`, `MeasurementProcess`, or `QuantumScript`.
   [(#5866)](https://github.com/PennyLaneAI/pennylane/pull/5866)
