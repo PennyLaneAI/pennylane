@@ -537,10 +537,6 @@ class TestJaxIntegration:
                 r2 = r2[r2 != fill_in_value]
             np.allclose(r1, r2)
 
-    def test_grad_basic(self):
-        """Test that the gradient is correct in a circuit without postselection
-        or classical control"""
-
     def test_obs_grad(self):
         """Test that the gradient of a single observable expectation value is correct."""
         assert True
@@ -563,12 +559,26 @@ class TestJaxIntegration:
 
 # pylint: disable=import-outside-toplevel, not-an-iterable
 @pytest.mark.torch
+@pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 class TestTorchIntegration:
     """Integration tests for dynamic_one_shot with Torch"""
 
-    def test_grad_basic(self):
-        """Test that the gradient is correct in a circuit without postselection
-        or classical control"""
+    def test_grad_cond_param(self):
+        """Test that the gradient is correct for a circuit with classically controlled
+        operations with trainable parameters"""
+        import torch
+        shots = 3000
+        dev = qml.device("default.qubit", shots=shots)
+
+        @qml.qnode(dev, diff_method="finite-diff", mcm_method="one-shot")
+        def circuit(x, y):
+            qml.RX(x, 0)
+            m = qml.measure(0)
+            qml.cond(m, qml.RX)(y, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = torch.tensor(2.1, requires_grad=False)
+        y = torch.tensor(1.5, requires_grad=True)
 
     def test_obs_grad(self):
         """Test that the gradient of a single observable expectation value is correct."""
@@ -594,10 +604,6 @@ class TestTorchIntegration:
 class TestAutogradIntegration:
     """Integration tests for dynamic_one_shot with Autograd"""
 
-    def test_grad_basic(self):
-        """Test that the gradient is correct in a circuit without postselection
-        or classical control"""
-
     def test_obs_grad(self):
         """Test that the gradient of a single observable expectation value is correct."""
         assert True
@@ -622,10 +628,6 @@ class TestAutogradIntegration:
 @pytest.mark.tf
 class TestTensorflowIntegration:
     """Integration tests for dynamic_one_shot with Tensorflow"""
-
-    def test_grad_basic(self):
-        """Test that the gradient is correct in a circuit without postselection
-        or classical control"""
 
     def test_obs_grad(self):
         """Test that the gradient of a single observable expectation value is correct."""

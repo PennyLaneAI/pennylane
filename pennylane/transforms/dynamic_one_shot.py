@@ -378,10 +378,9 @@ def gather_non_mcm(measurement, samples, is_valid):
     if (interface := qml.math.get_interface(is_valid)) == "tensorflow" and not isinstance(
         measurement, SampleMP
     ):
-        # Tensorflow requires arrays that are used for arithmetic with each other to
-        # have the same dtype. We don't cast if measuring samples as float tf.Tensors
-        # cannot be used to index other tf.Tensors (is_valid is used to index valid
-        # samples)
+        # Tensorflow requires arrays that are used for arithmetic with each other to have the
+        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
+        # index other tf.Tensors (is_valid is used to index valid samples).
         is_valid = qml.math.cast_like(is_valid, samples)
 
     if isinstance(measurement, ExpectationMP):
@@ -401,9 +400,10 @@ def gather_non_mcm(measurement, samples, is_valid):
         )
     # VarianceMP
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
-    # Casting needed for tensorflow
-    samples = qml.math.cast_like(samples, expval)
-    is_valid = qml.math.cast_like(is_valid, expval)
+    if interface == "tensorflow":
+        # Casting needed for tensorflow
+        samples = qml.math.cast_like(samples, expval)
+        is_valid = qml.math.cast_like(is_valid, expval)
     return qml.math.sum((samples - expval) ** 2 * is_valid) / qml.math.sum(is_valid)
 
 
