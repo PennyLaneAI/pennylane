@@ -21,6 +21,7 @@ page in the developement guide.
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as pnp
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -79,26 +80,113 @@ def test_fig_argument():
     assert output_fig == fig
 
 
-@pytest.mark.parametrize(
-    "device",
-    [qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit(wires=3)],
-)
-@pytest.mark.parametrize(
-    "strategy, initial_strategy, n_lines", [("gradient", "device", 3), ("device", "gradient", 13)]
-)
-def test_expansion_strategy(device, strategy, initial_strategy, n_lines):
-    """Test that the expansion strategy keyword controls what operations are drawn."""
+class TestLevelExpansionStrategy:
+    @pytest.fixture(
+        params=[qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit()],
+    )
+    def transforms_circuit(self, request):
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(request.param, diff_method="parameter-shift")
+        def circ(weights, order):
+            qml.RandomLayers(weights, wires=(0, 1))
+            qml.Permute(order, wires=(0, 1, 2))
+            qml.PauliX(0)
+            qml.PauliX(0)
+            qml.RX(0.1, wires=0)
+            qml.RX(-0.1, wires=0)
+            return qml.expval(qml.PauliX(0))
 
-    @qml.qnode(device, expansion_strategy=initial_strategy)
-    def circuit():
-        qml.Permute([2, 0, 1], wires=(0, 1, 2))
-        return qml.expval(qml.PauliZ(0))
+        return circ
 
-    _, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
+    @pytest.mark.parametrize(
+        "levels,expected_metadata",
+        [
+            ((0, "top"), (3, 9, 9)),
+            ((2, "user"), (3, 5, 5)),
+            ((3, "gradient"), (3, 6, 6)),
+            ((8, "device"), (8, 5, 5)),
+        ],
+    )
+    def test_equivalent_levels(self, transforms_circuit, levels, expected_metadata):
+        """Test that the expansion strategy keyword controls what operations are drawn."""
+        var1, var2 = levels
+        expected_lines, expected_patches, expected_texts = expected_metadata
 
-    assert len(ax.lines) == n_lines
-    assert circuit.expansion_strategy == initial_strategy
-    plt.close()
+        order = [2, 1, 0]
+        weights = pnp.array([[1.0, 20]])
+
+        _, ax1 = qml.draw_mpl(transforms_circuit, level=var1)(weights, order)
+        _, ax2 = qml.draw_mpl(transforms_circuit, level=var2)(weights, order)
+
+        assert len(ax1.lines) == len(ax2.lines) == expected_lines
+        assert len(ax1.patches) == len(ax2.patches) == expected_patches
+        assert len(ax1.texts) == len(ax2.texts) == expected_texts
+
+        plt.close("all")
+
+    @pytest.mark.parametrize(
+        "device",
+        [qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit(wires=3)],
+    )
+    @pytest.mark.parametrize(
+        "strategy, initial_strategy, n_lines",
+        [("gradient", "device", 3), ("device", "gradient", 13)],
+    )
+    def test_expansion_strategy(self, device, strategy, initial_strategy, n_lines):
+        """Test that the expansion strategy keyword controls what operations are drawn."""
+
+        @qml.qnode(device, expansion_strategy=initial_strategy)
+        def circuit():
+            qml.Permute([2, 0, 1], wires=(0, 1, 2))
+            return qml.expval(qml.PauliZ(0))
+
+        _, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
+
+        assert len(ax.lines) == n_lines
+        assert circuit.expansion_strategy == initial_strategy
+        plt.close()
+
+    def test_draw_at_level_1(self, transforms_circuit):
+        """Test that at level one the first transform has been applied, cancelling inverses."""
+
+        order = [2, 1, 0]
+        weights = pnp.array([[1.0, 20]])
+
+        _, ax = qml.draw_mpl(transforms_circuit, level=1)(weights, order)
+
+        assert len(ax.lines) == 3
+        assert len(ax.patches) == 7
+        assert len(ax.texts) == 7
+
+    def test_providing_both_level_and_expansion_raises_error(self, transforms_circuit):
+        with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
+            qml.draw_mpl(transforms_circuit, level=0, expansion_strategy="device")
+
+    def test_draw_with_qfunc_warns_with_expansion_strategy(self):
+        """Test that draw warns the user about expansion_strategy being ignored."""
+
+        def qfunc():
+            qml.PauliZ(0)
+
+        with pytest.warns(
+            UserWarning, match="the expansion_strategy and level arguments are ignored"
+        ):
+            qml.draw_mpl(qfunc, expansion_strategy="gradient")
+
+        with pytest.warns(
+            UserWarning, match="the expansion_strategy and level arguments are ignored"
+        ):
+            qml.draw_mpl(qfunc, level="gradient")
+
+    def test_split_tapes_raises_warning(self):
+        @qml.transforms.split_non_commuting
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            return [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
+
+        with pytest.warns(UserWarning, match="Multiple tapes constructed"):
+            qml.draw_mpl(circuit)()
 
 
 class TestKwargs:
@@ -357,7 +445,7 @@ def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
     def qfunc():
         qml.PauliZ(0)
 
-    with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
+    with pytest.warns(UserWarning, match="the expansion_strategy and level arguments are ignored"):
         _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")
 
 

@@ -53,7 +53,7 @@ def test_flatten_unflatten_methods():
     assert hash(metadata)
 
     new_op = qml.TTN._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op._name == "TTN"  # make sure acutally initialized
     assert new_op is not op
 

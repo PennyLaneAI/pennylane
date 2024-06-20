@@ -58,7 +58,7 @@ class TestControlledQubitUnitary:
         op1 = qml.ControlledQubitUnitary(X, control_wires=[0, 2], wires=1)
         op2 = qml.ControlledQubitUnitary(base_op, control_wires=[0, 2])
 
-        assert qml.equal(op1, op2)
+        qml.assert_equal(op1, op2)
 
     def test_no_control(self):
         """Test if ControlledQubitUnitary raises an error if control wires are not specified"""
@@ -440,7 +440,7 @@ class TestControlledQubitUnitary:
         )
 
         out = original._controlled("a")  # pylint: disable=protected-access
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     def test_unitary_check(self):
         unitary = np.array([[0.94877869j, 0.31594146], [-0.31594146, 0.94877869j]])
@@ -468,7 +468,7 @@ def test_map_wires_non_parametric(op_cls, _):
 
 def test_controlled_phase_shift_alias():
     """Tests that the alias for ControlledPhaseShift works"""
-    assert qml.equal(qml.ControlledPhaseShift(0.123, wires=[0, 1]), qml.CPhase(0.123, wires=[0, 1]))
+    qml.assert_equal(qml.ControlledPhaseShift(0.123, wires=[0, 1]), qml.CPhase(0.123, wires=[0, 1]))
 
 
 def _arbitrary_crot(x, y, z):
@@ -736,7 +736,7 @@ controlled_data = [
 def test_controlled_method(base, cbase):
     """Tests the _controlled method for parametric ops."""
     # pylint: disable=protected-access
-    assert qml.equal(base._controlled("a"), cbase)
+    qml.assert_equal(base._controlled("a"), cbase)
 
 
 @pytest.mark.parametrize(

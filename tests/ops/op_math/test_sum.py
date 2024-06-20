@@ -349,7 +349,7 @@ class TestInitialization:
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        assert qml.equal(eval(repr(op)), op)
+        qml.assert_equal(eval(repr(op)), op)
 
 
 class TestMatrix:
@@ -711,6 +711,7 @@ class TestProperties:
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_eigendecomposition_repeat_operations(self):
         """Test that the eigendecomposition works with a repeated operation."""
         op1 = qml.X(0) + qml.X(0) + qml.X(0)
@@ -1001,7 +1002,7 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -1039,7 +1040,7 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
 
 class TestSortWires:
@@ -1072,7 +1073,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
         """Test that the sorting algorithm works for operators that act on multiple wires."""
@@ -1107,7 +1108,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting algorithm works using a wire map."""
@@ -1162,7 +1163,7 @@ class TestSortWires:
         ]
         sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_no_wires(self):
         """Test that sorting can occur when an operator acts on no wires."""
