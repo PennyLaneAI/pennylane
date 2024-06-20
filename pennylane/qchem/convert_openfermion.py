@@ -48,17 +48,15 @@ def _import_of():
 def from_openfermion(openfermion_op, wires=None, tol=1e-16):
     r"""Convert OpenFermion
     `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__
-    and `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__
-    objects to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` or
-    :class:`~.LinearCombination` objects.
+    to PennyLane :class:`~.fermi.FermiWord` or :class:`~.fermi.FermiSentence` and
+    OpenFermion `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__
+    to PennyLane :class:`~.LinearCombination`.
 
     Args:
         openfermion_op (FermionOperator, QubitOperator): OpenFermion operator
-        wires (.Wires, list, tuple, dict): Custom wire mapping used to convert the external qubit
+        wires (dict): Custom wire mapping used to convert the external qubit
             operator to a PennyLane operator.
-            For types ``Wires``/list/tuple, each item in the iterable represents a wire label
-            for the corresponding qubit index.
-            For type dict, only int-keyed dictionaries (for qubit-to-wire conversion) are accepted.
+            Only int-keyed dictionaries (for qubit-to-wire conversion) are accepted.
             If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
         tol (float): tolerance for discarding negligible coefficients
 
@@ -115,12 +113,9 @@ def to_openfermion(
     Args:
         pennylane_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, FermiWord, FermiSentence):
             linear combination of operators
-        wires (Wires, list, tuple, dict):
-            Custom wire mapping used to convert the qubit operator
-            to an observable terms measurable in a PennyLane ansatz.
-            For types Wires/list/tuple, each item in the iterable represents a wire label
-            corresponding to the qubit number equal to its index.
-            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+        wires (dict): Custom wire mapping used to convert a PennyLane qubit operator
+            to the external operator.
+            Only int-keyed dict (for qubit-to-wire conversion) is accepted.
             If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
