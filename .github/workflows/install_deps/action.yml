@@ -107,7 +107,7 @@ runs:
 
     - name: Install Catalyst from Test Pypi
       shell: bash
-      if: inputs.install_catalyst_test_pypi
+      if: inputs.install_catalyst_test_pypi == 'true'
       run: pip install -i https://test.pypi.org/simple/ PennyLane-Catalyst==0.7.0.dev0 --upgrade;
 
     - name: Freeze dependencies
