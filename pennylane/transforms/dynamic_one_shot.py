@@ -27,7 +27,6 @@ import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
-    MeasurementValue,
     MidMeasureMP,
     ProbabilityMP,
     SampleMP,
@@ -210,12 +209,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
                 new_measurements.append(m)
     for op in circuit.operations:
         if isinstance(op, MidMeasureMP):
-            mv = (
-                op.mcm_tracer
-                if "MidCircuitMeasure" in str(type(op))
-                else MeasurementValue([op], lambda res: res)
-            )
-            new_measurements.append(qml.sample(op=mv))
+            new_measurements.append(qml.sample(op=op.mv))
     return qml.tape.QuantumScript(
         circuit.operations,
         new_measurements,
@@ -326,7 +320,7 @@ def gather_mcm_qjit(measurement, samples, is_valid):  # pragma: no cover
     """
     found, meas = False, None
     for k, meas in samples.items():
-        if measurement.mv is k.mcm_tracer:
+        if measurement.mv is k.mv:
             found = True
             break
     if not found:
