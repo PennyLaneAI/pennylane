@@ -262,7 +262,7 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
     Returns:
         A repacked pytree.
 
-    .. see-also:: :function:`~.flatten`
+    .. seealso:: :function:`~.flatten`
 
     >>> op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)

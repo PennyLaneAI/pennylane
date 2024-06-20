@@ -92,7 +92,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert qml.equal(obs_out, obs_in)
+        qml.assert_equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
 
     def test_bind_init(self, attribute_cls, obs_in):
@@ -109,7 +109,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert qml.equal(obs_out, obs_in)
+        qml.assert_equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
 
 
@@ -140,7 +140,7 @@ class TestDatasetArithmeticOperators:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert qml.equal(obs_out, obs_in)
+        qml.assert_equal(obs_out, obs_in)
 
     def test_bind_init(self, attribute_cls, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
@@ -156,7 +156,7 @@ class TestDatasetArithmeticOperators:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert qml.equal(obs_out, obs_in)
+        qml.assert_equal(obs_out, obs_in)
 
 
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])

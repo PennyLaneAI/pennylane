@@ -1261,7 +1261,7 @@ class TestExecution:
         dev = mock_qubit_device(wires=1)
         rotations = dev._get_diagonalizing_gates(circuit)
         assert len(rotations) == 1
-        assert qml.equal(rotations[0], qml.Hadamard(0))
+        qml.assert_equal(rotations[0], qml.Hadamard(0))
 
 
 # pylint: disable=too-few-public-methods, unused-argument
