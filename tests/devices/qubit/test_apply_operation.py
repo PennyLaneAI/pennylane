@@ -802,7 +802,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     def test_broadcasted_state(self, op, method, ml_framework):
         """Tests that unbatched operations are applied correctly to a batched state."""
-        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+        state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
@@ -819,7 +819,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         if method is apply_operation_tensordot:
             pytest.skip("Tensordot doesn't support batched operator and batched state.")
 
-        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+        state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
