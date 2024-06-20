@@ -671,7 +671,7 @@ class TestLinearCombination:
         assert data[1] == H._ops
 
         new_H = LinearCombination._unflatten(*H._flatten())
-        assert qml.equal(H, new_H)
+        qml.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
@@ -954,7 +954,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 
@@ -971,7 +971,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
         assert group_indices_before == mapped_h.grouping_indices

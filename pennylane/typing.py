@@ -16,7 +16,7 @@ import contextlib
 
 # pylint: disable=import-outside-toplevel, too-few-public-methods
 import sys
-from typing import Tuple, TypeVar, Union
+from typing import Dict, Tuple, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -119,6 +119,6 @@ def _is_torch(other, subclass=False):
     return False
 
 
-Result = TypeVar("Result", Tuple, TensorLike)
+Result = TypeVar("Result", Dict, Tuple, TensorLike)
 
 ResultBatch = Tuple[Result]

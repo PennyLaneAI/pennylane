@@ -138,7 +138,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = qml.MERA._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op._name == "MERA"  # make sure acutally initialized
     assert new_op is not op
 
