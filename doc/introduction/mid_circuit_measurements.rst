@@ -3,7 +3,7 @@
 
 .. _mid_circuit_measurements:
 
-Mid-circuit measurements
+Dynamic quantum circuits
 ========================
 
 .. currentmodule:: pennylane.measure
@@ -12,6 +12,13 @@ PennyLane allows using measurements in the middle of a quantum circuit.
 Such measurements are called mid-circuit measurements and can be used to
 shape the structure of the circuit dynamically, and to gather information
 about the quantum state during the circuit execution.
+
+Available features
+------------------
+
+Mid-circuit measurements
+************************
+
 The function to perform a mid-circuit measurement in PennyLane is
 :func:`~.pennylane.measure`, and can be used as follows:
 
@@ -34,17 +41,14 @@ of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
 methods. Also consider our
-:doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`,
-:doc:`how-to on collecting statistics of mid-circuit measurements
-<demos/tutorial_how_to_collect_mcm_stats>`,
-and :doc:`how-to on creating dynamic circuits with mid-circuit measurements
-<demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
+:doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`_,
+:doc:`how-to on collecting statistics of mid-circuit measurements 
+<demos/tutorial_how_to_collect_mcm_stats>`_,
+and :doc:`how-to on creating dynamic circuits with mid-circuit measurements 
+<demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
 
-Available features
-------------------
-
-Resetting wires
-***************
+Resetting qubits
+****************
 
 Wires can be reused after making mid-circuit measurements. Moreover, a measured wire can be
 reset to the :math:`|0 \rangle` state by setting ``reset=True`` in :func:`~.pennylane.measure`:
@@ -98,8 +102,8 @@ Note that only 7 samples are returned. This is because samples that do not meet 
 discarded. This behaviour can be customized, see the section
 :ref:`"Configuring mid-circuit measurements" <mcm_config>`.
 
-Conditional operators / Dynamic circuits
-****************************************
+Conditional operators
+*********************
 
 Users can create conditional operators controlled on mid-circuit measurements using
 :func:`~.pennylane.cond`. The condition for a conditional operator may simply be
@@ -126,7 +130,7 @@ condition based on such values and pass it to ``cond()``:
 
 For more examples, refer to the :func:`~.pennylane.cond` documentation
 and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements
-<demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
+<demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
 
 .. _mid_circuit_measurements_statistics:
 
