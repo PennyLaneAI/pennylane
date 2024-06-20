@@ -22,6 +22,7 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
+from tests.dummy_debugger import Debugger
 
 stim = pytest.importorskip("stim")
 
@@ -539,14 +540,6 @@ def test_tracker():
 
 def test_debugger():
     """Test that the debugger works for a simple circuit."""
-
-    # pylint: disable=too-few-public-methods
-    class Debugger:
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
 
     dev = qml.device("default.clifford")
     ops = [qml.Snapshot(), qml.Hadamard(wires=0), qml.Snapshot("final_state")]

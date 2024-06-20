@@ -45,7 +45,7 @@ INTERFACE_TO_LIKE = {
 }
 
 
-def get_final_state(circuit, debugger=None, interface=None):
+def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -72,7 +72,14 @@ def get_final_state(circuit, debugger=None, interface=None):
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
-        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
+        state = apply_operation(
+            op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            tape_shots=circuit.shots,
+            **kwargs,
+        )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or op.batch_size is not None
@@ -175,5 +182,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.        , 0.31882112, 0.        , 0.        ], requires_grad=True))
 
     """
-    state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
+    state, is_state_batched = get_final_state(
+        circuit, debugger=debugger, interface=interface, rng=rng, prng_key=prng_key
+    )
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)

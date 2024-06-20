@@ -15,7 +15,7 @@
 
 .. note::
 
-    For more details on using datasets, please see the
+    To start using datasets, please first see the
     :doc:`quantum datasets quickstart guide </introduction/data>`.
 
 Overview

@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functionality for debugging quantum programs on simulator devices.
+This file provides a dummy debugger for device tests.
 """
 
-from .snapshot import snapshots
+import pennylane as qml
 
-from .debugger import (
-    breakpoint,
-    debug_expval,
-    PLDB,
-    pldb_device_manager,
-    debug_probs,
-    debug_state,
-    debug_tape,
-)
+
+# pylint: disable=too-few-public-methods
+class Debugger:
+    """A dummy debugger class"""
+
+    def __init__(self):
+        # Create a dummy object to act as the device
+        # and add a dummy shots attribute to it
+        self.device = type("", (), {})()
+        self.device.shots = qml.measurements.Shots(None)
+
+        self.active = True
+        self.snapshots = {}
