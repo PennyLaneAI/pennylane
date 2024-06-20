@@ -45,7 +45,7 @@ def _import_of():
     return openfermion
 
 
-def from_openfermion(openfermion_op, tol=1e-16):
+def from_openfermion(openfermion_op, wires=None, tol=1e-16):
     r"""Convert OpenFermion
     `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__
     and `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__
@@ -100,7 +100,7 @@ def from_openfermion(openfermion_op, tol=1e-16):
 
         return pl_op
 
-    coeffs, pl_ops = _openfermion_to_pennylane(openfermion_op, tol=tol)
+    coeffs, pl_ops = _openfermion_to_pennylane(openfermion_op, wires=wires, tol=tol)
 
     pennylane_op = qml.ops.LinearCombination(coeffs, pl_ops)
 
@@ -159,18 +159,6 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
 def _(ops: FermiWord, wires=None, tol=1.0e-16):
     openfermion = _import_of()
 
-    if wires:
-        all_wires = Wires.all_wires(ops.wires, sort=True)
-        mapped_wires = _process_wires(wires)
-        if not set(all_wires).issubset(set(mapped_wires)):
-            raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
-
-        pl_op_mapped = {}
-        for loc, orbital in ops.keys():
-            pl_op_mapped[(loc, mapped_wires.index(orbital))] = ops[(loc, orbital)]
-
-        ops = FermiWord(pl_op_mapped)
-
     return openfermion.ops.FermionOperator(qml.fermi.fermionic._to_string(ops, of=True))
 
 
@@ -181,8 +169,8 @@ def _(pl_op: FermiSentence, wires=None, tol=1.0e-16):
     fermion_op = openfermion.ops.FermionOperator()
     for fermi_word in pl_op:
         if np.abs(pl_op[fermi_word].imag) < tol:
-            fermion_op += pl_op[fermi_word].real * to_openfermion(fermi_word, wires=wires)
+            fermion_op += pl_op[fermi_word].real * to_openfermion(fermi_word)
         else:
-            fermion_op += pl_op[fermi_word] * to_openfermion(fermi_word, wires=wires)
+            fermion_op += pl_op[fermi_word] * to_openfermion(fermi_word)
 
     return fermion_op

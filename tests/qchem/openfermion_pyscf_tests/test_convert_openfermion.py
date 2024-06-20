@@ -74,6 +74,20 @@ class TestFromOpenFermion:
         converted_pl_op = qml.from_openfermion(of_op)
         assert converted_pl_op.compare(pl_op)
 
+    OPSWIRES = (
+        (
+            (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
+            ({0: "a", 1: 2}),
+            (1.2 * qml.X("a") + 2.4 * qml.Z(2)),
+        ),
+    )
+
+    @pytest.mark.parametrize("of_op, wires, pl_op", OPSWIRES)
+    def test_wires_qubit(self, of_op, wires, pl_op):
+        """Test conversion from ``QubitOperator`` to PennyLane with wire map."""
+        converted_pl_op = qml.from_openfermion(of_op, wires=wires)
+        assert converted_pl_op.compare(pl_op)
+
     def test_tol_qubit(self):
         """Test with complex coefficients."""
         q_op = openfermion.QubitOperator("X0", complex(1.0, 1e-8)) + openfermion.QubitOperator(
@@ -86,8 +100,8 @@ class TestFromOpenFermion:
         pl_op = qml.from_openfermion(q_op, tol=1e-10)
         assert np.any(pl_op.coeffs.imag)
 
-    def test_sum_qubit(self):
-        """Test that from_openfermion yields a :class:`~.Sum` object."""
+    def test_type_qubit(self):
+        """Test that from_openfermion yields a ``LinearCombination`` object."""
         q_op = openfermion.QubitOperator("X0 X1", 0.25) + openfermion.QubitOperator("Z1 Z0", 0.75)
 
         assert isinstance(qml.from_openfermion(q_op), qml.ops.LinearCombination)
@@ -266,26 +280,9 @@ class TestToOpenFermion:
 
     MAPPED_OPS = (
         (
-            (qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"})),
-            (openfermion.FermionOperator("1^ 0")),
-            ({0: 1, 1: 0}),
-        ),
-        (
-            (
-                qml.fermi.FermiSentence(
-                    {
-                        qml.fermi.FermiWord(
-                            {(0, 0): "+", (1, 1): "-", (2, 3): "+", (3, 2): "-"}
-                        ): 0.25,
-                        qml.fermi.FermiWord({(1, 0): "+", (0, 1): "-"}): 0.1,
-                    }
-                )
-            ),
-            (
-                0.1 * openfermion.FermionOperator("1 0^")
-                + 0.25 * openfermion.FermionOperator("0^ 1 2^ 3")
-            ),
-            ({0: 0, 1: 1, 2: 3, 3: 2}),
+            (1.2 * qml.X("a") + 2.4 * qml.Z(2)),
+            (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
+            ({"a": 0, 2: 1}),
         ),
     )
 
@@ -311,32 +308,6 @@ class TestToOpenFermion:
         )
         with pytest.raises(ValueError, match=_match):
             qml.to_openfermion(qml.to_openfermion(pl_op))
-
-    INVALID_OPS_WIRES = (
-        (
-            qml.ops.LinearCombination(
-                np.array([0.1, 0.2]),
-                [
-                    qml.operation.Tensor(qml.PauliX(wires=["w0"])),
-                    qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w1"])),
-                ],
-            )
-        ),
-        ((qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"}))),
-    )
-
-    @pytest.mark.parametrize("pl_op", INVALID_OPS_WIRES)
-    def test_wires_not_covered(self, pl_op):
-        r"""Test if the conversion complains about supplied wires not covering ops wires."""
-
-        with pytest.raises(
-            ValueError,
-            match="Supplied `wires` does not cover all wires defined in `ops`.",
-        ):
-            qml.to_openfermion(
-                pl_op,
-                wires=qml.wires.Wires(["w0", "w2"]),
-            )
 
     def test_invalid_op(self):
         r"""Test if to_openfermion throws an error if the wrong type of operator is given."""
