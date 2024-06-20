@@ -41,11 +41,9 @@ of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
 methods. Also consider our
-:doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`_,
-:doc:`how-to on collecting statistics of mid-circuit measurements 
-<demos/tutorial_how_to_collect_mcm_stats>`_,
-and :doc:`how-to on creating dynamic circuits with mid-circuit measurements 
-<demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
+:doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`
+:doc:`how-to on collecting statistics of mid-circuit measurements <demos/tutorial_how_to_collect_mcm_stats>`,
+and :doc:`how-to on creating dynamic circuits with mid-circuit measurements <demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
 Resetting qubits
 ****************
@@ -130,7 +128,7 @@ condition based on such values and pass it to ``cond()``:
 
 For more examples, refer to the :func:`~.pennylane.cond` documentation
 and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements
-<demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
+<demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
 .. _mid_circuit_measurements_statistics:
 
@@ -222,7 +220,7 @@ Collecting statistics for sequences of mid-circuit measurements is supported wit
 .. warning::
 
     When collecting statistics for a sequence of mid-circuit measurements, the
-    sequence may not contain arithmetic expressions.
+    sequence must not contain arithmetic expressions.
 
 .. _simulation_techniques:
 
@@ -261,17 +259,19 @@ scalings  with respect to the number of mid-circuit measurements (and shots) are
 
 .. rst-class:: tb
 
-+--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+----------------------------------+
-| **Simulation technique** | **Memory**                                | **Time**                                                  | **Differentiation support**               | **Supports shots/analytic mode** |
-+==========================+===========================================+===========================================================+===========================================+==================================+
-| Deferred measurements    | :rd:`\ ` :math:`\mathcal{O}(2^{n_{MCM}})` | :rd:`\ ` :math:`\mathcal{O}(2^{n_{MCM}})`                 | :gr:`\ ` yes                              | :gr:`\ ` yes / yes               |
-+--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+----------------------------------+
-| Dynamic one-shot         | :gr:`\ ` :math:`\mathcal{O}(1)`           | :rd:`\ ` :math:`\mathcal{O}(n_{shots})`                   | :or:`\ ` finite differences\ :math:`{}^1` | :or:`\ ` yes / no                |
-+--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+----------------------------------+
-| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(min(n_{shots}, 2^{n_{MCM}}))` | :or:`\ ` finite differences\ :math:`{}^1` | :or:`\ ` yes / no                |
-+--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+----------------------------------+
++--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------------+
+| **Simulation technique** | **Memory**                                | **Time**                                                  | **Differentiation**                       | **shots/analytic** |
++==========================+===========================================+===========================================================+===========================================+====================+
+| Deferred measurements    | :rd:`\ ` :math:`\mathcal{O}(2^{n_{MCM}})` | :rd:`\ ` :math:`\mathcal{O}(2^{n_{MCM}})`                 | :gr:`\ ` yes \ :math:`{}^1`               | :gr:`\ ` yes / yes |
++--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------------+
+| Dynamic one-shot         | :gr:`\ ` :math:`\mathcal{O}(1)`           | :rd:`\ ` :math:`\mathcal{O}(n_{shots})`                   | :or:`\ ` finite differences\ :math:`{}^2` | :or:`\ ` yes / no  |
++--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------------+
+| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(min(n_{shots}, 2^{n_{MCM}}))` | :or:`\ ` finite differences\ :math:`{}^2` | :or:`\ ` yes / no  |
++--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------------+
 
-:math:`{}^1` In principle, parameter-shift differentiation is supported as long as no
+:math:`{}^1` Backpropagation and finite differences are fully supported. The adjoint method
+and the parameter-shift rule are supported if no postselection is used.
+:math:`{}^2` In principle, parameter-shift differentiation is supported as long as no
 postselection is used. Parameters within conditionally applied operations will
 fall back to finite differences, so a proper value for ``h`` should be provided (see
 :func:`~.pennylane.gradients.finite_diff`).
@@ -435,7 +435,7 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
           return qml.sample(qml.PauliZ(0))
 
       fill_shots = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="fill-shots")
-      hw_like= qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="hw-like")
+      hw_like = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="hw-like")
 
   .. code-block:: pycon
 
