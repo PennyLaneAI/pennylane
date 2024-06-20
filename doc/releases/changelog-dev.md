@@ -425,6 +425,9 @@
 * The input types for `coupling_map` in `qml.transpile` are updated to reflect all the allowed input types by `nx.to_networkx_graph`.
   [(#5864)](https://github.com/PennyLaneAI/pennylane/pull/5864)
 
+* The text in the `qml.data` module and datasets quickstart have been slightly modified to lead to the quickstart first and highlight `list_datasets`.
+  [(5484)](https://github.com/PennyLaneAI/pennylane/pull/5484)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug where `hadamard_grad` returned a wrong shape for `qml.probs()` without wires.
@@ -565,6 +568,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Diego Guala,
 Daria Van Hende,
 Austin Huang,
 David Ittah,
