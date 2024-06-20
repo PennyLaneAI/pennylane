@@ -853,7 +853,7 @@ def test_tape():
         qml.Z(0)
         qml.expval(qml.Z(0))
 
-        executed_tape = qml.debugging.tape()
+        executed_tape = qml.debug_tape()
 
     expected_tape = qml.tape.QuantumScript.from_queue(queue)
     qml.assert_equal(expected_tape, executed_tape)
@@ -889,7 +889,7 @@ def test_state(_mock_method):
         qml.RY(0.45, 2)
         qml.sample()
 
-        qml.debugging.state()
+        qml.debug_state()
 
     assert qml.state() not in queue
 
@@ -903,7 +903,7 @@ def test_expval(_mock_method):
             qml.RY(0.45, 2)
             qml.sample()
 
-            qml.debugging.expval(op)
+            qml.debug_expval(op)
 
         assert op not in queue
         assert qml.expval(op) not in queue
@@ -919,7 +919,7 @@ def test_probs_with_op(_mock_method):
             qml.RY(0.45, 2)
             qml.sample()
 
-            qml.debugging.probs(op=op)
+            qml.debug_probs(op=op)
 
         assert op not in queue
         assert qml.probs(op=op) not in queue
@@ -935,7 +935,7 @@ def test_probs_with_wires(_mock_method):
             qml.RY(0.45, 2)
             qml.sample()
 
-            qml.debugging.probs(wires=wires)
+            qml.debug_probs(wires=wires)
 
         assert qml.probs(wires=wires) not in queue
 
