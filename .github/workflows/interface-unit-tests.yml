@@ -361,7 +361,8 @@ jobs:
       install_jax: true
       install_tensorflow: false
       install_pytorch: false
-      install_pennylane_lightning_master: True
+      install_pennylane_lightning_master: true
+      install_catalyst_test_pypi: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: catalyst
       additional_pip_packages: matplotlib
