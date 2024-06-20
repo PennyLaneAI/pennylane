@@ -263,7 +263,8 @@ def test_openfermion_molecular_dipole(
             ]
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(d_ops, r_ops))
+        for o1, o2 in zip(d_ops, r_ops):
+            qml.assert_equal(o1, o2)
 
 
 @pytest.mark.parametrize(
@@ -423,4 +424,5 @@ def test_coordinate_units_for_molecular_dipole(method, tmpdir):
         method=method,
         outpath=tmpdir.strpath,
     )
-    assert all(qml.equal(o1, o2) for o1, o2 in zip(dipole_ang, dipole_bohr))
+    for o1, o2 in zip(dipole_ang, dipole_bohr):
+        qml.assert_equal(o1, o2)

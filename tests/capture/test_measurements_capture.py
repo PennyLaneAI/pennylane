@@ -171,7 +171,7 @@ def test_capture_and_eval(func):
     jaxpr = jax.make_jaxpr(func)()
     out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0]
 
-    assert qml.equal(mp, out)
+    qml.assert_equal(mp, out)
 
 
 @pytest.mark.parametrize("x64_mode", [True, False])

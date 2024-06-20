@@ -74,13 +74,13 @@ class TestMutualInfoUnitTests:
         """Test that map_wires works as expected."""
         mapped1 = MutualInfoMP(wires=[Wires([0]), Wires([1])]).map_wires({0: 1, 1: 0})
         assert mapped1.raw_wires == [Wires([1]), Wires([0])]
-        assert qml.equal(mapped1, MutualInfoMP(wires=[Wires([1]), Wires([0])]))
+        qml.assert_equal(mapped1, MutualInfoMP(wires=[Wires([1]), Wires([0])]))
 
         mapped2 = MutualInfoMP(wires=[Wires(["a", "b"]), Wires(["c"])]).map_wires(
             {"a": 0, "b": 1, "c": 2}
         )
         assert mapped2.raw_wires == [Wires([0, 1]), Wires([2])]
-        assert qml.equal(mapped2, MutualInfoMP(wires=[Wires([0, 1]), Wires([2])]))
+        qml.assert_equal(mapped2, MutualInfoMP(wires=[Wires([0, 1]), Wires([2])]))
 
 
 class TestIntegration:

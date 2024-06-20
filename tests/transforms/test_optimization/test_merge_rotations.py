@@ -270,7 +270,7 @@ class TestMergeRotations:
         tape = qml.tape.QuantumScript(ops, ms, shots=50)
         [out], _ = qml.transforms.merge_rotations(tape)
         expected = qml.tape.QuantumScript((qml.RX(0.4, 0),), ms, shots=50)
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
 
 # Example QNode and device for interface testing
