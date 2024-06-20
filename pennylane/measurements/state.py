@@ -14,10 +14,10 @@
 """
 This module contains the qml.state measurement.
 """
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 import pennylane as qml
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError, Wires
 
 from .measurements import State, StateMeasurement
 
@@ -139,9 +139,19 @@ class StateMP(StateMeasurement):
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
 
-    @property
-    def return_type(self):
-        return State
+    return_type = State
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires,)
+        return shape, complex
 
     @property
     def numeric_type(self):
@@ -156,9 +166,10 @@ class StateMP(StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
+        is_tf_interface = qml.math.get_deep_interface(state) == "tensorflow"
         wires = self.wires
         if not wires or wire_order == wires:
-            return qml.math.cast(state, "complex128")
+            return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
 
         if set(wires) != set(wire_order):
             raise WireError(
@@ -178,7 +189,7 @@ class StateMP(StateMeasurement):
         state = qml.math.reshape(state, shape)
         state = qml.math.transpose(state, desired_axes)
         state = qml.math.reshape(state, flat_shape)
-        return qml.math.cast(state, "complex128")
+        return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
 
 
 class DensityMatrixMP(StateMP):
@@ -194,6 +205,18 @@ class DensityMatrixMP(StateMP):
 
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires, 2**n_wires)
+        return shape, complex
 
     def shape(self, device, shots):
         num_shot_elements = (
@@ -211,4 +234,7 @@ class DensityMatrixMP(StateMP):
         # pylint:disable=redefined-outer-name
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        return qml.math.reduce_statevector(state, indices=mapped_wires)
+        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
+        if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
+            kwargs["c_dtype"] = state.dtype
+        return qml.math.reduce_statevector(state, **kwargs)

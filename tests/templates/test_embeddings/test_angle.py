@@ -14,10 +14,11 @@
 """
 Tests for the AngleEmbedding template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
@@ -46,7 +47,7 @@ def test_flatten_unflatten():
     assert metadata[1] == (("rotation", "Z"),)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert op is not new_op
 
 

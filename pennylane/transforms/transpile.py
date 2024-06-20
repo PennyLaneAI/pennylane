@@ -3,19 +3,18 @@ Contains the transpiler transform.
 """
 
 from functools import partial
-from typing import List, Union, Sequence, Callable
+from typing import Callable, Sequence
 
 import networkx as nx
 
 import pennylane as qml
-from pennylane.transforms import transform
-from pennylane.ops import Hamiltonian
-from pennylane.ops import LinearCombination
 from pennylane.operation import Tensor
+from pennylane.ops import Hamiltonian, LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 
 
 def state_transposition(results, mps, new_wire_order, original_wire_order):
@@ -61,9 +60,7 @@ def _process_measurements(expanded_tape, device_wires, is_default_mixed):
 
 
 @transform
-def transpile(
-    tape: QuantumTape, coupling_map: Union[List, nx.Graph], device=None
-) -> (Sequence[QuantumTape], Callable):
+def transpile(tape: QuantumTape, coupling_map, device=None) -> (Sequence[QuantumTape], Callable):
     """Transpile a circuit according to a desired coupling map
 
     .. warning::
@@ -73,8 +70,8 @@ def transpile(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum tape.
-        coupling_map (list[tuple(int, int)] or nx.Graph): Either a list of tuples(int, int) or an instance of
-            `networkx.Graph` specifying the couplings between different qubits.
+        coupling_map: Data specifying the couplings between different qubits. This data can be any format accepted by ``nx.to_networkx_graph()``,
+            currently including edge list, dict of dicts, dict of lists, NetworkX graph, 2D NumPy array, SciPy sparse matrix, or PyGraphviz graph.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -162,10 +159,18 @@ def transpile(
     with QueuingManager.stop_recording():
         # this unrolls everything in the current tape (in particular templates)
         def stop_at(obj):
+            if not isinstance(obj, qml.operation.Operator):
+                return True
+            if not obj.has_decomposition:
+                return True
             return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
 
-        expanded_tape = tape.expand(stop_at=stop_at)
-
+        [expanded_tape], _ = qml.devices.preprocess.decompose(
+            tape,
+            stopping_condition=stop_at,
+            name="transpile",
+            error=qml.operation.DecompositionUndefinedError,
+        )
         # make copy of ops
         list_op_copy = expanded_tape.operations.copy()
         wire_order = device_wires or tape.wires

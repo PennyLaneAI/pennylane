@@ -18,14 +18,15 @@ Unit tests for the available built-in parametric qutrit operations.
 
 import copy
 from functools import reduce
-import pytest
-import numpy as np
-from gate_data import TSHIFT, TCLOCK
-from pennylane import numpy as npp
-import pennylane as qml
-from pennylane.wires import Wires
-from pennylane.ops.qutrit import validate_subspace
 
+import numpy as np
+import pytest
+from gate_data import TCLOCK, TSHIFT
+
+import pennylane as qml
+from pennylane import numpy as npp
+from pennylane.ops.qutrit import validate_subspace
+from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
     qml.TRX(0.123, wires=0, subspace=(0, 1)),
@@ -274,8 +275,8 @@ class TestMatrix:
         """Test that compute_matrix works with tensorflow variables"""
         import tensorflow as tf
 
-        theta = tf.Variable(theta)
-        expected = tf.convert_to_tensor(expected)
+        theta = tf.Variable(theta, dtype="float64")
+        expected = tf.convert_to_tensor(expected, dtype="complex128")
         assert qml.math.allclose(
             op.compute_matrix(theta, subspace=subspace), expected, atol=tol, rtol=0
         )

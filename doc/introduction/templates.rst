@@ -295,6 +295,19 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
     :figure: _static/templates/subroutines/small_ctrl.png
 
+.. gallery-item::
+    :description: :doc:`FABLE <../code/api/pennylane.FABLE>`
+    :figure: _static/templates/subroutines/fable.png
+
+.. gallery-item::
+    :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
+    :figure: _static/templates/qubitization/thumbnail_qubitization.png
+
+.. gallery-item::
+    :description: :doc:`QROM <../code/api/pennylane.QROM>`
+    :figure: _static/templates/qrom/qrom_thumbnail.png
+
+
 .. raw:: html
 
         <div style='clear:both'></div>

@@ -17,20 +17,19 @@ Tests for the QubitUnitary decomposition transforms.
 # pylint: disable=unused-variable,unused-argument
 
 from functools import reduce
+
 import pytest
-from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
+from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
+
 import pennylane as qml
 from pennylane import numpy as np
-
-from pennylane.wires import Wires
-
-from pennylane.ops.op_math.decompositions import one_qubit_decomposition
-from pennylane.ops.op_math.decompositions import two_qubit_decomposition
+from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
+    _compute_num_cnots,
     _convert_to_su4,
     _su2su2_to_tensor_products,
-    _compute_num_cnots,
 )
+from pennylane.wires import Wires
 
 
 def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
@@ -1230,3 +1229,37 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         jitted_matrix = jax.jit(wrapped_decomposition)(U)
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
+
+
+def test_two_qubit_decomposition_special_case_discontinuity():
+    """Test that two_qubit_decomposition still provides accurate numbers at a special case."""
+
+    def make_unitary(theta1):
+        generator = (
+            theta1
+            / 2
+            * (
+                np.cos(0.2)
+                / 2
+                * (np.array([[0, 0, 0, 0], [0, 0, 2, 0], [0, 2, 0, 0], [0, 0, 0, 0]]))
+                + np.sin(0.2)
+                / 2
+                * (np.array([[0, 0, 0, 0], [0, 0, 2j, 0], [0, -2j, 0, 0], [0, 0, 0, 0]]))
+            )
+        )
+
+        def expm(val):
+            d, U = np.linalg.eigh(-1.0j * val)
+            return np.dot(U, np.dot(np.diag(np.exp(1.0j * d)), np.conj(U).T))
+
+        mat = expm(-1j * generator)
+
+        assert np.allclose(
+            np.dot(np.transpose(np.conj(mat)), mat), np.eye(len(mat))
+        ), "mat is not unitary"
+
+        return mat
+
+    mat = make_unitary(np.pi / 2)
+    decomp_mat = qml.matrix(two_qubit_decomposition, wire_order=(0, 1))(mat, wires=(0, 1))
+    assert qml.math.allclose(mat, decomp_mat)

@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
+import copy
 from random import random
 
 import numpy as np
@@ -30,11 +31,11 @@ from pennylane.measurements import (
     ProbabilityMP,
     Sample,
     SampleMP,
+    Shots,
     State,
     StateMP,
     Variance,
     VarianceMP,
-    Shots,
 )
 from pennylane.resource import Resources
 from pennylane.tape import QuantumScript
@@ -1147,6 +1148,62 @@ class TestCapabilities:
         assert capabilities == QubitDevice.capabilities()
 
 
+class TestNativeMidCircuitMeasurements:
+    """Unit tests for mid-circuit measurements related functionality"""
+
+    class MCMDevice(qml.devices.DefaultQubitLegacy):
+        def apply(self, *args, **kwargs):
+            for op in args[0]:
+                if isinstance(op, qml.measurements.MidMeasureMP):
+                    kwargs["mid_measurements"][op] = 0
+
+        @classmethod
+        def capabilities(cls):
+            default_capabilities = copy.copy(qml.devices.DefaultQubitLegacy.capabilities())
+            default_capabilities["supports_mid_measure"] = True
+            return default_capabilities
+
+    def test_qnode_native_mcm(self, mocker):
+        """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
+
+        dev = self.MCMDevice(wires=1, shots=100)
+        dev.operations.add("MidMeasureMP")
+        spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def func():
+            _ = qml.measure(0)
+            return qml.expval(op=qml.PauliZ(0))
+
+        res = func()
+        assert spy.call_count == 1
+        assert isinstance(res, float)
+
+    @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+    def test_postselect_mode_propagates_to_execute(self, monkeypatch, postselect_mode):
+        """Test that the specified postselect mode propagates to execution as expected."""
+        dev = self.MCMDevice(wires=1, shots=100)
+        dev.operations.add("MidMeasureMP")
+        pm_propagated = False
+
+        def new_apply(*args, **kwargs):  # pylint: disable=unused-argument
+            nonlocal pm_propagated
+            pm_propagated = kwargs.get("postselect_mode", -1) == postselect_mode
+
+        @qml.qnode(dev, postselect_mode=postselect_mode)
+        def func():
+            _ = qml.measure(0, postselect=1)
+            return qml.expval(op=qml.PauliZ(0))
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "apply", new_apply)
+            with pytest.raises(Exception):
+                # Error expected as mocked apply method does not adhere to expected output.
+                func()
+
+        assert pm_propagated is True
+
+
 class TestExecution:
     """Tests for the execute method"""
 
@@ -1204,7 +1261,7 @@ class TestExecution:
         dev = mock_qubit_device(wires=1)
         rotations = dev._get_diagonalizing_gates(circuit)
         assert len(rotations) == 1
-        assert qml.equal(rotations[0], qml.Hadamard(0))
+        qml.assert_equal(rotations[0], qml.Hadamard(0))
 
 
 # pylint: disable=too-few-public-methods, unused-argument
@@ -1476,27 +1533,54 @@ class TestResourcesTracker:
         ]
 
 
-def test_samples_to_counts_with_nan():
-    """Test that the counts function disregards failed measurements (samples including
-    NaN values) when totalling counts"""
-    # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
-    device = qml.device("default.qubit.legacy", wires=2, shots=1000)
-    device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
-    device._samples = device.generate_samples()
-    samples = device.sample(qml.measurements.CountsMP())
+class TestSamplesToCounts:
+    """Tests for correctness of QubitDevice._samples_to_counts"""
 
-    # imitate hardware return with NaNs (requires dtype float)
-    samples = qml.math.cast_like(samples, np.array([1.2]))
-    samples[0][0] = np.NaN
-    samples[17][1] = np.NaN
-    samples[850][0] = np.NaN
+    def test_samples_to_counts_with_nan(self):
+        """Test that the counts function disregards failed measurements (samples including
+        NaN values) when totalling counts"""
+        # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
+        device = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
+        device._samples = device.generate_samples()
+        samples = device.sample(qml.measurements.CountsMP())
 
-    result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
+        # imitate hardware return with NaNs (requires dtype float)
+        samples = qml.math.cast_like(samples, np.array([1.2]))
+        samples[0][0] = np.NaN
+        samples[17][1] = np.NaN
+        samples[850][0] = np.NaN
 
-    # no keys with NaNs
-    assert len(result) == 4
-    assert set(result.keys()) == {"00", "01", "10", "11"}
+        result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
 
-    # # NaNs were not converted into "0", but were excluded from the counts
-    total_counts = sum(count for count in result.values())
-    assert total_counts == 997
+        # no keys with NaNs
+        assert len(result) == 4
+        assert set(result.keys()) == {"00", "01", "10", "11"}
+
+        # # NaNs were not converted into "0", but were excluded from the counts
+        total_counts = sum(result.values())
+        assert total_counts == 997
+
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    def test_samples_to_counts_with_many_wires(self, all_outcomes):
+        """Test that the counts function correctly converts wire samples to strings when
+        the number of wires is 8 or more."""
+        # generate 1000 samples for 10 wires, randomly distributed between 0 and 1
+        n_wires = 10
+        shots = 100
+        device = qml.device("default.qubit.legacy", wires=n_wires, shots=shots)
+        state = np.random.rand(*([2] * n_wires))
+        device._state = state / np.linalg.norm(state)
+        device._samples = device.generate_samples()
+        samples = device.sample(qml.measurements.CountsMP(all_outcomes=all_outcomes))
+
+        result = device._samples_to_counts(
+            samples, mp=qml.measurements.CountsMP(), num_wires=n_wires
+        )
+
+        # Check that keys are correct binary strings
+        assert all(0 <= int(sample, 2) <= 2**n_wires for sample in result.keys())
+
+        # # NaNs were not converted into "0", but were excluded from the counts
+        total_counts = sum(result.values())
+        assert total_counts == shots

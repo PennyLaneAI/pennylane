@@ -14,16 +14,16 @@
 """
 Unit tests for the qutrit matrix-based operations.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
-import numpy as np
+from gate_data import TSWAP
 from scipy.stats import unitary_group
 
-from gate_data import TSWAP
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
-
+from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
@@ -304,7 +304,7 @@ class TestQutritUnitary:
         expected = qml.ControlledQutritUnitary(U, control_wires="a", wires=0)
 
         out = base._controlled("a")
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
 
 class TestControlledQutritUnitary:
@@ -587,7 +587,7 @@ class TestControlledQutritUnitary:
         expected = qml.ControlledQutritUnitary(U, control_wires=(0, 1, "a"), wires=[4, 2])
 
         out = original._controlled("a")
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
         original = qml.ControlledQutritUnitary(
             U, control_wires=(0, 1), wires=[4, 2], control_values="01"
@@ -597,7 +597,7 @@ class TestControlledQutritUnitary:
         )
 
         out = original._controlled("a")
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     def test_adjoint(self):
         """Tests the metadata and unitary for an adjoint ControlledQutritUnitary operation."""

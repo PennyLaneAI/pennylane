@@ -14,18 +14,17 @@
 """Tests for null.qubit."""
 
 from collections import defaultdict as dd
-import pytest
 
 import numpy as np
+import pytest
 
 import pennylane as qml
-
-from pennylane.devices import NullQubit, ExecutionConfig
+from pennylane.devices import ExecutionConfig, NullQubit
 from pennylane.measurements import (
-    SampleMeasurement,
-    StateMeasurement,
     ClassicalShadowMP,
+    SampleMeasurement,
     ShadowExpvalMP,
+    StateMeasurement,
 )
 
 np.random.seed(0)
@@ -62,6 +61,28 @@ def test_debugger_attribute():
 
     assert hasattr(dev, "_debugger")
     assert dev._debugger is None
+
+
+@pytest.mark.parametrize("shots", (None, 10))
+def test_supports_operator_without_decomp(shots):
+    """Test that null.qubit automatically supports any operation without a decomposition."""
+
+    # pylint: disable=too-few-public-methods
+    class MyOp(qml.operation.Operator):
+        pass
+
+    tape = qml.tape.QuantumScript([MyOp(wires=(0, 1))], [qml.expval(qml.Z(0))], shots=shots)
+    dev = NullQubit()
+
+    program, _ = dev.preprocess()
+    batch, _ = program((tape,))
+
+    assert isinstance(batch[0][0], MyOp)
+
+    with dev.tracker:
+        _ = dev.execute(batch)
+
+    assert dev.tracker.latest["resources"].gate_types["MyOp"] == 1
 
 
 def test_tracking():
@@ -106,6 +127,7 @@ def test_tracking():
             )
         ]
         * 13,
+        "errors": [{}] * 13,
     }
 
 

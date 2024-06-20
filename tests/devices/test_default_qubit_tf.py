@@ -17,40 +17,39 @@ Unit tests and integration tests for the ``default.qubit.tf`` device.
 # pylint: disable=too-many-arguments,protected-access,too-many-public-methods
 import numpy as np
 import pytest
-
 from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    S,
-    T,
-    CNOT,
-    CZ,
     CCZ,
-    SWAP,
-    Toffoli,
+    CNOT,
     CSWAP,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    Rot3,
+    CZ,
+    SWAP,
+    ControlledPhaseShift,
+    CRot3,
     CRotx,
     CRoty,
     CRotz,
-    CRot3,
+    FermionicSWAP,
+    H,
+    I,
     MultiRZ1,
     MultiRZ2,
-    ControlledPhaseShift,
     OrbitalRotation,
-    FermionicSWAP,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    T,
+    Toffoli,
+    X,
+    Y,
+    Z,
 )
 
 import pennylane as qml
-from pennylane import numpy as pnp
 from pennylane import DeviceError
+from pennylane import numpy as pnp
 
 tf = pytest.importorskip("tensorflow", minversion="2.0")
 from pennylane.devices.default_qubit_tf import (  # pylint: disable=wrong-import-position
@@ -519,6 +518,7 @@ class TestApply:
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_apply_ops_not_supported(self, mocker, monkeypatch):
         """Test that when a version of TensorFlow before 2.3.0 is used, the _apply_ops dictionary is
         empty and application of a CNOT gate is performed using _apply_unitary_einsum"""
@@ -927,11 +927,12 @@ class TestApplyBroadcasted:
         expected = np.einsum("ij,lj->li", mat, state)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_direct_eval_hamiltonian_broadcasted_tf(self):
         """Tests that the correct result is returned when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with TF."""
         dev = qml.device("default.qubit.tf", wires=2)
-        ham = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+        ham = qml.ops.LinearCombination(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit():

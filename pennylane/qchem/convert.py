@@ -16,6 +16,7 @@ This module contains the functions for converting an external operator to a Penn
 """
 import warnings
 from itertools import product
+
 import numpy as np
 
 # pylint: disable= import-outside-toplevel,no-member,too-many-function-args
@@ -117,7 +118,7 @@ def _process_wires(wires, n_wires=None):
     return wires
 
 
-def _openfermion_to_pennylane(qubit_operator, wires=None):
+def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
     r"""Convert OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
@@ -130,6 +131,8 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
             If None, will use identity map (e.g. 0->0, 1->1, ...).
+        tol (float): whether to keep the imaginary part of the coefficients if they are smaller
+            than the provided tolerance.
 
     Returns:
         tuple[array[float], Iterable[pennylane.operation.Operator]]: coefficients and their
@@ -137,7 +140,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
 
     **Example**
 
-    >>> q_op = 0.1*QubitOperator('X0') + 0.2*QubitOperator('Y0 Z2')
+    >>> q_op = 0.1 * QubitOperator('X0') + 0.2 * QubitOperator('Y0 Z2')
     >>> q_op
     0.1 [X0] +
     0.2 [Y0 Z2]
@@ -176,8 +179,12 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
         *[(coef, _get_op(term, wires)) for term, coef in qubit_operator.terms.items()]
         # example term: ((0,'X'), (2,'Z'), (3,'Y'))
     )
+    coeffs = np.array(coeffs)
 
-    return np.array(coeffs).real, list(ops)
+    if (np.abs(coeffs.imag) < tol).all():
+        coeffs = coeffs.real
+
+    return coeffs, list(ops)
 
 
 def _ps_to_coeff_term(ps, wire_order):
@@ -195,7 +202,8 @@ def _ps_to_coeff_term(ps, wire_order):
     return coeffs, ops_str
 
 
-def _pennylane_to_openfermion(coeffs, ops, wires=None):
+# pylint:disable=too-many-branches
+def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     r"""Convert a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
 
@@ -210,6 +218,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
             corresponding to the qubit number equal to its index.
             For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
             accepted. If None, will map sorted wires from all `ops` to consecutive int.
+        tol (float): whether to keep the imaginary part of the coefficients if they are smaller
+            than the provided tolerance.
 
     Returns:
         QubitOperator: an instance of OpenFermion's ``QubitOperator``.
@@ -247,6 +257,10 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
         qubit_indexed_wires = all_wires
+
+    coeffs = np.array(coeffs)
+    if (np.abs(coeffs.imag) < tol).all():
+        coeffs = coeffs.real
 
     q_op = openfermion.QubitOperator()
     for coeff, op in zip(coeffs, ops):
@@ -297,7 +311,9 @@ def _openfermion_pennylane_equivalent(
         (bool): True if equivalent
     """
     coeffs, ops = pennylane_qubit_operator.terms()
-    return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
+    return openfermion_qubit_operator == _pennylane_to_openfermion(
+        np.array(coeffs), ops, wires=wires
+    )
 
 
 def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e010):
@@ -326,19 +342,20 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
 
     **Example**
 
+    >>> assert qml.operation.active_new_opmath() == True
+    >>> h_pl = import_operator(h_of, format='openfermion')
+    >>> print(h_pl)
+    (-0.0548 * X(0 @ X(1) @ Y(2) @ Y(3))) + (0.14297 * Z(0 @ Z(1)))
+
+    If the new op-math is deactivated, a :class:`~Hamiltonian` is returned instead.
+
+    >>> assert qml.operation.active_new_opmath() == False
     >>> from openfermion import QubitOperator
     >>> h_of = QubitOperator('X0 X1 Y2 Y3', -0.0548) + QubitOperator('Z0 Z1', 0.14297)
     >>> h_pl = import_operator(h_of, format='openfermion')
     >>> print(h_pl)
     (0.14297) [Z0 Z1]
     + (-0.0548) [X0 X1 Y2 Y3]
-
-    If the new op-math is active, an arithmetic operator is returned instead.
-
-    >>> qml.operation.enable_new_opmath()
-    >>> h_pl = import_operator(h_of, format='openfermion')
-    >>> print(h_pl)
-    (-0.0548 * X(0 @ X(1) @ Y(2) @ Y(3))) + (0.14297 * Z(0 @ Z(1)))
     """
     if format not in ["openfermion"]:
         raise TypeError(f"Converter does not exist for {format} format.")

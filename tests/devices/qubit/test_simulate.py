@@ -13,12 +13,13 @@
 # limitations under the License.
 """Unit tests for simulate in devices/qubit."""
 
+import numpy as np
 import pytest
 
-import numpy as np
-
 import pennylane as qml
-from pennylane.devices.qubit import simulate, get_final_state, measure_final_state
+from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
+from pennylane.devices.qubit.simulate import _FlexShots
+from tests.dummy_debugger import Debugger
 
 
 class TestCurrentlyUnsupportedCases:
@@ -65,6 +66,18 @@ class TestStatePrepBase:
 
 class TestBasicCircuit:
     """Tests a basic circuit with one rx gate and two simple expectation values."""
+
+    def test_analytic_mid_meas_raise(self):
+        """Test measure_final_state raises an error when getting a mid-measurement dictionary."""
+        phi = np.array(0.397)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+        )
+        state, is_state_batched = get_final_state(qs)
+        with pytest.raises(
+            TypeError, match="Native mid-circuit measurements are only supported with finite shots."
+        ):
+            _ = measure_final_state(qs, state, is_state_batched, mid_measurements={})
 
     def test_basic_circuit_numpy(self):
         """Test execution with a basic circuit."""
@@ -163,7 +176,7 @@ class TestBasicCircuit:
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
 
         with tf.GradientTape(persistent=True) as grad_tape:
             qs = qml.tape.QuantumScript(
@@ -398,15 +411,32 @@ class TestPostselection:
         assert qml.math.all(qml.math.isnan(res))
 
 
+class Test_FlexShots:
+    """Unit tests for _FlexShots"""
+
+    @pytest.mark.parametrize(
+        "shots, expected_shot_vector",
+        [
+            (0, (0,)),
+            ((10, 0, 5, 0), (10, 0, 5, 0)),
+            (((10, 3), (0, 5)), (10, 10, 10, 0, 0, 0, 0, 0)),
+        ],
+    )
+    def test_init_with_zero_shots(self, shots, expected_shot_vector):
+        """Test that _FlexShots is initialized correctly with zero shots"""
+        flex_shots = _FlexShots(shots)
+        shot_vector = tuple(s for s in flex_shots)
+        assert shot_vector == expected_shot_vector
+
+    def test_init_with_other_shots(self):
+        """Test that a new _FlexShots object is not created if the input is a _FlexShots object."""
+        shots = _FlexShots(10)
+        new_shots = _FlexShots(shots)
+        assert new_shots is shots
+
+
 class TestDebugger:
     """Tests that the debugger works for a simple circuit"""
-
-    class Debugger:
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
 
     def test_debugger_numpy(self):
         """Test debugger with numpy"""
@@ -414,7 +444,7 @@ class TestDebugger:
         ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]
         qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         result = simulate(qs, debugger=debugger)
 
         assert isinstance(result, tuple)
@@ -433,7 +463,7 @@ class TestDebugger:
     def test_debugger_autograd(self):
         """Tests debugger with autograd"""
         phi = qml.numpy.array(-0.52)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
@@ -456,7 +486,7 @@ class TestDebugger:
         import jax
 
         phi = jax.numpy.array(0.678)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
@@ -480,7 +510,7 @@ class TestDebugger:
         import torch
 
         phi = torch.tensor(-0.526, requires_grad=True)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
@@ -505,8 +535,8 @@ class TestDebugger:
         """Tests debugger with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
-        debugger = self.Debugger()
+        phi = tf.Variable(4.873, dtype="float64")
+        debugger = Debugger()
 
         ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]
         qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
@@ -618,9 +648,7 @@ class TestSampleMeasurements:
         assert len(result) == len(mps)
 
         # check that samples are reused when possible
-        # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for
-        # Hamiltonian and Sum, and 1 group each for SProd and Prod
-        assert spy.call_count == 10
+        assert spy.call_count == 8
 
     shots_data = [
         [10000, 10000],

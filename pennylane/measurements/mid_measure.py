@@ -15,8 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional
-import numpy as np
+from typing import Generic, Hashable, Optional, TypeVar, Union
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -24,7 +23,9 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[int] = None):
+def measure(
+    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
+):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -208,7 +209,6 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
               samples, leading to unexpected or incorrect results.
 
     """
-
     wire = Wires(wires)
     if len(wire) > 1:
         raise qml.QuantumFunctionError(
@@ -218,6 +218,10 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
+    if qml.capture.enabled():
+        raise NotImplementedError(
+            "Capture cannot currently handle classical output from mid circuit measurements."
+        )
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
@@ -257,6 +261,22 @@ class MidMeasureMP(MeasurementProcess):
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
+
+    # pylint: disable=arguments-renamed, arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
+        wires = () if wires is None else wires
+        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect)
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ) -> tuple:
+        return (), int
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
@@ -332,9 +352,33 @@ class MeasurementValue(Generic[T]):
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
-        for i in range(2 ** len(self.measurements)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             yield branch, self.processing_fn(*branch)
+
+    def _postselected_items(self):
+        """A generator representing all the possible outcomes of the MeasurementValue,
+        taking postselection into account."""
+        # pylint: disable=stop-iteration-return
+        ps = {i: p for i, m in enumerate(self.measurements) if (p := m.postselect) is not None}
+        num_non_ps = len(self.measurements) - len(ps)
+        if num_non_ps == 0:
+            yield (), self.processing_fn(*ps.values())
+            return
+        for i in range(2**num_non_ps):
+            # Create the branch ignoring postselected measurements
+            non_ps_branch = tuple(int(b) for b in f"{i:0{num_non_ps}b}")
+            # We want a consumable iterable and the static tuple above
+            non_ps_branch_iter = iter(non_ps_branch)
+            # Extend the branch to include postselected measurements
+            full_branch = tuple(
+                ps[j] if j in ps else next(non_ps_branch_iter)
+                for j in range(len(self.measurements))
+            )
+            # Return the reduced non-postselected branch and the procesing function
+            # evaluated on the full branch
+            yield non_ps_branch, self.processing_fn(*full_branch)
 
     @property
     def wires(self):
@@ -345,8 +389,9 @@ class MeasurementValue(Generic[T]):
     def branches(self):
         """A dictionary representing all possible outcomes of the MeasurementValue."""
         ret_dict = {}
-        for i in range(2 ** len(self.measurements)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
 
@@ -419,10 +464,10 @@ class MeasurementValue(Generic[T]):
         return self._transform_bin_op(lambda a, b: a >= b, other)
 
     def __and__(self, other):
-        return self._transform_bin_op(lambda a, b: a and b, other)
+        return self._transform_bin_op(qml.math.logical_and, other)
 
     def __or__(self, other):
-        return self._transform_bin_op(lambda a, b: a or b, other)
+        return self._transform_bin_op(qml.math.logical_or, other)
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
@@ -453,13 +498,14 @@ class MeasurementValue(Generic[T]):
         return MeasurementValue(merged_measurements, merged_fn)
 
     def __getitem__(self, i):
-        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        branch = tuple(int(b) for b in f"{i:0{len(self.measurements)}b}")
         return self.processing_fn(*branch)
 
     def __str__(self):
         lines = []
-        for i in range(2 ** (len(self.measurements))):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
+        num_meas = len(self.measurements)
+        for i in range(2**num_meas):
+            branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             id_branch_mapping = [
                 f"{self.measurements[j].id}={branch[j]}" for j in range(len(branch))
             ]

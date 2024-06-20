@@ -28,9 +28,9 @@ from pennylane.measurements import (
     MidMeasure,
     MidMeasureMP,
     MutualInfoMP,
-    PurityMP,
     Probability,
     ProbabilityMP,
+    PurityMP,
     Sample,
     SampleMeasurement,
     SampleMP,
@@ -196,7 +196,7 @@ def test_flatten_unflatten(mp):
     assert hash(metadata)
 
     new_mp = type(mp)._unflatten(data, metadata)
-    assert qml.equal(new_mp, mp)
+    qml.assert_equal(new_mp, mp)
 
 
 @pytest.mark.jax
@@ -292,22 +292,6 @@ class TestStatisticsQueuing:
         meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-    def test_not_an_observable(self, stat_func, return_type):  # pylint: disable=unused-argument
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-        if stat_func is sample:
-            pytest.skip("Sampling is not yet supported with symbolic operators.")
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return stat_func(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
 
 
 class TestProperties:
@@ -408,11 +392,11 @@ class TestProperties:
 
         mp1 = qml.sample(op=[m0, m1])
         mapped_mp1 = mp1.map_wires(wire_map)
-        assert qml.equal(mapped_mp1, qml.sample(op=[m2, m3]))
+        qml.assert_equal(mapped_mp1, qml.sample(op=[m2, m3]))
 
         mp2 = qml.sample(op=m0 * m1)
         mapped_mp2 = mp2.map_wires(wire_map)
-        assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
+        qml.assert_equal(mapped_mp2, qml.sample(op=m2 * m3))
 
 
 class TestExpansion:

@@ -72,21 +72,23 @@ class Tracker:
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'batches': 2, 'simulations': 3, 'executions': 3, 'shots': 300}
+    {'batches': 2, 'simulations': 3, 'executions': 3, 'results': 0.86, 'shots': 300}
     >>> tracker.latest
     {'simulations': 1,
      'executions': 1,
-     'results': array(-0.08),
+     'results': 0.16,
      'shots': 100,
      'resources': Resources(num_wires=1, num_gates=1,
                             gate_types=defaultdict(<class 'int'>, {'RX': 1}),
                             gate_sizes=defaultdict(<class 'int'>, {1: 1}),
                             depth=1,
-                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),)))}
+                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),))),
+     'errors': {}
+    }
     >>> tracker.history.keys()
-    dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources'])
+    dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources', 'errors'])
     >>> tracker.history['results']
-    [array(1.), array(0.02), array(-0.08)]
+    [1.0, -0.3, 0.16]
     >>> print(tracker.history['resources'][0])
     wires: 1
     gates: 1

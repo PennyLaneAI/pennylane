@@ -14,7 +14,7 @@
 """
 Tests for the Hamiltonian class.
 """
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, superfluous-parens, unnecessary-dunder-call
 from collections.abc import Iterable
 from unittest.mock import patch
 
@@ -24,9 +24,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-
 from pennylane.wires import Wires
-
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -705,6 +703,15 @@ def test_deprecation_with_new_opmath(recwarn):
         assert len(recwarn) == 0
 
 
+def test_deprecation_simplify_argument():
+    """Test that a deprecation warning is raised if the simplify argument is True."""
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="deprecated",
+    ):
+        _ = qml.ops.Hamiltonian([1.0], [qml.X(0)], simplify=True)
+
+
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonian:
     """Test the Hamiltonian class"""
@@ -754,7 +761,7 @@ class TestHamiltonian:
         assert data[1] is H._ops
 
         new_H = qml.Hamiltonian._unflatten(*H._flatten())
-        assert qml.equal(H, new_H)
+        qml.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
@@ -954,7 +961,7 @@ class TestHamiltonian:
                 qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
             ],
         )
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
     def test_hamiltonian_matmul(self, H1, H2, H):
@@ -1083,7 +1090,7 @@ class TestHamiltonian:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 
@@ -1745,7 +1752,11 @@ class TestHamiltonianEvaluation:
                 qml.Hamiltonian([1.0, 2.0], [qml.PauliX(1), qml.PauliX(1)], simplify=True)
             )
 
-        circuit()
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="deprecated",
+        ):
+            circuit()
         pars = circuit.qtape.get_parameters(trainable_only=False)
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
@@ -1778,7 +1789,15 @@ class TestHamiltonianDifferentiation:
             )
 
         grad_fn = qml.grad(circuit)
-        grad = grad_fn(coeffs, param)
+
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                grad = grad_fn(coeffs, param)
+        else:
+            grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1852,7 +1871,15 @@ class TestHamiltonianDifferentiation:
             )
 
         grad_fn = qml.grad(circuit)
-        grad = grad_fn(coeffs, param)
+
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                grad = grad_fn(coeffs, param)
+        else:
+            grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1922,7 +1949,14 @@ class TestHamiltonianDifferentiation:
             )
 
         grad_fn = jax.grad(circuit)
-        grad = grad_fn(coeffs, param)
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                grad = grad_fn(coeffs, param)
+        else:
+            grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1990,7 +2024,15 @@ class TestHamiltonianDifferentiation:
                 )
             )
 
-        res = circuit(coeffs, param)
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                res = circuit(coeffs, param)
+        else:
+            res = circuit(coeffs, param)
+
         res.backward()  # pylint:disable=no-member
         grad = (coeffs.grad, param.grad)
 
@@ -2078,7 +2120,15 @@ class TestHamiltonianDifferentiation:
             )
 
         with tf.GradientTape() as tape:
-            res = circuit(coeffs, param)
+            if simplify:
+                with pytest.warns(
+                    qml.PennyLaneDeprecationWarning,
+                    match="deprecated",
+                ):
+                    res = circuit(coeffs, param)
+            else:
+                res = circuit(coeffs, param)
+
         grad = tape.gradient(res, [coeffs, param])
 
         # differentiating a cost that combines circuits with

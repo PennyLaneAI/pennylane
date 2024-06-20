@@ -13,12 +13,13 @@
 # limitations under the License.
 """Contains a function that computes the fourier series of
 a quantum expectation value."""
+import warnings
 from functools import wraps
 from inspect import signature
-import warnings
 
 import numpy as np
 from autoray import numpy as anp
+
 import pennylane as qml
 
 
@@ -128,11 +129,11 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
     f_max = qml.math.max(spectrum)
 
     # If no shifts are provided, choose equidistant ones
+    need_f0 = True
     if not have_shifts:
         R = qml.math.shape(spectrum)[0]
         shifts = qml.math.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
         zero_idx = R
-        need_f0 = True
     elif have_f0:
         zero_idx = qml.math.where(qml.math.isclose(shifts, qml.math.zeros_like(shifts[0])))
         zero_idx = zero_idx[0][0] if (len(zero_idx) > 0 and len(zero_idx[0]) > 0) else None

@@ -16,20 +16,19 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 # pylint: disable=comparison-with-callable
 import abc
-from dataclasses import replace
-
 from collections.abc import Iterable
+from dataclasses import replace
 from numbers import Number
-from typing import Callable, Union, Sequence, Tuple, Optional
+from typing import Callable, Optional, Sequence, Tuple, Union
 
+from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape
+from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
-from pennylane import Tracker
-from pennylane.transforms.core import TransformProgram
 
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -177,6 +176,14 @@ class Device(abc.ABC):
         details = f"({', '.join(details)}) " if details else ""
         return f"<{self.name} device {details}at {hex(id(self))}>"
 
+    def __getattr__(self, key):
+        raise AttributeError(
+            f"{type(self).__name__} has no attribute '{key}'."
+            " You may be looking for a property or method present in the legacy device interface."
+            f" Please consult the {type(self).__name__} documentation for an updated list of public"
+            " properties and methods."
+        )
+
     @property
     def shots(self) -> Shots:
         """Default shots for execution workflows containing this device.
@@ -186,6 +193,16 @@ class Device(abc.ABC):
 
         """
         return self._shots
+
+    @shots.setter
+    def shots(self, _):
+        raise AttributeError(
+            (
+                "Shots can no longer be set on a device instance. "
+                "You can set shots on a call to a QNode, on individual tapes, or "
+                "create a new device instance instead."
+            )
+        )
 
     @property
     def wires(self) -> Wires:
@@ -323,6 +340,8 @@ class Device(abc.ABC):
 
         .. details::
             :title: Return Shape
+
+            See :ref:`Return Type Specification <ReturnTypeSpec>` for more detailed information.
 
             The result for each :class:`~.QuantumTape` must match the shape specified by :class:`~.QuantumTape.shape`.
 

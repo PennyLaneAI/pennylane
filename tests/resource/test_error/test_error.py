@@ -14,14 +14,19 @@
 """
 Test base AlgorithmicError class and its associated methods.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
-import numpy as np
-
 import pennylane as qml
-from pennylane.resource.error import AlgorithmicError, SpectralNormError, ErrorOperation
 from pennylane.operation import Operation
+from pennylane.resource.error import (
+    AlgorithmicError,
+    ErrorOperation,
+    SpectralNormError,
+    _compute_algo_error,
+)
 
 
 class SimpleError(AlgorithmicError):
@@ -181,3 +186,112 @@ class TestErrorOperation:
                 num_wires = 3
 
             _ = NoErrorOp(wires=[1, 2, 3])
+
+
+class MultiplicativeError(AlgorithmicError):
+    """Multiplicative error object"""
+
+    def combine(self, other):
+        return self.__class__(self.error * other.error)
+
+    def __repr__(self):
+        """Return formal string representation."""
+        return f"MultiplicativeError({self.error})"
+
+
+class AdditiveError(AlgorithmicError):
+    """Additive error object"""
+
+    def combine(self, other):
+        return self.__class__(self.error + other.error)
+
+    def __repr__(self):
+        """Return formal string representation."""
+        return f"AdditiveError({self.error})"
+
+
+class CustomErrorOp1(ErrorOperation):
+    """Custome error operation with multiplicative error"""
+
+    def __init__(self, phase, wires):
+        self.phase = phase
+        super().__init__(phase, wires=wires)
+
+    def error(self, *args, **kwargs):
+        return MultiplicativeError(self.phase)
+
+
+class CustomErrorOp2(ErrorOperation):
+    """Custome error with additive error"""
+
+    def __init__(self, flips, wires):
+        self.flips = flips
+        super().__init__(flips, wires=wires)
+
+    def error(self, *args, **kwargs):
+        return AdditiveError(self.flips)
+
+
+_HAMILTONIAN = qml.dot([1.0, -0.5], [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.Y(1)])
+
+
+class TestSpecAndTracker:
+    """Test capture of ErrorOperation in specs and tracker."""
+
+    # TODO: remove this when support for below is present
+    # little hack for stopping device-level decomposition for custom ops
+    @staticmethod
+    def preprocess(execution_config=qml.devices.DefaultExecutionConfig):
+        """A vanilla preprocesser"""
+        return qml.transforms.core.TransformProgram(), execution_config
+
+    dev = qml.device("null.qubit", wires=2)
+    dev.preprocess = preprocess.__func__
+
+    @staticmethod
+    @qml.qnode(dev)
+    def circuit():
+        """circuit with custom ops"""
+        qml.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=2)
+        CustomErrorOp1(0.31, [0])
+        CustomErrorOp2(0.12, [1])
+        qml.TrotterProduct(_HAMILTONIAN, time=1.0, n=4, order=4)
+        CustomErrorOp1(0.24, [1])
+        CustomErrorOp2(0.73, [0])
+        return qml.state()
+
+    errors_types = ["MultiplicativeError", "AdditiveError", "SpectralNormError"]
+
+    def test_computation(self):
+        """Test that _compute_algo_error are adding up errors as expected."""
+
+        _ = self.circuit()
+        algo_errors = _compute_algo_error(self.circuit.qtape)
+        assert len(algo_errors) == 3
+        assert all(error in algo_errors for error in self.errors_types)
+        assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
+        assert algo_errors["AdditiveError"].error == 0.73 + 0.12
+        assert algo_errors["SpectralNormError"].error == 0.25 + 0.17998560822421455
+
+    def test_specs(self):
+        """Test that specs are tracking errors as expected."""
+
+        algo_errors = qml.specs(self.circuit)()["errors"]
+        assert len(algo_errors) == 3
+        assert all(error in algo_errors for error in self.errors_types)
+        assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
+        assert algo_errors["AdditiveError"].error == 0.73 + 0.12
+        assert algo_errors["SpectralNormError"].error == 0.25 + 0.17998560822421455
+
+    def test_tracker(self):
+        """Test that tracker are tracking errors as expected."""
+
+        with qml.Tracker(self.dev) as tracker:
+            self.circuit()
+
+        algo_errors = tracker.latest["errors"]
+        assert len(algo_errors) == 3
+        assert all(error in algo_errors for error in self.errors_types)
+        assert algo_errors["MultiplicativeError"].error == 0.31 * 0.24
+        assert algo_errors["AdditiveError"].error == 0.73 + 0.12
+        assert algo_errors["SpectralNormError"].error == 0.25 + 0.17998560822421455

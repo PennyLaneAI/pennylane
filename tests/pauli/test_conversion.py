@@ -13,16 +13,15 @@
 # limitations under the License.
 """Unit tests for utility functions of Pauli arithmetic."""
 import warnings
-import pytest
-
 
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
-from pennylane.pauli import pauli_sentence, PauliWord, PauliSentence
+from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.conversion import _generalized_pauli_decompose
-
 
 test_hamiltonians = [
     np.array([[2.5, -0.5], [-0.5, 2.5]]),
@@ -143,6 +142,7 @@ class TestDecomposition:
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -162,6 +162,7 @@ class TestDecomposition:
         tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
         assert all(len(tensor.obs) == n for tensor in tensors)
 
+    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -207,6 +208,27 @@ class TestDecomposition:
             ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
             qml.pauli_decompose(hamiltonian, pauli=pauli, wire_order=wire_order)
+
+    @pytest.mark.jax
+    def test_jit(self):
+        """Test that pauli_decompose can be used inside a jit context"""
+        import jax
+
+        @jax.jit
+        def decompose_non_hermitian(m):
+            coeffs, unitaries = qml.pauli_decompose(m, check_hermitian=False).terms()
+            return coeffs, unitaries
+
+        x = jax.numpy.array([[1 + 42j, 5.678 - 1.234j], [5.678 + 1.234j, -1 + 42j]])
+        assert np.allclose(decompose_non_hermitian(x)[0], [42j, 5.678, 1.234, 1])
+
+        @jax.jit
+        def decompose_hermitian(m):
+            coeffs, unitaries = qml.pauli_decompose(m).terms()
+            return coeffs, unitaries
+
+        x = jax.numpy.array([[2, 1 - 1j], [1 + 1j, 0]])
+        assert np.allclose(decompose_hermitian(x)[0], [1, 1, 1, 1])
 
 
 class TestPhasedDecomposition:
@@ -266,6 +288,7 @@ class TestPhasedDecomposition:
         ).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -288,6 +311,7 @@ class TestPhasedDecomposition:
         tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
         assert all(len(tensor.obs) == n for tensor in tensors)
 
+    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -314,6 +338,7 @@ class TestPhasedDecomposition:
         assert isinstance(ps, qml.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
+    # pylint: disable = consider-using-generator
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
@@ -342,6 +367,8 @@ class TestPhasedDecomposition:
             tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
             assert all(len(tensor.obs) == num_qubits for tensor in tensors)
 
+    # pylint: disable = consider-using-generator
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
     def test_observable_types_general(self, matrix, hide_identity):
@@ -417,8 +444,8 @@ class TestPhasedDecomposition:
         """Test builtins support in pauli_decompose"""
 
         import jax
-        import torch
         import tensorflow as tf
+        import torch
 
         libraries = [np.array, jax.numpy.array, torch.tensor, tf.Variable]
         matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
@@ -428,6 +455,7 @@ class TestPhasedDecomposition:
             coeffs = qml.pauli_decompose(mat).coeffs
             assert qml.math.get_interface(coeffs[0]) == interface
 
+    # pylint: disable = superfluous-parens
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
@@ -441,8 +469,8 @@ class TestPhasedDecomposition:
         """Test differentiability for pauli_decompose"""
 
         import jax
-        import torch
         import tensorflow as tf
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 

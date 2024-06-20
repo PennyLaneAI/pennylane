@@ -14,11 +14,13 @@
 """
 Tests for the MPS template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments
 import pytest
-import numpy as np
+
 import pennylane as qml
-from pennylane.templates.tensornetworks.mps import compute_indices_MPS, MPS
+from pennylane.templates.tensornetworks.mps import MPS, compute_indices_MPS
 
 
 # pylint: disable=protected-access
@@ -52,7 +54,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = qml.MPS._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op._name == "MPS"  # make sure acutally initialized
     assert new_op is not op
 

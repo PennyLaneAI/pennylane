@@ -19,6 +19,7 @@ core parameterized gates.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
 from operator import matmul
+
 import numpy as np
 
 import pennylane as qml
@@ -28,7 +29,7 @@ from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
-from .parametric_ops_single_qubit import _can_replace, stack_last, RX, RY, RZ, PhaseShift
+from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last
 
 
 class MultiRZ(Operation):
@@ -37,7 +38,7 @@ class MultiRZ(Operation):
 
     .. math::
 
-        MultiRZ(\theta) = \exp(-i \frac{\theta}{2} Z^{\otimes n})
+        MultiRZ(\theta) = \exp\left(-i \frac{\theta}{2} Z^{\otimes n}\right)
 
     **Details:**
 
@@ -208,7 +209,7 @@ class PauliRot(Operation):
 
     .. math::
 
-        RP(\theta, P) = \exp(-i \frac{\theta}{2} P)
+        RP(\theta, P) = \exp\left(-i \frac{\theta}{2} P\right)
 
     **Details:**
 
@@ -259,6 +260,10 @@ class PauliRot(Operation):
         "Y": RX.compute_matrix(np.pi / 2),
         "Z": np.array([[1, 0], [0, 1]]),
     }
+
+    @classmethod
+    def _primitive_bind_call(cls, theta, pauli_word, wires=None, id=None):
+        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires, id=id)
 
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)
@@ -737,7 +742,7 @@ class IsingXX(Operation):
     r"""
     Ising XX coupling gate
 
-    .. math:: XX(\phi) = \exp(-i \frac{\phi}{2} (X \otimes X)) =
+    .. math:: XX(\phi) = \exp\left(-i \frac{\phi}{2} (X \otimes X)\right) =
         \begin{bmatrix} =
             \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
             0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
@@ -873,7 +878,7 @@ class IsingYY(Operation):
     r"""
     Ising YY coupling gate
 
-    .. math:: \mathtt{YY}(\phi) = \exp(-i \frac{\phi}{2} (Y \otimes Y)) =
+    .. math:: \mathtt{YY}(\phi) = \exp\left(-i \frac{\phi}{2} (Y \otimes Y)\right) =
         \begin{bmatrix}
             \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
             0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
@@ -1015,7 +1020,7 @@ class IsingZZ(Operation):
     r"""
     Ising ZZ coupling gate
 
-    .. math:: ZZ(\phi) = \exp(-i \frac{\phi}{2} (Z \otimes Z)) =
+    .. math:: ZZ(\phi) = \exp\left(-i \frac{\phi}{2} (Z \otimes Z)\right) =
         \begin{bmatrix}
             e^{-i \phi / 2} & 0 & 0 & 0 \\
             0 & e^{i \phi / 2} & 0 & 0 \\
@@ -1188,7 +1193,7 @@ class IsingXY(Operation):
     r"""
     Ising (XX + YY) coupling gate
 
-    .. math:: \mathtt{XY}(\phi) = \exp(i \frac{\theta}{4} (X \otimes X + Y \otimes Y)) =
+    .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\theta}{4} (X \otimes X + Y \otimes Y)\right) =
         \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\

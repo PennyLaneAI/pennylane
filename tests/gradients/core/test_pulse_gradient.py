@@ -15,12 +15,13 @@
 Tests for the gradients.pulse_gradient module.
 """
 
-import warnings
 import copy
-import pytest
-import numpy as np
-import pennylane as qml
+import warnings
 
+import numpy as np
+import pytest
+
+import pennylane as qml
 from pennylane.gradients.general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from pennylane.gradients.pulse_gradient import (
     _parshift_and_integrate,
@@ -89,7 +90,7 @@ class TestSplitEvolOps:
         assert qml.math.allclose(coeffs, exp_coeffs)
 
         # Check that the original operation was not altered
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
         assert isinstance(ops, tuple) and len(ops) == len(exp_shifts)
 
@@ -99,15 +100,15 @@ class TestSplitEvolOps:
             assert qml.math.allclose(_ops[0].t, [op.t[0], tau])
             # Patch _ops[0] to have the same time as op, so that it should become the same as op
             _ops[0].t = op.t
-            assert qml.equal(_ops[0], op)
+            qml.assert_equal(_ops[0], op)
 
             assert qml.math.allclose(_ops[2].t, [tau, op.t[-1]])
             # Patch _ops[2] to have the same time as op, so that it should become the same as op
             _ops[2].t = op.t
-            assert qml.equal(_ops[2], op)
+            qml.assert_equal(_ops[2], op)
 
             # Check that the inserted exponential is correct
-            assert qml.equal(qml.PauliRot(exp_shift, word, wires=ob.wires), _ops[1])
+            qml.assert_equal(qml.PauliRot(exp_shift, word, wires=ob.wires), _ops[1])
 
     split_evol_ops_test_cases_general = [
         (
@@ -161,7 +162,7 @@ class TestSplitEvolOps:
         assert qml.math.allclose(coeffs, exp_coeffs)
 
         # Check that the original operation was not altered
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
         assert isinstance(ops, tuple) and len(ops) == len(exp_shifts)
 
@@ -171,15 +172,15 @@ class TestSplitEvolOps:
             assert qml.math.allclose(_ops[0].t, [op.t[0], tau])
             # Patch _ops[0] to have the same time as op, so that it should become the same as op
             _ops[0].t = op.t
-            assert qml.equal(_ops[0], op)
+            qml.assert_equal(_ops[0], op)
 
             assert qml.math.allclose(_ops[2].t, [tau, op.t[-1]])
             # Patch _ops[2] to have the same time as op, so that it should become the same as op
             _ops[2].t = op.t
-            assert qml.equal(_ops[2], op)
+            qml.assert_equal(_ops[2], op)
 
             # Check that the inserted exponential is correct
-            assert qml.equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
+            qml.assert_equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
 
     @pytest.mark.usefixtures("use_legacy_opmath")  # this is only an issue with legacy Hamiltonian
     def test_warnings_legacy_opmath(self):
@@ -220,9 +221,10 @@ class TestSplitEvolTapes:
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 1)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
-            assert qml.equal(t.operations[0], ops[0])
-            assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations[1:-1], new_ops))
-            assert qml.equal(t.operations[-1], ops[2])
+            qml.assert_equal(t.operations[0], ops[0])
+            for o1, o2 in zip(t.operations[1:-1], new_ops):
+                qml.assert_equal(o1, o2)
+            qml.assert_equal(t.operations[-1], ops[2])
 
     def test_with_parametrized_evolution(self):
         """Test basic behaviour of the operation replacement with ParametrizedEvolution."""
@@ -237,7 +239,8 @@ class TestSplitEvolTapes:
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 0)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
-            assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations, new_ops))
+            for o1, o2 in zip(t.operations, new_ops):
+                qml.assert_equal(o1, o2)
 
         ops = [qml.evolve(ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4), qml.CNOT([0, 2])]
         tape = qml.tape.QuantumScript(ops)
@@ -245,8 +248,9 @@ class TestSplitEvolTapes:
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 0)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
-            assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations[:-1], new_ops))
-            assert qml.equal(t.operations[-1], ops[1])
+            for o1, o2 in zip(t.operations[:-1], new_ops):
+                qml.assert_equal(o1, o2)
+            qml.assert_equal(t.operations[-1], ops[1])
 
         ops = [
             qml.RX(0.4, 2),
@@ -261,9 +265,10 @@ class TestSplitEvolTapes:
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 1)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
-            assert qml.equal(t.operations[0], ops[0])
-            assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations[1:-1], new_ops))
-            assert qml.equal(t.operations[-1], ops[2])
+            qml.assert_equal(t.operations[0], ops[0])
+            for o1, o2 in zip(t.operations[1:-1], new_ops):
+                qml.assert_equal(o1, o2)
+            qml.assert_equal(t.operations[-1], ops[2])
 
 
 @pytest.mark.jax
@@ -752,12 +757,41 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="Expected a positive number of samples"):
             stoch_pulse_grad(tape, num_split_times=num_split_times)
 
-    def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape."""
+    def test_trainable_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is differentiated."""
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
-        _match = "Computing the gradient of broadcasted tapes with the stochastic pulse"
+        _match = r"Computing the gradient of broadcasted tapes .* using the stochastic pulse"
         with pytest.raises(NotImplementedError, match=_match):
             stoch_pulse_grad(tape)
+
+    def test_nontrainable_batched_tape(self):
+        """Test that no error is raised for a broadcasted/batched tape if the broadcasted
+        parameter is not differentiated, and that the results correspond to the stacked
+        results of the single-tape derivatives."""
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit")
+        x = [0.4, 0.2]
+        params = [jnp.array(0.14)]
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        op = qml.evolve(ham_single_q_const)(params, 0.7)
+        tape = qml.tape.QuantumScript(
+            [qml.RX(x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
+        )
+        batched_tapes, batched_fn = stoch_pulse_grad(tape, argnum=0, num_split_times=1)
+        batched_grad = batched_fn(dev.execute(batched_tapes))
+        separate_tapes = [
+            qml.tape.QuantumScript(
+                [qml.RX(_x, 0), op], [qml.expval(qml.PauliZ(0))], trainable_params=[1]
+            )
+            for _x in x
+        ]
+        separate_tapes_and_fns = [
+            stoch_pulse_grad(t, argnum=0, num_split_times=1) for t in separate_tapes
+        ]
+        separate_grad = [_fn(dev.execute(_tapes)) for _tapes, _fn in separate_tapes_and_fns]
+        assert np.allclose(batched_grad, separate_grad)
 
     @pytest.mark.parametrize("num_meas", [0, 1, 2])
     def test_warning_no_trainable_params(self, num_meas):
@@ -1237,13 +1271,14 @@ class TestStochPulseGrad:
             for op_a_0, op_a_1, op_b in zip(tape_a_0, tape_a_1, tape_b):
                 if isinstance(op_a_0, qml.pulse.ParametrizedEvolution):
                     # The a_0 and a_1 operators are equal
-                    assert qml.equal(op_a_0, op_a_1)
+                    qml.assert_equal(op_a_0, op_a_1)
                     # The a_0 and b operators differ in time but are equal otherwise
                     assert not qml.equal(op_a_0, op_b)
                     op_b.t = op_a_0.t
-                    assert qml.equal(op_a_0, op_b)
+                    qml.assert_equal(op_a_0, op_b)
                 else:
-                    assert qml.equal(op_a_0, op_a_1) and qml.equal(op_a_0, op_b)
+                    qml.assert_equal(op_a_0, op_a_1)
+                    qml.assert_equal(op_a_0, op_b)
 
         dev = qml.device(dev_name, wires=1)
         res_a_0 = fn_a_0(qml.execute(tapes_a_0, dev, None))

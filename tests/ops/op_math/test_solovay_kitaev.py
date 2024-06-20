@@ -17,14 +17,14 @@ import math
 
 import pytest
 import scipy as sp
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.ops.op_math.decompositions.solovay_kitaev import (
-    _SU2_transform,
-    _quaternion_transform,
-    _contains_SU2,
     _approximate_set,
+    _contains_SU2,
     _group_commutator_decompose,
+    _quaternion_transform,
+    _SU2_transform,
     sk_decomposition,
 )
 
@@ -153,7 +153,7 @@ def test_solovay_kitaev(op):
         gates = sk_decomposition(op, epsilon=1e-4, max_depth=5, basis_set=("T", "T*", "H"))
     assert q.queue == gates
 
-    matrix_sk = qml.prod(*reversed(gates)).matrix()
+    matrix_sk = qml.matrix(qml.tape.QuantumScript(gates))
 
     assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-2)
     assert qml.prod(*gates, lazy=False).wires == op.wires

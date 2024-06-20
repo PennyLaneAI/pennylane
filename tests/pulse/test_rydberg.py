@@ -20,15 +20,14 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import rydberg_interaction, rydberg_drive
+from pennylane.pulse import rydberg_drive, rydberg_interaction
 from pennylane.pulse.hardware_hamiltonian import (
+    AmplitudeAndPhase,
     HardwareHamiltonian,
     HardwarePulse,
-    AmplitudeAndPhase,
 )
-
-from pennylane.wires import Wires
 from pennylane.pulse.rydberg import RydbergSettings
+from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 wires = [1, 6, 0, 2, 4, 3]
@@ -99,7 +98,7 @@ class TestRydbergInteraction:
 
         # Only 3 of the interactions will be non-negligible
         assert H_res.coeffs == [2.5**-6, 5**-6, 2.5**-6]
-        assert qml.equal(H_res([], t=5), H_exp([], t=5))
+        qml.assert_equal(H_res([], t=5), H_exp([], t=5))
 
 
 class TestRydbergDrive:
@@ -175,7 +174,7 @@ class TestRydbergDrive:
         # Hamiltonian is as expected
         actual = Hd([0.5, -0.5], t=5).simplify()
         expected = H_expected([0.5, -0.5], t=5).simplify()
-        assert qml.equal(actual, expected)
+        qml.assert_equal(actual, expected)
 
     def test_no_amplitude(self):
         """Test that when amplitude is not specified, the drive term is correctly defined."""
@@ -197,14 +196,14 @@ class TestRydbergDrive:
 
         actual = Hd([0.1], 10).simplify()
         expected = H_expected([0.1], 10).simplify()
-        assert qml.equal(actual, expected)
+        qml.assert_equal(actual, expected)
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([0, 3])
         assert Hd.settings is None
         assert len(Hd.coeffs) == 1
         assert Hd.coeffs[0] is f
         assert len(Hd.ops) == 1
-        assert qml.equal(Hd.ops[0], ops_expected[0])
+        qml.assert_equal(Hd.ops[0], ops_expected[0])
 
     @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_no_detuning(self):
@@ -225,13 +224,14 @@ class TestRydbergDrive:
         ]
         H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
-        assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
+        qml.assert_equal(Hd([0.1], 10), H_expected([0.1], 10))
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([0, 3])
         assert Hd.settings is None
         assert all(isinstance(coeff, AmplitudeAndPhase) for coeff in Hd.coeffs)
         assert len(Hd.coeffs) == 2
-        assert all(qml.equal(op, op_expected) for op, op_expected in zip(Hd.ops, ops_expected))
+        for op, op_expected in zip(Hd.ops, ops_expected):
+            qml.assert_equal(op, op_expected)
 
     def test_no_amplitude_no_detuning(self):
         """Test that the correct error is raised if both amplitude and detuning are trivial."""

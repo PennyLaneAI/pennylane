@@ -25,9 +25,9 @@ PennyLane Documentation
 
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-            PennyLane is a cross-platform Python library for differentiable
-            programming of quantum computers. Train a quantum computer the same
-            way as a neural network.
+          PennyLane is a cross-platform Python library for quantum computing,
+          quantum machine learning, and quantum chemistry.
+          Train a quantum computer the same way as a neural network.
         </p>
         <div class="row mt-3">
 
@@ -166,8 +166,16 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/importing_workflows
    introduction/chemistry
    introduction/data
-   introduction/returns
    introduction/logging
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Release news
+   :hidden:
+
+   development/release_notes.md
+   development/deprecations
+   news/new_opmath
 
 .. toctree::
    :maxdepth: 1
@@ -177,8 +185,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    development/guide
    development/plugins
    development/adding_operators
-   development/deprecations
-   development/release_notes.md
 
 .. toctree::
    :maxdepth: 1
@@ -188,6 +194,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml
    code/qml_compiler
    code/qml_data
+   code/qml_debugging
    code/qml_drawer
    code/qml_fermi
    code/qml_fourier
@@ -195,6 +202,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_kernels
    code/qml_logging
    code/qml_math
+   code/qml_noise
    code/qml_numpy
    code/qml_ops_op_math
    code/qml_pauli
@@ -213,6 +221,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Internals
    :hidden:
 
+   code/qml_capture
    code/qml_devices
    code/qml_measurements
    code/qml_operation

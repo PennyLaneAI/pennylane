@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-# pylint: disable=import-outside-toplevel, protected-access, no-member
-import warnings
 import copy
 
+# pylint: disable=import-outside-toplevel, protected-access, no-member
+import warnings
 from functools import partial
 from typing import Callable, Tuple
 
@@ -23,13 +23,12 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-
 import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 from pennylane.resource import Resources
+from pennylane.tape import QuantumScript
 
 
 def dummyfunc():
@@ -1076,7 +1075,7 @@ class TestIntegration:
         QNode construction if the device supports mid-circuit measurements."""
         dev = qml.device("default.qubit.legacy", wires=3)
         mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
 
         @qml.qnode(dev)
         def circuit():
@@ -1139,23 +1138,6 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 3 if dev.name == "defaut.qubit" else 1
 
-    def test_drawing_has_deferred_measurements(self):
-        """Test that `qml.draw` with qnodes uses defer_measurements
-        to draw circuits with mid-circuit measurements."""
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            m = qml.measure(0)
-            qml.cond(m, qml.PauliX)(wires=1)
-            return qml.expval(qml.PauliZ(wires=1))
-
-        res = qml.draw(circuit)("x")
-        expected = "0: ──RX(x)─╭●─┤     \n1: ────────╰X─┤  <Z>"
-
-        assert res == expected
-
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
@@ -1180,11 +1162,11 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        spy.assert_called_once()
+        spy.assert_called()
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
@@ -1868,7 +1850,7 @@ class TestTapeExpansion:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.3)
 
@@ -1877,26 +1859,28 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
-    def test_invalid_hamiltonian_expansion_finite_shots(self):
-        """Test that an error is raised if multiple expectations are requested
-        when using finite shots"""
+    @pytest.mark.usefixtures("new_opmath_only")
+    @pytest.mark.parametrize("grouping", [True, False])
+    def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
+        """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""
+
         dev = qml.device("default.qubit.legacy", wires=3, shots=50000)
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
         H = qml.Hamiltonian(c, obs)
-        H.compute_grouping()
 
-        assert len(H.grouping_indices) == 2
+        if grouping:
+            H.compute_grouping()
+            assert len(H.grouping_indices) == 2
 
         @qnode(dev)
         def circuit():
             return qml.expval(H), qml.expval(H)
 
-        with pytest.raises(
-            ValueError, match="Can only return the expectation of a single Hamiltonian"
-        ):
-            circuit()
+        res = circuit()
+        assert qml.math.allclose(res, [0.54, 0.54], atol=0.05)
+        assert res[0] == res[1]
 
     def test_device_expansion_strategy(self, mocker):
         """Test that the device expansion strategy performs the device

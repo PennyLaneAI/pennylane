@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,22 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
 
+from packaging.version import Version
+
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
 
-    CORRECT_TF_VERSION = int(tf.__version__.split(".", maxsplit=1)[0]) > 1
+    CORRECT_TF_VERSION = Version(tf.__version__) >= Version("2.0.0")
+    try:
+        # this feels a bit hacky, but if users *only* have an old (i.e. PL-compatible) version of Keras installed
+        # then tf.keras doesn't have a version attribute, and we *should be* good to go.
+        # if you have a newer version of Keras installed, then you can use tf.keras.version to check if you
+        # are configured to use Keras 3 or Keras 2
+        CORRECT_KERAS_VERSION = Version(tf.keras.version()) < Version("3.0.0")
+    except AttributeError:
+        CORRECT_KERAS_VERSION = True
+
 except ImportError:
     # The following allows this module to be imported even if TensorFlow is not installed. Users
     # will instead see an ImportError when instantiating the KerasLayer.
@@ -39,6 +50,13 @@ class KerasLayer(Layer):
     `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
+
+    .. note::
+
+        ``KerasLayer`` currently only supports Keras 2. If you are running the newest version
+        of TensorFlow and Keras, you may automatically be using Keras 3. For instructions
+        on running with Keras 2, instead, see the
+        `documentation on backwards compatibility <https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility>`__ .
 
     Args:
         qnode (qml.QNode): the PennyLane QNode to be converted into a Keras Layer_
@@ -299,6 +317,12 @@ class KerasLayer(Layer):
                 "https://www.tensorflow.org/install for detailed instructions."
             )
 
+        if not CORRECT_KERAS_VERSION:
+            raise ImportError(
+                "KerasLayer requires a Keras version lower than 3. For instructions on running with Keras 2,"
+                "visit https://keras.io/getting_started/#tensorflow--keras-2-backwards-compatibility."
+            )
+
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
@@ -307,7 +331,14 @@ class KerasLayer(Layer):
         self._signature_validation(qnode, weight_shapes)
 
         self.qnode = qnode
-        self.qnode.interface = "tf"
+        if self.qnode.interface not in (
+            "auto",
+            "tf",
+            "tensorflow",
+            "tensorflow-autograph",
+            "tf-autograph",
+        ):
+            raise ValueError(f"Invalid interface '{self.qnode.interface}' for KerasLayer")
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)

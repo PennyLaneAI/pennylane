@@ -452,7 +452,7 @@ class TestExpvalMeasurement:
         copied_res = copy.copy(res)
         assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
         assert copied_res.return_type == res.return_type
-        assert qml.equal(copied_res.H, res.H)
+        qml.assert_equal(copied_res.H, res.H)
         assert copied_res.k == res.k
         assert copied_res.seed == res.seed
 
@@ -573,7 +573,10 @@ class TestExpvalForward:
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
 
-        msg = "Observable must have a valid pauli representation."
+        legacy_msg = "Observable must be a linear combination of Pauli observables"
+        new_opmath_msg = "Observable must have a valid pauli representation."
+        msg = new_opmath_msg if qml.operation.active_new_opmath() else legacy_msg
+
         with pytest.raises(ValueError, match=msg):
             circuit(qml.Hadamard(0) @ qml.Hadamard(2))
 

@@ -348,11 +348,12 @@ class TestObservableReturn:
         assert gen.name == "Hamiltonian"
         assert gen.compare(ObservableOp(0.5, wires=0).generator())
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_observable_opmath(self):
         """Test a generator that returns a single observable is correct with opmath enabled"""
         gen = qml.generator(ObservableOp, format="observable")(0.5, wires=0)
         assert gen.name == "SProd"
-        assert qml.equal(gen, ObservableOp(0.5, wires=0).generator())
+        qml.assert_equal(gen, ObservableOp(0.5, wires=0).generator())
 
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_tensor_observable(self):
@@ -361,11 +362,12 @@ class TestObservableReturn:
         assert gen.name == "Hamiltonian"
         assert gen.compare(TensorOp(0.5, wires=[0, 1]).generator())
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_tensor_observable_opmath(self):
         """Test a generator that returns a tensor observable is correct with opmath enabled"""
         gen = qml.generator(TensorOp, format="observable")(0.5, wires=[0, 1])
         assert gen.name == "Prod"
-        assert qml.equal(gen, TensorOp(0.5, wires=[0, 1]).generator())
+        qml.assert_equal(gen, TensorOp(0.5, wires=[0, 1]).generator())
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""
@@ -456,12 +458,12 @@ class TestArithmeticReturn:
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""
         gen = qml.generator(qml.PhaseShift, format="arithmetic")(0.5, wires=0)
-        assert qml.equal(gen, qml.Projector(np.array([1]), wires=0))
+        qml.assert_equal(gen, qml.Projector(np.array([1]), wires=0))
 
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="arithmetic")(0.5, wires=0)
-        assert qml.equal(gen, qml.s_prod(-0.6, qml.PauliX(0)))
+        qml.assert_equal(gen, qml.s_prod(-0.6, qml.PauliX(0)))
 
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""

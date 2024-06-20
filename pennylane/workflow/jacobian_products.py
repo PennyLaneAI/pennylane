@@ -17,10 +17,10 @@ Defines classes that take the vjps, jvps, and jacobians of circuits.
 import abc
 import inspect
 import logging
-from typing import Tuple, Callable, Optional, Union
+from typing import Callable, Optional, Tuple, Union
 
-from cachetools import LRUCache
 import numpy as np
+from cachetools import LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
@@ -221,7 +221,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     Keyword Args:
         cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
             instead of treating each call as independent. This keyword argument is used to patch problematic
-            autograd behavior when caching is turned off. In this case, caching will be based on the identity
+            autograd behaviour when caching is turned off. In this case, caching will be based on the identity
             of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
             by the cache.
 
@@ -414,7 +414,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._uses_new_device = not isinstance(device, qml.Device)
+        self._uses_new_device = not isinstance(device, qml.devices.LegacyDevice)
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)
@@ -426,7 +426,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.execute_and_gradients(numpy_tapes, **self._gradient_kwargs)
@@ -437,7 +437,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.execute(numpy_tapes, self._execution_config)
         return self._device.batch_execute(numpy_tapes)
@@ -448,7 +448,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
@@ -669,35 +669,42 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     ) -> Tuple[ResultBatch, Tuple]:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         tangents = qml.math.unwrap(tangents)
         return self._device.execute_and_compute_jvp(numpy_tapes, tangents, self._execution_config)
 
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         dy = qml.math.unwrap(dy)
-        return self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+        vjps = self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+        res = []
+        for t, r in zip(tapes, vjps):
+            if len(t.trainable_params) == 1 and qml.math.shape(r) == ():
+                res.append((r,))
+            else:
+                res.append(r)
+        return res
 
     def compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         return self._device.compute_derivatives(numpy_tapes, self._execution_config)
 
     def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jacobian called with %s", tapes)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
 
 
-class LightningVJPs(DeviceDerivatives):  # pragma: no cover
+class LightningVJPs(DeviceDerivatives):
     """Calculates VJPs natively using lightning.qubit.
 
     Args:
-        device (LightningBase): a device in the lightning ecosystem (``lightning.qubit``, ``lightning.gpu``, ``lightning.kokkos``.)
+        device (LightningBase): Lightning ecosystem devices ``lightning.gpu`` or ``lightning.kokkos``.
         gradient_kwargs (Optional[dict]):  Any gradient options.
 
     >>> dev = qml.device('lightning.qubit', wires=5)
@@ -726,14 +733,14 @@ class LightningVJPs(DeviceDerivatives):  # pragma: no cover
             key: value for key, value in self._gradient_kwargs.items() if key != "method"
         }
 
-    def compute_vjp(self, tapes, dy):
+    def compute_vjp(self, tapes, dy):  # pragma: no cover
         if not all(
             isinstance(m, qml.measurements.ExpectationMP) for t in tapes for m in t.measurements
         ):
             raise NotImplementedError("Lightning device VJPs only support expectation values.")
         results = []
-        for dyi, tape in zip(dy, tapes):
-            numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
+        for dyi, tape in zip(dy, numpy_tapes):
             if len(tape.measurements) == 1:
                 dyi = (dyi,)
             dyi = np.array(qml.math.unwrap(dyi))
@@ -741,10 +748,8 @@ class LightningVJPs(DeviceDerivatives):  # pragma: no cover
                 raise NotImplementedError(
                     "Lightning device VJPs are not supported with jax jacobians."
                 )
-            vjp_f = self._device.vjp(
-                numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
-            )
-            out = vjp_f(numpy_tape)
+            vjp_f = self._device.vjp(tape.measurements, dyi, **self._processed_gradient_kwargs)
+            out = vjp_f(tape)
             if len(tape.trainable_params) == 1:
                 out = (out,)
             results.append(out)

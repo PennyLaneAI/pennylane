@@ -27,16 +27,9 @@ QNode without an exception being raised."""
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import QuantumFunctionError
-from pennylane.measurements import (
-    Probability,
-    Expectation,
-    Variance,
-    Sample,
-    VnEntropy,
-    MutualInfo,
-)
+from pennylane import numpy as np
+from pennylane.measurements import Expectation, MutualInfo, Probability, Sample, Variance, VnEntropy
 from pennylane.measurements.measurements import ObservableReturnTypes
 
 pytestmark = pytest.mark.all_interfaces
@@ -419,7 +412,7 @@ class TestSupportedConfs:
         # with pytest.raises(ValueError, match=msg):
         circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs, complex=complex)
-        if shots is not None:
+        if shots is not None and interface != "jax":
             with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
                 compute_gradient(x, interface, circuit, return_type, complex=complex)
         else:
@@ -547,7 +540,7 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if return_type in (VnEntropy, MutualInfo):
-            if shots:
+            if shots and interface != "jax":
                 err_cls = qml.DeviceError
                 msg = "not accepted with finite shots"
             else:

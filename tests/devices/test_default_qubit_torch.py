@@ -20,10 +20,11 @@ import math
 import numpy as np
 import pytest
 from gate_data import (
+    CCZ,
+    CH,
     CNOT,
     CSWAP,
     CZ,
-    CH,
     SWAP,
     ControlledPhaseShift,
     CRot3,
@@ -33,6 +34,7 @@ from gate_data import (
     DoubleExcitation,
     DoubleExcitationMinus,
     DoubleExcitationPlus,
+    FermionicSWAP,
     H,
     IsingXX,
     IsingYY,
@@ -40,7 +42,6 @@ from gate_data import (
     MultiRZ1,
     MultiRZ2,
     OrbitalRotation,
-    FermionicSWAP,
     Rot3,
     Rotx,
     Roty,
@@ -52,7 +53,6 @@ from gate_data import (
     SingleExcitationPlus,
     T,
     Toffoli,
-    CCZ,
     X,
     Y,
     Z,
@@ -914,12 +914,13 @@ class TestApplyBroadcasted:
         expected = qml.math.einsum("ij,lj->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_direct_eval_hamiltonian_broadcasted_torch(self, device, torch_device, mocker):
         """Tests that the correct result is returned when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with torch."""
 
         dev = device(wires=2, torch_device=torch_device)
-        ham = qml.Hamiltonian(
+        ham = qml.ops.LinearCombination(
             torch.tensor([0.1, 0.2], requires_grad=True), [qml.PauliX(0), qml.PauliZ(1)]
         )
 
@@ -2264,7 +2265,7 @@ class TestSamples:
         assert torch.is_tensor(res)
         assert res.shape == (shots,)  # pylint:disable=comparison-with-callable
         assert torch.allclose(
-            torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device)
+            torch.unique(res), torch.tensor([-1, 1], dtype=torch.float64, device=torch_device)
         )
 
     def test_estimating_marginal_probability(self, torch_device, tol):

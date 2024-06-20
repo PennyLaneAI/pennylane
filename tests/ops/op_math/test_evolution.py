@@ -72,13 +72,14 @@ class TestEvolution:
         assert U.base == U.generator()
 
     @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_num_params_for_parametric_bas_legacy_opmath(self):
+    def test_num_params_for_parametric_base_legacy_opmath(self):
         base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
         op = Evolution(base_op, 1.23)
 
         assert base_op.num_params == 2
         assert op.num_params == 1
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_num_params_for_parametric_base(self):
         base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
         op = Evolution(base_op, 1.23)
@@ -145,7 +146,7 @@ class TestEvolution:
 
         op = Exp(orig_base, coeff=0.2)
         new_op = op.simplify()
-        assert qml.equal(new_op.base, qml.PauliX(0))
+        qml.assert_equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 0.2
 
     def test_simplify_s_prod(self):
@@ -155,7 +156,7 @@ class TestEvolution:
         op = Evolution(base, 3)
         new_op = op.simplify()
 
-        assert qml.equal(new_op.base, qml.PauliX(0))
+        qml.assert_equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == -12j
 
     @pytest.mark.jax
@@ -191,7 +192,7 @@ class TestEvolution:
         base = qml.PauliX(0) + qml.PauliX(1) + qml.PauliX(0)
         op = Evolution(base, 2)
 
-        assert qml.equal(op.simplify(), Evolution(base.simplify(), 2))
+        qml.assert_equal(op.simplify(), Evolution(base.simplify(), 2))
 
     @pytest.mark.parametrize(
         "base",
@@ -205,7 +206,7 @@ class TestEvolution:
         """Test that qml.generator will return generator if it is_hermitian, but is not a subclass of Observable"""
         op = Evolution(base, 1)
         gen, c = qml.generator(op)
-        assert qml.equal(gen if c == 1 else qml.s_prod(c, gen), base)
+        qml.assert_equal(gen if c == 1 else qml.s_prod(c, gen), base)
 
     def test_generator_error_if_not_hermitian(self):
         """Tests that an error is raised if the generator is not hermitian."""

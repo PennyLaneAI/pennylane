@@ -16,15 +16,16 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 
-import io
 import contextlib
+import io
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.resource import ResourcesOperation, Resources
 from pennylane.circuit_graph import CircuitGraph
+from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
 
 
@@ -331,10 +332,10 @@ class TestCircuitGraph:
             lst_expected_no_wires = expected_grid_no_wires[key]
 
             for el1, el2 in zip(lst_w_wires, lst_expected_w_wires):
-                assert qml.equal(el1, el2)
+                qml.assert_equal(el1, el2)
 
             for el1, el2 in zip(lst_no_wires, lst_expected_no_wires):
-                assert qml.equal(el1, el2)
+                qml.assert_equal(el1, el2)
 
     def test_print_contents(self):
         """Tests if the circuit prints correct."""

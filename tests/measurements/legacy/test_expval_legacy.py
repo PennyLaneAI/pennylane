@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation, Shots
 from pennylane.devices.qubit.measure import flatten_state
+from pennylane.measurements import Expectation, Shots
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -77,24 +77,6 @@ class TestExpval:
             assert res[1].dtype == r_dtype
         else:
             assert res.dtype == r_dtype
-
-        custom_measurement_process(new_dev, spy)
-
-    def test_not_an_observable(self, mocker):
-        """Test that a warning is raised if the provided
-        argument might not be hermitian."""
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-        new_dev = circuit.device
-        spy = mocker.spy(qml.QubitDevice, "expval")
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
 
         custom_measurement_process(new_dev, spy)
 

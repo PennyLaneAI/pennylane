@@ -25,10 +25,17 @@ from functools import singledispatch
 import pennylane as qml
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
-from .mpldrawer import MPLDrawer
+
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
+from .mpldrawer import MPLDrawer
 from .style import _set_style
+from .utils import (
+    convert_wire_order,
+    cwire_connections,
+    default_bit_map,
+    transform_deferred_measurements_tape,
+    unwrap_controls,
+)
 
 has_mpl = True
 try:
@@ -107,7 +114,7 @@ def _(op: ops.Toffoli, drawer, layer, _):
 
 @_add_operation_to_drawer.register
 def _(op: ops.MultiControlledX, drawer, layer, _):
-    drawer.CNOT(layer, op.active_wires, control_values=op.control_values)
+    drawer.CNOT(layer, op.wires, control_values=op.control_values)
 
 
 @_add_operation_to_drawer.register
@@ -160,7 +167,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
     drawer.box_gate(
         layer,
         list(op.wires),
-        op.then_op.label(decimals=config.decimals),
+        op.base.label(decimals=config.decimals),
         box_options={"zorder": 4},
         text_options={"zorder": 5},
     )
@@ -216,6 +223,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     fontsize = kwargs.get("fontsize", None)
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    tape = transform_deferred_measurements_tape(tape)
     tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
     bit_map = default_bit_map(tape)
 

@@ -19,7 +19,7 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Dict, Union, Any
+from typing import Any, Callable, Dict, Union
 
 from pennylane import QNode
 
@@ -186,7 +186,7 @@ class TorchLayer(Module):
 
             init_method = {
                 "weights_0": torch.nn.init.normal_,
-                "weights_1": torch.nn.init.uniform,
+                "weights_1": torch.nn.init.uniform_,
                 "weights_2": torch.tensor([1., 2., 3.]),
                 "weight_3": torch.tensor(1.),  # scalar when shape is not an iterable and is <= 1
                 "weight_4": torch.tensor([1.]),
@@ -261,7 +261,7 @@ class TorchLayer(Module):
             def qnode(inputs, weights):
                 qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+                return [qml.expval(qml.Z(0)), qml.expval(qml.Z(1))]
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
@@ -349,8 +349,10 @@ class TorchLayer(Module):
         # validate the QNode signature, and convert to a Torch QNode.
         # TODO: update the docstring regarding changes to restrictions when tape mode is default.
         self._signature_validation(qnode, weight_shapes)
+
         self.qnode = qnode
-        self.qnode.interface = "torch"
+        if self.qnode.interface not in ("auto", "torch", "pytorch"):
+            raise ValueError(f"Invalid interface '{self.qnode.interface}' for TorchLayer")
 
         self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
 
@@ -401,6 +403,11 @@ class TorchLayer(Module):
         # calculate the forward pass as usual
         results = self._evaluate_qnode(inputs)
 
+        if isinstance(results, tuple):
+            if has_batch_dim:
+                results = [torch.reshape(r, (*batch_dims, *r.shape[1:])) for r in results]
+            return torch.stack(results, dim=0)
+
         # reshape to the correct number of batch dims
         if has_batch_dim:
             results = torch.reshape(results, (*batch_dims, *results.shape[1:]))
@@ -425,10 +432,17 @@ class TorchLayer(Module):
         if isinstance(res, torch.Tensor):
             return res.type(x.dtype)
 
-        if len(x.shape) > 1:
-            res = [torch.reshape(r, (x.shape[0], -1)) for r in res]
+        def _combine_dimensions(_res):
+            if len(x.shape) > 1:
+                _res = [torch.reshape(r, (x.shape[0], -1)) for r in _res]
+            return torch.hstack(_res).type(x.dtype)
 
-        return torch.hstack(res).type(x.dtype)
+        if isinstance(res, tuple) and len(res) > 1:
+            if all(isinstance(r, torch.Tensor) for r in res):
+                return tuple(_combine_dimensions([r]) for r in res)  # pragma: no cover
+            return tuple(_combine_dimensions(r) for r in res)
+
+        return _combine_dimensions(res)
 
     def construct(self, args, kwargs):
         """Constructs the wrapped QNode on input data using the initialized weights.
@@ -444,7 +458,7 @@ class TorchLayer(Module):
         x = args[0]
         kwargs = {
             self.input_arg: x,
-            **{arg: weight.data.to(x) for arg, weight in self.qnode_weights.items()},
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
         }
         self.qnode.construct((), kwargs)
 

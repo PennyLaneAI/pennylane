@@ -14,24 +14,24 @@
 """
 Unit tests for the available qubit operations for quantum chemistry purposes.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
 import pytest
-import numpy as np
+from gate_data import (
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    FermionicSWAP,
+    OrbitalRotation,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+)
 from scipy.linalg import expm, fractional_matrix_power
 
-from gate_data import (
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
-    OrbitalRotation,
-    FermionicSWAP,
-)
 import pennylane as qml
 from pennylane import numpy as pnp
-
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qml.SingleExcitation(0.14, wires=[0, 1]),
@@ -725,7 +725,7 @@ class TestOrbitalRotation:
         wires = (0, 1, 2, 3)
         op = qml.OrbitalRotation(phi, wires=wires)
         adj_op = qml.adjoint(op, lazy=False)
-        assert qml.equal(adj_op, qml.OrbitalRotation(-phi, wires=wires))
+        qml.assert_equal(adj_op, qml.OrbitalRotation(-phi, wires=wires))
 
     def test_adjoint_integration(self):
         """Test that the adjoint correctly inverts the orbital rotation operation"""
@@ -1078,7 +1078,7 @@ class TestFermionicSWAP:
         wires = (0, 1)
         op = qml.FermionicSWAP(phi, wires=wires)
         adj_op = qml.adjoint(op, lazy=False)
-        assert qml.equal(adj_op, qml.FermionicSWAP(-phi, wires=wires))
+        qml.assert_equal(adj_op, qml.FermionicSWAP(-phi, wires=wires))
 
     def test_adjoint_integration(self):
         """Test that the adjoint correctly inverts the fermionic swap operation"""

@@ -263,6 +263,22 @@ QUEUES = [
 add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 
 #####################################################
+# Helper functions
+
+
+def _convert_obs_to_legacy_opmath(obs):
+    """Convert single-term observables to legacy opmath"""
+
+    if isinstance(obs, qml.ops.Prod):
+        return qml.operation.Tensor(*obs.operands)
+
+    if isinstance(obs, (list, tuple)):
+        return [_convert_obs_to_legacy_opmath(o) for o in obs]
+
+    return obs
+
+
+#####################################################
 # Tests
 
 
@@ -273,6 +289,8 @@ class TestVQE:
     @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES)))
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
+        if not qml.operation.active_new_opmath():
+            observables = _convert_obs_to_legacy_opmath(observables)
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
         expval = generate_cost_fn(ansatz, hamiltonian, dev)
@@ -284,6 +302,8 @@ class TestVQE:
     )
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
+        if not qml.operation.active_new_opmath() and (not coeffs or all(c == 0 for c in coeffs)):
+            pytest.skip("Legacy opmath does not support zero Hamiltonians")
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         cost = generate_cost_fn(lambda params, **kwargs: None, hamiltonian, dev)
@@ -337,19 +357,23 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 14
+        assert exec_no_opt == 8  # Number of wire-based groups
 
         assert np.allclose(c1, c2, atol=1e-1)
 
     # pylint: disable=protected-access
     @pytest.mark.tf
     @pytest.mark.slow
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_tf(self, shots):
+    def test_optimize_tf(self, shots, dev_name):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        if dev_name == "default.qubit.legacy" and shots is None:
+            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
+
+        dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -383,19 +407,23 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 14
+        assert exec_no_opt == 8  # Number of wire-based groups
 
         assert np.allclose(c1, c2, atol=1e-1)
 
     # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_autograd(self, shots):
+    def test_optimize_autograd(self, shots, dev_name):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the autograd interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        if dev_name == "default.qubit.legacy" and shots is None:
+            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
+
+        dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -429,7 +457,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 14
+        assert exec_no_opt == 8
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -485,7 +513,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8
+        assert exec_no_opt == 4  # number of wire-based groups
 
         assert np.allclose(c1, c2)
 
@@ -540,9 +568,8 @@ class TestVQE:
             c2 = cost2(w)
         exec_no_opt = tracker.totals["executions"]
 
-        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8
+        assert exec_no_opt == 4
 
         assert np.allclose(c1, c2)
 
@@ -597,9 +624,8 @@ class TestVQE:
             c2 = cost2(w)
         exec_no_opt = tracker.totals["executions"]
 
-        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8
+        assert exec_no_opt == 4
 
         assert np.allclose(c1, c2)
 
@@ -742,6 +768,10 @@ class TestNewVQE:
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
         """Tests simple VQE evaluations."""
+
+        if not qml.operation.active_new_opmath():
+            observables = _convert_obs_to_legacy_opmath(observables)
+
         coeffs = [1.0] * len(observables)
         dev = qml.device("default.qubit", wires=3)
         H = qml.Hamiltonian(coeffs, observables)
@@ -892,7 +922,7 @@ class TestNewVQE:
 
     # the LinearCombination implementation does have diagonalizing gates,
     # but legacy Hamiltonian does not and fails
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -909,7 +939,7 @@ class TestNewVQE:
 
     # the LinearCombination implementation does have diagonalizing gates,
     # but legacy Hamiltonian does not and fails
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_error_sample_measurement(self):
         """Tests that error is thrown if sample(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -1019,9 +1049,31 @@ class TestNewVQE:
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.usefixtures("legacy_opmath_only")
+    def test_specs_legacy(self):
+        """Test that the specs of a VQE circuit can be computed"""
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(H)
+
+        res = qml.specs(circuit)()
+
+        assert res["num_observables"] == 1
+
+        # currently this returns 1 instead, because diagonalizing gates exist for H,
+        # but they aren't used in executing this qnode
+        # to be revisited in [sc-59117]
+        assert res["num_diagonalizing_gates"] == 0
+
     @pytest.mark.xfail(
         reason="diagonalizing gates defined but not used, should not be included in specs"
     )
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_specs(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
@@ -1042,7 +1094,7 @@ class TestNewVQE:
         # to be revisited in [sc-59117]
         assert res["num_diagonalizing_gates"] == 0
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_specs_legacy_opmath(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)

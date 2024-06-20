@@ -13,21 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for sampling states in devices/qutrit_mixed."""
-import pytest
 import numpy as np
+import pytest
 from flaky import flaky
 
 import pennylane as qml
 from pennylane import math
 from pennylane.devices.qutrit_mixed import (
-    sample_state,
-    measure_with_samples,
-    create_initial_state,
     apply_operation,
+    create_initial_state,
+    measure_with_samples,
+    sample_state,
 )
 from pennylane.devices.qutrit_mixed.sampling import _sample_state_jax
 from pennylane.measurements import Shots
-
 
 APPROX_ATOL = 0.05
 QUDIT_DIM = 3
@@ -365,7 +364,7 @@ class TestMeasureWithSamples:
             qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
         )
         assert results_gel_1s.shape == (shots.total_shots,)
-        assert results_gel_1s.dtype == np.float64
+        assert results_gel_1s.dtype == np.float64 if qml.operation.active_new_opmath() else np.int64
         assert sorted(np.unique(results_gel_1s)) == [-1, 0, 1]
 
     @flaky

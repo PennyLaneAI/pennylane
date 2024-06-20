@@ -15,46 +15,47 @@
 This module contains the Clifford simulator using ``stim``.
 """
 
+import concurrent.futures
 from dataclasses import replace
 from functools import partial
-from typing import Union, Tuple, Sequence
-import concurrent.futures
+from typing import Sequence, Tuple, Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.typing import Result, ResultBatch
-from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.transforms.core import TransformProgram
+from pennylane._device import DeviceError
 from pennylane.measurements import (
-    ExpectationMP,
-    StateMP,
-    DensityMatrixMP,
-    PurityMP,
-    VnEntropyMP,
-    MutualInfoMP,
-    VarianceMP,
-    ProbabilityMP,
-    SampleMP,
-    CountsMP,
     ClassicalShadowMP,
+    CountsMP,
+    DensityMatrixMP,
+    ExpectationMP,
+    MutualInfoMP,
+    ProbabilityMP,
+    PurityMP,
+    SampleMP,
     ShadowExpvalMP,
+    StateMP,
+    VarianceMP,
+    VnEntropyMP,
 )
 from pennylane.ops.qubit.observables import BasisStateProjector
+from pennylane.tape import QuantumTape
+from pennylane.transforms import convert_to_numpy_parameters
+from pennylane.transforms.core import TransformProgram
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
-
 from .default_qubit import accepted_sample_measurement
-from .modifiers import single_tape_support, simulator_tracking
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
-    validate_observables,
+    null_postprocessing,
+    validate_adjoint_trainable_params,
+    validate_device_wires,
     validate_measurements,
     validate_multiprocessing_workers,
-    validate_device_wires,
-    validate_adjoint_trainable_params,
-    null_postprocessing,
+    validate_observables,
 )
 
 has_stim = True
@@ -136,7 +137,7 @@ def _pl_op_to_stim(op):
         stim_tg = map(str, op.wires)
     except KeyError as e:
         raise qml.DeviceError(
-            f"Operator {op} not supported on default.clifford and does not provide a decomposition."
+            f"Operator {op} not supported with default.clifford and does not provide a decomposition."
         ) from e
 
     # Check if the operation is noisy
@@ -507,7 +508,7 @@ class DefaultClifford(Device):
             return tuple(
                 self.simulate(c, seed=s, debugger=self._debugger) for c, s in zip(circuits, seeds)
             )
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
         _wrap_simulate = partial(self.simulate, debugger=None)
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -574,23 +575,10 @@ class DefaultClifford(Device):
                 # Note: This is a lot faster than doing `stim_ct.append(gate, wires)`
                 stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
             else:
-                if op.name == "GlobalPhase":
+                if isinstance(op, qml.GlobalPhase):
                     global_phase_ops.append(op)
-                if op.name == "Snapshot":
-                    if debugger is not None and debugger.active:
-                        meas = op.hyperparameters["measurement"]
-                        if meas is not None and not isinstance(meas, qml.measurements.StateMP):
-                            raise ValueError(
-                                f"{self.name} does not support arbitrary measurements of a state with snapshots."
-                            )
-                        # Build a temporary simulator for obtaining state
-                        snap_sim = stim.TableauSimulator()
-                        if self.wires is not None:
-                            snap_sim.set_num_qubits(len(self.wires))
-                        snap_sim.do_circuit(stim_circuit)
-                        state = self._measure_state(meas, snap_sim, circuit=circuit)
-                        # Add to the debugger snapshot
-                        debugger.snapshots[op.tag or len(debugger.snapshots)] = state
+                if isinstance(op, qml.Snapshot):
+                    self._apply_snapshot(circuit, stim_circuit, op, global_phase_ops, debugger)
 
         tableau_simulator.do_circuit(stim_circuit)
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
@@ -604,6 +592,66 @@ class DefaultClifford(Device):
             )
 
         return meas_results[0] if len(meas_results) == 1 else tuple(meas_results)
+
+    @property
+    def _analytical_measurement_map(self):
+        """Maps measurement type to the desired analytic measurement method."""
+        return {
+            DensityMatrixMP: self._measure_density_matrix,
+            StateMP: self._measure_state,  # kwargs -> circuit, global_phase
+            ExpectationMP: self._measure_expectation,  # kwargs -> circuit, stim_circuit
+            VarianceMP: self._measure_variance,
+            VnEntropyMP: self._measure_vn_entropy,  # kwargs -> circuit
+            MutualInfoMP: self._measure_mutual_info,  # kwargs -> circuit
+            PurityMP: self._measure_purity,  # kwargs -> circuit
+            ProbabilityMP: self._measure_probability,  # kwargs -> circuit, stim_circuit
+        }
+
+    @property
+    def _statistical_measurement_map(self):
+        """Maps measurement type to the desired sampling measurement method."""
+        return {
+            ExpectationMP: self._sample_expectation,
+            VarianceMP: self._sample_variance,
+            ClassicalShadowMP: self._sample_classical_shadow,
+            ShadowExpvalMP: self._sample_expval_shadow,
+        }
+
+    def _apply_snapshot(
+        self,
+        circuit: qml.tape.QuantumScript,
+        stim_circuit,
+        operation: qml.Snapshot,
+        global_phase_ops: Sequence[qml.GlobalPhase],
+        debugger=None,
+    ):
+        """Apply a snapshot operation to the stim circuit."""
+        if debugger is not None and debugger.active:
+            meas = operation.hyperparameters["measurement"] or StateMP()
+            measurement_func = self._analytical_measurement_map.get(type(meas), None)
+
+            if measurement_func is None:  # pragma: no cover
+                raise DeviceError(
+                    f"Snapshots of {type(meas)} are not yet supported on default.clifford."
+                )
+
+            # Build a temporary simulator for obtaining state
+            snap_sim = stim.TableauSimulator()
+            if self.wires is not None:
+                snap_sim.set_num_qubits(len(self.wires))
+            snap_sim.do_circuit(stim_circuit)
+            global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
+
+            snap_result = measurement_func(
+                meas,
+                snap_sim,
+                circuit=circuit,
+                stim_circuit=stim_circuit,
+                global_phase=global_phase,
+            )
+
+            # Add to the debugger snapshot
+            debugger.snapshots[operation.tag or len(debugger.snapshots)] = snap_result
 
     @staticmethod
     def _measure_observable_sample(meas_obs, stim_circuit, shots, sample_seed):
@@ -636,17 +684,9 @@ class DefaultClifford(Device):
         num_shots = circuit.shots.total_shots
         sample_seed = seed if isinstance(seed, int) else self._rng.integers(2**31 - 1, size=1)[0]
 
-        # maps measurement type to the desired sampling measurement method
-        measurement_map = {
-            ExpectationMP: self._sample_expectation,
-            VarianceMP: self._sample_variance,
-            ClassicalShadowMP: self._sample_classical_shadow,
-            ShadowExpvalMP: self._sample_expval_shadow,
-        }
-
         results = []
         for meas in circuit.measurements:
-            measurement_func = measurement_map.get(type(meas), None)
+            measurement_func = self._statistical_measurement_map.get(type(meas), None)
             if measurement_func is not None:
                 res = measurement_func(meas, stim_circuit, shots=num_shots, seed=sample_seed)
             else:
@@ -677,22 +717,11 @@ class DefaultClifford(Device):
 
     def measure_analytical(self, circuit, stim_circuit, tableau_simulator, global_phase):
         """Given a circuit, compute tableau and return the analytical measurement results."""
-        # maps measurement type to the desired analytic measurement method
-        measurement_map = {
-            DensityMatrixMP: self._measure_density_matrix,
-            StateMP: self._measure_state,  # kwargs -> circuit, global_phase
-            ExpectationMP: self._measure_expectation,  # kwargs -> circuit, stim_circuit
-            VarianceMP: self._measure_variance,
-            VnEntropyMP: self._measure_vn_entropy,  # kwargs -> circuit
-            MutualInfoMP: self._measure_mutual_info,  # kwargs -> circuit
-            PurityMP: self._measure_purity,  # kwargs -> circuit
-            ProbabilityMP: self._measure_probability,  # kwargs -> circuit, stim_circuit
-        }
 
         results = []
         for meas in circuit.measurements:
             # signature: measurement_func(meas, tableaus_simulator, **kwargs) -> meas_result
-            measurement_func = measurement_map.get(type(meas), None)
+            measurement_func = self._analytical_measurement_map.get(type(meas), None)
             if measurement_func is None:  # pragma: no cover
                 raise NotImplementedError(
                     f"default.clifford doesn't support the {type(meas)} measurement analytically at the moment."

@@ -17,11 +17,11 @@ from functools import partial
 from typing import Callable, Sequence
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy, DefaultMixed
-from pennylane.measurements import StateMP, DensityMatrixMP
-from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane import transform
+from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
+from pennylane.gradients import adjoint_metric_tensor, metric_tensor
+from pennylane.measurements import DensityMatrixMP, StateMP
+from pennylane.tape import QuantumTape
 
 
 @partial(transform, final_transform=True)
@@ -56,6 +56,23 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
     >>> transformed_circuit(np.pi/2)
     tensor([[0.5+0.j, 0. +0.j],
             [0. +0.j, 0.5+0.j]], requires_grad=True)
+
+    This is equivalent to the state of the wire ``0`` after measuring the wire ``1``:
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def measured_circuit(x):
+            qml.IsingXX(x, wires=[0,1])
+            m = qml.measure(1)
+            return qml.density_matrix(wires=[0]), qml.probs(op=m)
+
+    >>> dm, probs = measured_circuit(np.pi/2)
+    >>> dm
+    tensor([[0.5+0.j, 0. +0.j],
+            [0. +0.j, 0.5+0.j]], requires_grad=True)
+    >>> probs
+    tensor([0.5, 0.5], requires_grad=True)
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
@@ -295,6 +312,42 @@ def _vn_entropy_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
+def _bipartite_qinfo_transform(
+    transform_func: Callable,
+    tape: QuantumTape,
+    wires0: Sequence[int],
+    wires1: Sequence[int],
+    base: float = None,
+    **kwargs,
+):
+
+    # device_wires is provided by the custom QNode transform
+    all_wires = kwargs.get("device_wires", tape.wires)
+    wire_map = {w: i for i, w in enumerate(all_wires)}
+    indices0 = [wire_map[w] for w in wires0]
+    indices1 = [wire_map[w] for w in wires1]
+
+    # Check measurement
+    measurements = tape.measurements
+    if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+        raise ValueError("The qfunc return type needs to be a state.")
+
+    def processing_fn(res):
+        # device is provided by the custom QNode transform
+        device = kwargs.get("device", None)
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
+
+        density_matrix = (
+            res[0]
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
+            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
+        )
+        entropy = transform_func(density_matrix, indices0, indices1, base=base, c_dtype=c_dtype)
+        return entropy
+
+    return [tape], processing_fn
+
+
 @partial(transform, final_transform=True)
 def mutual_info(
     tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
@@ -348,33 +401,7 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
-    # device_wires is provided by the custom QNode transform
-    all_wires = kwargs.get("device_wires", tape.wires)
-    wire_map = {w: i for i, w in enumerate(all_wires)}
-    indices0 = [wire_map[w] for w in wires0]
-    indices1 = [wire_map[w] for w in wires1]
-
-    # Check measurement
-    measurements = tape.measurements
-    if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
-        raise ValueError("The qfunc return type needs to be a state.")
-
-    def processing_fn(res):
-        # device is provided by the custom QNode transform
-        device = kwargs.get("device", None)
-        c_dtype = getattr(device, "C_DTYPE", "complex128")
-
-        density_matrix = (
-            res[0]
-            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
-            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
-        )
-        entropy = qml.math.mutual_info(
-            density_matrix, indices0, indices1, base=base, c_dtype=c_dtype
-        )
-        return entropy
-
-    return [tape], processing_fn
+    return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
 @mutual_info.custom_qnode_transform
@@ -393,6 +420,42 @@ def _mutual_info_qnode(self, qnode, targs, tkwargs):
     tkwargs.setdefault("device", qnode.device)
     tkwargs.setdefault("device_wires", qnode.device.wires)
     return self.default_qnode_transform(qnode, targs, tkwargs)
+
+
+@partial(transform, final_transform=True)
+def vn_entanglement_entropy(
+    tape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
+):
+    r"""Compute the Von Neumann entanglement entropy from a circuit returning a :func:`~pennylane.state`:
+
+    .. math::
+
+        S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
+
+    where :math:`S` is the von Neumann entropy; :math:`\rho_A = \text{Tr}_B [\rho_{AB}]` and
+    :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
+
+    The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
+    two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
+    Von Neumann entropy of the reduced density matrix for any of the subsystems. If it is non-zero,
+    it indicates the two subsystems are entangled.
+
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
+        wires0 (Sequence(int)): List of wires in the first subsystem.
+        wires1 (Sequence(int)): List of wires in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the entanglement entropy in the form of a tensor.
+
+    """
+    return _bipartite_qinfo_transform(
+        qml.math.vn_entanglement_entropy, tape, wires0, wires1, base, **kwargs
+    )
 
 
 # TODO: create qml.math.jacobian and replace it here
@@ -495,30 +558,31 @@ def classical_fisher(qnode, argnums=0):
     .. code-block:: python
 
         import pennylane.numpy as pnp
-        n_wires = 2
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circ(params):
             qml.RX(params[0], wires=0)
-            qml.RX(params[1], wires=0)
-            qml.CNOT(wires=(0,1))
-            return qml.probs(wires=range(n_wires))
+            qml.CNOT([0, 1])
+            qml.CRY(params[1], wires=[1, 0])
+            qml.Hadamard(1)
+            return qml.probs(wires=[0, 1])
 
-    Executing this circuit yields the ``2**n_wires`` elements of :math:`p_\ell(\bm{\theta})`
+    Executing this circuit yields the ``2**2=4`` elements of :math:`p_\ell(\bm{\theta})`
 
+    >>> pnp.random.seed(25)
     >>> params = pnp.random.random(2)
     >>> circ(params)
-    [0.61281668 0.         0.         0.38718332]
+    [0.41850088 0.41850088 0.08149912 0.08149912]
 
     We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
     by ``classical_fisher()``:
 
     >>> cfim_func = qml.qinfo.classical_fisher(circ)
     >>> cfim_func(params)
-    [[1. 1.]
-     [1. 1.]]
+    [[ 0.901561 -0.125558]
+     [-0.125558  0.017486]]
 
     This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
@@ -785,7 +849,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     fidelity is simply
 
     .. math::
-        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
+        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi| \phi}\right|^2
 
     .. note::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type

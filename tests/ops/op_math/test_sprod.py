@@ -24,9 +24,8 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math import SProd, s_prod, Prod, Sum
+from pennylane.ops.op_math import Prod, SProd, Sum, s_prod
 from pennylane.wires import Wires
-
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
@@ -163,7 +162,7 @@ class TestInitialization:
 
         assert coeff == [scalar]
         for op1, op2 in zip(op2, [op]):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_decomposition_raises_error(self):
         sprod_op = s_prod(3.14, qml.Identity(wires=1))
@@ -241,7 +240,7 @@ class TestMscMethods:
         assert metadata == tuple()
 
         new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
-        assert qml.equal(new_op, sprod_op)
+        qml.assert_equal(new_op, sprod_op)
         assert new_op is not sprod_op
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
@@ -897,7 +896,7 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -927,7 +926,7 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
 
 class TestWrapperFunc:
@@ -964,7 +963,7 @@ class TestWrapperFunc:
 
         assert isinstance(op, SProd)
         assert op.scalar == 12
-        assert qml.equal(op.base, qml.PauliX(0))
+        qml.assert_equal(op.base, qml.PauliX(0))
 
     def test_non_lazy_mode_queueing(self):
         """Test that if a simpification is accomplished, the metadata for the original op
@@ -1083,20 +1082,6 @@ class TestIntegration:
 
         true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
-
-    def test_non_hermitian_obs_not_supported(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
-        wires = [0, 1]
-        dev = qml.device("default.qubit", wires=wires)
-        sprod_op = SProd(1.0 + 2.0j, qml.RX(1.23, wires=0))
-
-        @qml.qnode(dev)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.expval(sprod_op)
-
-        with pytest.raises(NotImplementedError):
-            my_circ()
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))

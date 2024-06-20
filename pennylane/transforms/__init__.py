@@ -107,6 +107,7 @@ preprocessing, get information from a circuit and more.
     ~batch_params
     ~batch_input
     ~transforms.insert
+    ~transforms.add_noise
     ~defer_measurements
     ~transforms.split_non_commuting
     ~transforms.broadcast_expand
@@ -206,10 +207,10 @@ function in this scenario, we include a function that simply returns the first a
         operations = filter(lambda op: op.name != "RX", tape.operations)
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
 
-        def postprocessing(results):
+        def null_postprocessing(results):
             return results[0]
 
-        return [new_tape], postprocessing
+        return [new_tape], null_postprocessing
 
 To make your transform applicable to both :class:`~.QNode` and quantum functions, you can use the :func:`pennylane.transform` decorator.
 
@@ -218,7 +219,10 @@ To make your transform applicable to both :class:`~.QNode` and quantum functions
     dispatched_transform = qml.transform(remove_rx)
 
 For a more advanced example, let's consider a transform that sums a circuit with its adjoint. We define the adjoint
-of the tape operations, create a new tape, and return both tapes. The processing function then sums the results.
+of the tape operations, create a new tape with these new operations, and return both tapes.
+The processing function then sums the results of the original and the adjoint tape.
+In this example, we use ``qml.transform`` in the form of a decorator in order to turn the custom
+function into a quantum transform.
 
 .. code-block:: python
 
@@ -231,10 +235,10 @@ of the tape operations, create a new tape, and return both tapes. The processing
         operations = [qml.adjoint(op) for op in tape.operation]
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
 
-        def null_postprocessing(results):
+        def sum_postprocessing(results):
             return qml.sum(results)
 
-        return [tape, shifted_tape], null_postprocessing
+        return [tape, new_tape], sum_postprocessing
 
 Composability of transforms
 ---------------------------
@@ -267,7 +271,7 @@ Additional information
 Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
 For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/qml_gradients>`.
 Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
-for a comprehensive overview of transforms and core functionalities, consult the :doc:`transforms documentation <../code/qml_transforms>`.
+for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qml_transforms>`.
 """
 
 # Leave as alias for backwards-compatibility
@@ -281,11 +285,11 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-
+from .add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
-from .dynamic_one_shot import dynamic_one_shot
+from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting

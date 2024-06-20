@@ -17,13 +17,12 @@ Tests for the gradients.spsa_gradient module using shot vectors.
 import numpy
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
-from pennylane.gradients import spsa_grad
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubitLegacy
+from pennylane.gradients import spsa_grad
 from pennylane.measurements import Shots
-from pennylane.operation import Observable, AnyWires
+from pennylane.operation import AnyWires, Observable
 
 np.random.seed(0)
 
@@ -252,24 +251,13 @@ class TestSpsaGradient:
         grad_fn = spsa_grad(circuit, h=h_val, sampler_rng=rng)
         all_result = grad_fn(params)
 
+        assert isinstance(all_result, tuple)
         assert len(all_result) == len(default_shot_vector)
 
         for result in all_result:
-            assert isinstance(result, tuple)
-
-            assert len(result) == 3
-
-            assert isinstance(result[0], numpy.ndarray)
-            assert result[0].shape == (4,)
-            assert np.allclose(result[0], 0)
-
-            assert isinstance(result[1], numpy.ndarray)
-            assert result[1].shape == (4,)
-            assert np.allclose(result[1], 0)
-
-            assert isinstance(result[2], numpy.ndarray)
-            assert result[2].shape == (4,)
-            assert np.allclose(result[2], 0)
+            assert isinstance(result, np.ndarray)
+            assert result.shape == (4, 3)
+            assert np.allclose(result, 0)
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -288,42 +276,16 @@ class TestSpsaGradient:
         grad_fn = spsa_grad(circuit, h=h_val, sampler_rng=rng)
         all_result = grad_fn(params)
 
-        assert len(all_result) == len(default_shot_vector)
+        assert isinstance(all_result, tuple)
+        assert len(all_result) == len(many_shots_shot_vector)
 
-        for result in all_result:
-            assert isinstance(result, tuple)
-
-            assert len(result) == 2
-
-            # First elem
-            assert len(result[0]) == 3
-
-            assert isinstance(result[0][0], numpy.ndarray)
-            assert result[0][0].shape == ()
-            assert np.allclose(result[0][0], 0)
-
-            assert isinstance(result[0][1], numpy.ndarray)
-            assert result[0][1].shape == ()
-            assert np.allclose(result[0][1], 0)
-
-            assert isinstance(result[0][2], numpy.ndarray)
-            assert result[0][2].shape == ()
-            assert np.allclose(result[0][2], 0)
-
-            # Second elem
-            assert len(result[0]) == 3
-
-            assert isinstance(result[1][0], numpy.ndarray)
-            assert result[1][0].shape == (4,)
-            assert np.allclose(result[1][0], 0)
-
-            assert isinstance(result[1][1], numpy.ndarray)
-            assert result[1][1].shape == (4,)
-            assert np.allclose(result[1][1], 0)
-
-            assert isinstance(result[1][2], numpy.ndarray)
-            assert result[1][2].shape == (4,)
-            assert np.allclose(result[1][2], 0)
+        for res in all_result:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r, exp_shape in zip(res, [(3,), (4, 3)]):
+                assert isinstance(r, np.ndarray)
+                assert r.shape == exp_shape
+                assert np.allclose(r, 0)
 
     def test_y0(self):
         """Test that if first order finite differences is underlying the SPSA, then
@@ -433,7 +395,7 @@ class TestSpsaGradient:
         dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
 
         def cost1(x):
-            qml.Rot(*x, wires=0)
+            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
         def cost2(x):
@@ -461,7 +423,7 @@ class TestSpsaGradient:
 
         transform = [qml.math.shape(spsa_grad(c, h=h_val)(x)) for c in circuits]
 
-        expected = [(3, 3), (1, 3, 3), (3, 2, 3), (3, 3, 4), (1, 3, 3, 4), (3, 2, 3, 4)]
+        expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
 
         assert all(t == q for t, q in zip(transform, expected))
 
@@ -852,7 +814,6 @@ class TestSpsaGradientIntegration:
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
@@ -870,7 +831,7 @@ class TestSpsaGradientIntegration:
         all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
-        assert len(all_res) == len(default_shot_vector)
+        assert len(all_res) == len(many_shots_shot_vector)
 
         for res in all_res:
             assert isinstance(res, tuple)

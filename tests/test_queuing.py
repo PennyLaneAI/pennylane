@@ -15,16 +15,12 @@
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
 from multiprocessing.dummy import Pool as ThreadPool
-import pytest
-import numpy as np
-import pennylane as qml
 
-from pennylane.queuing import (
-    AnnotatedQueue,
-    QueuingManager,
-    QueuingError,
-    WrappedObj,
-)
+import numpy as np
+import pytest
+
+import pennylane as qml
+from pennylane.queuing import AnnotatedQueue, QueuingError, QueuingManager, WrappedObj
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
@@ -224,6 +220,7 @@ class TestAnnotatedQueue:
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_append_prod_ops_overloaded(self):
         """Test that Prod ops created using `@`
         are successfully added to the queue, as well as the `Prod` object."""
@@ -454,15 +451,8 @@ class TestApplyOp:
                 op1 = qml.apply(5)
                 op2 = qml.apply(6, q1)
 
-            tape2 = qml.tape.QuantumScript.from_queue(q2)
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert q1.queue == [op2]
         assert q2.queue == [op1]
-
-        # note that tapes don't know how to process integers,
-        # so they are not included after queue processing
-        assert tape1.operations == []
-        assert tape2.operations == []
 
 
 class TestWrappedObj:
@@ -519,3 +509,13 @@ class TestWrappedObj:
         obj = Dummy()
         wo = WrappedObj(obj)
         assert wo.__repr__() == "Wrapped(test_repr)"
+
+
+def test_process_queue_error_if_not_operator_or_measurement():
+    """Test that a QueuingError is raised if process queue encounters an object that does not have a
+    _queue_category property
+    """
+    q = AnnotatedQueue()
+    q.append(1)
+    with pytest.raises(QueuingError, match="not an object that can be processed"):
+        qml.queuing.process_queue(q)

@@ -14,10 +14,11 @@
 """
 Tests for the ApproxTimeEvolution template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
@@ -43,8 +44,19 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert new_op is not op
+
+
+def test_queuing():
+    """Test that ApproxTimeEvolution de-queues the input hamiltonian."""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        H = qml.X(0) + qml.Y(1)
+        op = qml.ApproxTimeEvolution(H, 0.1, n=20)
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is op
 
 
 class TestDecomposition:
@@ -66,7 +78,7 @@ class TestDecomposition:
             ),
             (
                 2,
-                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliZ("b") @ qml.PauliX("a")]),
+                qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliX("a") @ qml.PauliZ("b")]),
                 2,
                 [
                     qml.PauliRot(4.0, "X", wires=["a"]),
@@ -87,7 +99,7 @@ class TestDecomposition:
                     [2, 0.5, 0.5],
                     [
                         qml.PauliX("a"),
-                        qml.PauliZ(-15) @ qml.PauliX("a"),
+                        qml.PauliX("a") @ qml.PauliZ(-15),
                         qml.Identity(0) @ qml.PauliY(-15),
                     ],
                 ),
@@ -107,7 +119,7 @@ class TestDecomposition:
         queue = op.expand().operations
 
         for expected_gate, gate in zip(expected_queue, queue):
-            assert qml.equal(expected_gate, gate)
+            qml.assert_equal(expected_gate, gate)
 
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expectation"),

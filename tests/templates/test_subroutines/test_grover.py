@@ -16,10 +16,12 @@ Tests for the Grover Diffusion Operator template
 """
 import functools
 import itertools
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane.ops import Hadamard, PauliZ, MultiControlledX
+from pennylane.ops import Hadamard, MultiControlledX, PauliZ
 
 
 def test_repr():
@@ -29,23 +31,11 @@ def test_repr():
     assert repr(op) == expected
 
 
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Tests the flatten and unflatten methods for GroverOperator."""
+def test_standard_validity():
+    """Test the standard criteria for a valid operation."""
     work_wires = qml.wires.Wires((3, 4))
     op = qml.GroverOperator(wires=(0, 1, 2), work_wires=work_wires)
-    data, metadata = op._flatten()
-    assert data == tuple()
-    assert len(metadata) == 2
-    assert metadata[0] == op.wires
-    assert metadata[1] == (("work_wires", work_wires),)
-
-    # make sure metadata hashable
-    assert hash(metadata)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert new_op is not op
+    qml.ops.functions.assert_valid(op)
 
 
 def test_work_wires():

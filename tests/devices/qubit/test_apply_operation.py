@@ -15,19 +15,19 @@
 Tests the apply_operation functions from devices/qubit
 """
 from functools import reduce
-import pytest
 
 import numpy as np
+import pytest
 from scipy.stats import unitary_group
+
 import pennylane as qml
-from pennylane.operation import _UNSET_BATCH_SIZE, Operation
-
-
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation
+from tests.dummy_debugger import Debugger
 
 ml_frameworks_list = [
     "numpy",
@@ -389,7 +389,8 @@ class TestApplyParametrizedEvolution:
 
         # seems like _evolve_state_vector_under_parametrized_evolution calls
         # einsum twice, and the default apply_operation only once
-        assert spy.call_count == 1
+        # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+        assert spy.call_count == 6
 
     def test_small_evolves_state(self, mocker):
         """Test that applying a ParametrizedEvolution operating on less
@@ -465,7 +466,8 @@ class TestApplyParametrizedEvolution:
 
         # seems like _evolve_state_vector_under_parametrized_evolution calls
         # einsum twice, and the default apply_operation only once
-        assert spy.call_count == 2
+        # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+        assert spy.call_count == 7
 
     def test_parametrized_evolution_raises_error(self):
         """Test applying a ParametrizedEvolution without params or t specified raises an error."""
@@ -530,21 +532,16 @@ class TestApplyParametrizedEvolution:
         assert np.allclose(new_state, new_state_expected, atol=0.002)
 
         if num_state_wires == 4:
-            assert spy_einsum.call_count == 2
+            # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+            assert spy_einsum.call_count == 7
         else:
-            assert spy_einsum.call_count == 1
+            # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+            assert spy_einsum.call_count == 6
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
-
-    class Debugger:  # pylint: disable=too-few-public-methods
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
 
     def test_no_debugger(self, ml_framework):
         """Test nothing happens when there is no debugger"""
@@ -570,7 +567,7 @@ class TestSnapshot:
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(qml.Snapshot(), initial_state, debugger=debugger)
 
         assert new_state.shape == initial_state.shape
@@ -590,7 +587,7 @@ class TestSnapshot:
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         tag = "abcd"
         new_state = apply_operation(qml.Snapshot(tag), initial_state, debugger=debugger)
 
@@ -612,7 +609,7 @@ class TestSnapshot:
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
         measurement = qml.expval(qml.PauliZ(0))
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(measurement=measurement), initial_state, debugger=debugger
         )
@@ -627,7 +624,7 @@ class TestSnapshot:
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
         initial_state = qml.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(), initial_state, is_state_batched=True, debugger=debugger
         )

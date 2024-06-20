@@ -16,10 +16,12 @@ Tests for the Select template.
 """
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import copy
-import pytest
+
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_checks():
@@ -28,6 +30,7 @@ def test_standard_checks():
     control = [1]
 
     op = qml.Select(ops, control)
+    assert op.target_wires == qml.wires.Wires(0)
     qml.ops.functions.assert_valid(op)
 
 
@@ -199,31 +202,10 @@ class TestSelect:
         select_decomposition = op.decomposition()
         select_compute_decomposition = op.compute_decomposition(ops, control)
 
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(select_decomposition, expected_gates))
-        assert all(
-            qml.equal(op1, op2) for op1, op2 in zip(select_compute_decomposition, expected_gates)
-        )
-
-    # pylint: disable=protected-access
-    def test_flatten_unflatten(self):
-        """Test that the _flatten and _unflatten functions work as expected."""
-        ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2, 3])]
-        op = qml.Select(ops, control=[0, 1])
-        data, metadata = op._flatten()
-
-        assert hash(metadata)
-
-        assert len(data) == len(ops)
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(data, ops))
-
-        assert metadata == op.control
-
-        new_op = type(op)._unflatten(*op._flatten())
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
-        assert op.wires == new_op.wires
-        assert op.control == new_op.control
-        assert op.target_wires == new_op.target_wires
-        assert op is not new_op
+        for op1, op2 in zip(select_decomposition, expected_gates):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(select_compute_decomposition, expected_gates):
+            qml.assert_equal(op1, op2)
 
     def test_copy(self):
         """Test that the copy function of Select works correctly."""
@@ -231,7 +213,7 @@ class TestSelect:
         op = qml.Select(ops, control=[0, 1])
         op_copy = copy.copy(op)
 
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
 
 class TestErrorMessages:

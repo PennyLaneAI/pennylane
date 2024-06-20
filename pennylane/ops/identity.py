@@ -16,10 +16,11 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
+
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
+from pennylane.operation import AllWires, AnyWires, CVObservable, Operation
 
 
 class Identity(CVObservable, Operation):
@@ -29,7 +30,7 @@ class Identity(CVObservable, Operation):
     The expectation of this observable
 
     .. math::
-        E[\I] = \text{Tr}(\I \rho)
+        E[I] = \text{Tr}(I \rho)
 
     .. seealso:: The equivalent short-form alias :class:`~I`
 
@@ -194,7 +195,8 @@ class Identity(CVObservable, Operation):
     def adjoint(self):
         return I(wires=self.wires)
 
-    def pow(self, _):
+    # pylint: disable=unused-argument
+    def pow(self, z):
         return [I(wires=self.wires)]
 
 
@@ -204,7 +206,7 @@ r"""The Identity operator
 The expectation of this observable
 
 .. math::
-    E[\I] = \text{Tr}(\I \rho)
+    E[I] = \text{Tr}(I \rho)
 
 .. seealso:: The equivalent long-form alias :class:`~Identity`
 

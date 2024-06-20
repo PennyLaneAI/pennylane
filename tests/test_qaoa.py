@@ -15,32 +15,29 @@
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import itertools
-import pytest
-import numpy as np
 
 import networkx as nx
-from networkx import Graph
+import numpy as np
+import pytest
 import rustworkx as rx
-
+from networkx import Graph
 from scipy.linalg import expm
 from scipy.sparse import csc_matrix, kron
 
 import pennylane as qml
 from pennylane import qaoa
-
 from pennylane.qaoa.cycle import (
-    edges_to_wires,
-    wires_to_edges,
     _inner_net_flow_constraint_hamiltonian,
-    net_flow_constraint,
-    loss_hamiltonian,
+    _inner_out_flow_constraint_hamiltonian,
+    _partial_cycle_mixer,
     _square_hamiltonian_terms,
     cycle_mixer,
-    _partial_cycle_mixer,
+    edges_to_wires,
+    loss_hamiltonian,
+    net_flow_constraint,
     out_flow_constraint,
-    _inner_out_flow_constraint_hamiltonian,
+    wires_to_edges,
 )
-
 
 #####################################################
 
@@ -1164,14 +1161,18 @@ def make_mixer_layer_test_cases():
             [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
         ],
         [
+            qml.X(0) + qml.X(1),
+            [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
+        ],
+        [
             qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
             [
-                qml.PauliRot(1.0, "XX", wires=[1, 0]),
-                qml.PauliRot(1.0, "YY", wires=[1, 0]),
-                qml.PauliRot(1.0, "XX", wires=[2, 0]),
-                qml.PauliRot(1.0, "YY", wires=[2, 0]),
-                qml.PauliRot(1.0, "XX", wires=[2, 1]),
-                qml.PauliRot(1.0, "YY", wires=[2, 1]),
+                qml.PauliRot(1.0, "XX", wires=[0, 1]),
+                qml.PauliRot(1.0, "YY", wires=[0, 1]),
+                qml.PauliRot(1.0, "XX", wires=[0, 2]),
+                qml.PauliRot(1.0, "YY", wires=[0, 2]),
+                qml.PauliRot(1.0, "XX", wires=[1, 2]),
+                qml.PauliRot(1.0, "YY", wires=[1, 2]),
             ],
         ],
     ]
@@ -1184,11 +1185,15 @@ def make_cost_layer_test_cases():
             [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
         ],
         [
+            qml.Z(0) + qml.Z(1),
+            [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
+        ],
+        [
             qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
             [
-                qml.PauliRot(1.0, "ZZ", wires=[1, 0]),
-                qml.PauliRot(1.0, "ZZ", wires=[2, 0]),
-                qml.PauliRot(1.0, "ZZ", wires=[2, 1]),
+                qml.PauliRot(1.0, "ZZ", wires=[0, 1]),
+                qml.PauliRot(1.0, "ZZ", wires=[0, 2]),
+                qml.PauliRot(1.0, "ZZ", wires=[1, 2]),
             ],
         ],
     ]
@@ -1202,7 +1207,9 @@ class TestLayers:
 
         hamiltonian = [[1, 1], [1, 1]]
 
-        with pytest.raises(ValueError, match=r"hamiltonian must be of type pennylane.Hamiltonian"):
+        with pytest.raises(
+            ValueError, match=r"hamiltonian must be a linear combination of pauli words"
+        ):
             qaoa.mixer_layer(0.1, hamiltonian)
 
     def test_cost_layer_errors(self):
@@ -1210,7 +1217,9 @@ class TestLayers:
 
         hamiltonian = [[1, 1], [1, 1]]
 
-        with pytest.raises(ValueError, match=r"hamiltonian must be of type pennylane.Hamiltonian"):
+        with pytest.raises(
+            ValueError, match=r"hamiltonian must be a linear combination of pauli words"
+        ):
             qaoa.cost_layer(0.1, hamiltonian)
 
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
@@ -1268,15 +1277,18 @@ class TestLayers:
 
         gamma = 1
 
-        with qml.tape.OperationRecorder() as rec:
-            qaoa.cost_layer(gamma, cost)
+        with qml.queuing.AnnotatedQueue() as q:
+            out = qaoa.cost_layer(gamma, cost)
 
-        rec = rec.expand()
+        expected = qml.ApproxTimeEvolution(cost, gamma, 1)
+        qml.assert_equal(out, expected)
 
-        for i, j in zip(rec.operations, gates):
-            prep = [i.name, i.parameters, i.wires]
-            target = [j.name, j.parameters, j.wires]
-            assert prep == target
+        assert q.queue[0] is out
+        assert len(q) == 1
+        decomp = out.decomposition()
+
+        for i, j in zip(decomp, gates):
+            qml.assert_equal(i, j)
 
     with qml.operation.disable_new_opmath_cm():
         cost_layer_test_cases_legacy = make_cost_layer_test_cases()
@@ -2018,6 +2030,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
+    @pytest.mark.usefixtures("use_new_opmath")
     def test_inner_out_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with

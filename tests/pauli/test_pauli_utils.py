@@ -471,6 +471,7 @@ class TestGroupingUtils:
         with pytest.raises(TypeError):
             pauli_word_to_string(non_pauli_word)
 
+    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize(
         "pauli_string,wire_map,expected_pauli",
         [
@@ -486,7 +487,7 @@ class TestGroupingUtils:
     def test_string_to_pauli_word(self, pauli_string, wire_map, expected_pauli):
         """Test that valid strings are correctly converted into Pauli words."""
         obtained_pauli = string_to_pauli_word(pauli_string, wire_map)
-        assert qml.equal(obtained_pauli, expected_pauli)
+        qml.assert_equal(obtained_pauli, expected_pauli)
 
     @pytest.mark.parametrize(
         "non_pauli_string,wire_map,error_type,error_message",
@@ -664,7 +665,8 @@ class TestPauliGroup:
         ]
 
         pg_2 = list(pauli_group(2, wire_map=wire_map))
-        assert all(qml.equal(expected, obtained) for expected, obtained in zip(expected_pg_2, pg_2))
+        for expected, obtained in zip(expected_pg_2, pg_2):
+            qml.assert_equal(obtained, expected)
 
     @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,expected_product",
@@ -925,10 +927,7 @@ class TestMeasurementTransformations:
         (
             [PauliX(0) @ PauliY(1), PauliX(0) @ PauliZ(2)],
             (
-                [
-                    RX(np.pi / 2, wires=[1]),
-                    RY(-np.pi / 2, wires=[0]),
-                ],
+                [RY(-np.pi / 2, wires=[0]), RX(np.pi / 2, wires=[1])],
                 [PauliZ(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[0]) @ PauliZ(wires=[2])],
             ),
         ),
@@ -982,7 +981,7 @@ class TestMeasurementTransformations:
             for i in range(len(qwc_rot))
         )
         for diag_op, expected in zip(diag_qwc_grouping, diag_qwc_grouping_sol):
-            assert qml.equal(diag_op, expected)
+            qml.assert_equal(diag_op, expected)
 
     not_qwc_groupings = [
         [PauliX("a"), PauliY("a")],

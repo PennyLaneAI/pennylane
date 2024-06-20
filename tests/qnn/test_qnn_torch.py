@@ -14,9 +14,9 @@
 """
 Tests for the pennylane.qnn.torch module.
 """
-from unittest import mock
 import math
 from collections import defaultdict
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -367,6 +367,32 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
 
         assert torch.allclose(layer_out, circuit_out)
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    def test_evaluate_qnode_shots(
+        self, get_circuit_shots, n_qubits, shots
+    ):  # pylint: disable=no-self-use
+        """Tests _evaluate_qnode() works with different type of shots"""
+
+        c, w = get_circuit_shots
+        layer = TorchLayer(c, w)
+        x = torch.ones(n_qubits)
+
+        layer_out = layer._evaluate_qnode(x)  # pylint: disable=protected-access
+        weights = layer.qnode_weights.values()
+        circuit_out_raw = c(x, *weights)
+
+        if isinstance(shots, list):
+
+            assert isinstance(layer_out, tuple)
+            for out, exp in zip(layer_out, circuit_out_raw):
+                circuit_out = torch.hstack(exp)
+                assert out.shape == circuit_out.shape
+
+        else:
+            circuit_out = torch.hstack(circuit_out_raw)
+            assert layer_out.shape == circuit_out.shape
+
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_evaluate_qnode_shuffled_args(
         self, get_circuit, output_dim, n_qubits
@@ -456,6 +482,33 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         assert layer_out.shape == torch.Size((2, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("shots", [[10, 10]])
+    def test_forward_shot_batching(self, get_circuit_shots, output_dim, n_qubits):
+        """Tests forward() works with shot batching"""
+
+        c, w = get_circuit_shots
+        layer = TorchLayer(c, w)
+        x = torch.Tensor(np.ones(n_qubits))
+
+        layer_out = layer.forward(x)
+        assert layer_out.shape == torch.Size((2, output_dim))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("batch_size", [4, 6])
+    @pytest.mark.parametrize("shots", [[10, 10]])
+    def test_forward_shot_batching_broadcasting(
+        self, get_circuit_shots, batch_size, output_dim, n_qubits
+    ):
+        """Tests forward() works with shot batching and broadcasting"""
+
+        c, w = get_circuit_shots
+        layer = TorchLayer(c, w)
+        x = torch.Tensor(np.ones((batch_size, n_qubits)))
+
+        layer_out = layer.forward(x)
+        assert layer_out.shape == torch.Size((2, batch_size, output_dim))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2, 4, 6])
     @pytest.mark.parametrize("middle_dim", [2, 5, 8])
     def test_forward_broadcasting(
@@ -511,17 +564,75 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
+    def test_construct(self, get_circuit, n_qubits):
+        """Test that the construct method builds the correct tape with correct differentiability"""
+        c, w = get_circuit
+        layer = TorchLayer(c, w)
+
+        x = torch.ones(n_qubits)
+
+        layer.construct((x,), {})
+
+        assert layer.tape is not None
+        assert (
+            len(layer.tape.get_parameters(trainable_only=False))
+            == len(layer.tape.get_parameters(trainable_only=True)) + 1
+        )
+
+
+@pytest.mark.parametrize(
+    "num_qubits, weight_shapes",
+    [(2, {"weights": [3, 2, 3]}), (3, {"weights": [7, 3, 3]}), (4, {"weights": [3, 4, 3]})],
+)
+def test_forward_tuple(num_qubits, weight_shapes):
+    """Test that the forward method accepts a tuple input and returns a torch tensor."""
+
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def qnode(inputs, weights):
+        qml.templates.AngleEmbedding(inputs, wires=range(num_qubits))
+        qml.templates.StronglyEntanglingLayers(weights, wires=range(num_qubits))
+        return qml.expval(qml.Z(0)), qml.var(qml.Y(1))
+
+    qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+    x = torch.tensor(np.random.random((5, num_qubits)), dtype=torch.float32)
+    assert isinstance(qlayer.forward(x), torch.Tensor)
+
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-@pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
-def test_interface_conversion(get_circuit):
-    """Test if input QNodes with all types of interface are converted internally to the PyTorch
-    interface"""
-    c, w = get_circuit
-    layer = TorchLayer(c, w)
-    assert layer.qnode.interface == "torch"
+@pytest.mark.parametrize("interface", ["autograd", "jax", "tf"])
+def test_invalid_interface_error(interface):
+    """Test an error gets raised if input QNode has the wrong interface"""
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1}
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    with pytest.raises(ValueError, match="Invalid interface"):
+        _ = TorchLayer(circuit, weight_shapes)
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("interface", ("auto", "torch", "pytorch"))
+def test_qnode_interface_not_mutated(interface):
+    """Test that the input QNode's interface is not mutated by TorchLayer"""
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1}
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(inputs, w1):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = TorchLayer(circuit, weight_shapes)
+    assert qlayer.qnode.interface == circuit.interface == interface
 
 
 @pytest.mark.torch
@@ -848,7 +959,8 @@ def test_specs():
 
     assert info["num_observables"] == 2
     assert info["num_diagonalizing_gates"] == 0
-    assert info["num_device_wires"] == 2
-    assert info["num_trainable_params"] == 0
+    assert info["num_device_wires"] == 3
+    assert info["num_tape_wires"] == 2
+    assert info["num_trainable_params"] == 2
     assert info["interface"] == "torch"
     assert info["device_name"] == "default.qubit"

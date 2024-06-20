@@ -17,18 +17,16 @@ Unit tests for utilities for optimization transforms.
 # pylint: disable=too-few-public-methods
 
 import pytest
-
 from utils import check_matrix_equivalence
-from pennylane.transforms.optimization.optimization_utils import (
-    find_next_gate,
-    _zyz_to_quat,
-    _quaternion_product,
-    fuse_rot_angles,
-)
 
 import pennylane as qml
 from pennylane import numpy as np
-
+from pennylane.transforms.optimization.optimization_utils import (
+    _quaternion_product,
+    _zyz_to_quat,
+    find_next_gate,
+    fuse_rot_angles,
+)
 
 sample_op_list = [
     qml.Hadamard(wires="a"),

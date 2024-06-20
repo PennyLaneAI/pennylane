@@ -68,6 +68,7 @@ from .multi_dispatch import (
 from .quantum import (
     cov_matrix,
     dm_from_state_vector,
+    expectation_value,
     marginal_prob,
     mutual_info,
     partial_trace,
@@ -77,6 +78,7 @@ from .quantum import (
     relative_entropy,
     sqrt_matrix,
     vn_entropy,
+    vn_entanglement_entropy,
     max_entropy,
     min_entropy,
     trace_distance,
@@ -150,6 +152,7 @@ __all__ = [
     "dot",
     "einsum",
     "expand_matrix",
+    "expectation_value",
     "eye",
     "fidelity",
     "fidelity_statevector",
@@ -182,5 +185,6 @@ __all__ = [
     "trace_distance",
     "unwrap",
     "vn_entropy",
+    "vn_entanglement_entropy",
     "where",
 ]

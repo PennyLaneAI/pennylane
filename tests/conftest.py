@@ -15,8 +15,10 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
+import contextlib
 import os
 import pathlib
+import sys
 
 import numpy as np
 import pytest
@@ -24,6 +26,8 @@ import pytest
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
 from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 # defaults
 TOL = 1e-3
@@ -37,6 +41,12 @@ class DummyDevice(DefaultGaussian):
 
     _operation_map = DefaultGaussian._operation_map.copy()
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
+
+
+@pytest.fixture(autouse=True)
+def set_numpy_seed():
+    np.random.seed(9872653)
+    yield
 
 
 @pytest.fixture(scope="session")
@@ -178,18 +188,28 @@ def tear_down_thermitian():
 # Fixtures for testing under new and old opmath
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
+    )
+
+
+# pylint: disable=eval-used
+@pytest.fixture(scope="session", autouse=True)
+def disable_opmath_if_requested(request):
+    disable_opmath = request.config.getoption("--disable-opmath")
+    # value from yaml file is a string, convert to boolean
+    if eval(disable_opmath):
+        qml.operation.disable_new_opmath(warn=True)
+
+
 @pytest.fixture(scope="function")
 def use_legacy_opmath():
     with disable_new_opmath_cm() as cm:
         yield cm
 
 
-# @pytest.fixture(scope="function")
-# def use_legacy_opmath():
-#     with disable_new_opmath_cm():
-#         yield
-
-
+# pylint: disable=contextmanager-generator-missing-cleanup
 @pytest.fixture(scope="function")
 def use_new_opmath():
     with enable_new_opmath_cm() as cm:
@@ -200,6 +220,18 @@ def use_new_opmath():
 def use_legacy_and_new_opmath(request):
     with request.param() as cm:
         yield cm
+
+
+@pytest.fixture
+def new_opmath_only():
+    if not qml.operation.active_new_opmath():
+        pytest.skip("This feature only works with new opmath enabled")
+
+
+@pytest.fixture
+def legacy_opmath_only():
+    if qml.operation.active_new_opmath():
+        pytest.skip("This test exclusively tests legacy opmath")
 
 
 #######################################################################

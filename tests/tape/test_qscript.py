@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumScript"""
-from collections import defaultdict
 import copy
+from collections import defaultdict
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, State, VnEntropy, Shots
+from pennylane.measurements import MutualInfo, Shots, State, VnEntropy
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
@@ -29,12 +30,12 @@ class TestInitialization:
     """Test the non-update components of intialization."""
 
     def test_no_update_empty_initialization(self):
-        """Test initialization if nothing is provided and update does not occur."""
+        """Test initialization if nothing is provided"""
 
-        qs = QuantumScript(_update=False)
+        qs = QuantumScript()
         assert len(qs._ops) == 0
         assert len(qs._measurements) == 0
-        assert len(qs._par_info) == 0
+        assert len(qs.par_info) == 0
         assert qs._trainable_params is None
         assert qs.trainable_params == []
         assert qs._trainable_params == []
@@ -43,11 +44,19 @@ class TestInitialization:
         assert qs._shots.total_shots is None
         assert qs._batch_size is _UNSET_BATCH_SIZE
         assert qs.batch_size is None
+        assert qs._obs_sharing_wires is None
+        assert qs._obs_sharing_wires_id is None
         assert qs.wires == qml.wires.Wires([])
         assert qs.num_wires == 0
         assert qs.samples_computational_basis is False
-        assert len(qs._obs_sharing_wires) == 0
-        assert len(qs._obs_sharing_wires_id) == 0
+
+    def test_empty_sharing_wires(self):
+        """Test public sharing wires and id are empty lists if nothing is provided"""
+        qs = QuantumScript()
+        assert qs.obs_sharing_wires == []
+
+        qs = QuantumScript()
+        assert qs.obs_sharing_wires_id == []
 
     @pytest.mark.parametrize(
         "ops",
@@ -62,7 +71,7 @@ class TestInitialization:
         qs = QuantumScript(ops)
         assert len(qs.operations) == 1
         assert isinstance(qs.operations, list)
-        assert qml.equal(qs.operations[0], qml.S(0))
+        qml.assert_equal(qs.operations[0], qml.S(0))
 
     @pytest.mark.parametrize(
         "m",
@@ -167,7 +176,7 @@ class TestUpdate:
         m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
         qs = QuantumScript(ops, m)
 
-        p_i = qs._par_info
+        p_i = qs.par_info
 
         assert p_i[0] == {"op": ops[0], "op_idx": 0, "p_idx": 0}
         assert p_i[1] == {"op": ops[1], "op_idx": 1, "p_idx": 0}
@@ -179,6 +188,22 @@ class TestUpdate:
         assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
 
         assert qs.trainable_params == list(range(8))
+
+    def test_cached_properties(self):
+        """Test that the @cached_property gets invalidated after update"""
+        ops = [
+            qml.RX(1.2, wires=0),
+            qml.Rot(2.3, 3.4, 5.6, wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+            qml.U2(-1, -2, wires=0),
+        ]
+        m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+        qs._ops = []
+        qs._measurements = []
+        qs._update()
+        assert qs.wires == qml.wires.Wires([])
+        assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
 
     # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
@@ -194,25 +219,32 @@ class TestUpdate:
         qs = QuantumScript(ops, m)
 
         op_0, op_id_0, p_id_0 = qs.get_operation(0)
-        assert qml.equal(op_0, ops[0]) and op_id_0 == 0 and p_id_0 == 0
+        qml.assert_equal(op_0, ops[0])
+        assert op_id_0 == 0 and p_id_0 == 0
 
         op_1, op_id_1, p_id_1 = qs.get_operation(1)
-        assert qml.equal(op_1, ops[1]) and op_id_1 == 1 and p_id_1 == 0
+        qml.assert_equal(op_1, ops[1])
+        assert op_id_1 == 1 and p_id_1 == 0
 
         op_2, op_id_2, p_id_2 = qs.get_operation(2)
-        assert qml.equal(op_2, ops[1]) and op_id_2 == 1 and p_id_2 == 1
+        qml.assert_equal(op_2, ops[1])
+        assert op_id_2 == 1 and p_id_2 == 1
 
         op_3, op_id_3, p_id_3 = qs.get_operation(3)
-        assert qml.equal(op_3, ops[1]) and op_id_3 == 1 and p_id_3 == 2
+        qml.assert_equal(op_3, ops[1])
+        assert op_id_3 == 1 and p_id_3 == 2
 
         op_4, op_id_4, p_id_4 = qs.get_operation(4)
-        assert qml.equal(op_4, ops[3]) and op_id_4 == 3 and p_id_4 == 0
+        qml.assert_equal(op_4, ops[3])
+        assert op_id_4 == 3 and p_id_4 == 0
 
         op_5, op_id_5, p_id_5 = qs.get_operation(5)
-        assert qml.equal(op_5, ops[4]) and op_id_5 == 4 and p_id_5 == 0
+        qml.assert_equal(op_5, ops[4])
+        assert op_id_5 == 4 and p_id_5 == 0
 
         op_6, op_id_6, p_id_6 = qs.get_operation(6)
-        assert qml.equal(op_6, ops[4]) and op_id_6 == 4 and p_id_6 == 1
+        qml.assert_equal(op_6, ops[4])
+        assert op_id_6 == 4 and p_id_6 == 1
 
         _, obs_id_0, p_id_0 = qs.get_operation(7)
         assert obs_id_0 == 5 and p_id_0 == 0
@@ -228,8 +260,24 @@ class TestUpdate:
             qml.PauliX(0) @ qml.PauliY(1),
         ]
         qs = QuantumScript(measurements=[qml.expval(o) for o in obs])
-        assert qs._obs_sharing_wires == [obs[1], obs[2], obs[4]]
-        assert qs._obs_sharing_wires_id == [1, 2, 4]
+        assert qs.obs_sharing_wires == [obs[1], obs[2], obs[4]]
+        assert qs.obs_sharing_wires_id == [1, 2, 4]
+
+    def test_update_no_sharing_wires(self):
+        """Tests the case where no observables share wires"""
+        obs = [
+            qml.PauliX("a"),
+            qml.PauliX(0),
+            qml.PauliY(1),
+            qml.PauliX("b"),
+            qml.PauliX(2) @ qml.PauliY(3),
+        ]
+        qs = QuantumScript(measurements=[qml.expval(o) for o in obs])
+        assert qs.obs_sharing_wires == []
+        assert qs.obs_sharing_wires_id == []
+        # Since the public attributes were accessed already, the private ones should be empty lists not None
+        assert qs._obs_sharing_wires == []
+        assert qs._obs_sharing_wires_id == []
 
     @pytest.mark.parametrize(
         "x, rot, exp_batch_size",
@@ -448,7 +496,7 @@ class TestInfomationProperties:
         assert qs.specs["num_diagonalizing_gates"] == 0
         assert qs.specs["num_trainable_params"] == 0
 
-        assert len(qs.specs) == 4
+        assert len(qs.specs) == 5
 
         assert qs._specs is qs.specs
 
@@ -460,7 +508,7 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 4
+        assert len(specs) == 5
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
@@ -602,7 +650,7 @@ def test_adjoint():
 
     assert len(q.queue) == 0  # not queued
 
-    assert qml.equal(adj_qs.operations[0], qs.operations[0])
+    qml.assert_equal(adj_qs.operations[0], qs.operations[0])
     assert adj_qs.measurements == qs.measurements
     assert adj_qs.shots is qs.shots
 
@@ -906,7 +954,7 @@ class TestFromQueue:
 
         assert len(diag_ops) == 1
         # Hadamard is the diagonalizing gate for PauliX
-        assert qml.equal(diag_ops[0], qml.Hadamard(0))
+        qml.assert_equal(diag_ops[0], qml.Hadamard(0))
         assert len(q.queue) == 0
 
 
@@ -1384,13 +1432,11 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, complex)
         assert qs.numeric_type is complex
 
-    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
-    def test_sample_int_eigvals(self, ret):
+    def test_sample_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for a
-        sampling measurement with a Hermitian observable with integer
-        eigenvalues."""
+        sampling measurement returning samples"""
         dev = qml.device("default.qubit", wires=3, shots=5)
-        qs = QuantumScript([qml.RY(0.4, 0)], [ret], shots=5)
+        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample()], shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
@@ -1425,20 +1471,15 @@ class TestNumericType:
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real
-        eigenvalues and another one with integer eigenvalues."""
+        eigenvalues and another sample with integer values."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
-        arr = np.array(
-            [
-                1.32,
-                2.312,
-            ]
-        )
+        arr = np.array([1.32, 2.312])
         herm = np.outer(arr, arr)
 
         a, b = 0, 3
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))]
+        m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample()]
         qs = QuantumScript(ops, m, shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]

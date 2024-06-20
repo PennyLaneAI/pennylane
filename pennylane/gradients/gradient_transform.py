@@ -13,57 +13,39 @@
 # limitations under the License.
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
-# pylint: disable=too-few-public-methods
-from functools import partial
 import warnings
 
-import pennylane as qml
-from pennylane.measurements import (
-    MutualInfoMP,
-    StateMP,
-    VarianceMP,
-    VnEntropyMP,
-    ProbabilityMP,
-)
+# pylint: disable=too-few-public-methods
+from functools import partial
 
-SUPPORTED_GRADIENT_KWARGS = [
+import pennylane as qml
+from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
+
+SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
     "argnum",
+    "atol",
     "aux_wire",
     "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
     "device_wires",
     "diagonal_shifts",
+    "fallback_fn",
     "f0",
     "force_order2",
     "gradient_recipes",
-    "gradient_kwargs",
     "h",
     "n",
-    "num",
     "num_directions",
     "num_split_times",
     "off_diagonal_shifts",
-    "order",
-    "reduction",
     "sampler",
     "sampler_rng",
     "sampler_seed",
     "shifts",
-    "shots",
     "strategy",
     "use_broadcasting",
     "validate_params",
-]
-
-
-def assert_multimeasure_not_broadcasted(measurements, broadcast):
-    """Assert that there are not simultaneously multiple measurements and
-    broadcasting activated.Otherwise raises an error."""
-    if broadcast and len(measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {measurements}."
-        )
+}
 
 
 def assert_no_state_returns(measurements, transform_name):
@@ -99,18 +81,24 @@ def assert_no_variance(measurements, transform_name):
         )
 
 
-def assert_no_tape_batching(tape, transform_name):
+def assert_no_trainable_tape_batching(tape, transform_name):
     """Check whether a tape is broadcasted and raise an error if this is the case.
 
     Args:
         tape (`~.QuantumScript`): measurements to analyze
         transform_name (str): Name of the gradient transform that queries the tape
     """
-    if tape.batch_size is not None:
-        raise NotImplementedError(
-            f"Computing the gradient of broadcasted tapes with the {transform_name} "
-            "gradient transform is currently not supported. See #4462 for details."
-        )
+    if tape.batch_size is None:
+        return
+
+    # Iterate over trainable parameters and check the affiliated operations for batching
+    for idx in range(len(tape.trainable_params)):
+        if tape.get_operation(idx)[0].batch_size is not None:
+            raise NotImplementedError(
+                "Computing the gradient of broadcasted tapes with respect to the broadcasted "
+                f"parameters using the {transform_name} gradient transform is currently not "
+                "supported. See #4462 for details."
+            )
 
 
 def choose_trainable_params(tape, argnum=None):
@@ -158,7 +146,7 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
     """
 
     # pylint:disable=protected-access
-    par_info = tape._par_info[param_index]
+    par_info = tape.par_info[param_index]
 
     if use_graph:
         op_or_mp = tape[par_info["op_idx"]]
@@ -284,20 +272,22 @@ def _no_trainable_grad(tape):
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
-def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
+def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):
     """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
-    if first_axis_size == 1:
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 1)``"""
+    if first_axis_size == 1 and squeeze:
         return tuple(grads[0][i] for i in range(second_axis_size))
     return tuple(
         tuple(grads[j][i] for j in range(first_axis_size)) for i in range(second_axis_size)
     )
 
 
-def _move_first_axis_to_third_pos(grads, first_axis_size, second_axis_size, third_axis_size):
+def _move_first_axis_to_third_pos(
+    grads, first_axis_size, second_axis_size, third_axis_size, squeeze=True
+):
     """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
-    if first_axis_size == 1:
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 2)``"""
+    if first_axis_size == 1 and squeeze:
         return tuple(
             tuple(grads[0][i][j] for j in range(third_axis_size)) for i in range(second_axis_size)
         )
@@ -373,6 +363,10 @@ def reorder_grads(grads, tape_specs):
     return _move_first_axis_to_third_pos(grads, num_params, shots.num_copies, num_measurements)
 
 
+tdot = partial(qml.math.tensordot, axes=[[0], [0]])
+stack = qml.math.stack
+
+
 # pylint: disable=too-many-return-statements,too-many-branches
 def _contract_qjac_with_cjac(qjac, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
@@ -391,52 +385,58 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
         cjac = cjac[0]
 
     cjac_is_tuple = isinstance(cjac, tuple)
-    if not cjac_is_tuple:
-        is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-        if not qml.math.is_abstract(cjac) and (
-            is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0]))
-        ):
-            # Classical Jacobian is the identity. No classical processing is present in the QNode
-            return qjac
 
     multi_meas = num_measurements > 1
 
+    # This block only figures out whether there is a single tape parameter or not
     if cjac_is_tuple:
-        multi_params = True
+        single_tape_param = False
     else:
+        # Peel out a single measurement's and single shot setting's qjac
         _qjac = qjac
         if multi_meas:
             _qjac = _qjac[0]
         if has_partitioned_shots:
             _qjac = _qjac[0]
-        multi_params = isinstance(_qjac, tuple)
+        single_tape_param = not isinstance(_qjac, tuple)
 
-    tdot = partial(qml.math.tensordot, axes=[[0], [0]])
-
-    if not multi_params:
+    if single_tape_param:
         # Without dimension (e.g. expval) or with dimension (e.g. probs)
         def _reshape(x):
             return qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
         if not (multi_meas or has_partitioned_shots):
-            # Single parameter, single measurements
+            # Single parameter, single measurements, no shot vector
             return tdot(_reshape(qjac), cjac)
 
         if not (multi_meas and has_partitioned_shots):
+            # Single parameter, multiple measurements or shot vector, but not both
             return tuple(tdot(_reshape(q), cjac) for q in qjac)
 
-        # Single parameter, multiple measurements
+        # Single parameter, multiple measurements, and shot vector
         return tuple(tuple(tdot(_reshape(_q), cjac) for _q in q) for q in qjac)
 
     if not multi_meas:
         # Multiple parameters, single measurement
-        qjac = qml.math.stack(qjac)
+        qjac = stack(qjac)
         if not cjac_is_tuple:
-            return tdot(qjac, qml.math.stack(cjac))
+            cjac = stack(cjac)
+            if has_partitioned_shots:
+                return tuple(tdot(stack(q), cjac) for q in qjac)
+            return tdot(qjac, cjac)
+        if has_partitioned_shots:
+            return tuple(tuple(tdot(q, c) for c in cjac if c is not None) for q in qjac)
         return tuple(tdot(qjac, c) for c in cjac if c is not None)
 
     # Multiple parameters, multiple measurements
     if not cjac_is_tuple:
-        return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
-    return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
+        cjac = stack(cjac)
+        if has_partitioned_shots:
+            return tuple(tuple(tdot(stack(_q), cjac) for _q in q) for q in qjac)
+        return tuple(tdot(stack(q), cjac) for q in qjac)
+    if has_partitioned_shots:
+        return tuple(
+            tuple(tuple(tdot(stack(_q), c) for c in cjac if c is not None) for _q in q)
+            for q in qjac
+        )
+    return tuple(tuple(tdot(stack(q), c) for c in cjac if c is not None) for q in qjac)

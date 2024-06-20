@@ -12,15 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.gradient_transform module."""
+import inspect
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
+    SUPPORTED_GRADIENT_KWARGS,
     _find_gradient_methods,
     _validate_gradient_methods,
     choose_trainable_params,
 )
+from pennylane.transforms.core import TransformDispatcher
+
+
+def test_supported_gradient_kwargs():
+    """Test that all keyword arguments of gradient transforms are
+    registered as supported gradient kwargs, and no others."""
+    # Collect all gradient transforms
+    grad_transforms = []
+    for attr in qml.gradients.__dir__():
+        if attr == "metric_tensor":
+            # Skip metric_tensor because it is not a diff_method
+            continue
+        obj = getattr(qml.gradients, attr)
+        if isinstance(obj, TransformDispatcher):
+            grad_transforms.append(obj)
+
+    # Collect arguments of all gradient transforms
+    grad_kwargs = set()
+    for tr in grad_transforms:
+        grad_kwargs |= set(inspect.signature(tr).parameters)
+
+    # Remove arguments that are not keyword arguments
+    grad_kwargs -= {"tape"}
+    # Remove "dev", because we decided against supporting this kwarg, although
+    # it is an argument to param_shift_cv, to avoid confusion.
+    grad_kwargs -= {"dev"}
+
+    # Check equality of required and supported gradient kwargs
+    assert grad_kwargs == SUPPORTED_GRADIENT_KWARGS
+    # Shots should never be used as a gradient kwarg
+    assert "shots" not in grad_kwargs
 
 
 def test_repr():
@@ -186,7 +220,8 @@ class TestGradientTransformIntegration:
 
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 500], 3e-1)])
     @pytest.mark.parametrize("slicing", [False, True])
-    def test_acting_on_qnodes_single_param(self, shots, slicing, atol):
+    @pytest.mark.parametrize("prefactor", [1.0, 2.0])
+    def test_acting_on_qnodes_single_param(self, shots, slicing, prefactor, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
         np.random.seed(412)
         dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -194,9 +229,9 @@ class TestGradientTransformIntegration:
         @qml.qnode(dev)
         def circuit(weights):
             if slicing:
-                qml.RX(weights[0], wires=[0])
+                qml.RX(prefactor * weights[0], wires=[0])
             else:
-                qml.RX(weights, wires=[0])
+                qml.RX(prefactor * weights, wires=[0])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
         grad_fn = qml.gradients.param_shift(circuit)
@@ -204,14 +239,18 @@ class TestGradientTransformIntegration:
         w = np.array([0.543] if slicing else 0.543, requires_grad=True)
         res = grad_fn(w)
         assert circuit.interface == "auto"
-        expected = np.array([-np.sin(w[0] if slicing else w), 0])
+
+        # Need to multiply 0 with w to get the right output shape for non-scalar w
+        expected = (-prefactor * np.sin(prefactor * w), w * 0)
+
         if isinstance(shots, list):
             assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
         else:
             assert np.allclose(res, expected, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
-    def test_acting_on_qnodes_multi_param(self, shots, atol):
+    @pytest.mark.parametrize("prefactor", [1.0, 2.0])
+    def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
         np.random.seed(412)
         dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -219,9 +258,9 @@ class TestGradientTransformIntegration:
         @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=[0])
-            qml.RY(weights[1], wires=[1])
+            qml.RY(prefactor * weights[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
         grad_fn = qml.gradients.param_shift(circuit)
 
@@ -229,7 +268,16 @@ class TestGradientTransformIntegration:
         res = grad_fn(w)
         assert circuit.interface == "auto"
         x, y = w
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
+        y *= prefactor
+        expected = np.array(
+            [
+                [-np.sin(x), 0],
+                [
+                    2 * np.cos(x) * np.sin(x) * np.cos(y) ** 2,
+                    2 * prefactor * np.cos(y) * np.sin(y) * np.cos(x) ** 2,
+                ],
+            ]
+        )
         if isinstance(shots, list):
             assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
         else:

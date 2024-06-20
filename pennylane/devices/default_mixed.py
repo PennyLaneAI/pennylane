@@ -21,26 +21,36 @@ qubit-based quantum circuits.
 
 import functools
 import itertools
+import logging
 from collections import defaultdict
 from string import ascii_letters as ABC
+
 import numpy as np
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane import (
-    BasisState,
-    DeviceError,
-    QubitDensityMatrix,
-    QubitDevice,
-    StatePrep,
-    Snapshot,
+from pennylane import BasisState, DeviceError, QubitDensityMatrix, QubitDevice, Snapshot, StatePrep
+from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.measurements import (
+    CountsMP,
+    DensityMatrixMP,
+    ExpectationMP,
+    MutualInfoMP,
+    ProbabilityMP,
+    PurityMP,
+    SampleMP,
+    StateMP,
+    VarianceMP,
+    VnEntropyMP,
 )
-from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP, PurityMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
 
 from .._version import __version__
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
@@ -176,6 +186,7 @@ class DefaultMixed(QubitDevice):
         res = qnp.cast(array, dtype=dtype)
         return res
 
+    @debug_logger_init
     def __init__(
         self,
         wires,
@@ -247,6 +258,7 @@ class DefaultMixed(QubitDevice):
         # User obtains state as a matrix
         return qnp.reshape(self._pre_rotated_state, (dim, dim))
 
+    @debug_logger
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.
 
@@ -261,12 +273,14 @@ class DefaultMixed(QubitDevice):
         wires = self.map_wires(wires)
         return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
+    @debug_logger
     def purity(self, mp, **kwargs):  # pylint: disable=unused-argument
         """Returns the purity of the final state"""
         state = getattr(self, "state", None)
         wires = self.map_wires(mp.wires)
         return qml.math.purity(state, indices=wires, c_dtype=self.C_DTYPE)
 
+    @debug_logger
     def reset(self):
         """Resets the device"""
         super().reset()
@@ -274,6 +288,7 @@ class DefaultMixed(QubitDevice):
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
+    @debug_logger
     def analytic_probability(self, wires=None):
         if self._state is None:
             return None
@@ -582,18 +597,80 @@ class DefaultMixed(QubitDevice):
             self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
             self._pre_rotated_state = self._state
 
+    def _snapshot_measurements(self, density_matrix, measurement):
+        """Perform state-based snapshot measurement"""
+        meas_wires = self.wires if not measurement.wires else measurement.wires
+
+        pre_rotated_state = self._state
+        if isinstance(measurement, (ProbabilityMP, ExpectationMP, VarianceMP)):
+            for diag_gate in measurement.diagonalizing_gates():
+                self._apply_operation(diag_gate)
+
+        if isinstance(measurement, (StateMP, DensityMatrixMP)):
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.reduce_dm(
+                density_matrix, indices=map_wires, c_dtype=self.C_DTYPE
+            )
+
+        elif isinstance(measurement, PurityMP):
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.purity(density_matrix, indices=map_wires, c_dtype=self.C_DTYPE)
+
+        elif isinstance(measurement, ProbabilityMP):
+            snap_result = self.analytic_probability(wires=meas_wires)
+
+        elif isinstance(measurement, ExpectationMP):
+            eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
+            probs = self.analytic_probability(wires=meas_wires)
+            snap_result = self._dot(probs, eigvals)
+
+        elif isinstance(measurement, VarianceMP):
+            eigvals = self._asarray(measurement.obs.eigvals(), dtype=self.R_DTYPE)
+            probs = self.analytic_probability(wires=meas_wires)
+            snap_result = self._dot(probs, (eigvals**2)) - self._dot(probs, eigvals) ** 2
+
+        elif isinstance(measurement, VnEntropyMP):
+            base = measurement.log_base
+            map_wires = self.map_wires(meas_wires)
+            snap_result = qml.math.vn_entropy(
+                density_matrix, indices=map_wires, c_dtype=self.C_DTYPE, base=base
+            )
+
+        elif isinstance(measurement, MutualInfoMP):
+            base = measurement.log_base
+            wires0, wires1 = list(map(self.map_wires, measurement.raw_wires))
+            snap_result = qml.math.mutual_info(
+                density_matrix,
+                indices0=wires0,
+                indices1=wires1,
+                c_dtype=self.C_DTYPE,
+                base=base,
+            )
+
+        else:
+            raise DeviceError(
+                f"Snapshots of {type(measurement)} are not yet supported on default.mixed"
+            )
+
+        self._state = pre_rotated_state
+        self._pre_rotated_state = self._state
+
+        return snap_result
+
     def _apply_snapshot(self, operation):
         """Applies the snapshot operation"""
         measurement = operation.hyperparameters["measurement"]
-        if measurement:
-            raise DeviceError("Snapshots of measurements are not yet supported on default.mixed")
+
         if self._debugger and self._debugger.active:
             dim = 2**self.num_wires
             density_matrix = qnp.reshape(self._state, (dim, dim))
+
+            snapshot_result = self._snapshot_measurements(density_matrix, measurement)
+
             if operation.tag:
-                self._debugger.snapshots[operation.tag] = density_matrix
+                self._debugger.snapshots[operation.tag] = snapshot_result
             else:
-                self._debugger.snapshots[len(self._debugger.snapshots)] = density_matrix
+                self._debugger.snapshots[len(self._debugger.snapshots)] = snapshot_result
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
@@ -637,6 +714,7 @@ class DefaultMixed(QubitDevice):
 
     # pylint: disable=arguments-differ
 
+    @debug_logger
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
@@ -691,6 +769,7 @@ class DefaultMixed(QubitDevice):
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
 
+    @debug_logger
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 

@@ -18,8 +18,8 @@ Unit tests for the the arithmetic qubit operations
 import copy
 import itertools
 
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -269,7 +269,7 @@ class TestIntegerComparator:
         assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(new_op, op)
+        qml.assert_equal(new_op, op)
         assert new_op is not op
 
     @pytest.mark.parametrize(
