@@ -74,7 +74,7 @@ class TestFromOpenFermion:
         converted_pl_op = qml.from_openfermion(of_op)
         assert converted_pl_op.compare(pl_op)
 
-    OPSWIRES = (
+    OPS_WIRES = (
         (
             (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
             ({0: "a", 1: 2}),
@@ -82,7 +82,7 @@ class TestFromOpenFermion:
         ),
     )
 
-    @pytest.mark.parametrize("of_op, wires, pl_op", OPSWIRES)
+    @pytest.mark.parametrize("of_op, wires, pl_op", OPS_WIRES)
     def test_wires_qubit(self, of_op, wires, pl_op):
         """Test conversion from ``QubitOperator`` to PennyLane with wire map."""
         converted_pl_op = qml.from_openfermion(of_op, wires=wires)

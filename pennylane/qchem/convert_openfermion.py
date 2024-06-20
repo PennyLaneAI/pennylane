@@ -56,7 +56,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
         openfermion_op (FermionOperator, QubitOperator): OpenFermion operator
         wires (dict): Custom wire mapping used to convert the external qubit
             operator to a PennyLane operator.
-            Only int-keyed dictionaries (for qubit-to-wire conversion) are accepted.
+            Only dictionaries with integer keys (for qubit-to-wire conversion) are accepted.
             If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
         tol (float): tolerance for discarding negligible coefficients
 
@@ -115,7 +115,7 @@ def to_openfermion(
             linear combination of operators
         wires (dict): Custom wire mapping used to convert a PennyLane qubit operator
             to the external operator.
-            Only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            Only dictionaries with integer keys (for qubit-to-wire conversion) are accepted.
             If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
