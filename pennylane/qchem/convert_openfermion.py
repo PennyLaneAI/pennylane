@@ -79,51 +79,39 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
     >>> print(pl_op)
     1.2 * X(0) + 2.4 * Z(1)
     """
-    _ = _import_of()
-    return _from_openfermion_dispatch(openfermion_op, wires=None, tol=tol)
+    openfermion = _import_of()
 
+    if isinstance(openfermion_op, openfermion.FermionOperator):
+        typemap = {0: "-", 1: "+"}
 
-@singledispatch
-def _from_openfermion_dispatch(of_op, wires=None, tol=1.0e-16):
-    """Dispatches to appropriate function if of_op is a ``FermionOperator`` or ``QubitOperator``."""
-    raise ValueError(
-        f"The input operator must be a FermionOperator or QubitOperator, got: {type(of_op)}."
-    )
+        fermi_words = []
+        fermi_coeffs = []
 
+        for ops, val in openfermion_op.terms.items():
+            fw_dict = {(i, op[0]): typemap[op[1]] for i, op in enumerate(ops)}
+            fermi_words.append(FermiWord(fw_dict))
+            fermi_coeffs.append(val)
 
-openfermion = _import_of()
+        if len(fermi_words) == 1 and fermi_coeffs[0] == 1.0:
+            return fermi_words[0]
 
+        pl_op = FermiSentence(dict(zip(fermi_words, fermi_coeffs)))
+        pl_op.simplify(tol=tol)
 
-@_from_openfermion_dispatch.register
-def _(openfermion_op: openfermion.FermionOperator, wires=None, tol=1.0e-16):
+        return pl_op
 
-    typemap = {0: "-", 1: "+"}
+    elif isinstance(openfermion_op, openfermion.QubitOperator):
 
-    fermi_words = []
-    fermi_coeffs = []
+        coeffs, pl_ops = _openfermion_to_pennylane(openfermion_op, tol=tol)
 
-    for ops, val in openfermion_op.terms.items():
-        fw_dict = {(i, op[0]): typemap[op[1]] for i, op in enumerate(ops)}
-        fermi_words.append(FermiWord(fw_dict))
-        fermi_coeffs.append(val)
+        pennylane_op = qml.ops.LinearCombination(coeffs, pl_ops)
 
-    if len(fermi_words) == 1 and fermi_coeffs[0] == 1.0:
-        return fermi_words[0]
+        return pennylane_op
 
-    pl_op = FermiSentence(dict(zip(fermi_words, fermi_coeffs)))
-    pl_op.simplify(tol=tol)
-
-    return pl_op
-
-
-@_from_openfermion_dispatch.register
-def _(openfermion_op: openfermion.QubitOperator, wires=None, tol=1.0e-16):
-
-    coeffs, pl_ops = _openfermion_to_pennylane(openfermion_op, tol=tol)
-
-    pennylane_op = qml.ops.LinearCombination(coeffs, pl_ops)
-
-    return pennylane_op
+    else:
+        raise ValueError(
+            f"The input operator must be a QubitOperator or FermionOperator, got: {type(openfermion_op)}."
+        )
 
 
 def to_openfermion(
@@ -155,7 +143,7 @@ def to_openfermion(
     1.2 [0^ 1] +
     3.1 [1^ 2]
     """
-    _ = _import_of()
+
     return _to_openfermion_dispatch(pennylane_op, wires=wires, tol=tol)
 
 
