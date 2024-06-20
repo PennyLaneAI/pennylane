@@ -134,7 +134,7 @@ def sample(
            [0, 0]])
 
     """
-    return SampleMP(obs=op, wires=wires)
+    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
 
 
 class SampleMP(SampleMeasurement):
