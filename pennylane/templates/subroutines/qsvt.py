@@ -457,15 +457,14 @@ def _qsp_to_qsvt(angles):
     r"""Converts qsp angles to qsvt angles."""
     num_angles = len(angles)
     new_angles = qml.math.array(copy.copy(angles))
+    indicies = qml.math.convert_like(np.arange(num_angles), angles)
 
-    for index in range(num_angles):
-        if index == 0:
-            update_val = 3 * np.pi / 4
-        elif index == num_angles - 1:
-            update_val = -np.pi / 4
-        else:
-            update_val = np.pi / 2
+    update_vals = np.zeros(num_angles)
+    update_vals[0] = 3 * np.pi / 4
+    update_vals[1:-1] = np.pi / 2
+    update_vals[-1] = -np.pi / 4
 
-        qml.math.set_index(new_angles, index, new_angles[index] + update_val)
+    update_vals = qml.math.convert_like(update_vals, angles)
 
+    new_angles = qml.math.add_index(new_angles, indicies, update_vals)
     return new_angles
