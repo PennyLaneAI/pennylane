@@ -1467,7 +1467,7 @@ class TestObservablesComparisons:
         assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
         if not res:
-            error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not same")
+            error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not the same")
             with pytest.raises(AssertionError, match=error_message_pattern):
                 assert_equal(H1, H2)
 
@@ -1481,7 +1481,7 @@ class TestObservablesComparisons:
         """Tensors are not equal because of different observable data"""
         op1 = qml.operation.Tensor(qml.X(0), qml.Y(1))
         op2 = qml.operation.Tensor(qml.Y(0), qml.X(1))
-        with pytest.raises(AssertionError, match="op1 and op2 have different _obs_data outputs"):
+        with pytest.raises(AssertionError, match="have different _obs_data outputs"):
             assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
@@ -1522,13 +1522,22 @@ class TestObservablesComparisons:
         with pytest.raises(AssertionError, match="is not of type Observable"):
             assert_equal(op1, op2)
 
+    def test_tensor_and_observable_not_equal(self):
+        """Tests that comparing a Tensor with an Observable that is not a Tensor returns False"""
+        op1 = qml.PauliX(0) @ qml.PauliY(1)
+        op2 = qml.Z(0)
+        assert qml.equal(op1, op2) is False
+        assert qml.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="is of type <class 'pennylane.operation.Tensor'>"):
+            assert_equal(op1, op2)
+
     def test_tensor_and_unsupported_observable_returns_false(self):
         """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
         op2 = qml.Hermitian([[0, 1], [1, 0]], 0)
 
         assert not qml.equal(op1, op2)
-        error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not same")
+        error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not the same")
         with pytest.raises(AssertionError, match=error_message_pattern):
             assert_equal(op1, op2)
 

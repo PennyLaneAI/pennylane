@@ -27,6 +27,7 @@ from pennylane.devices.qubit.apply_operation import (
     apply_operation_tensordot,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation
+from tests.dummy_debugger import Debugger
 
 ml_frameworks_list = [
     "numpy",
@@ -542,13 +543,6 @@ class TestApplyParametrizedEvolution:
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
 
-    class Debugger:  # pylint: disable=too-few-public-methods
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
-
     def test_no_debugger(self, ml_framework):
         """Test nothing happens when there is no debugger"""
         initial_state = np.array(
@@ -573,7 +567,7 @@ class TestSnapshot:
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(qml.Snapshot(), initial_state, debugger=debugger)
 
         assert new_state.shape == initial_state.shape
@@ -593,7 +587,7 @@ class TestSnapshot:
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         tag = "abcd"
         new_state = apply_operation(qml.Snapshot(tag), initial_state, debugger=debugger)
 
@@ -615,7 +609,7 @@ class TestSnapshot:
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
         measurement = qml.expval(qml.PauliZ(0))
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(measurement=measurement), initial_state, debugger=debugger
         )
@@ -630,7 +624,7 @@ class TestSnapshot:
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
         initial_state = qml.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(), initial_state, is_state_batched=True, debugger=debugger
         )
