@@ -40,7 +40,7 @@ inputs:
     description: Indicate if catalyst should be installed from the test pypi location
     required: false
     type: boolean
-    default: false
+    default: 'false'
   additional_pip_packages:
     description: Additional packages to install. Values will be passed to pip install {value}
     required: false
