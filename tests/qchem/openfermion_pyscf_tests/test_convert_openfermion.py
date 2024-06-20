@@ -90,7 +90,7 @@ class TestFromOpenFermion:
         """Test that from_openfermion yields a :class:`~.Sum` object."""
         q_op = openfermion.QubitOperator("X0 X1", 0.25) + openfermion.QubitOperator("Z1 Z0", 0.75)
 
-        assert isinstance(qml.from_openfermion(q_op), qml.ops.Sum)
+        assert isinstance(qml.from_openfermion(q_op), qml.ops.LinearCombination)
 
     # def test_invalid_format_qubit(self):
     #     """Test if error is raised if format is invalid."""
