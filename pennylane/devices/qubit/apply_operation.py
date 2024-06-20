@@ -435,7 +435,9 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     sl_1 = _get_slice(1, axis, n_dim)
 
     # must be first state and then -1 because it breaks otherwise
-    state1 = math.multiply(math.cast(state[sl_1], dtype=complex), math.exp(1j * params))
+    state1 = math.multiply(
+        math.cast(state[sl_1], dtype=complex), math.exp(1j * math.cast(params, dtype=complex))
+    )
     state = math.stack([state[sl_0], state1], axis=axis)
     if op.batch_size == 1:
         state = math.stack([state], axis=0)
