@@ -141,4 +141,5 @@ def __getattr__(key):
         from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
 
         return _get_abstract_operator()
+
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
