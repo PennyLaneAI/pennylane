@@ -162,7 +162,7 @@ class TestInitialization:
 
         assert coeff == [scalar]
         for op1, op2 in zip(op2, [op]):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_decomposition_raises_error(self):
         sprod_op = s_prod(3.14, qml.Identity(wires=1))
@@ -240,7 +240,7 @@ class TestMscMethods:
         assert metadata == tuple()
 
         new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
-        assert qml.equal(new_op, sprod_op)
+        qml.assert_equal(new_op, sprod_op)
         assert new_op is not sprod_op
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
@@ -896,7 +896,7 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -926,7 +926,7 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
 
 class TestWrapperFunc:
@@ -963,7 +963,7 @@ class TestWrapperFunc:
 
         assert isinstance(op, SProd)
         assert op.scalar == 12
-        assert qml.equal(op.base, qml.PauliX(0))
+        qml.assert_equal(op.base, qml.PauliX(0))
 
     def test_non_lazy_mode_queueing(self):
         """Test that if a simpification is accomplished, the metadata for the original op

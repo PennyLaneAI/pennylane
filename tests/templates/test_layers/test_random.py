@@ -68,7 +68,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op is not op
 
 
@@ -93,9 +93,12 @@ class TestDecomposition:
         assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2))
         assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3))
 
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue1, decomp1))
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue2, decomp2))
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue3, decomp3))
+        for op1, op2 in zip(queue1, decomp1):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(queue2, decomp2):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(queue3, decomp3):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("n_layers, n_rots", [(3, 4), (1, 2)])
     def test_number_gates(self, n_layers, n_rots):
@@ -236,7 +239,7 @@ class TestInterfaces:
         ]
 
         for op1, op2 in zip(decomp, expected):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_autograd(self, tol):
         """Tests the autograd interface."""

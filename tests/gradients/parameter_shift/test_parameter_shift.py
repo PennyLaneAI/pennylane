@@ -562,8 +562,8 @@ class TestParamShift:
         assert len(batch) == 2
         tape0 = qml.tape.QuantumScript((qml.RX(0.5 + np.pi / 2, 0),), ms, trainable_params=[0])
         tape1 = qml.tape.QuantumScript((qml.RX(0.5 - np.pi / 2, 0),), ms, trainable_params=[0])
-        assert qml.equal(batch[0], tape0)
-        assert qml.equal(batch[1], tape1)
+        qml.assert_equal(batch[0], tape0)
+        qml.assert_equal(batch[1], tape1)
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with

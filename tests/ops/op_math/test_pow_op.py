@@ -58,7 +58,7 @@ class TestConstructor:
         op = qml.pow(qml.PauliX(0), 2)
         assert isinstance(op, Pow)
         assert op.z == 2
-        assert qml.equal(op.base, qml.PauliX(0))
+        qml.assert_equal(op.base, qml.PauliX(0))
 
     def test_nonlazy_no_simplification(self):
         """Test that if lazy=False, but no decomposition exists, then the operator is simply
@@ -74,7 +74,7 @@ class TestConstructor:
         to the identity."""
 
         op_new = qml.pow(op, 2, lazy=False)
-        assert qml.equal(op_new, qml.Identity(op.wires))
+        qml.assert_equal(op_new, qml.Identity(op.wires))
 
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,
@@ -89,8 +89,8 @@ class TestConstructor:
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
         assert isinstance(new_op, qml.ops.Prod)  # pylint:disable=no-member
-        assert qml.equal(new_op.operands[0], qml.S(0))
-        assert qml.equal(new_op.operands[1], qml.T(0))
+        qml.assert_equal(new_op.operands[0], qml.S(0))
+        qml.assert_equal(new_op.operands[1], qml.T(0))
 
     def test_nonlazy_simplification_queueing(self):
         """Test that if a simpification is accomplished, the metadata for the original op
@@ -495,7 +495,7 @@ class TestProperties:
 
         assert isinstance(adj_op, Pow)
         assert adj_op.z is op.z
-        assert qml.equal(adj_op.base, qml.ops.Adjoint(qml.X(0)))
+        qml.assert_equal(adj_op.base, qml.ops.Adjoint(qml.X(0)))
 
     @pytest.mark.parametrize("z", [-2.0, 1.0, 0.32])
     def test_adjoint_non_integer_power_raises(self, z, power_method):
@@ -528,7 +528,7 @@ class TestSimplify:
 
     def test_simplify_zero_power(self):
         """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
-        assert qml.equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
+        qml.assert_equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
 
     def test_simplify_zero_power_multiple_wires(self):
         """Test that simplifying a multi-wire operator raised to the power of 0 returns a product
@@ -606,7 +606,7 @@ class TestMiscMethods:
 
         new_op = type(op)._unflatten(*op._flatten())
         assert new_op is not op
-        assert qml.equal(new_op, op)
+        qml.assert_equal(new_op, op)
 
     def test_copy(self):
         """Test that a copy of a power operator can have its parameters updated
@@ -1003,7 +1003,8 @@ class TestDecompositionExpand:
             op.decomposition()
 
         assert len(q.queue) == z
-        assert all(qml.equal(applied_op, base) for applied_op in q.queue)
+        for applied_op in q.queue:
+            qml.assert_equal(applied_op, base)
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])

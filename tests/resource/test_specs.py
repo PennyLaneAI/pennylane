@@ -19,7 +19,7 @@ from typing import Callable, Sequence
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 class TestSpecsTransform:
@@ -29,7 +29,7 @@ class TestSpecsTransform:
         @qml.transforms.merge_rotations
         @qml.transforms.undo_swaps
         @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=pnp.pi / 4)
         def circuit(x):
             qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
             qml.RX(x, wires=0)
@@ -37,7 +37,7 @@ class TestSpecsTransform:
             qml.SWAP((0, 1))
             qml.X(0)
             qml.X(0)
-            return qml.expval(qml.X(0) + qml.Y(1))
+            return qml.expval(qml.sum(qml.X(0), qml.Y(1)))
 
         return circuit
 
@@ -68,7 +68,7 @@ class TestSpecsTransform:
 
     @pytest.mark.parametrize(
         "level,expected_gates,exptected_train_params",
-        [(0, 6, 3), (1, 4, 3), (2, 3, 3), (3, 1, 1), (None, 2, 2)],
+        [(0, 6, 1), (1, 4, 3), (2, 3, 3), (3, 1, 1), (None, 2, 2)],
     )
     def test_int_specs_level(self, level, expected_gates, exptected_train_params):
         circ = self.sample_circuit()
@@ -152,8 +152,8 @@ class TestSpecsTransform:
                 qml.RY(x[4], wires=1)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = np.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
-        y = np.array(0.1, requires_grad=False)
+        x = pnp.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
+        y = pnp.array(0.1, requires_grad=False)
 
         info = qml.specs(circuit)(x, y, add_RY=False)
 
@@ -170,7 +170,7 @@ class TestSpecsTransform:
         assert info["num_diagonalizing_gates"] == 1
         assert info["num_device_wires"] == 4
         assert info["diff_method"] == diff_method
-        assert info["num_trainable_params"] == 5
+        assert info["num_trainable_params"] == 4
         assert info["device_name"] == dev.name
         assert info["level"] == "gradient"
 
@@ -205,7 +205,7 @@ class TestSpecsTransform:
 
         @qml.transforms.hamiltonian_expand
         @qml.transforms.merge_rotations
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=pnp.pi / 4)
         def circuit(x):
             qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
             qml.RX(x, wires=0)
@@ -215,11 +215,11 @@ class TestSpecsTransform:
             qml.X(0)
             return qml.expval(H)
 
-        specs_instance = qml.specs(circuit, level=1)(np.array([1.23, -1]))
+        specs_instance = qml.specs(circuit, level=1)(pnp.array([1.23, -1]))
 
         assert isinstance(specs_instance, dict)
 
-        specs_list = qml.specs(circuit, level=2)(np.array([1.23, -1]))
+        specs_list = qml.specs(circuit, level=2)(pnp.array([1.23, -1]))
 
         assert len(specs_list) == len(H)
 
@@ -244,7 +244,7 @@ class TestSpecsTransform:
             return qml.expval(qml.PauliZ(0))
 
         params_shape = qml.BasicEntanglerLayers.shape(n_layers=n_layers, n_wires=n_wires)
-        rng = np.random.default_rng(seed=10)
+        rng = pnp.random.default_rng(seed=10)
         params = rng.standard_normal(params_shape)  # pylint:disable=no-member
 
         return circuit, params
@@ -350,7 +350,7 @@ class TestSpecsTransform:
         dev_specs = qml.specs(circuit, level="device")()
 
         assert "SpectralNormError" in top_specs["errors"]
-        assert np.allclose(top_specs["errors"]["SpectralNormError"].error, 13.824)
+        assert pnp.allclose(top_specs["errors"]["SpectralNormError"].error, 13.824)
 
         # At the device level, approximations don't exist anymore and therefore
         # we should expect an empty errors dictionary.
