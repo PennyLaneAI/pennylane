@@ -2772,7 +2772,7 @@ class TestPauliRot:
 
         decomp_op = decomp_ops[0]
 
-        assert qml.equal(decomp_op, qml.GlobalPhase(theta / 2))
+        qml.assert_equal(decomp_op, qml.GlobalPhase(theta / 2))
 
         assert qml.math.allclose(op.matrix(), decomp_op.matrix() * np.eye(4))
 
@@ -2786,8 +2786,7 @@ class TestPauliRot:
         assert len(decomp_ops) == 1
 
         decomp_op = decomp_ops[0]
-
-        assert qml.equal(decomp_op, qml.GlobalPhase(theta / 2))
+        qml.assert_equal(decomp_op, qml.GlobalPhase(theta / 2))
 
         op_matrices = op.matrix()
         decomp_op_matrices = decomp_op.matrix().T
