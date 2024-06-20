@@ -162,7 +162,6 @@ def __getattr__(key):
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
 
-# pylint: disable=undefined-all-variable
 __all__ = (
     "disable",
     "enable",
