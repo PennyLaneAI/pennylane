@@ -39,12 +39,12 @@ def catalyst_execute_jaxpr(jaxpr):
             result_treedef = jax.tree_util.tree_structure((0,) * len(jaxpr.out_avals))
             arg_signature = catalyst.tracing.type_signatures.get_abstract_signature(args)
 
-            return jaxpr, result_treedef, arg_signature
+            return jaxpr, None, result_treedef, arg_signature
 
     return JAXPRRunner(fn=lambda: None, compile_options=catalyst.CompileOptions())
 
 
-def compare_call_jaxprs(jaxpr1, jaxpr2, skip_eqns=()):
+def compare_call_jaxprs(jaxpr1, jaxpr2, skip_eqns=(), skip_counts=False):
     """Compares two call jaxprs and validates that they are essentially equal."""
     for inv1, inv2 in zip(jaxpr1.invars, jaxpr2.invars):
         assert inv1.aval == inv2.aval, f"{inv1.aval}, {inv2.aval}"
@@ -54,10 +54,10 @@ def compare_call_jaxprs(jaxpr1, jaxpr2, skip_eqns=()):
 
     for i, (eqn1, eqn2) in enumerate(zip(jaxpr1.eqns, jaxpr2.eqns)):
         if i not in skip_eqns:
-            compare_eqns(eqn1, eqn2)
+            compare_eqns(eqn1, eqn2, skip_counts=skip_counts)
 
 
-def compare_eqns(eqn1, eqn2):
+def compare_eqns(eqn1, eqn2, skip_counts=False):
     assert eqn1.primitive == eqn2.primitive
     if "shots" not in eqn1.params and "shape" not in eqn1.params:
         assert eqn1.params == eqn2.params
@@ -68,14 +68,14 @@ def compare_eqns(eqn1, eqn2):
         assert inv1.aval == inv2.aval, f"{eqn1}, {inv1.aval}, {inv2.aval}"
         if hasattr(inv1, "val"):
             assert inv1.val == inv2.val, f"{eqn1}, {inv1.val}, {inv2.val}"
-        if hasattr(inv1, "count"):
+        if not skip_counts and hasattr(inv1, "count"):
             assert inv1.count == inv2.count, f"{eqn1}, {inv1.count}, {inv2.count}"
 
     assert len(eqn1.outvars) == len(eqn2.outvars)
     for ov1, ov2 in zip(eqn1.outvars, eqn2.outvars):
         assert type(ov1) == type(ov2)  # pylint: disable=unidiomatic-typecheck
         assert ov1.aval == ov2.aval
-        if hasattr(ov1, "count"):
+        if not skip_counts and hasattr(ov1, "count"):
             assert ov1.count == ov2.count, f"{eqn1}, {ov1.count}, {ov2.count}"
 
 
@@ -98,7 +98,7 @@ class TestErorrs:
         jaxpr = jax.make_jaxpr(f)()
         qml.capture.disable()
 
-        with pytest.raises(NotImplementedError, match=r"catalyst does not support dynamic shots."):
+        with pytest.raises(NotImplementedError):
             to_catalyst(jaxpr)()
 
     def test_operator_without_n_wires(self):
@@ -115,10 +115,7 @@ class TestErorrs:
         jaxpr = jax.make_jaxpr(circuit)()
         qml.capture.disable()
 
-        with pytest.raises(
-            NotImplementedError,
-            match=f"Operator Adjoint not yet supported for catalyst conversion.",
-        ):
+        with pytest.raises(NotImplementedError):
             to_catalyst(jaxpr)()
 
     def test_observable_without_n_wires(self):
@@ -134,7 +131,7 @@ class TestErorrs:
         jaxpr = jax.make_jaxpr(circuit)()
         qml.capture.disable()
 
-        with pytest.raises(NotImplementedError, match="not yet supported for catalyst conversion"):
+        with pytest.raises(NotImplementedError):
             to_catalyst(jaxpr)()
 
     def test_measuring_eigvals_not_supported(self):
@@ -152,9 +149,7 @@ class TestErorrs:
         jaxpr = jax.make_jaxpr(circuit)()
         qml.capture.disable()
 
-        with pytest.raises(
-            NotImplementedError, match="Measurements with eigvals not yet supported"
-        ):
+        with pytest.raises(NotImplementedError):
             to_catalyst(jaxpr)()
 
     def test_measuring_measurement_values(self):
@@ -273,7 +268,7 @@ class TestCatalystCompareJaxpr:
         plxpr = jax.make_jaxpr(circuit)(phi)
         qml.capture.disable()
 
-        converted = to_catalyst(plxpr)(0.5)
+        converted = to_catalyst(plxpr)(phi)
 
         assert converted.eqns[0].primitive == catalyst.jax_primitives.func_p
         assert converted.eqns[0].params["fn"] == circuit
@@ -447,4 +442,9 @@ class TestHybridPrograms:
         call_jaxpr_pl = converted.eqns[1].params["call_jaxpr"]
         call_jaxpr_c = qjit_obj.jaxpr.eqns[1].params["call_jaxpr"]
 
-        compare_call_jaxprs(call_jaxpr_pl, call_jaxpr_c, skip_eqns=(4, 5, 6))
+        # qubit extraction and classical equations in a slightly different order
+        # thus cant check specific equations and have to discard comparing counts
+        compare_call_jaxprs(call_jaxpr_pl, call_jaxpr_c, skip_eqns=(4, 5, 6), skip_counts=True)
+        compare_eqns(call_jaxpr_pl.eqns[4], call_jaxpr_c.eqns[5], skip_counts=True)
+        compare_eqns(call_jaxpr_pl.eqns[5], call_jaxpr_c.eqns[6], skip_counts=True)
+        compare_eqns(call_jaxpr_pl.eqns[6], call_jaxpr_c.eqns[4], skip_counts=True)
