@@ -20,7 +20,7 @@ from typing import Union
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator, convert_to_opmath, TermsUndefinedError
+from pennylane.operation import Operator, TermsUndefinedError, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager

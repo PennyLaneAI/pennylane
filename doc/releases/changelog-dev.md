@@ -156,6 +156,9 @@
 * Add more fermionic-to-qubit tests to cover cases when the mapped operator is different for various mapping schemes.
   [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
 
+* `SProd.terms` now flattens out the terms if the base is a multi-term observable.
+  [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
+
 <h4>Mid-circuit measurements and dynamic circuits</h4>
 
 * The `default.qubit` device implements a depth-first tree-traversal algorithm to
