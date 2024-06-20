@@ -79,7 +79,9 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
     >>> print(pl_op)
     1.2 * X(0) + 2.4 * Z(1)
     """
+    _ = _import_of()
     return _from_openfermion_dispatch(openfermion_op, wires=None, tol=tol)
+
 
 @singledispatch
 def _from_openfermion_dispatch(of_op, wires=None, tol=1.0e-16):
@@ -88,7 +90,10 @@ def _from_openfermion_dispatch(of_op, wires=None, tol=1.0e-16):
         f"The input operator must be a FermionOperator or QubitOperator, got: {type(of_op)}."
     )
 
+
 openfermion = _import_of()
+
+
 @_from_openfermion_dispatch.register
 def _(openfermion_op: openfermion.FermionOperator, wires=None, tol=1.0e-16):
 
@@ -110,10 +115,16 @@ def _(openfermion_op: openfermion.FermionOperator, wires=None, tol=1.0e-16):
 
     return pl_op
 
+
 @_from_openfermion_dispatch.register
 def _(openfermion_op: openfermion.QubitOperator, wires=None, tol=1.0e-16):
 
-    return qml.dot(*_openfermion_to_pennylane(openfermion_op, wires=wires))
+    coeffs, pl_ops = _openfermion_to_pennylane(openfermion_op, tol=tol)
+
+    pennylane_op = qml.ops.LinearCombination(coeffs, pl_ops)
+
+    return pennylane_op
+
 
 def to_openfermion(
     pennylane_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=1.0e-16
@@ -144,6 +155,7 @@ def to_openfermion(
     1.2 [0^ 1] +
     3.1 [1^ 2]
     """
+    _ = _import_of()
     return _to_openfermion_dispatch(pennylane_op, wires=wires, tol=tol)
 
 
