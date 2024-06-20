@@ -94,8 +94,8 @@ class TestPrivateHelpers:
         op = NoMatOp("a")
         casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
         assert len(casted_to_list) == 2
-        assert qml.equal(casted_to_list[0], qml.PauliX("a"))
-        assert qml.equal(casted_to_list[1], qml.PauliY("a"))
+        qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
+        qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
 
     def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
@@ -114,11 +114,11 @@ class TestPrivateHelpers:
         op = RaggedDecompositionOp("a")
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
         assert len(final_decomp) == 5
-        assert qml.equal(final_decomp[0], qml.PauliX("a"))
-        assert qml.equal(final_decomp[1], qml.PauliY("a"))
-        assert qml.equal(final_decomp[2], qml.S("a"))
-        assert qml.equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
-        assert qml.equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
+        qml.assert_equal(final_decomp[0], qml.PauliX("a"))
+        qml.assert_equal(final_decomp[1], qml.PauliY("a"))
+        qml.assert_equal(final_decomp[2], qml.S("a"))
+        qml.assert_equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
+        qml.assert_equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
 
     def test_error_from_unsupported_operation(self):
         """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
@@ -359,7 +359,7 @@ class TestDecomposeTransformations:
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         for op, exp in zip(expanded_tape.circuit, expected + measurements):
-            assert qml.equal(op, exp)
+            qml.assert_equal(op, exp)
 
         assert tape.shots == expanded_tape.shots
 
@@ -372,7 +372,7 @@ class TestDecomposeTransformations:
         expanded_tape = expanded_tapes[0]
 
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
-            assert qml.equal(op, exp)
+            qml.assert_equal(op, exp)
 
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))
     def test_valdiate_measurements_non_commuting_measurements(self, validation_transform):

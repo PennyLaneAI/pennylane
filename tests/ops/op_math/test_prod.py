@@ -306,7 +306,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
         assert isinstance(decomposition, list)
         for op1, op2 in zip(decomposition, true_decomposition):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
@@ -319,7 +319,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
         tape = qml.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
@@ -452,7 +452,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert callable(prod_gen)
         prod_op = prod_gen()
         expected = prod(qml.RZ(1.1, 1), qml.CNOT([0, 1]), qml.Hadamard(0))
-        assert qml.equal(prod_op, expected)
+        qml.assert_equal(prod_op, expected)
         assert prod_op.wires == Wires([1, 0])
 
     def test_qfunc_single_operator(self):
@@ -478,8 +478,8 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.CNOT([0, 1])
 
         prod_gen = prod(qfunc)
-        assert qml.equal(prod_gen(1.1), prod(qml.CNOT([0, 1]), qml.RX(1.1, 0)))
-        assert qml.equal(
+        qml.assert_equal(prod_gen(1.1), prod(qml.CNOT([0, 1]), qml.RX(1.1, 0)))
+        qml.assert_equal(
             prod_gen(2.2, run_had=True), prod(qml.CNOT([0, 1]), qml.RX(2.2, 0), qml.Hadamard(0))
         )
 
@@ -494,7 +494,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         prod_op = prod_gen(1.1)
 
         assert prod_op.id == 123987  # id was set
-        assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
+        qml.assert_equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 
     def test_qfunc_init_only_works_with_one_qfunc(self):
         """Test that the qfunc init only occurs when one callable is passed to prod."""
@@ -504,7 +504,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.CNOT([0, 1])
 
         prod_op = prod(qfunc)()
-        assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.Hadamard(0)))
+        qml.assert_equal(prod_op, prod(qml.CNOT([0, 1]), qml.Hadamard(0)))
 
         def fn2():
             qml.PauliX(0)
@@ -521,7 +521,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.PauliX(0)
 
         prod_op = prod(qfunc)()
-        assert qml.equal(prod_op, qml.PauliX(0))
+        qml.assert_equal(prod_op, qml.PauliX(0))
         assert not isinstance(prod_op, Prod)
 
     @pytest.mark.xfail  # this requirement has been lifted
@@ -1139,7 +1139,7 @@ class TestSimplify:
         final_op = qml.PauliX(0)
         simplified_op = prod_op.simplify()
 
-        assert qml.equal(final_op, simplified_op)
+        qml.assert_equal(final_op, simplified_op)
 
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
@@ -1276,7 +1276,7 @@ class TestSimplify:
         final_op = qml.Identity(0)
         simplified_op = prod_op.simplify()
 
-        assert qml.equal(final_op, simplified_op)
+        qml.assert_equal(final_op, simplified_op)
 
     def test_grouping_with_product_of_sum(self):
         """Test that grouping works with product of a sum"""
@@ -1323,7 +1323,7 @@ class TestSimplify:
     def test_grouping_with_only_visual_barriers(self):
         """Test that grouping is implemented when an only-visual barrier is present."""
         prod_op = qml.prod(qml.S(0), qml.Barrier(0, only_visual=True), qml.S(0)).simplify()
-        assert qml.equal(prod_op.simplify(), qml.PauliZ(0))
+        qml.assert_equal(prod_op.simplify(), qml.PauliZ(0))
 
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
@@ -1336,7 +1336,7 @@ class TestSimplify:
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -1370,7 +1370,7 @@ class TestSimplify:
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
 
 class TestWrapperFunc:
@@ -1614,7 +1614,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
         """Test that the sorting alforithm works for operators that act on multiple wires."""
@@ -1643,7 +1643,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting alforithm works using a wire map."""

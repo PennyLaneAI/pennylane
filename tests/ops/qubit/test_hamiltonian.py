@@ -761,7 +761,7 @@ class TestHamiltonian:
         assert data[1] is H._ops
 
         new_H = qml.Hamiltonian._unflatten(*H._flatten())
-        assert qml.equal(H, new_H)
+        qml.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
@@ -961,7 +961,7 @@ class TestHamiltonian:
                 qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
             ],
         )
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
     def test_hamiltonian_matmul(self, H1, H2, H):
@@ -1090,7 +1090,7 @@ class TestHamiltonian:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 

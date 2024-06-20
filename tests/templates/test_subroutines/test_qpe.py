@@ -125,18 +125,18 @@ class TestDecomposition:
         assert len(qscript) == len(qscript2)
         # qml.equal doesn't work for Adjoint or Pow op yet, so we stop before we get to it.
         for op1, op2 in zip(qscript[:2], qscript2[:2]):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
-        assert qml.equal(qscript[2].base.base, qscript2[2].base.base)
+        qml.assert_equal(qscript[2].base.base, qscript2[2].base.base)
         assert qscript[2].base.z, qscript2[2].base.z
         assert qscript[2].control_wires == qscript2[2].control_wires
 
-        assert qml.equal(qscript[3].base.base, qscript2[3].base.base)
+        qml.assert_equal(qscript[3].base.base, qscript2[3].base.base)
         assert qscript[3].base.z == qscript2[3].base.z
         assert qscript[3].control_wires == qscript2[3].control_wires
 
         assert isinstance(qscript[-1], qml.ops.op_math.Adjoint)  # pylint: disable=no-member
-        assert qml.equal(qscript[-1].base, qml.QFT(wires=(1, 2)))
+        qml.assert_equal(qscript[-1].base, qml.QFT(wires=(1, 2)))
 
         assert np.allclose(qscript[1].matrix(), qscript[1].matrix())
         assert np.allclose(qscript[3].matrix(), qscript[3].matrix())

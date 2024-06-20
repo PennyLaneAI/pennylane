@@ -599,7 +599,7 @@ class DefaultMixed(QubitDevice):
 
     def _snapshot_measurements(self, density_matrix, measurement):
         """Perform state-based snapshot measurement"""
-        meas_wires = measurement.wires
+        meas_wires = self.wires if not measurement.wires else measurement.wires
 
         pre_rotated_state = self._state
         if isinstance(measurement, (ProbabilityMP, ExpectationMP, VarianceMP)):
@@ -664,15 +664,13 @@ class DefaultMixed(QubitDevice):
         if self._debugger and self._debugger.active:
             dim = 2**self.num_wires
             density_matrix = qnp.reshape(self._state, (dim, dim))
-            snap_result = density_matrix
 
-            if measurement:
-                snap_result = self._snapshot_measurements(density_matrix, measurement)
+            snapshot_result = self._snapshot_measurements(density_matrix, measurement)
 
             if operation.tag:
-                self._debugger.snapshots[operation.tag] = snap_result
+                self._debugger.snapshots[operation.tag] = snapshot_result
             else:
-                self._debugger.snapshots[len(self._debugger.snapshots)] = snap_result
+                self._debugger.snapshots[len(self._debugger.snapshots)] = snapshot_result
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.

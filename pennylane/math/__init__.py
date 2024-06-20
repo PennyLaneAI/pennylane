@@ -69,6 +69,7 @@ from .multi_dispatch import (
 from .quantum import (
     cov_matrix,
     dm_from_state_vector,
+    expectation_value,
     marginal_prob,
     mutual_info,
     partial_trace,
@@ -152,6 +153,7 @@ __all__ = [
     "dot",
     "einsum",
     "expand_matrix",
+    "expectation_value",
     "eye",
     "fidelity",
     "fidelity_statevector",
