@@ -36,6 +36,11 @@ inputs:
     description: Indicate if PennyLane-Lightning should be installed from the master branch
     required: false
     default: 'true'
+  install_catalyst_test_pypi:
+    description: Indicate if catalyst should be installed from the test pypi location
+    required: false
+    type: boolean
+    default: false
   additional_pip_packages:
     description: Additional packages to install. Values will be passed to pip install {value}
     required: false
@@ -99,6 +104,11 @@ runs:
       shell: bash
       if: inputs.install_pennylane_lightning_master == 'true'
       run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+
+    - name: Install Catalyst from Test Pypi
+      shell: bash
+      if: inputs.install_catalyst_test_pypi
+      run: pip install -i https://test.pypi.org/simple/ PennyLane-Catalyst==0.7.0.dev0 --upgrade;
 
     - name: Freeze dependencies
       shell: bash

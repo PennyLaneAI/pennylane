@@ -64,6 +64,11 @@ on:
         required: false
         type: boolean
         default: true
+      install_catalyst_test_pypi:
+        description: Indicate if catalyst should be installed from the test pypi location
+        required: false
+        type: boolean
+        default: false
       pytest_test_directory:
         description: The directory where the PennyLane tests are that should be run by PyTest
         required: false
@@ -148,6 +153,7 @@ jobs:
           install_jax: ${{ inputs.install_jax }}
           additional_pip_packages: ${{ inputs.additional_pip_packages }}
           install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
+          install_catalyst_test_pypi: ${{ inputs.install_catalyst_test_pypi }}
           requirements_file: ${{ inputs.requirements_file }}
 
       - name: Set PyTest Args

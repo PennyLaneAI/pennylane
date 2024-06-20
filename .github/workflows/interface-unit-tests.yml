@@ -335,6 +335,38 @@ jobs:
       requirements_file: ${{ strategy.job-index == 0 && 'all_interfaces.txt' || '' }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
+  catalyst-tests:
+    needs:
+      - setup-ci-load
+    strategy:
+      max-parallel: >-
+        ${{
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).catalyst-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
+         }}
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-ci-load.outputs.python-version).catalyst-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
+           }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'catalyst-tests') }}
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      job_name: catalyst-tests (${{ matrix.python-version }})
+      branch: ${{ inputs.branch }}
+      coverage_artifact_name: catalyst-tests-coverage
+      python_version: ${{ matrix.python-version }}
+      pipeline_mode: ${{ inputs.pipeline_mode }}
+      install_jax: true
+      install_tensorflow: false
+      install_pytorch: false
+      install_pennylane_lightning_master: True
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_markers: catalyst
+      additional_pip_packages: matplotlib
+      requirements_file: ${{ strategy.job-index == 0 && 'catalyst.txt' || '' }}
+      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
   external-libraries-tests:
     needs:
