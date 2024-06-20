@@ -45,7 +45,7 @@ def _import_of():
     return openfermion
 
 
-def from_openfermion(openfermion_op, wires=None, tol=1e-16):
+def from_openfermion(openfermion_op, tol=1e-16):
     r"""Convert OpenFermion
     `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__
     and `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__
@@ -100,18 +100,11 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
 
         return pl_op
 
-    elif isinstance(openfermion_op, openfermion.QubitOperator):
+    coeffs, pl_ops = _openfermion_to_pennylane(openfermion_op, tol=tol)
 
-        coeffs, pl_ops = _openfermion_to_pennylane(openfermion_op, tol=tol)
+    pennylane_op = qml.ops.LinearCombination(coeffs, pl_ops)
 
-        pennylane_op = qml.ops.LinearCombination(coeffs, pl_ops)
-
-        return pennylane_op
-
-    else:
-        raise ValueError(
-            f"The input operator must be a QubitOperator or FermionOperator, got: {type(openfermion_op)}."
-        )
+    return pennylane_op
 
 
 def to_openfermion(

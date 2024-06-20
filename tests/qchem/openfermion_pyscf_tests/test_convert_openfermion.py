@@ -92,16 +92,6 @@ class TestFromOpenFermion:
 
         assert isinstance(qml.from_openfermion(q_op), qml.ops.LinearCombination)
 
-    # def test_invalid_format_qubit(self):
-    #     """Test if error is raised if format is invalid."""
-    #     q_op = openfermion.QubitOperator("X0")
-    #
-    #     with pytest.raises(
-    #         ValueError,
-    #         match="format must be a Sum or LinearCombination, got: invalid_format",
-    #     ):
-    #         _from_openfermion_qubit(q_op, format="invalid_format")
-
     # PennyLane operators were obtained from openfermion operators manually
     @pytest.mark.parametrize(
         ("of_op", "pl_op"),
