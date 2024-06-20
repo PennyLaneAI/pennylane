@@ -7,7 +7,8 @@ Gradients and training
 ======================
 
 PennyLane offers seamless integration between classical and quantum computations. Code up quantum
-circuits in PennyLane, compute :doc:`gradients of quantum circuits <glossary/quantum_gradient>`, and
+circuits in PennyLane, compute `gradients of quantum circuits 
+<https://pennylane.ai/qml/glossary/quantum_gradient>`_, and
 connect them easily to the top scientific computing and machine learning libraries.
 
 Training and interfaces
@@ -182,8 +183,8 @@ The interface between PennyLane and automatic differentiation libraries relies o
 to compute or estimate gradients of quantum circuits. There are different strategies to do so, and they may
 depend on the device used.
 
-When creating a QNode, you can specify the :doc:`differentiation method
-<glossary/quantum_differentiable_programming>` like this:
+When creating a QNode, you can specify the `differentiation method
+<https://pennylane.ai/qml/glossary/quantum_differentiable_programming>`_ like this:
 
 .. code-block:: python
 
@@ -230,8 +231,8 @@ However, when using a simulator, you may notice that the number of circuit execu
 compute the gradients with these methods :doc:`scales linearly <demos/tutorial_backprop>`
 with the number of trainable circuit parameters.
 
-* ``"parameter-shift"``: Use the analytic :doc:`parameter-shift rule
-  <glossary/parameter_shift>` for all supported quantum operation arguments, with
+* ``"parameter-shift"``: Use the analytic `parameter-shift rule
+  <https://pennylane.ai/qml/glossary/parameter_shift>`_ for all supported quantum operation arguments, with
   finite-difference as a fallback.
 
 * ``"finite-diff"``: Use numerical finite-differences for all quantum operation arguments.

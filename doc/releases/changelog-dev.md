@@ -408,6 +408,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Move information about mid-circuit measurements from the measurements quickstart page to its own
+  [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
+  [(#5870)](https://github.com/PennyLaneAI/pennylane/pull/5870)
+
 * The documentation for the `default.tensor` device has been added.
   [(#5719)](https://github.com/PennyLaneAI/pennylane/pull/5719)
 
