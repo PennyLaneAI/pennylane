@@ -439,8 +439,8 @@ def from_qasm(quantum_circuit: str, measurements=False):
         that will **override** any terminal measurements present in the QASM code,
         so that they are not performed before the operations specified in ``measurements``.
 
-    If the existing QASM code already contains measurements, set `measurements=None` so that
-    `from_qasm` returns those measurements. By default, `from_qasm` will remove any measurements
+    If the existing QASM code already contains measurements, set ``measurements=None`` so that
+    ``from_qasm`` returns those measurements. By default, ``from_qasm`` will remove any measurements
     that are present in the QASM code.
 
     .. warning::
