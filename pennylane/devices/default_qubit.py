@@ -85,6 +85,9 @@ def observable_accepts_sampling(obs: qml.operation.Operator) -> bool:
     if isinstance(obs, qml.ops.CompositeOp):
         return all(observable_accepts_sampling(o) for o in obs.operands)
 
+    if isinstance(obs, qml.ops.Hamiltonian):
+        return all(observable_accepts_sampling(o) for o in obs.ops)
+
     if isinstance(obs, qml.operation.Tensor):
         return all(observable_accepts_sampling(o) for o in obs.obs)
 
@@ -96,6 +99,12 @@ def observable_accepts_analytic(obs: qml.operation.Operator, is_expval=False) ->
 
     if isinstance(obs, qml.ops.CompositeOp):
         return all(observable_accepts_analytic(o, is_expval) for o in obs.operands)
+
+    if isinstance(obs, qml.ops.Hamiltonian):
+        return all(observable_accepts_analytic(o, is_expval) for o in obs.ops)
+
+    if isinstance(obs, qml.operation.Tensor):
+        return all(observable_accepts_analytic(o, is_expval) for o in obs.obs)
 
     if obs.has_diagonalizing_gates:
         return True
