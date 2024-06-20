@@ -16,7 +16,7 @@ import copy
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
-from dataclasses import replace
+from dataclasses import asdict, replace
 from functools import partial
 from typing import Callable, Tuple
 
@@ -975,23 +975,8 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
 
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def cry_qnode_deferred(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
-            qml.CRY(x, wires=[0, 1])
-            return qml.sample(qml.PauliZ(1))
-
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def conditional_ry_qnode_deferred(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.sample(qml.PauliZ(1))
+        cry_qnode_deferred = qml.defer_measurements(cry_qnode)
+        conditional_ry_qnode_deferred = qml.defer_measurements(conditional_ry_qnode)
 
         r1 = cry_qnode_deferred(first_par)
         r2 = conditional_ry_qnode_deferred(first_par)
@@ -1014,7 +999,6 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(1))
 
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        @qml.defer_measurements
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
@@ -1024,9 +1008,12 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
+        dm_conditional_ry_qnode = qml.defer_measurements(conditional_ry_qnode)
+
         x_ = -0.654
         x1 = tf.Variable(x_, dtype=tf.float64)
         x2 = tf.Variable(x_, dtype=tf.float64)
+        x3 = tf.Variable(x_, dtype=tf.float64)
 
         with tf.GradientTape() as tape1:
             r1 = cry_qnode(x1)
@@ -1034,11 +1021,17 @@ class TestIntegration:
         with tf.GradientTape() as tape2:
             r2 = conditional_ry_qnode(x2)
 
+        with tf.GradientTape() as tape3:
+            r3 = dm_conditional_ry_qnode(x3)
+
         assert np.allclose(r1, r2)
+        assert np.allclose(r1, r3)
 
         grad1 = tape1.gradient(r1, x1)
         grad2 = tape2.gradient(r2, x2)
+        grad3 = tape3.gradient(r3, x3)
         assert np.allclose(grad1, grad2)
+        assert np.allclose(grad1, grad3)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
@@ -1719,19 +1712,21 @@ class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
-    def test_one_shot_error_without_shots(self, dev_name):
-        """Test that an error is raised if mcm_method="one-shot" with no shots"""
+    @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+    def test_one_shot_error_without_shots(self, dev_name, mcm_method):
+        """Test that an error is raised if mcm_method="one-shot"/"tree-traversal" with no shots"""
         dev = qml.device(dev_name, wires=3)
         param = np.pi / 4
 
-        @qml.qnode(dev, mcm_method="one-shot")
+        @qml.qnode(dev, mcm_method=mcm_method)
         def f(x):
             qml.RX(x, 0)
             _ = qml.measure(0)
             return qml.probs(wires=[0, 1])
 
         with pytest.raises(
-            ValueError, match="Cannot use the 'one-shot' method for mid-circuit measurements with"
+            ValueError,
+            match=f"Cannot use the '{mcm_method}' method for mid-circuit measurements with",
         ):
             _ = f(param)
 
@@ -1838,6 +1833,32 @@ class TestMCMConfiguration:
         param = np.pi / 4
         with pytest.raises(ValueError, match="Cannot use mcm_method='single-branch-statistics'"):
             _ = circuit(param)
+
+    @pytest.mark.parametrize("postselect_mode", [None, "fill-shots", "hw-like"])
+    @pytest.mark.parametrize("mcm_method", [None, "one-shot", "deferred"])
+    def test_execution_does_not_mutate_config(self, mcm_method, postselect_mode):
+        """Test that executing a QNode does not mutate its mid-circuit measurement config options"""
+        dev = qml.device("default.qubit", wires=2)
+
+        original_config = qml.devices.MCMConfig(
+            postselect_mode=postselect_mode, mcm_method=mcm_method
+        )
+
+        @qml.qnode(dev, **asdict(original_config))
+        def circuit(x, mp):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=1)
+            return mp(qml.PauliZ(0))
+
+        _ = circuit(1.8, qml.expval, shots=10)
+        assert circuit.execute_kwargs["mcm_config"] == original_config
+
+        if mcm_method != "one-shot":
+            _ = circuit(1.8, qml.expval)
+            assert circuit.execute_kwargs["mcm_config"] == original_config
+
+        _ = circuit(1.8, qml.expval, shots=10)
+        assert circuit.execute_kwargs["mcm_config"] == original_config
 
 
 class TestTapeExpansion:

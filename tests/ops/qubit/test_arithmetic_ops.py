@@ -269,7 +269,7 @@ class TestIntegerComparator:
         assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(new_op, op)
+        qml.assert_equal(new_op, op)
         assert new_op is not op
 
     @pytest.mark.parametrize(

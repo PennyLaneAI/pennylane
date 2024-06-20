@@ -564,6 +564,22 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
+    def test_construct(self, get_circuit, n_qubits):
+        """Test that the construct method builds the correct tape with correct differentiability"""
+        c, w = get_circuit
+        layer = TorchLayer(c, w)
+
+        x = torch.ones(n_qubits)
+
+        layer.construct((x,), {})
+
+        assert layer.tape is not None
+        assert (
+            len(layer.tape.get_parameters(trainable_only=False))
+            == len(layer.tape.get_parameters(trainable_only=True)) + 1
+        )
+
 
 @pytest.mark.parametrize(
     "num_qubits, weight_shapes",
@@ -943,7 +959,8 @@ def test_specs():
 
     assert info["num_observables"] == 2
     assert info["num_diagonalizing_gates"] == 0
-    assert info["num_device_wires"] == 2
-    assert info["num_trainable_params"] == 0
+    assert info["num_device_wires"] == 3
+    assert info["num_tape_wires"] == 2
+    assert info["num_trainable_params"] == 2
     assert info["interface"] == "torch"
     assert info["device_name"] == "default.qubit"
