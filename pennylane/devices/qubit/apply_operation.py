@@ -378,8 +378,8 @@ def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debu
 def apply_global_phase(
     op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None, **_
 ):
-    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
-    return qml.math.exp(-1j * qml.math.cast(op.data[0], complex)) * state
+    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1.0j * op.data[0])``"""
+    return qml.math.exp(-1.0j * qml.math.cast(op.data[0], complex)) * state
 
 
 @apply_operation.register
@@ -392,12 +392,19 @@ def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None
 @apply_operation.register
 def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply pauliz to state."""
-    return apply_operation(
-        qml.PhaseShift(np.pi, op.wires),
-        state,
-        is_state_batched=is_state_batched,
-        debugger=debugger,
-    )
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    # must be first state and then -1 because it breaks otherwise
+    state1 = math.multiply(state[sl_1], -1)
+    return math.stack([state[sl_0], state1], axis=axis)
 
 
 @apply_operation.register
@@ -428,7 +435,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     sl_1 = _get_slice(1, axis, n_dim)
 
     # must be first state and then -1 because it breaks otherwise
-    state1 = math.multiply(state[sl_1], math.exp(1j * params))
+    state1 = math.multiply(state[sl_1], math.exp(1.0j * params))
     state = math.stack([state[sl_0], state1], axis=axis)
     if op.batch_size == 1:
         state = math.stack([state], axis=0)
@@ -438,23 +445,37 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 @apply_operation.register
 def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply T to state."""
-    return apply_operation(
-        qml.PhaseShift(np.pi / 4, op.wires),
-        state,
-        is_state_batched=is_state_batched,
-        debugger=debugger,
-    )
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    # must be first state and then -1 because it breaks otherwise
+    state1 = math.multiply(state[sl_1], math.exp(0.25j * np.pi))
+    return math.stack([state[sl_0], state1], axis=axis)
 
 
-@apply_operation.register
-def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_):
-    """Apply S to state."""
-    return apply_operation(
-        qml.PhaseShift(np.pi / 2, op.wires),
-        state,
-        is_state_batched=is_state_batched,
-        debugger=debugger,
-    )
+# @apply_operation.register
+# def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_):
+#     """Apply T to state."""
+
+#     axis = op.wires[0] + is_state_batched
+#     n_dim = math.ndim(state)
+
+#     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+#         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+#     sl_0 = _get_slice(0, axis, n_dim)
+#     sl_1 = _get_slice(1, axis, n_dim)
+
+#     # must be first state and then -1 because it breaks otherwise
+#     state1 = math.multiply(state[sl_1], 1.0j)
+#     return math.stack([state[sl_0], state1], axis=axis)
 
 
 @apply_operation.register
@@ -687,7 +708,7 @@ def _evolve_state_vector_under_parametrized_evolution(
 
     def fun(y, t):
         """dy/dt = -i H(t) y"""
-        return (-1j * H_jax(operation.data, t=t)) @ y
+        return (-1.0j * H_jax(operation.data, t=t)) @ y
 
     result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
     if operation.hyperparameters["return_intermediate"]:
