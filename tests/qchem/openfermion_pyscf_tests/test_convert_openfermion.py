@@ -88,6 +88,23 @@ class TestFromOpenFermion:
         converted_pl_op = qml.from_openfermion(of_op, wires=wires)
         assert converted_pl_op.compare(pl_op)
 
+    OPS_FERMI = (
+        ((openfermion.FermionOperator("0^ 1")), ({0: "a", 1: 2})),
+        (
+            (openfermion.FermionOperator("0^ 1") + openfermion.FermionOperator("3^ 4^")),
+            ({0: "a", 3: 2}),
+        ),
+    )
+
+    @pytest.mark.parametrize("of_op, wires", OPS_FERMI)
+    def test_wires_fermionic(self, of_op, wires):
+        """Test that an error is raised for mapping wires in fermionic operators."""
+        with pytest.raises(
+            ValueError,
+            match=f"Custom wire mapping is not supported for fermionic operators.",
+        ):
+            qml.from_openfermion(of_op, wires=wires)
+
     def test_tol_qubit(self):
         """Test with complex coefficients."""
         q_op = openfermion.QubitOperator("X0", complex(1.0, 1e-8)) + openfermion.QubitOperator(
@@ -320,3 +337,20 @@ class TestToOpenFermion:
             qml.to_openfermion(
                 pl_op,
             )
+
+    OPS_FERMI_WIRE = (
+        ((qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"})), ({0: "a", 1: 2})),
+        (
+            (qml.fermi.FermiSentence({qml.fermi.FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2})),
+            ({0: "a", 1: 2}),
+        ),
+    )
+
+    @pytest.mark.parametrize("pl_op, wires", OPS_FERMI_WIRE)
+    def test_wires_fermionic_error(self, pl_op, wires):
+        """Test that an error is raised for mapping wires in fermionic operators."""
+        with pytest.raises(
+            ValueError,
+            match=f"Custom wire mapping is not supported for fermionic operators.",
+        ):
+            qml.to_openfermion(pl_op, wires=wires)
