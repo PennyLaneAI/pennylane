@@ -19,6 +19,7 @@ import warnings
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
+
 import pennylane as qml
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
@@ -442,7 +443,7 @@ def from_qasm(quantum_circuit: str, measurements=False):
     `from_qasm` returns those measurements. By default, `from_qasm` will remove any measurements
     that are present in the QASM code.
 
-    .. warnings::
+    .. warning::
 
         The current default behaviour of excluding measurements in the QASM code is deprecated
         and will be changed in a future release. Starting in version ``0.38``, ``from_qasm``
