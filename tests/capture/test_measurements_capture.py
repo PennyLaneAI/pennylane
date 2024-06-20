@@ -485,14 +485,11 @@ class TestSample:
         shapes = _get_shapes_for(
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=4
         )
-        if isinstance(wires, list):
-            assert shapes[0] == jax.core.ShapedArray(
-                (50, dim1_len), jax.numpy.int64 if x64_mode else jax.numpy.int32
-            )
-        else:
-            assert shapes[0] == jax.core.ShapedArray(
-                (50,), jax.numpy.int64 if x64_mode else jax.numpy.int32
-            )
+        assert len(shapes) == 1
+        shape = (50, dim1_len) if isinstance(wires, list) else (50,)
+        assert shapes[0] == jax.core.ShapedArray(
+            shape, jax.numpy.int64 if x64_mode else jax.numpy.int32
+        )
 
         with pytest.raises(ValueError, match="finite shots are required"):
             jaxpr.out_avals[0].abstract_eval(shots=None, num_device_wires=4)
