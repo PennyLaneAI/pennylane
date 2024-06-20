@@ -21,9 +21,7 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane.capture.capture_qnode import _get_qnode_prim
-
-qnode_prim = _get_qnode_prim()
+from pennylane.capture import qnode_prim
 
 pytestmark = pytest.mark.jax
 

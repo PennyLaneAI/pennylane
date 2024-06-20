@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import _get_abstract_measurement
+from pennylane.capture import AbstractMeasurement
 from pennylane.measurements import (
     ClassicalShadowMP,
     DensityMatrixMP,
@@ -39,8 +39,6 @@ from pennylane.measurements import (
 jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.jax
-
-AbstractMeasurement = _get_abstract_measurement()
 
 
 @pytest.fixture(autouse=True)

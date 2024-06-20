@@ -18,13 +18,11 @@ Integration tests for the capture of pennylane operations into jaxpr.
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import _get_abstract_operator
+from pennylane.capture import AbstractOperator
 
 jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.jax
-
-AbstractOperator = _get_abstract_operator()
 
 
 @pytest.fixture(autouse=True)
