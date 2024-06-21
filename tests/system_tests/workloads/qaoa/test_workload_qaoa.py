@@ -105,12 +105,11 @@ def cut_decorator(use_qcut=False):
     return inner_func
 
 
-def create_workload(dev_name, diff_method, shots, cut_circuit):
+def create_workload(dev_name, diff_method, shots, cut_circuit, layers):
     "Create QAOA workload for QCUT paper example targeting Lightning"
     r = 2  # number of clusters
-    n = 3  # nodes in clusters
+    n = 2  # nodes in clusters
     k = 1  # vertex separators
-    layers = 1  # QAOA application layers
 
     q1 = 0.7
     q2 = 0.3
@@ -174,22 +173,22 @@ def create_workload(dev_name, diff_method, shots, cut_circuit):
 ###############################################################################
 
 
-def workload_non_catalyst(params, valid_results, diff_method, shots, cut_circuit):
+def workload_non_catalyst(params, valid_results, diff_method, shots, cut_circuit, layers=1):
     "Run gradient workload directly with PennyLane and Lightning, comparing results against the input"
-    lq_qnode = create_workload("lightning.qubit", diff_method, shots, cut_circuit)
+    lq_qnode = create_workload("lightning.qubit", diff_method, shots, cut_circuit, layers)
     assert pnp.allclose(valid_results, qml.grad(lq_qnode)(params), rtol=1e-3)
 
 
-def workload_catalyst(params, valid_results, diff_method, shots, cut_circuit):
+def workload_catalyst(params, valid_results, diff_method, shots, cut_circuit, layers=1):
     "Run gradient workload with PennyLane, Lightning, and Catalyst, comparing results against the input"
-    lq_qnode = create_workload("lightning.qubit", diff_method, shots, cut_circuit)
+    lq_qnode = create_workload("lightning.qubit", diff_method, shots, cut_circuit, layers)
     local_params = jax.numpy.array(params)
     assert pnp.allclose(valid_results, catalyst.grad(qml.qjit(lq_qnode))(params), rtol=1e-3)
 
 
-def dq_workload(diff_method, shots, cut_circuit):
-    params = pnp.array([[7.20792567e-01, 1.02761748e-04]], requires_grad=True)
-    dq_qnode = create_workload("default.qubit", diff_method, shots, cut_circuit)
+def dq_workload(diff_method, shots, cut_circuit, layers=1):
+    params = pnp.array([[7.20792567e-01, 1.02761748e-04]] * layers, requires_grad=True)
+    dq_qnode = create_workload("default.qubit", diff_method, shots, cut_circuit, layers)
     dq_grad = qml.grad(dq_qnode)(params)
     return dq_grad, params
 
@@ -199,24 +198,25 @@ def dq_workload(diff_method, shots, cut_circuit):
 ###############################################################################
 
 
-@pytest.mark.parametrize("use_jit", [True])
+@pytest.mark.parametrize("layers", [1, 2])
+@pytest.mark.parametrize("use_jit", [False, True])
 @pytest.mark.parametrize(
     "diff_method, shots",
     [
         ("best", None),
-        # ("adjoint", None),
-        # ("adjoint", None),
-        # ("parameter-shift", None),
-        # ("parameter-shift", 10000),
+        ("adjoint", None),
+        ("adjoint", None),
+        ("parameter-shift", None),
+        ("parameter-shift", 10000),
     ],
 )
-@pytest.mark.parametrize("cut_ciruit", [True])
-def test_QAOA_layers_scaling(use_jit, diff_method, shots, cut_ciruit):
+@pytest.mark.parametrize("cut_ciruit", [False, True])
+def test_QAOA_layers_scaling(layers, use_jit, diff_method, shots, cut_ciruit):
     "Run the example workload over the given parameters"
 
-    dq_grad, params = dq_workload(diff_method, shots, cut_ciruit)
+    dq_grad, params = dq_workload(diff_method, shots, cut_ciruit, layers)
 
     if use_jit:
-        workload_catalyst(params, dq_grad, diff_method, shots, cut_ciruit)
+        workload_catalyst(params, dq_grad, diff_method, shots, cut_ciruit, layers)
     else:
-        workload_non_catalyst(params, dq_grad, diff_method, shots, cut_ciruit)
+        workload_non_catalyst(params, dq_grad, diff_method, shots, cut_ciruit, layers)
