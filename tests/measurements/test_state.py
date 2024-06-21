@@ -145,7 +145,7 @@ class TestStateMP:
         with pytest.raises(
             ValueError, match="Processing from density matrix to state is not supported."
         ):
-            processed = mp.process_density_matrix(dm, [0, 1])
+            mp.process_density_matrix(dm, [0, 1])
 
 
 class TestDensityMatrixMP:
