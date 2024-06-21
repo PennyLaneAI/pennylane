@@ -149,7 +149,7 @@
 
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
-  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
+  [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
@@ -377,6 +377,9 @@
 * `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
+
+* `qml.qsvt()` now supports jax arrays with angle conversions. 
+  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5853)
 
 <h3>Breaking changes 💔</h3>
 
