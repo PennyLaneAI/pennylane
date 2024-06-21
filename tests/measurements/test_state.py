@@ -130,16 +130,10 @@ class TestStateMP:
             StateMP(wires=[0, 1]).process_state([1, 0], wire_order=Wires(2))
 
     @pytest.mark.parametrize(
-        "dm, expected",
-        [
-            (
-                np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531
-                + 0.0j,
-                np.array([0.0433963, 0.0, 0.0433963, 0.99811498]),
-            )
-        ],
+        "dm",
+        [(np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j)],
     )
-    def test_process_density_matrix(self, dm, expected):
+    def test_process_density_matrix(self, dm):
         """Test the processing of a state vector."""
 
         mp = StateMP(wires=None)
