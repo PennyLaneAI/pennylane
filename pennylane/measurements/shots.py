@@ -215,7 +215,7 @@ class Shots:
             for _ in range(shot_copy.copies):
                 yield shot_copy.shots
 
-    def __all_tuple_init__(self, shots: Sequence[Tuple], merge_repeated):
+    def __all_tuple_init__(self, shots: Sequence[Tuple], merge_repeated=True):
         res = []
         total_shots = 0
         current_shots, current_copies = shots[0]
