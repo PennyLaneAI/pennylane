@@ -15,7 +15,6 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from copy import copy
 from typing import Generic, Hashable, Optional, TypeVar, Union
 
 import pennylane as qml
@@ -311,8 +310,12 @@ class MidMeasureMP(MeasurementProcess):
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
-        new_measurement = copy(self)
-        new_measurement._wires = qml.wires.Wires(wire_map[self._wires[0]])
+        new_measurement = MidMeasureMP(
+            wire_map.get(self.wires[0], self.wires[0]),
+            reset=self.reset,
+            postselect=self.postselect,
+            id=self.id,
+        )
         new_mv = MeasurementValue([new_measurement], processing_fn=lambda v: v)
         new_measurement.mv = new_mv
         return new_measurement
