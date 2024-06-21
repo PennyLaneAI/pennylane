@@ -554,6 +554,12 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 else:
                     single_term_obs_mps[sm] = ([mp_idx], [c])
         else:
+            if isinstance(obs, SProd):
+                obs = obs.simplify()
+            if isinstance(obs, (Hamiltonian, Sum)):
+                raise RuntimeError(
+                    f"Cannot split up terms in sums for MeasurementProcess {type(mp)}"
+                )
             # For all other measurement types, simply add them to the list of measurements.
             if mp not in single_term_obs_mps:
                 single_term_obs_mps[mp] = ([mp_idx], [1])

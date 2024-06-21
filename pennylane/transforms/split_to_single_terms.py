@@ -51,18 +51,16 @@ def split_to_single_terms(tape):
         tape.operations, measurements=list(single_term_obs_mps), shots=tape.shots
     )
 
-    def post_processing_fn(res):
+    print(new_tape.measurements)
 
-        res = res[0]
-        # res dimensions are: (len(new_measurements), tape.batch_size, shots), or with
-        # partitioned shots: (tape.shots.num_copies, len(new_measurements), tape.batch_size, shots)
+    def post_processing_fn(res):
 
         process_shot_copy = partial(
             process_tape_results_from_shot_copy,
-            single_term_obs_mps,
-            offsets,
-            tape.shots,
-            tape.batch_size,
+            single_term_obs_mps=single_term_obs_mps,
+            offsets=offsets,
+            shots=tape.shots,
+            batch_size=tape.batch_size,
         )
 
         if tape.shots.has_partitioned_shots:
@@ -80,6 +78,12 @@ def process_tape_results_from_shot_copy(
     batch_size: int,
 ):
     """Placeholder docstring for pylint"""
+
+    # remove the extra dimension added by nesting the single tape as (tape,)
+    res = res[0]
+
+    # res dimensions are: (len(new_measurements), tape.batch_size, shots), or with
+    # partitioned shots: (tape.shots.num_copies, len(new_measurements), tape.batch_size, shots)
 
     res_batch_for_each_mp = [[] for _ in offsets]
     coeffs_for_each_mp = [[] for _ in offsets]
