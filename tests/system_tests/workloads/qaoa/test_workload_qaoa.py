@@ -25,7 +25,6 @@ The workload is first run with default.qubit, and then compared against the othe
 """
 from typing import List, Optional, Tuple
 
-import catalyst
 import networkx as nx
 import pytest
 
@@ -33,6 +32,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 jax = pytest.importorskip("jax")
+catalyst = pytest.importorskip("catalyst")
 pytestmark = [pytest.mark.catalyst, pytest.mark.external, pytest.mark.system, pytest.mark.slow]
 
 ###############################################################################
