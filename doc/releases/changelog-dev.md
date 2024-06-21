@@ -305,6 +305,10 @@
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
+  
+* The `qml.data` module now supports PyTree data types as dataset attributes
+  [(#5732)](https://github.com/PennyLaneAI/pennylane/pull/5732)
+
 
 * `qml.ops.Conditional` now inherits from `qml.ops.SymbolicOp`, thus it inherits several useful common functionalities. Other properties such as adjoint and diagonalizing gates have been added using the `base` properties.
   [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
@@ -572,6 +576,7 @@ Utkarsh Azad,
 Lillian M. A. Frederiksen,
 Ludmila Botelho,
 Gabriel Bottrill,
+Jack Brown,
 Astral Cai,
 Ahmed Darwish,
 Isaac De Vlugt,
