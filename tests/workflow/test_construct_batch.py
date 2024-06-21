@@ -105,7 +105,7 @@ class TestTransformProgramGetter:
         p_none = get_transform_program(circuit, None)
         assert p_dev == p_default
         assert p_none == p_dev
-        assert len(p_dev) == 9
+        assert len(p_dev) == 8
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
         assert p_dev == p_grad + dev.preprocess(config)[0]
 
