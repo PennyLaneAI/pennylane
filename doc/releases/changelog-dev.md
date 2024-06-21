@@ -97,6 +97,7 @@
   OpenFermion and PennyLane objects.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
   [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+  [(#5881)](https://github.com/PennyLaneAI/pennylane/pull/5881)
 
   ```python
   of_op = openfermion.FermionOperator('0^ 2')
@@ -148,7 +149,7 @@
 
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
-  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
+  [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
@@ -278,6 +279,7 @@
   [(#5708)](https://github.com/PennyLaneAI/pennylane/pull/5708)
   [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
   [(#5686)](https://github.com/PennyLaneAI/pennylane/pull/5686)
+  [(#5889)](https://github.com/PennyLaneAI/pennylane/pull/5889)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised,
   allowing error types to be more consistent with the context the `decompose` function is used in.
@@ -301,6 +303,10 @@
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
+  
+* The `qml.data` module now supports PyTree data types as dataset attributes
+  [(#5732)](https://github.com/PennyLaneAI/pennylane/pull/5732)
+
 
 * `qml.ops.Conditional` now inherits from `qml.ops.SymbolicOp`, thus it inherits several useful common functionalities. Other properties such as adjoint and diagonalizing gates have been added using the `base` properties.
   [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
@@ -368,6 +374,9 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
+* `qml.qsvt()` now supports jax arrays with angle conversions. 
+  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5853)
+
 <h3>Breaking changes 💔</h3>
 
 * Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
@@ -405,6 +414,9 @@
 
 * `qml.transforms.map_batch_transform` is deprecated, since a transform can be applied directly to a batch of tapes.
   [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
+
+* The default behaviour of `qml.from_qasm()` to remove measurements in the QASM code is deprecated. Use `measurements=[]` to keep this behaviour or `measurements=None` to keep the measurements from the QASM code.
+  [(#5882)](https://github.com/PennyLaneAI/pennylane/pull/5882)
 
 <h3>Documentation 📝</h3>
 
@@ -551,6 +563,9 @@
 * Fix bug where `CompositeOp.overlapping_ops` sometimes puts overlapping ops in different groups, leading to incorrect results returned by `LinearCombination.eigvals()`
   [(#5847)](https://github.com/PennyLaneAI/pennylane/pull/5847)
 
+* Implement the correct decomposition for a `qml.PauliRot` with an identity as `pauli_word`, i.e. returns a `qml.GlobalPhase` with half the angle.
+  [(#5875)](https://github.com/PennyLaneAI/pennylane/pull/5875)
+
 * `qml.pauli_decompose` now works in a jit-ted context, such as `jax.jit` and `catalyst.qjit`.
   [(#5878)](https://github.com/PennyLaneAI/pennylane/pull/5878)
 
@@ -564,6 +579,7 @@ Utkarsh Azad,
 Lillian M. A. Frederiksen,
 Ludmila Botelho,
 Gabriel Bottrill,
+Jack Brown,
 Astral Cai,
 Ahmed Darwish,
 Isaac De Vlugt,
