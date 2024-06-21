@@ -122,7 +122,7 @@ def to_openfermion(
         wires (dict): Custom wire mapping used to convert a PennyLane qubit operator
             to the external operator.
             Only dictionaries with integer keys (for qubit-to-wire conversion) are accepted.
-            If None, will use identity map (e.g. 0->0, 1->1, ...).
+            If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
 
     Returns:
         (QubitOperator, FermionOperator): OpenFermion operator
