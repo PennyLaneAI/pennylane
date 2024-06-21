@@ -99,7 +99,7 @@ class TestConstruction:
         # test that the internal tape.measurements list is created properly
         assert isinstance(tape.measurements[0], MeasurementProcess)
         assert tape.measurements[0].return_type == qml.measurements.Expectation
-        assert qml.equal(tape.measurements[0].obs, obs[0])
+        qml.assert_equal(tape.measurements[0].obs, obs[0])
 
         assert isinstance(tape.measurements[1], MeasurementProcess)
         assert tape.measurements[1].return_type == qml.measurements.Probability
@@ -252,8 +252,8 @@ class TestConstruction:
             qml.BasisState(np.array([0, 1]), wires=[0, 1])
 
         assert len(tape.operations) == 2
-        assert qml.equal(tape.operations[0], qml.PauliX(wires=0))
-        assert qml.equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
+        qml.assert_equal(tape.operations[0], qml.PauliX(wires=0))
+        qml.assert_equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
 
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
@@ -1041,7 +1041,7 @@ class TestExpand:
 
         assert len(new_tape.operations) == len(true_decomposition)
         for tape_op, true_op in zip(new_tape.operations, true_decomposition):
-            assert qml.equal(tape_op, true_op)
+            qml.assert_equal(tape_op, true_op)
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
@@ -1193,10 +1193,8 @@ class TestExpand:
         circuit_after_first_expand = expand_tape.operations
         twice_expand_tape = tape.expand()
         circuit_after_second_expand = twice_expand_tape.operations
-        assert all(
-            qml.equal(op1, op2)
-            for op1, op2 in zip(circuit_after_first_expand, circuit_after_second_expand)
-        )
+        for op1, op2 in zip(circuit_after_first_expand, circuit_after_second_expand):
+            qml.assert_equal(op1, op2)
 
     def test_expand_does_not_affect_original_tape(self):
         """Test that expand_tape does not modify the inputted tape while creating a new one."""
@@ -1206,20 +1204,22 @@ class TestExpand:
         expanded = tape.expand()
 
         assert len(tape.operations) == 1
-        assert qml.equal(tape.operations[0], ops[0])
+        qml.assert_equal(tape.operations[0], ops[0])
         assert len(tape.obs_sharing_wires) == 2
-        assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape.obs_sharing_wires)
-        assert qml.equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
-        assert qml.equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
+        for obs in tape.obs_sharing_wires:
+            qml.assert_equal(obs, qml.X(0))
+        qml.assert_equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
+        qml.assert_equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
         assert tape.shots == qml.measurements.Shots(None)
 
         assert len(expanded.operations) == 2
-        assert qml.equal(expanded.operations[0], ops[0])
-        assert qml.equal(expanded.operations[1], qml.RY(-np.pi / 2, 0))  # new rotation
+        qml.assert_equal(expanded.operations[0], ops[0])
+        qml.assert_equal(expanded.operations[1], qml.RY(-np.pi / 2, 0))  # new rotation
         assert len(expanded.obs_sharing_wires) == 2
-        assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded.obs_sharing_wires)
-        assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
-        assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
+        for obs in expanded.obs_sharing_wires:
+            qml.assert_equal(obs, qml.Z(0))
+        qml.assert_equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
+        qml.assert_equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
         assert expanded.shots is tape.shots
 
     def test_expand_tape_does_not_check_mp_name_by_default(self, recwarn):

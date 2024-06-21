@@ -274,11 +274,6 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
     coeffs = []
 
     gradient_data = []
-    measurements_probs = [
-        idx
-        for idx, m in enumerate(tape.measurements)
-        if isinstance(m, qml.measurements.ProbabilityMP)
-    ]
     for trainable_param_idx, _ in enumerate(tape.trainable_params):
         if trainable_param_idx not in argnums:
             # parameter has zero gradient
@@ -330,7 +325,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                 elif m.obs:
                     obs_new = [m.obs]
                 else:
-                    obs_new = [qml.Z(i) for i in m.wires]
+                    m_wires = m.wires if len(m.wires) > 0 else tape.wires
+                    obs_new = [qml.Z(i) for i in m_wires]
 
                 obs_new.append(qml.Y(aux_wire))
                 obs_type = qml.prod if qml.operation.active_new_opmath() else qml.operation.Tensor
@@ -359,6 +355,18 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
     multi_measurements = len(tape.measurements) > 1
     multi_params = len(tape.trainable_params) > 1
+    measurements_probs = [
+        idx
+        for idx, m in enumerate(tape.measurements)
+        if isinstance(m, qml.measurements.ProbabilityMP)
+    ]
+
+    def _postprocess_probs(res, measurement, projector):
+        num_wires_probs = len(measurement.wires)
+        if num_wires_probs == 0:
+            num_wires_probs = tape.num_wires
+        res = qml.math.reshape(res, (2**num_wires_probs, 2))
+        return qml.math.tensordot(res, projector, axes=[[1], [0]])
 
     def processing_fn(results):  # pylint: disable=too-many-branches
         """Post processing function for computing a hadamard gradient."""
@@ -378,16 +386,12 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             for idx, res in enumerate(final_res):
                 if multi_measurements:
                     for prob_idx in measurements_probs:
-                        num_wires_probs = len(tape.measurements[prob_idx].wires)
-                        res_reshaped = qml.math.reshape(res[prob_idx], (2**num_wires_probs, 2))
-                        final_res[idx][prob_idx] = qml.math.tensordot(
-                            res_reshaped, projector, axes=[[1], [0]]
+                        final_res[idx][prob_idx] = _postprocess_probs(
+                            res[prob_idx], tape.measurements[prob_idx], projector
                         )
                 else:
                     prob_idx = measurements_probs[0]
-                    num_wires_probs = len(tape.measurements[prob_idx].wires)
-                    res = qml.math.reshape(res, (2**num_wires_probs, 2))
-                    final_res[idx] = qml.math.tensordot(res, projector, axes=[[1], [0]])
+                    final_res[idx] = _postprocess_probs(res, tape.measurements[prob_idx], projector)
         grads = []
         idx = 0
         for num_tape in gradient_data:

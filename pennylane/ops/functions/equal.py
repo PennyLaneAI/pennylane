@@ -202,43 +202,28 @@ def assert_equal(
         None
 
     Raises:
-
         AssertionError: An ``AssertionError`` is raised if the two operators are not equal.
 
     .. warning::
 
         This function is still under developement.
 
-    .. see-also::
+    .. seealso::
 
         :func:`~.equal`
 
-    >>> mat1 = qml.IsingXX.compute_matrix(0.1)
-    >>> op1 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat1)
-    >>> mat2 = qml.IsingXX.compute_matrix(0.2)
-    >>> op2 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat2)
-    >>> assert_equal(op1, op2)
-    AssertionError: The hyperparameter unitary_matrix is not equal for op1 and op2.
-    Got [[0.99875026+0.j         0.        +0.j         0.        +0.j
-    0.        -0.04997917j]
-    [0.        +0.j         0.99875026+0.j         0.        -0.04997917j
-    0.        +0.j        ]
-    [0.        +0.j         0.        -0.04997917j 0.99875026+0.j
-    0.        +0.j        ]
-    [0.        -0.04997917j 0.        +0.j         0.        +0.j
-    0.99875026+0.j        ]]
-    and [[0.99500417+0.j         0.        +0.j         0.        +0.j
-    0.        -0.09983342j]
-    [0.        +0.j         0.99500417+0.j         0.        -0.09983342j
-    0.        +0.j        ]
-    [0.        +0.j         0.        -0.09983342j 0.99500417+0.j
-    0.        +0.j        ]
-    [0.        -0.09983342j 0.        +0.j         0.        +0.j
-    0.99500417+0.j        ]].
-    >>> mat3 = qml.numpy.array(0.3)
-    >>> op3 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat3)
-    >>> assert_equal(op1, op3)
-    AssertionError: The hyperparameter unitary_matrix has different interfaces for op1 and op2. Got numpy and autograd.
+    **Example**
+
+    >>> op1 = qml.RX(np.array(0.12), wires=0)
+    >>> op2 = qml.RX(np.array(1.23), wires=0)
+    >>> qml.assert_equal(op1, op1)
+    AssertionError: op1 and op2 have different data.
+    Got (array(0.12),) and (array(1.23),)
+
+    >>> h1 = qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)])
+    >>> h2 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)])
+    >>> qml.assert_equal(h1, h2)
+    AssertionError: op1 and op2 have different operands because op1 and op2 have different scalars. Got 2 and 1
 
     """
 
@@ -371,6 +356,9 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
+    if any(qml.math.is_abstract(d) for d in op1.data + op2.data):
+        # assume all tracers are independent
+        return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
@@ -609,31 +597,33 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
 # pylint: disable=unused-argument
 def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
+
     if not isinstance(op2, Observable):
         return f"{op2} is not of type Observable"
 
     if isinstance(op2, (Hamiltonian, LinearCombination, Hermitian)):
-        if not op2.compare(op1):
-            return f"'{op1}' and '{op2}' are not same"
+        return (
+            op2.compare(op1) or f"'{op1}' and '{op2}' are not the same for an unspecified reason."
+        )
 
     if isinstance(op2, Tensor):
-        if not op1._obs_data() == op2._obs_data():  # pylint: disable=protected-access
-            return "op1 and op2 have different _obs_data outputs"
+        return (
+            op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
+            or f"{op1} and {op2} have different _obs_data outputs"
+        )
 
-    return True
+    return f"{op1} is of type {type(op1)} and {op2} is of type {type(op2)}"
 
 
 @_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
+
     if not isinstance(op2, Observable):
         return f"{op2} is not of type Observable"
 
-    if not op1.compare(op2):
-        return f"'{op1}' and '{op2}' are not same"
-
-    return True
+    return op1.compare(op2) or f"'{op1}' and '{op2}' are not the same for an unspecified reason"
 
 
 @_equal_dispatch.register
