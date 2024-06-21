@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functionality for debugging quantum programs on simulator devices.
+An internal module for working with pytrees.
 """
 
-from .snapshot import snapshots
+from .pytrees import PyTreeStructure, flatten, is_pytree, leaf, register_pytree, unflatten
 
-from .debugger import (
-    breakpoint,
-    debug_expval,
-    PLDB,
-    pldb_device_manager,
-    debug_probs,
-    debug_state,
-    debug_tape,
-)
+__all__ = [
+    "PyTreeStructure",
+    "flatten",
+    "is_pytree",
+    "leaf",
+    "register_pytree",
+    "unflatten",
+]
