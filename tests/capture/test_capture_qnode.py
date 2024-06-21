@@ -21,9 +21,7 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane.capture.capture_qnode import _get_qnode_prim
-
-qnode_prim = _get_qnode_prim()
+from pennylane.capture import qnode_prim
 
 pytestmark = pytest.mark.jax
 
@@ -119,6 +117,7 @@ def test_simple_qnode(x64_mode):
     assert jaxpr.out_avals[0] == jax.core.ShapedArray((), fdtype)
 
     assert eqn0.params["device"] == dev
+    assert eqn0.params["qnode"] == circuit
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
     expected_kwargs = {"diff_method": "best"}
     expected_kwargs.update(circuit.execute_kwargs)
