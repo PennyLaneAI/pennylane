@@ -97,6 +97,7 @@
   OpenFermion and PennyLane objects.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
   [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+  [(#5881)](https://github.com/PennyLaneAI/pennylane/pull/5881)
 
   ```python
   of_op = openfermion.FermionOperator('0^ 2')
@@ -408,7 +409,14 @@
 * `qml.transforms.map_batch_transform` is deprecated, since a transform can be applied directly to a batch of tapes.
   [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
 
+* The default behaviour of `qml.from_qasm()` to remove measurements in the QASM code is deprecated. Use `measurements=[]` to keep this behaviour or `measurements=None` to keep the measurements from the QASM code.
+  [(#5882)](https://github.com/PennyLaneAI/pennylane/pull/5882)
+
 <h3>Documentation 📝</h3>
+
+* Move information about mid-circuit measurements from the measurements quickstart page to its own
+  [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
+  [(#5870)](https://github.com/PennyLaneAI/pennylane/pull/5870)
 
 * The documentation for the `default.tensor` device has been added.
   [(#5719)](https://github.com/PennyLaneAI/pennylane/pull/5719)
@@ -424,6 +432,9 @@
 
 * The input types for `coupling_map` in `qml.transpile` are updated to reflect all the allowed input types by `nx.to_networkx_graph`.
   [(#5864)](https://github.com/PennyLaneAI/pennylane/pull/5864)
+
+* The text in the `qml.data` module and datasets quickstart have been slightly modified to lead to the quickstart first and highlight `list_datasets`.
+  [(5484)](https://github.com/PennyLaneAI/pennylane/pull/5484)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -565,6 +576,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Diego Guala,
 Daria Van Hende,
 Austin Huang,
 David Ittah,
