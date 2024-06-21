@@ -331,7 +331,7 @@ class MidMeasureMP(MeasurementProcess):
     @property
     def name(self):
         """The name of the measurement. Needed to match the Operator API."""
-        return "MidMeasureMP"
+        return self.__class__.__name__
 
 
 class MeasurementValue(Generic[T]):
