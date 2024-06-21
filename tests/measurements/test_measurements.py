@@ -656,8 +656,6 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.qubit", wires=2)
-
         with pytest.raises(NotImplementedError):
             MyMeasurement().process_density_matrix(
                 density_matrix=qml.math.array([[1, 0], [0, 0]]), wire_order=Wires([0, 1])
