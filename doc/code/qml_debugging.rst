@@ -1,11 +1,8 @@
 qml.debugging
 =============
+.. currentmodule:: pennylane.debugging
 
 .. automodule:: pennylane.debugging
-    :no-heading:
-    :no-inherited-members:
-    :skip: PLDB
-    :skip: pldb_device_manager
 
 Entering the Debugging Context
 ------------------------------

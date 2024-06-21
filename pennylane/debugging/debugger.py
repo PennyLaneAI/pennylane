@@ -140,7 +140,7 @@ def breakpoint():
     :code:`continue`, :code:`quit`).
 
     .. seealso:: :doc:`/code/qml_debugging`
-    
+
     **Example**
 
     Consider the following python script containing the quantum circuit with breakpoints.
@@ -284,7 +284,7 @@ def debug_state():
 def debug_expval(op):
     """Compute the expectation value of an observable at the
     current point in the quantum circuit.
-    
+
     Debugging measurements do not alter the state, it remains the same until the
     next operation in the circuit.
 
