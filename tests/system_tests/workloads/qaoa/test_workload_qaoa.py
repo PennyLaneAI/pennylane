@@ -33,6 +33,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 jax = pytest.importorskip("jax")
+pytestmark = [pytest.mark.catalyst, pytest.mark.external, pytest.mark.system, pytest.mark.slow]
 
 ###############################################################################
 # Workload setup: define parameters, quantum circuit and utility decorator
@@ -198,8 +199,6 @@ def dq_workload(diff_method, shots, cut_circuit):
 ###############################################################################
 
 
-@pytest.mark.system
-@pytest.mark.slow
 @pytest.mark.parametrize("use_jit", [True])
 @pytest.mark.parametrize(
     "diff_method, shots",

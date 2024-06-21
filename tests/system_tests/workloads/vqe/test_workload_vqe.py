@@ -33,6 +33,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+pytestmark = [pytest.mark.catalyst, pytest.mark.external, pytest.mark.system, pytest.mark.slow]
+
 optax = pytest.importorskip("optax")
 jax = pytest.importorskip("jax")
 
@@ -45,8 +47,6 @@ mols_basis_sets = [
 ]
 
 
-@pytest.mark.system
-@pytest.mark.slow
 @pytest.mark.parametrize("mol, basis_set", mols_basis_sets)
 @pytest.mark.parametrize(
     "diff_method, batch_obs, shots",
