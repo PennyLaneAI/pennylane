@@ -381,12 +381,12 @@ def _split_ham_term_sampling(
 
     for meas, (ham_idx, coeffs) in single_term_obs_mps.items():
         shts = []
-        shts_flags = []
+        shots_flags = []
         for idx, coeff in zip(ham_idx, coeffs):
             term_coefficient = np.abs(coeff) if term_sampling == "weighted" else 1.0
 
             prob = term_coefficient / remaining_coefficient_sums[idx]
-            shots_flags = []
+            shts_flags = []
             for i, (rmng_shots, shot_vector) in enumerate(
                 zip(remaining_shots_budget[idx], tape.shots.shot_vector)
             ):
@@ -400,14 +400,14 @@ def _split_ham_term_sampling(
                 sampled_shots = binom(n=rmng_shots, p=prob).rvs() if prob < 1 else rmng_shots
 
                 if sampled_shots == 0:
-                    shots_flags.append(False)
+                    shts_flags.append(-shot_vector.copies)
                     continue
 
-                shots_flags.append(True)
+                shts_flags.append(shot_vector.copies)
                 shts.append((int(sampled_shots), shot_vector.copies))
                 remaining_shots_budget[idx][i] -= sampled_shots
 
-            shts_flags.append(shots_flags)
+            shots_flags.append(shts_flags)
             remaining_coefficient_sums[idx] -= term_coefficient
 
         if shts:
@@ -420,7 +420,7 @@ def _split_ham_term_sampling(
                     shots=qml.measurements.Shots(shts, merge_repeated=False),
                 )
             )
-            new_single_term_obs_mps[meas] = (*new_single_term_obs_mps[meas], shts_flags)
+            new_single_term_obs_mps[meas] = (*new_single_term_obs_mps[meas], shots_flags)
         else:
             # If the measurement didn't get any shots, just remove it from the dict
             del new_single_term_obs_mps[meas]
@@ -720,7 +720,6 @@ def _processing_fn_no_grouping(
         shots (Shots): The shots settings of the original tape.
 
     """
-
     res_batch_for_each_mp = [[] for _ in offsets]
     coeffs_for_each_mp = [[] for _ in offsets]
 
@@ -730,14 +729,26 @@ def _processing_fn_no_grouping(
         for mps_dict_value in zip(*mps_dict_values):
             if term_sampling_used:
                 mp_idx, coeff, shots_flags = mps_dict_value
+
                 res_batch_for_each_mp[mp_idx].append(
-                    tuple(next(res_iter) if flag else 0.0 for flag in shots_flags)
+                    tuple(
+                        0.0 if flag < 0 else next(res_iter)
+                        for flag in shots_flags
+                        for _ in (range(flag) if flag > 0 else range(flag, 0))
+                    )
                 )
+
             else:
                 mp_idx, coeff = mps_dict_value
                 res_batch_for_each_mp[mp_idx].append(res_item)
 
             coeffs_for_each_mp[mp_idx].append(coeff)
+
+        try:
+            assert term_sampling_used and next(res_iter)
+            raise RuntimeError("Results remain unprocessed in split_non_commuting")
+        except (AssertionError, StopIteration):
+            continue
 
     result_shape = _infer_result_shape(shots, batch_size)
 
