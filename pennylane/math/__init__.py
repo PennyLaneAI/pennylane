@@ -60,7 +60,6 @@ from .multi_dispatch import (
     scatter,
     scatter_element_add,
     set_index,
-    add_index,
     stack,
     tensordot,
     unwrap,
