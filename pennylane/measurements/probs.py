@@ -262,11 +262,11 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
         if len(np.shape(density_matrix)) == 2:
-            prob = qml.math.diagonal(qml.math.real(density_matrix))
+            prob = qml.math.diagonal(density_matrix)
         else:
             prob = qml.math.array(
                 [
-                    qml.math.diagonal(qml.math.real(density_matrix[i]))
+                    qml.math.diagonal(density_matrix[i])
                     for i in range(np.shape(density_matrix)[0])
                 ]
             )
