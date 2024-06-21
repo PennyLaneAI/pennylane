@@ -97,6 +97,7 @@
   OpenFermion and PennyLane objects.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
   [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+  [(#5881)](https://github.com/PennyLaneAI/pennylane/pull/5881)
 
   ```python
   of_op = openfermion.FermionOperator('0^ 2')
@@ -404,6 +405,9 @@
 
 * `qml.transforms.map_batch_transform` is deprecated, since a transform can be applied directly to a batch of tapes.
   [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
+
+* The default behaviour of `qml.from_qasm()` to remove measurements in the QASM code is deprecated. Use `measurements=[]` to keep this behaviour or `measurements=None` to keep the measurements from the QASM code.
+  [(#5882)](https://github.com/PennyLaneAI/pennylane/pull/5882)
 
 <h3>Documentation 📝</h3>
 
