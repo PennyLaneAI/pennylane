@@ -1092,7 +1092,6 @@ def add_index(array, idx, val, like=None):
         # ensure array is jax array (interface may be jax because of idx or val and not array)
         jax_array = jnp.asarray(array)
 
-
         return jax_array.at[idx].add(val)
 
     try:
