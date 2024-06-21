@@ -658,6 +658,7 @@ def expval_param_shift_with_mcms(
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
     tape_specs = (single_measure, num_params, num_measurements, tape.shots)
+    probs_tape_specs = (True, num_params, 1, probs_tape.shots)
 
     def processing_fn(results):
         p_results = _extract_psp(results[num_g_tapes + 1 :], postselect_int, tape_specs)
@@ -676,7 +677,7 @@ def expval_param_shift_with_mcms(
                     grads.append(None)
                     continue
                 # The gradient for this parameter is computed from r0 alone.
-                g = _evaluate_gradient(tape, [], data, r0)
+                g = _evaluate_gradient(tape_specs, [], data, r0, batch_size)
                 continue
             if num_pg_tapes == 0:
                 res = (
@@ -685,7 +686,7 @@ def expval_param_shift_with_mcms(
                     else results[g_start]
                 )
                 g_start = g_start + num_tapes
-                g = _evaluate_gradient(tape, res, data, r0)
+                g = _evaluate_gradient(tape_specs, res, data, r0, batch_size)
             elif num_tapes == 0:
                 p_res = (
                     p_results[p_start : p_start + num_pg_tapes]
@@ -694,7 +695,7 @@ def expval_param_shift_with_mcms(
                 )
                 p_start = p_start + num_pg_tapes
                 p_res = tuple(a_times_b_over_c(pr, r0, p0, -1.0, tape_specs) for pr in p_res)
-                g = _evaluate_gradient(probs_tape, p_res, data, p0)
+                g = _evaluate_gradient(probs_tape_specs, p_res, data, p0, batch_size)
 
             else:
                 beta_gt_alpha = isinstance(num_pg_tapes, tuple)
@@ -732,8 +733,10 @@ def expval_param_shift_with_mcms(
                 first_term_res = tuple(
                     a_times_b_over_c(f, p, p0, 1.0, tape_specs) for f, p in zip(res, p_res)
                 )
-                first_term = _evaluate_gradient(tape, first_term_res, data, r0)
-                second_term = _evaluate_gradient(probs_tape, p_res_mod, second_term_data, p0)
+                first_term = _evaluate_gradient(tape_specs, first_term_res, data, r0, batch_size)
+                second_term = _evaluate_gradient(
+                    probs_tape_specs, p_res_mod, second_term_data, p0, batch_size
+                )
                 g = minus(first_term, second_term, tape_specs)
 
             grads.append(g)
@@ -763,8 +766,13 @@ def mcm_wrapper(tape, psr_tapes, **psr_kwargs):
     probs_psr_tapes = [
         _make_probs_tape(t)[0] for i, t in enumerate(psr_tapes) if i not in skip_probs_tapes
     ]
-    first_result_unshifted = qml.math.allclose(
-        tape.get_parameters(trainable_only=False), psr_tapes[0].get_parameters(trainable_only=False)
+
+    first_result_unshifted = all(
+        qml.math.allclose(p, psr_p)
+        for p, psr_p in zip(
+            tape.get_parameters(trainable_only=False),
+            psr_tapes[0].get_parameters(trainable_only=False),
+        )
     )
 
     if first_result_unshifted:
@@ -1514,13 +1522,17 @@ def param_shift(
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
     else:
         requires_mcm = _requires_mcm_treatment(tape, argnum)
-        if not deactivate_mcms and requires_mcm and mcm_version == 0:
-            g_tapes, fn = expval_param_shift_with_mcms(
-                tape, argnum, shifts, gradient_recipes, f0, broadcast
-            )
-        else:
+        if deactivate_mcms or not requires_mcm:
             g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
-            if not deactivate_mcms and requires_mcm and mcm_version == 1:
+        else:
+            if mcm_version == 0:
+                g_tapes, fn = expval_param_shift_with_mcms(
+                    tape, argnum, shifts, gradient_recipes, f0, broadcast
+                )
+            elif mcm_version == 1:
+                g_tapes, fn = expval_param_shift(
+                    tape, argnum, shifts, gradient_recipes, f0, broadcast
+                )
                 _fn = fn
                 g_tapes, mcm_fn = mcm_wrapper(
                     tape,
@@ -1530,6 +1542,8 @@ def param_shift(
                     gradient_recipes=gradient_recipes,
                 )
                 fn = lambda results: _fn(mcm_fn(results))
+            else:
+                raise NotImplementedError
 
     gradient_tapes.extend(g_tapes)
 

@@ -83,6 +83,13 @@ class Conditional(SymbolicOp, Operation):
 
     @property
     def parameter_frequencies(self):
+        # The cost function does not change its functional form between application of
+        # base and cond(base).
+        return self.base.parameter_frequencies
+
+    """
+    @property
+    def parameter_frequencies(self):
         import pennylane as qml
 
         # TODO: Add the following optimization once MCM parameter-shit rules can
@@ -115,6 +122,7 @@ class Conditional(SymbolicOp, Operation):
             "and parameter frequencies can not be computed via generator for more than one "
             "parameter."
         )
+    """
 
     def matrix(self, wire_order=None):
         return self.base.matrix(wire_order=wire_order)
