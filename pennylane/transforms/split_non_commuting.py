@@ -680,12 +680,12 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                     else:
                         single_term_obs_mps[sm][0].append(mp_idx)
                         single_term_obs_mps[sm][1].append(c)
-                        coeff_sum += np.abs(c)
+                        coeff_sum += qml.math.abs(c)
                         non_id_obs_count += 1
                 # Otherwise, add this new measurement to the list of single-term measurements.
                 else:
                     single_term_obs_mps[sm] = ([mp_idx], [c])
-                    coeff_sum += np.abs(c)
+                    coeff_sum += qml.math.abs(c)
                     non_id_obs_count += 1
         else:
             # For all other measurement types, simply add them to the list of measurements.
