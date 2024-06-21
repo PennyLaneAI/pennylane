@@ -69,8 +69,8 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
     >>> of_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
     >>> pl_op = from_openfermion(of_op)
     >>> print(pl_op)
-        0.5 * a⁺(0) a(2)
-        + 1.0 * a(0) a⁺(2)
+    0.5 * a⁺(0) a(2)
+    + 1.0 * a(0) a⁺(2)
 
     >>> of_op = QubitOperator('X0', 1.2) + QubitOperator('Z1', 2.4)
     >>> pl_op = from_openfermion(of_op)
@@ -112,18 +112,20 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
 def to_openfermion(
     pennylane_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=1.0e-16
 ):
-    r"""Convert a PennyLane operator to a OpenFermion ``QubitOperator`` or ``FermionOperator``.
+    r"""Convert a PennyLane operator to OpenFermion
+    `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__ or
+    `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__.
 
     Args:
         pennylane_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, FermiWord, FermiSentence):
-            linear combination of operators
+            PennyLane operator
         wires (dict): Custom wire mapping used to convert a PennyLane qubit operator
             to the external operator.
             Only dictionaries with integer keys (for qubit-to-wire conversion) are accepted.
             If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
-        (QubitOperator, FermionOperator): an OpenFermion operator
+        (QubitOperator, FermionOperator): OpenFermion operator
 
     **Example**
 
