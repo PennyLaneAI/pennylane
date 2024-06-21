@@ -50,8 +50,7 @@ interface_and_device_and_diff_method = [
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-config = pytest.importorskip("jax.config")
-config.config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 TOL_FOR_SPSA = 1.0
 SEED_FOR_SPSA = 32651

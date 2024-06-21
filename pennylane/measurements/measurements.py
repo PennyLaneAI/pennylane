@@ -23,6 +23,7 @@ from enum import Enum
 from typing import Optional, Sequence, Tuple, Union
 
 import pennylane as qml
+from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
@@ -111,7 +112,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess(ABC):
+class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -129,8 +130,84 @@ class MeasurementProcess(ABC):
 
     # pylint:disable=too-many-instance-attributes
 
+    _obs_primitive: Optional["jax.core.Primitive"] = None
+    _wires_primitive: Optional["jax.core.Primitive"] = None
+    _mcm_primitive: Optional["jax.core.Primitive"] = None
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
+        name = getattr(cls.return_type, "value", cls.__name__)
+        cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
+        cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
+        cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
+
+    @classmethod
+    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
+        """Called instead of ``type.__call__`` if ``qml.capture.enabled()``.
+
+        Measurements have three "modes":
+
+        1) Wires or wires + eigvals
+        2) Observable
+        3) Mid circuit measurements
+
+        Not all measurements support all three modes. For example, ``VNEntropyMP`` does not
+        allow being specified via an observable. But we handle the generic case here.
+
+        """
+        if cls._obs_primitive is None:
+            # safety check if primitives aren't set correctly.
+            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id, **kwargs)
+        if obs is None:
+            wires = () if wires is None else wires
+            if eigvals is None:
+                return cls._wires_primitive.bind(*wires, **kwargs)  # wires
+            return cls._wires_primitive.bind(
+                *wires, eigvals, has_eigvals=True, **kwargs
+            )  # wires + eigvals
+
+        if isinstance(obs, Operator) or isinstance(
+            getattr(obs, "aval", None), qml.capture.AbstractOperator
+        ):
+            return cls._obs_primitive.bind(obs, **kwargs)
+        if isinstance(obs, (list, tuple)):
+            return cls._mcm_primitive.bind(*obs, **kwargs)  # iterable of mcms
+        return cls._mcm_primitive.bind(obs, **kwargs)  # single mcm
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ) -> tuple[tuple, type]:
+        """Calculate the shape and dtype that will be returned when a measurement is performed.
+
+        This information is similar to ``numeric_type`` and ``shape``, but is provided through
+        a class method and does not require the creation of an instance.
+
+        Note that ``shots`` should strictly be ``None`` or ``int``. Shot vectors are handled higher
+        in the stack.
+
+        If ``n_wires is None``, then the measurement process contains an observable. An integer
+        ``n_wires`` can correspond either to the number of wires or to the number of mid circuit
+        measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
+
+        >>> ProbabilityMP._abstract_eval(n_wires=2)
+        ((4,), float)
+        >>> ProbabilityMP._abstract_eval(n_wires=0, num_device_wires=2)
+        ((4,), float)
+        >>> SampleMP._abstract_eval(n_wires=0, shots=50, num_device_wires=2)
+        ((50, 2), int)
+        >>> SampleMP._abstract_eval(n_wires=4, has_eigvals=True, shots=50)
+        ((50,), float)
+        >>> SampleMP._abstract_eval(n_wires=None, shots=50)
+        ((50,), float)
+
+        """
+        return (), float
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires),)
@@ -162,6 +239,9 @@ class MeasurementProcess(ABC):
             # Cast sequence of measurement values to list
             self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
             self.obs = None
+        elif is_abstract(obs):  # Catalyst program with qml.sample(m, wires=i)
+            self.mv = obs
+            self.obs = None
         else:
             self.obs = obs
             self.mv = None
@@ -169,7 +249,7 @@ class MeasurementProcess(ABC):
         self.id = id
 
         if wires is not None:
-            if len(wires) == 0:
+            if not qml.capture.enabled() and len(wires) == 0:
                 raise ValueError("Cannot set an empty list of wires.")
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")
@@ -278,12 +358,13 @@ class MeasurementProcess(ABC):
 
     def __repr__(self):
         """Representation of this class."""
+        name_str = self.return_type.value if self.return_type else type(self).__name__
         if self.mv:
-            return f"{self.return_type.value}({repr(self.mv)})"
+            return f"{name_str}({repr(self.mv)})"
         if self.obs:
-            return f"{self.return_type.value}({self.obs})"
+            return f"{name_str}({self.obs})"
         if self._eigvals is not None:
-            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
+            return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         return f"{getattr(self.return_type, 'value', 'None')}(wires={self.wires.tolist()})"
@@ -306,7 +387,7 @@ class MeasurementProcess(ABC):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.mv is not None:
+        if self.mv is not None and not is_abstract(self.mv):
             if isinstance(self.mv, list):
                 return qml.wires.Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires

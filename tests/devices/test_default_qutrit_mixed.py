@@ -243,7 +243,7 @@ class TestBasicCircuit:
         """Tests execution and gradients of a basic circuit using tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
 
         dev = DefaultQutritMixed()
 
@@ -730,7 +730,7 @@ class TestExecutingBatches:
         """Test batches can be executed and have backprop derivatives using tensorflow."""
         import tensorflow as tf
 
-        x = tf.Variable(5.2281)
+        x = tf.Variable(5.2281, dtype="float64")
         with tf.GradientTape(persistent=True) as tape:
             results = self.f(x)
 
@@ -894,7 +894,7 @@ class TestSumOfTermsDifferentiability:
         Hamiltonians using new and old math."""
         import tensorflow as tf
 
-        x = tf.Variable(self.x)
+        x = tf.Variable(self.x, dtype="float64")
         coeffs = [8.3, 5.7]
 
         with tf.GradientTape() as tape1:
@@ -914,7 +914,7 @@ class TestSumOfTermsDifferentiability:
         the coefficients of Hamiltonians using new and old math."""
         import tensorflow as tf
 
-        coeffs = tf.Variable([8.3, 5.7])
+        coeffs = tf.Variable([8.3, 5.7], dtype="float64")
 
         with tf.GradientTape() as tape1:
             out = self.f(self.x, coeffs)
@@ -1059,9 +1059,9 @@ class TestPRNGKeySeed:
 
     def test_prng_key_as_seed(self):
         """Test that a jax PRNG can be passed as a seed."""
-        from jax.config import config
+        import jax
 
-        config.update("jax_enable_x64", True)
+        jax.config.update("jax_enable_x64", True)
 
         from jax import random
 

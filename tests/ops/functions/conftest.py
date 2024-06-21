@@ -24,7 +24,6 @@ import pytest
 import pennylane as qml
 from pennylane.operation import (
     Channel,
-    DiagGatesUndefinedError,
     MatrixUndefinedError,
     Observable,
     Operation,
@@ -36,6 +35,7 @@ from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 
 _INSTANCES_TO_TEST = [
     qml.sum(qml.PauliX(0), qml.PauliZ(0)),
+    qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)),
     qml.BasisState([1], wires=[0]),
     qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
     qml.QubitStateVector([0, 1], wires=0),
@@ -61,6 +61,9 @@ _INSTANCES_TO_TEST = [
     qml.ops.Evolution(qml.PauliX(0), 5.2),
     qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]),
     qml.resource.FirstQuantization(1, 2, 1),
+    qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)),
+    qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"),
+    qml.Snapshot(tag="tag"),
 ]
 """Valid operator instances that could not be auto-generated."""
 
@@ -85,10 +88,6 @@ _INSTANCES_TO_FAIL = [
     (
         qml.ops.Conditional(qml.measure(1), qml.S(0)),
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
-    ),
-    (
-        qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)),
-        DiagGatesUndefinedError,  # has_diagonalizing_gates should be False
     ),
     (
         qml.Identity(0),

@@ -13,8 +13,6 @@
 # limitations under the License.
 """The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
 computations."""
-
-import inspect
 import logging
 from dataclasses import replace
 from typing import Callable, Optional, Sequence, Tuple, Union
@@ -22,6 +20,8 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -49,7 +49,6 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 # always a function from a resultbatch to either a result or a result batch
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
-channels = set()
 observables = {
     "THermitian",
     "GellMann",
@@ -177,6 +176,7 @@ class DefaultQutritMixed(Device):
         """The name of the device."""
         return "default.qutrit.mixed"
 
+    @debug_logger_init
     def __init__(
         self,
         wires=None,
@@ -193,6 +193,7 @@ class DefaultQutritMixed(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
+    @debug_logger
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -239,6 +240,7 @@ class DefaultQutritMixed(Device):
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
         return replace(execution_config, **updated_values)
 
+    @debug_logger
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
@@ -284,19 +286,12 @@ class DefaultQutritMixed(Device):
 
         return transform_program, config
 
+    @debug_logger
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                """Entry with args=(circuits=%s) called by=%s""",
-                circuits,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
 
         interface = (
             execution_config.interface

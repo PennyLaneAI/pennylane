@@ -19,15 +19,20 @@ It implements the :class:`~pennylane._device.Device` methods as well as some bui
 simulation of qutrit-based quantum computing.
 """
 import functools
+import logging
 
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
 from pennylane import DeviceError, QutritBasisState, QutritDevice
 from pennylane.devices.default_qubit_legacy import _get_slice
+from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.wires import WireError
 
 from .._version import __version__
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -118,6 +123,7 @@ class DefaultQutrit(QutritDevice):
         res = qml.math.cast(array, dtype=dtype)
         return res
 
+    @debug_logger_init
     def __init__(
         self,
         wires,
@@ -128,7 +134,8 @@ class DefaultQutrit(QutritDevice):
         analytic=None,
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
-        self._debugger = None
+        # TODO: add support for snapshots
+        # self._debugger = None
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [3]*wires.
@@ -165,6 +172,7 @@ class DefaultQutrit(QutritDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
+    @debug_logger
     def apply(self, operations, rotations=None, **kwargs):  # pylint: disable=arguments-differ
         rotations = rotations or []
 
@@ -403,6 +411,7 @@ class DefaultQutrit(QutritDevice):
     def state(self):
         return self._flatten(self._pre_rotated_state)
 
+    @debug_logger
     def density_matrix(self, wires):
         """Returns the reduced density matrix of a given set of wires.
 
@@ -460,6 +469,7 @@ class DefaultQutrit(QutritDevice):
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         return self._transpose(tdot, inv_perm)
 
+    @debug_logger
     def reset(self):
         """Reset the device"""
         super().reset()
@@ -468,6 +478,7 @@ class DefaultQutrit(QutritDevice):
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
+    @debug_logger
     def analytic_probability(self, wires=None):
         if self._state is None:
             return None

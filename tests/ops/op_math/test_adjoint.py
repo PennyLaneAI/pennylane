@@ -96,7 +96,8 @@ class TestInheritanceMixins:
 
         # Check some basic observable functionality
         assert ob.compare(ob)
-        assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
+        with pytest.warns(UserWarning, match="Tensor object acts on overlapping"):
+            assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
 
         # check the dir
         assert "grad_recipe" not in dir(ob)
@@ -118,7 +119,7 @@ class TestInheritanceMixins:
         unpickled_op = pickle.loads(pickled_adj_op)
 
         assert type(adj_op) is type(unpickled_op)
-        assert qml.equal(adj_op, unpickled_op)
+        qml.assert_equal(adj_op, unpickled_op)
 
 
 class TestInitialization:
@@ -182,7 +183,8 @@ class TestInitialization:
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_base(self):
         """Test adjoint initialization for a hamiltonian."""
-        base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
+        with pytest.warns(UserWarning, match="Tensor object acts on overlapping"):
+            base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
 
         op = Adjoint(base)
 
@@ -470,7 +472,7 @@ class TestMiscMethods:
         assert metadata == tuple()
 
         new_op = type(adj_op)._unflatten(*adj_op._flatten())
-        assert qml.equal(adj_op, new_op)
+        qml.assert_equal(adj_op, new_op)
 
 
 class TestAdjointOperation:
@@ -496,7 +498,7 @@ class TestAdjointOperation:
         base = qml.RX(1.23, wires=0)
         op = Adjoint(base)
 
-        assert qml.equal(base.generator(), -1.0 * op.generator())
+        qml.assert_equal(base.generator(), -1.0 * op.generator())
 
     def test_no_generator(self):
         """Test that an adjointed non-Operation raises a GeneratorUndefinedError."""
@@ -895,7 +897,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         tape = qml.tape.QuantumScript.from_queue(q)
         assert out is tape[0]
         assert isinstance(out, Adjoint)
-        assert qml.equal(out.base, qml.RX(1.234, "a"))
+        qml.assert_equal(out.base, qml.RX(1.234, "a"))
 
     def test_adjoint_template(self):
         """Test the adjoint transform on a template."""
@@ -1178,7 +1180,7 @@ class TestAdjointConstructorIntegration:
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
-        x = tf.Variable(0.234)
+        x = tf.Variable(0.234, dtype=tf.float64)
         with tf.GradientTape() as tape:
             y = circ(x)
 

@@ -35,8 +35,7 @@ interface_and_qubit_device_and_diff_method = [
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-config = pytest.importorskip("jax.config")
-config.config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 TOL_FOR_SPSA = 1.0
 SEED_FOR_SPSA = 32651
@@ -1541,7 +1540,7 @@ class TestTapeExpansion:
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3, shots=None)
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(
@@ -1610,7 +1609,7 @@ class TestTapeExpansion:
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3, shots=50000)
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(

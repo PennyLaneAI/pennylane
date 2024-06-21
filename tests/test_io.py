@@ -14,7 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -73,13 +73,6 @@ def mock_plugin_converters_fixture(monkeypatch):
 class TestLoad:
     """Test that the convenience load functions access the correct entrypoint."""
 
-    def test_load_is_deprecated(self, monkeypatch):
-        """Test that qml.load is deprecated"""
-        mock_converter_dict = {entry: MockPluginConverter(entry) for entry in load_entry_points}
-        monkeypatch.setattr(qml.io, "plugin_converters", mock_converter_dict)
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="deprecated"):
-            _ = qml.load("test", format="qiskit")
-
     @pytest.mark.parametrize(
         "method, entry_point_name",
         [(qml.from_qiskit, "qiskit"), (qml.from_qiskit_op, "qiskit_op")],
@@ -116,20 +109,11 @@ class TestLoad:
         with pytest.raises(ValueError, match=r"Some Other Error"):
             method("Test")
 
-    def test_from_qasm_file_deprecated(self, monkeypatch):
-        """Tests that qml.from_qasm_file is deprecated."""
-        mock_converter_dict = {entry: MockPluginConverter(entry) for entry in load_entry_points}
-        monkeypatch.setattr(qml.io, "plugin_converters", mock_converter_dict)
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="deprecated"):
-            with patch("builtins.open", mock_open(read_data="Test")):
-                _ = qml.from_qasm_file("test.qasm")
-
     @pytest.mark.parametrize(
         "method, entry_point_name",
         [
             (qml.from_qiskit, "qiskit"),
             (qml.from_qiskit_op, "qiskit_op"),
-            (qml.from_qasm, "qasm"),
             (qml.from_pyquil, "pyquil_program"),
             (qml.from_quil, "quil"),
             (qml.from_quil_file, "quil_file"),
@@ -150,11 +134,38 @@ class TestLoad:
             if mock_plugin_converters[plugin_converter].called:
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
 
+    def test_from_qasm(self, mock_plugin_converters):
+        """Tests that the correct entry point is called for from_qasm."""
+
+        qml.from_qasm("Test", measurements=None)
+        assert mock_plugin_converters["qasm"].called
+        assert mock_plugin_converters["qasm"].last_args == ("Test",)
+
+        for plugin_converter in mock_plugin_converters:
+            if mock_plugin_converters[plugin_converter].called and plugin_converter != "qasm":
+                raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
+
+    def test_from_qasm_deprecated(self, mock_plugin_converters):
+        """Tests that the current default behaviour of from_qasm is deprecated."""
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The current default behaviour"):
+            qml.from_qasm("Test")
+
+        called_args, called_kwargs = mock_plugin_converters["qasm"].call_args
+        assert called_args == ("Test",)
+        assert called_kwargs == {"measurements": []}
+
     @pytest.mark.parametrize(
         "method, entry_point_name, args, kwargs",
         [
             (qml.from_qiskit, "qiskit", ("Circuit",), {"measurements": []}),
             (qml.from_qiskit_op, "qiskit_op", ("Op",), {"params": [1, 2], "wires": [3, 4]}),
+            (
+                qml.from_qasm,
+                "qasm",
+                ("Circuit",),
+                {"measurements": []},
+            ),
         ],
     )
     def test_convenience_function_arguments(

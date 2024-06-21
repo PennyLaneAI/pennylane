@@ -113,7 +113,7 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        np.random.seed(478437894)
+        np.random.seed(0)
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -243,7 +243,7 @@ class TestExpval:
         m = qml.expval(qml.PauliX(0))
         copied_m = copy.copy(m)
         assert m.obs is not copied_m.obs
-        assert qml.equal(m.obs, copied_m.obs)
+        qml.assert_equal(m.obs, copied_m.obs)
 
     def test_copy_eigvals(self):
         """Test that the eigvals value is just assigned to new mp without copying."""

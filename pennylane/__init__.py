@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ PennyLane can be directly imported.
 from importlib import reload, metadata
 from sys import version_info
 
-
 import numpy as _np
+
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
@@ -50,6 +50,8 @@ from pennylane.qchem import (
     paulix_ops,
     taper_operation,
     import_operator,
+    from_openfermion,
+    to_openfermion,
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp
@@ -103,11 +105,13 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+    add_noise,
 )
 from pennylane.ops.functions import (
     dot,
     eigvals,
     equal,
+    assert_equal,
     evolve,
     generator,
     is_commuting,
@@ -122,7 +126,14 @@ from pennylane.ops.functions import (
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
-from pennylane.debugging import snapshots
+from pennylane.debugging import (
+    snapshots,
+    breakpoint,
+    debug_expval,
+    debug_state,
+    debug_probs,
+    debug_tape,
+)
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
@@ -139,6 +150,9 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
+
+import pennylane.noise
+from pennylane.noise import NoiseModel
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -217,11 +231,17 @@ def device(name, *args, **kwargs):
     * :mod:`'default.qutrit' <pennylane.devices.default_qutrit>`: a simple
       state simulator of qutrit-based quantum circuit architectures.
 
+    * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a
+      mixed-state simulator of qutrit-based quantum circuit architectures.
+
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
 
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
       simulator of Clifford circuits.
+
+    * :mod:`'default.tensor' <pennylane.devices.default_tensor>`: a simulator
+      of quantum circuits based on tensor networks.
 
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more

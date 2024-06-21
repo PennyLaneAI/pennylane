@@ -115,7 +115,7 @@ class TestPreprocessing:
         tape = tapes[0]
         assert tape.operations == qs.operations
         assert tape.measurements != qs.measurements
-        assert qml.equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
+        qml.assert_equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
         assert tape.measurements[1] is exp_z
 
     @pytest.mark.parametrize(
@@ -125,9 +125,12 @@ class TestPreprocessing:
             (qml.GellMann(0, 1), False),
             (qml.Snapshot(), True),
             (qml.TRX(1.1, 0), True),
+            (qml.QutritDepolarizingChannel(0.4, 0), True),
+            (qml.QutritAmplitudeDamping(0.1, 0.2, 0.12, 0), True),
+            (qml.TritFlip(0.4, 0.1, 0.02, 0), True),
         ],
     )
-    def test_accepted_observables(self, op, expected):
+    def test_accepted_operator(self, op, expected):
         """Test that stopping_condition works correctly"""
         res = stopping_condition(op)
         assert res == expected
@@ -136,6 +139,7 @@ class TestPreprocessing:
         "obs, expected",
         [
             (qml.TShift(0), False),
+            (qml.QutritDepolarizingChannel(0.4, 0), False),
             (qml.GellMann(0, 1), True),
             (qml.Snapshot(), False),
             (qml.operation.Tensor(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
@@ -144,7 +148,7 @@ class TestPreprocessing:
             (qml.ops.op_math.Prod(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
         ],
     )
-    def test_accepted_operator(self, obs, expected):
+    def test_accepted_observable(self, obs, expected):
         """Test that observable_stopping_condition works correctly"""
         res = observable_stopping_condition(obs)
         assert res == expected
@@ -196,7 +200,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
             for op, expected_op in zip(res_tape.operations, ops):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
@@ -219,7 +223,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for i, t in enumerate(res_tapes):
             for op, exp in zip(t.circuit, expected + measurements[i]):
-                assert qml.equal(op, exp)
+                qml.assert_equal(op, exp)
 
         val = (("a", "b"), "c", "d")
         assert batch_fn(val) == (("a", "b"), "c")
@@ -246,7 +250,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
             for op, expected_op in zip(res_tape.operations, expected_ops):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])

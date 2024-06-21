@@ -40,71 +40,6 @@ __plugin_devices = (
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
 
-def load(quantum_circuit_object, format: str, **load_kwargs):
-    r"""Load external quantum assembly and quantum circuits from supported frameworks
-    into PennyLane templates.
-
-    .. warning::
-        ``qml.load`` is deprecated. Instead, please use the functions outlined in the
-        :ref:`Importing Circuits <intro_ref_importing_circuits>` quickstart guide, such as ``qml.from_qiskit``.
-
-    .. note::
-
-        For more details on which formats are supported
-        please consult the corresponding plugin documentation:
-        https://pennylane.ai/plugins.html
-
-    **Example:**
-
-    >>> qc = qiskit.QuantumCircuit(2)
-    >>> qc.rz(0.543, [0])
-    >>> qc.cx(0, 1)
-    >>> my_circuit = qml.load(qc, format='qiskit')
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
-
-    Args:
-        quantum_circuit_object: the quantum circuit that will be converted
-            to a PennyLane template
-        format (str): the format of the quantum circuit object to convert from
-        **load_kwargs: keyword arguments to pass when converting the quantum circuit
-            using the plugin. See below for details about supported keyword arguments.
-
-    Keyword Args:
-        measurements (list[MeasurementProcess]): the list of PennyLane measurements that
-            overrides the terminal measurements that may be present in the imput circuit.
-            Currently, only supported for Qiskit's `QuantumCircuit <https://docs.pennylane.ai/projects/qiskit>`_.
-
-    Returns:
-        function: the PennyLane template created from the quantum circuit object
-
-    """
-
-    _format = "pyquil" if format == "pyquil_program" else format
-    warnings.warn(
-        f"qml.load() is deprecated. Instead, please use the more specific qml.from_{_format}()",
-        qml.PennyLaneDeprecationWarning,
-    )
-
-    if format in plugin_converters:
-        # loads the plugin load function
-        plugin_converter = plugin_converters[format].load()
-        # calls the load function of the converter on the quantum circuit object
-        return plugin_converter(quantum_circuit_object, **load_kwargs)
-
-    raise ValueError(
-        "Converter does not exist. Make sure the required plugin is installed "
-        "and supports conversion."
-    )
-
-
 def from_qiskit(quantum_circuit, measurements=None):
     r"""Converts a Qiskit `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`_
     into a PennyLane :ref:`quantum function <intro_vcirc_qfunc>`.
@@ -475,7 +410,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
-def from_qasm(quantum_circuit: str):
+def from_qasm(quantum_circuit: str, measurements=False):
     """Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
@@ -488,6 +423,58 @@ def from_qasm(quantum_circuit: str):
         ...                 'qreg q[1];' \\
         ...                 'h q[0];'
         >>> my_circuit = qml.from_qasm(hadamard_qasm)
+
+    The measurements can also be passed directly to the function when creating the
+    quantum function, making it possible to create a PennyLane circuit with
+    :class:`qml.QNode <pennylane.QNode>`:
+
+    >>> measurements = [qml.var(qml.Y(0))]
+    >>> circuit = qml.QNode(qml.from_qasm(hadamard_qasm, measurements), dev)
+    >>> circuit()
+    [tensor(1., requires_grad=True)]
+
+    .. note::
+
+        The ``measurements`` keyword allows one to add a list of PennyLane measurements
+        that will **override** any terminal measurements present in the QASM code,
+        so that they are not performed before the operations specified in ``measurements``.
+
+    By default, ``from_qasm`` will remove any measurements that are present in the QASM code.
+    If the QASM code contains measurements, set ``measurements=None`` to keep them in the
+    output of ``from_qasm``.
+
+    .. warning::
+
+        The current default behaviour of removing measurements in the QASM code is deprecated
+        and will be changed in a future release. Starting in version ``0.38``, ``from_qasm``
+        will keep the measurements from the QASM code by default. To remove all measurements,
+        set ``measurements=[]`` which overrides the existing measurements with an empty list.
+
+    Mid-circuit measurements inside the QASM code can also be interpreted.
+
+    .. code-block:: python
+
+        hadamard_qasm = 'OPENQASM 2.0;' \\
+                         'include "qelib1.inc";' \\
+                         'qreg q[2];' \\
+                         'creg c[2];' \\
+                         'h q[0];' \\
+                         'measure q[0] -> c[0];' \\
+                         'rz(0.24) q[0];' \\
+                         'cx q[0], q[1];' \\
+                         'measure q -> c;'
+
+        dev = qml.device("default.qubit")
+        loaded_circuit = qml.from_qasm(hadamard_qasm)
+
+        @qml.qnode(dev)
+        def circuit():
+            mid_measure, m0, m1 = loaded_circuit()
+            qml.cond(mid_measure == 0, qml.RX)(np.pi / 2, 0)
+            return [qml.expval(qml.measure(0))]
+
+    >>> circuit()
+    [tensor(0.75, requires_grad=True)]
 
     You can also load the contents of a QASM file:
 
@@ -507,49 +494,26 @@ def from_qasm(quantum_circuit: str):
 
     Args:
         quantum_circuit (str): a QASM string containing a valid quantum circuit
+        measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
+            measurement or list of PennyLane measurements that overrides any terminal measurements
+            that may be present in the input circuit. If set to ``None``, existing measurements
+            in the input circuit will be used.
 
     Returns:
         function: the PennyLane template created based on the QASM string
+
     """
     plugin_converter = plugin_converters["qasm"].load()
-    return plugin_converter(quantum_circuit)
-
-
-def from_qasm_file(qasm_filename: str):
-    """Loads quantum circuits from a QASM file using the converter in the
-    PennyLane-Qiskit plugin.
-
-    **Example:**
-
-    >>> my_circuit = qml.from_qasm_file("hadamard_circuit.qasm")
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
-
-    Args:
-        qasm_filename (str): path to a QASM file containing a valid quantum circuit
-
-    Returns:
-        function: the PennyLane template created based on the QASM file
-
-    .. warning::
-        qml.from_qasm_file is deprecated and will be removed in a future release.
-        Please use qml.from_qasm instead.
-
-    """
-    warnings.warn(
-        "qml.from_qasm_file is deprecated and will be removed in a future release. "
-        "Please use qml.from_qasm instead.",
-        qml.PennyLaneDeprecationWarning,
-    )
-    plugin_converter = plugin_converters["qasm_file"].load()
-    return plugin_converter(qasm_filename)
+    if measurements is False:
+        warnings.warn(
+            "The current default behaviour of removing measurements in the QASM code is "
+            "deprecated. Set measurements=None to keep the existing measurements in the QASM "
+            "code or set measurements=[] to remove them from the returned circuit. Starting "
+            "in version 0.38, measurements=None will be the new default.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        measurements = []
+    return plugin_converter(quantum_circuit, measurements=measurements)
 
 
 def from_pyquil(pyquil_program):

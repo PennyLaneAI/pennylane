@@ -41,12 +41,10 @@ hermitian_ops = [
 
 pauli_ops = [
     op_cls(wires)
-    for op_cls, wires in itertools.product(
-        [qml.PauliX, qml.PauliY, qml.PauliZ], [0, 1, "q", None, [1]]
-    )
+    for op_cls, wires in itertools.product([qml.PauliX, qml.PauliY, qml.PauliZ], [0, 1, "q", [1]])
 ]
 
-identity = [qml.Identity(wires) for wires in [0, 1, "q", None, [1, "a"]]]
+identity = [qml.Identity(wires) for wires in [0, 1, "q", [1, "a"]]]
 
 hamiltonians = [
     qml.Hamiltonian(*args)
@@ -92,7 +90,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert qml.equal(obs_out, obs_in)
+        qml.assert_equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
 
     def test_bind_init(self, obs_in):
@@ -109,7 +107,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert qml.equal(obs_out, obs_in)
+        qml.assert_equal(obs_out, obs_in)
         assert obs_in.compare(obs_out)
 
 
@@ -139,7 +137,7 @@ class TestDatasetArithmeticOperators:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert qml.equal(obs_out, obs_in)
+        qml.assert_equal(obs_out, obs_in)
 
     def test_bind_init(self, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
@@ -155,7 +153,7 @@ class TestDatasetArithmeticOperators:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        assert qml.equal(obs_out, obs_in)
+        qml.assert_equal(obs_out, obs_in)
 
 
 class TestDatasetOperator:

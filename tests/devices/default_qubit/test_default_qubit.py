@@ -18,7 +18,6 @@ from unittest import mock
 
 import numpy as np
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
@@ -127,15 +126,24 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
-    def test_supports_adjoint(self):
+    @pytest.mark.parametrize(
+        "device_wires, measurement",
+        [
+            (None, qml.expval(qml.PauliZ(0))),
+            (2, qml.expval(qml.PauliZ(0))),
+            (2, qml.probs()),
+            (2, qml.probs([0])),
+        ],
+    )
+    def test_supports_adjoint(self, device_wires, measurement):
         """Test that DefaultQubit says that it supports adjoint differentiation."""
-        dev = DefaultQubit()
+        dev = DefaultQubit(wires=device_wires)
         config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript([], [measurement])
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
@@ -299,7 +307,7 @@ class TestBasicCircuit:
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
 
         dev = DefaultQubit(max_workers=max_workers)
 
@@ -783,7 +791,7 @@ class TestExecutingBatches:
 
         dev = DefaultQubit(max_workers=max_workers)
 
-        x = tf.Variable(5.2281)
+        x = tf.Variable(5.2281, dtype="float64")
         with tf.GradientTape(persistent=True) as tape:
             results = self.f(dev, x)
 
@@ -905,7 +913,7 @@ class TestSumOfTermsDifferentiability:
 
         dev = DefaultQubit()
 
-        x = tf.Variable(0.5)
+        x = tf.Variable(0.5, dtype="float64")
 
         with tf.GradientTape() as tape1:
             out = self.f(dev, x, style=style)
@@ -1817,7 +1825,6 @@ class TestPostselection:
         assert qml.math.allclose(res, expected)
         assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
-    @flaky(max_runs=5)
     @pytest.mark.parametrize(
         "mp",
         [
@@ -1839,9 +1846,7 @@ class TestPostselection:
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
-        np.random.seed(42)
-
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=1971)
         param = qml.math.asarray(param, like=interface)
 
         @qml.defer_measurements
@@ -1879,7 +1884,12 @@ class TestPostselection:
 
     @pytest.mark.parametrize(
         "mp, expected_shape",
-        [(qml.sample(wires=[0]), (5,)), (qml.classical_shadow(wires=[0]), (2, 5, 1))],
+        [
+            (qml.sample(wires=[0, 2]), (5, 2)),
+            (qml.classical_shadow(wires=[0, 2]), (2, 5, 2)),
+            (qml.sample(wires=[0]), (5,)),
+            (qml.classical_shadow(wires=[0]), (2, 5, 1)),
+        ],
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
     @pytest.mark.parametrize("shots", [10, (10, 10)])
@@ -1908,11 +1918,6 @@ class TestPostselection:
                 qml.CNOT([0, 1])
                 qml.measure(0, postselect=1)
                 return qml.apply(mp)
-
-            if use_jit:
-                import jax
-
-                circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
             res = circ_postselect(param, shots=shots)
 

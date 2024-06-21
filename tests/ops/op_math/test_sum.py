@@ -349,7 +349,7 @@ class TestInitialization:
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        assert qml.equal(eval(repr(op)), op)
+        qml.assert_equal(eval(repr(op)), op)
 
 
 class TestMatrix:
@@ -660,6 +660,9 @@ class TestProperties:
         op3 = Sum(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ(-1))
         assert op3.hash != op1.hash
 
+        op4 = Sum(qml.X("a"), qml.X("a"), qml.Y("b"))
+        assert op4.hash != op1.hash
+
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_is_hermitian(self, ops_lst, sum_method):
@@ -679,11 +682,9 @@ class TestProperties:
         sum_op = sum_method(*ops_lst)
         assert sum_op._queue_category is None  # pylint: disable=protected-access
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_eigvals_Identity_no_wires(self):
         """Test that eigenvalues can be computed for a sum containing identity with no wires."""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("Identity with no wires is not supported for legacy opmath")
 
         op1 = qml.X(0) + 2 * qml.I()
         op2 = qml.X(0) + 2 * qml.I(0)
@@ -709,6 +710,16 @@ class TestProperties:
 
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
+
+    @pytest.mark.usefixtures("new_opmath_only")
+    def test_eigendecomposition_repeat_operations(self):
+        """Test that the eigendecomposition works with a repeated operation."""
+        op1 = qml.X(0) + qml.X(0) + qml.X(0)
+        op2 = qml.X(0) + qml.X(0)
+
+        assert op1.diagonalizing_gates() == op2.diagonalizing_gates()
+        assert qml.math.allclose(op1.eigvals(), np.array([-3.0, 3.0]))
+        assert qml.math.allclose(op2.eigvals(), np.array([-2.0, 2.0]))
 
     op_pauli_reps = (
         (
@@ -991,7 +1002,7 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -1029,7 +1040,7 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
 
 class TestSortWires:
@@ -1062,7 +1073,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
         """Test that the sorting algorithm works for operators that act on multiple wires."""
@@ -1097,7 +1108,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting algorithm works using a wire map."""
@@ -1152,7 +1163,7 @@ class TestSortWires:
         ]
         sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_no_wires(self):
         """Test that sorting can occur when an operator acts on no wires."""

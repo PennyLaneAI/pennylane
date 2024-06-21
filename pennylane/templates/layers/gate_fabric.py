@@ -67,8 +67,8 @@ class GateFabric(Operation):
         weights (tensor_like): Array of weights of shape ``(D, L, 2)``\,
             where ``D`` is the number of gate fabric layers and ``L = N/2-1``
             is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
-        wires (Iterable): wires that the template acts on
-        init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
+        wires (Iterable): wires that the template acts on.
+        init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
             in the Jordan-Wigner representation.
         include_pi (boolean): If True, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
@@ -228,8 +228,8 @@ class GateFabric(Operation):
             weights (tensor_like): Array of weights of shape ``(D, L, 2)``,
                 where ``D`` is the number of gate fabric layers and ``L = N/2-1``
                 is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
+            wires (Any or Iterable[Any]): wires that the operator acts on.
+            init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
                 in the Jordan-Wigner representation.
             include_pi (boolean): If ``True``, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
                 Default value is :math:`\hat{I}`.
@@ -281,7 +281,7 @@ class GateFabric(Operation):
 
         if n_wires < 4:
             raise ValueError(
-                f"This template requires the number of qubits to be greater than four; got 'n_wires' = {n_wires}"
+                f"This template requires the number of qubits to be at least four; got 'n_wires' = {n_wires}"
             )
 
         if n_wires % 2:

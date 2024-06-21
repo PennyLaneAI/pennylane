@@ -38,7 +38,7 @@ def _assert_error_raised(func, error, failure_comment):
     return inner_func
 
 
-def _check_decomposition(op):
+def _check_decomposition(op, skip_wire_mapping):
     """Checks involving the decomposition."""
     if op.has_decomposition:
         decomp = op.decomposition()
@@ -64,6 +64,18 @@ def _check_decomposition(op):
             assert o1 == o3, "decomposition must match queued operations"
             assert o1 == o4, "decomposition must match expansion"
             assert isinstance(o1, qml.operation.Operator), "decomposition must contain operators"
+
+        if skip_wire_mapping:
+            return
+        # Check that mapping wires transitions to the decomposition
+        wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
+        mapped_op = op.map_wires(wire_map)
+        mapped_decomp = mapped_op.decomposition()
+        orig_decomp = op.decomposition()
+        for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
+            assert (
+                mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
+            ), "Operators in decomposition of wire-mapped operator must have mapped wires."
     else:
         failure_comment = "If has_decomposition is False, then decomposition must raise a ``DecompositionUndefinedError``."
         _assert_error_raised(
@@ -199,6 +211,34 @@ def _check_pytree(op):
         ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
 
 
+def _check_capture(op):
+    try:
+        import jax
+    except ImportError:
+        return
+
+    if not all(isinstance(w, int) for w in op.wires):
+        return
+
+    qml.capture.enable()
+    try:
+        jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
+        data, _ = jax.tree_util.tree_flatten(op)
+        new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
+        assert op == new_op
+    except Exception as e:
+        raise ValueError(
+            (
+                "The capture of the operation into jaxpr failed somehow."
+                " This capture mechanism is currently experimental and not a core"
+                " requirement, but will be necessary in the future."
+                " Please see the capture module documentation for more information."
+            )
+        ) from e
+    finally:
+        qml.capture.disable()
+
+
 def _check_pickle(op):
     """Check that an operation can be dumped and reloaded with pickle."""
     pickled = pickle.dumps(op)
@@ -216,17 +256,19 @@ def _check_bind_new_parameters(op):
         assert qml.math.allclose(d1, d2), failure_comment
 
 
-def _check_wires(op):
+def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
 
+    if skip_wire_mapping:
+        return
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
     new_wires = qml.wires.Wires(list(ascii_lowercase[: len(op.wires)]))
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
+def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mapping=False) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
@@ -278,14 +320,15 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
         assert qml.math.allclose(d, p), "data and parameters must match."
 
     if len(op.wires) <= 26:
-        _check_wires(op)
+        _check_wires(op, skip_wire_mapping)
     _check_copy(op)
     _check_pytree(op)
     if not skip_pickle:
         _check_pickle(op)
     _check_bind_new_parameters(op)
 
-    _check_decomposition(op)
+    _check_decomposition(op, skip_wire_mapping)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_eigendecomposition(op)
+    _check_capture(op)

@@ -44,7 +44,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or MeasurementValue): Observable (with a ``diagonalizing_gates``
+        op (Observable or MeasurementValue or Sequence[MeasurementValue]): Observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
@@ -103,7 +103,9 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
         return ProbabilityMP(obs=op)
 
     if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+        if not qml.math.is_abstract(op[0]) and not all(
+            isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op
+        ):
             raise qml.QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
@@ -115,7 +117,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     if isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if op is not None and not op.has_diagonalizing_gates:
+    if op is not None and not qml.math.is_abstract(op) and not op.has_diagonalizing_gates:
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
@@ -147,9 +149,13 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    @property
-    def return_type(self):
-        return Probability
+    return_type = Probability
+
+    @classmethod
+    def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+        n_wires = num_device_wires if n_wires == 0 else n_wires
+        shape = (2**n_wires,)
+        return shape, float
 
     @property
     def numeric_type(self):
@@ -259,23 +265,33 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         """Count the occurrences of sampled indices and convert them to relative
         counts in order to estimate their occurrence probability."""
         num_bins, bin_size = indices.shape[-2:]
+        interface = qml.math.get_deep_interface(indices)
+
+        if qml.math.is_abstract(indices):
+
+            def _count_samples_core(indices, dim, interface):
+                return qml.math.array(
+                    [[qml.math.sum(idx == p) for idx in indices] for p in range(dim)],
+                    like=interface,
+                )
+
+        else:
+
+            def _count_samples_core(indices, dim, *_):
+                probabilities = qml.math.zeros((dim, num_bins), dtype="float64")
+                for b, idx in enumerate(indices):
+                    basis_states, counts = qml.math.unique(idx, return_counts=True)
+                    probabilities[basis_states, b] = counts
+                return probabilities
+
         if batch_size is None:
-            prob = qml.math.zeros((dim, num_bins), dtype="float64")
-            # count the basis state occurrences, and construct the probability vector for each bin
-            for b, idx in enumerate(indices):
-                basis_states, counts = qml.math.unique(idx, return_counts=True)
-                prob[basis_states, b] = counts / bin_size
-
-            return prob
-
-        prob = qml.math.zeros((batch_size, dim, num_bins), dtype="float64")
-        indices = indices.reshape((batch_size, num_bins, bin_size))
+            return _count_samples_core(indices, dim, interface) / bin_size
 
         # count the basis state occurrences, and construct the probability vector
         # for each bin and broadcasting index
-        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
-            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
-                basis_states, counts = qml.math.unique(idx, return_counts=True)
-                prob[i, basis_states, b] = counts / bin_size
-
-        return prob
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+        probabilities = qml.math.array(
+            [_count_samples_core(_indices, dim, interface) for _indices in indices],
+            like=interface,
+        )
+        return probabilities / bin_size

@@ -146,7 +146,7 @@ def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, mo
 
 
 msg1 = "Elements in the lists are expected to be of type 'FermionOperator'"
-msg2 = "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'"
+msg2 = "Please set 'mapping' to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
 
 
 @pytest.mark.parametrize(
@@ -173,13 +173,13 @@ def test_import_of(monkeypatch):
         m.setitem(sys.modules, "openfermion", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.openfermion_obs._import_of()
+            qml.qchem.openfermion_pyscf._import_of()
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermionpyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.openfermion_obs._import_of()
+            qml.qchem.openfermion_pyscf._import_of()
 
 
 def test_import_pyscf(monkeypatch):
@@ -190,4 +190,4 @@ def test_import_pyscf(monkeypatch):
         m.setitem(sys.modules, "pyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires pyscf"):
-            qml.qchem.openfermion_obs._import_pyscf()
+            qml.qchem.openfermion_pyscf._import_pyscf()

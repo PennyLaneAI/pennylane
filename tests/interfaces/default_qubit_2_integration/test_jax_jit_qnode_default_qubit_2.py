@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
+import copy
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 from functools import partial
 
@@ -47,8 +49,7 @@ interface_and_qubit_device_and_diff_method = [
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-config = pytest.importorskip("jax.config")
-config.config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 TOL_FOR_SPSA = 1.0
 SEED_FOR_SPSA = 32651
@@ -1375,6 +1376,7 @@ class TestQubitIntegrationHigherOrder:
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
         if not dev.wires:
+            dev = copy.copy(dev)
             dev._wires = qml.wires.Wires([0, 1])  # pylint:disable=protected-access
 
         @qnode(

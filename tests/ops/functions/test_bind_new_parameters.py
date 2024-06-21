@@ -87,7 +87,7 @@ def test_composite_ops(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert all(no is not o for no, o in zip(new_op.operands, op.operands))
 
@@ -122,7 +122,7 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert new_op.base is not op.base
 
@@ -171,7 +171,7 @@ def test_symbolic_ops(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert new_op.base is not op.base
 
@@ -181,7 +181,7 @@ def test_controlled_sequence():
     op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
     new_op = bind_new_parameters(op, (0.5,))
     assert qml.math.allclose(new_op.data[0], 0.5)
-    assert qml.equal(new_op.base, qml.RX(0.5, wires=3))
+    qml.assert_equal(new_op.base, qml.RX(0.5, wires=3))
 
 
 with qml.operation.disable_new_opmath_cm():
@@ -216,7 +216,7 @@ def test_hamiltonian_legacy_opmath(H, new_coeffs, expected_H):
     operator."""
     new_H = bind_new_parameters(H, new_coeffs)
 
-    assert qml.equal(new_H, expected_H)
+    qml.assert_equal(new_H, expected_H)
     assert new_H is not H
 
 
@@ -307,7 +307,7 @@ def test_linear_combination(H, new_coeffs, expected_H):
     operator."""
     new_H = bind_new_parameters(H, new_coeffs)
 
-    assert qml.equal(new_H, expected_H)
+    qml.assert_equal(new_H, expected_H)
     assert new_H is not H
 
 
@@ -343,7 +343,7 @@ def test_tensor(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert all(n_obs is not obs for n_obs, obs in zip(new_op.obs, op.obs))
 
@@ -369,6 +369,11 @@ new_hamiltonian = qml.Hamiltonian(
             [10, 0.4, 0.5, 0.6],
             qml.CommutingEvolution(new_hamiltonian, 10),
         ),
+        (
+            qml.QDrift(old_hamiltonian, 5, n=4, seed=251),
+            [0.4, 0.5, 0.6, 10],
+            qml.QDrift(new_hamiltonian, 10, n=4, seed=251),
+        ),
     ],
 )
 def test_evolution_template_ops(op, new_params, expected_op):
@@ -386,7 +391,7 @@ def test_evolution_template_ops(op, new_params, expected_op):
     assert new_op.wires == op.wires
     for val1, val2 in zip(new_op.hyperparameters.values(), expected_op.hyperparameters.values()):
         if isinstance(val1, qml.Hamiltonian):
-            assert qml.equal(val1, val2)
+            qml.assert_equal(val1, val2)
         else:
             assert val1 == val2
 
@@ -411,7 +416,7 @@ def test_fermionic_template_ops(op, new_params, expected_op):
     with the new parameters."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
 
 
@@ -451,7 +456,7 @@ def test_vanilla_operators(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
 
 
@@ -469,7 +474,7 @@ def test_projector(op, new_params, expected_op):
     parameters without mutating the original operator."""
     new_op = bind_new_parameters(op, new_params)
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op
 
 
@@ -493,7 +498,7 @@ def test_conditional_ops(op, new_params, expected_op):
     new_op = bind_new_parameters(cond_op, new_params)
 
     assert isinstance(new_op, qml.ops.Conditional)
-    assert new_op.then_op == expected_op
+    assert new_op.base == expected_op
     assert new_op.meas_val.measurements == [mp0]
 
 
@@ -506,5 +511,5 @@ def test_unsupported_op_copy_and_set():
 
     expected_op = qml.PCPhase(0.456, 2, wires=[1, 2])
 
-    assert qml.equal(new_op, expected_op)
+    qml.assert_equal(new_op, expected_op)
     assert new_op is not op

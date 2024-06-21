@@ -21,6 +21,19 @@ quantum-classical programs.
 
     This module is experimental and will change significantly in the future.
 
+.. currentmodule:: pennylane.capture
+
+.. autosummary::
+    :toctree: api
+
+    ~disable
+    ~enable
+    ~enabled
+    ~create_operator_primitive
+    ~create_measurement_obs_primitive
+    ~create_measurement_wires_primitive
+    ~create_measurement_mcm_primitive
+    ~qnode_call
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -40,5 +53,92 @@ By default, the mechanism is disabled:
     >>> qml.capture.enabled()
     False
 
+**Custom Operator Behaviour**
+
+Any operator that inherits from :class:`~.Operator` gains a default ability to be captured
+in a Jaxpr. Any positional argument is bound as a tracer, wires are processed out into individual tracers,
+and any keyword arguments are passed as keyword metadata.
+
+.. code-block:: python
+
+    class MyOp1(qml.operation.Operator):
+
+        def __init__(self, arg1, wires, key=None):
+            super().__init__(arg1, wires=wires)
+
+    def qfunc(a):
+        MyOp1(a, wires=(0,1), key="a")
+
+    qml.capture.enable()
+    print(jax.make_jaxpr(qfunc)(0.1))
+
+.. code-block::
+
+    { lambda ; a:f32[]. let
+        _:AbstractOperator() = MyOp1[key=a n_wires=2] a 0 1
+    in () }
+
+But an operator developer may need to override custom behavior for calling ``cls._primitive.bind``
+(where ``cls`` indicates the class) if:
+
+* The operator does not accept wires, like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
+* The operator needs to enforce a data / metadata distinction, like :class:`~.PauliRot`.
+
+In such cases, the operator developer can override ``cls._primitive_bind_call``, which
+will be called when constructing a new class instance instead of ``type.__call__``.  For example,
+
+.. code-block:: python
+
+    class JustMetadataOp(qml.operation.Operator):
+
+        def __init__(self, metadata):
+            super().__init__(wires=[])
+            self._metadata = metadata
+
+        @classmethod
+        def _primitive_bind_call(cls, metadata):
+            return cls._primitive.bind(metadata=metadata)
+
+
+    def qfunc():
+        JustMetadataOp("Y")
+
+    qml.capture.enable()
+    print(jax.make_jaxpr(qfunc)())
+
+.. code-block::
+
+    { lambda ; . let _:AbstractOperator() = JustMetadataOp[metadata=Y]  in () }
+
+As you can see, the input ``"Y"``, while being passed as a positional argument, is converted to
+metadata within the custom ``_primitive_bind_call`` method.
+
+If needed, developers can also override the implementation method of the primitive like was done with ``Controlled``.
+``Controlled`` needs to do so to handle packing and unpacking the control wires.
+
+.. code-block:: python
+
+    class MyCustomOp(qml.operation.Operator):
+        pass
+
+    @MyCustomOp._primitive.def_impl
+    def _(*args, **kwargs):
+        return type.__call__(MyCustomOp, *args, **kwargs)
 """
 from .switches import disable, enable, enabled
+from .capture_meta import CaptureMeta, ABCCaptureMeta
+from .primitives import (
+    create_operator_primitive,
+    create_measurement_obs_primitive,
+    create_measurement_wires_primitive,
+    create_measurement_mcm_primitive,
+)
+from .capture_qnode import qnode_call
+
+
+def __getattr__(key):
+    if key == "AbstractOperator":
+        from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
+
+        return _get_abstract_operator()
+    raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")

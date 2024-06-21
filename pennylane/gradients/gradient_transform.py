@@ -21,54 +21,31 @@ from functools import partial
 import pennylane as qml
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 
-SUPPORTED_GRADIENT_KWARGS = [
+SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
     "argnum",
+    "atol",
     "aux_wire",
     "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
     "device_wires",
     "diagonal_shifts",
+    "fallback_fn",
     "f0",
     "force_order2",
     "gradient_recipes",
-    "gradient_kwargs",
     "h",
     "n",
-    "num",
     "num_directions",
     "num_split_times",
     "off_diagonal_shifts",
-    "order",
-    "reduction",
     "sampler",
     "sampler_rng",
     "sampler_seed",
     "shifts",
-    "shots",
     "strategy",
     "use_broadcasting",
     "validate_params",
-]
-
-
-def assert_multimeasure_not_broadcasted(measurements, broadcast):
-    """Assert that there are not simultaneously multiple measurements and
-    broadcasting activated. Otherwise raises an error."""
-    if broadcast and len(measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {measurements}."
-        )
-
-
-def assert_shot_vector_not_broadcasted(shots, broadcast):
-    """Assert that there are not simultaneously multiple shot settings (shot vector) and
-    broadcasting activated. Otherwise raises an error."""
-    if broadcast and shots.has_partitioned_shots:
-        raise NotImplementedError(
-            "Broadcasting with shot vectors is not supported yet. "
-            f"Set broadcast to False instead. The tape shots are {shots}."
-        )
+}
 
 
 def assert_no_state_returns(measurements, transform_name):
@@ -169,7 +146,7 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
     """
 
     # pylint:disable=protected-access
-    par_info = tape._par_info[param_index]
+    par_info = tape.par_info[param_index]
 
     if use_graph:
         op_or_mp = tape[par_info["op_idx"]]
@@ -295,20 +272,22 @@ def _no_trainable_grad(tape):
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
-def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
+def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):
     """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
-    if first_axis_size == 1:
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 1)``"""
+    if first_axis_size == 1 and squeeze:
         return tuple(grads[0][i] for i in range(second_axis_size))
     return tuple(
         tuple(grads[j][i] for j in range(first_axis_size)) for i in range(second_axis_size)
     )
 
 
-def _move_first_axis_to_third_pos(grads, first_axis_size, second_axis_size, third_axis_size):
+def _move_first_axis_to_third_pos(
+    grads, first_axis_size, second_axis_size, third_axis_size, squeeze=True
+):
     """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
-    if first_axis_size == 1:
+    a tuple of tuples. Tuple version of ``np.moveaxis(grads, 0, 2)``"""
+    if first_axis_size == 1 and squeeze:
         return tuple(
             tuple(grads[0][i][j] for j in range(third_axis_size)) for i in range(second_axis_size)
         )

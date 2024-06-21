@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.devices.qutrit_mixed import apply_operation, measure
 from pennylane.operation import Channel
+from tests.dummy_debugger import Debugger
 
 ml_frameworks_list = [
     "numpy",
@@ -84,13 +85,6 @@ def test_custom_operator_with_matrix(one_qutrit_state):
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
 
-    class Debugger:  # pylint: disable=too-few-public-methods
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
-
     @pytest.mark.usefixtures("two_qutrit_state")
     def test_no_debugger(
         self, ml_framework, state, shape, request
@@ -108,7 +102,7 @@ class TestSnapshot:
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
         )
@@ -125,7 +119,7 @@ class TestSnapshot:
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         tag = "dense"
         new_state = apply_operation(
             qml.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
@@ -142,14 +136,29 @@ class TestSnapshot:
         """Test a snapshot with measurement throws NotImplementedError"""
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
+        tag = "expected_value"
 
-        debugger = self.Debugger()
-        with pytest.raises(NotImplementedError):
-            _ = apply_operation(
-                qml.Snapshot(measurement=qml.expval(qml.GellMann(0, 1))),
-                initial_state,
-                debugger=debugger,
-                is_state_batched=len(shape) != 2,
+        debugger = Debugger()
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=qml.expval(qml.GellMann(0, 1))),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=len(shape) != 2,
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        if len(shape) == 2:
+            assert debugger.snapshots[tag].shape == ()
+            assert math.allclose(debugger.snapshots[tag], 0.018699118213231336)
+        else:
+            assert debugger.snapshots[tag].shape == (2,)
+            assert math.allclose(
+                debugger.snapshots[tag], [0.018699118213231336, 0.018699118213231336]
             )
 
 
@@ -355,8 +364,8 @@ class TestTRXCalcGrad:
         trx_adj = qml.TRX.compute_matrix(-phi, subspace)
         state = math.reshape(state, (9, 9))
 
-        expected_probs = math.diagonal(
-            np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3))
+        expected_probs = math.real(
+            math.diagonal(np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3)))
         )
         assert qml.math.allclose(probs, expected_probs)
 
@@ -371,7 +380,7 @@ class TestTRXCalcGrad:
         expected_derivative_state = (
             np.kron(trx_derivative, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3))
         ) + (np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj_derivative, np.eye(3)))
-        expected_derivative = np.diagonal(expected_derivative_state)
+        expected_derivative = np.real(np.diagonal(expected_derivative_state))
         assert qml.math.allclose(jacobian, expected_derivative)
 
     @pytest.mark.autograd
@@ -443,8 +452,8 @@ class TestTRXCalcGrad:
         """Tests the application and differentiation of a trx gate with tensorflow"""
         import tensorflow as tf
 
-        state = tf.Variable(two_qutrit_state)
-        phi = tf.Variable(0.8589, trainable=True)
+        state = tf.Variable(two_qutrit_state, dtype="complex128")
+        phi = tf.Variable(0.8589, trainable=True, dtype="float64")
 
         with tf.GradientTape() as grad_tape:
             op = qml.TRX(phi, wires=0, subspace=subspace)
@@ -547,8 +556,8 @@ class TestChannelCalcGrad:
         """Tests the application and differentiation of a channel with tensorflow"""
         import tensorflow as tf
 
-        state = tf.Variable(two_qutrit_state)
-        p = tf.Variable(0.8589 + 0j, trainable=True)
+        state = tf.Variable(two_qutrit_state, dtype="complex128")
+        p = tf.Variable(0.8589, trainable=True, dtype="complex128")
 
         with tf.GradientTape() as grad_tape:
             op = CustomChannel(p, wires=1)

@@ -15,6 +15,7 @@
 # pylint: disable=too-many-branches
 from typing import Callable, Sequence
 
+import pennylane as qml
 from pennylane.math import allclose, cast_like, get_interface, is_abstract, stack, zeros
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
@@ -116,8 +117,17 @@ def merge_rotations(
         2: ─╰X─────────H────────╰●───────────────────┤
 
     """
+
     # Expand away adjoint ops
-    expanded_tape = tape.expand(stop_at=lambda obj: not isinstance(obj, Adjoint))
+    def stop_at(obj):
+        return not isinstance(obj, Adjoint)
+
+    [expanded_tape], _ = qml.devices.preprocess.decompose(
+        tape,
+        stopping_condition=stop_at,
+        name="merge_rotations",
+        error=qml.operation.DecompositionUndefinedError,
+    )
     list_copy = expanded_tape.operations
     new_operations = []
     while len(list_copy) > 0:

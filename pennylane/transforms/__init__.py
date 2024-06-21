@@ -107,6 +107,7 @@ preprocessing, get information from a circuit and more.
     ~batch_params
     ~batch_input
     ~transforms.insert
+    ~transforms.add_noise
     ~defer_measurements
     ~transforms.split_non_commuting
     ~transforms.broadcast_expand
@@ -284,11 +285,11 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-
+from .add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
-from .dynamic_one_shot import dynamic_one_shot
+from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting

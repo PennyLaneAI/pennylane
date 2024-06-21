@@ -211,9 +211,9 @@ def parity_transform(
     >>> parity_transform(w, n=6)
     (
         -0.25j * Y(0)
-    + (-0.25+0j) * (X(0) @ Z(1))
-    + (0.25+0j) * X(0)
-    + 0.25j * (Y(0) @ Z(1))
+      + (-0.25+0j) * (X(0) @ Z(1))
+      + (0.25+0j) * X(0)
+      + 0.25j * (Y(0) @ Z(1))
     )
 
     >>> parity_transform(w, n=6, ps=True)
@@ -374,10 +374,10 @@ def bravyi_kitaev(
     >>> w = qml.fermi.from_string('0+ 1-')
     >>> bravyi_kitaev(w, n=6)
     (
-    -0.25j * Y(0)
-    + (-0.25+0j) * (X(0) @ Z(1))
-    + (0.25+0j) * X(0)
-    + 0.25j * (Y(0) @ Z(1))
+        -0.25j * Y(0)
+      + (-0.25+0j) * (X(0) @ Z(1))
+      + (0.25+0j) * X(0)
+      + 0.25j * (Y(0) @ Z(1))
     )
 
     >>> bravyi_kitaev(w, n=6, ps=True)
@@ -556,7 +556,7 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
     qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
 
     for fw, coeff in fermi_operator.items():
-        fermi_word_as_ps = parity_transform(fw, n, ps=True)
+        fermi_word_as_ps = bravyi_kitaev(fw, n, ps=True)
 
         for pw in fermi_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
