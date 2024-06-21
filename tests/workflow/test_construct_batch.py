@@ -140,7 +140,7 @@ class TestTransformProgramGetter:
             return qml.expval(qml.PauliZ(0))
 
         full_prog = get_transform_program(circuit)
-        assert len(full_prog) == 13
+        assert len(full_prog) == 12
 
         config = qml.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
