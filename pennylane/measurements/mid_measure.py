@@ -222,7 +222,7 @@ def measure(
         raise NotImplementedError(
             "Capture cannot currently handle classical output from mid circuit measurements."
         )
-    return mp.mv
+    return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
 T = TypeVar("T")
@@ -261,14 +261,6 @@ class MidMeasureMP(MeasurementProcess):
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
-        self.mv = MeasurementValue([self], processing_fn=lambda v: v)
-
-    @property
-    def wires(self):
-        # Overriden wires property as MeasurementProcess.wires uses mv.wires when mv is not None,
-        # and MeasurementValue.wires uses the wires of the mid-circuit measurements, which would
-        # lead to infinite recursion.
-        return self._wires
 
     # pylint: disable=arguments-renamed, arguments-differ
     @classmethod
@@ -307,18 +299,6 @@ class MidMeasureMP(MeasurementProcess):
         _label += "├" if not self.reset else "│  │0⟩"
 
         return _label
-
-    def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
-        new_measurement = MidMeasureMP(
-            wire_map.get(self.wires[0], self.wires[0]),
-            reset=self.reset,
-            postselect=self.postselect,
-            id=self.id,
-        )
-        new_mv = MeasurementValue([new_measurement], processing_fn=lambda v: v)
-        new_measurement.mv = new_mv
-        return new_measurement
 
     @property
     def return_type(self):

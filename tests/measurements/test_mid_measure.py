@@ -43,16 +43,6 @@ class TestMeasure:
         ):
             qml.measure(wires=[0, 1])
 
-    @pytest.mark.parametrize("reset", [True, False])
-    @pytest.mark.parametrize("postselect", [None, 0, 1])
-    def test_map_wires(self, reset, postselect):
-        """Test that MidMeasureMP.map_wires maps wires correctly."""
-        wire_map = {0: "a"}
-        op = MidMeasureMP(wires=0, reset=reset, postselect=postselect)
-        expected = MidMeasureMP(wires="a", reset=reset, postselect=postselect)
-
-        assert op.map_wires(wire_map) == expected
-
     def test_hash(self):
         """Test that the hash for `MidMeasureMP` is defined correctly."""
         m1 = MidMeasureMP(Wires(0), id="m1")
