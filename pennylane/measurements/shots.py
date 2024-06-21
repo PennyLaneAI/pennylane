@@ -145,7 +145,8 @@ class Shots:
 
     _frozen = False
 
-    def __new__(cls, shots=None):
+    # pylint:disable=unused-argument
+    def __new__(cls, shots=None, merge_repeated=True):
         return shots if isinstance(shots, cls) else object.__new__(cls)
 
     def __setattr__(self, name, value):
@@ -155,7 +156,7 @@ class Shots:
             )
         return super().__setattr__(name, value)
 
-    def __init__(self, shots=None):
+    def __init__(self, shots=None, merge_repeated=True):
         if shots is None:
             self.total_shots = None
             self.shot_vector = ()
@@ -167,7 +168,10 @@ class Shots:
         elif isinstance(shots, Sequence):
             if not all(valid_int(s) or valid_tuple(s) for s in shots):
                 raise self._SHOT_ERROR
-            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
+            self.__all_tuple_init__(
+                [s if isinstance(s, tuple) else (s, 1) for s in shots],
+                merge_repeated=merge_repeated,
+            )
         elif isinstance(shots, self.__class__):
             return  # self already _is_ shots as defined by __new__
         else:
@@ -211,12 +215,12 @@ class Shots:
             for _ in range(shot_copy.copies):
                 yield shot_copy.shots
 
-    def __all_tuple_init__(self, shots: Sequence[Tuple]):
+    def __all_tuple_init__(self, shots: Sequence[Tuple], merge_repeated):
         res = []
         total_shots = 0
         current_shots, current_copies = shots[0]
         for s in shots[1:]:
-            if s[0] == current_shots:
+            if s[0] == current_shots and merge_repeated:
                 current_copies += s[1]
             else:
                 res.append(ShotCopies(current_shots, current_copies))
