@@ -1,8 +1,8 @@
-
 from functools import partial
 from typing import Optional
 
 import jax
+from jax.tree_util import tree_flatten, tree_unflatten
 
 from pennylane.devices.qubit import apply_operation, create_initial_state, measure
 from pennylane.tape import QuantumScript
@@ -106,7 +106,12 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     def interpret_measurement(self, m):
         return measure(m, self._state)
 
-from pennylane_lightning.lightning_qubit._state_vector import LightningStateVector, LightningMeasurements
+
+from pennylane_lightning.lightning_qubit._state_vector import (
+    LightningMeasurements,
+    LightningStateVector,
+)
+
 
 class LightningInterpreter(PlxprInterpreter):
 
@@ -121,7 +126,6 @@ class LightningInterpreter(PlxprInterpreter):
 
     def interpret_measurement(self, m):
         return LightningMeasurements(self._state).measurement(m)
-
 
 
 class DecompositionInterpreter(PlxprInterpreter):
@@ -143,7 +147,15 @@ class DecompositionInterpreter(PlxprInterpreter):
     """
 
     def interpret_operation(self, op):
-        op.decomposition()
+        if op.has_decomposition:
+            op.decomposition()
+        else:
+            vals, structure = tree_flatten(op)
+            tree_unflatten(structure, vals)
+
+    def interpret_measurement(self, m):
+        vals, structure = tree_flatten(m)
+        return tree_unflatten(structure, vals)
 
 
 class ConvertToTape(PlxprInterpreter):
@@ -202,7 +214,8 @@ class CancelInverses(PlxprInterpreter):
         if len(op.wires) != 1:
             for w in op.wires:
                 self._last_op_on_wires[w] = None
-            op._unflatten(*op._flatten())
+            vals, structure = tree_flatten(op)
+            tree_unflatten(structure, vals)
             return
 
         w = op.wires[0]
@@ -212,11 +225,77 @@ class CancelInverses(PlxprInterpreter):
                 return
             previous_op = self._last_op_on_wires[w]
             if previous_op is not None:
-                previous_op._unflatten(*previous_op._flatten())
+                vals, structure = tree_flatten(previous_op)
+                tree_unflatten(structure, vals)
         self._last_op_on_wires[w] = op
         return
+
+    def interpret_measurement(self, m):
+        vals, structure = tree_flatten(m)
+        return tree_unflatten(structure, vals)
 
     def cleanup(self):
         for _, op in self._last_op_on_wires.items():
             if op is not None:
-                op._unflatten(*op._flatten())
+                vals, structure = tree_flatten(op)
+                tree_unflatten(structure, vals)
+
+
+class MergeRotations(PlxprInterpreter):
+    """
+
+    >>> def g(x):
+    ...     qml.RX(x, 0)
+    ...     qml.RX(2*x, 0)
+    ...     qml.RX(-4*x, 0)
+    ...     qml.X(0)
+    ...     qml.RX(0.5, 0)
+    >>> plxpr = jax.make_jaxpr(g)(1.0)
+    >>> MergeRotations().call_jaxpr(plxpr.jaxpr, plxpr.consts)(1.0)
+    { lambda ; a:f64[]. let
+        b:f64[] = mul 2.0 a
+        c:f64[] = add b a
+        d:f64[] = mul -4.0 a
+        e:f64[] = add d c
+        _:AbstractOperator() = RX[n_wires=1] e 0
+        _:AbstractOperator() = PauliX[n_wires=1] 0
+        _:AbstractOperator() = RX[n_wires=1] 0.5 0
+    in () }
+
+    """
+
+    _last_op_on_wires = None
+
+    def setup(self):
+        self._last_op_on_wires = {}
+
+    def interpret_operation(self, op):
+        if len(op.wires) != 1:
+            for w in op.wires:
+                self._last_op_on_wires[w] = None
+            vals, structure = tree_flatten(op)
+            tree_unflatten(structure, vals)
+            return
+
+        w = op.wires[0]
+        if w in self._last_op_on_wires:
+            previous_op = self._last_op_on_wires[w]
+            if op.name == previous_op.name and op.wires == previous_op.wires:
+                new_data = [d1 + d2 for d1, d2 in zip(op.data, previous_op.data)]
+                self._last_op_on_wires[w] = op._primitive.impl(*new_data, wires=op.wires)
+                return
+            if previous_op is not None:
+                vals, structure = tree_flatten(previous_op)
+                tree_unflatten(structure, vals)
+        self._last_op_on_wires[w] = op
+        return
+
+    def interpret_measurement(self, m):
+        vals, structure = tree_flatten(m)
+        return tree_unflatten(structure, vals)
+
+    def cleanup(self):
+        for _, op in self._last_op_on_wires.items():
+            if op is not None:
+                vals, structure = tree_flatten(op)
+                tree_unflatten(structure, vals)
