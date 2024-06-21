@@ -420,12 +420,10 @@ class TestJaxSupport:
 
 
 # At this stage, this test is especially relevant for the MPS method, but we test both methods for consistency.
+@pytest.mark.parametrize("num_orbitals", [2, 4])
 @pytest.mark.parametrize("method", ["mps", "tn"])
-def test_wire_order_dense_vector(method):
+def test_wire_order_dense_vector(method, num_orbitals):
     """Test that the wire order is preserved if the initial state is created from a dense vector."""
-
-    num_orbitals = 4
-    control_wires = 1
 
     dev = qml.device("default.tensor", wires=int(2 * num_orbitals + 1), method=method)
     qubits = dev.wires.tolist()
@@ -444,6 +442,8 @@ def test_wire_order_dense_vector(method):
         for grot_mat, indices in givens_list:
             theta = np.arccos(np.real(grot_mat[1, 1]))
             qml.SingleExcitation(2 * theta, wires=[int(wires[indices[0]]), int(wires[indices[1]])])
+
+    control_wires = 1
 
     @qml.qnode(dev)
     def circuit():
