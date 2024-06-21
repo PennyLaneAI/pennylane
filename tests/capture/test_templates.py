@@ -23,14 +23,12 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 pytestmark = pytest.mark.jax
 
-AbstractOperator = _get_abstract_operator()
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 
 
