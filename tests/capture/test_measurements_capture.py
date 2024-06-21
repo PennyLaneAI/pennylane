@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.capture import AbstractMeasurement
 from pennylane.measurements import (
     ClassicalShadowMP,
     DensityMatrixMP,
@@ -37,6 +36,8 @@ from pennylane.measurements import (
 )
 
 jax = pytest.importorskip("jax")
+
+from pennylane.capture import AbstractMeasurement  # pylint: disable=wrong-import-position
 
 pytestmark = pytest.mark.jax
 
