@@ -15,12 +15,12 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
-import warnings
+# import warnings
 from collections import defaultdict
 from importlib import metadata
 from sys import version_info
 
-import pennylane as qml
+# import pennylane as qml
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -410,7 +410,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
-def from_qasm(quantum_circuit: str, measurements=False):
+def from_qasm(quantum_circuit: str, measurements=None):
     """Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
@@ -504,15 +504,15 @@ def from_qasm(quantum_circuit: str, measurements=False):
 
     """
     plugin_converter = plugin_converters["qasm"].load()
-    if measurements is False:
-        warnings.warn(
-            "The current default behaviour of removing measurements in the QASM code is "
-            "deprecated. Set measurements=None to keep the existing measurements in the QASM "
-            "code or set measurements=[] to remove them from the returned circuit. Starting "
-            "in version 0.38, measurements=None will be the new default.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        measurements = []
+    # if measurements is False:
+    #     warnings.warn(
+    #         "The current default behaviour of removing measurements in the QASM code is "
+    #         "deprecated. Set measurements=None to keep the existing measurements in the QASM "
+    #         "code or set measurements=[] to remove them from the returned circuit. Starting "
+    #         "in version 0.38, measurements=None will be the new default.",
+    #         qml.PennyLaneDeprecationWarning,
+    #     )
+    #     measurements = []
     return plugin_converter(quantum_circuit, measurements=measurements)
 
 
