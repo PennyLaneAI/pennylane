@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.typing import TensorLike
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
@@ -260,15 +261,12 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         return prob_vector
 
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         if len(np.shape(density_matrix)) == 2:
             prob = qml.math.diagonal(density_matrix)
         else:
             prob = qml.math.array(
-                [
-                    qml.math.diagonal(density_matrix[i])
-                    for i in range(np.shape(density_matrix)[0])
-                ]
+                [qml.math.diagonal(density_matrix[i]) for i in range(np.shape(density_matrix)[0])]
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method

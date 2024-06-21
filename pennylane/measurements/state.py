@@ -18,6 +18,7 @@ from typing import Optional, Sequence
 
 import pennylane as qml
 from pennylane.wires import WireError, Wires
+from pennylane.typing import TensorLike
 
 from .measurements import State, StateMeasurement
 
@@ -243,7 +244,7 @@ class DensityMatrixMP(StateMP):
             kwargs["c_dtype"] = state.dtype
         return qml.math.reduce_statevector(state, **kwargs)
 
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         # pylint:disable=redefined-outer-name
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
