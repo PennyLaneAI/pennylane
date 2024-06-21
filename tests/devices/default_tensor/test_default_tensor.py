@@ -23,6 +23,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.qchem import givens_decomposition
+from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
 quimb = pytest.importorskip("quimb")
@@ -451,4 +452,6 @@ def test_wire_order_dense_vector(method):
         basis_rotation_ops(U0, [int(2 * i + 1 + control_wires) for i in range(num_orbitals)])
         return qml.state()
 
-    assert circuit() is not None
+    state = circuit()
+    assert isinstance(state, TensorLike)
+    assert len(state) == 2 ** (2 * num_orbitals + 1)
