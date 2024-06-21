@@ -305,7 +305,7 @@ def split_non_commuting(
             )
             and term_sampling
         ):
-            tapes, single_term_obs_mps = _split_ham_no_grouping(
+            tapes, single_term_obs_mps = _split_ham_term_sampling(
                 tape, term_sampling, single_term_obs_mps, metadatas
             )
         else:
@@ -346,15 +346,28 @@ def split_non_commuting(
     return _split_using_qwc_grouping(tape, single_term_obs_mps, offsets)
 
 
-def _split_ham_no_grouping(
+def _split_ham_term_sampling(
     tape: qml.tape.QuantumScript, term_sampling, single_term_obs_mps, metadatas
 ):
+    """
+    This function is responsible for carrying out shot-allocation to measurement terms
+    and generating new tapes as appropriate. Depending on the coefficients of the terms
+    of the observable, it is possible that some of them might be allocated no shots from some
+    or all ShotCopies in the shot vector and so will have no new tape generated for. Such process
+    is tracked by a list of boolean flags (in the single_term_obs_mps dictionary) that signal
+    whether some term has been allocated shots from a given ShotCopies object. If the term got
+    absolutely no shots, it will be deleted from the dictionary to match the length of results in
+    the post-processing functions.
+    """
+
     remaining_shots_budget = np.stack(
         [np.array([shot_copies.shots for shot_copies in tape.shots.shot_vector])]
         * len(tape.measurements)
     )
 
-    coefficient_sums = [
+    # If uniform sampling is requested, we just consider for simplicity the count of the observables
+    # to be our coefficient sum and give each term a coefficient of 1 (as seen in the loop body)
+    remaining_coefficient_sums = [
         (
             metadata.sum_non_id_coefficients
             if term_sampling == "weighted"
@@ -372,12 +385,18 @@ def _split_ham_no_grouping(
         for idx, coeff in zip(ham_idx, coeffs):
             term_coefficient = np.abs(coeff) if term_sampling == "weighted" else 1.0
 
-            prob = term_coefficient / coefficient_sums[idx]
+            prob = term_coefficient / remaining_coefficient_sums[idx]
             shots_flags = []
             for i, (rmng_shots, shot_vector) in enumerate(
                 zip(remaining_shots_budget[idx], tape.shots.shot_vector)
             ):
 
+                # Ideally, we could've used one call to scipy.stats.multinomial and got everything
+                # we needed at once. However, since we would've needed to process the single_term_obs_mps
+                # dictionary through a loop to compute the probabilities in the first place, it made sense
+                # to use this trick where a cascade of binomial sampling is equivalent, and loop over the
+                # dictionary only once, and avoid any post-processing.
+                # For added numerical stability, we don't carry out sampling if probs are 1
                 sampled_shots = binom(n=rmng_shots, p=prob).rvs() if prob < 1 else rmng_shots
 
                 if sampled_shots == 0:
@@ -389,11 +408,17 @@ def _split_ham_no_grouping(
                 remaining_shots_budget[idx][i] -= sampled_shots
 
             shts_flags.append(shots_flags)
-            coefficient_sums[idx] -= term_coefficient
+            remaining_coefficient_sums[idx] -= term_coefficient
 
         if shts:
             new_tapes.append(
-                type(tape)(tape.operations, [meas], shots=qml.measurements.Shots(shts))
+                type(tape)(
+                    tape.operations,
+                    [meas],
+                    # TODO: Find a way to do away with merge_repeated and somehow
+                    # capture merged shots and handle them in the post-processing
+                    shots=qml.measurements.Shots(shts, merge_repeated=False),
+                )
             )
             new_single_term_obs_mps[meas] = (*new_single_term_obs_mps[meas], shts_flags)
         else:
@@ -701,7 +726,7 @@ def _processing_fn_no_grouping(
 
     for res_item, (_, mps_dict_values) in zip(res, single_term_obs_mps.items()):
 
-        res_iter = iter(res_item if isinstance(res_item, tuple) else [res_item])
+        res_iter = iter(res_item if isinstance(res_item, tuple) else (res_item,))
         for mps_dict_value in zip(*mps_dict_values):
             if term_sampling_used:
                 mp_idx, coeff, shots_flags = mps_dict_value
