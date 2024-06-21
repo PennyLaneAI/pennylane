@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.measurements import MutualInfo, Shots, State, VnEntropy
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
+from pennylane.wires import Wires
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods
 
@@ -30,15 +31,14 @@ class TestInitialization:
     """Test the non-update components of intialization."""
 
     def test_no_update_empty_initialization(self):
-        """Test initialization if nothing is provided"""
+        """Test initialization if nothing is provided and update does not occur."""
 
         qs = QuantumScript()
-        assert len(qs._ops) == 0
-        assert len(qs._measurements) == 0
+        assert qs._ops == []
+        assert qs._measurements == []
+        assert qs._measured_wires == qml.wires.Wires([])
         assert len(qs.par_info) == 0
         assert qs._trainable_params is None
-        assert qs.trainable_params == []
-        assert qs._trainable_params == []
         assert qs._graph is None
         assert qs._specs is None
         assert qs._shots.total_shots is None
@@ -86,6 +86,7 @@ class TestInitialization:
         qs = QuantumScript(measurements=m)
         assert len(qs._measurements) == 1
         assert isinstance(qs._measurements, list)
+        assert isinstance(qs._measured_wires, Wires)
         assert qs._measurements[0].return_type is qml.measurements.State
 
     @pytest.mark.parametrize(
@@ -454,6 +455,32 @@ class TestIteration:
 
         # Check that the underlying circuit is still as expected
         assert qs.circuit == circuit
+
+
+class TestMeasuredWires:
+    """Tests the measured_wires property."""
+
+    @pytest.fixture
+    def make_script(self):
+        prep = [qml.BasisState([1, 1], wires=(-1, -2))]
+        ops = [qml.S(0), qml.T("a"), qml.S(0)]
+        measurement = [
+            qml.probs(wires=(-1)),
+            qml.expval(qml.Hermitian(2 * np.eye(2), wires=-2)),
+            qml.expval(qml.PauliX(-1)),
+        ]
+
+        return QuantumScript(prep + ops, measurement)
+
+    def test_measured_wires(self, make_script):
+        """Test that measured_wires property is set when called and not before."""
+        qs = make_script
+
+        assert len(qs._measured_wires) == 0
+
+        assert -1 in qs.measured_wires
+        assert -2 in qs.measured_wires
+        assert len(qs.measured_wires) == 2
 
 
 class TestInfomationProperties:

@@ -430,6 +430,13 @@
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
+* `qml.operation.WiresEnum.AllWires` is now -2 instead of 0 to avoid the
+  ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
+  [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
+  
+* Added a `measured_wires` property to the `QuantumScript` class.
+  [(#3655)](https://github.com/PennyLaneAI/pennylane/pull/3655)
+
 * Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fix of incorrectly set up commands)
   [(#5804)](https://github.com/PennyLaneAI/pennylane/pull/5804)
 
@@ -573,6 +580,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Komi Amiko,
 Tarun Kumar Allamsetty,
 Guillermo Alonso-Linaje,
 Utkarsh Azad,
@@ -600,6 +608,8 @@ Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
 Jay Soni,
+David Wierichs,
+Marcus Edwards,
 Kazuki Tsuoka,
 Haochen Paul Wang,
 David Wierichs.
