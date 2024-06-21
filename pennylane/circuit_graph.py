@@ -24,8 +24,8 @@ import numpy as np
 import rustworkx as rx
 
 from pennylane.measurements import MeasurementProcess, MidMeasureMP
-from pennylane.resource import ResourcesOperation
 from pennylane.ops.op_math import Conditional
+from pennylane.resource import ResourcesOperation
 
 
 def _by_idx(x):

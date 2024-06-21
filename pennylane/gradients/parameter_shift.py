@@ -17,16 +17,15 @@ of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
 import copy
-from functools import partial
-
-from typing import Callable, Sequence
 import warnings
+from functools import partial
+from typing import Callable, Sequence
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.measurements import VarianceMP, MidMeasureMP, MeasurementValue
+from pennylane.measurements import MeasurementValue, MidMeasureMP, VarianceMP
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
