@@ -149,7 +149,7 @@
 
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
-  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5838)
+  [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
 
@@ -278,6 +278,7 @@
   [(#5708)](https://github.com/PennyLaneAI/pennylane/pull/5708)
   [(#5523)](https://github.com/PennyLaneAI/pennylane/pull/5523)
   [(#5686)](https://github.com/PennyLaneAI/pennylane/pull/5686)
+  [(#5889)](https://github.com/PennyLaneAI/pennylane/pull/5889)
 
 * The `decompose` transform has an `error` kwarg to specify the type of error that should be raised,
   allowing error types to be more consistent with the context the `decompose` function is used in.
@@ -371,6 +372,9 @@
 * `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
+
+* `qml.qsvt()` now supports jax arrays with angle conversions. 
+  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5853)
 
 <h3>Breaking changes 💔</h3>
 
@@ -560,6 +564,9 @@
 
 * Fix bug where `CompositeOp.overlapping_ops` sometimes puts overlapping ops in different groups, leading to incorrect results returned by `LinearCombination.eigvals()`
   [(#5847)](https://github.com/PennyLaneAI/pennylane/pull/5847)
+
+* Implement the correct decomposition for a `qml.PauliRot` with an identity as `pauli_word`, i.e. returns a `qml.GlobalPhase` with half the angle.
+  [(#5875)](https://github.com/PennyLaneAI/pennylane/pull/5875)
 
 * `qml.pauli_decompose` now works in a jit-ted context, such as `jax.jit` and `catalyst.qjit`.
   [(#5878)](https://github.com/PennyLaneAI/pennylane/pull/5878)

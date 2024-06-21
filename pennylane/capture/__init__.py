@@ -135,10 +135,45 @@ from .primitives import (
 )
 from .capture_qnode import qnode_call
 
+# by defining this here, we avoid
+# E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
+# on use of from capture import AbstractOperator
+AbstractOperator: type
+AbstractMeasurement: type
+qnode_prim: "jax.core.Primitive"
+
 
 def __getattr__(key):
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
 
         return _get_abstract_operator()
+
+    if key == "AbstractMeasurement":
+        from .primitives import _get_abstract_measurement  # pylint: disable=import-outside-toplevel
+
+        return _get_abstract_measurement()
+
+    if key == "qnode_prim":
+        from .capture_qnode import _get_qnode_prim  # pylint: disable=import-outside-toplevel
+
+        return _get_qnode_prim()
+
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
+
+
+__all__ = (
+    "disable",
+    "enable",
+    "enabled",
+    "CaptureMeta",
+    "ABCCaptureMeta",
+    "create_operator_primitive",
+    "create_measurement_obs_primitive",
+    "create_measurement_wires_primitive",
+    "create_measurement_mcm_primitive",
+    "qnode_call",
+    "AbstractOperator",
+    "AbstractMeasurement",
+    "qnode_prim",
+)
