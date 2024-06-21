@@ -129,7 +129,6 @@ class TestStateMP:
         with pytest.raises(WireError, match=r"Unexpected unique wires <Wires = \[0, 1, 2\]> found"):
             StateMP(wires=[0, 1]).process_state([1, 0], wire_order=Wires(2))
 
-    @pytest.mark.xfail(reason="StateMP.process_density_matrix is no longer supported")
     @pytest.mark.parametrize(
         "dm, expected",
         [
@@ -147,10 +146,12 @@ class TestStateMP:
         assert mp.return_type == State
         assert mp.numeric_type is complex
 
-        processed = mp.process_density_matrix(dm, [0, 1])
-        assert qml.math.allclose(
-            qml.math.dm_from_state_vector(processed), qml.math.dm_from_state_vector(expected)
-        )  # Check if the density matrix is the same. Please do not try comparing the two statevec directly, considering the gauge freedom
+        # Expecting a NotImplementedError to be raised when process_density_matrix is called
+
+        with pytest.raises(
+            ValueError, match="Processing from density matrix to state is not supported."
+        ):
+            processed = mp.process_density_matrix(dm, [0, 1])
 
 
 class TestDensityMatrixMP:
