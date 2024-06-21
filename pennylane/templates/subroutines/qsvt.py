@@ -456,7 +456,7 @@ class QSVT(Operation):
 def _qsp_to_qsvt(angles):
     r"""Converts qsp angles to qsvt angles."""
     num_angles = len(angles)
-    update_vals = np.zeros(num_angles)
+    update_vals = np.empty(num_angles)
 
     update_vals[0] = 3 * np.pi / 4
     update_vals[1:-1] = np.pi / 2
