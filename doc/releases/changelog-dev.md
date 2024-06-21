@@ -97,6 +97,7 @@
   OpenFermion and PennyLane objects.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
   [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
+  [(#5881)](https://github.com/PennyLaneAI/pennylane/pull/5881)
 
   ```python
   of_op = openfermion.FermionOperator('0^ 2')
