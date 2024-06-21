@@ -18,9 +18,11 @@ Unit tests for the DefaultTensor class.
 
 import numpy as np
 import pytest
+from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane.qchem import givens_decomposition
 from pennylane.wires import WireError
 
 quimb = pytest.importorskip("quimb")
@@ -414,3 +416,39 @@ class TestJaxSupport:
             return qml.expval(qml.Z(0))
 
         assert np.allclose(circuit(), 0.0)
+
+
+# At this stage, this test is especially relevant for the MPS method, but we test both methods for consistency.
+@pytest.mark.parametrize("method", ["mps", "tn"])
+def test_wire_order_dense_vector(method):
+    """Test that the wire order is preserved if the initial state is created from a dense vector."""
+
+    num_orbitals = 4
+    control_wires = 1
+
+    dev = qml.device("default.tensor", wires=int(2 * num_orbitals + 1), method=method)
+    qubits = dev.wires.tolist()
+
+    wave_fun = np.random.random((2 ** (2 * num_orbitals))) + 1j * np.random.random(
+        (2 ** (2 * num_orbitals))
+    )
+    wave_fun = wave_fun / np.linalg.norm(wave_fun)
+
+    X0 = np.random.random((num_orbitals, num_orbitals))
+    U0 = expm((X0 + X0.T) / 2.0)
+
+    def basis_rotation_ops(unitary_matrix, wires):
+        _, givens_list = givens_decomposition(unitary_matrix)
+
+        for grot_mat, indices in givens_list:
+            theta = np.arccos(np.real(grot_mat[1, 1]))
+            qml.SingleExcitation(2 * theta, wires=[int(wires[indices[0]]), int(wires[indices[1]])])
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.StatePrep(wave_fun, wires=qubits[1:])
+        qml.Hadamard(qubits[0])
+        basis_rotation_ops(U0, [int(2 * i + 1 + control_wires) for i in range(num_orbitals)])
+        return qml.state()
+
+    assert circuit() is not None
