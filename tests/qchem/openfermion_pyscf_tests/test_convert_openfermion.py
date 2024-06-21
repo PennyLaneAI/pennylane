@@ -101,7 +101,7 @@ class TestFromOpenFermion:
         """Test that an error is raised for mapping wires in fermionic operators."""
         with pytest.raises(
             ValueError,
-            match=f"Custom wire mapping is not supported for fermionic operators.",
+            match="Custom wire mapping is not supported for fermionic operators.",
         ):
             qml.from_openfermion(of_op, wires=wires)
 
@@ -351,6 +351,6 @@ class TestToOpenFermion:
         """Test that an error is raised for mapping wires in fermionic operators."""
         with pytest.raises(
             ValueError,
-            match=f"Custom wire mapping is not supported for fermionic operators.",
+            match="Custom wire mapping is not supported for fermionic operators.",
         ):
             qml.to_openfermion(pl_op, wires=wires)
