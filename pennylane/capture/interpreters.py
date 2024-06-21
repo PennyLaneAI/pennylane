@@ -1,3 +1,5 @@
+
+from functools import partial
 from typing import Optional
 
 import jax
@@ -49,6 +51,10 @@ class PlxprInterpreter:
         invals = [self._read(invar) for invar in eqn.invars]
         mp = eqn.primitive.impl(*invals, **eqn.params)
         return self.interpret_measurement(mp)
+
+    def call_jaxpr(self, jaxpr, consts):
+        partial_call = partial(self, jaxpr, consts)
+        return jax.make_jaxpr(partial_call)
 
     def __call__(self, jaxpr, consts, *args):
         self._env = {}
@@ -124,8 +130,7 @@ class DecompositionInterpreter(PlxprInterpreter):
     ...     qml.IsingXX(x, wires=(0,1))
     ...     qml.Rot(0.5, x, 1.5, wires=1)
     >>> jaxpr = jax.make_jaxpr(f)(0.5)
-    >>> converter = partial(DecompositionInterpreter(), jaxpr.jaxpr, jaxpr.consts)
-    >>> jax.make_jaxpr(converter)(0.5)
+    >>> DecompositionInterpreter().call_jaxpr(jaxpr.jaxpr, jaxpr.consts)(0.5)
     { lambda ; a:f32[]. let
         _:AbstractOperator() = CNOT[n_wires=2] 0 1
         _:AbstractOperator() = RX[n_wires=1] a 0
@@ -180,8 +185,7 @@ class CancelInverses(PlxprInterpreter):
     ...     qml.RX(x, 0)
     ...     qml.adjoint(qml.RX(x, 0))
     >>> jaxpr = jax.make_jaxpr(f)(0.5)
-    >>> converter = partial(CancelInverses(), jaxpr.jaxpr, jaxpr.consts)
-    >>> jax.make_jaxpr(converter)(0.5)
+    >>> CancelInverses().call_jaxpr(jaxpr.jaxpr, jaxpr.consts)(0.5)
     { lambda ; a:f64[]. let
         _:AbstractOperator() = Hadamard[n_wires=1] 0
         _:AbstractOperator() = PauliY[n_wires=1] 1
