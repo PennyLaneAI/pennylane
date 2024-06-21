@@ -538,6 +538,22 @@ class TestKerasLayer:
         output_shape = layer.compute_output_shape(inputs_shape)
         assert output_shape.as_list() == [None, 1]
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
+    def test_construct(self, get_circuit, n_qubits, output_dim):
+        """Test that the construct method builds the correct tape with correct differentiability"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        x = tf.ones((1, n_qubits))
+
+        layer.construct((x,), {})
+
+        assert layer.tape is not None
+        assert (
+            len(layer.tape.get_parameters(trainable_only=False))
+            == len(layer.tape.get_parameters(trainable_only=True)) + 1
+        )
+
 
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
@@ -955,7 +971,8 @@ def test_specs():
 
     assert info["num_observables"] == 2
     assert info["num_diagonalizing_gates"] == 0
-    assert info["num_device_wires"] == 2
+    assert info["num_device_wires"] == 3
+    assert info["num_tape_wires"] == 2
     assert info["num_trainable_params"] == 2
     assert info["interface"] == "tf"
     assert info["device_name"] == "default.qubit"

@@ -103,7 +103,30 @@ def _get_num_executions_for_expval_H(obs):
     indices = obs.grouping_indices
     if indices:
         return len(indices)
-    return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
+    return _get_num_wire_groups_for_expval_H(obs)
+
+
+def _get_num_wire_groups_for_expval_H(obs):
+    _, obs_list = obs.terms()
+    wires_list = []
+    added_obs = []
+    num_groups = 0
+    for o in obs_list:
+        if o in added_obs:
+            continue
+        if isinstance(o, qml.Identity):
+            continue
+        added = False
+        for wires in wires_list:
+            if len(qml.wires.Wires.shared_wires([wires, o.wires])) == 0:
+                added_obs.append(o)
+                added = True
+                break
+        if not added:
+            added_obs.append(o)
+            wires_list.append(o.wires)
+            num_groups += 1
+    return num_groups
 
 
 def _get_num_executions_for_sum(obs):

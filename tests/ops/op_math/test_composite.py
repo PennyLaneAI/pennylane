@@ -281,7 +281,7 @@ class TestMscMethods:
         assert op.wires == copied_op.wires
 
         for o1, o2 in zip(op.operands, copied_op.operands):
-            assert qml.equal(o1, o2)
+            qml.assert_equal(o1, o2)
             assert o1 is not o2
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -315,7 +315,7 @@ class TestMscMethods:
         assert metadata == tuple()
 
         new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
+        qml.assert_equal(op, new_op)
 
 
 class TestProperties:
@@ -353,14 +353,16 @@ class TestProperties:
         valid_op = ValidOp(
             qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
             qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
-            qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+            qml.prod(qml.PauliX(10), qml.PauliY(2)),
             qml.PauliY(7),
+            qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
             qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
         )
         overlapping_ops = [
             [
                 qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
-                qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+                qml.prod(qml.PauliX(10), qml.PauliY(2)),
+                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
                 qml.PauliY(7),
             ],
             [

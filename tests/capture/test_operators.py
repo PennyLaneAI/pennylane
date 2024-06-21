@@ -18,13 +18,12 @@ Integration tests for the capture of pennylane operations into jaxpr.
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
 
-pytestmark = pytest.mark.jax
+from pennylane.capture import AbstractOperator  # pylint: disable=wrong-import-position
 
-AbstractOperator = _get_abstract_operator()
+pytestmark = pytest.mark.jax
 
 
 @pytest.fixture(autouse=True)
@@ -106,7 +105,7 @@ def test_hybrid_capture_wires():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.X(3))
+    qml.assert_equal(q.queue[0], qml.X(3))
 
 
 def test_hybrid_capture_parametrization():
@@ -134,7 +133,7 @@ def test_hybrid_capture_parametrization():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
 
     assert len(q) == 1
-    assert qml.equal(
+    qml.assert_equal(
         q.queue[0], qml.Rot(1.0, jax.numpy.sqrt(0.5), 0.25, wires=1), check_interface=False
     )
 
@@ -169,7 +168,7 @@ def test_different_wires(w, as_kwarg):
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.X(0))
+    qml.assert_equal(q.queue[0], qml.X(0))
 
 
 def test_parametrized_op():
@@ -191,7 +190,7 @@ def test_parametrized_op():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, 2.0, 3.0, 10)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
+    qml.assert_equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
 
 
 def test_pauli_rot():
@@ -214,7 +213,7 @@ def test_pauli_rot():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
+    qml.assert_equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
 
 
 class TestTemplates:
@@ -287,7 +286,7 @@ class TestOpmath:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], qml.adjoint(qml.X(0)))
+        qml.assert_equal(q.queue[0], qml.adjoint(qml.X(0)))
 
     def test_Controlled(self):
         """Test a nested control operation."""
@@ -314,7 +313,7 @@ class TestOpmath:
 
         assert len(q) == 1
         expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
-        assert qml.equal(q.queue[0], expected)
+        qml.assert_equal(q.queue[0], expected)
 
 
 class TestAbstractDunders:

@@ -529,10 +529,10 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             expanded_tape.operations[expanded_tape.num_preps :],
             expanded_ops,
         ):
-            assert qml.equal(op, expected_op)
+            qml.assert_equal(op, expected_op)
 
         for mp, expected_mp in zip(expanded_tape.measurements, measurements):
-            assert qml.equal(mp, expected_mp)
+            qml.assert_equal(mp, expected_mp)
 
     wires_to_try = [
         (1, Wires([0])),
@@ -658,7 +658,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         assert len(new_tape.operations) == len(true_decomposition)
         for tape_op, true_op in zip(new_tape.operations, true_decomposition):
-            assert qml.equal(tape_op, true_op)
+            qml.assert_equal(tape_op, true_op)
 
         assert new_tape.shots is tape.shots
         assert new_tape.wires == tape.wires
@@ -671,7 +671,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         expected_tape = qml.tape.QuantumScript([qml.RZ(np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))])
         dev = mock_device_supporting_paulis(wires=1)
         expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
-        assert qml.equal(expanded_tape, expected_tape)
+        qml.assert_equal(expanded_tape, expected_tape)
         assert len(recwarn) == 0
 
     def test_stopping_condition_passes_with_non_obs_mp(self, mock_device_with_identity, recwarn):
@@ -1174,9 +1174,9 @@ class TestGrouping:
 
         H = qml.Hamiltonian([1.0, 1.0], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc")
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
 
-        dev = self.SomeDevice(shots=None)
+        dev = self.SomeDevice()
         dev.use_grouping = use_grouping
         new_qscripts, _ = dev.batch_transform(qs)
 
@@ -1191,9 +1191,9 @@ class TestGrouping:
         """Tests that batch_transform does not expand Sums if they are supported."""
         H = qml.sum(qml.PauliX(0), qml.PauliY(0))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "sum_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
 
-        dev = self.SomeDevice()
+        dev = self.SomeDevice(shots=None)
         new_qscripts, _ = dev.batch_transform(qs)
 
         assert len(new_qscripts) == 1
@@ -1203,7 +1203,7 @@ class TestGrouping:
         """Tests that batch_transform expand Sums if they are not supported."""
         H = qml.sum(qml.PauliX(0), qml.PauliY(0))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "sum_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.supports_observable = lambda *args, **kwargs: False
@@ -1217,7 +1217,7 @@ class TestGrouping:
 
         H = qml.prod(qml.PauliX(0), qml.sum(qml.PauliY(0), qml.PauliZ(0)))
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        spy = mocker.spy(qml.transforms, "sum_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.supports_observable = lambda *args, **kwargs: False
