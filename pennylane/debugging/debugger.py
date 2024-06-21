@@ -139,6 +139,8 @@ def breakpoint():
     throught the circuit execution using Pdb like commands (:code:`list`, :code:`next`,
     :code:`continue`, :code:`quit`).
 
+    .. seealso:: :doc:`/code/qml_debugging`
+    
     **Example**
 
     Consider the following python script containing the quantum circuit with breakpoints.
@@ -227,6 +229,9 @@ def breakpoint():
 def debug_state():
     """Compute the quantum state at the current point in the quantum circuit.
 
+    Debugging measurements do not alter the state, it remains the same until the
+    next operation in the circuit.
+
     Returns:
         Array(complex): quantum state of the circuit
 
@@ -279,6 +284,9 @@ def debug_state():
 def debug_expval(op):
     """Compute the expectation value of an observable at the
     current point in the quantum circuit.
+    
+    Debugging measurements do not alter the state, it remains the same until the
+    next operation in the circuit.
 
     Args:
         op (Operator): the observable to compute the expectation value for.
@@ -337,6 +345,9 @@ def debug_expval(op):
 def debug_probs(wires=None, op=None):
     """Compute the probability distribution for the state at the current
     point in the quantum circuit.
+
+    Debugging measurements do not alter the state, it remains the same until the
+    next operation in the circuit.
 
     Args:
         wires (Union[Iterable, int, str, list]): the wires the operation acts on

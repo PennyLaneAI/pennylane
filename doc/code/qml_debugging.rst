@@ -1,7 +1,7 @@
 qml.debugging
 =============
 
-.. automodapi:: pennylane.debugging
+.. automodule:: pennylane.debugging
     :no-heading:
     :no-inherited-members:
     :skip: PLDB
