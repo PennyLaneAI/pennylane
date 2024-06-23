@@ -49,7 +49,7 @@ class TestMolecule:
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
         [
-            (["H", "Og"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+            (["H", "Ox"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
         ],
     )
     def test_symbol_error(self, symbols, geometry):
