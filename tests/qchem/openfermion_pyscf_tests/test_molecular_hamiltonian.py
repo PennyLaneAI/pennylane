@@ -1292,7 +1292,7 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
         method=method,
         outpath=tmpdir.strpath,
     )
-    assert qml.equal(hamiltonian_ang, hamiltonian_bohr)
+    qml.assert_equal(hamiltonian_ang, hamiltonian_bohr)
 
 
 @pytest.mark.parametrize(
@@ -1323,7 +1323,7 @@ def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdi
         method=method,
         outpath=tmpdir.strpath,
     )
-    assert qml.equal(hamiltonian_ang, hamiltonian_bohr)
+    qml.assert_equal(hamiltonian_ang, hamiltonian_bohr)
 
 
 def test_unit_error_molecular_hamiltonian():

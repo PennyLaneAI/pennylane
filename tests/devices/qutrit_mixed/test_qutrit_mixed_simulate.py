@@ -19,6 +19,7 @@ from flaky import flaky
 import pennylane as qml
 from pennylane import math
 from pennylane.devices.qutrit_mixed import get_final_state, measure_final_state, simulate
+from tests.dummy_debugger import Debugger
 
 
 # pylint: disable=inconsistent-return-statements
@@ -393,13 +394,6 @@ class TestStatePadding:
 class TestDebugger:
     """Tests that the debugger works for a simple circuit"""
 
-    class Debugger:
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
-
     basis_state = np.array([[1.0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
     @staticmethod
@@ -418,7 +412,7 @@ class TestDebugger:
         """Test debugger with numpy"""
         phi = np.array(0.397)
         qs = self.get_debugger_quantum_script(phi, subspace)
-        debugger = self.Debugger()
+        debugger = Debugger()
         result = simulate(qs, debugger=debugger)
 
         assert isinstance(result, tuple)
@@ -437,7 +431,7 @@ class TestDebugger:
     def test_debugger_autograd(self, subspace):
         """Tests debugger with autograd"""
         phi = qml.numpy.array(-0.52)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             qs = self.get_debugger_quantum_script(x, subspace)
@@ -459,7 +453,7 @@ class TestDebugger:
         import jax
 
         phi = jax.numpy.array(0.678)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             qs = self.get_debugger_quantum_script(x, subspace)
@@ -481,7 +475,7 @@ class TestDebugger:
         import torch
 
         phi = torch.tensor(-0.526, requires_grad=True)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             qs = self.get_debugger_quantum_script(x, subspace)
@@ -507,7 +501,7 @@ class TestDebugger:
         import tensorflow as tf
 
         phi = tf.Variable(4.873)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         qs = self.get_debugger_quantum_script(phi, subspace)
         result = simulate(qs, debugger=debugger)

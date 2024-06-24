@@ -332,10 +332,10 @@ class TestCircuitGraph:
             lst_expected_no_wires = expected_grid_no_wires[key]
 
             for el1, el2 in zip(lst_w_wires, lst_expected_w_wires):
-                assert qml.equal(el1, el2)
+                qml.assert_equal(el1, el2)
 
             for el1, el2 in zip(lst_no_wires, lst_expected_no_wires):
-                assert qml.equal(el1, el2)
+                qml.assert_equal(el1, el2)
 
     def test_print_contents(self):
         """Tests if the circuit prints correct."""

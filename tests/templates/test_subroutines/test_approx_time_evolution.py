@@ -44,7 +44,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert new_op is not op
 
 
@@ -119,7 +119,7 @@ class TestDecomposition:
         queue = op.expand().operations
 
         for expected_gate, gate in zip(expected_queue, queue):
-            assert qml.equal(expected_gate, gate)
+            qml.assert_equal(expected_gate, gate)
 
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expectation"),

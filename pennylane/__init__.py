@@ -51,6 +51,7 @@ from pennylane.qchem import (
     taper_operation,
     import_operator,
     from_openfermion,
+    to_openfermion,
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp
@@ -104,11 +105,13 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+    add_noise,
 )
 from pennylane.ops.functions import (
     dot,
     eigvals,
     equal,
+    assert_equal,
     evolve,
     generator,
     is_commuting,
@@ -123,7 +126,14 @@ from pennylane.ops.functions import (
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
-from pennylane.debugging import snapshots, breakpoint
+from pennylane.debugging import (
+    snapshots,
+    breakpoint,
+    debug_expval,
+    debug_state,
+    debug_probs,
+    debug_tape,
+)
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse

@@ -19,10 +19,10 @@ from .snapshot import snapshots
 
 from .debugger import (
     breakpoint,
-    expval,
+    debug_expval,
     PLDB,
     pldb_device_manager,
-    probs,
-    state,
-    tape,
+    debug_probs,
+    debug_state,
+    debug_tape,
 )
