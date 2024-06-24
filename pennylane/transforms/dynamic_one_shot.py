@@ -254,18 +254,25 @@ def parse_native_mid_circuit_measurements(
 
     interface = interface or qml.math.get_deep_interface(circuit.data)
     interface = "numpy" if interface == "builtins" else interface
+    interface = "tensorflow" if interface == "tf" else interface
     active_qjit = qml.compiler.active()
 
     all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
     n_mcms = len(all_mcms)
-    mcm_samples = qml.math.hstack(tuple(res.reshape((-1, 1)) for res in results[-n_mcms:]))
+    mcm_samples = qml.math.hstack(
+        tuple(qml.math.reshape(res, (-1, 1)) for res in results[-n_mcms:])
+    )
     mcm_samples = qml.math.array(mcm_samples, like=interface)
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
     has_postselect = qml.math.array(
-        [[int(op.postselect is not None) for op in all_mcms]], like=interface
+        [[int(op.postselect is not None) for op in all_mcms]],
+        like=interface,
+        dtype=mcm_samples.dtype,
     )
     postselect = qml.math.array(
-        [[0 if op.postselect is None else op.postselect for op in all_mcms]], like=interface
+        [[0 if op.postselect is None else op.postselect for op in all_mcms]],
+        like=interface,
+        dtype=mcm_samples.dtype,
     )
     is_valid = qml.math.all(mcm_samples * has_postselect == postselect, axis=1)
     has_valid = qml.math.any(is_valid)
@@ -301,7 +308,10 @@ def parse_native_mid_circuit_measurements(
                 # We return the sum of counts (`result[1]`) weighting by `is_valid`, which is `0` for invalid samples
                 if isinstance(m, CountsMP):
                     normalized_meas.append(
-                        (result[0][0], qml.math.sum(result[1] * is_valid.reshape((-1, 1)), axis=0))
+                        (
+                            result[0][0],
+                            qml.math.sum(result[1] * qml.math.reshape(is_valid, (-1, 1)), axis=0),
+                        )
                     )
                     m_count += 1
                     continue
@@ -336,7 +346,7 @@ def gather_mcm_qjit(measurement, samples, is_valid):  # pragma: no cover
         raise LookupError("MCM not found")
     meas = qml.math.squeeze(meas)
     if isinstance(measurement, (CountsMP, ProbabilityMP)):
-        interface = qml.math.get_deep_interface(is_valid)
+        interface = qml.math.get_interface(is_valid)
         sum_valid = qml.math.sum(is_valid)
         count_1 = qml.math.sum(meas * is_valid)
         if isinstance(measurement, CountsMP):
@@ -370,14 +380,25 @@ def gather_non_mcm(measurement, samples, is_valid):
         if not measurement.all_outcomes:
             tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
+
+    if (interface := qml.math.get_interface(is_valid)) == "tensorflow" and not isinstance(
+        measurement, SampleMP
+    ):
+        # Tensorflow requires arrays that are used for arithmetic with each other to have the
+        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
+        # index other tf.Tensors (is_valid is used to index valid samples).
+        is_valid = qml.math.cast_like(is_valid, samples)
+
     if isinstance(measurement, ExpectationMP):
         return qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
     if isinstance(measurement, ProbabilityMP):
-        return qml.math.sum(samples * is_valid.reshape((-1, 1)), axis=0) / qml.math.sum(is_valid)
+        return qml.math.sum(samples * qml.math.reshape(is_valid, (-1, 1)), axis=0) / qml.math.sum(
+            is_valid
+        )
     if isinstance(measurement, SampleMP):
-        is_interface_jax = qml.math.get_deep_interface(is_valid) == "jax"
+        is_interface_jax = interface == "jax"
         if is_interface_jax and samples.ndim == 2:
-            is_valid = is_valid.reshape((-1, 1))
+            is_valid = qml.math.reshape(is_valid, (-1, 1))
         return (
             qml.math.where(is_valid, samples, fill_in_value)
             if is_interface_jax
@@ -385,6 +406,10 @@ def gather_non_mcm(measurement, samples, is_valid):
         )
     # VarianceMP
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
+    if interface == "tensorflow":
+        # Casting needed for tensorflow
+        samples = qml.math.cast_like(samples, expval)
+        is_valid = qml.math.cast_like(is_valid, expval)
     return qml.math.sum((samples - expval) ** 2 * is_valid) / qml.math.sum(is_valid)
 
 
@@ -409,9 +434,14 @@ def gather_mcm(measurement, samples, is_valid):
         if isinstance(measurement, ProbabilityMP):
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))
-            values = [qml.math.array([v], like=interface) for v in values]
+            values = [qml.math.array([v], like=interface, dtype=mcm_samples.dtype) for v in values]
+            # Need to use boolean functions explicitly as Tensorflow does not allow integer math
+            # on boolean arrays
             counts = [
-                qml.math.sum(qml.math.all(mcm_samples == v, axis=1) * is_valid) for v in values
+                qml.math.count_nonzero(
+                    qml.math.logical_and(qml.math.all(mcm_samples == v, axis=1), is_valid)
+                )
+                for v in values
             ]
             counts = qml.math.array(counts, like=interface)
             return counts / qml.math.sum(counts)
@@ -420,7 +450,12 @@ def gather_mcm(measurement, samples, is_valid):
         return gather_non_mcm(measurement, mcm_samples, is_valid)
     mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=interface))
     if isinstance(measurement, ProbabilityMP):
-        counts = [qml.math.sum((mcm_samples == v) * is_valid) for v in list(mv.branches.values())]
+        # Need to use boolean functions explicitly as Tensorflow does not allow integer math
+        # on boolean arrays
+        counts = [
+            qml.math.count_nonzero(qml.math.logical_and((mcm_samples == v), is_valid))
+            for v in list(mv.branches.values())
+        ]
         counts = qml.math.array(counts, like=interface)
         return counts / qml.math.sum(counts)
     if isinstance(measurement, CountsMP):
