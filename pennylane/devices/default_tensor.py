@@ -47,6 +47,8 @@ from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import WireError
+import torch
+
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -360,6 +362,7 @@ class DefaultTensor(Device):
         "contraction_optimizer",
         "cutoff",
         "c_dtype",
+        "device",
         "local_simplify",
         "max_bond_dim",
         "method",
@@ -398,6 +401,7 @@ class DefaultTensor(Device):
         self._cutoff = kwargs.get("cutoff", None)
 
         # options both for MPS and TN
+        self._device = kwargs.get("device", "cpu")
         self._local_simplify = kwargs.get("local_simplify", "ADCRS")
         self._contraction_optimizer = kwargs.get("contraction_optimizer", "auto-hq")
         self._contract = None
@@ -450,6 +454,12 @@ class DefaultTensor(Device):
             CircuitMPS or Circuit: The initial quimb instance of a circuit.
         """
 
+        dtype_mapping = {np.complex64: torch.complex64, np.complex128: torch.complex128}
+
+        to_backend = lambda data: torch.tensor(
+            data, dtype=dtype_mapping[self.c_dtype], device=self._device
+        )
+
         if not _accepted_gate_contract(self._contract, self.method):
             raise ValueError(
                 f"Unsupported gate contraction option: '{self._contract}' for '{self.method}' method. "
@@ -464,6 +474,7 @@ class DefaultTensor(Device):
                 max_bond=self._max_bond_dim,
                 gate_contract=self._contract,
                 cutoff=self._cutoff,
+                to_backend=to_backend,
             )
 
         if self.method == "tn":
@@ -471,6 +482,7 @@ class DefaultTensor(Device):
                 psi0=psi0.column_reduce(),
                 gate_contract=self._contract,
                 tags=[str(l) for l in wires.labels] if wires else None,
+                to_backend=to_backend,
             )
 
         raise NotImplementedError  # pragma: no cover
@@ -791,9 +803,9 @@ class DefaultTensor(Device):
         qc = self._quimb_circuit.copy()
 
         exp_val = qc.local_expectation(
-            matrix,
+            torch.from_numpy(matrix),
             wires,
-            dtype=self._c_dtype.__name__,
+            dtype=torch.complex64,
             optimize=self._contraction_optimizer,
             simplify_sequence=self._local_simplify,
             simplify_atol=0.0,
@@ -982,6 +994,7 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
 @singledispatch
 def expval_core(obs: Observable, device) -> float:
     """Dispatcher for expval."""
+    # print(f"Computing {obs.name} using expval_core")
     return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
 
 
@@ -994,6 +1007,7 @@ def expval_core_tensor(obs: Tensor, device) -> float:
 @expval_core.register
 def expval_core_prod(obs: Prod, device) -> float:
     """Computes the expval of a Prod."""
+    # print(f"Computing {obs.name} using expval_core_prod")
     ket = device._quimb_circuit.copy()
     for op in obs:
         ket.apply_gate(qml.matrix(op).astype(device._c_dtype), *op.wires, parametrize=None)
