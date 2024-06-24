@@ -151,9 +151,7 @@ def _get_ml_boundary_execute(
     return ml_boundary
 
 
-def _make_inner_execute(
-    device, override_shots, cache, execution_config=None, numpy_only=True
-) -> Callable:
+def _make_inner_execute(device, cache, execution_config=None, numpy_only=True) -> Callable:
     """Construct the function that will execute the tapes inside the ml framework registration
     for the 1st order derivatives.
 
@@ -164,14 +162,13 @@ def _make_inner_execute(
 
     For higher order derivatives, the "inner execute" will be another ml framework execute.
     """
-    device_execution = partial(device.execute, execution_config=execution_config)
 
     def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
 
         Closure Variables:
             numpy_only (bool): whether or not to convert the data to numpy or leave as is
-            device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
+            device (qml.devices.Device)
             cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
         transform_program = qml.transforms.core.TransformProgram()
@@ -185,7 +182,7 @@ def _make_inner_execute(
         transformed_tapes, transform_post_processing = transform_program(tapes)
 
         if transformed_tapes:
-            results = device_execution(transformed_tapes)
+            results = device.execute(transformed_tapes, execution_config=execution_config)
         else:
             results = ()
 
@@ -231,30 +228,11 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
     return [tape], cache_miss_postprocessing
 
 
-def _apply_cache_transform(fn: Callable, cache: Optional[MutableMapping]) -> Callable:
-    """Wraps the given execution function with ``_cache_transform()`` using the provided cache.
-
-    Args:
-        fn (Callable): The execution function to be augmented with caching. This function should
-            have the signature ``fn(tapes, **kwargs)`` and return ``list[tensor_like]`` with the
-            same length as the input ``tapes``.
-        cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
-    """
-    if cache is None:
-        return fn
-
-    def execution_function_with_caching(tapes):
-        tapes, post_processing_fn = _cache_transform(tapes, cache=cache)
-        return post_processing_fn(fn(tapes))
-
-    return execution_function_with_caching
-
-
 def execute(
     tapes: Sequence[QuantumTape],
     device: "qml.devices.Device",
     gradient_fn: Optional[Union[Callable, str]] = None,
-    interface="auto",
+    interface: Optional[str] = "auto",
     transform_program=None,
     config=None,
     grad_on_execution="best",
@@ -465,7 +443,6 @@ def execute(
 
     inner_execute = _make_inner_execute(
         device,
-        override_shots,
         cache,
         config,
         numpy_only=not device_supports_interface_data,

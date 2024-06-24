@@ -637,7 +637,7 @@ class QNode:
             return QNode.get_best_method(device, interface, tape=tape)
 
         if diff_method == "parameter-shift":
-            return QNode._validate_parameter_shift(device)
+            return QNode._validate_parameter_shift(device, tape=tape)
 
         if diff_method == "finite-diff":
             return qml.gradients.finite_diff, {}, device
@@ -695,7 +695,7 @@ class QNode:
             new_config = device.preprocess(config)[1]
             return new_config.gradient_method, {}, device
 
-        return QNode._validate_parameter_shift(device)
+        return QNode._validate_parameter_shift(device, tape=tape)
 
     @staticmethod
     @debug_logger
@@ -737,21 +737,10 @@ class QNode:
         return transform
 
     @staticmethod
-    def _validate_parameter_shift(device):
-        if isinstance(device, qml.devices.Device):
-            return qml.gradients.param_shift, {}, device
-        model = device.capabilities().get("model", None)
-
-        if model in {"qubit", "qutrit"}:
-            return qml.gradients.param_shift, {}, device
-
-        if model == "cv":
+    def _validate_parameter_shift(device, tape=None):
+        if tape and any(isinstance(o, qml.operation.CV) for o in tape):
             return qml.gradients.param_shift_cv, {"dev": device}, device
-
-        raise qml.QuantumFunctionError(
-            f"Device {device.short_name} uses an unknown model ('{model}') "
-            "that does not support the parameter-shift rule."
-        )
+        return qml.gradients.param_shift, {}, device
 
     @property
     def tape(self) -> QuantumTape:
@@ -857,15 +846,6 @@ class QNode:
         config = _make_execution_config(self, self.gradient_fn)
         device_transform_program, config = self.device.preprocess(execution_config=config)
         full_transform_program = self.transform_program + device_transform_program
-
-        has_mcm_support = (
-            any(isinstance(op, MidMeasureMP) for op in self._tape)
-            and hasattr(self.device, "capabilities")
-            and self.device.capabilities().get("supports_mid_measure", False)
-        )
-        if has_mcm_support:
-            full_transform_program.add_transform(qml.dynamic_one_shot)
-            override_shots = 1
 
         # Add the gradient expand to the program if necessary
         if getattr(self.gradient_fn, "expand_transform", False):
