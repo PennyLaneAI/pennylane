@@ -506,7 +506,7 @@ def from_qasm(quantum_circuit: str, measurements=False):
     plugin_converter = plugin_converters["qasm"].load()
     if measurements is False:
         warnings.warn(
-            "The current default behaviour of removing measurements in the QASM code is "
+            "Here, The current default behaviour of removing measurements in the QASM code is "
             "deprecated. Set measurements=None to keep the existing measurements in the QASM "
             "code or set measurements=[] to remove them from the returned circuit. Starting "
             "in version 0.38, measurements=None will be the new default.",
