@@ -23,6 +23,7 @@ from numbers import Number
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import torch
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
@@ -47,8 +48,6 @@ from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import WireError
-import torch
-
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -362,7 +361,6 @@ class DefaultTensor(Device):
         "contraction_optimizer",
         "cutoff",
         "c_dtype",
-        "device",
         "local_simplify",
         "max_bond_dim",
         "method",
@@ -401,10 +399,11 @@ class DefaultTensor(Device):
         self._cutoff = kwargs.get("cutoff", None)
 
         # options both for MPS and TN
-        self._device = kwargs.get("device", "cpu")
         self._local_simplify = kwargs.get("local_simplify", "ADCRS")
         self._contraction_optimizer = kwargs.get("contraction_optimizer", "auto-hq")
         self._contract = None
+
+        self._to_backend = None
 
         if method == "mps":
             self._contract = kwargs.get("contract", "auto-mps")
@@ -439,6 +438,19 @@ class DefaultTensor(Device):
         """Tensor complex data type."""
         return self._c_dtype
 
+    # dtype_mapping = {np.complex64: torch.complex64, np.complex128: torch.complex128}
+
+    # to_backend = lambda data: torch.tensor(data, dtype=torch.complex64, device=self._device)
+
+    def enable_GPU(self, device: str = "cuda"):
+        """Enable GPU support for the device.
+
+        Args:
+            device (str): The device to use for GPU support. Default is ``"cuda"``.
+        """
+
+        self._to_backend = lambda data: torch.tensor(data, dtype=torch.complex64, device=device)
+
     def _initial_quimb_circuit(
         self, wires: qml.wires.Wires, psi0=None
     ) -> Union["qtn.CircuitMPS", "qtn.Circuit"]:
@@ -454,12 +466,6 @@ class DefaultTensor(Device):
             CircuitMPS or Circuit: The initial quimb instance of a circuit.
         """
 
-        dtype_mapping = {np.complex64: torch.complex64, np.complex128: torch.complex128}
-
-        to_backend = lambda data: torch.tensor(
-            data, dtype=dtype_mapping[self.c_dtype], device=self._device
-        )
-
         if not _accepted_gate_contract(self._contract, self.method):
             raise ValueError(
                 f"Unsupported gate contraction option: '{self._contract}' for '{self.method}' method. "
@@ -474,7 +480,7 @@ class DefaultTensor(Device):
                 max_bond=self._max_bond_dim,
                 gate_contract=self._contract,
                 cutoff=self._cutoff,
-                to_backend=to_backend,
+                to_backend=self._to_backend,
             )
 
         if self.method == "tn":
@@ -482,7 +488,7 @@ class DefaultTensor(Device):
                 psi0=psi0.column_reduce(),
                 gate_contract=self._contract,
                 tags=[str(l) for l in wires.labels] if wires else None,
-                to_backend=to_backend,
+                to_backend=self._to_backend,
             )
 
         raise NotImplementedError  # pragma: no cover
@@ -803,9 +809,9 @@ class DefaultTensor(Device):
         qc = self._quimb_circuit.copy()
 
         exp_val = qc.local_expectation(
-            torch.from_numpy(matrix),
+            matrix if self._to_backend is None else torch.from_numpy(matrix),
             wires,
-            dtype=torch.complex64,
+            dtype=self._c_dtype if self._to_backend is None else torch.complex64,
             optimize=self._contraction_optimizer,
             simplify_sequence=self._local_simplify,
             simplify_atol=0.0,
