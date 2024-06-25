@@ -211,6 +211,7 @@ from .attributes import (
     DatasetSparseArray,
     DatasetString,
     DatasetTuple,
+    DatasetPyTree,
 )
 from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
@@ -225,6 +226,7 @@ __all__ = (
     "DatasetAttribute",
     "DatasetNotWriteableError",
     "DatasetArray",
+    "DatasetPyTree",
     "DatasetScalar",
     "DatasetString",
     "DatasetList",

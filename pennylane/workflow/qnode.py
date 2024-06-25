@@ -108,8 +108,8 @@ def _to_qfunc_output_type(
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
-    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
-    (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
+    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>` (corresponding to
+    a `variational circuit <https://pennylane.ai/qml/glossary/variational_circuit>`)
     and the computational device it is executed on.
 
     The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing

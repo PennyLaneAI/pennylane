@@ -38,6 +38,7 @@ from typing import (
 from pennylane.data.base import hdf5
 from pennylane.data.base.hdf5 import HDF5, HDF5Any, HDF5Group
 from pennylane.data.base.typing_util import UNSET, get_type, get_type_str
+from pennylane.pytrees import is_pytree
 
 T = TypeVar("T")
 
@@ -492,5 +493,7 @@ def match_obj_type(
         ret = DatasetAttribute.registry["list"]
     elif issubclass(type_, Mapping):
         ret = DatasetAttribute.registry["dict"]
+    elif is_pytree(type_):
+        ret = DatasetAttribute.registry["pytree"]
 
     return ret
