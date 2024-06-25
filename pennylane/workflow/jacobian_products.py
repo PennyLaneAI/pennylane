@@ -209,6 +209,21 @@ class JacobianProductCalculator(abc.ABC):
         """
 
 
+class NullJPC(JacobianProductCalculator):
+
+    def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
+        raise qml.QuantumFunctionError
+
+    def compute_jacobian(self, tapes: Batch) -> Tuple:
+        raise qml.QuantumFunctionError
+
+    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
+        raise qml.QuantumFunctionError
+
+    def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]) -> Tuple[ResultBatch, Tuple]:
+        raise qml.QuantumFunctionError
+
+
 class TransformJacobianProducts(JacobianProductCalculator):
     """Compute VJPs, JVPs and Jacobians via a gradient transform :class:`~.TransformDispatcher`.
 

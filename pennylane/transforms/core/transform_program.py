@@ -15,7 +15,7 @@
 This module contains the ``TransformProgram`` class.
 """
 from functools import partial
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Optional, Iterable, Tuple, Union
 
 import numpy as np
 
@@ -27,6 +27,38 @@ from .transform_dispatcher import TransformContainer, TransformDispatcher, Trans
 
 PostProcessingFn = Callable[[ResultBatch], Result]
 BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
+
+def _autograd_jacobian(classical_function, argnums):
+    return qml.jacobian(classical_function, argnums)
+
+def _tf_jacobian(classical_function, _):
+    import tensorflow as tf
+
+    def jacobian(*args, **kwargs):
+        with tf.GradientTape() as tape:
+            gate_params = classical_function(*args, **kwargs)
+        return tape.jacobain(gate_params, args)
+    return jacobian
+
+def _torch_jacobian(classical_function, _):
+    import torch
+
+    def jacobian(*args, **kwargs):
+        return torch.autograd.functional.jacobian(classical_function, args)
+    return jacobian
+
+def _jax_jacobian(classical_function, argnums):
+    import jax
+    argnums = 0 if argnums is None else argnums
+    return jax.jacobian(classical_function, argnums=argnums)
+
+_jacobian_map = {
+    "autograd": _autograd_jacobian,
+    "tf": _tf_jacobian,
+    "torch": _torch_jacobian,
+    "jax": _jax_jacobian,
+    "jax-jit": _jax_jacobian
+}
 
 
 def _batch_postprocessing(
@@ -150,7 +182,7 @@ class TransformProgram:
 
     """
 
-    def __init__(self, initial_program: Optional[Sequence] = None):
+    def __init__(self, initial_program: Optional[Iterable] = None):
         self._transform_program = list(initial_program) if initial_program else []
         self._classical_jacobians = None
         self._argnums = None
@@ -403,42 +435,7 @@ class TransformProgram:
                 raise qml.QuantumFunctionError("No trainable parameters.")
 
             classical_function = partial(classical_function, program)
-
-            if qnode.interface == "autograd":
-                jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
-
-            if qnode.interface == "tf":
-                import tensorflow as tf  # pylint: disable=import-outside-toplevel
-
-                def _jacobian(*args, **kwargs):
-                    with tf.GradientTape() as tape:
-                        gate_params = classical_function(*args, **kwargs)
-
-                    jac = tape.jacobian(gate_params, args)
-                    return jac
-
-                jac = _jacobian(*args, **kwargs)
-
-            if qnode.interface == "torch":
-                import torch  # pylint: disable=import-outside-toplevel
-
-                def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
-                    jac = torch.autograd.functional.jacobian(classical_function, args)
-                    return jac
-
-                jac = _jacobian(*args, **kwargs)
-
-            if qnode.interface in ["jax", "jax-jit"]:
-                import jax  # pylint: disable=import-outside-toplevel
-
-                argnums = 0 if argnums is None else argnums
-
-                def _jacobian(*args, **kwargs):
-                    return jax.jacobian(classical_function, argnums=argnums)(*args, **kwargs)
-
-                jac = _jacobian(*args, **kwargs)
-
-            return jac
+            return _jacobian_map[qnode.interface](classical_function, argnums)(*args, **kwargs)
 
         classical_jacobians = []
         for index, transform in enumerate(self):

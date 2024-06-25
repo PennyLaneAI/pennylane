@@ -16,7 +16,7 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
     Monte Carlo method, at its auxillary functions"""
 
 import inspect
-from functools import partial
+from functools import lru_cache, partial
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -492,32 +492,35 @@ def cut_circuit_mc(
     return tapes, processing_fn
 
 
-class CustomQNode(qml.QNode):
-    """
-    A subclass with a custom __call__ method. The custom QNode transform returns an instance
-    of this class.
-    """
+@lru_cache
+def _get_custom_qnode():
+    class CustomQNode(qml.QNode):
+        """
+        A subclass with a custom __call__ method. The custom QNode transform returns an instance
+        of this class.
+        """
 
-    def __call__(self, *args, **kwargs):
-        shots = kwargs.pop("shots", False)
-        shots = shots or self.device.shots
+        def __call__(self, *args, **kwargs):
+            shots = kwargs.pop("shots", False)
+            shots = shots or self.device.shots
 
-        if not shots:
-            raise ValueError(
-                "A shots value must be provided in the device "
-                "or when calling the QNode to be cut"
-            )
-        if isinstance(shots, qml.measurements.Shots):
-            shots = shots.total_shots
+            if not shots:
+                raise ValueError(
+                    "A shots value must be provided in the device "
+                    "or when calling the QNode to be cut"
+                )
+            if isinstance(shots, qml.measurements.Shots):
+                shots = shots.total_shots
 
-        # find the qcut transform inside the transform program and set the shots argument
-        qcut_tc = [
-            tc for tc in self.transform_program if tc.transform.__name__ == "cut_circuit_mc"
-        ][-1]
-        qcut_tc._kwargs["shots"] = shots
+            # find the qcut transform inside the transform program and set the shots argument
+            qcut_tc = [
+                tc for tc in self.transform_program if tc.transform.__name__ == "cut_circuit_mc"
+            ][-1]
+            qcut_tc._kwargs["shots"] = shots
 
-        kwargs["shots"] = 1
-        return super().__call__(*args, **kwargs)
+            kwargs["shots"] = 1
+            return super().__call__(*args, **kwargs)
+    return CustomQNode
 
 
 @cut_circuit_mc.custom_qnode_transform
@@ -544,7 +547,7 @@ def _qnode_transform_mc(self, qnode, targs, tkwargs):
     execute_kwargs["cache"] = False
 
     new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
-    new_qnode.__class__ = CustomQNode
+    new_qnode.__class__ = _get_custom_qnode()
     new_qnode.execute_kwargs = execute_kwargs
 
     return new_qnode

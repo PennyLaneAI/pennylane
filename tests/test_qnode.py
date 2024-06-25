@@ -76,7 +76,6 @@ def test_copy():
     assert copied_qn.device is qn.device
     assert copied_qn.interface is qn.interface
     assert copied_qn.diff_method == qn.diff_method
-    assert copied_qn.expansion_strategy == qn.expansion_strategy
 
 
 class TestInitialization:
@@ -89,7 +88,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is False
+        assert f._cache == "auto"
 
     def test_cache_initialization_maxdiff_2(self):
         """Test that when max_diff = 2, the cache initialization to True."""
@@ -98,7 +97,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is True
+        assert f.execute_kwargs["cache"] == "auto"
 
 
 # pylint: disable=too-many-public-methods
@@ -135,61 +134,6 @@ class TestValidation:
         """Test that an exception is raised for an invalid device"""
         with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
-
-    # pylint: disable=protected-access
-    def test_validate_backprop_method_invalid_device(self):
-        """Test that the method for validating the backprop diff method
-        tape raises an exception if the device does not support backprop."""
-        dev = qml.device("default.gaussian", wires=1)
-
-        with pytest.raises(qml.QuantumFunctionError, match="does not support native computations"):
-            QNode._validate_backprop_method(dev, None)
-
-    # pylint: disable=protected-access
-    def test_validate_device_method_new_device(self):
-        """Test that _validate_device_method raises a valueerror with the new device interface."""
-
-        dev = qml.device("default.qubit")
-
-        with pytest.raises(ValueError):
-            QNode._validate_device_method(dev)
-
-    # pylint: disable=protected-access
-    def test_validate_backprop_method(self):
-        """Test that the method for validating the backprop diff method
-        tape works as expected"""
-        dev = qml.device("default.qubit", wires=1)
-
-        with pytest.raises(ValueError):
-            QNode._validate_backprop_method(dev, "auto")
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_parameter_shift_qubit_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for qubit devices."""
-        dev = qml.device("default.qubit", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_parameter_shift_cv_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for cv devices."""
-        dev = qml.device("default.gaussian", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift_cv
-        assert gradient_fn[1] == {"dev": dev}
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_parameter_shift_qutrit_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for qutrit devices."""
-        dev = qml.device("default.qutrit", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift
 
     # pylint: disable=protected-access
     @pytest.mark.autograd
@@ -345,15 +289,6 @@ class TestValidation:
             match="Differentiation method 5 must be a gradient transform or a string",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
-
-    def test_validate_adjoint_invalid_device(self):
-        """Test if a ValueError is raised when an invalid device is provided to
-        _validate_adjoint_method"""
-
-        dev = qml.device("default.gaussian", wires=1)
-
-        with pytest.raises(ValueError, match="The default.gaussian device does not"):
-            QNode._validate_adjoint_method(dev)
 
     def test_adjoint_finite_shots(self):
         """Tests that a DeviceError is raised with the adjoint differentiation method

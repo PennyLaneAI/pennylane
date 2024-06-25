@@ -29,7 +29,7 @@ jacobian = torch.autograd.functional.jacobian
 hessian = torch.autograd.functional.hessian
 
 legacy_dev = qml.devices.LegacyDeviceFacade(
-    qml.device("default.qubit.legacy", wires=(0, 1, 2, "a", "b"))
+    qml.devices.DefaultQubitLegacy(wires=(0, 1, 2, "a", "b"))
 )
 
 # device, diff_method, grad_on_execution, device_vjp

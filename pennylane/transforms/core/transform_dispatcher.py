@@ -209,12 +209,12 @@ class TransformDispatcher:
         qnode = copy.copy(qnode)
 
         if self.expand_transform:
-            qnode.add_transform(
+            qnode.transform_program.push_back(
                 TransformContainer(
                     self._expand_transform, targs, tkwargs, use_argnum=self._use_argnum_in_expand
                 )
             )
-        qnode.add_transform(
+        qnode.transform_program.push_back(
             TransformContainer(
                 self._transform,
                 targs,

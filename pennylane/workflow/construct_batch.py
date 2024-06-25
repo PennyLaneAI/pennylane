@@ -20,8 +20,6 @@ from typing import Callable, Tuple, Union
 
 import pennylane as qml
 
-from .qnode import QNode, _get_device_shots, _make_execution_config
-
 
 def null_postprocessing(results):
     """A postprocessing function with null behaviour."""
@@ -52,22 +50,18 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
     return qml.transform(wrapped_expand_fn)
 
 
-def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformProgram":
+def _get_full_transform_program(qnode: "qml.QNode") -> "qml.transforms.core.TransformProgram":
     program = qml.transforms.core.TransformProgram(qnode.transform_program)
     if getattr(qnode.gradient_fn, "expand_transform", False):
         program.add_transform(
             qml.transform(qnode.gradient_fn.expand_transform),
             **qnode.gradient_kwargs,
         )
-    if isinstance(qnode.device, qml.devices.Device):
-        config = _make_execution_config(qnode, qnode.gradient_fn)
-        return program + qnode.device.preprocess(config)[0]
-    program.add_transform(qml.transform(qnode.device.batch_transform))
-    program.add_transform(expand_fn_transform(qnode.device.expand_fn))
-    return program
+    config = qnode.default_execution_config
+    return program + qnode.device.preprocess(config)[0]
 
 
-def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.TransformProgram":
+def get_transform_program(qnode: "qml.QNode", level=None) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.
 
     Args:
@@ -186,7 +180,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
     return full_transform_program[level]
 
 
-def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") -> Callable:
+def construct_batch(qnode: "qml.QNode", level: Union[None, str, int, slice] = "user") -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
     Args:
@@ -287,9 +281,9 @@ def construct_batch(qnode: QNode, level: Union[None, str, int, slice] = "user") 
     def batch_constructor(*args, **kwargs) -> Tuple[Tuple["qml.tape.QuantumTape", Callable]]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
-            shots = _get_device_shots(qnode.device)
+            shots = qnode.device.shots
         else:
-            shots = kwargs.pop("shots", _get_device_shots(qnode.device))
+            shots = kwargs.pop("shots", qnode.device.shots)
 
         initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
 

@@ -40,6 +40,7 @@ from .jacobian_products import (
     LightningVJPs,
     TransformJacobianProducts,
 )
+from .cache_transform import cache_transform
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -79,16 +80,6 @@ INTERFACE_MAP = {
 SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
-
-_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
-    "Cached execution with finite shots detected!\n"
-    "Note that samples as well as all noisy quantities computed via sampling "
-    "will be identical across executions. This situation arises where tapes "
-    "are executed with identical operations, measurements, and parameters.\n"
-    "To avoid this behaviour, provide 'cache=False' to the QNode or execution "
-    "function."
-)
-"""str: warning message to display when cached execution is used with finite shots"""
 
 
 def _use_tensorflow_autograph():
@@ -132,7 +123,7 @@ def _get_ml_boundary_execute(
         elif mapped_interface == "torch":
             from .interfaces.torch import execute as ml_boundary
 
-        elif interface == "jax-jit":
+        elif interface == "jax-jit" and not differentiable:
             if device_vjp:
                 from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
@@ -177,7 +168,7 @@ def _make_inner_execute(device, cache, execution_config=None, numpy_only=True) -
             transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
 
         if cache is not None:
-            transform_program.add_transform(_cache_transform, cache=cache)
+            transform_program.add_transform(cache_transform, cache=cache)
 
         transformed_tapes, transform_post_processing = transform_program(tapes)
 
@@ -190,42 +181,6 @@ def _make_inner_execute(device, cache, execution_config=None, numpy_only=True) -
 
     return inner_execute
 
-
-@transform
-def _cache_transform(tape: QuantumTape, cache: MutableMapping):
-    """Caches the result of ``tape`` using the provided ``cache``.
-
-    .. note::
-
-        This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
-    """
-
-    def cache_hit_postprocessing(_results: Tuple[Tuple]) -> Tuple:
-        result = cache[tape.hash]
-        if result is not None:
-            if tape.shots and getattr(cache, "_persistent_cache", True):
-                warnings.warn(_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS, UserWarning)
-            return result
-
-        raise RuntimeError(
-            "Result for tape is missing from the execution cache. "
-            "This is likely the result of a race condition."
-        )
-
-    if tape.hash in cache:
-        return [], cache_hit_postprocessing
-
-    def cache_miss_postprocessing(results: Tuple[Tuple]) -> Tuple:
-        result = results[0]
-        cache[tape.hash] = result
-        return result
-
-    # Adding a ``None`` entry to the cache indicates that a result will eventually be available for
-    # the tape. This assumes that post-processing functions are called in the same order in which
-    # the transforms are invoked. Otherwise, ``cache_hit_postprocessing()`` may be called before the
-    # result of the corresponding tape is placed in the cache by ``cache_miss_postprocessing()``.
-    cache[tape.hash] = None
-    return [tape], cache_miss_postprocessing
 
 
 def execute(
@@ -351,8 +306,6 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    if isinstance(device, qml.devices.LegacyDevice):
-        device = qml.deviecs.LegacyDeviceFacade(device)
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
@@ -390,6 +343,7 @@ def execute(
         interface = qml.math.get_interface(*params)
     if INTERFACE_MAP.get(interface, "") == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
+        raise NotImplementedError
     if interface == "jax":
         try:  # pragma: no-cover
             from .interfaces.jax import get_jax_interface_name
@@ -448,21 +402,8 @@ def execute(
         numpy_only=not device_supports_interface_data,
     )
 
-    # moved to its own explicit step so it will be easier to remove
-    def inner_execute_with_empty_jac(tapes, **_):
-        return (inner_execute(tapes), [])
-
-    if interface in jpc_interfaces:
-        execute_fn = inner_execute
-    else:
-        execute_fn = inner_execute_with_empty_jac
+    execute_fn = inner_execute
     #### Executing the configured setup #####
-
-    if not device_batch_transform:
-        warnings.warn(
-            "device batch transforms cannot be turned off with the new device interface.",
-            UserWarning,
-        )
     tapes, post_processing = transform_program(tapes)
 
     if transform_program.is_informative:
@@ -488,49 +429,11 @@ def execute(
     elif config.use_device_gradient:
         jpc = DeviceDerivatives(device, config)
 
-        if interface in jpc_interfaces:
-            execute_fn = (
-                jpc.execute_and_cache_jacobian if config.grad_on_execution else inner_execute
-            )
+        execute_fn = (
+            jpc.execute_and_cache_jacobian if config.grad_on_execution else inner_execute
+        )
 
-        elif config.grad_on_execution:
-
-            def execute_fn(internal_tapes):
-                """A partial function that wraps the execute_and_compute_derivatives method of the device.
-
-                Closure Variables:
-                    device: The device to execute on
-                    config: the ExecutionConfig that specifies how to perform the simulations.
-                """
-                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
-
-                return device.execute_and_compute_derivatives(numpy_tapes, config)
-
-            gradient_fn = None
-
-        else:
-
-            def execute_fn(internal_tapes) -> Tuple[ResultBatch, Tuple]:
-                """A wrapper around device.execute that adds an empty tuple instead of derivatives.
-
-                Closure Variables:
-                    device: the device to execute on
-                    config: the ExecutionConfig that specifies how to perform the simulations.
-                """
-                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
-                return (device.execute(numpy_tapes, config), tuple())
-
-            def gradient_fn(internal_tapes):
-                """A partial function that wraps compute_derivatives method of the device.
-
-                Closure Variables:
-                    device: the device to execute on
-                    config: the ExecutionConfig that specifies how to take the derivative.
-                """
-                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
-                return device.compute_derivatives(numpy_tapes, config)
-
-    elif grad_on_execution is True:
+    elif config.grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
         # within execute_and_gradients, so providing a gradient_fn
         # in this case would have ambiguous behaviour.
@@ -578,13 +481,7 @@ def execute(
         config.use_device_jacobian_product,
         differentiable=max_diff > 1,
     )
-
-    if interface in jpc_interfaces:
-        results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
-    else:
-        results = ml_boundary_execute(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
+    results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
 
     return post_processing(results)
 

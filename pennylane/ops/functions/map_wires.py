@@ -23,11 +23,10 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.workflow import QNode
 
 
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable],
+    input: Union[Operator, MeasurementProcess, QuantumTape, "qml.QNode", Callable],
     wire_map: dict,
     queue=False,
     replace=False,
@@ -99,7 +98,7 @@ def map_wires(
                 qml.apply(new_op)
             return new_op
         return input.map_wires(wire_map=wire_map)
-    if isinstance(input, (QuantumScript, QNode)) or callable(input):
+    if isinstance(input, (QuantumScript, qml.QNode)) or callable(input):
         return _map_wires_transform(input, wire_map=wire_map, queue=queue)
 
     raise ValueError(f"Cannot map wires of object {input} of type {type(input)}.")

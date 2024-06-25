@@ -14,10 +14,10 @@
 """
 Contains the :class:`ExecutionConfig` data class.
 """
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Optional, Union
 
-from pennylane.workflow import SUPPORTED_INTERFACES
+from pennylane.transforms.core import TransformDispatcher
 
 
 # pylint: disable=too-many-instance-attributes
@@ -52,42 +52,20 @@ class ExecutionConfig:
     ``True`` indicates to either use the device Jacobian products or fail.
     """
 
-    gradient_method: Optional[str] = None
+    gradient_method: Optional[Union[str, TransformDispatcher]] = "best"
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: Optional[dict] = None
+    gradient_keyword_arguments: dict = field(default_factory=dict)
     """Arguments used to control a gradient transform"""
 
-    device_options: Optional[dict] = None
+    device_options: dict = field(default_factory=dict)
     """Various options for the device executing a quantum circuit"""
 
-    interface: Optional[str] = None
+    interface: Optional[str] = "auto"
     """The machine learning framework to use"""
 
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
-
-    def __post_init__(self):
-        """
-        Validate the configured execution options.
-
-        Note that this hook is automatically called after init via the dataclass integration.
-        """
-        if self.interface not in SUPPORTED_INTERFACES:
-            raise ValueError(
-                f"Unknown interface. interface must be in {SUPPORTED_INTERFACES}, got {self.interface} instead."
-            )
-
-        if self.grad_on_execution not in {True, False, None}:
-            raise ValueError(
-                f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
-            )
-
-        if self.device_options is None:
-            self.device_options = {}
-
-        if self.gradient_keyword_arguments is None:
-            self.gradient_keyword_arguments = {}
 
 
 DefaultExecutionConfig = ExecutionConfig()

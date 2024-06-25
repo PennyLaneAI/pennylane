@@ -23,7 +23,7 @@ from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit, LegacyDeviceFacade
 
-legacy_dev = LegacyDeviceFacade(qml.device("default.qubit.legacy", wires=(0, 1, 2, "a", "b")))
+legacy_dev = LegacyDeviceFacade(qml.devices.DefaultQubitLegacy(wires=(0, 1, 2, "a", "b")))
 
 # device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [

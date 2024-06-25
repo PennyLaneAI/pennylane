@@ -24,7 +24,7 @@ from pennylane import qnode
 from pennylane.devices import DefaultQubit, LegacyDeviceFacade
 from tests.param_shift_dev import ParamShiftDerivativesDevice
 
-legacy_dev = LegacyDeviceFacade(qml.device("default.qubit.legacy", wires=5))
+legacy_dev = LegacyDeviceFacade(qml.devices.DefaultQubitLegacy(wires=5))
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [

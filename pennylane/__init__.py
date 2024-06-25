@@ -88,7 +88,6 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -122,6 +121,7 @@ from pennylane.ops.functions import (
     comm,
 )
 from pennylane.ops.identity import I
+import pennylane.devices
 from pennylane.optimize import *
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
@@ -131,6 +131,7 @@ import pennylane.pulse
 import pennylane.fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
+from pennylane.workflow import QNode, qnode, execute
 import pennylane.qinfo
 
 # pylint:disable=wrong-import-order

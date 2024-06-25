@@ -25,7 +25,7 @@ from pennylane.devices import DefaultQubit, LegacyDeviceFacade
 
 device_seed = 42
 
-legacy_dev = LegacyDeviceFacade(qml.device("default.qubit.legacy", wires=5))
+legacy_dev = LegacyDeviceFacade(qml.devices.DefaultQubitLegacy(wires=5))
 # device, diff_method, grad_on_execution, device_vjp
 device_and_diff_method = [
     [DefaultQubit(seed=device_seed), "backprop", True, False],
