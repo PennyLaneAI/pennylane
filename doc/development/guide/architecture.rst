@@ -8,7 +8,7 @@ PennyLane's core feature is the ability to compute gradients of variational
 quantum circuits in a way that is compatible with classical techniques such as
 backpropagation. PennyLane thus extends the automatic differentiation
 algorithms common in optimization and machine learning to include quantum and
-:doc:`hybrid computations <glossary/hybrid_computation>`.
+`hybrid computations <https://pennylane.ai/qml/glossary/hybrid_computation>`_.
 A plugin system makes the framework compatible with many quantum
 simulators or hardware devices, remote or local.
 

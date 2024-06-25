@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Version number (major.minor.patch[-label])
+An internal module for working with pytrees.
 """
 
-__version__ = "0.38.0-dev"
+from .pytrees import PyTreeStructure, flatten, is_pytree, leaf, register_pytree, unflatten
+
+__all__ = [
+    "PyTreeStructure",
+    "flatten",
+    "is_pytree",
+    "leaf",
+    "register_pytree",
+    "unflatten",
+]
