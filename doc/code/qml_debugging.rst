@@ -4,6 +4,21 @@ qml.debugging
 
 .. automodule:: pennylane.debugging
 
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~.breakpoint
+    ~.debug_expval
+    ~.debug_probs
+    ~.debug_state
+    ~.debug_tape
+    ~.snapshots
+
+:html:`</div>`
+
+
 Entering the Debugging Context
 ------------------------------
 
