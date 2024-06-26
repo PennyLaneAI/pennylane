@@ -72,7 +72,7 @@ def _construct_graph_from_queue(queue, all_wires):
     return graph, inds_for_objs, nodes_on_wires
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes, too-many-public-methods
 class CircuitGraph:
     """Represents a quantum circuit as a directed acyclic graph.
 
@@ -439,6 +439,33 @@ class CircuitGraph:
             return 1
 
         return rx.dag_longest_path_length(operation_graph, weight_fn=weight_fn)
+
+    def has_path_idx(self, a_idx: int, b_idx: int) -> bool:
+        """Checks if a path exists between the two given nodes.
+
+        Args:
+            a (int): initial node index
+            b (int): final node index
+
+        Returns:
+            bool: returns ``True`` if a path exists
+        """
+        if a_idx == b_idx:
+            return True
+
+        return (
+            len(
+                rx.digraph_dijkstra_shortest_paths(
+                    self._graph,
+                    a_idx,
+                    b_idx,
+                    weight_fn=None,
+                    default_weight=1.0,
+                    as_undirected=False,
+                )
+            )
+            != 0
+        )
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
