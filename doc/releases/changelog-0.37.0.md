@@ -7,8 +7,7 @@
 * Added a quantum debugger (`PLDB`) which interfaces via `qml.breakpoint()` and provides tools for 
   debugging quantum circuits. Users can step through the quantum circuit operations, dynamically
   queue operations and make measurements using (`qml.debug_state()`, `qml.debug_probs()`, 
-  `qml.debug_expval()`, and `qml.debug_tape()`). Consider the following python script 
-  containing the quantum circuit with breakpoints.
+  `qml.debug_expval()`, and `qml.debug_tape()`).
   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
   [(#5749)](https://github.com/PennyLaneAI/pennylane/pull/5749)
   [(#5789)](https://github.com/PennyLaneAI/pennylane/pull/5789)
