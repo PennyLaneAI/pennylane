@@ -1,20 +1,22 @@
+.. role:: html(raw)
+   :format: html
+
 qml.debugging
 =============
-.. currentmodule:: pennylane.debugging
 
-.. automodule:: pennylane.debugging
+This module contains functionality for debugging quantum programs on simulator devices.
 
 :html:`<div class="summary-table">`
 
 .. autosummary::
     :nosignatures:
 
-    ~.breakpoint
-    ~.debug_expval
-    ~.debug_probs
-    ~.debug_state
-    ~.debug_tape
-    ~.snapshots
+    ~pennylane.breakpoint
+    ~pennylane.debug_expval
+    ~pennylane.debug_probs
+    ~pennylane.debug_state
+    ~pennylane.debug_tape
+    ~pennylane.snapshots
 
 :html:`</div>`
 
