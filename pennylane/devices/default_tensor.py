@@ -814,10 +814,14 @@ class DefaultTensor(Device):
         # after the execution, we could avoid copying the circuit.
         qc = self._quimb_circuit.copy()
 
+        # computing local expectation values on the GPU is not supported by quimb
+        if self._to_backend is not None:
+            qc.apply_to_arrays(lambda x: x.cpu().numpy())
+
         exp_val = qc.local_expectation(
-            matrix if self._to_backend is None else torch.from_numpy(matrix),
+            matrix,  # if self._to_backend is None else torch.from_numpy(matrix),
             wires,
-            dtype=self._c_dtype if self._to_backend is None else torch.complex64,
+            dtype=self._c_dtype,  # if self._to_backend is None else torch.complex64,
             optimize=self._contraction_optimizer,
             simplify_sequence=self._local_simplify,
             simplify_atol=0.0,
