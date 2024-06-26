@@ -22,13 +22,14 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
+from pennylane.capture import bind_nested_plxpr
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
 make_vjp = unary_to_nary(_make_vjp)
 
 
-class grad:
+class _grad:
     """Returns the gradient as a callable function of hybrid quantum-classical functions.
     :func:`~.qjit` and Autograd compatible.
 
@@ -193,6 +194,12 @@ class grad:
         return grad_value, ans
 
 
+@bind_nested_plxpr
+def grad(func, argnum=None, method=None, h=None):
+    return _grad(func, argnum=argnum, method=method, h=h)
+
+
+@bind_nested_plxpr
 def jacobian(func, argnum=None, method=None, h=None):
     """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
     :func:`~.qjit` and Autograd compatible.
