@@ -416,9 +416,12 @@ class CircuitGraph:
             if obj is old:
                 self._queue[i] = new
 
-    @cached_property
     def get_depth(self):
         """Depth of the quantum circuit (longest path in the DAG)."""
+        return self._depth
+
+    @cached_property
+    def _depth(self):
         # If there are no operations in the circuit, the depth is 0
         if not self.operations:
             return 0
