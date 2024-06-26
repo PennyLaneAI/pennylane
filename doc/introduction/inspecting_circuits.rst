@@ -169,7 +169,7 @@ the number of a snapshot is used as a key in the output dictionary instead.
 Interactive Debugging on Simulators
 -----------------------------------
 
-Pennylane allows for more interactive debugging of quantum circuits in a programatic 
+PennyLane allows for more interactive debugging of quantum circuits in a programmatic 
 fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is 
 currently supported on ``default.qubit`` and ``lightning.qubit`` devices. 
 
