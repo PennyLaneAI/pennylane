@@ -183,7 +183,6 @@ class CircuitGraph:
                 # get the index of the wire on the device and add op to the grid, to the end of wire w
                 grid.setdefault(wires.index(w), []).append(op)
 
-        print(grid)
         return grid
 
     @staticmethod
