@@ -313,3 +313,34 @@ class TestCircuitGraph:
         """Test that depth is computed correctly for operations that define a custom depth > 1"""
         cg = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4])
         assert cg.get_depth() == true_depth
+
+
+def test_has_path():
+    """Test has_path and has_path_idx."""
+
+    ops = [qml.X(0), qml.X(3), qml.CNOT((0, 1)), qml.X(1), qml.X(3)]
+    graph = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4, 5])
+
+    assert graph.has_path(ops[0], ops[2])
+    assert graph.has_path_idx(0, 2)
+    assert not graph.has_path(ops[0], ops[4])
+    assert not graph.has_path_idx(0, 4)
+
+
+def test_has_path_repeated_ops():
+    """Test has_path and has_path_idx when an operation is repeated."""
+
+    op = qml.X(0)
+    ops = [op, qml.CNOT((0, 1)), op, qml.Y(1)]
+
+    graph = CircuitGraph(ops, [], [0, 1, 2, 3])
+
+    assert graph.has_path_idx(0, 3)
+    assert graph.has_path_idx(1, 2)
+    with pytest.raises(ValueError, match="does not work with operations that have been repeated. "):
+        graph.has_path(op, ops[3])
+    with pytest.raises(ValueError, match="does not work with operations that have been repeated. "):
+        graph.has_path(ops[1], op)
+
+    # still works if they are the same operation.
+    assert graph.has_path(op, op)

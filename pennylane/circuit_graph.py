@@ -467,7 +467,7 @@ class CircuitGraph:
             != 0
         )
 
-    def has_path(self, a, b):
+    def has_path(self, a, b) -> bool:
         """Checks if a path exists between the two given nodes.
 
         Args:
@@ -477,12 +477,14 @@ class CircuitGraph:
         Returns:
             bool: returns ``True`` if a path exists
         """
+
         if a is b:
             return True
 
         if any(len(self._inds_for_objs[WrappedObj(o)]) > 1 for o in (a, b)):
             raise ValueError(
-                "CircuitGraph.has_path does not work with operations that have been repeated."
+                "CircuitGraph.has_path does not work with operations that have been repeated. "
+                "Consider using has_path_idx instead."
             )
 
         return (
