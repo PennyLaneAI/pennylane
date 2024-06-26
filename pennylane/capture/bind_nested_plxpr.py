@@ -15,7 +15,7 @@
 This submodule provides a decorator for binding a qfunc transform as a PLXPR primitive.
 """
 from functools import partial, wraps
-from typing import Callable
+from typing import Any, Callable, Protocol
 
 from .switches import enabled
 
@@ -26,10 +26,13 @@ except ImportError:
     has_jax = False
 
 QFunc = Callable
-QFuncTransform = Callable[[QFunc], QFunc]
 
 
-def bind_nested_plxpr(fn: QFuncTransform) -> QFuncTransform:
+class QFuncTransform(Protocol):
+    def __call__(self, g: QFunc, *args: Any, **kwds: Any) -> QFunc: ...
+
+
+def bind_nested_plxpr(fn: QFuncTransform, name=None, additional_args=()) -> QFuncTransform:
     """Allows a qfunc transform to become a plxpr primitive.
 
     Args:
@@ -98,7 +101,7 @@ def bind_nested_plxpr(fn: QFuncTransform) -> QFuncTransform:
     if not has_jax:
         return fn
 
-    prim = jax.core.Primitive(fn.__name__)
+    prim = jax.core.Primitive(name or fn.__name__)
     prim.multiple_results = True
 
     @prim.def_abstract_eval
@@ -111,10 +114,12 @@ def bind_nested_plxpr(fn: QFuncTransform) -> QFuncTransform:
         fn_args = total_args[n_args:]
 
         # the new qfunc, created by evaluating the jaxpr.
-        bound = partial(jax.core.eval_jaxpr, jaxpr.jaxpr)
+        def bound_jaxpr(*args, **kwargs):
+            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args, **kwargs)
+            return res[0] if len(res) == 1 else res
 
         fn_kwargs = fn_kwargs or {}
-        return [fn(bound, *fn_args, **fn_kwargs)(jaxpr.consts, *qfunc_args)]
+        return [fn(bound_jaxpr, *fn_args, **fn_kwargs)(*qfunc_args)]
 
     @wraps(fn)
     def new_fn(qfunc: QFunc, *fn_args, **fn_kwargs) -> QFunc:
@@ -123,7 +128,7 @@ def bind_nested_plxpr(fn: QFuncTransform) -> QFuncTransform:
 
         @wraps(qfunc)
         def new_qfunc(*args, **kwargs):
-            jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
+            jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*additional_args, *args)
             n_args = len(args)
             return prim.bind(*args, *fn_args, jaxpr=jaxpr, n_args=n_args, fn_kwargs=fn_kwargs)
 

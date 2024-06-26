@@ -136,6 +136,7 @@ from .primitives import (
 )
 from .bind_nested_plxpr import bind_nested_plxpr
 from .capture_qnode import qnode_call
+from .classical_control import for_loop
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -174,6 +175,7 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
+    "for_loop",
     "qnode_call",
     "AbstractOperator",
     "AbstractMeasurement",
