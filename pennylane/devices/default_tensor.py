@@ -442,14 +442,20 @@ class DefaultTensor(Device):
 
     # to_backend = lambda data: torch.tensor(data, dtype=torch.complex64, device=self._device)
 
-    def enable_GPU(self, device: str = "cuda"):
-        """Enable GPU support for the device.
+    def enable_GPU(self, device: str = "cuda", dtype: type = torch.complex64):
+        """Enable GPU support for the device using PyTorch.
 
         Args:
             device (str): The device to use for GPU support. Default is ``"cuda"``.
+            dtype (type): The data type to use for the tensor representation. Default is ``torch.complex64``.
         """
 
-        self._to_backend = lambda data: torch.tensor(data, dtype=torch.complex64, device=device)
+        self._to_backend = lambda data: torch.tensor(data, dtype=dtype, device=device)
+
+    def disable_GPU(self):
+        """Disable GPU support for the device."""
+
+        self._to_backend = None
 
     def _initial_quimb_circuit(
         self, wires: qml.wires.Wires, psi0=None
