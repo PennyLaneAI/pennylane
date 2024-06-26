@@ -139,31 +139,19 @@ class TestCircuitGraph:
         assert len(graph.node_indexes()) == 9
         assert len(graph.edges()) == 9
 
-        queue = ops + obs
+        a = {(graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list()}
 
-        # all ops should be nodes in the graph
-        for k in queue:
-            assert k in graph.nodes()
-
-        # all nodes in the graph should be ops
-        # for k in graph.nodes:
-        for k in graph.nodes():
-            assert k is queue[k.queue_idx]
-        a = set((graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list())
-        b = set(
-            (queue[a], queue[b])
-            for a, b in [
-                (0, 3),
-                (1, 3),
-                (2, 4),
-                (3, 5),
-                (3, 6),
-                (4, 5),
-                (5, 7),
-                (5, 8),
-                (6, 8),
-            ]
-        )
+        b = {
+            (0, 3),
+            (1, 3),
+            (2, 4),
+            (3, 5),
+            (3, 6),
+            (4, 5),
+            (5, 7),
+            (5, 8),
+            (6, 8),
+        }
         assert a == b
 
     def test_ancestors_and_descendants_example(self, ops, obs):
@@ -181,26 +169,6 @@ class TestCircuitGraph:
 
         descendants = circuit.descendants([queue[6]])
         assert descendants == [queue[8]]
-
-    def test_in_topological_order_example(self, ops, obs):
-        """
-        Test ``_in_topological_order`` method returns the expected result.
-        """
-        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
-
-        to = circuit._in_topological_order(ops)
-
-        to_expected = [
-            qml.RZ(0.35, wires=[2]),
-            qml.Hadamard(wires=[2]),
-            qml.RY(0.35, wires=[1]),
-            qml.RX(0.43, wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.PauliX(wires=[1]),
-            qml.CNOT(wires=[2, 0]),
-        ]
-
-        assert str(to) == str(to_expected)
 
     def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
@@ -300,43 +268,6 @@ class TestCircuitGraph:
         circuit = qnode.qtape.graph
         assert circuit.max_simultaneous_measurements == expected
 
-    def test_grid_when_sample_no_wires(self):
-        """A test to ensure the sample operation applies to all wires on the
-        `CircuitGraph`s grid when none are explicitly provided."""
-
-        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_no_wires = [qml.sample(op=None, wires=None)]
-        obs_w_wires = [qml.sample(op=None, wires=[0, 1, 2])]
-
-        circuit_no_wires = CircuitGraph(ops, obs_no_wires, wires=Wires([0, 1, 2]))
-        circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
-
-        sample_w_wires_op = qml.sample(op=None, wires=[0, 1, 2])
-        expected_grid_w_wires = {
-            0: [ops[0], ops[1], sample_w_wires_op],
-            1: [ops[1], sample_w_wires_op],
-            2: [sample_w_wires_op],
-        }
-
-        sample_no_wires_op = qml.sample(op=None, wires=None)
-        expected_grid_no_wires = {
-            0: [ops[0], ops[1], sample_no_wires_op],
-            1: [ops[1], sample_no_wires_op],
-            2: [sample_no_wires_op],
-        }
-
-        for key in range(3):
-            lst_w_wires = circuit_w_wires._grid[key]
-            lst_no_wires = circuit_no_wires._grid[key]
-            lst_expected_w_wires = expected_grid_w_wires[key]
-            lst_expected_no_wires = expected_grid_no_wires[key]
-
-            for el1, el2 in zip(lst_w_wires, lst_expected_w_wires):
-                qml.assert_equal(el1, el2)
-
-            for el1, el2 in zip(lst_no_wires, lst_expected_no_wires):
-                qml.assert_equal(el1, el2)
-
     def test_print_contents(self):
         """Tests if the circuit prints correct."""
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
@@ -354,6 +285,7 @@ class TestCircuitGraph:
 
     tape_depth = (
         ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], 2),
+        ([qml.X(0)] * 4, 4),
         ([qml.Hadamard(0), qml.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
         (
             [

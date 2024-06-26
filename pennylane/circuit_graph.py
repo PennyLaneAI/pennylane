@@ -15,42 +15,22 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
-from collections import namedtuple
-
-# pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
-from numbers import Number
+from collections import defaultdict, namedtuple
+from functools import cached_property
 
 import numpy as np
 import rustworkx as rx
 
 from pennylane.measurements import MeasurementProcess
+from pennylane.ops.identity import I
+from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.resource import ResourcesOperation
 
 
-def _by_idx(x):
-    """Sorting key for Operators: queue index aka temporal order.
-
-    Args:
-        x (Operator): node in the circuit graph
-    Returns:
-        int: sorting key for the node
-    """
-    return x.queue_idx
-
-
-def _is_observable(x):
-    """Predicate for deciding if an Operator instance is an observable.
-
-    .. note::
-       Currently some :class:`Observable` instances are not observables in this sense,
-       since they can be used as gates as well.
-
-    Args:
-        x (Operator): node in the circuit graph
-    Returns:
-        bool: True iff x is an observable
-    """
-    return isinstance(x, MeasurementProcess)
+def _get_wires(obj, all_wires):
+    if isinstance(obj, MeasurementProcess) and len(obj.wires) == 0:
+        return all_wires
+    return obj.wires
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
@@ -74,6 +54,25 @@ Args:
 """
 
 
+def _construct_graph_from_queue(queue, all_wires):
+    inds_for_objs = defaultdict(list)  # dict from wrappedobjs to all indices for the objs
+    nodes_on_wires = defaultdict(list)  # wire to list of nodes
+
+    graph = rx.PyDiGraph(multigraph=False)
+
+    for i, obj in enumerate(queue):
+        inds_for_objs[WrappedObj(obj)].append(i)
+
+        obj_node = graph.add_node(i)
+        for w in _get_wires(obj, all_wires):
+            if w in nodes_on_wires:
+                graph.add_edge(nodes_on_wires[w][-1], obj_node, "")
+            nodes_on_wires[w].append(obj_node)
+
+    return graph, inds_for_objs, nodes_on_wires
+
+
+# pylint: disable=too-many-instance-attributes
 class CircuitGraph:
     """Represents a quantum circuit as a directed acyclic graph.
 
@@ -93,76 +92,24 @@ class CircuitGraph:
             quantum circuit.
     """
 
-    # pylint: disable=too-many-public-methods
-
+    # pylint: disable=too-many-arguments
     def __init__(self, ops, obs, wires, par_info=None, trainable_params=None):
         self._operations = ops
         self._observables = obs
         self.par_info = par_info
         self.trainable_params = trainable_params
 
-        queue = ops + obs
-
-        self._depth = None
-
-        self._grid = {}
-        """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
-        Here, the key is the wire number, and the value is a list containing the operators on that wire.
-        """
-
-        self._indices = {}
-        # Store indices for the nodes of the DAG here
+        self._queue = ops + obs
 
         self.wires = wires
         """Wires: wires that are addressed in the operations.
         Required to translate between wires and indices of the wires on the device."""
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
-        for k, op in enumerate(queue):
-            # meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
-            op.queue_idx = k  # store the queue index in the Operator
 
-            for w in wires if len(op.wires) == 0 else op.wires:
-                # get the index of the wire on the device
-                wire = wires.index(w)
-                # add op to the grid, to the end of wire w
-                self._grid.setdefault(wire, []).append(op)
-
-        # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
-
-        self._graph = rx.PyDiGraph(
-            multigraph=False
-        )  #: rx.PyDiGraph: DAG representation of the quantum circuit
-
-        # Iterate over each (populated) wire in the grid
-        for wire in self._grid.values():
-            # Add the first operator on the wire to the graph
-            # This operator does not depend on any others
-
-            # Check if wire[0] in self._grid.values()
-            # is already added to the graph; this
-            # condition avoids adding new nodes with
-            # the same value but different indexes
-            if all(wire[0] is not op for op in self._graph.nodes()):
-                _ind = self._graph.add_node(wire[0])
-                self._indices.setdefault(id(wire[0]), _ind)
-
-            for i in range(1, len(wire)):
-                # For subsequent operators on the wire:
-                if all(wire[i] is not op for op in self._graph.nodes()):
-                    # Add them to the graph if they are not already
-                    # in the graph (multi-qubit operators might already have been placed)
-                    _ind = self._graph.add_node(wire[i])
-                    self._indices.setdefault(id(wire[i]), _ind)
-
-                # Create an edge between this and the previous operator
-                # There isn't any default value for the edge-data in
-                # rx.PyDiGraph.add_edge(); this is set to an empty string
-                self._graph.add_edge(self._indices[id(wire[i - 1])], self._indices[id(wire[i])], "")
-
-        # For computing depth; want only a graph with the operations, not
-        # including the observables
-        self._operation_graph = None
+        self._graph, self._inds_for_objs, self._nodes_on_wires = _construct_graph_from_queue(
+            self._queue, wires
+        )
 
         # Required to keep track if we need to handle multiple returned
         # observables per wire
@@ -242,8 +189,7 @@ class CircuitGraph:
         Returns:
             list[Observable]: observables
         """
-        nodes = [node for node in self._graph.nodes() if _is_observable(node)]
-        return sorted(nodes, key=_by_idx)
+        return self._observables
 
     @property
     def observables(self):
@@ -262,8 +208,7 @@ class CircuitGraph:
         Returns:
             list[Operation]: operations
         """
-        nodes = [node for node in self._graph.nodes() if not _is_observable(node)]
-        return sorted(nodes, key=_by_idx)
+        return self._operations
 
     @property
     def operations(self):
@@ -274,7 +219,7 @@ class CircuitGraph:
     def graph(self):
         """The graph representation of the quantum circuit.
 
-        The graph has nodes representing :class:`.Operator` instances,
+        The graph has nodes representing indices into the queue,
         and directed edges pointing from nodes to their immediate dependents/successors.
 
         Returns:
@@ -291,7 +236,7 @@ class CircuitGraph:
         Returns:
             list[int]: indices of operators on the wire, in temporal order
         """
-        return [op.queue_idx for op in self._grid[wire]]
+        return self._nodes_on_wires[wire]
 
     def ancestors(self, ops):
         """Ancestors of a given set of operators.
@@ -302,12 +247,16 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators
         """
-        # rx.ancestors() returns node indices instead of node-values
-        all_indices = set().union(*(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops))
-        double_op_indices = set(self._indices[id(o)] for o in ops)
-        ancestor_indices = all_indices - double_op_indices
-
-        return list(self._graph.get_node_data(n) for n in ancestor_indices)
+        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
+            raise ValueError(
+                "cannot calculate ancestors for an operator that occurs multiple times."
+            )
+        ancestors = set()
+        for op in ops:
+            ind = self._inds_for_objs[WrappedObj(op)][0]
+            op_ancestors = rx.ancestors(self._graph, ind)
+            ancestors.update(set(op_ancestors))
+        return [self._queue[ind] for ind in ancestors]
 
     def descendants(self, ops):
         """Descendants of a given set of operators.
@@ -318,25 +267,16 @@ class CircuitGraph:
         Returns:
             list[Operator]: descendants of the given operators
         """
-        # rx.descendants() returns node indices instead of node-values
-        all_indices = set().union(*(rx.descendants(self._graph, self._indices[id(o)]) for o in ops))
-        double_op_indices = set(self._indices[id(o)] for o in ops)
-        ancestor_indices = all_indices - double_op_indices
-
-        return list(self._graph.get_node_data(n) for n in ancestor_indices)
-
-    def _in_topological_order(self, ops):
-        """Sorts a set of operators in the circuit in a topological order.
-
-        Args:
-            ops (Iterable[Operator]): set of operators in the circuit
-
-        Returns:
-            Iterable[Operator]: same set of operators, topologically ordered
-        """
-        G = self._graph.subgraph(list(self._indices[id(o)] for o in ops))
-        indexes = rx.topological_sort(G)
-        return list(G[x] for x in indexes)
+        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
+            raise ValueError(
+                "cannot calculate decendents for an operator that occurs multiple times."
+            )
+        descendants = set()
+        for op in ops:
+            ind = self._inds_for_objs[WrappedObj(op)][0]
+            op_descendants = rx.descendants(self._graph, ind)
+            descendants.update(set(op_descendants))
+        return [self._queue[ind] for ind in descendants]
 
     def ancestors_in_order(self, ops):
         """Operator ancestors in a topological order.
@@ -349,7 +289,15 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
-        return sorted(self.ancestors(ops), key=_by_idx)  # an abitrary topological order
+        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
+            raise ValueError(
+                "cannot calculate decendents for an operator that occurs multiple times."
+            )
+        # rx.descendants() returns node indices instead of node-values
+        all_indices = set().union(
+            *(rx.ancestors(self._graph, self._inds_for_objs[WrappedObj(o)][0]) for o in ops)
+        )
+        return [self._queue[ind] for ind in sorted(all_indices)]
 
     def descendants_in_order(self, ops):
         """Operator descendants in a topological order.
@@ -362,7 +310,15 @@ class CircuitGraph:
         Returns:
             list[Operator]: descendants of the given operators, topologically ordered
         """
-        return sorted(self.descendants(ops), key=_by_idx)
+        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
+            raise ValueError(
+                "cannot calculate decendents for an operator that occurs multiple times."
+            )
+        # rx.descendants() returns node indices instead of node-values
+        all_indices = set().union(
+            *(rx.descendants(self._graph, self._inds_for_objs[WrappedObj(o)][0]) for o in ops)
+        )
+        return [self._queue[ind] for ind in sorted(all_indices)]
 
     def nodes_between(self, a, b):
         r"""Nodes on all the directed paths between the two given nodes.
@@ -439,82 +395,47 @@ class CircuitGraph:
         Raises:
             ValueError: if the new :class:`~.Operator` does not act on the same wires as the old one
         """
-        # NOTE Does not alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous!
+        # NOTE Does not alter the graph edges in any way. variable_deps is not changed, Dangerous!
         if new.wires != old.wires:
             raise ValueError("The new Operator must act on the same wires as the old one.")
 
-        new.queue_idx = old.queue_idx
-        self._graph[self._indices[id(old)]] = new
-        index = self._indices.pop(id(old))
-        self._indices[id(new)] = index
+        self._inds_for_objs[WrappedObj(new)] = self._inds_for_objs.pop(WrappedObj(old))
 
-        self._operations = self.operations_in_order
-        self._observables = self.observables_in_order
+        for nodes in self._nodes_on_wires.values():
+            for i, n in enumerate(nodes):
+                if n is old:
+                    nodes[i] = new
 
+        for i, op in enumerate(self._operations):
+            if op is old:
+                self._operations[i] = new
+        for i, mp in enumerate(self._observables):
+            if mp is old:
+                self._observables[i] = new
+        for i, obj in enumerate(self._queue):
+            if obj is old:
+                self._queue[i] = new
+
+    @cached_property
     def get_depth(self):
         """Depth of the quantum circuit (longest path in the DAG)."""
         # If there are no operations in the circuit, the depth is 0
         if not self.operations:
-            self._depth = 0
+            return 0
+        with QueuingManager.stop_recording():
+            ops_with_initial_I = [
+                I(self.wires)
+            ] + self.operations  # add identity wire to end the graph
+        operation_graph, _, _ = _construct_graph_from_queue(ops_with_initial_I, self.wires)
 
-        # If there are operations but depth is uncomputed, compute the truncated graph
-        # with only the operations, and return the longest path + 1 (since the path is
-        # expressed in terms of edges, and we want it in terms of nodes).
-        if self._depth is None and self.operations:
-            if self._operation_graph is None:
-                self._operation_graph = self._graph.subgraph(
-                    list(self._indices[id(node)] for node in self.operations)
-                )
-                self._extend_graph(self._operation_graph)
-                self._depth = (
-                    rx.dag_longest_path_length(
-                        self._operation_graph, weight_fn=lambda _, __, w: self._weight_func(w)
-                    )
-                    + 1
-                )
-        return self._depth
+        # pylint: disable=unused-argument
+        def weight_fn(in_idx, out_idx, w):
+            out_op = ops_with_initial_I[out_idx]
+            if isinstance(out_op, ResourcesOperation):
+                return out_op.resources().depth
+            return 1
 
-    @staticmethod
-    def _weight_func(weight):
-        """If weight is a number, use it!"""
-        if isinstance(weight, Number):
-            return weight
-        return 1
-
-    def _extend_graph(self, graph: rx.PyDiGraph) -> rx.PyDiGraph:
-        """Extend graph to account for custom depth operations"""
-        custom_depth_node_dict = {}
-        for op in self.operations:
-            if isinstance(op, ResourcesOperation) and (d := op.resources().depth) > 1:
-                custom_depth_node_dict[graph.nodes().index(op)] = d
-
-        def _link_graph(target_index, sub_graph, node_index):
-            """Link incoming and outgoing edges for the initial node to the sub-graph"""
-            if target_index == node_index:
-                return sub_graph.nodes().index(f"{node_index}.0")
-            return sub_graph.nodes().index(f"{node_index}.1")
-
-        for node_index, depth in custom_depth_node_dict.items():
-            # Construct sub_graph:
-            sub_graph = rx.PyDiGraph()
-            source_node, target_node = (f"{node_index}.0", f"{node_index}.1")
-
-            sub_graph.add_node(source_node)
-            sub_graph.add_node(target_node)
-
-            sub_graph.add_edge(
-                sub_graph.nodes().index(source_node),
-                sub_graph.nodes().index(target_node),
-                depth - 1,  # set edge weight as depth - 1
-            )
-
-            graph.substitute_node_with_subgraph(
-                node_index,
-                sub_graph,
-                lambda _, t, __: _link_graph(
-                    t, sub_graph, node_index  # pylint: disable=cell-var-from-loop
-                ),
-            )
+        return rx.dag_longest_path_length(operation_graph, weight_fn=weight_fn)
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
@@ -529,12 +450,17 @@ class CircuitGraph:
         if a is b:
             return True
 
+        if any(len(self._inds_for_objs[WrappedObj(o)]) > 1 for o in (a, b)):
+            raise ValueError(
+                "CircuitGraph.has_path does not work with operations that have been repeated."
+            )
+
         return (
             len(
                 rx.digraph_dijkstra_shortest_paths(
                     self._graph,
-                    self._indices[id(a)],
-                    self._indices[id(b)],
+                    self._inds_for_objs[WrappedObj(a)][0],
+                    self._inds_for_objs[WrappedObj(b)][0],
                     weight_fn=None,
                     default_weight=1.0,
                     as_undirected=False,
@@ -543,7 +469,7 @@ class CircuitGraph:
             != 0
         )
 
-    @property
+    @cached_property
     def max_simultaneous_measurements(self):
         """Returns the maximum number of measurements on any wire in the circuit graph.
 
@@ -570,15 +496,11 @@ class CircuitGraph:
         Returns:
             int: the maximum number of measurements
         """
-        if self._max_simultaneous_measurements is None:
-            all_wires = []
+        all_wires = []
 
-            for obs in self.observables:
-                all_wires.extend(obs.wires.tolist())
+        for obs in self.observables:
+            all_wires.extend(obs.wires.tolist())
 
-            a = np.array(all_wires)
-            _, counts = np.unique(a, return_counts=True)
-            self._max_simultaneous_measurements = (
-                counts.max() if counts.size != 0 else 1
-            )  # qml.state() will result in an empty array
-        return self._max_simultaneous_measurements
+        a = np.array(all_wires)
+        _, counts = np.unique(a, return_counts=True)
+        return counts.max() if counts.size != 0 else 1  # qml.state() will result in an empty array

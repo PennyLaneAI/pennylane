@@ -16,6 +16,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
