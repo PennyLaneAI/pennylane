@@ -527,7 +527,7 @@ def minus(a, b, tape_specs):
         return tuple(map(scalar_fun, a, b))
     if scalar_shots:
         return tuple(map(scalar_fun, a, b))
-    return tuple(tuple(map(scalar_fun, _a, _b)) for _a, _b, _c in zip(a, b, c))
+    return tuple(tuple(map(scalar_fun, _a, _b)) for _a, _b in zip(a, b))
 
 
 def expval_param_shift_with_mcms(
@@ -1167,7 +1167,7 @@ def _expand_transform_param_shift(
     broadcast=False,
     deactivate_mcms=False,
     mcm_version=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Expand function to be applied before parameter shift."""
     [new_tape], postprocessing = qml.devices.preprocess.decompose(
         tape,
@@ -1199,7 +1199,7 @@ def param_shift(
     broadcast=False,
     deactivate_mcms=False,
     mcm_version=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 
