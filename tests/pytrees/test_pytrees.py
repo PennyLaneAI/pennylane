@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the pennylane pytrees module
+Tests for the pennylane pytrees module.
 """
+import re
 
 import pytest
 
 import pennylane as qml
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
+from pennylane.pytrees.pytrees import get_typename, get_typename_type
 
 
 def test_structure_repr_str():
@@ -145,4 +147,39 @@ def test_nested_pl_object():
         shots=50,
         trainable_params=(0, 1),
     )
-    assert qml.equal(new_tape, expected_new_tape)
+    qml.assert_equal(new_tape, expected_new_tape)
+
+
+@pytest.mark.parametrize(
+    "type_,typename", [(list, "builtins.list"), (qml.Hadamard, "qml.Hadamard")]
+)
+def test_get_typename(type_, typename):
+    """Test for ``get_typename()``."""
+
+    assert get_typename(type_) == typename
+
+
+def test_get_typename_invalid():
+    """Tests that a ``TypeError`` is raised when passing an non-pytree
+    type to ``get_typename()``."""
+
+    with pytest.raises(TypeError, match="<class 'int'> is not a Pytree type"):
+        get_typename(int)
+
+
+@pytest.mark.parametrize(
+    "type_,typename", [(list, "builtins.list"), (qml.Hadamard, "qml.Hadamard")]
+)
+def test_get_typename_type(type_, typename):
+    """Tests for ``get_typename_type()``."""
+    assert get_typename_type(typename) is type_
+
+
+def test_get_typename_type_invalid():
+    """Tests that a ``ValueError`` is raised when passing an invalid
+    typename to ``get_typename_type()``."""
+
+    with pytest.raises(
+        ValueError, match=re.escape("'not.a.typename' is not the name of a Pytree type.")
+    ):
+        get_typename_type("not.a.typename")

@@ -1,82 +1,11 @@
 :orphan:
 
-# Release 0.37.0-dev (development release)
+# Release 0.38.0-dev (development release)
 
 <h3>New features since last release</h3>
-
-* The `default.tensor` device now supports the `tn` method to simulate quantum circuits using exact tensor networks.
-  [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
-
-* QROM template is added. This template allows you to enter classic data in the form of bitstrings.
-  [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
-
-  ```python
-  # a list of bitstrings is defined
-  bitstrings = ["010", "111", "110", "000"]
-
-  dev = qml.device("default.qubit", shots = 1)
-
-  @qml.qnode(dev)
-  def circuit():
-
-      # the third index is encoded in the control wires [0, 1]
-      qml.BasisEmbedding(2, wires = [0,1])
-
-      qml.QROM(bitstrings = bitstrings,
-              control_wires = [0,1],
-              target_wires = [2,3,4],
-              work_wires = [5,6,7])
-
-      return qml.sample(wires = [2,3,4])
-  ```
-   ```pycon
-  >>> print(circuit())
-  [1 1 0]
-  ```
-
-* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
-  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
-
-  ```pycon
-  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
-  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
-  >>> qml.math.expectation_value(operator_matrix, state_vector)
-  tensor(-2.23711432e-17+0.j, requires_grad=True)
-  ```
-
-* The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
-  [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
-
-* Added `from_openfermion` to convert openfermion `FermionOperator` objects to PennyLane `FermiWord` or
-`FermiSentence` objects.
-[(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
-
-  ```python
-  of_op = openfermion.FermionOperator('0^ 2')
-  pl_op = qml.from_openfermion(of_op)
-
-  ```
-  ```pycon
-  >>> print(pl_op)
-  a⁺(0) a(2)
-  ```
-
-* A new `qml.noise` module which contains utililty functions for building `NoiseModels`.
-  [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
-  [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
-
-  ```python
-  fcond = qml.noise.op_eq(qml.X) | qml.noise.op_eq(qml.Y)
-  noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
-  ```
-
-  ```pycon
-  >>> qml.NoiseModel({fcond: noise}, t1=0.04)
-  NoiseModel({
-    OpEq(PauliX) | OpEq(PauliY) = AmplitudeDamping(gamma=0.4)
-  }, t1 = 0.04)
-  ```
-
+* A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
+  [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
+  
 <h3>Improvements 🛠</h3>
 
 * Add operation and measurement specific routines in `default.tensor` to improve scalability.
@@ -323,189 +252,15 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
-  [(#5748)](https://github.com/PennyLaneAI/pennylane/pull/5748)
-
-* A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
-  operation directly with `qml.apply`.
-  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
-
-* Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
-  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
-
-* `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
-  [(#5660)](https://github.com/PennyLaneAI/pennylane/pull/5660)
-
-* `qml.from_qasm_file` has been removed. The user can open files and load their content using `qml.from_qasm`.
-  [(#5659)](https://github.com/PennyLaneAI/pennylane/pull/5659)
-
-* `qml.load` has been removed in favour of more specific functions, such as `qml.from_qiskit`, etc.
-  [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
-
-* `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
-  returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
-  [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
-
-* `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
-  Consequently, `Controlled.active_wires` has been removed in favour of the more common `Controlled.wires`.
-  [(#5728)](https://github.com/PennyLaneAI/pennylane/pull/5728)
-
 <h3>Deprecations 👋</h3>
-
-* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated.
-  Instead, `qml.simplify()` can be called on the constructed operator.
-  [(#5677)](https://github.com/PennyLaneAI/pennylane/pull/5677)
-
-* `qml.transforms.map_batch_transform` is deprecated, since a transform can be applied directly to a batch of tapes.
-  [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
 
 <h3>Documentation 📝</h3>
 
-* The documentation for the `default.tensor` device has been added.
-  [(#5719)](https://github.com/PennyLaneAI/pennylane/pull/5719)
-
-* A small typo was fixed in the docstring for `qml.sample`.
-  [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
-
-* Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fix of incorrectly set up commands)
-  [(#5804)](https://github.com/PennyLaneAI/pennylane/pull/5804)
-
-* The `qml.Tracker` examples are updated.
-  [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
-
 <h3>Bug fixes 🐛</h3>
-
-* Fixes a bug in the wire handling on special controlled ops.
-  [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
-
-* Fixes a bug where `Sum`'s with repeated identical operations ended up with the same hash as
-  `Sum`'s with different numbers of repeats.
-  [(#5851)](https://github.com/PennyLaneAI/pennylane/pull/5851)
-
-* `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` can now be used with `Sum` operators.
-  [(#5846)](https://github.com/PennyLaneAI/pennylane/pull/5846)
-
-* Fixes a bug where `MottonenStatePreparation` produces wrong derivatives at special parameter values.
-  [(#5774)](https://github.com/PennyLaneAI/pennylane/pull/5774)
-
-* Fixes a bug where fractional powers and adjoints of operators were commuted, which is
-  not well-defined/correct in general. Adjoints of fractional powers can no longer be evaluated.
-  [(#5835)](https://github.com/PennyLaneAI/pennylane/pull/5835)
-
-* `qml.qnn.TorchLayer` now works with tuple returns.
-  [(#5816)](https://github.com/PennyLaneAI/pennylane/pull/5816)
-
-* An error is now raised if a transform is applied to a catalyst qjit object.
-  [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
-
-* `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
-  [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
-
-* Disable Docker builds on PR merge.
-  [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
-
-* The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
-  [(#5761)](https://github.com/PennyLaneAI/pennylane/pull/5761)
-
-* `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
-  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
-
-* The decomposition of `AmplitudeAmplification` now correctly queues all operations.
-  [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
-
-* Replaced `semantic_version` with `packaging.version.Version`, since the former cannot
-  handle the metadata `.post` in the version string.
-  [(#5754)](https://github.com/PennyLaneAI/pennylane/pull/5754)
-
-* The `dynamic_one_shot` transform now has expanded support for the `jax` and `torch` interfaces.
-  [(#5672)](https://github.com/PennyLaneAI/pennylane/pull/5672)
-
-* The decomposition of `StronglyEntanglingLayers` is now compatible with broadcasting.
-  [(#5716)](https://github.com/PennyLaneAI/pennylane/pull/5716)
-
-* `qml.cond` can now be applied to `ControlledOp` operations when deferring measurements.
-  [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
-
-* The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
-  [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
-
-* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that
-  returned samples of observables containing the `qml.Identity` operator.
-  [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
-
-* The signature of `CaptureMeta` objects (like `Operator`) now match the signature of the `__init__` call.
-  [(#5727)](https://github.com/PennyLaneAI/pennylane/pull/5727)
-
-* Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
-  [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
-
-* `qml.Projector` is now compatible with jax-jit.
-  [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
-
-* Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
-  [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
-
-* `param_shift`, `finite_diff`, `compile`, `insert`, `merge_rotations`, and `transpile` now
-  all work with circuits with non-commuting measurements.
-  [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
-  [(#5681)](https://github.com/PennyLaneAI/pennylane/pull/5681)
-
-* A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
-  [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
-
-* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors,
-  multiple measurements, and parameter broadcasting.
-  [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
-
-* Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
-  [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
-
-* `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
-  [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
-
-* `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
-  [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
-
-* Fixes a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` is incorrect on `default.qubit.legacy` with `parameter_shift`.
-  [(#5806)](https://github.com/PennyLaneAI/pennylane/pull/5806)
-
-* Fixed a bug where `split_non_commuting` raises an error when the circuit contains measurements of observables that are not pauli words.
-  [(#5827)](https://github.com/PennyLaneAI/pennylane/pull/5827)
-
-* Simplify method for `Exp` now returns an operator with the correct number of Trotter steps, i.e. equal to the one from the pre-simplified operator.
-  [(#5831)](https://github.com/PennyLaneAI/pennylane/pull/5831)
-
-* Fix bug where `CompositeOp.overlapping_ops` sometimes puts overlapping ops in different groups, leading to incorrect results returned by `LinearCombination.eigvals()`
-  [(#5847)](https://github.com/PennyLaneAI/pennylane/pull/5847)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Tarun Kumar Allamsetty,
-Guillermo Alonso-Linaje,
-Utkarsh Azad,
-Lillian M. A. Frederiksen,
-Ludmila Botelho,
-Gabriel Bottrill,
-Astral Cai,
-Ahmed Darwish,
-Isaac De Vlugt,
-Diksha Dhawan,
-Pietropaolo Frisoni,
-Emiliano Godinez,
-Austin Huang,
-David Ittah,
-Soran Jahangiri,
-Rohan Jain,
-Mashhood Khan,
-Korbinian Kottmann,
-Christina Lee,
-Vincent Michaud-Rioux,
-Lee James O'Riordan,
-Mudit Pandey,
-Kenya Sakka,
-Jay Soni,
-Kazuki Tsuoka,
-Haochen Paul Wang,
-David Wierichs.
+Yushao Chen,
+Vincent Michaud-Rioux.
