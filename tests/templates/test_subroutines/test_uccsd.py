@@ -299,7 +299,7 @@ class TestInputs:
                 [],
                 np.array([1, 1, 0, 0]),
                 1,
-                "Weights tensor must be of",
+                "For one-dimensional weights tensor",
             ),
             (
                 np.array([-2.8, 1.6]),
@@ -307,7 +307,7 @@ class TestInputs:
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
                 1,
-                "Weights tensor must be of",
+                "For one-dimensional weights tensor",
             ),
             (
                 np.array([-2.8, 1.6]),
@@ -315,7 +315,7 @@ class TestInputs:
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
                 1,
-                "Weights tensor must be of",
+                "For one-dimensional weights tensor",
             ),
             (
                 np.array([-2.8]),
@@ -339,7 +339,7 @@ class TestInputs:
                 [],
                 np.array([1, 1, 0, 0]),
                 2,
-                "Weights tensor must be of",
+                "For one-dimensional weights tensor",
             ),
             (
                 np.array([[-2.8], [-1.8]]),

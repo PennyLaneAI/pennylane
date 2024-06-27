@@ -198,18 +198,15 @@ class UCCSD(Operation):
 
         shape = qml.math.shape(weights)
 
-        expected_shape_1 = (len(s_wires) + len(d_wires),)
-        expected_shape_repeats = (n_repeats,) + expected_shape_1
-        if n_repeats == 1 and (
-            (len(shape) == 2 and shape != expected_shape_repeats)
-            or (len(shape) == 1 and shape != expected_shape_1)
-        ):
+        expected_shape = (len(s_wires) + len(d_wires),)
+        if len(shape) == 1 and (n_repeats != 1 or shape != expected_shape):
             raise ValueError(
-                f"Weights tensor must be of shape {expected_shape_repeats} or {expected_shape_1}; got {shape}."
+                f"For one-dimensional weights tensor, the shape must be {expected_shape}, and n_repeats should be 1; "
+                f"got {shape} and {n_repeats}, respectively."
             )
-        if n_repeats != 1 and shape != expected_shape_repeats:
+        if len(shape) != 1 and shape != (n_repeats,) + expected_shape:
             raise ValueError(
-                f"Weights tensor must be of shape {expected_shape_repeats}; got {shape}."
+                f"Weights tensor must be of shape {(n_repeats,) + expected_shape}; got {shape}."
             )
 
         init_state = qml.math.toarray(init_state)
