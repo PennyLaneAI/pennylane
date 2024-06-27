@@ -583,9 +583,10 @@ def insert_mcms(circuit, results, mid_measurements):
     if not any(m.mv for m in circuit.measurements):
         return results
     new_results = []
+    mid_measurements = dict((k, qml.math.array([[v]])) for k, v in mid_measurements.items())
     for m in circuit.measurements:
         if m.mv:
-            new_results.append(m.mv.concretize(mid_measurements))
+            new_results.append(gather_mcm(m, mid_measurements, qml.math.array([[True]])))
         else:
             new_results.append(results.pop(0))
     return new_results
