@@ -438,6 +438,7 @@ def simulate_tree_mcm(
     # Initialize stacks
     counts = [None] * (n_mcms + 1)
     cumcounts = [0] * (n_mcms + 1)
+    probs = [None] * (n_mcms + 1)
     # TODO: combine these two (possibly more) stacks into a list to handle non-binary trees
     results_0 = [None] * (n_mcms + 1)
     results_1 = [None] * (n_mcms + 1)
@@ -453,13 +454,14 @@ def simulate_tree_mcm(
         if results_0[depth] is not None and results_1[depth] is not None:
             # Call `combine_measurements` to count-average measurements
             measurement_dicts = get_measurement_dicts(
-                circuits[-1], counts[depth], (results_0[depth], results_1[depth])
+                circuits[-1], probs[depth], (results_0[depth], results_1[depth])
             )
             measurements = combine_measurements(circuits[-1], measurement_dicts, mcm_samples)
             # Reset current branch
             mcm_current[depth:] = False
             # Clear stacks
             counts[depth] = None
+            probs[depth] = None
             results_0[depth] = None
             results_1[depth] = None
             states[depth] = None
@@ -531,6 +533,7 @@ def simulate_tree_mcm(
             else:
                 samples = qml.math.atleast_1d(measurements)
             counts[depth] = samples_to_counts(samples)
+            probs[depth] = counts_to_probs(counts[depth])
             # Store a copy of the state-vector to project on the one-branch
             states[depth] = state
             mcm_samples, cumcounts = update_mcm_samples(samples, mcm_samples, depth, cumcounts)
@@ -547,16 +550,16 @@ def simulate_tree_mcm(
 
     # Combine first two branches
     measurement_dicts = get_measurement_dicts(
-        circuits[-1], counts[depth], (results_0[depth], results_1[depth])
+        circuits[-1], probs[depth], (results_0[depth], results_1[depth])
     )
     mcm_samples = dict((mcms[i], v) for i, v in mcm_samples.items())
     mcm_samples = prune_mcm_samples(mcm_samples)
     return combine_measurements(circuit, measurement_dicts, mcm_samples)
 
 
-def get_measurement_dicts(circuit, counts, results):
-    """Combine a counts dictionary and two tuples of measurements into a
-    tuple of dictionaries storing the counts and measurements of both branches."""
+def get_measurement_dicts(circuit, probs, results):
+    """Combine a probs dictionary and two tuples of measurements into a
+    tuple of dictionaries storing the probs and measurements of both branches."""
     # We use `circuits[-1].measurements` since it contains the
     # target measurements (this is the only tape segment with
     # unmodified measurements)
@@ -564,13 +567,13 @@ def get_measurement_dicts(circuit, counts, results):
     measurement_dicts = [{} for _ in circuit.measurements]
     # Special treatment for single measurements
     single_measurement = len(circuit.measurements) == 1
-    # Store each measurement in a dictionary `{branch: (count, measure)}`
-    for branch, count in counts.items():
+    # Store each measurement in a dictionary `{branch: (prob, measure)}`
+    for branch, prob in probs.items():
         meas = results_0 if branch == 0 else results_1
         if single_measurement:
             meas = [meas]
         for i, m in enumerate(meas):
-            measurement_dicts[i][branch] = (count, m)
+            measurement_dicts[i][branch] = (prob, m)
     return measurement_dicts
 
 
@@ -610,6 +613,13 @@ def samples_to_counts(samples):
     """
     counts_1 = int(qml.math.count_nonzero(samples))
     return {0: samples.size - counts_1, 1: counts_1}
+
+
+def counts_to_probs(counts):
+    """Converts counts to probs."""
+    probs = qml.math.array(list(counts.values()))
+    probs = probs / qml.math.sum(probs)
+    return dict((k, v) for k, v in zip(counts.keys(), probs))
 
 
 def prepend_state_prep(circuit, state, interface, wires):
@@ -794,7 +804,7 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
     cum_value = 0
     total_counts = 0
     for v in measures.values():
-        if not v[0]:
+        if not v[0] or v[1] is tuple():
             continue
         cum_value += v[0] * v[1]
         total_counts += v[0]
@@ -807,7 +817,7 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
     cum_value = 0
     total_counts = 0
     for v in measures.values():
-        if not v[0]:
+        if not v[0] or v[1] is tuple():
             continue
         cum_value += v[0] * v[1]
         total_counts += v[0]
@@ -817,7 +827,9 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 @combine_measurements_core.register
 def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
     """The combined samples of two branches is obtained by concatenating the sample if each branch.."""
-    new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values() if m[0])
+    new_sample = tuple(
+        qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
+    )
     return qml.math.squeeze(qml.math.concatenate(new_sample))
 
 
@@ -825,7 +837,9 @@ def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argum
 def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-argument
     """Intermediate ``VarianceMP`` measurements are in fact ``SampleMP`` measurements,
     and hence the implementation is the same as for ``SampleMP``."""
-    new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values() if m[0])
+    new_sample = tuple(
+        qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
+    )
     return qml.math.squeeze(qml.math.concatenate(new_sample))
 
 
