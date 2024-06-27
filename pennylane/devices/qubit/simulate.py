@@ -407,6 +407,7 @@ def simulate_tree_mcm(
     # main implementation #
     #######################
     # Parse MCM info
+    finite_shots = bool(circuit.shots)
     mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasureMP)])
     n_mcms = len(mcms) - 1
     mcm_current = qml.math.zeros(n_mcms + 1, dtype=bool)
@@ -423,7 +424,7 @@ def simulate_tree_mcm(
             measured_mcms = measured_mcms | set(m.mv.measurements)
     measured_mcms_indices = [i for i, mcm in enumerate(mcms[1:]) if mcm in measured_mcms]
     mcm_samples = dict(
-        (k + 1, qml.math.empty((circuit.shots.total_shots,), dtype=bool) if circuit.shots else None)
+        (k + 1, qml.math.empty((circuit.shots.total_shots,), dtype=bool) if finite_shots else None)
         for k in measured_mcms_indices
     )
     # This is used by `get_final_state::apply_operation` for `Conditional` operations
@@ -436,6 +437,7 @@ def simulate_tree_mcm(
         circuits.append(circuit_left)
     circuits.append(circuit_right)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
+    terminal_measurements = circuits[-1].measurements if finite_shots else circuit.measurements
     # Initialize stacks
     counts = [None] * (n_mcms + 1)
     cumcounts = [0] * (n_mcms + 1)
@@ -455,9 +457,11 @@ def simulate_tree_mcm(
         if results_0[depth] is not None and results_1[depth] is not None:
             # Call `combine_measurements` to count-average measurements
             measurement_dicts = get_measurement_dicts(
-                circuits[-1], probs[depth], (results_0[depth], results_1[depth])
+                terminal_measurements, probs[depth], (results_0[depth], results_1[depth])
             )
-            measurements = combine_measurements(circuits[-1], measurement_dicts, mcm_samples)
+            measurements = combine_measurements(
+                terminal_measurements, measurement_dicts, mcm_samples
+            )
             # Reset current branch
             mcm_current[depth:] = False
             # Clear stacks
@@ -488,10 +492,10 @@ def simulate_tree_mcm(
         else:
             shots = circuits[depth].shots.total_shots
         # Update active branch dict
-        if circuit.shots:
-            no_shots = not bool(shots)
+        if finite_shots:
+            skip_subtree = not bool(shots)
         else:
-            no_shots = (
+            skip_subtree = (
                 probs[depth] is not None
                 and float(probs[depth][int(mcm_current[depth])]) < PROBS_TOL
             )
@@ -501,7 +505,7 @@ def simulate_tree_mcm(
             and mcm_current[depth] != mcms[depth].postselect
         )
         # If num_shots is zero or postselecting on the wrong branch, update measurements with an empty tuple
-        if no_shots or invalid_postselect:
+        if skip_subtree or invalid_postselect:
             # Adjust counts if `invalid_postselect`
             if invalid_postselect:
                 # Bump downstream cumulative counts before zeroing-out counts
@@ -530,10 +534,10 @@ def simulate_tree_mcm(
             )
             measurements = measure_final_state(circtmp, state, is_state_batched, **execution_kwargs)
         # If not at a leaf, project on the zero-branch and increase depth by one
-        if depth < n_mcms and (not no_shots and not invalid_postselect):
+        if depth < n_mcms and (not skip_subtree and not invalid_postselect):
             depth += 1
             # Update the active branch samples with `update_mcm_samples`
-            if circuit.shots:
+            if finite_shots:
                 if (
                     mcms[depth]
                     and mcms[depth].postselect is not None
@@ -552,6 +556,7 @@ def simulate_tree_mcm(
             mcm_samples, cumcounts = update_mcm_samples(samples, mcm_samples, depth, cumcounts)
             continue
 
+        measurements = insert_mcms(circuit, measurements, mid_measurements)
         # If at a zero-branch leaf, update measurements and switch to the one-branch
         if not mcm_current[depth]:
             results_0[depth] = measurements
@@ -562,24 +567,40 @@ def simulate_tree_mcm(
         results_1[depth] = measurements
 
     # Combine first two branches
+    terminal_measurements = circuit.measurements
     measurement_dicts = get_measurement_dicts(
-        circuits[-1], probs[depth], (results_0[depth], results_1[depth])
+        terminal_measurements, probs[depth], (results_0[depth], results_1[depth])
     )
     mcm_samples = dict((mcms[i], v) for i, v in mcm_samples.items())
     mcm_samples = prune_mcm_samples(mcm_samples)
-    return combine_measurements(circuit, measurement_dicts, mcm_samples)
+    return combine_measurements(terminal_measurements, measurement_dicts, mcm_samples)
 
 
-def get_measurement_dicts(circuit, probs, results):
+def insert_mcms(circuit, results, mid_measurements):
+    """Inserts terminal measurements of MCMs if the circuit is evaluated in analytic mode."""
+    if circuit.shots:
+        return results
+    if not any(m.mv for m in circuit.measurements):
+        return results
+    new_results = []
+    for m in circuit.measurements:
+        if m.mv:
+            new_results.append(m.mv.concretize(mid_measurements))
+        else:
+            new_results.append(results.pop(0))
+    return new_results
+
+
+def get_measurement_dicts(measurements, probs, results):
     """Combine a probs dictionary and two tuples of measurements into a
     tuple of dictionaries storing the probs and measurements of both branches."""
     # We use `circuits[-1].measurements` since it contains the
     # target measurements (this is the only tape segment with
     # unmodified measurements)
     results_0, results_1 = results
-    measurement_dicts = [{} for _ in circuit.measurements]
+    measurement_dicts = [{} for _ in measurements]
     # Special treatment for single measurements
-    single_measurement = len(circuit.measurements) == 1
+    single_measurement = len(measurements) == 1
     # Store each measurement in a dictionary `{branch: (prob, measure)}`
     for branch, prob in probs.items():
         meas = results_0 if branch == 0 else results_1
@@ -765,34 +786,35 @@ def measurement_with_no_shots(measurement):
     return np.nan
 
 
-def combine_measurements(circuit, measurements, mcm_samples):
+def combine_measurements(terminal_measurements, results, mcm_samples):
     """Returns combined measurement values of various types."""
     empty_mcm_samples = False
-    need_mcm_samples = any(circ_meas.mv for circ_meas in circuit.measurements)
+    need_mcm_samples = not all(v is None for v in mcm_samples.values())
+    need_mcm_samples = need_mcm_samples and any(circ_meas.mv for circ_meas in terminal_measurements)
     if need_mcm_samples:
         empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
         if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):  # pragma: no cover
             raise ValueError("mcm_samples have inconsistent shapes.")
     final_measurements = []
-    for circ_meas in circuit.measurements:
-        if circ_meas.mv and empty_mcm_samples:
+    for circ_meas in terminal_measurements:
+        if need_mcm_samples and circ_meas.mv and empty_mcm_samples:
             comb_meas = measurement_with_no_shots(circ_meas)
-        elif circ_meas.mv:
+        elif need_mcm_samples and circ_meas.mv:
             mcm_samples = dict((k, v.reshape((-1, 1))) for k, v in mcm_samples.items())
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = gather_mcm(circ_meas, mcm_samples, is_valid)
-        elif not measurements or not measurements[0]:
-            if len(measurements) > 0:
-                _ = measurements.pop(0)
+        elif not results or not results[0]:
+            if len(results) > 0:
+                _ = results.pop(0)
             comb_meas = measurement_with_no_shots(circ_meas)
         else:
-            comb_meas = combine_measurements_core(circ_meas, measurements.pop(0))
+            comb_meas = combine_measurements_core(circ_meas, results.pop(0))
         if isinstance(circ_meas, SampleMP):
             comb_meas = qml.math.squeeze(comb_meas)
         final_measurements.append(comb_meas)
     # special treatment of var
-    for i, (c, m) in enumerate(zip(circuit.measurements, final_measurements)):
-        if not c.mv and isinstance(circuit.measurements[i], VarianceMP):
+    for i, (c, m) in enumerate(zip(terminal_measurements, final_measurements)):
+        if not c.mv and isinstance(terminal_measurements[i], VarianceMP):
             final_measurements[i] = qml.math.var(m)
     return final_measurements[0] if len(final_measurements) == 1 else tuple(final_measurements)
 
