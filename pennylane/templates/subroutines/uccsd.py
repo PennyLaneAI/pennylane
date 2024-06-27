@@ -68,7 +68,7 @@ class UCCSD(Operation):
             the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each
             single and double excitation generated with the :func:`~.excitations` function. For legacy support,
-            If the size of given tensor is ``(len(s_wires) + len(d_wires),)``, it is assumed ``n_repeats == 1``.
+            if the size of given tensor is ``(len(s_wires) + len(d_wires),)``, it is assumed ``n_repeats == 1``.
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
             :func:`~.FermionicSingleExcitation`
             and
