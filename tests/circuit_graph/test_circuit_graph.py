@@ -170,6 +170,21 @@ class TestCircuitGraph:
         descendants = circuit.descendants([queue[6]])
         assert descendants == [queue[8]]
 
+    def test_ancestors_and_descendents_repeated_op(self):
+        """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
+
+        op = qml.X(0)
+        ops = [op, qml.Y(0), op, qml.Z(0), op]
+        graph = CircuitGraph(ops, [], [0, 1, 2])
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.ancestors(op)
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.descendants(op)
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.ancestors_in_order(op)
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.descendants_in_order(op)
+
     def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
 
@@ -177,6 +192,9 @@ class TestCircuitGraph:
         new = qml.RX(0.1, wires=0)
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
+        new_mp = qml.var(qml.Y(0))
+        circuit.update_node(obs[0], new_mp)
+        assert circuit.observables[0] is new_mp
 
     def test_update_node_error(self, ops, obs):
         """Test that changing nodes in the graph may raise an error."""
