@@ -22,7 +22,7 @@ exceptiongroup==1.2.1
 flatbuffers==24.3.25
 fonttools==4.53.0
 frozenlist==1.4.1
-fsspec==2024.6.0
+fsspec==2024.6.1
 future==1.0.0
 gast==0.4.0
 google-auth==2.30.0
