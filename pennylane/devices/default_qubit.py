@@ -95,7 +95,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
 
-    return op.has_matrix
+    return isinstance(op, (Conditional, MidMeasureMP)) or op.has_matrix
 
 
 def stopping_condition_shots(op: qml.operation.Operator) -> bool:
