@@ -231,6 +231,11 @@ def vn_entropy(
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
+    .. warning::
+
+        The qml.qinfo.vn_entropy transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.vn_entropy` measurement process in the return line of your QNode.
+
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
