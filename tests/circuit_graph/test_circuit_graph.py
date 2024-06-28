@@ -201,11 +201,11 @@ class TestCircuitGraph:
         ):
             graph.descendants(op)
         with pytest.raises(
-            ValueError, match=r"CircuitGraph.ancestors_in_order accepts an iterable of operators"
+            ValueError, match=r"CircuitGraph.ancestors accepts an iterable of operators"
         ):
             graph.ancestors_in_order(op)
         with pytest.raises(
-            ValueError, match=r"CircuitGraph.descendants_in_order accepts an iterable of operators"
+            ValueError, match=r"CircuitGraph.descendants accepts an iterable of operators"
         ):
             graph.descendants_in_order(op)
 

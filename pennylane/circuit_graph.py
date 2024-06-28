@@ -248,7 +248,7 @@ class CircuitGraph:
         """
         return self._nodes_on_wires[wire]
 
-    def ancestors(self, ops):
+    def ancestors(self, ops, sort=False):
         """Ancestors of a given set of operators.
 
         Args:
@@ -271,9 +271,11 @@ class CircuitGraph:
             ind = self._inds_for_objs[WrappedObj(op)][0]
             op_ancestors = rx.ancestors(self._graph, ind)
             ancestors.update(set(op_ancestors))
+        if sort:
+            ancestors = sorted(ancestors)
         return [self._queue[ind] for ind in ancestors]
 
-    def descendants(self, ops):
+    def descendants(self, ops, sort=False):
         """Descendants of a given set of operators.
 
         Args:
@@ -296,6 +298,8 @@ class CircuitGraph:
             ind = self._inds_for_objs[WrappedObj(op)][0]
             op_descendants = rx.descendants(self._graph, ind)
             descendants.update(set(op_descendants))
+        if sort:
+            descendants = sorted(descendants)
         return [self._queue[ind] for ind in descendants]
 
     def ancestors_in_order(self, ops):
@@ -309,19 +313,7 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
-        if isinstance(ops, (Operator, MeasurementProcess)):
-            raise ValueError(
-                "CircuitGraph.ancestors_in_order accepts an iterable"
-                " of operators and measurements, not operators and measurements themselves."
-            )
-        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
-            raise ValueError(
-                "cannot calculate decendents for an operator that occurs multiple times."
-            )
-        all_indices = set().union(
-            *(rx.ancestors(self._graph, self._inds_for_objs[WrappedObj(o)][0]) for o in ops)
-        )
-        return [self._queue[ind] for ind in sorted(all_indices)]
+        return self.ancestors(ops, sort=True)
 
     def descendants_in_order(self, ops):
         """Operator descendants in a topological order.
@@ -334,19 +326,7 @@ class CircuitGraph:
         Returns:
             list[Operator]: descendants of the given operators, topologically ordered
         """
-        if isinstance(ops, (Operator, MeasurementProcess)):
-            raise ValueError(
-                "CircuitGraph.descendants_in_order accepts an iterable of "
-                "operators and measurements, not operators and measurements themselves."
-            )
-        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
-            raise ValueError(
-                "cannot calculate decendents for an operator that occurs multiple times."
-            )
-        all_indices = set().union(
-            *(rx.descendants(self._graph, self._inds_for_objs[WrappedObj(o)][0]) for o in ops)
-        )
-        return [self._queue[ind] for ind in sorted(all_indices)]
+        return self.descendants(ops, sort=True)
 
     def nodes_between(self, a, b):
         r"""Nodes on all the directed paths between the two given nodes.
