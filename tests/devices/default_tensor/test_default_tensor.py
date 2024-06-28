@@ -423,10 +423,14 @@ class TestJaxSupport:
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
 @pytest.mark.parametrize(
-    "operation,expected_output,par",
+    "operation, expected_output, par",
     [
+        (qml.BasisState, [0, 0, 1 + 0j, 0], [1 + 0j, 0]),
+        (qml.BasisState, [0, 0, 0, 1 + 0j], [1 + 0j, 1 + 0j]),
         (qml.BasisState, [0, 0, 1, 0], [1, 0]),
         (qml.BasisState, [0, 0, 0, 1], [1, 1]),
+        (qml.StatePrep, [0, 0, 1 + 0j, 0], [0, 0, 1 + 0j, 0]),
+        (qml.StatePrep, [0, 0, 0, 1 + 0j], [0, 0, 0, 1 + 0j]),
         (qml.StatePrep, [0, 0, 1, 0], [0, 0, 1, 0]),
         (qml.StatePrep, [0, 0, 0, 1], [0, 0, 0, 1]),
         (
@@ -445,7 +449,7 @@ def test_apply_operation_state_preparation(operation, expected_output, par, meth
     """Tests that applying an operation yields the expected output state for single wire
     operations that have no parameters."""
 
-    par = np.array(par).astype(np.complex128)
+    par = np.array(par)
     dev = qml.device("default.tensor", method=method, wires=2)
 
     @qml.qnode(dev)
