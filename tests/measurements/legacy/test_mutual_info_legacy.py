@@ -19,6 +19,11 @@ import pennylane as qml
 from pennylane.measurements import Shots
 from pennylane.workflow import INTERFACE_MAP
 
+DEP_WARNING_MESSAGE_MUTUAL_INFO = (
+    "The qml.qinfo.mutual_info transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.mutual_info measurement process in the "
+    "return line of your QNode."
+)
 
 @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
 def test_shape(shots, shape):
@@ -94,7 +99,11 @@ class TestIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])(params)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
+        ):
+            actual = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])(params)
 
         # compare transform results with analytic values
         expected = -2 * np.cos(params / 2) ** 2 * np.log(
@@ -130,8 +139,12 @@ class TestIntegration:
 
         actual = circuit_mutual_info(params)
 
-        # compare measurement results with transform results
-        expected = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(params)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
+        ):
+            # compare measurement results with transform results
+            expected = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(params)
 
         assert np.allclose(actual, expected)
 
@@ -148,7 +161,11 @@ class TestIntegration:
             qml.CNOT(wires=wires)
             return qml.state()
 
-        actual = qml.qinfo.mutual_info(circuit, wires0=[wires[0]], wires1=[wires[1]])(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
+        ):
+            actual = qml.qinfo.mutual_info(circuit, wires0=[wires[0]], wires1=[wires[1]])(param)
 
         # compare transform results with analytic values
         expected = -2 * np.cos(param / 2) ** 2 * np.log(np.cos(param / 2) ** 2) - 2 * np.sin(
@@ -175,7 +192,11 @@ class TestIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = jax.jit(qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1]))(params)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
+        ):
+            actual = jax.jit(qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1]))(params)
 
         # compare transform results with analytic values
         expected = -2 * jnp.cos(params / 2) ** 2 * jnp.log(
@@ -213,8 +234,12 @@ class TestIntegration:
 
         actual = jax.jit(circuit_mutual_info)(params)
 
-        # compare measurement results with transform results
-        expected = jax.jit(qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1]))(params)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
+        ):
+            # compare measurement results with transform results
+            expected = jax.jit(qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1]))(params)
 
         assert np.allclose(actual, expected)
 

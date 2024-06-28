@@ -19,6 +19,18 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+DEP_WARNING_MESSAGE_VN_ENTROPY = (
+    "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.vn_entropy measurement process in the "
+    "return line of your QNode."
+)
+
+DEP_WARNING_MESSAGE_MUTUAL_INFO = (
+    "The qml.qinfo.mutual_info transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.mutual_info measurement process in the "
+    "return line of your QNode."
+)
+
 
 def expected_entropy_ising_xx(param):
     """
@@ -176,6 +188,7 @@ class TestVonNeumannEntropy:
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
+
         entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
 
         entropy.backward()
@@ -202,7 +215,9 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(tf.Variable(param))
+        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(
+            tf.Variable(param)
+        )
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
@@ -301,7 +316,7 @@ class TestVonNeumannEntropy:
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
-
+        
         entropy = jax.jit(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
             jnp.array(param)
         )
@@ -862,7 +877,12 @@ class TestBroadcasting:
             return qml.state()
 
         x = np.array([0.4, 0.6, 0.8])
-        minfo = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(x)
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
+        ):
+            minfo = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(x)
 
         expected = [2 * expected_entropy_ising_xx(_x) for _x in x]
         assert qml.math.allclose(minfo, expected)
