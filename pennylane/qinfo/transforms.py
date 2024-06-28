@@ -13,6 +13,7 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
+import warnings
 from functools import partial
 from typing import Callable, Sequence
 
@@ -28,6 +29,11 @@ from pennylane.tape import QuantumTape
 def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
     """Compute the reduced density matrix from a :class:`~.QNode` returning
     :func:`~pennylane.state`.
+
+    .. warning::
+
+        The qml.qinfo.reduced_dm transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.density_matrix` measurement process in the return line of your QNode.
 
     Args:
         tape (QuantumTape or QNode or Callable)): A quantum circuit returning :func:`~pennylane.state`.
@@ -76,6 +82,14 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+
+    warnings.warn(
+        "The qml.qinfo.reduced_dm transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.density_matrix measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
