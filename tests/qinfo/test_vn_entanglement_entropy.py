@@ -20,9 +20,30 @@ import pytest
 
 import pennylane as qml
 
+DEP_WARNING_MESSAGE = (
+    "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
+    "the return line of your QNode."
+)
+
 
 class TestVnEntanglementEntropy:
     """Tests for the vn entanglement entropy transform"""
+
+    def test_qinfo_transform_deprecated(self):
+        """Test that vn_entanglement_entropy is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            _ = qml.qinfo.vn_entanglement_entropy(circuit, [0], [1])()
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
@@ -40,7 +61,11 @@ class TestVnEntanglementEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            actual = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
 
         # Compare transform results with analytic values
         expected = -np.cos(params / 2) ** 2 * np.log(np.cos(params / 2) ** 2) - np.sin(
@@ -67,7 +92,13 @@ class TestVnEntanglementEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = jax.jit(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(params)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            actual = jax.jit(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(
+                params
+            )
 
         # Compare transform results with analytic values
         expected = -jnp.cos(params / 2) ** 2 * jnp.log(jnp.cos(params / 2) ** 2) - jnp.sin(
@@ -88,9 +119,13 @@ class TestVnEntanglementEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = qml.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(
-            params
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            actual = qml.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(
+                params
+            )
 
         # Compare transform results with analytic values
         expected = (
@@ -114,9 +149,13 @@ class TestVnEntanglementEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = jax.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(
-            jax.numpy.array(params)
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            actual = jax.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(
+                jax.numpy.array(params)
+            )
 
         # Compare transform results with analytic values
         expected = (
@@ -140,9 +179,13 @@ class TestVnEntanglementEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = jax.jit(
-            jax.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))
-        )(jax.numpy.array(params))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            actual = jax.jit(
+                jax.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))
+            )(jax.numpy.array(params))
 
         # Compare transform results with analytic values
         expected = (
@@ -175,9 +218,14 @@ class TestVnEntanglementEntropy:
         )
 
         params = torch.tensor(params, dtype=torch.float64, requires_grad=True)
-        entropy = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
-        entropy.backward()
-        actual = params.grad
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            entropy = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
+            entropy.backward()
+            actual = params.grad
 
         assert qml.math.allclose(actual, expected)
 
@@ -201,10 +249,14 @@ class TestVnEntanglementEntropy:
             * (np.log(np.cos(params / 2) ** 2) - np.log(np.sin(params / 2) ** 2))
         )
 
-        params = tf.Variable(params)
-        with tf.GradientTape() as tape:
-            entropy = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
-        actual = tape.gradient(entropy, params)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            params = tf.Variable(params)
+            with tf.GradientTape() as tape:
+                entropy = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
+            actual = tape.gradient(entropy, params)
 
         assert qml.math.allclose(actual, expected)
 
@@ -223,4 +275,8 @@ class TestVnEntanglementEntropy:
             ValueError,
             match="The qfunc return type needs to be a state.",
         ):
-            qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(0.1)
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match=DEP_WARNING_MESSAGE,
+            ):
+                qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(0.1)
