@@ -1,11 +1,25 @@
+.. role:: html(raw)
+   :format: html
+
 qml.debugging
 =============
 
-.. automodapi:: pennylane.debugging
-    :no-heading:
-    :no-inherited-members:
-    :skip: PLDB
-    :skip: pldb_device_manager
+This module contains functionality for debugging quantum programs on simulator devices.
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.breakpoint
+    ~pennylane.debug_expval
+    ~pennylane.debug_probs
+    ~pennylane.debug_state
+    ~pennylane.debug_tape
+    ~pennylane.snapshots
+
+:html:`</div>`
+
 
 Entering the Debugging Context
 ------------------------------
