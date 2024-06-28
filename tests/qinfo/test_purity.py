@@ -66,6 +66,21 @@ class TestPurity:
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
 
+    def test_qinfo_purity_deprecated(self):
+        """Test that qinfo.purity is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            _ = qml.qinfo.purity(circuit, [0])()
+
     def test_purity_cannot_specify_device(self):
         """Test that an error is raised if a device or device wires are given
         to the purity transform manually."""
