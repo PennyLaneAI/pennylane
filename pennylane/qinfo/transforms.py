@@ -13,6 +13,7 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
+import warnings
 from functools import partial
 from typing import Callable, Sequence
 
@@ -123,7 +124,7 @@ def _reduced_dm_qnode(self, qnode, targs, tkwargs):
 
 @partial(transform, final_transform=True)
 def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
-    r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`.
+    r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`:
 
     .. math::
         \gamma = \text{Tr}(\rho^2)
@@ -131,6 +132,11 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
     where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
     :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
     A pure state has a purity of 1.
+
+    .. warning::
+
+        The qml.qinfo.purity transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.purity` measurement process in the return line of your QNode.
 
     It is possible to compute the purity of a sub-system from a given state. To find the purity of
     the overall state, include all wires in the ``wires`` argument.
@@ -173,6 +179,14 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+
+    warnings.warn(
+        "The qml.qinfo.purity transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.purity measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}

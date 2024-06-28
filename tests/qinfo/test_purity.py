@@ -19,6 +19,13 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+DEP_WARNING_MESSAGE = (
+    "The qml.qinfo.purity transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.purity measurement process in the "
+    "return line of your QNode."
+)
+
+
 def expected_purity_ising_xx(param):
     """Returns the analytical purity for subsystems of the IsingXX"""
     return np.cos(param / 2) ** 4 + np.sin(param / 2) ** 4
@@ -60,6 +67,21 @@ class TestPurity:
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
 
+    def test_qinfo_purity_deprecated(self):
+        """Test that qinfo.purity is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            _ = qml.qinfo.purity(circuit, [0])()
+
     def test_purity_cannot_specify_device(self):
         """Test that an error is raised if a device or device wires are given
         to the purity transform manually."""
@@ -87,8 +109,12 @@ class TestPurity:
             qml.RZ(0, wires=[0])
             return qml.expval(qml.PauliX(wires=0))
 
-        with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
-            qml.qinfo.purity(circuit, wires=[0])()
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
+                qml.qinfo.purity(circuit, wires=[0])()
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
@@ -103,7 +129,12 @@ class TestPurity:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
+
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
@@ -119,7 +150,12 @@ class TestPurity:
             qml.IsingXX(0, wires=[0, 1])
             return qml.state()
 
-        purity = qml.qinfo.purity(circuit_state, wires=wires)()
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity = qml.qinfo.purity(circuit_state, wires=wires)()
+
         expected_purity = expected_purity_ising_xx(0) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
@@ -139,7 +175,12 @@ class TestPurity:
             qml.BitFlip(p, wires=1)
             return qml.state()
 
-        purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
+
         expected_purity = (
             0.5
             if is_partial
@@ -162,7 +203,12 @@ class TestPurity:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        grad_purity = qml.grad(qml.qinfo.purity(circuit_state, wires=wires))(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            grad_purity = qml.grad(qml.qinfo.purity(circuit_state, wires=wires))(param)
+
         expected_grad = expected_purity_grad_ising_xx(param) if is_partial else 0
         assert qml.math.allclose(grad_purity, expected_grad)
 
@@ -184,7 +230,12 @@ class TestPurity:
             qml.BitFlip(p, wires=1)
             return qml.state()
 
-        purity_grad = qml.grad(qml.qinfo.purity(circuit_state, wires=wires))(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity_grad = qml.grad(qml.qinfo.purity(circuit_state, wires=wires))(param)
+
         expected_purity_grad = 0 if is_partial else 32 * (param - 0.5) ** 3
         assert qml.math.allclose(purity_grad, expected_purity_grad)
 
@@ -207,7 +258,12 @@ class TestPurity:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        purity = qml.qinfo.purity(circuit_state, wires=wires)(jnp.array(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity = qml.qinfo.purity(circuit_state, wires=wires)(jnp.array(param))
+
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
@@ -231,7 +287,14 @@ class TestPurity:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        grad_purity = jax.grad(qml.qinfo.purity(circuit_state, wires=wires))(jax.numpy.array(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            grad_purity = jax.grad(qml.qinfo.purity(circuit_state, wires=wires))(
+                jax.numpy.array(param)
+            )
+
         grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
 
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
@@ -256,7 +319,12 @@ class TestPurity:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        purity = jax.jit(qml.qinfo.purity(circuit_state, wires=wires))(jnp.array(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity = jax.jit(qml.qinfo.purity(circuit_state, wires=wires))(jnp.array(param))
+
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
@@ -280,9 +348,14 @@ class TestPurity:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        grad_purity = jax.jit(jax.grad(qml.qinfo.purity(circuit_state, wires=wires)))(
-            jax.numpy.array(param)
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            grad_purity = jax.jit(jax.grad(qml.qinfo.purity(circuit_state, wires=wires)))(
+                jax.numpy.array(param)
+            )
+
         grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
 
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
@@ -306,7 +379,12 @@ class TestPurity:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        purity = qml.qinfo.purity(circuit_state, wires=wires)(torch.tensor(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity = qml.qinfo.purity(circuit_state, wires=wires)(torch.tensor(param))
+
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
@@ -333,7 +411,12 @@ class TestPurity:
         expected_grad = expected_purity_grad_ising_xx(param) if is_partial else 0
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
-        purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
         purity.backward()
         grad_purity = param.grad
 
@@ -358,7 +441,12 @@ class TestPurity:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        purity = qml.qinfo.purity(circuit_state, wires=wires)(tf.Variable(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity = qml.qinfo.purity(circuit_state, wires=wires)(tf.Variable(param))
+
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
@@ -385,8 +473,13 @@ class TestPurity:
         grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
 
         param = tf.Variable(param)
-        with tf.GradientTape() as tape:
-            purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            with tf.GradientTape() as tape:
+                purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
 
         grad_purity = tape.gradient(purity, param)
 
@@ -405,8 +498,13 @@ class TestPurity:
             qml.IsingXX(x, wires=wires)
             return qml.state()
 
-        purity0 = qml.qinfo.purity(circuit_state, wires=[wires[0]])(param)
-        purity1 = qml.qinfo.purity(circuit_state, wires=[wires[1]])(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            purity0 = qml.qinfo.purity(circuit_state, wires=[wires[0]])(param)
+            purity1 = qml.qinfo.purity(circuit_state, wires=[wires[1]])(param)
+
         expected = expected_purity_ising_xx(param)
 
         assert qml.math.allclose(purity0, expected, atol=tol)
@@ -424,7 +522,11 @@ def test_broadcasting(device):
         return qml.state()
 
     x = np.array([0.4, 0.6, 0.8])
-    purity = qml.qinfo.purity(circuit_state, wires=[0])(x)
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match=DEP_WARNING_MESSAGE,
+    ):
+        purity = qml.qinfo.purity(circuit_state, wires=[0])(x)
 
     expected = expected_purity_ising_xx(x)
     assert qml.math.allclose(purity, expected)
