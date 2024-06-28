@@ -4,6 +4,22 @@
 
 <h3>New features since last release</h3>
 
+<h4>Execute faster with Default Tensor 🔗</h4>
+
+<h4>Add noise models to your quantum circuits 📺</h4>
+
+<h4>Identify mistakes in your code with the PennyLane debugger 🚫🐞</h4>
+
+<h4>Convert between OpenFermion and PennyLane 🤝</h4>
+
+<h3>Improvements 🛠</h3>
+
+<h4>Simulate more algorithms</h4>
+
+<h4>Faster mid-circuit measurements</h4>
+
+<h4>Simulate more algorithms</h4>
+
 * Added a quantum debugger (`PLDB`) which interfaces via `qml.breakpoint()` and provides tools for 
   debugging quantum circuits. Users can step through the quantum circuit operations, dynamically
   queue operations and make measurements using (`qml.debug_state()`, `qml.debug_probs()`, 
