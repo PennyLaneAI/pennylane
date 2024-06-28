@@ -13,8 +13,8 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
-from functools import partial
 import warnings
+from functools import partial
 from typing import Callable, Sequence
 
 import pennylane as qml
