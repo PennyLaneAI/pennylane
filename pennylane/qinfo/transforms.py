@@ -14,6 +14,7 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 from functools import partial
+import warnings
 from typing import Callable, Sequence
 
 import pennylane as qml
@@ -22,8 +23,6 @@ from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
 from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane.measurements import DensityMatrixMP, StateMP
 from pennylane.tape import QuantumTape
-
-import warnings
 
 
 @partial(transform, final_transform=True)
