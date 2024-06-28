@@ -1,24 +1,29 @@
-
-
-from warnings import warn
-from functools import partial
-from typing import Optional, MutableMapping, Tuple, Callable
 from dataclasses import replace
+from functools import partial
+from typing import Callable, MutableMapping, Optional, Tuple
+from warnings import warn
 
 import pennylane as qml
-
 from pennylane.transforms.core import TransformProgram
 
 from .cache_transform import cache_transform
-from .jacobian_products import JacobianProductCalculator, DeviceDerivatives, DeviceJacobianProducts, NullJPC, TransformJacobianProducts
+from .jacobian_products import (
+    DeviceDerivatives,
+    DeviceJacobianProducts,
+    JacobianProductCalculator,
+    NullJPC,
+    TransformJacobianProducts,
+)
 
 BatchTape = Tuple[qml.tape.QuantumTape]
 ExecuteFn = Callable[[BatchTape], qml.typing.ResultBatch]
+
 
 def _use_tensorflow_autograph():
     import tensorflow as tf
 
     return not tf.executing_eagerly()
+
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -44,17 +49,20 @@ gradient_transform_map = {
     "parameter-shift": qml.gradients.param_shift,
     "finite-diff": qml.gradients.finite_diff,
     "spsa": qml.gradients.spsa_grad,
-    "hadamard": qml.gradients.hadamard_grad
+    "hadamard": qml.gradients.hadamard_grad,
 }
 
 
-
-def null_ml_boundary(tapes: BatchTape, execute_fn: ExecuteFn, jpc: JacobianProductCalculator, device: qml.devices.Device=None) -> qml.typing.ResultBatch:
+def null_ml_boundary(
+    tapes: BatchTape,
+    execute_fn: ExecuteFn,
+    jpc: JacobianProductCalculator,
+    device: qml.devices.Device = None,
+) -> qml.typing.ResultBatch:
     return execute_fn(tapes)
 
 
-def _get_ml_boundary_execute(execution_config, differentiable=False
-) -> Callable:
+def _get_ml_boundary_execute(execution_config, differentiable=False) -> Callable:
     """Imports and returns the function that binds derivatives of the required ml framework.
 
     Args:
@@ -80,7 +88,9 @@ def _get_ml_boundary_execute(execution_config, differentiable=False
             if "autograph" in execution_config.interface:
                 from .interfaces.tensorflow_autograph import execute as ml_boundary
 
-                ml_boundary = partial(ml_boundary, grad_on_execution=execution_config.grad_on_execution)
+                ml_boundary = partial(
+                    ml_boundary, grad_on_execution=execution_config.grad_on_execution
+                )
 
             else:
                 from .interfaces.tensorflow import tf_execute as full_ml_boundary
@@ -132,9 +142,9 @@ def _resolve_interface(tapes, interface: Optional[str]) -> Optional[str]:
     return interface
 
 
-def resolve_execution_config(tapes: BatchTape,
-    device: qml.devices.Device,
-    execution_config: qml.devices.ExecutionConfig) -> qml.devices.ExecutionConfig:
+def resolve_execution_config(
+    tapes: BatchTape, device: qml.devices.Device, execution_config: qml.devices.ExecutionConfig
+) -> qml.devices.ExecutionConfig:
 
     interface = _resolve_interface(tapes, execution_config.interface)
     execution_config = replace(execution_config, interface=interface)
@@ -142,10 +152,14 @@ def resolve_execution_config(tapes: BatchTape,
     if device.supports_derivatives(execution_config, circuit=tapes[0]):
         return device.preprocess(execution_config)[1]
     if execution_config.use_device_gradient or execution_config.use_device_jacobian_product:
-        raise qml.QuantumFunctionError(f"device {device} does not support derivative method"
-           f" {execution_config.gradient_method} with tape {tapes[0]}")
+        raise qml.QuantumFunctionError(
+            f"device {device} does not support derivative method"
+            f" {execution_config.gradient_method} with tape {tapes[0]}"
+        )
 
-    execution_config = replace(execution_config, use_device_gradient=False, use_device_jacobian_product=False)
+    execution_config = replace(
+        execution_config, use_device_gradient=False, use_device_jacobian_product=False
+    )
     if execution_config.gradient_method in {"best", "parameter-shift", qml.gradients.param_shift}:
         if tapes and any(isinstance(o, qml.operation.CV) for o in tapes[0]):
             gradient_method = qml.gradients.param_shift_cv
@@ -156,18 +170,24 @@ def resolve_execution_config(tapes: BatchTape,
     elif isinstance(execution_config.gradient_method, qml.transforms.core.TransformDispatcher):
         gradient_method = execution_config.gradient_method
     else:
-        raise qml.QuantumFunctionError(f"Unrecognized gradient_method {execution_config.gradient_method}")
+        raise qml.QuantumFunctionError(
+            f"Unrecognized gradient_method {execution_config.gradient_method}"
+        )
 
     if execution_config.grad_on_execution:
-        raise qml.QuantumFunctionError("grad_on_execution=True cannot be used with gradient transforms.")
+        raise qml.QuantumFunctionError(
+            "grad_on_execution=True cannot be used with gradient transforms."
+        )
 
-    return replace(execution_config, gradient_method = gradient_method)
+    return replace(execution_config, gradient_method=gradient_method)
 
 
-def setup_transform_programs(user_transforms: TransformProgram,
+def setup_transform_programs(
+    user_transforms: TransformProgram,
     device: qml.devices.Device,
     execution_config: qml.devices.ExecutionConfig,
-    cache: Optional[MutableMapping]) -> tuple[TransformProgram, TransformProgram]:
+    cache: Optional[MutableMapping],
+) -> tuple[TransformProgram, TransformProgram]:
 
     outer_transform_program = TransformProgram(user_transforms)
     inner_transform_program = TransformProgram()
@@ -194,7 +214,11 @@ def setup_transform_programs(user_transforms: TransformProgram,
     return outer_transform_program, inner_transform_program
 
 
-def _get_jacobian_product_calculator(device: qml.devices.Device, execution_config: qml.devices.ExecutionConfig, inner_execute: ExecuteFn) -> JacobianProductCalculator:
+def _get_jacobian_product_calculator(
+    device: qml.devices.Device,
+    execution_config: qml.devices.ExecutionConfig,
+    inner_execute: ExecuteFn,
+) -> JacobianProductCalculator:
 
     if execution_config.gradient_method in {None, "backprop"}:
         return NullJPC()
@@ -212,59 +236,92 @@ def _get_jacobian_product_calculator(device: qml.devices.Device, execution_confi
     # this mechanism unpacks the currently existing recursion
 
     execute_fn = inner_execute
-    jpc = TransformJacobianProducts(execute_fn, execution_config.gradient_method, execution_config.gradient_keyword_arguments)
+    jpc = TransformJacobianProducts(
+        execute_fn, execution_config.gradient_method, execution_config.gradient_keyword_arguments
+    )
     for i in range(1, execution_config.derivative_order):
         differentiable = i > 1
-        ml_boundary_execute = _get_ml_boundary_execute(execution_config, differentiable=differentiable)
+        ml_boundary_execute = _get_ml_boundary_execute(
+            execution_config, differentiable=differentiable
+        )
         execute_fn = partial(
             ml_boundary_execute,
             execute_fn=execute_fn,
             jpc=jpc,
             device=device,
         )
-        jpc = TransformJacobianProducts(execute_fn, execution_config.gradient_method, execution_config.gradient_keyword_arguments)
+        jpc = TransformJacobianProducts(
+            execute_fn,
+            execution_config.gradient_method,
+            execution_config.gradient_keyword_arguments,
+        )
 
     return jpc
 
 
-def _make_inner_execute(device:qml.devices.Device, execution_config: qml.devices.ExecutionConfig, inner_transform_program: TransformProgram) -> ExecuteFn:
-    def inner_execute(tapes :BatchTape) -> qml.typing.ResultBatch:
+def _make_inner_execute(
+    device: qml.devices.Device,
+    execution_config: qml.devices.ExecutionConfig,
+    inner_transform_program: TransformProgram,
+) -> ExecuteFn:
+    def inner_execute(tapes: BatchTape) -> qml.typing.ResultBatch:
         new_batch, postprocessing = inner_transform_program(tapes)
         results = device.execute(new_batch, execution_config) if new_batch else ()
         return postprocessing(results)
+
     return inner_execute
+
 
 def _warn_about_kwargs(kwargs):
     for key in kwargs:
-        if key in {"gradient_fn", "interface", "grad_on_execution", "gradient_kwargs", "max_diff", "device_vjp"}:
-            warn( f"{key} should now be specified via the execution config instead of as its own keyword argument.", qml.PennyLaneDeprecationWarning)
+        if key in {
+            "gradient_fn",
+            "interface",
+            "grad_on_execution",
+            "gradient_kwargs",
+            "max_diff",
+            "device_vjp",
+        }:
+            warn(
+                f"{key} should now be specified via the execution config instead of as its own keyword argument.",
+                qml.PennyLaneDeprecationWarning,
+            )
         elif key == "cachesize":
-            warn(f"Please provide a cache with size {kwargs['cachesize']} instead of providing the cachesize itself.", qml.PennyLaneDeprecationWarning)
+            warn(
+                f"Please provide a cache with size {kwargs['cachesize']} instead of providing the cachesize itself.",
+                qml.PennyLaneDeprecationWarning,
+            )
         elif key in {"override_shots", "expand_fn", "max_expansion", "device_batch_transform"}:
-            warn((
-                f"keyword argument {key} no longer supported.\n"
-                "If you wish to customize the behavior of a device, please modify "
-                "the device behavior via either defining a new device that inherits from "
-                " the original, or defining a device wrapper that modifies the behavior of an "
-                "existing device."
-            ), qml.PennyLaneDeprecationWarning)
+            warn(
+                (
+                    f"keyword argument {key} no longer supported.\n"
+                    "If you wish to customize the behavior of a device, please modify "
+                    "the device behavior via either defining a new device that inherits from "
+                    " the original, or defining a device wrapper that modifies the behavior of an "
+                    "existing device."
+                ),
+                qml.PennyLaneDeprecationWarning,
+            )
         else:
             raise ValueError(f"Unrecognized keyword argument {key}")
 
-def execute(tapes: BatchTape,
+
+def execute(
+    tapes: BatchTape,
     device: qml.devices.Device,
-    config : qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
-    user_transform_program: Optional[TransformProgram]=None,
+    config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+    user_transform_program: Optional[TransformProgram] = None,
     cache: Optional[MutableMapping] = None,
-    **deprecated_kwargs
-    ) -> qml.typing.ResultBatch:
-    _warn_about_kwargs(kwargs)
+    **deprecated_kwargs,
+) -> qml.typing.ResultBatch:
+    _warn_about_kwargs(deprecated_kwargs)
     if cache is not None and not isinstance(cache, MutableMapping):
         raise ValueError(f"cache must None or a MutableMapping. Got {cache}")
     user_transform_program = user_transform_program or TransformProgram()
     config = resolve_execution_config(tapes, device, config)
-    outer_transform_program, inner_transform_program = setup_transform_programs(user_transform_program, device, config, cache)
-
+    outer_transform_program, inner_transform_program = setup_transform_programs(
+        user_transform_program, device, config, cache
+    )
 
     inner_execute_fn = _make_inner_execute(device, config, inner_transform_program)
     jpc = _get_jacobian_product_calculator(device, config, inner_execute_fn)
@@ -278,5 +335,3 @@ def execute(tapes: BatchTape,
         return outer_postprocessing(new_batch)
     results = ml_boundary(new_batch, inner_execute_fn, jpc, device=device)
     return outer_postprocessing(results)
-
-    
