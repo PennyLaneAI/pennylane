@@ -215,9 +215,7 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(
-            tf.Variable(param)
-        )
+        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(tf.Variable(param))
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
@@ -316,7 +314,7 @@ class TestVonNeumannEntropy:
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
-        
+
         entropy = jax.jit(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
             jnp.array(param)
         )
