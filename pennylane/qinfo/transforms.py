@@ -457,8 +457,8 @@ def vn_entanglement_entropy(
     """
 
     warnings.warn(
-        "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
-        "in 0.40. Instead include the qml.vn_entropy measurement process in the "
+        "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in the "
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
