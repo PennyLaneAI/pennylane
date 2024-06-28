@@ -176,13 +176,37 @@ class TestCircuitGraph:
         op = qml.X(0)
         ops = [op, qml.Y(0), op, qml.Z(0), op]
         graph = CircuitGraph(ops, [], [0, 1, 2])
+
         with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.ancestors([op])
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.descendants([op])
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.ancestors_in_order([op])
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.descendants_in_order([op])
+
+    def test_ancestors_and_descendents_single_op_error(self):
+        """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
+
+        op = qml.Z(0)
+        graph = CircuitGraph([op], [], [0, 1, 2])
+
+        with pytest.raises(
+            ValueError, match=r"CircuitGraph.ancestors accepts an iterable of operators"
+        ):
             graph.ancestors(op)
-        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+        with pytest.raises(
+            ValueError, match=r"CircuitGraph.descendants accepts an iterable of operators"
+        ):
             graph.descendants(op)
-        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+        with pytest.raises(
+            ValueError, match=r"CircuitGraph.ancestors_in_order accepts an iterable of operators"
+        ):
             graph.ancestors_in_order(op)
-        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+        with pytest.raises(
+            ValueError, match=r"CircuitGraph.descendants_in_order accepts an iterable of operators"
+        ):
             graph.descendants_in_order(op)
 
     def test_update_node(self, ops, obs):

@@ -257,6 +257,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators
         """
+        if isinstance(ops, (Operator, MeasurementProcess)):
+            raise ValueError(
+                "CircuitGraph.ancestors accepts an iterable of"
+                " operators and measurements, not operators and measurements themselves."
+            )
         if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "Cannot calculate ancestors for an operator that occurs multiple times."
@@ -277,6 +282,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: descendants of the given operators
         """
+        if isinstance(ops, (Operator, MeasurementProcess)):
+            raise ValueError(
+                "CircuitGraph.descendants accepts an iterable of"
+                " operators and measurements, not operators and measurements themselves."
+            )
         if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "cannot calculate decendents for an operator that occurs multiple times."
@@ -299,6 +309,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
+        if isinstance(ops, (Operator, MeasurementProcess)):
+            raise ValueError(
+                "CircuitGraph.ancestors_in_order accepts an iterable"
+                " of operators and measurements, not operators and measurements themselves."
+            )
         if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "cannot calculate decendents for an operator that occurs multiple times."
@@ -319,6 +334,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: descendants of the given operators, topologically ordered
         """
+        if isinstance(ops, (Operator, MeasurementProcess)):
+            raise ValueError(
+                "CircuitGraph.descendants_in_order accepts an iterable of "
+                "operators and measurements, not operators and measurements themselves."
+            )
         if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "cannot calculate decendents for an operator that occurs multiple times."
