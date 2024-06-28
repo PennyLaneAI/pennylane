@@ -20,12 +20,18 @@ import pytest
 
 import pennylane as qml
 
+DEP_WARNING_MESSAGE = (
+    "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
+    "the return line of your QNode."
+)
+
 
 class TestVnEntanglementEntropy:
     """Tests for the vn entanglement entropy transform"""
 
     def test_qinfo_transform_deprecated(self):
-        """Test that my_feature is deprecated."""
+        """Test that vn_entanglement_entropy is deprecated."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -35,11 +41,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=(
-                "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                "the return line of your QNode."
-            ),
+            match=DEP_WARNING_MESSAGE,
         ):
             _ = qml.qinfo.vn_entanglement_entropy(circuit, [0], [1])()
 
@@ -61,11 +63,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=(
-                "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                "the return line of your QNode."
-            ),
+            match=DEP_WARNING_MESSAGE,
         ):
             actual = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
 
@@ -96,11 +94,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=(
-                "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                "the return line of your QNode."
-            ),
+            match=DEP_WARNING_MESSAGE,
         ):
             actual = jax.jit(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(
                 params
@@ -127,11 +121,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=(
-                "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                "the return line of your QNode."
-            ),
+            match=DEP_WARNING_MESSAGE,
         ):
             actual = qml.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(
                 params
@@ -161,11 +151,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=(
-                "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                "the return line of your QNode."
-            ),
+            match=DEP_WARNING_MESSAGE,
         ):
             actual = jax.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(
                 jax.numpy.array(params)
@@ -195,11 +181,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=(
-                "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                "the return line of your QNode."
-            ),
+            match=DEP_WARNING_MESSAGE,
         ):
             actual = jax.jit(
                 jax.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))
@@ -239,11 +221,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=(
-                "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                "the return line of your QNode."
-            ),
+            match=DEP_WARNING_MESSAGE,
         ):
             entropy = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
             entropy.backward()
@@ -273,11 +251,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=(
-                "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                "the return line of your QNode."
-            ),
+            match=DEP_WARNING_MESSAGE,
         ):
             params = tf.Variable(params)
             with tf.GradientTape() as tape:
