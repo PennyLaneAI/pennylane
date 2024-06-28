@@ -19,6 +19,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+DEP_WARNING_MESSAGE_VN_ENTROPY = (
+    "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.vn_entropy measurement process in the "
+    "return line of your QNode."
+)
+
 
 def expected_entropy_ising_xx(param):
     """
@@ -82,7 +88,11 @@ class TestVonNeumannEntropy:
             return qml.state()
 
         with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
-            _ = qml.qinfo.vn_entropy(circuit, wires=[0], device=dev)
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+            ):
+                _ = qml.qinfo.vn_entropy(circuit, wires=[0], device=dev)
 
         with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
             _ = qml.qinfo.vn_entropy(circuit, wires=[0], device_wires=dev.wires)
@@ -101,7 +111,11 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
         assert qml.math.allclose(entropy, expected_entropy)
@@ -123,7 +137,13 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        grad_entropy = qml.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            grad_entropy = qml.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
+                param
+            )
 
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
@@ -147,7 +167,13 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(torch.tensor(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(
+                torch.tensor(param)
+            )
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
         assert qml.math.allclose(entropy, expected_entropy)
@@ -176,7 +202,12 @@ class TestVonNeumannEntropy:
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
 
         entropy.backward()
         grad_entropy = param.grad
@@ -202,7 +233,13 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(tf.Variable(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(
+                tf.Variable(param)
+            )
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
@@ -226,7 +263,11 @@ class TestVonNeumannEntropy:
 
         param = tf.Variable(param)
         with tf.GradientTape() as tape:
-            entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+            ):
+                entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
 
         grad_entropy = tape.gradient(entropy, param)
 
@@ -253,7 +294,11 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(jnp.array(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(jnp.array(param))
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
@@ -275,9 +320,13 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        grad_entropy = jax.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
-            jax.numpy.array(param)
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            grad_entropy = jax.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
+                jax.numpy.array(param)
+            )
 
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
@@ -302,9 +351,13 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = jax.jit(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
-            jnp.array(param)
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = jax.jit(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
+                jnp.array(param)
+            )
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
@@ -348,7 +401,11 @@ class TestVonNeumannEntropy:
             ValueError,
             match="The qfunc return type needs to be a state.",
         ):
-            qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+            ):
+                qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
 
     def test_qnode_entropy_wires_full_range_state_vector(self):
         """Test entropy for a QNode that returns a state vector with all wires, entropy is 0."""
@@ -360,7 +417,11 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
 
         expected_entropy = 0.0
         assert qml.math.allclose(entropy, expected_entropy)
@@ -375,7 +436,12 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
+
         expected_entropy = 0.0
 
         assert qml.math.allclose(entropy, expected_entropy)
@@ -393,11 +459,21 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=wires)
             return qml.state()
 
-        entropy0 = qml.qinfo.vn_entropy(circuit, wires=[wires[0]])(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy0 = qml.qinfo.vn_entropy(circuit, wires=[wires[0]])(param)
+
         eigs0 = [np.sin(param / 2) ** 2, np.cos(param / 2) ** 2]
         exp0 = -np.sum(eigs0 * np.log(eigs0))
 
-        entropy1 = qml.qinfo.vn_entropy(circuit, wires=[wires[1]])(param)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy1 = qml.qinfo.vn_entropy(circuit, wires=[wires[1]])(param)
+
         eigs1 = [np.cos(param / 2) ** 2, np.sin(param / 2) ** 2]
         exp1 = -np.sum(eigs1 * np.log(eigs1))
 
