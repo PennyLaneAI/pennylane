@@ -15,6 +15,9 @@
 * The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
 
+* Add operation and measurement specific routines in `default.tensor` to improve scalability.
+  [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
+
 <h4>Add noise models to your quantum circuits 📺</h4>
 
 * A new `qml.noise` module which contains utility function for building `NoiseModels` 
@@ -53,9 +56,6 @@
   ───ThermalRelaxationError(0.03,2.00,0.20,0.60)─┤ ╭<Z@Z>
   ───PhaseDamping(0.40)──────────────────────────┤ ╰<Z@Z>
   ```
-
-* Add operation and measurement specific routines in `default.tensor` to improve scalability.
-  [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
 
 <h4>Identify mistakes in your code with the PennyLane debugger 🚫🐞</h4>
 
@@ -125,8 +125,9 @@
   to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
-* `qml.qsvt()` now supports jax arrays with angle conversions. 
-  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5853)
+* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
+   optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
+   [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
 <h4>Faster and flexible mid-circuit measurements</h4>
 
@@ -217,7 +218,7 @@
 
   There is only one controlled gate with only one control wire.
 
-<h4>Simulate more algorithms</h4>
+<h4>Access to QROM</h4>
 
 * QROM template is added. This template allows you to enter classic data in the form of bitstrings.
   [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
@@ -250,10 +251,6 @@
 
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
-
-* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
-   optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
-   [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
 * PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
@@ -292,6 +289,34 @@
 * `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
   [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
 
+* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends. The
+  ``molecular_hamiltonian`` and ``molecular_dipole`` functions are moved to ``hamiltonian`` and
+  ``dipole`` modules.
+  [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
+  [(#5863)](https://github.com/PennyLaneAI/pennylane/pull/5863)
+
+* Add more fermionic-to-qubit tests to cover cases when the mapped operator is different for various mapping schemes.
+  [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
+
+<h4>Decompositions and global phase</h4>
+
+* `MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations, and is applicable for any multi controlled unitary gate.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control unitary now includes the correct global phase.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+* Single control `GlobalPhase` has now a decomposition, i.e. relative phase on control wire.
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
+
+<h4>Easier development</h4>
+
+* Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
+  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528)
+
+* Add support for 3 new pytest markers: `unit`, `integration` and `system`.
+  [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
+
 <h4>Other improvements</h4>
 
 * `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
@@ -313,14 +338,8 @@
 * Added `packaging` in the required list of packages.
   [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769)
 
-* Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
-  [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528)
-
 * `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
   [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
-
-* Add support for 3 new pytest markers: `unit`, `integration` and `system`.
-  [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
@@ -330,15 +349,6 @@
   [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
-
-* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends. The
-  ``molecular_hamiltonian`` and ``molecular_dipole`` functions are moved to ``hamiltonian`` and
-  ``dipole`` modules.
-  [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
-  [(#5863)](https://github.com/PennyLaneAI/pennylane/pull/5863)
-
-* Add more fermionic-to-qubit tests to cover cases when the mapped operator is different for various mapping schemes.
-  [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
@@ -360,15 +370,6 @@
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
-* `MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations, and is applicable for any multi controlled unitary gate.
-  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
-
-* Single control unitary now includes the correct global phase.
-  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
-
-* Single control `GlobalPhase` has now a decomposition, i.e. relative phase on control wire.
-  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
-
 * `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
   `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
@@ -387,11 +388,15 @@
 
 * The `qml.Snapshot` operator now accepts sample-based measurements for finite-shot devices.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
+
 * Device preprocess transforms now happen inside the ml boundary.
   [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
 
 * Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature of the original function.
   [(#5857)](https://github.com/PennyLaneAI/pennylane/pull/5857)
+
+* `qml.qsvt()` now supports jax arrays with angle conversions. 
+  [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5853)
 
 <h3>Breaking changes 💔</h3>
 
