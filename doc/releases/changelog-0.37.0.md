@@ -419,6 +419,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Several links to other functions in measurement process docstrings have been fixed.
+  [(#5913)](https://github.com/PennyLaneAI/pennylane/pull/5913)
+
 * Move information about mid-circuit measurements from the measurements quickstart page to its own
   [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
   [(#5870)](https://github.com/PennyLaneAI/pennylane/pull/5870)
