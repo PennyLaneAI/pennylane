@@ -19,12 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-DEP_WARNING_MESSAGE_VN_ENTROPY = (
-    "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
-    "in 0.40. Instead include the qml.vn_entropy measurement process in the "
-    "return line of your QNode."
-)
-
 DEP_WARNING_MESSAGE_MUTUAL_INFO = (
     "The qml.qinfo.mutual_info transform is deprecated and will be removed "
     "in 0.40. Instead include the qml.mutual_info measurement process in the "

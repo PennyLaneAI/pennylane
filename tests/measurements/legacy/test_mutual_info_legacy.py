@@ -25,6 +25,7 @@ DEP_WARNING_MESSAGE_MUTUAL_INFO = (
     "return line of your QNode."
 )
 
+
 @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
 def test_shape(shots, shape):
     """Test that the shape is correct."""
