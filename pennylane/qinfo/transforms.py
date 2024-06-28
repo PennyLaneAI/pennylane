@@ -136,8 +136,8 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
 
     .. warning::
 
-        The qml.qinfo.mutual_info transform is deprecated and will be removed in 0.40. Instead include
-        the :func:`pennylane.mutual_info` measurement process in the return line of your QNode.
+        The qml.qinfo.purity transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.purity` measurement process in the return line of your QNode.
 
     It is possible to compute the purity of a sub-system from a given state. To find the purity of
     the overall state, include all wires in the ``wires`` argument.
