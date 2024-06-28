@@ -678,7 +678,10 @@ class DefaultTensor(Device):
         elif operations and isinstance(operations[0], qml.StatePrep):
             op = operations.pop(0)
             self._quimb_circuit = self._initial_quimb_circuit(
-                wires, psi0=qtn.MatrixProductState.from_dense(op.state_vector(wire_order=wires))
+                wires,
+                psi0=qtn.MatrixProductState.from_dense(
+                    op.state_vector(wire_order=wires).astype(self._c_dtype)
+                ),
             )
         else:
             self._quimb_circuit = self._initial_quimb_circuit(wires)
