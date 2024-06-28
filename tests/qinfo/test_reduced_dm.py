@@ -50,7 +50,7 @@ class TestDensityMatrixQNode:
     """Tests for the (reduced) density matrix for QNodes returning states."""
 
     def test_qinfo_transform_deprecated(self):
-        """Test that my_feature is deprecated."""
+        """Test that qinfo.reduced_dm is deprecated."""
 
         dev = qml.device("default.qubit", wires=2)
 
