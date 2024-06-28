@@ -105,28 +105,36 @@ class TestShadowEntropies:
         bitstrings, recipes = qnode(x)
         shadow = ClassicalShadow(bitstrings, recipes)
 
-        # Check for the correct entropies for all possible 2-site reduced density matrix (rdm)
-        for rdm_wires in [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]:
-            # this is intentionally not done in a parametrize loop because this would re-execute the quantum function
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=(
+                "The qml.qinfo.reduced_dm transform is deprecated and will be removed "
+                "in 0.40. Instead include the qml.density_matrix measurement process in the "
+                "return line of your QNode."
+            ),
+        ):
+            # Check for the correct entropies for all possible 2-site reduced density matrix (rdm)
+            for rdm_wires in [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]:
+                # this is intentionally not done in a parametrize loop because this would re-execute the quantum function
 
-            # exact solution
-            rdm = qml.qinfo.reduced_dm(qnode_exact, wires=rdm_wires)(x)
-            evs = qml.math.eigvalsh(rdm)
+                # exact solution
+                rdm = qml.qinfo.reduced_dm(qnode_exact, wires=rdm_wires)(x)
+                evs = qml.math.eigvalsh(rdm)
 
-            evs = evs[np.where(evs > 0)]
+                evs = evs[np.where(evs > 0)]
 
-            exact_2 = -np.log(np.trace(rdm @ rdm))
+                exact_2 = -np.log(np.trace(rdm @ rdm))
 
-            alpha = 1.5
-            exact_alpha = qml.math.log(qml.math.sum(evs**alpha)) / (1 - alpha)
+                alpha = 1.5
+                exact_alpha = qml.math.log(qml.math.sum(evs**alpha)) / (1 - alpha)
 
-            exact_vn = qml.math.entr(evs)
-            exact = [exact_vn, exact_alpha, exact_2]
+                exact_vn = qml.math.entr(evs)
+                exact = [exact_vn, exact_alpha, exact_2]
 
-            # shadow estimate
-            entropies = [shadow.entropy(wires=rdm_wires, alpha=alpha) for alpha in [1, 1.5, 2]]
+                # shadow estimate
+                entropies = [shadow.entropy(wires=rdm_wires, alpha=alpha) for alpha in [1, 1.5, 2]]
 
-            assert np.allclose(entropies, exact, atol=1e-1)
+                assert np.allclose(entropies, exact, atol=1e-1)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])

@@ -146,8 +146,7 @@ class TestDensityMatrixQNode:
             match=DEP_WARNING_MESSAGE,
         ):
             dm0 = qml.qinfo.reduced_dm(circuit, wires=[wires[0]])(angle)
-
-        dm1 = qml.qinfo.reduced_dm(circuit, wires=[wires[1]])(angle)
+            dm1 = qml.qinfo.reduced_dm(circuit, wires=[wires[1]])(angle)
 
         exp0 = np.array([[np.sin(angle / 2) ** 2, 0], [0, np.cos(angle / 2) ** 2]])
         exp1 = np.array([[np.cos(angle / 2) ** 2, 0], [0, np.sin(angle / 2) ** 2]])
