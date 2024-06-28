@@ -39,8 +39,30 @@ interfaces = [
 wires_list = [[0], [1], [0, 1], [1, 0]]
 
 
+DEP_WARNING_MESSAGE = (
+    "The qml.qinfo.reduced_dm transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.density_matrix measurement process in the "
+    "return line of your QNode."
+)
+
+
 class TestDensityMatrixQNode:
     """Tests for the (reduced) density matrix for QNodes returning states."""
+
+    def test_qinfo_transform_deprecated(self):
+        """Test that my_feature is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            _ = qml.qinfo.reduced_dm(circuit, [0])()
 
     def test_reduced_dm_cannot_specify_device(self):
         """Test that an error is raised if a device or device wires are given
@@ -53,11 +75,15 @@ class TestDensityMatrixQNode:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
-            _ = qml.qinfo.reduced_dm(circuit, wires=[0], device=dev)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
+                _ = qml.qinfo.reduced_dm(circuit, wires=[0], device=dev)
 
-        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
-            _ = qml.qinfo.reduced_dm(circuit, wires=[0], device_wires=dev.wires)
+            with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+                _ = qml.qinfo.reduced_dm(circuit, wires=[0], device_wires=dev.wires)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", interfaces)
@@ -73,7 +99,11 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        density_matrix = qml.qinfo.reduced_dm(circuit, wires=wires)(angle)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            density_matrix = qml.qinfo.reduced_dm(circuit, wires=wires)(angle)
 
         def expected_density_matrix(x, wires):
             if wires == [0]:
@@ -111,7 +141,12 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=wires)
             return qml.state()
 
-        dm0 = qml.qinfo.reduced_dm(circuit, wires=[wires[0]])(angle)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            dm0 = qml.qinfo.reduced_dm(circuit, wires=[wires[0]])(angle)
+
         dm1 = qml.qinfo.reduced_dm(circuit, wires=[wires[1]])(angle)
 
         exp0 = np.array([[np.sin(angle / 2) ** 2, 0], [0, np.cos(angle / 2) ** 2]])
@@ -129,8 +164,12 @@ class TestDensityMatrixQNode:
             qml.RZ(0, wires=[0])
             return qml.expval(qml.PauliX(wires=0))
 
-        with pytest.raises(ValueError, match="The qfunc measurement needs to be State"):
-            qml.qinfo.reduced_dm(circuit, wires=[0])()
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            with pytest.raises(ValueError, match="The qfunc measurement needs to be State"):
+                qml.qinfo.reduced_dm(circuit, wires=[0])()
 
     def test_density_matrix_qnode_jax_jit(self, tol):
         """Test reduced_dm jitting for QNode."""
@@ -146,7 +185,12 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        density_matrix = jit(qml.qinfo.reduced_dm(circuit, wires=[0]))(angle)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            density_matrix = jit(qml.qinfo.reduced_dm(circuit, wires=[0]))(angle)
+
         expected_density_matrix = [[np.cos(angle / 2) ** 2, 0], [0, np.sin(angle / 2) ** 2]]
 
         assert np.allclose(density_matrix, expected_density_matrix, atol=tol, rtol=0)
@@ -160,11 +204,16 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        density_matrix = tf.function(
-            qml.qinfo.reduced_dm(circuit, wires=[0]),
-            jit_compile=True,
-            input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            density_matrix = tf.function(
+                qml.qinfo.reduced_dm(circuit, wires=[0]),
+                jit_compile=True,
+                input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
+            )
+
         density_matrix = density_matrix(tf.Variable(0.0, dtype=tf.float32))
         assert np.allclose(density_matrix, [[1, 0], [0, 0]])
 
@@ -182,7 +231,12 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        density_matrix = qml.qinfo.reduced_dm(circuit, wires=wires)(0.5)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            density_matrix = qml.qinfo.reduced_dm(circuit, wires=wires)(0.5)
+
         assert density_matrix.dtype == c_dtype
 
 
@@ -202,7 +256,12 @@ class TestBroadcasting:
             return qml.state()
 
         x = qml.math.asarray([0.4, 0.6, 0.8], like=interface)
-        density_matrix = qml.qinfo.reduced_dm(circuit, wires=[0])(x)
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            density_matrix = qml.qinfo.reduced_dm(circuit, wires=[0])(x)
 
         expected = np.zeros((3, 2, 2))
         expected[:, 0, 0] = np.sin(x / 2) ** 2
@@ -223,7 +282,11 @@ class TestBroadcasting:
             return qml.density_matrix(wires=[0, 1])
 
         x = qml.math.asarray([0.4, 0.6, 0.8], like=interface)
-        density_matrix = qml.qinfo.reduced_dm(circuit, wires=[0])(x)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            density_matrix = qml.qinfo.reduced_dm(circuit, wires=[0])(x)
 
         expected = np.zeros((3, 2, 2))
         expected[:, 0, 0] = np.sin(x / 2) ** 2
