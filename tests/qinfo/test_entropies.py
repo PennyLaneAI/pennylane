@@ -87,15 +87,15 @@ class TestVonNeumannEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match=DEP_WARNING_MESSAGE_VN_ENTROPY,
-            ):
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
                 _ = qml.qinfo.vn_entropy(circuit, wires=[0], device=dev)
 
-        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
-            _ = qml.qinfo.vn_entropy(circuit, wires=[0], device_wires=dev.wires)
+            with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+                _ = qml.qinfo.vn_entropy(circuit, wires=[0], device_wires=dev.wires)
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
@@ -379,9 +379,13 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        grad_entropy = jax.jit(
-            jax.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))
-        )(jax.numpy.array(param))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            grad_entropy = jax.jit(
+                jax.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))
+            )(jax.numpy.array(param))
 
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
@@ -923,7 +927,11 @@ class TestBroadcasting:
             return qml.state()
 
         x = np.array([0.4, 0.6, 0.8])
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0])(x)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0])(x)
 
         expected = [expected_entropy_ising_xx(_x) for _x in x]
         assert qml.math.allclose(entropy, expected)
