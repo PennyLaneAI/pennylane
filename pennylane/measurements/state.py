@@ -129,7 +129,7 @@ def density_matrix(wires) -> "DensityMatrixMP":
 class StateMP(StateMeasurement):
     """Measurement process that returns the quantum state in the computational basis.
 
-    Please refer to :func:`state` for detailed documentation.
+    Please refer to :func:`~.state` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
