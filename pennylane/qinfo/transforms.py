@@ -23,6 +23,8 @@ from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane.measurements import DensityMatrixMP, StateMP
 from pennylane.tape import QuantumTape
 
+import warnings
+
 
 @partial(transform, final_transform=True)
 def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
@@ -453,6 +455,14 @@ def vn_entanglement_entropy(
         will provide the entanglement entropy in the form of a tensor.
 
     """
+
+    warnings.warn(
+        "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.vn_entropy measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     return _bipartite_qinfo_transform(
         qml.math.vn_entanglement_entropy, tape, wires0, wires1, base, **kwargs
     )

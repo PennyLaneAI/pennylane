@@ -48,6 +48,7 @@ class ObservableReturnTypes(Enum):
     State = "state"
     MidMeasure = "measure"
     VnEntropy = "vnentropy"
+    VnEntanglementEntropy = "vnentanglemententropy"
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
@@ -91,6 +92,9 @@ basis in the middle of the circuit."""
 
 VnEntropy = ObservableReturnTypes.VnEntropy
 """Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
+
+VnEntanglementEntropy = ObservableReturnTypes.VnEntanglementEntropy
+"""Enum: An enumeration which represents returning Von Neumann entanglement entropy before measurements."""
 
 MutualInfo = ObservableReturnTypes.MutualInfo
 """Enum: An enumeration which represents returning the mutual information before measurements."""
