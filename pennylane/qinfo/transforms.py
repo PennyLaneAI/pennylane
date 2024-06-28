@@ -359,6 +359,11 @@ def mutual_info(
 
         I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
 
+    .. warning::
+
+        The qml.qinfo.mutual_info transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.mutual_info` measurement process in the return line of your QNode.
+
     where :math:`S` is the von Neumann entropy.
 
     The mutual information is a measure of correlation between two subsystems.
