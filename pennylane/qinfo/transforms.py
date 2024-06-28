@@ -23,6 +23,8 @@ from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane.measurements import DensityMatrixMP, StateMP
 from pennylane.tape import QuantumTape
 
+import warnings
+
 
 @partial(transform, final_transform=True)
 def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
@@ -76,6 +78,14 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+
+    warnings.warn(
+        "The qml.qinfo.reduced_dm transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.density_matrix measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
