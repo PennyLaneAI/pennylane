@@ -31,6 +31,11 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
     """Compute the reduced density matrix from a :class:`~.QNode` returning
     :func:`~pennylane.state`.
 
+    .. warning::
+
+        The qml.qinfo.reduced_dm transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.density_matrix` measurement process in the return line of your QNode.
+
     Args:
         tape (QuantumTape or QNode or Callable)): A quantum circuit returning :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
