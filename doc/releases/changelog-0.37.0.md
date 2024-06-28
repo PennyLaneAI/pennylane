@@ -6,70 +6,13 @@
 
 <h4>Execute faster with Default Tensor 🔗</h4>
 
-<h4>Add noise models to your quantum circuits 📺</h4>
-
-<h4>Identify mistakes in your code with the PennyLane debugger 🚫🐞</h4>
-
-<h4>Convert between OpenFermion and PennyLane 🤝</h4>
-
-<h3>Improvements 🛠</h3>
-
-<h4>Simulate more algorithms</h4>
-
-<h4>Faster mid-circuit measurements</h4>
-
-<h4>Simulate more algorithms</h4>
-
-* Added a quantum debugger (`PLDB`) which interfaces via `qml.breakpoint()` and provides tools for 
-  debugging quantum circuits. Users can step through the quantum circuit operations, dynamically
-  queue operations and make measurements using (`qml.debug_state()`, `qml.debug_probs()`, 
-  `qml.debug_expval()`, and `qml.debug_tape()`).
-  [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
-  [(#5749)](https://github.com/PennyLaneAI/pennylane/pull/5749)
-  [(#5789)](https://github.com/PennyLaneAI/pennylane/pull/5789)
-
 * The `default.tensor` device now supports the `tn` method to simulate quantum circuits using exact tensor networks.
   [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
 
-* QROM template is added. This template allows you to enter classic data in the form of bitstrings.
-  [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
-
-  ```python
-  # a list of bitstrings is defined
-  bitstrings = ["010", "111", "110", "000"]
-
-  dev = qml.device("default.qubit", shots = 1)
-
-  @qml.qnode(dev)
-  def circuit():
-
-      # the third index is encoded in the control wires [0, 1]
-      qml.BasisEmbedding(2, wires = [0,1])
-
-      qml.QROM(bitstrings = bitstrings,
-              control_wires = [0,1],
-              target_wires = [2,3,4],
-              work_wires = [5,6,7])
-
-      return qml.sample(wires = [2,3,4])
-  ```
-   ```pycon
-  >>> print(circuit())
-  [1 1 0]
-  ```
-
-* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
-  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
-
-  ```pycon
-  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
-  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
-  >>> qml.math.expectation_value(operator_matrix, state_vector)
-  tensor(-2.23711432e-17+0.j, requires_grad=True)
-  ```
-
 * The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
+
+<h4>Add noise models to your quantum circuits 📺</h4>
 
 * A new `qml.noise` module which contains utility function for building `NoiseModels` 
   and an `add_noise` tranform for addding it to quantum circuits.
@@ -108,6 +51,18 @@
   ───PhaseDamping(0.40)──────────────────────────┤ ╰<Z@Z>
   ```
 
+<h4>Identify mistakes in your code with the PennyLane debugger 🚫🐞</h4>
+
+* Added a quantum debugger (`PLDB`) which interfaces via `qml.breakpoint()` and provides tools for 
+  debugging quantum circuits. Users can step through the quantum circuit operations, dynamically
+  queue operations and make measurements using (`qml.debug_state()`, `qml.debug_probs()`, 
+  `qml.debug_expval()`, and `qml.debug_tape()`).
+  [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+  [(#5749)](https://github.com/PennyLaneAI/pennylane/pull/5749)
+  [(#5789)](https://github.com/PennyLaneAI/pennylane/pull/5789)
+
+<h4>Convert between OpenFermion and PennyLane 🤝</h4>
+
 * The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
   OpenFermion and PennyLane objects.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
@@ -126,6 +81,59 @@
   >>> print(of_op_new)
   1.0 [0^ 2]
   ```
+
+<h3>Improvements 🛠</h3>
+
+<h4>Faster mid-circuit measurements</h4>
+
+<h4>Simulate more algorithms</h4>
+
+* QROM template is added. This template allows you to enter classic data in the form of bitstrings.
+  [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
+
+  ```python
+  # a list of bitstrings is defined
+  bitstrings = ["010", "111", "110", "000"]
+
+  dev = qml.device("default.qubit", shots = 1)
+
+  @qml.qnode(dev)
+  def circuit():
+
+      # the third index is encoded in the control wires [0, 1]
+      qml.BasisEmbedding(2, wires = [0,1])
+
+      qml.QROM(bitstrings = bitstrings,
+              control_wires = [0,1],
+              target_wires = [2,3,4],
+              work_wires = [5,6,7])
+
+      return qml.sample(wires = [2,3,4])
+  ```
+   ```pycon
+  >>> print(circuit())
+  [1 1 0]
+  ```
+
+<h4>Other improvements</h4>
+
+* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
+  [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
+
+  ```pycon
+  >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
+  >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+  >>> qml.math.expectation_value(operator_matrix, state_vector)
+  tensor(-2.23711432e-17+0.j, requires_grad=True)
+  ```
+
+
+
+
+
+
+
+
 
 <h3>Improvements 🛠</h3>
 
