@@ -23,6 +23,8 @@ from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane.measurements import DensityMatrixMP, StateMP
 from pennylane.tape import QuantumTape
 
+import warnings
+
 
 @partial(transform, final_transform=True)
 def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
@@ -401,6 +403,14 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
+
+    warnings.warn(
+        "The qml.qinfo.mutual_info transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.mutual_info measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
