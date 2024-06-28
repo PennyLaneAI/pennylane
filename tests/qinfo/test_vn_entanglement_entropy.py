@@ -277,10 +277,6 @@ class TestVnEntanglementEntropy:
         ):
             with pytest.warns(
                 qml.PennyLaneDeprecationWarning,
-                match=(
-                    "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-                    "in 0.40. Instead include the qml.vn_entanglement_entropy measurement process in "
-                    "the return line of your QNode."
-                ),
+                match=DEP_WARNING_MESSAGE,
             ):
                 qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(0.1)
