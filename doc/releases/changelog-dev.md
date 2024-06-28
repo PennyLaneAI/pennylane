@@ -8,6 +8,8 @@
   
 <h3>Improvements 🛠</h3>
 
+* `QuantumScript.hash` is now cached, leading to performance improvements.
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -20,4 +22,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Yushao Chen.
+Yushao Chen,
+Christina Lee,
