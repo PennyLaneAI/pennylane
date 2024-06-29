@@ -17,7 +17,6 @@ from copy import copy
 from numbers import Number
 from typing import Union, Optional
 
-import numpy as np
 from numpy import ndarray
 
 import pennylane as qml
@@ -684,7 +683,7 @@ def _to_mat(fermi_op: Union[FermiWord, FermiSentence], n_orbitals: Optional[int]
         raise ValueError(f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}.")
 
     largest_order = n_orbitals or largest_orb_id
-    mat = jordan_wigner(fermi_op, ps=True).to_mat(wire_order=[i for i in range(largest_order)])
+    mat = jordan_wigner(fermi_op, ps=True).to_mat(wire_order=list(range(largest_order)))
 
     return mat
 
