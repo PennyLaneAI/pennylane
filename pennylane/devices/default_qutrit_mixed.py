@@ -110,15 +110,15 @@ def warn_readout_error_state(
     return (tape,), null_postprocessing
 
 
-def get_readout_errors(readout_relaxations, readout_misclassifications):
+def get_readout_errors(readout_relaxation_probs, readout_misclassification_probs):
     r"""Get the list of readout errors that should be applied to each measured wire.
 
     Args:
-        readout_relaxations (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+        readout_relaxation_probs (List[float]): Inputs for qml.QutritAmplitudeDamping channel
             of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
             amplitude damping from longer readout with shorter relaxation time associated with
             transmon based qudits.
-        readout_misclassifications (List[float]): Gamma inputs for qml.QutritAmplitudeDamping channel
+        s (List[float]): Inputs for qml.TritFlip channel
             of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
             in readout.
 
@@ -127,20 +127,20 @@ def get_readout_errors(readout_relaxations, readout_misclassifications):
         applied to each measured wire.
     """
     measure_funcs = []
-    if readout_relaxations is not None:
+    if readout_relaxation_probs is not None:
         try:
             with qml.queuing.QueuingManager.stop_recording():
-                qml.QutritAmplitudeDamping(*readout_relaxations, wires=0)
+                qml.QutritAmplitudeDamping(*readout_relaxation_probs, wires=0)
         except Exception as e:
             raise qml.DeviceError("Applying damping readout error results in error:\n" + str(e))
-        measure_funcs.append(partial(qml.QutritAmplitudeDamping, *readout_relaxations))
-    if readout_misclassifications is not None:
+        measure_funcs.append(partial(qml.QutritAmplitudeDamping, *readout_relaxation_probs))
+    if readout_misclassification_probs is not None:
         try:
             with qml.queuing.QueuingManager.stop_recording():
-                qml.TritFlip(*readout_misclassifications, wires=0)
+                qml.TritFlip(*readout_misclassification_probs, wires=0)
         except Exception as e:
             raise qml.DeviceError("Applying trit flip readout error results in error:\n" + str(e))
-        measure_funcs.append(partial(qml.TritFlip, *readout_misclassifications))
+        measure_funcs.append(partial(qml.TritFlip, *readout_misclassification_probs))
 
     return None if len(measure_funcs) == 0 else measure_funcs
 
@@ -164,10 +164,10 @@ class DefaultQutritMixed(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        readout_relaxations (List[float]): Input probabilities for relation input errors implemented
+        readout_relaxation_probs (List[float]): Input probabilities for relation input errors implemented
             with the :class:`qml.QutritAmplitudeDamping` channel. The input defines the
             channel's parameters :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`.
-        readout_misclassifications (List[float]):  Input probabilities for state readout
+        readout_misclassification_probs (List[float]):  Input probabilities for state readout
             misclassification events implemented with the :class:`qml.TritFlip` channel. The input defines the
             channel's parameters :math:`[\p_{01}, \p_{02}, \p_{12}]`.
 
@@ -227,11 +227,11 @@ class DefaultQutritMixed(Device):
         which apply an error channel to the state after it has
         been diagonalized for the measurement:
 
-        * ``readout_relaxations``: Defines the readout error inputs of :class:`qml.QutritAmplitudeDamping`
+        * ``readout_relaxation_probs``: Defines the readout error inputs of :class:`qml.QutritAmplitudeDamping`
             channel. This error models state relaxation error that occur during readout of transmon
             based qutrits. The motivation for this readout error is decribed in
             [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
-        * ``readout_misclassifications``: Defines the inputs of :class:`qml.TritFlip` channel.
+        * ``readout_misclassification_probs``: Defines the inputs of :class:`qml.TritFlip` channel.
             This error models misclassification events in readout. An example of this readout error
             can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
 
@@ -269,8 +269,8 @@ class DefaultQutritMixed(Device):
         wires=None,
         shots=None,
         seed="global",
-        readout_relaxations=None,
-        readout_misclassifications=None,
+        readout_relaxation_probs=None,
+        readout_misclassification_probs=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
@@ -282,7 +282,7 @@ class DefaultQutritMixed(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
-        self.readout_errors = get_readout_errors(readout_relaxations, readout_misclassifications)
+        self.readout_errors = get_readout_errors(readout_relaxation_probs, readout_misclassification_probs)
 
     @debug_logger
     def supports_derivatives(
