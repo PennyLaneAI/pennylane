@@ -443,6 +443,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `default.tensor` device now preserves the order of wires if the initial MPS is created from a dense state vector.
+  [(#5892)](https://github.com/PennyLaneAI/pennylane/pull/5892)
+
 * Fixes a bug where `hadamard_grad` returned a wrong shape for `qml.probs()` without wires.
   [(#5860)](https://github.com/PennyLaneAI/pennylane/pull/5860)
 
