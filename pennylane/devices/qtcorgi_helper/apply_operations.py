@@ -103,8 +103,6 @@ def apply_operation_einsum(kraus, wires, state):
     return jnp.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
-def f(carry, x):
-    if x[0] == 0:
-        qml.TRX().matrix
-
-flag, wires, inputs
+def apply_operation(state, op_info, qudit_dim):
+    op = jax.lax.switch()
+    return state, None
