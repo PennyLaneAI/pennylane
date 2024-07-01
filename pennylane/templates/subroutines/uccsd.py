@@ -67,13 +67,12 @@ class UCCSD(Operation):
             parameters (see usage details below) :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering
             the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             These parameters are the coupled-cluster amplitudes that need to be optimized for each
-            single and double excitation generated with the :func:`~.excitations` function. If the size of the given tensor is ``(len(s_wires) + len(d_wires),)``, it is assumed that ``n_repeats == 1``.
+            single and double excitation generated with the :func:`~.excitations` function.
+            If the size of the given tensor is ``(len(s_wires) + len(d_wires),)``, it is assumed that ``n_repeats == 1``.
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
-            :func:`~.FermionicSingleExcitation`
-            and
-            :func:`~.FermionicDoubleExcitation`. These parameters are the coupled-cluster
-            amplitudes that need to be optimized for each single and double excitation generated
-            with the :func:`~.excitations` function.
+            :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
+            These parameters are the coupled-cluster amplitudes that need to be optimized for each
+            single and double excitation generated with the :func:`~.excitations` function.
         wires (Iterable): wires that the template acts on
         s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
             resulting from the single excitation
