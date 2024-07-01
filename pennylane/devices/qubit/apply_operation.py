@@ -339,6 +339,7 @@ def apply_mid_measure(
 
         else:
             binomial_fn = np.random.binomial if rng is None else rng.binomial
+        prob0 = np.clip(prob0, 0.0, 1.0)
         sample = binomial_fn(1, 1 - prob0)
     mid_measurements[op] = sample
 
