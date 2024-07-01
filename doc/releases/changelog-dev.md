@@ -20,6 +20,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix a bug where the global phase returned by `one_qubit_decomposition` gained a broadcasting dimension.
+  [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
