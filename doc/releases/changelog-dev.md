@@ -9,6 +9,7 @@
 <h3>Improvements 🛠</h3>
 
 * `QuantumScript.hash` is now cached, leading to performance improvements.
+  [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
 <h3>Breaking changes 💔</h3>
 
