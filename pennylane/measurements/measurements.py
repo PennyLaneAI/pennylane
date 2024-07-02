@@ -18,7 +18,7 @@ and measurement samples using AnnotatedQueues.
 """
 import copy
 import functools
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional, Sequence, Tuple, Union
 
@@ -112,12 +112,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-# pylint: disable=abstract-method
-class ABCCaptureMeta(qml.capture.CaptureMeta, ABCMeta):
-    """A combination of the capture meta and ABCMeta"""
-
-
-class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
+class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -680,6 +675,22 @@ class StateMeasurement(MeasurementProcess):
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
+
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+        """
+        Process the given density matrix.
+
+        Args:
+            density_matrix (TensorLike): The density matrix representing the (mixed) quantum state,
+                which may be single or batched. For a single matrix, the shape should be ``(2^n, 2^n)``
+                where `n` is the number of wires the matrix acts upon. For batched matrices, the shape
+                should be ``(batch_size, 2^n, 2^n)``.
+            wire_order (Wires): The wires determining the subspace that the ``density_matrix`` acts on.
+                A matrix of dimension :math:`2^n` acts on a subspace of :math:`n` wires. This parameter specifies
+                the mapping of matrix dimensions to physical qubits, allowing the function to correctly
+                trace out the subsystems not involved in the measurement or operation.
+        """
+        raise NotImplementedError
 
 
 class MeasurementTransform(MeasurementProcess):

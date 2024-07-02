@@ -19,6 +19,7 @@ that they are supported for execution by a device."""
 import os
 import warnings
 from copy import copy
+from itertools import chain
 from typing import Callable, Generator, Optional, Sequence, Union
 
 import pennylane as qml
@@ -27,6 +28,8 @@ from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase, Tensor
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import WireError
+
+from .execution_config import MCMConfig
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
 
@@ -80,7 +83,7 @@ def _operator_decomposition_gen(
 @transform
 def no_sampling(
     tape: qml.tape.QuantumTape, name: str = "device"
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Raises an error if the tape has finite shots.
 
     Args:
@@ -104,7 +107,7 @@ def no_sampling(
 @transform
 def validate_device_wires(
     tape: qml.tape.QuantumTape, wires: Optional[qml.wires.Wires] = None, name: str = "device"
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Validates that all wires present in the tape are in the set of provided wires. Adds the
     device wires to measurement processes like :class:`~.measurements.StateMP` that are broadcasted
     across all available wires.
@@ -145,23 +148,34 @@ def validate_device_wires(
 
 @transform
 def mid_circuit_measurements(
-    tape: qml.tape.QuantumTape, device
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+    tape: qml.tape.QuantumTape,
+    device,
+    mcm_config=MCMConfig(),
+    interface=None,
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Provide the transform to handle mid-circuit measurements.
 
     If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
     and use the ``qml.defer_measurements`` transform otherwise.
     """
 
-    if tape.shots:
-        return qml.dynamic_one_shot(tape)
+    if isinstance(mcm_config, dict):
+        mcm_config = MCMConfig(**mcm_config)
+    mcm_method = mcm_config.mcm_method
+    if mcm_method is None:
+        mcm_method = "one-shot" if tape.shots else "deferred"
+
+    if mcm_method == "one-shot":
+        return qml.dynamic_one_shot(tape, interface=interface)
+    if mcm_method == "tree-traversal":
+        return (tape,), null_postprocessing
     return qml.defer_measurements(tape, device=device)
 
 
 @transform
 def validate_multiprocessing_workers(
     tape: qml.tape.QuantumTape, max_workers: int, device
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Validates the number of workers for multiprocessing.
 
     Checks that the CPU is not oversubscribed and warns user if it is,
@@ -220,7 +234,7 @@ def validate_multiprocessing_workers(
 @transform
 def validate_adjoint_trainable_params(
     tape: qml.tape.QuantumTape,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Raises a warning if any of the observables is trainable, and raises an error if any
     trainable parameters belong to state-prep operations. Can be used in validating circuits
     for adjoint differentiation.
@@ -256,7 +270,7 @@ def decompose(
     max_expansion: Union[int, None] = None,
     name: str = "device",
     error: Exception = DeviceError,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Decompose operations until the stopping condition is met.
 
     Args:
@@ -370,7 +384,7 @@ def validate_observables(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     name: str = "device",
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Validates the observables and measurements for a circuit.
 
     Args:
@@ -412,7 +426,7 @@ def validate_observables(
 @transform
 def validate_measurements(
     tape: qml.tape.QuantumTape, analytic_measurements=None, sample_measurements=None, name="device"
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable[[ResultBatch], Result]]:
     """Validates the supported state and sample based measurement processes.
 
     Args:
@@ -420,7 +434,7 @@ def validate_measurements(
         analytic_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
             to whether or not it is accepted in analytic simulations.
         sample_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
-            to whether or not it accepted for finite shot siutations
+            to whether or not it accepted for finite shot simulations.
         name (str): the name to use in error messages.
 
     Returns:
@@ -453,13 +467,23 @@ def validate_measurements(
         def sample_measurements(m):
             return isinstance(m, SampleMeasurement)
 
+    # Gather all the measurements present in the snapshot operations with the
+    # exception of `qml.state` as this is supported for any supported simulator regardless
+    # of its configuration
+    snapshot_measurements = [
+        meas
+        for op in tape.operations
+        if isinstance(op, qml.Snapshot)
+        and not isinstance(meas := op.hyperparameters["measurement"], qml.measurements.StateMP)
+    ]
+
     if tape.shots:
-        for m in tape.measurements:
+        for m in chain(snapshot_measurements, tape.measurements):
             if not sample_measurements(m):
                 raise DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
 
     else:
-        for m in tape.measurements:
+        for m in chain(snapshot_measurements, tape.measurements):
             if not analytic_measurements(m):
                 raise DeviceError(
                     f"Measurement {m} not accepted for analytic simulation on {name}."

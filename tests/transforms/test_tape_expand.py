@@ -803,7 +803,7 @@ class TestCreateCustomDecompExpandFn:
 
         for op in decomp_ops:
             assert isinstance(op, qml.ops.op_math.Controlled)
-            assert qml.equal(op.base, qml.T(0))
+            qml.assert_equal(op.base, qml.T(0))
 
         # check that new instances of the operator are not affected by the modifications made to get the decomposition
         assert [op1 == op2 for op1, op2 in zip(CustomOp(0).decomposition(), original_decomp)]
@@ -931,7 +931,6 @@ class TestCreateCustomDecompExpandFn:
         _ = circuit()
         decomp_ops = circuit.tape.operations
 
-        print(decomp_ops)
         assert len(decomp_ops) == 4 if shots is None else 5
 
         assert decomp_ops[0].name == "RZ"
@@ -940,5 +939,10 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[1].name == "RY"
         assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
 
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[3].name == "CNOT"
+        if shots:
+            assert decomp_ops[2].name == "MidMeasureMP"
+            assert decomp_ops[3].name == "CNOT"
+            assert decomp_ops[4].name == "MidMeasureMP"
+        else:
+            assert decomp_ops[2].name == "CNOT"
+            assert decomp_ops[3].name == "CNOT"

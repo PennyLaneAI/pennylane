@@ -21,6 +21,7 @@ from pennylane import DeviceError
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
+    mid_circuit_measurements,
     no_sampling,
     validate_adjoint_trainable_params,
     validate_device_wires,
@@ -93,8 +94,8 @@ class TestPrivateHelpers:
         op = NoMatOp("a")
         casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
         assert len(casted_to_list) == 2
-        assert qml.equal(casted_to_list[0], qml.PauliX("a"))
-        assert qml.equal(casted_to_list[1], qml.PauliY("a"))
+        qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
+        qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
 
     def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
@@ -113,11 +114,11 @@ class TestPrivateHelpers:
         op = RaggedDecompositionOp("a")
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
         assert len(final_decomp) == 5
-        assert qml.equal(final_decomp[0], qml.PauliX("a"))
-        assert qml.equal(final_decomp[1], qml.PauliY("a"))
-        assert qml.equal(final_decomp[2], qml.S("a"))
-        assert qml.equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
-        assert qml.equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
+        qml.assert_equal(final_decomp[0], qml.PauliX("a"))
+        qml.assert_equal(final_decomp[1], qml.PauliY("a"))
+        qml.assert_equal(final_decomp[2], qml.S("a"))
+        qml.assert_equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
+        qml.assert_equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
 
     def test_error_from_unsupported_operation(self):
         """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
@@ -358,7 +359,7 @@ class TestDecomposeTransformations:
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         for op, exp in zip(expanded_tape.circuit, expected + measurements):
-            assert qml.equal(op, exp)
+            qml.assert_equal(op, exp)
 
         assert tape.shots == expanded_tape.shots
 
@@ -371,7 +372,7 @@ class TestDecomposeTransformations:
         expanded_tape = expanded_tapes[0]
 
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
-            assert qml.equal(op, exp)
+            qml.assert_equal(op, exp)
 
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))
     def test_valdiate_measurements_non_commuting_measurements(self, validation_transform):
@@ -438,6 +439,42 @@ class TestDecomposeTransformations:
         new_tape = batch[0]
 
         assert new_tape[0] != prep_op
+
+
+class TestMidCircuitMeasurements:
+    """Unit tests for the mid_circuit_measurements preprocessing transform"""
+
+    @pytest.mark.parametrize(
+        "mcm_method, shots, expected_transform",
+        [
+            ("deferred", 10, qml.defer_measurements),
+            ("deferred", None, qml.defer_measurements),
+            (None, None, qml.defer_measurements),
+            (None, 10, qml.dynamic_one_shot),
+            ("one-shot", 10, qml.dynamic_one_shot),
+        ],
+    )
+    def test_mcm_method(self, mcm_method, shots, expected_transform, mocker):
+        """Test that the preprocessing transform adheres to the specified transform"""
+        dev = qml.device("default.qubit")
+        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        spy = mocker.spy(expected_transform, "_transform")
+
+        _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+        spy.assert_called_once()
+
+    def test_error_incompatible_mcm_method(self):
+        """Test that an error is raised if requesting the one-shot transform without shots"""
+        dev = qml.device("default.qubit")
+        shots = None
+        mcm_config = {"postselect_mode": None, "mcm_method": "one-shot"}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="dynamic_one_shot is only supported with finite shots."
+        ):
+            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 
 
 def test_validate_multiprocessing_workers_None():

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
+import copy
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 from functools import partial
 
@@ -1400,6 +1402,7 @@ class TestQubitIntegrationHigherOrder:
         if dev.name == "default.qubit.legacy":
             pytest.skip("cant set wires with legacy device.")
         if not dev.wires:
+            dev = copy.copy(dev)
             dev._wires = qml.wires.Wires([0, 1])  # pylint:disable=protected-access
 
         @qnode(

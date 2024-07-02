@@ -211,6 +211,123 @@ class TestProbs:
         assert subset_probs.shape == qml.math.shape(expected)
         assert qml.math.allclose(subset_probs, expected)
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_process_density_matrix_basic(self, interface):
+        """Test that process_density_matrix returns correct probabilities from a density matrix."""
+        dm = qml.math.array([[0.5, 0], [0, 0.5]], like=interface)
+        wires = qml.wires.Wires(range(1))
+        expected = qml.math.array([0.5, 0.5], like=interface)
+        calculated_probs = qml.probs().process_density_matrix(dm, wires)
+        assert qml.math.allclose(calculated_probs, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires, expected",
+        [
+            ([0], [0.5, 0.5]),
+            ([1], [0.25, 0.75]),
+            ([1, 0], [0.15, 0.1, 0.35, 0.4]),
+            ([0, 1], [0.15, 0.35, 0.1, 0.4]),
+        ],
+    )
+    def test_process_density_matrix_subsets(self, interface, subset_wires, expected):
+        """Test processing of density matrix with subsets of wires."""
+        dm = qml.math.array(
+            [[0.15, 0, 0.1, 0], [0, 0.35, 0, 0.4], [0.1, 0, 0.1, 0], [0, 0.4, 0, 0.4]],
+            like=interface,
+        )
+        wires = qml.wires.Wires(range(2))
+        subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm, wires)
+        assert subset_probs.shape == qml.math.shape(expected)
+        assert qml.math.allclose(subset_probs, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires, expected",
+        [
+            ([0], [[1, 0], [0.5, 0.5], [0.5, 0.5]]),
+            ([1], [[1, 0], [0.5, 0.5], [0.5, 0.5]]),
+            ([1, 0], [[1, 0, 0, 0], [0.25, 0.25, 0.25, 0.25], [0.5, 0, 0, 0.5]]),
+            ([0, 1], [[1, 0, 0, 0], [0.25, 0.25, 0.25, 0.25], [0.5, 0, 0, 0.5]]),
+        ],
+    )
+    def test_process_density_matrix_batched(self, interface, subset_wires, expected):
+        """Test processing of a batch of density matrices."""
+        # Define a batch of density matrices
+        dm_batch = qml.math.array(
+            [
+                # Pure state |00⟩
+                np.outer([1, 0, 0, 0], [1, 0, 0, 0]),
+                # Maximally mixed state
+                np.identity(4) / 4,
+                # Bell state |Φ+⟩ = 1/√2(|00⟩ + |11⟩)
+                0.5 * np.outer([1, 0, 0, 1], [1, 0, 0, 1]),
+            ],
+            like=interface,
+        )
+
+        wires = qml.wires.Wires(range(2))
+        # Process the entire batch of density matrices
+        subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm_batch, wires)
+
+        expected = qml.math.array(expected, like=interface)
+        # Check if the calculated probabilities match the expected values
+        assert (
+            subset_probs.shape == expected.shape
+        ), f"Shape mismatch: expected {expected.shape}, got {subset_probs.shape}"
+        assert qml.math.allclose(
+            subset_probs, expected
+        ), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires",
+        [([3, 1, 0])],
+    )
+    def test_process_density_matrix_medium(self, interface, subset_wires):
+        """Test processing of a random generated, medium-sized density matrices."""
+        # Define a density matrix for a 4-qubit system
+        size = 16
+        B = np.random.rand(size, size)
+        dm_np = B + B.conjugate().T
+        dm_np = dm_np / np.trace(dm_np)
+        dm = qml.math.array(
+            dm_np,
+            like=interface,
+        )
+
+        wires = qml.wires.Wires(range(4))
+        # Process the entire batch of density matrices
+        subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm, wires)
+
+        # Trace out the second qubit (qubit indexed 2) and calculate probabilities for qubits 3, 1, 0
+        # We need to sum over the indices corresponding to the second qubit, which are in positions 4, 5, 6, 7, ...
+        # and their strides in the flattened array are 4 (since 2^2)
+        reshaped_dm = dm_np.reshape(
+            (2, 2, 2, 2, 2, 2, 2, 2)
+        )  # Reshape to (2^8) with each qubit getting a dimension
+        reduced_dm = np.einsum(
+            "ijklmnkp->ljipnm", reshaped_dm
+        )  # Sum over the second qubit (k, m -> trace out)
+
+        # Reshape back to a 8x8 matrix to get the density matrix for qubits 3, 1, 0
+        reduced_dm = reduced_dm.reshape((8, 8))
+
+        # Extract probabilities (diagonal elements of the reduced density matrix)
+        expected = np.diag(reduced_dm)
+        expected = qml.math.array(expected, like=interface)
+        # Check if the calculated probabilities match the expected values
+        assert (
+            subset_probs.shape == expected.shape
+        ), f"Shape mismatch: expected {expected.shape}, got {subset_probs.shape}"
+        assert qml.math.allclose(
+            subset_probs, expected
+        ), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
+
     def test_integration(self, tol):
         """Test the probability is correct for a known state preparation."""
         dev = qml.device("default.qubit", wires=2)

@@ -15,6 +15,8 @@
 This submodule defines a capture compatible call to QNodes.
 """
 
+from copy import copy
+from dataclasses import asdict
 from functools import lru_cache, partial
 
 import pennylane as qml
@@ -59,7 +61,7 @@ def _get_qnode_prim():
     qnode_prim.multiple_results = True
 
     @qnode_prim.def_impl
-    def _(*args, shots, device, qnode_kwargs, qfunc_jaxpr):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr):
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *inner_args)
 
@@ -68,7 +70,7 @@ def _get_qnode_prim():
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
-    def _(*args, shots, device, qnode_kwargs, qfunc_jaxpr):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr):
         mps = qfunc_jaxpr.out_avals
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
 
@@ -159,9 +161,17 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
     qfunc_jaxpr = jax.make_jaxpr(qfunc)(*args)
-    qnode_kwargs = {"diff_method": qnode.diff_method, **qnode.execute_kwargs}
+    execute_kwargs = copy(qnode.execute_kwargs)
+    mcm_config = asdict(execute_kwargs.pop("mcm_config"))
+    qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
-    return qnode_prim.bind(
-        *args, shots=shots, device=qnode.device, qnode_kwargs=qnode_kwargs, qfunc_jaxpr=qfunc_jaxpr
+    res = qnode_prim.bind(
+        *args,
+        shots=shots,
+        qnode=qnode,
+        device=qnode.device,
+        qnode_kwargs=qnode_kwargs,
+        qfunc_jaxpr=qfunc_jaxpr,
     )
+    return res[0] if len(res) == 1 else res
