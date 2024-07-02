@@ -182,40 +182,62 @@ class LegacyDeviceFacade(Device):
 
         return program, execution_config
 
-    def _setup_execution_config(self, execution_config):
+    def _setup_backprop_config(self, execution_config):
+        tape = qml.tape.QuantumScript()
+        if not self._validate_backprop_method(tape):
+            raise qml.DeviceError("device does not support backprop.")
+        if execution_config.use_device_gradient is None:
+            return replace(execution_config, use_device_gradient=True)
+        return execution_config
+
+    def _setup_adjoint_config(self, execution_config):
+        tape = qml.tape.QuantumScript([], [])
+        if not self._validate_adjoint_method(tape):
+            raise qml.DeviceError("device does not support device derivatives")
         updated_values = {}
-        if execution_config.gradient_method == "adjoint":
-            updated_values["gradient_keyword_arguments"] = {
-                "use_device_state": True,
-                "method": "adjoint_jacobian",
-            }
-            if execution_config.use_device_gradient is None:
-                updated_values["use_device_gradient"] = True
-            if execution_config.grad_on_execution is None:
-                updated_values["grad_on_execution"] = True
+        updated_values["gradient_keyword_arguments"] = {
+            "use_device_state": True,
+            "method": "adjoint_jacobian",
+        }
+        if execution_config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = True
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = True
+        return replace(execution_config, **updated_values)
 
-        if execution_config.gradient_method == "device":
-            tape = qml.tape.QuantumScript([], [])
-            if not self._validate_device_method(tape):
-                raise qml.DeviceError("device does not support device derivatives")
-            if execution_config.use_device_gradient is None:
-                updated_values["use_device_gradient"] = True
-            if execution_config.grad_on_execution is None:
-                updated_values["grad_on_execution"] = True
+    def _setup_device_config(self, execution_config):
+        tape = qml.tape.QuantumScript([], [])
+        if not self._validate_device_method(tape):
+            raise qml.DeviceError("device does not support device derivatives")
+        updated_values = {}
+        if execution_config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = True
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = True
+        return replace(execution_config, **updated_values)
 
+    # pylint: disable=too-many-return-statements
+    def _setup_execution_config(self, execution_config):
         if execution_config.gradient_method == "best":
             tape = qml.tape.QuantumScript([], [])
             if self._validate_backprop_method(tape):
-                updated_values["gradient_method"] = "backprop"
-                if execution_config.use_device_gradient is None:
-                    updated_values["use_device_gradient"] = True
-            elif self._validate_adjoint_method(tape):
+                config = replace(execution_config, gradient_method="backprop")
+                return self._setup_backprop_config(config)
+            if self._validate_adjoint_method(tape):
                 config = replace(execution_config, gradient_method="adjoint")
-                return self._setup_execution_config(config)
-            elif self._validate_device_method(tape):
+                return self._setup_adjoint_config(config)
+            if self._validate_device_method(tape):
                 config = replace(execution_config, gradient_method="device")
                 return self._setup_execution_config(config)
-        return replace(execution_config, **updated_values)
+
+        if execution_config.gradient_method == "backprop":
+            return self._setup_backprop_config(execution_config)
+        if execution_config.gradient_method == "adjoint":
+            return self._setup_adjoint_config(execution_config)
+        if execution_config.gradient_method == "device":
+            return self._setup_device_config(execution_config)
+
+        return execution_config
 
     def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
         circuit = qml.tape.QuantumScript([], [], shots=self.shots) if circuit is None else circuit
@@ -303,15 +325,12 @@ class LegacyDeviceFacade(Device):
 
         if backprop_interface is not None:
             # device supports backpropagation natively
-            return mapped_interface == backprop_interface or interface == "auto"
+            return mapped_interface == backprop_interface
         # determine if the device has any child devices that support backpropagation
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
 
         if backprop_devices is None:
             return False
-
-        if interface == "auto":
-            return True
 
         return mapped_interface in backprop_devices
 

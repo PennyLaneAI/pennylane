@@ -698,6 +698,8 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tupl
     # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
     for c, r in zip(coeffs, res):
+        print("r: ", r)
+        print("c: ", c)
         dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset

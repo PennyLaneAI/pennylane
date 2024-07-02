@@ -26,6 +26,8 @@ from pennylane.typing import Result, ResultBatch
 
 def _is_snapshot_compatible(dev):
     # The `_debugger` attribute is a good enough proxy for snapshot compatibility
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        return _is_snapshot_compatible(dev.target_device)
     return hasattr(dev, "_debugger")
 
 

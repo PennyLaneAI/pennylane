@@ -14,10 +14,13 @@
 """
 Contains unit tests for the LegacyDeviceFacade class.
 """
-# pylint: disable=protected-access
 import numpy as np
 
+# pylint: disable=protected-access
+import pytest
+
 import pennylane as qml
+from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.legacy_facade import (
     LegacyDeviceFacade,
     legacy_device_batch_transform,
@@ -50,6 +53,14 @@ class DummyDevice(qml.devices.LegacyDevice):
         return 0.0
 
 
+def test_error_if_not_legacy_device():
+    """Test that a ValueError is raiuised if the target is not a legacy device."""
+
+    target = qml.devices.DefaultQubit()
+    with pytest.raises(ValueError, match="The LegacyDeviceFacade only accepts"):
+        LegacyDeviceFacade(target)
+
+
 def test_shots():
     """Test the shots behavior of a dummy legacy device."""
     legacy_dev = DummyDevice(shots=(100, 100))
@@ -63,6 +74,35 @@ def test_shots():
     assert legacy_dev._shot_vector == list(qml.measurements.Shots((100, 100)).shot_vector)
     assert legacy_dev.shots == 200
     assert dev.shots == qml.measurements.Shots((100, 100))
+
+
+def test_tracker():
+    """Test that tracking works with the Facade."""
+
+    dev = LegacyDeviceFacade(DummyDevice())
+
+    with qml.Tracker(dev) as tracker:
+        _ = dev.execute(qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50))
+
+    assert tracker.totals == {"executions": 1, "shots": 50, "batches": 1, "batch_len": 1}
+
+
+def test_debugger():
+    """Test that snapshots still work with legacy devices."""
+
+    dev = LegacyDeviceFacade(qml.devices.DefaultQubitLegacy(wires=1))
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Snapshot()
+        qml.Hadamard(0)
+        qml.Snapshot()
+        return qml.expval(qml.Z(0))
+
+    res = qml.snapshots(circuit)()
+    assert qml.math.allclose(res[0], np.array([1, 0]))
+    assert qml.math.allclose(res[1], 1 / np.sqrt(2) * np.array([1, 1]))
+    assert qml.math.allclose(res["execution_results"], 0)
 
 
 def test_legacy_device_expand_fn():
@@ -170,6 +210,25 @@ def test_preprocessing_program_supports_mid_measure():
 class TestGradientSupport:
     """Test integration with various kinds of device derivatives."""
 
+    def test_no_derivatives_case(self):
+        """Test that the relevant errors are raised when the device does not support derivatives."""
+
+        dev = LegacyDeviceFacade(DummyDevice())
+
+        assert not dev.supports_derivatives()
+        assert not dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
+        assert not dev.supports_derivatives(ExecutionConfig(gradient_method="adjoint"))
+        assert not dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
+
+        with pytest.raises(qml.DeviceError):
+            dev.preprocess(ExecutionConfig(gradient_method="device"))
+
+        with pytest.raises(qml.DeviceError):
+            dev.preprocess(ExecutionConfig(gradient_method="adjoint"))
+
+        with pytest.raises(qml.DeviceError):
+            dev.preprocess(ExecutionConfig(gradient_method="backprop"))
+
     def test_adjoint_support(self):
         """Test that the facade can handle devices that support adjoint."""
 
@@ -238,9 +297,41 @@ class TestGradientSupport:
         dev = LegacyDeviceFacade(ddev)
 
         assert dev.supports_derivatives()
+        assert dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
         assert dev._validate_device_method(qml.tape.QuantumScript())
 
         config = qml.devices.ExecutionConfig(gradient_method="best")
         _, processed_config = dev.preprocess(config)
         assert processed_config.use_device_gradient is True
         assert processed_config.grad_on_execution is True
+
+    def test_no_backprop_with_sparse_hamiltonian(self):
+        """Test that backpropagation is not supported with SparseHamiltonian."""
+
+        class BackpropDevice(DummyDevice):
+
+            _capabilities = {"passthru_interface": "autograd"}
+
+        H = qml.SparseHamiltonian(qml.X.compute_sparse_matrix(), wires=0)
+        x = qml.numpy.array(0.1)
+        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(H)])
+        dev = LegacyDeviceFacade(BackpropDevice())
+        assert not dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
+
+        tape2 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+        assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape2)
+
+    def test_backprop_has_passthru_devices(self):
+        """Test that backprop is supported if the device has passthru devices."""
+
+        class BackpropDevice(DummyDevice):
+
+            _capabilities = {"passthru_devices": {"autograd": "default.qubit.autograd"}}
+
+        dev = LegacyDeviceFacade(BackpropDevice())
+
+        x = qml.numpy.array(0.1)
+        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+        assert dev.supports_derivatives()
+        assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
+        assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
