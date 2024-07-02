@@ -165,10 +165,10 @@ class DefaultQutritMixed(Device):
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
         readout_relaxation_probs (List[float]): Input probabilities for relation input errors implemented
-            with the :class:`qml.QutritAmplitudeDamping` channel. The input defines the
+            with the :class:`~.QutritAmplitudeDamping` channel. The input defines the
             channel's parameters :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`.
         readout_misclassification_probs (List[float]):  Input probabilities for state readout
-            misclassification events implemented with the :class:`qml.TritFlip` channel. The input defines the
+            misclassification events implemented with the :class:`~.TritFlip` channel. The input defines the
             channel's parameters :math:`[\p_{01}, \p_{02}, \p_{12}]`.
 
     **Example:**
@@ -237,9 +237,9 @@ class DefaultQutritMixed(Device):
 
         .. note::
             The readout errors will be applied based on the state after diagonalizing gates. This
-            may result in different results depending on how an observable is inputted. For example
-            measuring :class:`qml.THermitian` with a GellMann matrix may result in a different
-            measurement result then measuring the equivalent :class:`qml.GellMann` observable.
+            may give different results depending on how an observable is inputted. For example,
+            measuring :class:`~.THermitian` with a GellMann matrix may result in a different
+            measurement result then measuring the equivalent :class:`~.GellMann` observable.
 
     .. details::
         :title: Tracking
