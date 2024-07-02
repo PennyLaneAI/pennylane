@@ -103,21 +103,92 @@ def apply_operation_einsum(kraus, wires, state):
     return jnp.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
-def apply_single_qudit_unitary():
+def get_two_qubit_unitary_matrix():
     pass
 
 
-def apply_two_qudit_unitary():
+def get_CNOT_matrix(params):
+    return jnp.array([[1,0,0,0],
+                           [0,1,0,0],
+                           [0,0,0,1],
+                           [0,0,1,0]])
+
+
+single_qubit_ops = [qml.RX.compute_matrix, qml.RY.compute_matrix, qml.RZ.compute_matrix]
+two_qubit_ops = [get_CNOT_matrix, get_two_qubit_unitary_matrix]
+single_qubit_channels = [qml.DepolarizingChannel.compute_kraus_matrices, qml.AmplitudeDamping.compute_kraus_matrices, qml.BitFlip.compute_kraus_matrices]
+
+def apply_single_qubit_unitary(state, op_info):
+    wire, param = op_info["wires"][0], op_info["params"][0]
+    kraus_mat = jax.lax.switch(op_info["type_index"], single_qubit_ops, param)
     pass
 
 
-def apply_single_qudit_channel():
+def apply_two_qubit_unitary(state, op_info):
+    wires, params = op_info["wires"], op_info["params"]
+    kraus_mat = jax.lax.switch(op_info["type_index"], two_qubit_ops, params)
     pass
 
 
-def apply_operation(state, qudit_dim, op_info):
-    # TODO may have to rewrite to return different functions for qubits and qutrits
-    op_i = op_info["type_index"]
-    op_class = op_i // first_index + op_i // second_index + op_i // third_index
-    state = jax.lax.switch(op_class, [], qudit_dim, op_info)
-    return state, None
+def apply_single_qubit_channel(state, op_info):
+    wire, param = op_info["wires"][0], op_info["params"][0]
+    kraus_mat = jax.lax.switch(op_info["type_index"], single_qubit_channels, param)
+    pass
+
+
+single_qutrit_ops = [qml.TRX.compute_matrix, qml.TRY.compute_matrix, qml.TRZ.compute_matrix]
+single_qutrit_channels = [
+    lambda params: qml.QutritDepolarizingChannel.compute_kraus_matrices(params[0]),
+    lambda params: qml.QutritAmplitudeDamping.compute_kraus_matrices(*params),
+    lambda params: qml.TritFlip.compute_kraus_matrices(*params),
+]
+
+
+def apply_single_qutrit_unitary(state, op_info):
+    wire, param = op_info["wires"][0], op_info["params"][0]
+    kraus_mat = jax.lax.switch(op_info["type_index"], single_qutrit_ops, param)
+    pass
+
+
+def apply_two_qutrit_unitary(state, op_info):
+    wires = op_info["wires"]
+    kraus_mat = jnp.array([[1,0,0,0,0,0,0,0,0],
+                           [0,1,0,0,0,0,0,0,0],
+                           [0,0,1,0,0,0,0,0,0],
+                           [0,0,0,0,0,1,0,0,0],
+                           [0,0,0,1,0,0,0,0,0],
+                           [0,0,0,0,1,0,0,0,0],
+                           [0,0,0,0,0,0,0,1,0],
+                           [0,0,0,0,0,0,0,0,1],
+                           [0,0,0,0,0,0,1,0,0]])
+    pass
+
+
+def apply_single_qutrit_channel(state, op_info):
+    wire, params = op_info["wires"][0], op_info["params"]  # TODO qutrit channels take 3 params
+    kraus_mat = jax.lax.switch(op_info["type_index"], single_qutrit_channels, *params)
+    pass
+
+
+def get_operation_applier(qudit_dim):
+    qubit_type_branches = [apply_single_qubit_unitary, apply_two_qubit_unitary,
+                           apply_single_qubit_channel]
+    qutrit_type_branches = [apply_single_qutrit_unitary, apply_two_qutrit_unitary,
+                            apply_single_qutrit_channel]
+    if qudit_dim == 2:
+        def operation_applier(state, op_info):
+            index_cutoffs = [0, 0, 0]
+            op_i = op_info["type_index"]
+            op_class = op_i // index_cutoffs[0] + op_i // index_cutoffs[1] + op_i // index_cutoffs[2]
+            return jax.lax.switch(op_class, qubit_type_branches, state, op_info), None
+    elif qudit_dim == 3:
+        def operation_applier(state, op_info):
+            index_cutoffs = [0, 0, 0]
+            op_i = op_info["type_index"]
+            op_class = op_i // index_cutoffs[0] + op_i // index_cutoffs[1] + op_i // index_cutoffs[2]
+            return jax.lax.switch(op_class, qutrit_type_branches, state, op_info), None
+    else:
+        raise ValueError("Only qubit and qutrit simulators are allowed")
+
+    return operation_applier
+
