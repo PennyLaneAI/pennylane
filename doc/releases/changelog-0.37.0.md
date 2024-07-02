@@ -499,7 +499,7 @@
 * An error is now raised if a transform is applied to a catalyst qjit object.
   [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
 
-* `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
+* `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` no longer mutate the input `qml.QNode`'s interface.
   [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
 
 * Disable Docker builds on PR merge.
