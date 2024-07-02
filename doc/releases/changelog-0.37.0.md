@@ -103,31 +103,29 @@
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
-* Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
-  [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
+* `qml.equal` now properly handles `Pow`, `Adjoint`, `Exp`, and `SProd` operators as arugments across different interfaces and tolerances with the addition of four new keyword arguments: `check_interface`, `check_trainability`, `atol` and `rtol`.
+  [(#5668)](https://github.com/PennyLaneAI/pennylane/pull/5668)
   
-* `qml.QutritDepolarizingChannel` has been added, allowing for depolarizing noise to be simulated on the `default.qutrit.mixed` device.
-  [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
- 
-* Implement support in `assert_equal` for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian`
+* The implementation for `qml.assert_equal` has been updated for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian` instances.
   [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
   [(#5877)](https://github.com/PennyLaneAI/pennylane/pull/5877)
+ 
+* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
+   optional argument to specify a list of measurements to be performed at the end of the circuit, just like `qml.from_qiskit`.
+   [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
-* `qml.QutritChannel` has been added, enabling the specification of noise using a collection of (3x3) Kraus matrices on the `default.qutrit.mixed` device.
+* Four new operators have been added for simulating noise on the `default.qutrit.mixed` device:
+  [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
   [(#5793)](https://github.com/PennyLaneAI/pennylane/issues/5793)
-
-* `qml.QutritAmplitudeDamping` channel has been added, allowing for noise processes modelled by amplitude damping to be simulated on the `default.qutrit.mixed` device.
   [(#5503)](https://github.com/PennyLaneAI/pennylane/pull/5503)
   [(#5757)](https://github.com/PennyLaneAI/pennylane/pull/5757)
   [(#5799)](https://github.com/PennyLaneAI/pennylane/pull/5799)
-  
-* `qml.TritFlip` has been added, allowing for trit flip errors, such as misclassification, 
-  to be simulated on the `default.qutrit.mixed` device.
   [(#5784)](https://github.com/PennyLaneAI/pennylane/pull/5784)
 
-* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
-   optional argument to specify a list of measurements to be performed at the end of the circuit, just like `from_qiskit`.
-   [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
+  * `qml.QutritDepolarizingChannel`: a channel that adds depolarizing noise.
+  * `qml.QutritChannel`: enables the specification of noise using a collection of (3x3) Kraus matrices.
+  * `qml.QutritAmplitudeDamping`: a channel that adds noise processes modelled by amplitude damping.
+  * `qml.TritFlip`: a channel that adds trit flip errors, such as misclassification.
 
 <h4>Faster and flexible mid-circuit measurements</h4>
 
