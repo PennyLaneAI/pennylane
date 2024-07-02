@@ -503,7 +503,13 @@ def from_qasm(quantum_circuit: str, measurements=False):
         function: the PennyLane template created based on the QASM string
 
     """
-    plugin_converter = plugin_converters["qasm"].load()
+    try:
+        plugin_converter = plugin_converters["qasm"].load()
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to load the qasm plugin. Please ensure that the pennylane-qiskit package is installed."
+        ) from e
+
     if measurements is False:
         measurements = []
         if "measure" in quantum_circuit:
