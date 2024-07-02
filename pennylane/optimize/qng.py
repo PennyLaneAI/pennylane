@@ -193,15 +193,19 @@ class QNGOptimizer(GradientDescentOptimizer):
             _metric_tensor = metric_tensor_fn(*args, **kwargs)
             # Reshape metric tensor to be square
             shape = qml.math.shape(_metric_tensor)
-            size = qml.math.prod(shape[: len(shape) // 2])
-            self.metric_tensor = qml.math.reshape(_metric_tensor, (size, size))
+            if shape == ():
+                size = 1
+                self.metric_tensor = qml.math.eye(1, like=_metric_tensor) * _metric_tensor
+            else:
+                size = qml.math.prod(shape[: len(shape) // 2])
+                self.metric_tensor = qml.math.reshape(_metric_tensor, (size, size))
             # Add regularization
             self.metric_tensor = self.metric_tensor + self.lam * qml.math.eye(
                 size, like=_metric_tensor
             )
 
         g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
-        new_args = pnp.array(self.apply_grad(g, args), requires_grad=True)
+        new_args = self.apply_grad(g, args)
 
         if forward is None:
             forward = qnode(*args, **kwargs)
@@ -210,8 +214,8 @@ class QNGOptimizer(GradientDescentOptimizer):
         # arguments, but this might change, see TODO below.
         # Once the other approach is implemented, we need to unwrap from list
         # if one argument for a cleaner return.
-        # if len(new_args) == 1:
-        return new_args[0], forward
+        if len(new_args) == 1:
+            return new_args[0], forward
 
         # TODO: The scenario of the following return statement is not implemented
         # yet, as currently only a single metric tensor can be processed.
@@ -224,7 +228,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         # together with the corresponding array in the metric tensor tuple.
         # This requires modifications of the `GradientDescentOptimizer` base class
         # as none of the optimizers accomodate for this use case.
-        # return new_args, forward
+        return new_args, forward
 
     # pylint: disable=arguments-differ
     def step(
@@ -273,7 +277,18 @@ class QNGOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-        grad_flat = pnp.array(list(_flatten(grad)))
-        x_flat = pnp.array(list(_flatten(args)))
-        x_new_flat = x_flat - self.stepsize * pnp.linalg.solve(self.metric_tensor, grad_flat)
-        return unflatten(x_new_flat, args)
+        args_new = list(args)
+
+        trained_index = 0
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", False):
+                if trained_index > 0:
+                    raise ValueError("Only one trainable argument is supported by QNGOptimizer.")
+                grad_flat = pnp.array(list(_flatten(grad[trained_index])))
+                # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
+                update = pnp.linalg.solve(self.metric_tensor, grad_flat)
+                args_new[index] = arg - self.stepsize * unflatten(update, grad[trained_index])
+
+                trained_index += 1
+
+        return tuple(args_new)

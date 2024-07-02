@@ -8,6 +8,8 @@
   
 <h3>Improvements 🛠</h3>
 
+* `QNGOptimizer` now supports functions with multiple arguments, as long as only one of them is trainable.
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -20,4 +22,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Yushao Chen.
+Yushao Chen,
+David Wierichs,
