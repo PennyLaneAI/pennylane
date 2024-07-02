@@ -36,8 +36,9 @@
   ```
 
   Additional configuration settings like the matrix product state bond dimension can be specified
-  when instantiating `default.tensor`, as discussed in the
-  [device documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html).
+  when instantiating `default.tensor`, see the
+  [device documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html)
+  for more details.
   These settings have implications for the speed and accuracy of the simulation, as shown in the
   following example. First, set up the circuit:
 
