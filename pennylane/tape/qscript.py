@@ -378,6 +378,7 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
+        self._trainable_params = None
 
         try:
             # Invalidate cached properties so they get recalculated
