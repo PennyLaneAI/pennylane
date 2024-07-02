@@ -152,11 +152,78 @@
 
 <h4>Better control over when drawing and specs take place 🎚️</h4>
 
-* Circuits can now be plotted at any specific point of the transform program through the `level` keyword argument in `draw()` and `draw_mpl()`.
+* It is now possible to control the stage at which `qml.draw`, `qml.draw_mpl`, and `qml.specs` occur
+  within a QNode's
+  [transform](https://docs.pennylane.ai/en/stable/code/qml_transforms.html) program.
   [(#5855)](https://github.com/PennyLaneAI/pennylane/pull/5855)
+  [(#5781)](https://github.com/PennyLaneAI/pennylane/pull/5781/)
+
+  Consider the following circuit which has multiple transforms applied:
+
+  ```python
+  @qml.transforms.split_non_commuting
+  @qml.transforms.cancel_inverses
+  @qml.transforms.merge_rotations
+  @qml.qnode(qml.device("default.qubit"))
+  def f():
+      qml.Hadamard(0)
+      qml.Y(0)
+      qml.RX(0.4, 0)
+      qml.RX(-0.4, 0)
+      qml.Y(0)
+      return qml.expval(qml.X(0) + 2 * qml.Y(0))
+  ```
+
+  We can specify a `level` value when using `qml.draw()`:
+
+  ```pycon
+  >>> print(qml.draw(f, level=0)())  # input program
+  0: ──H──Y──RX(0.40)──RX(-0.40)──Y─┤  <X+(2.00*Y)>
+  >>> print(qml.draw(f, level=1)())  # rotations merged
+  0: ──H──Y──Y─┤  <X+(2.00*Y)>
+  >>>  print(qml.draw(f, level=2)())  # inverses cancelled
+  0: ──H─┤  <X+(2.00*Y)>
+  >>>  print(qml.draw(f, level=3)())  # Hamiltonian expanded
+  0: ──H─┤  <X>
+
+  0: ──H─┤  <Y>
+  ```
+
+  The
+  [`qml.workflow.get_transform_program()` function](https://docs.pennylane.ai/en/latest/code/api/pennylane.workflow.get_transform_program.html)
+  can be used to see the full transform program.
+
+  ```pycon
+  >>> qml.workflow.get_transform_program(f)
+  TransformProgram(merge_rotations, cancel_inverses, split_non_commuting, validate_device_wires, mid_circuit_measurements, decompose, validate_measurements, validate_observables, no_sampling)
+  ```
+
+  Note that additional transforms can be added automatically from device preprocessing or gradient
+  calculations. Rather than providing an integer value to `level`, it is possible to target
+  the `"user"`, `"gradient"` or `"device"` stages:
+
+  ```python
+  n_wires = 3
+  x = np.random.random((2, n_wires))
+
+  @qml.qnode(qml.device("default.qubit"))
+  def f():
+      qml.BasicEntanglerLayers(x, range(n_wires))
+      return qml.expval(qml.X(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(f, level="device")())
+  0: ──RX(0.28)─╭●────╭X──RX(0.70)─╭●────╭X─┤  <X>
+  1: ──RX(0.52)─╰X─╭●─│───RX(0.65)─╰X─╭●─│──┤     
+  2: ──RX(0.00)────╰X─╰●──RX(0.03)────╰X─╰●─┤     
+  ```
+
+* Circuits can now be plotted at any specific point of the transform program through the `level` keyword argument in `draw()` and `draw_mpl()`.
+  
 
 * `specs()` can now be requested at any specific point of the transform program through the `level` keyword argument.
-  [(#5781)](https://github.com/PennyLaneAI/pennylane/pull/5781/)
+  
 
 <h3>Improvements 🛠</h3>
 
