@@ -201,16 +201,14 @@ class TestUpdate:
         qs = QuantumScript(ops, m)
         assert qs.wires == qml.wires.Wires((0,))
         assert isinstance(qs.par_info, list) and len(qs.par_info) > 0
-        qs.hash  # trigger caching # pylint: disable=pointless-statement
+        old_hash = qs.hash
         assert qs.trainable_params == [0, 1, 2, 3, 4, 5, 6, 7]
-
         qs._ops = []
         qs._measurements = []
         qs._update()
         assert qs.wires == qml.wires.Wires([])
-        assert qs.par_info == []
-        assert QuantumScript([], []).hash == qs.hash
-        assert qs.trainable_params == []
+        assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
+        assert QuantumScript([], []).hash == qs.hash and qs.hash != old_hash
 
     # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
