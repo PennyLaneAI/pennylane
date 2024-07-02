@@ -11,6 +11,11 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* `bind_nested_plxpr` is added to the `capture` module for the easy capture
+  of quantum fucntion transforms.
+
+* Applying `adjoint` to a quantum function can now be captured into plxpr.
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>

@@ -15,6 +15,7 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 from functools import wraps
+from typing import Callable
 
 import pennylane as qml
 from pennylane.compiler import compiler
@@ -171,16 +172,20 @@ def create_adjoint_op(fn, lazy):
     """Main logic for qml.adjoint, but allows bypassing the compiler dispatch if needed."""
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
-    if not callable(fn):
-        raise ValueError(
-            f"The object {fn} of type {type(fn)} is not callable. "
-            "This error might occur if you apply adjoint to a list "
-            "of operations instead of a function or template."
-        )
+    if callable(fn):
+        return adjoint_transform(fn, lazy=lazy)
+    raise ValueError(
+        f"The object {fn} of type {type(fn)} is not callable. "
+        "This error might occur if you apply adjoint to a list "
+        "of operations instead of a function or template."
+    )
 
-    @wraps(fn)
+
+@qml.capture.bind_nested_plxpr
+def adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+    @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = make_qscript(fn)(*args, **kwargs)
+        qscript = make_qscript(qfunc)(*args, **kwargs)
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:
