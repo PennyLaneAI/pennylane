@@ -6,17 +6,78 @@
 
 <h4>Execute faster with Default Tensor 🔗</h4>
 
-* The `default.tensor` device now supports the `tn` method to simulate quantum circuits using exact tensor networks.
-  [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
-
-* The `default.tensor` device is introduced to perform tensor network simulations of quantum circuits using the `mps` (Matrix Product State) method.
+* A new `default.tensor` device is now available for performing
+  [tensor network](https://en.wikipedia.org/wiki/Tensor_network) and
+  [matrix product state](https://en.wikipedia.org/wiki/Matrix_product_state) simulations using the
+  [`quimb` backend](https://quimb.readthedocs.io/en/latest/).
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
-
-* The wires for the `default.tensor` device are selected at runtime if they are not provided by user.
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
-
-* Add operation and measurement specific routines in `default.tensor` to improve scalability.
+  [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
   [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
+
+  Either method can be selected when instantiating the `default.tensor` device by fixing the
+  `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state). This
+  device can allow a large number of qubits to be simulated:
+
+  ```python
+  import pennylane as qml
+
+  num_qubits = 1000
+  dev = qml.device("default.tensor", method="mps")
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(0)
+      for i in range(num_qubits - 1):
+          qml.CNOT([i, i + 1])
+      return qml.expval(qml.Z(num_qubits - 1))
+
+  circuit()
+  ```
+
+  Additional configuration settings like the matrix product state bond dimension can be specified
+  when instantiating `default.tensor`, as discussed in the
+  [device documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html).
+  These settings have implications for the speed and accuracy of the simulation, as shown in the
+  following example. First, set up the circuit:
+
+  ```python
+  import numpy as np
+
+  n_layers = 10
+  n_wires = 10
+
+  initial_shape, weights_shape = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
+  np.random.seed(1967)
+  initial_layer_weights = np.random.random(initial_shape)
+  weights = np.random.random(weights_shape)
+
+  def f():
+      qml.SimplifiedTwoDesign(initial_layer_weights, weights, range(n_wires))
+      return qml.expval(qml.Z(0))
+  ```
+
+  The `default.tensor` device is instantiated with a `max_bond_dim` value:
+
+  ```python
+
+  dev_dq = qml.device("default.qubit")
+  value_dq = qml.QNode(f, dev_dq)()
+
+  dev_mps = qml.device("default.tensor", max_bond_dim=5)
+  value_mps = qml.QNode(f, dev_mps)()
+  ```
+
+  With this bond dimension, the expectation values calculated for `default.qubit` and
+  `default.tensor` are different:
+
+  ```pycon
+  >>> np.abs(value_dq - value_mps)
+  tensor(0.0253213, requires_grad=True)
+  ```
+
+  Learn more about `default.tensor` and how to configure it by visiting the
+  [how-to guide](https://pennylane.ai/qml/demos/tutorial_How_to_simulate_quantum_circuits_with_tensor_networks/).
 
 <h4>Add noise models to your quantum circuits 📺</h4>
 
