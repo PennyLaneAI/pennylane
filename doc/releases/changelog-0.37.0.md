@@ -103,7 +103,7 @@
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
-* `qml.equal` now properly handles `Pow`, `Adjoint`, `Exp`, and `SProd` operators as arugments across 
+* `qml.equal` now properly handles `Pow`, `Adjoint`, `Exp`, and `SProd` operators as arguments across 
   different interfaces and tolerances with the addition of four new keyword arguments: `check_interface`, 
   `check_trainability`, `atol` and `rtol`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/pull/5668)
@@ -134,10 +134,11 @@
 <h4>Faster and more flexible mid-circuit measurements</h4>
 
 * The `default.qubit` device supports a depth-first tree-traversal algorithm to accelerate native mid-circuit 
-  measurement execution. The new implementation supports classical control, collecting statistics, and 
+  measurement execution. Accessible through the QNode argument `mcm_method="tree-traversal"`,
+  this new implementation supports classical control, collecting statistics, and 
   post-selection, along with all measurements enabled with `qml.dynamic_one_shot`. More information 
   about this new mid-circuit measurement method can be found on our 
-  [measurement documentation page](https://docs.pennylane.ai/en/stable/introduction/measurements.html).
+  [measurement documentation page](https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm).
   [(#5180)](https://github.com/PennyLaneAI/pennylane/pull/5180)
 
 * `qml.QNode` and the `@qml.qnode` decorator now accept two new keyword arguments: `postselect_mode` 
@@ -267,7 +268,7 @@
 * The `qml.PyTrees` module now has `flatten` and `unflatten` methods for serializing PyTrees.
   [(#5701)](https://github.com/PennyLaneAI/pennylane/pull/5701)
 
-* `qml.sample` can now be used on boolean values representing mid-circuit measurement results in
+* `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
   traced quantum functions. This feature is used with Catalyst to enable the pattern
   `m = measure(0); qml.sample(m)`.
   [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
@@ -311,7 +312,7 @@
 <h4>Other improvements</h4>
 
 * `qml.MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation 
-  returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations and is applicable for any multi-controlled 
+  returns :math:`\mathcal{O}(\text{len(control\_wires)}^2)` operations and is applicable for any multi-controlled 
   unitary gate. This decomposition is provided in [arXiv:quant-ph/9503016](https://arxiv.org/abs/quant-ph/9503016).
   [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
 
