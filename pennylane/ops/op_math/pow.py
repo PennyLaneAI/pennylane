@@ -356,7 +356,7 @@ class Pow(ScalarSymbolicOp):
 
         .. warning::
 
-            The adjoint of a fractional power of an operator is not well defined due to branch cuts in the power function.
+            The adjoint of a fractional power of an operator is not well-defined due to branch cuts in the power function.
             Therefore, an ``AdjointUndefinedError`` is raised when the power ``z`` is not an integer.
 
             The integer power check is a type check, so that floats like ``2.0`` are not considered to be integers.
