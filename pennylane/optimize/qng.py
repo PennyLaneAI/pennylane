@@ -22,7 +22,7 @@ from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
 
-def _reshape_and_regularize_tensor(tensor, lam):
+def _reshape_and_regularize(tensor, lam):
     shape = qml.math.shape(tensor)
     size = 1 if shape == () else qml.math.prod(shape[: len(shape) // 2])
     tensor = qml.math.reshape(tensor, (size, size))
@@ -103,7 +103,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     **Examples:**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
-    realized as :class:`~.QNode` that returns the expectation value of a Hamiltonian.
+    realized as a :class:`~.QNode` that returns the expectation value of a Hamiltonian.
 
     >>> dev = qml.device("default.qubit", wires=(0, 1, "aux"))
     >>> @qml.qnode(dev)
@@ -113,7 +113,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     ...     return qml.expval(qml.X(0) + qml.X(1))
 
     Once constructed, the cost function can be passed directly to the
-    optimizer's ``step`` function:
+    optimizer's :meth:`~.step` function:
 
     >>> eta = 0.01
     >>> init_params = np.array([0.011, 0.012])
@@ -122,19 +122,27 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> theta_new
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
-    An alternative function to calculate the metric tensor of the QNode
-    can be provided to :meth:`~.step`
-    via the ``metric_tensor_fn`` keyword argument.  For example, we can provide a function
+    An alternative function to calculate the metric tensor of the QNode can be provided to ``step``
+    via the ``metric_tensor_fn`` keyword argument. For example, we can provide a function
     to calculate the metric tensor via the adjoint method.
 
     >>> adj_metric_tensor = qml.adjoint_metric_tensor(circuit, circuit.device)
     >>> opt.step(circuit, init_params, metric_tensor_fn=adj_metric_tensor)
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
+    .. note::
+
+        If the objective function takes multiple trainable arguments, ``QNGOptimizer`` applies the
+        metric tensor for each argument individually. This means that "correlations" between
+        parameters from different arguments are not taken into account. In order to take all
+        correlations into account within the optimization, consider combining all parameters into
+        one objective function argument.
+
     .. seealso::
 
-        See the :doc:`quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`
-        for more details on Fubini-Study metric tensor and this optimization class.
+        See the :doc:`quantum natural gradient example
+        <demo:demos/tutorial_quantum_natural_gradient>` for more details on the Fubini-Study
+        metric tensor and this optimization class.
 
     Keyword Args:
         stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
@@ -199,13 +207,11 @@ class QNGOptimizer(GradientDescentOptimizer):
             if metric_tensor_fn is None:
                 metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
 
-            _metric_tensor = metric_tensor_fn(*args, **kwargs)
-            if not isinstance(_metric_tensor, tuple):
-                _metric_tensor = (_metric_tensor,)
-
-            self.metric_tensor = tuple(
-                _reshape_and_regularize_tensor(mt, self.lam) for mt in _metric_tensor
-            )
+            mt = metric_tensor_fn(*args, **kwargs)
+            if isinstance(mt, tuple):
+                self.metric_tensor = tuple(_reshape_and_regularize(_mt, self.lam) for _mt in mt)
+            else:
+                self.metric_tensor = _reshape_and_regularize(mt, self.lam)
 
         g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
         new_args = self.apply_grad(g, args)
@@ -213,24 +219,9 @@ class QNGOptimizer(GradientDescentOptimizer):
         if forward is None:
             forward = qnode(*args, **kwargs)
 
-        # Note: for now, we only have single element lists as the new
-        # arguments, but this might change, see TODO below.
-        # Once the other approach is implemented, we need to unwrap from list
-        # if one argument for a cleaner return.
         if len(new_args) == 1:
-            return new_args[0], forward
+            new_args = new_args[0]
 
-        # TODO: The scenario of the following return statement is not implemented
-        # yet, as currently only a single metric tensor can be processed.
-        # An optimizer refactor is needed to accomodate for this (similar to other
-        # optimizers for which `apply_grad` will have to be patched to allow for
-        # tuple-valued gradients to be processed)
-        #
-        # For multiple QNode arguments, `qml.jacobian` and `qml.metric_tensor`
-        # return a tuple of arrays. Each of the gradient arrays has to be processed
-        # together with the corresponding array in the metric tensor tuple.
-        # This requires modifications of the `GradientDescentOptimizer` base class
-        # as none of the optimizers accomodate for this use case.
         return new_args, forward
 
     # pylint: disable=arguments-differ
@@ -281,14 +272,14 @@ class QNGOptimizer(GradientDescentOptimizer):
             array: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
+        mt = self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
 
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
                 grad_flat = pnp.array(list(_flatten(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                mt_flat = self.metric_tensor[trained_index]
-                update = pnp.linalg.solve(mt_flat, grad_flat)
+                update = pnp.linalg.solve(mt[trained_index], grad_flat)
                 args_new[index] = arg - self.stepsize * unflatten(update, grad[trained_index])
 
                 trained_index += 1

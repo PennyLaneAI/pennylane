@@ -8,7 +8,7 @@
   
 <h3>Improvements 🛠</h3>
 
-* `QNGOptimizer` now supports functions with multiple arguments, as long as only one of them is trainable.
+* `QNGOptimizer` now supports functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 
 <h3>Breaking changes 💔</h3>
