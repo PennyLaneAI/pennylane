@@ -11,6 +11,12 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* `qml.DefaultQutritMixed` readout error has been added using parameters readout_relaxation_probs and 
+  readout_misclassification_probs. These parameters add a `qml.QutritAmplitudeDamping`  and a `qml.TritFlip` channel, respectively,
+  after measurement diagonalization. The amplitude damping error represents the potential for
+  relaxation errors to occur during a potentially longer measurement. The trit flip error represents misclassification events.
+  [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
