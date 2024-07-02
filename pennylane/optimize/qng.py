@@ -22,6 +22,15 @@ from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
 
+def _reshape_and_regularize_tensor(tensor, lam):
+    shape = qml.math.shape(tensor)
+    size = 1 if shape == () else qml.math.prod(shape[: len(shape) // 2])
+    tensor = qml.math.reshape(tensor, (size, size))
+    # Add regularization
+    tensor += lam * qml.math.eye(size, like=tensor)
+    return tensor
+
+
 class QNGOptimizer(GradientDescentOptimizer):
     r"""Optimizer with adaptive learning rate, via calculation
     of the diagonal or block-diagonal approximation to the Fubini-Study metric tensor.
@@ -191,17 +200,11 @@ class QNGOptimizer(GradientDescentOptimizer):
                 metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
 
             _metric_tensor = metric_tensor_fn(*args, **kwargs)
-            # Reshape metric tensor to be square
-            shape = qml.math.shape(_metric_tensor)
-            if shape == ():
-                size = 1
-                self.metric_tensor = qml.math.eye(1, like=_metric_tensor) * _metric_tensor
-            else:
-                size = qml.math.prod(shape[: len(shape) // 2])
-                self.metric_tensor = qml.math.reshape(_metric_tensor, (size, size))
-            # Add regularization
-            self.metric_tensor = self.metric_tensor + self.lam * qml.math.eye(
-                size, like=_metric_tensor
+            if not isinstance(_metric_tensor, tuple):
+                _metric_tensor = (_metric_tensor,)
+
+            self.metric_tensor = tuple(
+                _reshape_and_regularize_tensor(mt, self.lam) for mt in _metric_tensor
             )
 
         g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
@@ -282,11 +285,10 @@ class QNGOptimizer(GradientDescentOptimizer):
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                if trained_index > 0:
-                    raise ValueError("Only one trainable argument is supported by QNGOptimizer.")
                 grad_flat = pnp.array(list(_flatten(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                update = pnp.linalg.solve(self.metric_tensor, grad_flat)
+                mt_flat = self.metric_tensor[trained_index]
+                update = pnp.linalg.solve(mt_flat, grad_flat)
                 args_new[index] = arg - self.stepsize * unflatten(update, grad[trained_index])
 
                 trained_index += 1

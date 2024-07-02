@@ -46,25 +46,6 @@ class TestExceptions:
         ):
             opt.step(cost, params)
 
-    def test_multiple_trainable_args(self):
-        """Test that an error is raised if multiple arguments of the optimized
-        function are trainable."""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            """A cost function with two arguments."""
-            qml.RX(x, 0)
-            qml.RY(y, 0)
-            return qml.expval(qml.Z(0))
-
-        opt = qml.QNGOptimizer()
-        x, y = np.array(0.2, requires_grad=True), np.array(-0.8, requires_grad=True)
-        fake_mt_fn = lambda x, y: np.eye(1)
-        with pytest.raises(ValueError, match="Only one trainable argument is supported"):
-            _ = opt.step(circuit, x, y, metric_tensor_fn=fake_mt_fn)
-
 
 class TestOptimize:
     """Test basic optimization integration"""
@@ -178,7 +159,6 @@ class TestOptimize:
         assert np.isclose(cost1, expected_cost)
         assert np.isclose(cost2, expected_cost)
 
-    @pytest.mark.skip("QNGOptimizer is not yet implemented for split inputs.")
     def test_step_and_cost_with_grad_fn_split_input(self):
         """Test that the correct cost and update is returned via the step_and_cost
         method for the QNG optimizer when providing an explicit grad_fn.
@@ -228,6 +208,9 @@ class TestOptimize:
             qml.RY(-y, 0)
             return qml.expval(qml.Z(0))
 
+        grad_fn = qml.grad(circuit)
+        mt_fn = qml.metric_tensor(circuit)
+
         params = np.array(0.2, requires_grad=False), np.array(-0.8, requires_grad=False)
         params[trainable_idx].requires_grad = True
         opt = qml.QNGOptimizer(stepsize=0.01)
@@ -237,16 +220,15 @@ class TestOptimize:
         step2 = opt.step(circuit, *params)
 
         # With modified autograd gradient function
-        grad_fn1 = lambda *args, **kwargs: qml.grad(circuit)(*args, **kwargs) * 2
-        step3, cost2 = opt.step_and_cost(circuit, *params, grad_fn=grad_fn1)
-        step4 = opt.step(circuit, *params, grad_fn=grad_fn1)
+        fake_grad_fn = lambda *args, **kwargs: grad_fn(*args, **kwargs) * 2
+        step3, cost2 = opt.step_and_cost(circuit, *params, grad_fn=fake_grad_fn)
+        step4 = opt.step(circuit, *params, grad_fn=fake_grad_fn)
 
         # With modified metric tensor function
-        fake_mt_fn = lambda *args, **kwargs: qml.metric_tensor(circuit)(*args, **kwargs) * 4
+        fake_mt_fn = lambda *args, **kwargs: mt_fn(*args, **kwargs) * 4
         step5 = opt.step(circuit, *params, metric_tensor_fn=fake_mt_fn)
 
         # Expectations
-        grad_fn = qml.grad(circuit)
         if trainable_idx == 1:
             mt_inv = 1 / (np.cos(2 * params[0]) + 1) * 8
         else:
@@ -308,7 +290,6 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(theta), -0.9963791, atol=tol, rtol=0)
 
-    @pytest.mark.skip("QNGOptimizer is not yet implemented for split inputs.")
     def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct QNG value every step, the correct parameter updates, and
@@ -347,13 +328,14 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(x) ** 2) / 4])
-            assert np.allclose(res, exp, atol=0.00001, rtol=0)
+            exp = np.array([[[0.25]], [[(np.cos(2 * theta[0]) + 1) / 8]]])
+            assert np.allclose(res, exp)
 
             # check parameter update
-            theta_new = np.array([x, y])
-            dtheta = eta * sp.linalg.pinvh(exp) @ gradient(theta)
-            assert np.allclose(dtheta, theta - theta_new, atol=0.000001, rtol=0)
+            theta_new = (x, y)
+            grad = gradient(theta)
+            dtheta = tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
+            assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost
         assert np.allclose(circuit(x, y), -1.41421356, atol=tol, rtol=0)
