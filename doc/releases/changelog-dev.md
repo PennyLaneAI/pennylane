@@ -8,6 +8,9 @@
   
 <h3>Improvements 🛠</h3>
 
+* `qml.UCCSD` now accepts an additional optional argument, `n_repeats`, which defines the number of times the UCCSD template is repeated. This can improve the accuracy of the template by reducing the Trotter error but would result in deeper circuits.
+  [(#5801)](https://github.com/PennyLaneAI/pennylane/pull/5801)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -20,4 +23,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Yushao Chen.
+Yushao Chen,
+Erik Schultheis.
